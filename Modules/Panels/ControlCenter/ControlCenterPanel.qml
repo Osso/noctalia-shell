@@ -167,11 +167,11 @@ SmartPanel {
           Layout.fillHeight: true
         }
 
-        // System monitors combined in one card
-        SystemMonitorCard {
-          Layout.preferredWidth: Math.round(Style.baseWidgetSize * 2.625)
-          Layout.fillHeight: true
-        }
+        // System monitors combined in one card - disabled
+        // SystemMonitorCard {
+        //   Layout.preferredWidth: Math.round(Style.baseWidgetSize * 2.625)
+        //   Layout.fillHeight: true
+        // }
       }
     }
   }
