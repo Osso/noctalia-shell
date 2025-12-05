@@ -61,7 +61,13 @@ Singleton {
           "path": "~/.config/gtk-4.0/gtk.css"
         }
       ],
-      "postProcess": mode => `gsettings set org.gnome.desktop.interface color-scheme prefer-${mode}`
+      "postProcess": mode => {
+        const dark = mode === "dark" ? "1" : "0";
+        return `gsettings set org.gnome.desktop.interface color-scheme prefer-${mode} && ` +
+               `sed -i 's/gtk-application-prefer-dark-theme=./gtk-application-prefer-dark-theme=${dark}/' ` +
+               `~/.config/gtk-3.0/settings.ini ~/.config/gtk-4.0/settings.ini 2>/dev/null || true && ` +
+               `systemctl --user restart xdg-desktop-portal-gtk.service`;
+      }
     },
     {
       "id": "qt",
