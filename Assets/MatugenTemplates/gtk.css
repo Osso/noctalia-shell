@@ -21,3 +21,28 @@
 @define-color sidebar_fg_color {{colors.on_surface.default.hex}};
 @define-color sidebar_border_color @window_bg_color;
 @define-color sidebar_backdrop_color @window_bg_color;
+
+/* GTK3-specific styling */
+@define-color theme_bg_color @window_bg_color;
+@define-color theme_fg_color @window_fg_color;
+@define-color theme_selected_bg_color @accent_bg_color;
+@define-color theme_selected_fg_color @accent_fg_color;
+
+button.suggested-action {
+    background-color: @accent_bg_color;
+    color: @accent_fg_color;
+}
+
+button.suggested-action:hover {
+    background-color: shade(@accent_bg_color, 1.1);
+}
+
+*:selected {
+    background-color: @accent_bg_color;
+    color: @accent_fg_color;
+}
+
+selection {
+    background-color: @accent_bg_color;
+    color: @accent_fg_color;
+}
