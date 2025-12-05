@@ -85,7 +85,7 @@ Singleton {
       case "compact":
       return (Settings.data.bar.position === "left" || Settings.data.bar.position === "right") ? 27 : 25;
       case "comfortable":
-      return (Settings.data.bar.position === "left" || Settings.data.bar.position === "right") ? 39 : 37;
+      return (Settings.data.bar.position === "left" || Settings.data.bar.position === "right") ? 47 : 45;
       default:
       case "default":
       return (Settings.data.bar.position === "left" || Settings.data.bar.position === "right") ? 33 : 31;

@@ -72,9 +72,9 @@ Rectangle {
             Binding on pointSize {
               value: {
                 if (repeater.model.length == 1) {
-                  return Style.fontSizeS * scaling;
+                  return Style.fontSizeM * scaling;
                 } else {
-                  return (index == 0) ? Style.fontSizeXS * scaling : Style.fontSizeXXS * scaling;
+                  return (index == 0) ? Style.fontSizeS * scaling : Style.fontSizeXS * scaling;
                 }
               }
             }
@@ -103,7 +103,7 @@ Rectangle {
             text: modelData
             family: useCustomFont && customFont ? customFont : Settings.data.ui.fontDefault
             Binding on pointSize {
-              value: Style.fontSizeS * scaling
+              value: Style.fontSizeM * scaling
             }
             applyUiScale: false
 

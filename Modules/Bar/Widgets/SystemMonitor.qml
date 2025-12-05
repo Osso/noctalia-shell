@@ -5,6 +5,7 @@ import Quickshell
 import qs.Commons
 import qs.Modules.Bar.Extras
 import qs.Modules.Panels.Settings
+import qs.Services.Hardware
 import qs.Services.System
 import qs.Services.UI
 import qs.Widgets
@@ -43,6 +44,7 @@ Rectangle {
   readonly property bool showNetworkStats: (widgetSettings.showNetworkStats !== undefined) ? widgetSettings.showNetworkStats : widgetMetadata.showNetworkStats
   readonly property bool showDiskUsage: (widgetSettings.showDiskUsage !== undefined) ? widgetSettings.showDiskUsage : widgetMetadata.showDiskUsage
   readonly property string diskPath: (widgetSettings.diskPath !== undefined) ? widgetSettings.diskPath : widgetMetadata.diskPath
+  readonly property bool showFanSpeed: (widgetSettings.showFanSpeed !== undefined) ? widgetSettings.showFanSpeed : widgetMetadata.showFanSpeed
 
   readonly property real iconSize: textSize * 1.4
   readonly property real textSize: {
@@ -107,6 +109,16 @@ Rectangle {
     text: "99.9K" // Longest value part of network speed
   }
 
+  TextMetrics {
+    id: fanMetrics
+    font.family: Settings.data.ui.fontFixed
+    font.weight: Style.fontWeightMedium
+    font.pointSize: textSize * Settings.data.ui.fontFixedScale
+    text: "9.9k" // Fan RPM format
+  }
+
+  readonly property int fanTextWidth: Math.ceil(fanMetrics.boundingRect.width + 3)
+
   anchors.centerIn: parent
   implicitWidth: isVertical ? Style.capsuleHeight : Math.round(mainGrid.implicitWidth + Style.marginM * 2)
   implicitHeight: isVertical ? Math.round(mainGrid.implicitHeight + Style.marginM * 2) : Style.capsuleHeight
@@ -138,9 +150,12 @@ Rectangle {
 
   MouseArea {
     anchors.fill: parent
-    acceptedButtons: Qt.RightButton
+    acceptedButtons: Qt.LeftButton | Qt.RightButton
     onClicked: mouse => {
-                 if (mouse.button === Qt.RightButton) {
+                 if (mouse.button === Qt.LeftButton) {
+                   // Open process panel on left click
+                   PanelService.getPanel("processPanel", screen)?.toggle(root);
+                 } else if (mouse.button === Qt.RightButton) {
                    var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
                    if (popupMenuWindow) {
                      popupMenuWindow.showContextMenu(contextMenu);
@@ -589,6 +604,69 @@ Rectangle {
         hoverEnabled: true
         onEntered: {
           TooltipService.show(diskContent, diskPath, BarService.getTooltipDirection());
+        }
+        onExited: {
+          TooltipService.hide();
+        }
+      }
+    }
+
+    // Fan Speed Component
+    Item {
+      id: fanContainer
+      Layout.preferredWidth: isVertical ? root.width : iconSize + fanTextWidth + (Style.marginXXS)
+      Layout.preferredHeight: Style.capsuleHeight
+      Layout.alignment: isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
+      visible: showFanSpeed && FanService.available
+
+      GridLayout {
+        id: fanContent
+        anchors.centerIn: parent
+        flow: isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+        rows: isVertical ? 2 : 1
+        columns: isVertical ? 1 : 2
+        rowSpacing: Style.marginXXS
+        columnSpacing: Style.marginXXS
+
+        Item {
+          Layout.alignment: Qt.AlignCenter
+          Layout.row: isVertical ? 1 : 0
+          Layout.column: 0
+          Layout.fillWidth: isVertical
+          implicitWidth: iconSize
+          implicitHeight: iconSize
+
+          NIcon {
+            icon: "propeller"
+            pointSize: iconSize
+            applyUiScale: false
+            anchors.centerIn: parent
+          }
+        }
+
+        NText {
+          text: FanService.formatRpm(FanService.getMaxRpm())
+          family: Settings.data.ui.fontFixed
+          pointSize: textSize
+          applyUiScale: false
+          font.weight: Style.fontWeightMedium
+          Layout.alignment: Qt.AlignCenter
+          Layout.preferredWidth: isVertical ? -1 : fanTextWidth
+          horizontalAlignment: isVertical ? Text.AlignHCenter : Text.AlignRight
+          verticalAlignment: Text.AlignVCenter
+          color: textColor
+          Layout.row: isVertical ? 0 : 0
+          Layout.column: isVertical ? 0 : 1
+          scale: isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
+        }
+      }
+
+      MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        onEntered: {
+          var tooltipText = FanService.fans.map(f => f.label + ": " + f.rpm + " RPM").join("\n");
+          TooltipService.show(fanContent, tooltipText, BarService.getTooltipDirection());
         }
         onExited: {
           TooltipService.hide();

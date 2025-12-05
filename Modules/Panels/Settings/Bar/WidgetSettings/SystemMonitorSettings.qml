@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
+import qs.Services.Hardware
 import qs.Services.System
 import qs.Widgets
 
@@ -22,6 +23,7 @@ ColumnLayout {
   property bool valueShowNetworkStats: widgetData.showNetworkStats !== undefined ? widgetData.showNetworkStats : widgetMetadata.showNetworkStats
   property bool valueShowDiskUsage: widgetData.showDiskUsage !== undefined ? widgetData.showDiskUsage : widgetMetadata.showDiskUsage
   property string valueDiskPath: widgetData.diskPath !== undefined ? widgetData.diskPath : widgetMetadata.diskPath
+  property bool valueShowFanSpeed: widgetData.showFanSpeed !== undefined ? widgetData.showFanSpeed : widgetMetadata.showFanSpeed
 
   function saveSettings() {
     var settings = Object.assign({}, widgetData || {});
@@ -33,6 +35,7 @@ ColumnLayout {
     settings.showNetworkStats = valueShowNetworkStats;
     settings.showDiskUsage = valueShowDiskUsage;
     settings.diskPath = valueDiskPath;
+    settings.showFanSpeed = valueShowFanSpeed;
 
     return settings;
   }
@@ -115,5 +118,15 @@ ColumnLayout {
     }
     currentKey: valueDiskPath
     onSelected: key => valueDiskPath = key
+  }
+
+  NToggle {
+    id: showFanSpeed
+    Layout.fillWidth: true
+    label: "Fan Speed"
+    description: "Show fan RPM in the system monitor"
+    checked: valueShowFanSpeed
+    onToggled: checked => valueShowFanSpeed = checked
+    visible: FanService.available
   }
 }

@@ -22,6 +22,7 @@ import qs.Modules.Panels.NotificationHistory
 import qs.Modules.Panels.SessionMenu
 import qs.Modules.Panels.Settings
 import qs.Modules.Panels.SetupWizard
+import qs.Modules.Panels.Process
 import qs.Modules.Panels.Tray
 import qs.Modules.Panels.Wallpaper
 import qs.Modules.Panels.WiFi
@@ -50,6 +51,7 @@ PanelWindow {
   readonly property alias trayDrawerPanel: trayDrawerPanel
   readonly property alias wallpaperPanel: wallpaperPanel
   readonly property alias wifiPanel: wifiPanel
+  readonly property alias processPanel: processPanel
 
   // Expose panel backgrounds for AllBackgrounds
   readonly property var audioPanelPlaceholder: audioPanel.panelRegion
@@ -67,6 +69,7 @@ PanelWindow {
   readonly property var trayDrawerPanelPlaceholder: trayDrawerPanel.panelRegion
   readonly property var wallpaperPanelPlaceholder: wallpaperPanel.panelRegion
   readonly property var wifiPanelPlaceholder: wifiPanel.panelRegion
+  readonly property var processPanelPlaceholder: processPanel.panelRegion
 
   Component.onCompleted: {
     Logger.d("MainScreen", "Initialized for screen:", screen?.name, "- Dimensions:", screen?.width, "x", screen?.height, "- Position:", screen?.x, ",", screen?.y);
@@ -301,6 +304,12 @@ PanelWindow {
       objectName: "wifiPanel-" + (root.screen?.name || "unknown")
       screen: root.screen
       z: 50
+    }
+
+    ProcessPanel {
+      id: processPanel
+      objectName: "processPanel-" + (root.screen?.name || "unknown")
+      screen: root.screen
     }
 
     // ----------------------------------------------

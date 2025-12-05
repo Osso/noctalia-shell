@@ -317,7 +317,7 @@ Singleton {
       property bool randomEnabled: false
       property int randomIntervalSec: 300 // 5 min
       property int transitionDuration: 1500 // 1500 ms
-      property string transitionType: "random"
+      property string transitionType: "none"
       property real transitionEdgeSmoothness: 0.05
       property string panelPosition: "follow_bar"
       property bool hideWallpaperFilenames: false

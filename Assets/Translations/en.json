@@ -2205,6 +2205,20 @@
       "enabled": "Enabled"
     }
   },
+  "process": {
+    "panel-title": "System Processes",
+    "process-count": "{count} processes",
+    "memory": "Memory",
+    "processes": "Procs",
+    "header-process": "Process",
+    "header-memory": "Memory",
+    "sort-descending": "Sort descending",
+    "sort-ascending": "Sort ascending",
+    "kill": "End process",
+    "force-kill": "Force kill",
+    "copy-pid": "Copy PID",
+    "copy-command": "Copy command"
+  },
   "tooltips": {
     "add-widget": "Add widget",
     "bluetooth-devices": "Bluetooth devices",

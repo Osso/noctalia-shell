@@ -193,7 +193,8 @@ Singleton {
                                     "showMemoryAsPercent": false,
                                     "showNetworkStats": false,
                                     "showDiskUsage": false,
-                                    "diskPath": "/"
+                                    "diskPath": "/",
+                                    "showFanSpeed": false
                                   },
                                   "Taskbar": {
                                     "allowUserSettings": true,
