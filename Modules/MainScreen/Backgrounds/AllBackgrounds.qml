@@ -173,6 +173,13 @@ Item {
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
+
+      // Process
+      PanelBackground {
+        panel: root.windowRoot.processPanelPlaceholder
+        shapeContainer: backgroundsShape
+        backgroundColor: panelBackgroundColor
+      }
     }
 
     // Apply shadow to the cached layer
