@@ -27,10 +27,10 @@ Singleton {
     const secondaryContainer = ColorsConvert.generateContainerColor(colors.mSecondary, isDarkMode);
     const tertiaryContainer = ColorsConvert.generateContainerColor(colors.mTertiary, isDarkMode);
 
-    // Generate "on" colors
-    const onPrimary = ColorsConvert.generateOnColor(colors.mPrimary, isDarkMode);
-    const onSecondary = ColorsConvert.generateOnColor(colors.mSecondary, isDarkMode);
-    const onTertiary = ColorsConvert.generateOnColor(colors.mTertiary, isDarkMode);
+    // Generate "on" colors (use scheme-defined if available, otherwise auto-generate)
+    const onPrimary = (colors.mOnPrimary !== undefined && colors.mOnPrimary !== "") ? colors.mOnPrimary : ColorsConvert.generateOnColor(colors.mPrimary, isDarkMode);
+    const onSecondary = (colors.mOnSecondary !== undefined && colors.mOnSecondary !== "") ? colors.mOnSecondary : ColorsConvert.generateOnColor(colors.mSecondary, isDarkMode);
+    const onTertiary = (colors.mOnTertiary !== undefined && colors.mOnTertiary !== "") ? colors.mOnTertiary : ColorsConvert.generateOnColor(colors.mTertiary, isDarkMode);
 
     const onPrimaryContainer = ColorsConvert.generateOnColor(primaryContainer, isDarkMode);
     const onSecondaryContainer = ColorsConvert.generateOnColor(secondaryContainer, isDarkMode);
