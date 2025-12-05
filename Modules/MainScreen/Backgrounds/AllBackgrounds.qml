@@ -166,6 +166,13 @@ Item {
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
+
+      // VPN
+      PanelBackground {
+        panel: root.windowRoot.vpnPanelPlaceholder
+        shapeContainer: backgroundsShape
+        backgroundColor: panelBackgroundColor
+      }
     }
 
     // Apply shadow to the cached layer

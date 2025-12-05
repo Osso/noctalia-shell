@@ -16,6 +16,7 @@ Singleton {
                            "NightLight": nightLightComponent,
                            "PowerProfile": powerProfileComponent,
                            "ScreenRecorder": screenRecorderComponent,
+                           "VPN": vpnComponent,
                            "WiFi": wiFiComponent,
                            "WallpaperSelector": wallpaperSelectorComponent,
                            "CustomButton": customButtonComponent
@@ -52,6 +53,9 @@ Singleton {
   }
   property Component screenRecorderComponent: Component {
     ScreenRecorder {}
+  }
+  property Component vpnComponent: Component {
+    VPN {}
   }
   property Component wiFiComponent: Component {
     WiFi {}

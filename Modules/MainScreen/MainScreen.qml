@@ -26,6 +26,7 @@ import qs.Modules.Panels.Process
 import qs.Modules.Panels.Tray
 import qs.Modules.Panels.Wallpaper
 import qs.Modules.Panels.WiFi
+import qs.Modules.Panels.VPN
 import qs.Services.Compositor
 import qs.Services.UI
 
@@ -51,6 +52,7 @@ PanelWindow {
   readonly property alias trayDrawerPanel: trayDrawerPanel
   readonly property alias wallpaperPanel: wallpaperPanel
   readonly property alias wifiPanel: wifiPanel
+  readonly property alias vpnPanel: vpnPanel
   readonly property alias processPanel: processPanel
 
   // Expose panel backgrounds for AllBackgrounds
@@ -69,6 +71,7 @@ PanelWindow {
   readonly property var trayDrawerPanelPlaceholder: trayDrawerPanel.panelRegion
   readonly property var wallpaperPanelPlaceholder: wallpaperPanel.panelRegion
   readonly property var wifiPanelPlaceholder: wifiPanel.panelRegion
+  readonly property var vpnPanelPlaceholder: vpnPanel.panelRegion
   readonly property var processPanelPlaceholder: processPanel.panelRegion
 
   Component.onCompleted: {
@@ -302,6 +305,13 @@ PanelWindow {
     WiFiPanel {
       id: wifiPanel
       objectName: "wifiPanel-" + (root.screen?.name || "unknown")
+      screen: root.screen
+      z: 50
+    }
+
+    VPNPanel {
+      id: vpnPanel
+      objectName: "vpnPanel-" + (root.screen?.name || "unknown")
       screen: root.screen
       z: 50
     }

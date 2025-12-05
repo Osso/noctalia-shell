@@ -2288,6 +2288,21 @@
     "wallpaper-selector": "Wallpaper selector",
     "widget-settings": "Widget settings"
   },
+  "vpn": {
+    "panel": {
+      "active-connections": "Active connections",
+      "available-connections": "Available connections",
+      "configure-message": "Configure VPN connections in your network settings.",
+      "connect": "Connect",
+      "connected": "Connected",
+      "connecting": "Connecting...",
+      "disconnect": "Disconnect",
+      "disconnected": "Not connected",
+      "disconnecting": "Disconnecting...",
+      "no-connections": "No VPN connections configured",
+      "title": "VPN"
+    }
+  },
   "wallpaper": {
     "configure-directory": "Configure your wallpaper directory with images.",
     "fill-modes": {
