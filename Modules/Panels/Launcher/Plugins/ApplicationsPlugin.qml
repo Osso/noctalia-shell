@@ -300,6 +300,14 @@ Item {
                                                                  return app;
                                                                });
     Logger.d("ApplicationsPlugin", `Loaded ${entries.length} applications`);
+    // Debug: log all app IDs to find duplicates
+    const appIds = entries.map(e => e.id || e.name);
+    const counts = {};
+    appIds.forEach(id => { counts[id] = (counts[id] || 0) + 1; });
+    const dupes = Object.entries(counts).filter(([k, v]) => v > 1);
+    if (dupes.length > 0) {
+      Logger.w("ApplicationsPlugin", `DUPLICATES FOUND: ${JSON.stringify(dupes)}`);
+    }
     // Update available categories when apps are loaded
     updateAvailableCategories();
   }
