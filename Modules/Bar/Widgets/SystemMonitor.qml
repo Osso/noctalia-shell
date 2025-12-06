@@ -63,7 +63,9 @@ Rectangle {
   readonly property int percentTextWidth: Math.ceil(percentMetrics.boundingRect.width + 3)
   readonly property int tempTextWidth: Math.ceil(tempMetrics.boundingRect.width + 3)
   readonly property int memTextWidth: Math.ceil(memMetrics.boundingRect.width + 3)
-  readonly property color textColor: usePrimaryColor ? Color.mPrimary : Color.mOnSurface
+  readonly property bool isHovered: mainMouseArea.containsMouse || (diskHoverArea?.containsMouse ?? false) || (fanHoverArea?.containsMouse ?? false)
+  readonly property color textColor: isHovered ? Color.mOnHover : (usePrimaryColor ? Color.mPrimary : Color.mOnSurface)
+  readonly property color iconColor: isHovered ? Color.mOnHover : Color.mOnSurface
 
   // Threshold settings from global configuration
   readonly property int cpuWarningThreshold: Settings.data.systemMonitor.cpuWarningThreshold
@@ -123,7 +125,7 @@ Rectangle {
   implicitWidth: isVertical ? Style.capsuleHeight : Math.round(mainGrid.implicitWidth + Style.marginM * 2)
   implicitHeight: isVertical ? Math.round(mainGrid.implicitHeight + Style.marginM * 2) : Style.capsuleHeight
   radius: Style.radiusM
-  color: Style.capsuleColor
+  color: isHovered ? Color.mHover : Style.capsuleColor
 
   NPopupContextMenu {
     id: contextMenu
@@ -149,7 +151,10 @@ Rectangle {
   }
 
   MouseArea {
+    id: mainMouseArea
     anchors.fill: parent
+    hoverEnabled: true
+    cursorShape: Qt.PointingHandCursor
     acceptedButtons: Qt.LeftButton | Qt.RightButton
     onClicked: mouse => {
                  if (mouse.button === Qt.LeftButton) {
@@ -265,7 +270,7 @@ Rectangle {
             applyUiScale: false
             anchors.centerIn: parent
             // Invert color to bar background when indicator active
-            color: isVertical ? (cpuCritical ? criticalColor : (cpuWarning ? warningColor : Color.mOnSurface)) : ((cpuWarning || cpuCritical) ? Color.mSurfaceVariant : Color.mOnSurface)
+            color: isVertical ? (cpuCritical ? criticalColor : (cpuWarning ? warningColor : iconColor)) : ((cpuWarning || cpuCritical) ? Color.mSurfaceVariant : iconColor)
           }
         }
 
@@ -340,7 +345,7 @@ Rectangle {
             applyUiScale: false
             anchors.centerIn: parent
             // Invert color when temp indicator active
-            color: isVertical ? (tempCritical ? criticalColor : (tempWarning ? warningColor : Color.mOnSurface)) : ((tempWarning || tempCritical) ? Color.mSurfaceVariant : Color.mOnSurface)
+            color: isVertical ? (tempCritical ? criticalColor : (tempWarning ? warningColor : iconColor)) : ((tempWarning || tempCritical) ? Color.mSurfaceVariant : iconColor)
           }
         }
 
@@ -408,7 +413,7 @@ Rectangle {
             applyUiScale: false
             anchors.centerIn: parent
             // Invert color when memory indicator active
-            color: isVertical ? (memCritical ? criticalColor : (memWarning ? warningColor : Color.mOnSurface)) : ((memWarning || memCritical) ? Color.mSurfaceVariant : Color.mOnSurface)
+            color: isVertical ? (memCritical ? criticalColor : (memWarning ? warningColor : iconColor)) : ((memWarning || memCritical) ? Color.mSurfaceVariant : iconColor)
           }
         }
 
@@ -460,6 +465,7 @@ Rectangle {
             pointSize: iconSize
             applyUiScale: false
             anchors.centerIn: parent
+            color: iconColor
           }
         }
 
@@ -510,6 +516,7 @@ Rectangle {
             pointSize: iconSize
             applyUiScale: false
             anchors.centerIn: parent
+            color: iconColor
           }
         }
 
@@ -576,7 +583,7 @@ Rectangle {
             applyUiScale: false
             anchors.centerIn: parent
             // Invert color when disk indicator active (vertical uses highlight colors)
-            color: isVertical ? (diskCritical ? criticalColor : (diskWarning ? warningColor : Color.mOnSurface)) : ((diskWarning || diskCritical) ? Color.mSurfaceVariant : Color.mOnSurface)
+            color: isVertical ? (diskCritical ? criticalColor : (diskWarning ? warningColor : iconColor)) : ((diskWarning || diskCritical) ? Color.mSurfaceVariant : iconColor)
           }
         }
 
@@ -600,8 +607,11 @@ Rectangle {
       }
 
       MouseArea {
+        id: diskHoverArea
         anchors.fill: parent
         hoverEnabled: true
+        acceptedButtons: Qt.NoButton
+        cursorShape: Qt.PointingHandCursor
         onEntered: {
           TooltipService.show(diskContent, diskPath, BarService.getTooltipDirection());
         }
@@ -641,6 +651,7 @@ Rectangle {
             pointSize: iconSize
             applyUiScale: false
             anchors.centerIn: parent
+            color: iconColor
           }
         }
 
@@ -662,8 +673,11 @@ Rectangle {
       }
 
       MouseArea {
+        id: fanHoverArea
         anchors.fill: parent
         hoverEnabled: true
+        acceptedButtons: Qt.NoButton
+        cursorShape: Qt.PointingHandCursor
         onEntered: {
           var tooltipText = FanService.fans.map(f => f.label + ": " + f.rpm + " RPM").join("\n");
           TooltipService.show(fanContent, tooltipText, BarService.getTooltipDirection());
