@@ -28,13 +28,17 @@
 @define-color theme_selected_bg_color @accent_bg_color;
 @define-color theme_selected_fg_color @accent_fg_color;
 
-button.suggested-action {
+button.suggested-action,
+button.default {
     background-color: @accent_bg_color;
+    background-image: none;
     color: @accent_fg_color;
 }
 
-button.suggested-action:hover {
+button.suggested-action:hover,
+button.default:hover {
     background-color: shade(@accent_bg_color, 1.1);
+    background-image: none;
 }
 
 *:selected {
