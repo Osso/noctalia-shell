@@ -294,20 +294,22 @@ Item {
     }
 
     const allApps = DesktopEntries.applications.values || [];
-    entries = allApps.filter(app => app && !app.noDisplay).map(app => {
+    const filtered = allApps.filter(app => app && !app.noDisplay).map(app => {
                                                                  // Add executable name property for search
                                                                  app.executableName = getExecutableName(app);
                                                                  return app;
                                                                });
-    Logger.d("ApplicationsPlugin", `Loaded ${entries.length} applications`);
-    // Debug: log all app IDs to find duplicates
-    const appIds = entries.map(e => e.id || e.name);
-    const counts = {};
-    appIds.forEach(id => { counts[id] = (counts[id] || 0) + 1; });
-    const dupes = Object.entries(counts).filter(([k, v]) => v > 1);
-    if (dupes.length > 0) {
-      Logger.w("ApplicationsPlugin", `DUPLICATES FOUND: ${JSON.stringify(dupes)}`);
-    }
+    // Deduplicate by app id (desktop file name)
+    const seen = new Set();
+    entries = filtered.filter(app => {
+      const key = app.id || app.name;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+    Logger.d("ApplicationsPlugin", `Loaded ${entries.length} applications (filtered from ${filtered.length})`);
     // Update available categories when apps are loaded
     updateAvailableCategories();
   }
