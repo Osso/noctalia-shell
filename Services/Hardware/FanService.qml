@@ -9,7 +9,7 @@ Singleton {
   id: root
 
   // Configuration
-  property int sleepDuration: 3000
+  property int sleepDuration: 5000
 
   // Public values - list of fan objects with rpm and label
   property list<var> fans: []
