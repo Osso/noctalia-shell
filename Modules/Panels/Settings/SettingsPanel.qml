@@ -64,6 +64,7 @@ SmartPanel {
     About,
     Audio,
     Bar,
+    Battery,
     ColorScheme,
     LockScreen,
     ControlCenter,
@@ -107,6 +108,10 @@ SmartPanel {
   Component {
     id: audioTab
     AudioTab {}
+  }
+  Component {
+    id: batteryTab
+    BatteryTab {}
   }
   Component {
     id: displayTab
@@ -253,6 +258,12 @@ SmartPanel {
             "label": "settings.audio.title",
             "icon": "settings-audio",
             "source": audioTab
+          },
+          {
+            "id": SettingsPanel.Tab.Battery,
+            "label": "settings.battery.title",
+            "icon": "battery-3",
+            "source": batteryTab
           },
           {
             "id": SettingsPanel.Tab.Display,

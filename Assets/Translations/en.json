@@ -910,6 +910,37 @@
         }
       }
     },
+    "battery": {
+      "title": "Battery",
+      "status": {
+        "section": {
+          "label": "Battery Status",
+          "description": "View current battery information and statistics."
+        },
+        "state": "Status",
+        "time-remaining": "Time remaining",
+        "health": "Health",
+        "power": "Power",
+        "cycles": "Charge cycles"
+      },
+      "thresholds": {
+        "section": {
+          "label": "Charge Thresholds",
+          "description": "Configure battery charge limits to extend battery lifespan."
+        },
+        "info": "Setting charge thresholds can help extend your battery's lifespan by limiting how full it charges. This is especially useful for laptops that are frequently plugged in.",
+        "start": {
+          "label": "Start charging at",
+          "description": "Battery will begin charging when it drops below this level."
+        },
+        "stop": {
+          "label": "Stop charging at",
+          "description": "Battery will stop charging when it reaches this level."
+        },
+        "current": "Current thresholds:",
+        "not-supported": "Charge threshold control is not supported on this device."
+      }
+    },
     "bar": {
       "appearance": {
         "background-opacity": {
