@@ -41,6 +41,7 @@ Item {
 
       // Use curve renderer for smooth corners (GPU-accelerated)
       preferredRendererType: Shape.CurveRenderer
+      asynchronous: true
 
       enabled: false // Disable mouse input on the Shape itself
 

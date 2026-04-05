@@ -25,6 +25,7 @@ Item {
 
       anchors.fill: parent
       preferredRendererType: Shape.CurveRenderer
+      asynchronous: true
       enabled: false // Disable mouse input
 
       ShapePath {
