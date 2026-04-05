@@ -128,7 +128,7 @@
     "colorRange": "limited",
     "showCursor": true,
     "audioSource": "default_output",
-    "videoSource": "portal"
+    "videoSource": "eDP-1"
   },
   "wallpaper": {
     "enabled": true,

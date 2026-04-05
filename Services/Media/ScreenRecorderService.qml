@@ -18,11 +18,98 @@ Singleton {
   property string outputPath: ""
   property bool isAvailable: ProgramCheckerService.gpuScreenRecorderAvailable
 
+  // Available capture sources (populated from gpu-screen-recorder --list-capture-options)
+  property var captureSources: []
+  // Resolution of first detected monitor (e.g. "1920x1200"), used for -s flag with -w focused
+  property string primaryMonitorResolution: ""
+
   // Update availability when ProgramCheckerService completes its checks
   Connections {
     target: ProgramCheckerService
-    function onChecksCompleted() {// Availability is now automatically updated via property binding
+    function onChecksCompleted() {
+      if (ProgramCheckerService.gpuScreenRecorderAvailable)
+        refreshCaptureSources();
     }
+  }
+
+  // Also query on startup in case checksCompleted already fired
+  Component.onCompleted: {
+    if (isAvailable)
+      refreshCaptureSources();
+  }
+
+  function refreshCaptureSources() {
+    captureSourcesProcess.command = ["gpu-screen-recorder", "--list-capture-options"];
+    captureSourcesProcess.running = true;
+    monitorListProcess.command = ["gpu-screen-recorder", "--list-monitors"];
+    monitorListProcess.running = true;
+  }
+
+  // Query gpu-screen-recorder for available capture sources
+  Process {
+    id: captureSourcesProcess
+    running: false
+    stdout: StdioCollector {
+      onStreamFinished: {
+        var sources = [];
+        var lines = this.text.trim().split("\n");
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i].trim();
+          if (!line) continue;
+          // Lines like "eDP-1|1920x1200" or "region" or "/dev/video0|..."
+          var parts = line.split("|");
+          var key = parts[0];
+          // Skip v4l2 devices
+          if (key.startsWith("/dev/")) continue;
+          if (key === "region") {
+            sources.push({ "key": "region", "name": "Select region", "label": "Select region" });
+          } else {
+            // Monitor: key is name, parts[1] is resolution
+            var displayName = key;
+            if (parts.length > 1) displayName += " (" + parts[1] + ")";
+            sources.push({ "key": key, "name": displayName, "label": displayName, "resolution": parts.length > 1 ? parts[1] : "" });
+          }
+        }
+        sources.push({ "key": "portal", "name": "Portal (window picker)", "label": "Portal (window picker)" });
+        root.captureSources = sources;
+      }
+    }
+    stderr: StdioCollector {}
+  }
+
+  // Query --list-monitors for primary monitor resolution (needed for -w focused)
+  Process {
+    id: monitorListProcess
+    running: false
+    stdout: StdioCollector {
+      onStreamFinished: {
+        var lines = this.text.trim().split("\n");
+        var sources = root.captureSources.slice();
+        // Insert monitors before the last entry (portal)
+        var insertIdx = sources.length > 0 ? sources.length - 1 : 0;
+        for (var i = 0; i < lines.length; i++) {
+          var parts = lines[i].trim().split("|");
+          if (parts.length > 1 && !parts[0].startsWith("/dev/")) {
+            var key = parts[0];
+            var res = parts[1];
+            // Skip if already added by --list-capture-options
+            var exists = false;
+            for (var j = 0; j < sources.length; j++) {
+              if (sources[j].key === key) { exists = true; break; }
+            }
+            if (!exists) {
+              var displayName = key + " (" + res + ")";
+              sources.splice(insertIdx, 0, { "key": key, "name": displayName, "label": displayName, "resolution": res });
+              insertIdx++;
+            }
+            if (!root.primaryMonitorResolution)
+              root.primaryMonitorResolution = res;
+          }
+        }
+        root.captureSources = sources;
+      }
+    }
+    stderr: StdioCollector {}
   }
 
   // Start or Stop recording
@@ -46,11 +133,16 @@ Singleton {
       PanelService.openedPanel.close();
     }
 
-    // First, ensure xdg-desktop-portal and a compositor portal are running
-    portalCheckProcess.exec({
-                              "command": ["sh", "-c" // require core portal AND one of the backends
-                                , "pidof xdg-desktop-portal >/dev/null 2>&1 && (pidof xdg-desktop-portal-wlr >/dev/null 2>&1 || pidof xdg-desktop-portal-hyprland >/dev/null 2>&1 || pidof xdg-desktop-portal-gnome >/dev/null 2>&1 || pidof xdg-desktop-portal-kde >/dev/null 2>&1)"]
-                            });
+    // Portal check only needed when using portal capture mode
+    if (settings.videoSource === "portal") {
+      portalCheckProcess.exec({
+                                "command": ["sh", "-c"
+                                  , "pidof xdg-desktop-portal >/dev/null 2>&1 && (pidof xdg-desktop-portal-wlr >/dev/null 2>&1 || pidof xdg-desktop-portal-hyprland >/dev/null 2>&1 || pidof xdg-desktop-portal-gnome >/dev/null 2>&1 || pidof xdg-desktop-portal-kde >/dev/null 2>&1 || pidof xdg-desktop-portal-gtk >/dev/null 2>&1)"]
+                              });
+    } else {
+      // Direct monitor/region capture - skip portal check
+      launchRecorder();
+    }
   }
 
   function launchRecorder() {
@@ -63,7 +155,12 @@ Singleton {
 
     var audioArg = (settings.audioSource === "both") ? `-a "default_output|default_input"` : `-a ${settings.audioSource}`;
 
-    var flags = `-w ${settings.videoSource} -f ${settings.frameRate} -ac ${settings.audioCodec} -k ${settings.videoCodec} ${audioArg} -q ${settings.quality} -cursor ${settings.showCursor ? "yes" : "no"} -cr ${settings.colorRange} -o "${outputPath}"`;
+    // -s WxH is required when using -w focused
+    var sizeFlag = "";
+    if (settings.videoSource === "focused" && primaryMonitorResolution)
+      sizeFlag = `-s ${primaryMonitorResolution}`;
+
+    var flags = `-w ${settings.videoSource} ${sizeFlag} -f ${settings.frameRate} -ac ${settings.audioCodec} -k ${settings.videoCodec} ${audioArg} -q ${settings.quality} -cursor ${settings.showCursor ? "yes" : "no"} -cr ${settings.colorRange} -o "${outputPath}"`;
     var command = `
     _gpuscreenrecorder_flatpak_installed() {
     flatpak list --app | grep -q "com.dec05eba.gpu_screen_recorder"

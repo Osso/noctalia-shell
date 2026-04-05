@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import qs.Commons
+import qs.Services.Media
 import qs.Widgets
 
 ColumnLayout {
@@ -60,16 +61,18 @@ ColumnLayout {
     NComboBox {
       label: I18n.tr("settings.screen-recorder.video.video-source.label")
       description: I18n.tr("settings.screen-recorder.video.video-source.description")
-      model: [
-        {
-          "key": "portal",
-          "name": I18n.tr("options.screen-recording.sources.portal")
-        },
-        {
-          "key": "screen",
-          "name": I18n.tr("options.screen-recording.sources.screen")
-        }
-      ]
+      model: ScreenRecorderService.captureSources.length > 0
+        ? ScreenRecorderService.captureSources
+        : [
+          {
+            "key": "portal",
+            "name": I18n.tr("options.screen-recording.sources.portal")
+          },
+          {
+            "key": "screen",
+            "name": I18n.tr("options.screen-recording.sources.screen")
+          }
+        ]
       currentKey: Settings.data.screenRecorder.videoSource
       onSelected: key => Settings.data.screenRecorder.videoSource = key
     }

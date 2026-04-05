@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import qs.Commons
+import qs.Modules.Bar.Extras
 import qs.Services.Media
 import qs.Services.System
 import qs.Services.UI
@@ -28,7 +29,31 @@ NIconButton {
       ToastService.showError(I18n.tr("toast.recording.not-installed"), I18n.tr("toast.recording.not-installed-desc"));
       return;
     }
-    ScreenRecorderService.toggleRecording();
+    if (ScreenRecorderService.isRecording || ScreenRecorderService.isPending) {
+      ScreenRecorderService.stopRecording();
+      return;
+    }
+    // Show source picker menu
+    sourceMenu.model = ScreenRecorderService.captureSources;
+    var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+    if (popupMenuWindow) {
+      popupMenuWindow.showContextMenu(sourceMenu);
+      const pos = BarService.getContextMenuPosition(root, sourceMenu.implicitWidth, sourceMenu.implicitHeight);
+      sourceMenu.openAtItem(root, pos.x, pos.y);
+    }
+  }
+
+  NPopupContextMenu {
+    id: sourceMenu
+    model: ScreenRecorderService.captureSources
+    onTriggered: action => {
+      var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+      if (popupMenuWindow) {
+        popupMenuWindow.close();
+      }
+      Settings.data.screenRecorder.videoSource = action;
+      ScreenRecorderService.toggleRecording();
+    }
   }
 
   onClicked: handleClick()

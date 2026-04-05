@@ -300,7 +300,7 @@ Singleton {
       property string colorRange: "limited"
       property bool showCursor: true
       property string audioSource: "default_output"
-      property string videoSource: "portal"
+      property string videoSource: "eDP-1"
     }
 
     // wallpaper
