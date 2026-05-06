@@ -190,14 +190,68 @@ Singleton {
       return;
     }
 
-    // Check for duplicate content
+    // Same content from a new dbus call (e.g. site re-fires "1 unread"):
+    // refresh the existing row in place. Removing and re-inserting would
+    // destroy the Repeater delegate and re-run its entry animation — that
+    // is the visible flash on rapid duplicates.
     const duplicateId = findDuplicateNotification(data);
     if (duplicateId) {
-      removeNotification(duplicateId);
+      refreshDuplicateNotification(duplicateId, quickshellId, notification, data);
+      return;
     }
 
     // Add new notification
     addNewNotification(quickshellId, notification, data);
+  }
+
+  function refreshDuplicateNotification(existingInternalId, quickshellId, notification, data) {
+    const index = findNotificationIndex(existingInternalId);
+    if (index < 0) {
+      addNewNotification(quickshellId, notification, data);
+      return;
+    }
+
+    // Update visible properties and reset the duration timer. Keep the
+    // existing internal id so model.id is unchanged — the delegate stays
+    // mounted and onNotificationIdChanged does not fire.
+    activeList.setProperty(index, "summary", data.summary);
+    activeList.setProperty(index, "body", data.body);
+    activeList.setProperty(index, "appName", data.appName);
+    activeList.setProperty(index, "urgency", data.urgency);
+    activeList.setProperty(index, "expireTimeout", data.expireTimeout);
+    activeList.setProperty(index, "originalImage", data.originalImage);
+    activeList.setProperty(index, "cachedImage", data.cachedImage);
+    activeList.setProperty(index, "actionsJson", data.actionsJson);
+    activeList.setProperty(index, "timestamp", data.timestamp);
+    activeList.setProperty(index, "progress", 1.0);
+
+    // Re-bind tracking to the new dbus notification object so dismiss() and
+    // action invocation target the latest sender call.
+    const notifData = activeNotifications[existingInternalId];
+    notifData.notification = notification;
+    notifData.metadata.timestamp = data.timestamp.getTime();
+    notifData.metadata.duration = calculateDuration(data);
+    notifData.metadata.urgency = data.urgency;
+    notifData.metadata.paused = false;
+    notifData.metadata.pauseTime = 0;
+
+    if (notifData.watcher) {
+      notifData.watcher.destroy();
+    }
+    notifData.watcher = notificationWatcherComponent.createObject(root, {
+                                                                    "targetNotification": notification,
+                                                                    "targetDataId": existingInternalId
+                                                                  });
+
+    notification.tracked = true;
+    // Guard against the previously-tracked notification's `closed` signal
+    // arriving after refresh and removing the current toast.
+    notification.closed.connect(() => {
+                                  if (activeNotifications[existingInternalId]?.notification === notification)
+                                  removeNotification(existingInternalId);
+                                });
+
+    quickshellIdToInternalId[quickshellId] = existingInternalId;
   }
 
   function updateExistingNotification(internalId, notification, data) {
@@ -224,7 +278,10 @@ Singleton {
     const notifData = activeNotifications[internalId];
     notifData.notification = notification;
     notification.tracked = true;
-    notification.closed.connect(() => removeNotification(internalId));
+    notification.closed.connect(() => {
+                                  if (activeNotifications[internalId]?.notification === notification)
+                                  removeNotification(internalId);
+                                });
 
     // Update metadata
     notifData.metadata.urgency = data.urgency;
@@ -255,7 +312,10 @@ Singleton {
     };
 
     notification.tracked = true;
-    notification.closed.connect(() => removeNotification(data.id));
+    notification.closed.connect(() => {
+                                  if (activeNotifications[data.id]?.notification === notification)
+                                  removeNotification(data.id);
+                                });
 
     // Add to list
     activeList.insert(0, data);
@@ -375,11 +435,12 @@ Singleton {
       delete activeNotifications[id];
     }
 
-    // Clean up quickshell ID mapping
+    // Clean up quickshell ID mapping. Refresh paths (and replacement updates)
+    // can map several quickshell ids to the same internal id, so remove all
+    // matching entries instead of stopping at the first.
     for (const qsId in quickshellIdToInternalId) {
       if (quickshellIdToInternalId[qsId] === id) {
         delete quickshellIdToInternalId[qsId];
-        break;
       }
     }
   }
