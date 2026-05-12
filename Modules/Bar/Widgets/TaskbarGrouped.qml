@@ -318,8 +318,8 @@ Item {
 
             property bool itemHovered: false
 
-            width: root.itemSize * 0.8
-            height: root.itemSize * 0.8
+            width: root.itemSize
+            height: root.itemSize
 
             IconImage {
               id: appIcon
