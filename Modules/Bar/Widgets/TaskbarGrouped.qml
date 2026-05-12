@@ -321,16 +321,6 @@ Item {
             width: root.itemSize * 0.8
             height: root.itemSize * 0.8
 
-            // Smooth scale animation on hover
-            scale: itemHovered ? 1.1 : 1.0
-
-            Behavior on scale {
-              NumberAnimation {
-                duration: Style.animationNormal
-                easing.type: Easing.OutBack
-              }
-            }
-
             IconImage {
               id: appIcon
 
@@ -340,7 +330,15 @@ Item {
               smooth: true
               asynchronous: true
               opacity: model.isFocused ? Style.opacityFull : 0.6
+              scale: taskbarItem.itemHovered ? 1.1 : 1.0
               layer.enabled: root.colorizeIcons && !model.isFocused
+
+              Behavior on scale {
+                NumberAnimation {
+                  duration: Style.animationNormal
+                  easing.type: Easing.OutBack
+                }
+              }
 
               Behavior on opacity {
                 NumberAnimation {
