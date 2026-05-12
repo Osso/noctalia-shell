@@ -178,14 +178,23 @@ Singleton {
   function handleNotification(notification) {
     const quickshellId = notification.id;
     const data = createData(notification);
-    addToHistory(data);
-
-    if (root.doNotDisturb || PowerProfileService.noctaliaPerformanceMode)
-      return;
+    const isSuppressed = root.doNotDisturb || PowerProfileService.noctaliaPerformanceMode;
 
     // Check if this is a replacement notification
     const existingInternalId = quickshellIdToInternalId[quickshellId];
     if (existingInternalId && activeNotifications[existingInternalId]) {
+      const existingIndex = findNotificationIndex(existingInternalId);
+      const existingData = existingIndex >= 0 ? activeList.get(existingIndex) : null;
+      if (existingData && hasSameNotificationContent(existingData, data)) {
+        if (isSuppressed)
+          return;
+        refreshDuplicateNotification(existingInternalId, quickshellId, notification, data);
+        return;
+      }
+
+      addToHistory(data);
+      if (isSuppressed)
+        return;
       updateExistingNotification(existingInternalId, notification, data);
       return;
     }
@@ -196,9 +205,16 @@ Singleton {
     // is the visible flash on rapid duplicates.
     const duplicateId = findDuplicateNotification(data);
     if (duplicateId) {
+      if (isSuppressed)
+        return;
       refreshDuplicateNotification(duplicateId, quickshellId, notification, data);
       return;
     }
+
+    addToHistory(data);
+
+    if (isSuppressed)
+      return;
 
     // Add new notification
     addNewNotification(quickshellId, notification, data);
@@ -211,37 +227,20 @@ Singleton {
       return;
     }
 
-    // Update visible properties and reset the duration timer. Keep the
-    // existing internal id so model.id is unchanged — the delegate stays
-    // mounted and onNotificationIdChanged does not fire.
-    activeList.setProperty(index, "summary", data.summary);
-    activeList.setProperty(index, "body", data.body);
-    activeList.setProperty(index, "appName", data.appName);
-    activeList.setProperty(index, "urgency", data.urgency);
-    activeList.setProperty(index, "expireTimeout", data.expireTimeout);
-    activeList.setProperty(index, "originalImage", data.originalImage);
-    activeList.setProperty(index, "cachedImage", data.cachedImage);
+    // Exact duplicate content from a new dbus call should not look like a new
+    // notification. Keep the displayed image, timestamp, and progress stable.
     activeList.setProperty(index, "actionsJson", data.actionsJson);
-    activeList.setProperty(index, "timestamp", data.timestamp);
-    activeList.setProperty(index, "progress", 1.0);
 
     // Re-bind tracking to the new dbus notification object so dismiss() and
-    // action invocation target the latest sender call.
+    // action invocation target the latest sender call. Do not watch duplicate
+    // refires for property changes; changing site icon badges are not content.
     const notifData = activeNotifications[existingInternalId];
     notifData.notification = notification;
-    notifData.metadata.timestamp = data.timestamp.getTime();
-    notifData.metadata.duration = calculateDuration(data);
-    notifData.metadata.urgency = data.urgency;
-    notifData.metadata.paused = false;
-    notifData.metadata.pauseTime = 0;
 
     if (notifData.watcher) {
       notifData.watcher.destroy();
     }
-    notifData.watcher = notificationWatcherComponent.createObject(root, {
-                                                                    "targetNotification": notification,
-                                                                    "targetDataId": existingInternalId
-                                                                  });
+    notifData.watcher = null;
 
     notification.tracked = true;
     // Guard against the previously-tracked notification's `closed` signal
@@ -277,6 +276,13 @@ Singleton {
     // Update stored notification object
     const notifData = activeNotifications[internalId];
     notifData.notification = notification;
+    if (notifData.watcher) {
+      notifData.watcher.destroy();
+    }
+    notifData.watcher = notificationWatcherComponent.createObject(root, {
+                                                                    "targetNotification": notification,
+                                                                    "targetDataId": internalId
+                                                                  });
     notification.tracked = true;
     notification.closed.connect(() => {
                                   if (activeNotifications[internalId]?.notification === notification)
@@ -340,6 +346,12 @@ Singleton {
       }
     }
     return null;
+  }
+
+  function hasSameNotificationContent(existing, data) {
+    const existingContentId = getContentId(existing.summary, existing.body, existing.appName);
+    const dataContentId = getContentId(data.summary, data.body, data.appName);
+    return existingContentId === dataContentId;
   }
 
   function calculateDuration(data) {
