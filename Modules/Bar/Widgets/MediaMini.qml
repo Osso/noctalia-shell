@@ -580,22 +580,15 @@ Item {
               }
             }
 
-            // Stepped marquee: Timer-driven instead of infinite animation to reduce CPU/GPU usage
-            Timer {
-              id: marqueeTimer
-              interval: 16 // ~60 updates/s
-              repeat: true
+            // Seamless infinite scroll
+            NumberAnimation on scrollX {
+              id: infiniteScroll
               running: titleContainer.isScrolling && !titleContainer.isResetting
-              onTriggered: {
-                const cycleWidth = titleContainer.textWidth + 50; // text width + gap
-                if (cycleWidth <= 0)
-                  return;
-                const cycleDuration = Math.max(4000, getTitle().length * 120);
-                const step = cycleWidth * (interval / cycleDuration);
-                scrollContainer.scrollX -= step;
-                if (scrollContainer.scrollX <= -cycleWidth)
-                  scrollContainer.scrollX += cycleWidth;
-              }
+              from: 0
+              to: -(titleContainer.textWidth + 50)
+              duration: Math.max(4000, getTitle().length * 120)
+              loops: Animation.Infinite
+              easing.type: Easing.Linear
             }
           }
         }
