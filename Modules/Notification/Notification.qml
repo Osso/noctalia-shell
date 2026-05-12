@@ -46,6 +46,7 @@ Variants {
 
       WlrLayershell.namespace: "noctalia-notifications-" + (screen?.name || "unknown")
       WlrLayershell.layer: (Settings.data.notifications?.overlayLayer) ? WlrLayer.Overlay : WlrLayer.Top
+      WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
       WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
       color: Color.transparent
@@ -106,6 +107,24 @@ Variants {
 
       implicitWidth: notifWidth
       implicitHeight: notificationStack.implicitHeight + Style.marginL
+
+      mask: Region {
+        x: 0
+        y: 0
+        width: notifWindow.width
+        height: notifWindow.height
+        intersection: Intersection.Xor
+        regions: [notificationInputRegion]
+
+        Region {
+          id: notificationInputRegion
+          x: notificationStack.x
+          y: notificationStack.y
+          width: notificationStack.width
+          height: notificationStack.height
+          intersection: Intersection.Subtract
+        }
+      }
 
       property var animateConnection: null
 

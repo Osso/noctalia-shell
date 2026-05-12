@@ -194,7 +194,24 @@ Item {
       WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
       WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-      //mask: Region {}
+      mask: Region {
+        x: 0
+        y: 0
+        width: panel.width
+        height: panel.height
+        intersection: Intersection.Xor
+        regions: [toastInputRegion]
+
+        Region {
+          id: toastInputRegion
+          x: toastItem.x
+          y: toastItem.y
+          width: toastItem.width
+          height: toastItem.height
+          intersection: Intersection.Subtract
+        }
+      }
+
       function showToast(message, description, icon, type, duration) {
         toastItem.show(message, description, icon, type, duration);
       }
