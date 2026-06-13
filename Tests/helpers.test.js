@@ -16,6 +16,8 @@ function loadHelper(relativePath) {
     parseInt,
     isFinite,
     isNaN,
+    Map,
+    Object,
   });
   const source = fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
   const runnableSource = source.replace(/^\.pragma library\s*$/m, "");
@@ -127,11 +129,73 @@ function testThemeIconResolver() {
   );
 }
 
+function testFuzzySort() {
+  const fuzzySort = loadHelper("Helpers/FuzzySort.js");
+
+  const single = fuzzySort.single("fox", "Firefox");
+  assert.equal(single.target, "Firefox");
+  assert.deepEqual(plain(single.indexes), [4, 5, 6]);
+  assert.equal(single.highlight("[", "]"), "Fire[fox]");
+
+  const results = fuzzySort.go("qs", ["Firefox", "Quickshell", "Terminal"]);
+  assert.equal(results.length, 1);
+  assert.equal(results[0].target, "Quickshell");
+
+  const keyed = fuzzySort.go(
+    "term",
+    [
+      { name: "Terminal", id: "org.term" },
+      { name: "Firefox", id: "firefox" },
+    ],
+    { key: "name" },
+  );
+  assert.equal(keyed.length, 1);
+  assert.equal(keyed[0].obj.id, "org.term");
+  assert.equal(keyed[0].target, "Terminal");
+
+  fuzzySort.cleanup();
+}
+
+function testQtObjectToPlainObject() {
+  const qtObj = loadHelper("Helpers/QtObj2JS.js");
+  const source = {
+    keep: 1,
+    objectName: "ignored",
+    keepChanged: "ignored",
+    nested: { value: 2 },
+    list: { 0: "a", 1: { value: 3 }, length: 2 },
+    emptyList: { length: 0 },
+    color: {
+      r: 1,
+      g: 0,
+      b: 0,
+      a: 1,
+      valid: true,
+      toString() {
+        return "#ff0000";
+      },
+    },
+    fn() {
+      return "ignored";
+    },
+  };
+
+  assert.deepEqual(plain(qtObj.qtObjectToPlainObject(source)), {
+    keep: 1,
+    nested: { value: 2 },
+    list: ["a", { value: 3 }],
+    emptyList: [],
+    color: "#ff0000",
+  });
+}
+
 const tests = [
   testColorsConvert,
   testAdvancedMath,
   testSha256,
   testThemeIconResolver,
+  testFuzzySort,
+  testQtObjectToPlainObject,
 ];
 
 for (const test of tests) {
