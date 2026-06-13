@@ -26,7 +26,7 @@ in {
   config = lib.mkIf cfg.enable {
     systemd.user.services.noctalia-shell = {
       description = "Noctalia Shell - Wayland desktop shell";
-      documentation = ["file:///home/osso/Repos/noctalia-shell/nix/README.md"];
+      documentation = ["file:///syncthing/Sync/Projects/apps/noctalia-shell/nix/README.md"];
       after = [cfg.target];
       partOf = [cfg.target];
       wantedBy = [cfg.target];

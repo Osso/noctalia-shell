@@ -1,6 +1,6 @@
 {
 # Legacy/reference Nix packaging only. The active local install launches stock
-# Arch quickshell directly from /home/osso/Repos/noctalia-shell; see nix/README.md.
+# Arch quickshell directly from /syncthing/Sync/Projects/apps/noctalia-shell; see nix/README.md.
   version ? "dirty",
   lib,
   stdenvNoCC,

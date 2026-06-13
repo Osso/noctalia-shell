@@ -4,7 +4,7 @@ The active local shell is not installed through Nix.
 
 Current runtime contract:
 
-- Launch command: `quickshell -p /home/osso/Repos/noctalia-shell`
+- Launch command: `quickshell -p /syncthing/Sync/Projects/apps/noctalia-shell`
 - Runtime binary: stock Arch `/usr/bin/quickshell`
 - Config path: `/home/osso/.config/noctalia/settings.json`
 

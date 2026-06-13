@@ -7,7 +7,7 @@ It is maintained for this machine and session:
 - OS: Arch Linux
 - Compositor: niri
 - Runtime: stock Arch `quickshell`
-- Launch command: `quickshell -p /home/osso/Repos/noctalia-shell`
+- Launch command: `quickshell -p /syncthing/Sync/Projects/apps/noctalia-shell`
 - User config: `/home/osso/.config/noctalia/settings.json`
 - User cache/state: `/home/osso/.cache/noctalia`
 
@@ -42,7 +42,7 @@ See [Bin/dev/PROBES.md](Bin/dev/PROBES.md) for probe details.
 After Arch updates `quickshell`, Qt, niri, icon themes, PipeWire, DDC tools, or
 related runtime packages:
 
-1. Start or keep the shell running with `quickshell -p /home/osso/Repos/noctalia-shell`.
+1. Start or keep the shell running with `quickshell -p /syncthing/Sync/Projects/apps/noctalia-shell`.
 2. Run `./run-tests.sh`.
 3. Inspect `quickshell log --pid "$(pgrep -u "$USER" -n quickshell)" --tail 500 --no-color`.
 4. Run the manual smoke checklist from `docs/local/maintenance.md`.

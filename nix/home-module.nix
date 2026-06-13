@@ -106,7 +106,7 @@ in {
       systemd.user.services.noctalia-shell = lib.mkIf cfg.systemd.enable {
         Unit = {
           Description = "Noctalia Shell - Wayland desktop shell";
-          Documentation = "file://%h/Repos/noctalia-shell/nix/README.md";
+          Documentation = "file:///syncthing/Sync/Projects/apps/noctalia-shell/nix/README.md";
           PartOf = [ config.wayland.systemd.target ];
           After = [ config.wayland.systemd.target ];
           X-Restart-Triggers =
