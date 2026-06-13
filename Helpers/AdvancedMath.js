@@ -23,6 +23,11 @@ var constants = {
     SQRT2: Math.SQRT2
 };
 
+function replaceDegreeTrigFunction(expression, sourceName, targetName) {
+    var pattern = new RegExp("\\b" + sourceName + "\\s*\\(([^()]*)\\)", "g");
+    return expression.replace(pattern, "Math." + targetName + "(($1)*" + (Math.PI / 180) + ")");
+}
+
 // Safe evaluation function that handles advanced math
 function evaluate(expression) {
     try {
@@ -75,10 +80,9 @@ function evaluate(expression) {
             .replace(/\brandom\s*\(\s*\)/g, 'Math.random()');
 
         // Handle degree versions of trig functions
-        processed = processed
-            .replace(/\bsind\s*\(/g, '(function(x) { return Math.sin(' + (Math.PI / 180) + ' * x); })(')
-            .replace(/\bcosd\s*\(/g, '(function(x) { return Math.cos(' + (Math.PI / 180) + ' * x); })(')
-            .replace(/\btand\s*\(/g, '(function(x) { return Math.tan(' + (Math.PI / 180) + ' * x); })(');
+        processed = replaceDegreeTrigFunction(processed, "sind", "sin");
+        processed = replaceDegreeTrigFunction(processed, "cosd", "cos");
+        processed = replaceDegreeTrigFunction(processed, "tand", "tan");
 
         // Sanitize expression (only allow safe characters)
         if (!/^[0-9+\-*/().\s\w,]+$/.test(processed)) {

@@ -1,0 +1,98 @@
+#!/usr/bin/env node
+
+const assert = require("assert/strict");
+const fs = require("fs");
+const path = require("path");
+const vm = require("vm");
+
+const repoRoot = path.resolve(__dirname, "..");
+
+function loadHelper(relativePath) {
+  const context = vm.createContext({
+    console,
+    Math,
+    Number,
+    parseFloat,
+    parseInt,
+    isFinite,
+    isNaN,
+  });
+  const source = fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+  vm.runInContext(source, context, {
+    filename: relativePath,
+  });
+  return context;
+}
+
+function assertAlmostEqual(actual, expected, message, epsilon = 1e-9) {
+  assert.ok(
+    Math.abs(actual - expected) <= epsilon,
+    `${message}: expected ${expected}, got ${actual}`,
+  );
+}
+
+function plain(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function testColorsConvert() {
+  const colors = loadHelper("Helpers/ColorsConvert.js");
+
+  assert.deepEqual(plain(colors.hexToRgb("#336699")), { r: 51, g: 102, b: 153 });
+  assert.deepEqual(plain(colors.hexToRgb("336699")), { r: 51, g: 102, b: 153 });
+  assert.equal(colors.rgbToHex(51, 102, 153), "#336699");
+  assert.equal(colors.rgbToHex(-10, 260, 127.6), "#00ff80");
+
+  const redHsl = colors.rgbToHsl(255, 0, 0);
+  assertAlmostEqual(redHsl.h, 0, "red hue");
+  assertAlmostEqual(redHsl.s, 100, "red saturation");
+  assertAlmostEqual(redHsl.l, 50, "red lightness");
+  assert.equal(colors.hslToHex(0, 100, 50), "#ff0000");
+
+  assertAlmostEqual(colors.getLuminance("#000000"), 0, "black luminance");
+  assertAlmostEqual(colors.getLuminance("#ffffff"), 1, "white luminance");
+  assertAlmostEqual(colors.getContrastRatio("#000000", "#ffffff"), 21, "black/white contrast");
+  assert.equal(colors.isLightColor("#ffffff"), true);
+  assert.equal(colors.isLightColor("#000000"), false);
+}
+
+function testAdvancedMath() {
+  const advancedMath = loadHelper("Helpers/AdvancedMath.js");
+
+  assertAlmostEqual(advancedMath.toRadians(180), Math.PI, "degrees to radians");
+  assertAlmostEqual(advancedMath.toDegrees(Math.PI), 180, "radians to degrees");
+  assert.equal(advancedMath.evaluate("sqrt(9)+pow(2,3)"), 11);
+  assert.equal(advancedMath.evaluate("sind(30)+cosd(60)"), 1);
+  assert.equal(advancedMath.formatResult(42), "42");
+  assert.equal(advancedMath.formatResult(1 / 3), "0.3333333333");
+  assert.equal(advancedMath.formatResult(1e-7), "1.000000e-7");
+  assert.throws(() => advancedMath.evaluate("process.exit()"), /Evaluation failed/);
+}
+
+function testSha256() {
+  const crypto = loadHelper("Helpers/sha256.js");
+
+  assert.equal(
+    crypto.sha256(""),
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  );
+  assert.equal(
+    crypto.sha256("abc"),
+    "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+  );
+  assert.equal(
+    crypto.sha256("The quick brown fox jumps over the lazy dog"),
+    "d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592",
+  );
+}
+
+const tests = [
+  testColorsConvert,
+  testAdvancedMath,
+  testSha256,
+];
+
+for (const test of tests) {
+  test();
+  console.log(`ok ${test.name}`);
+}
