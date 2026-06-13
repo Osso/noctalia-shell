@@ -14,8 +14,12 @@ require_command() {
 require_command qmllint
 
 lint_files=(
+    "shell.qml"
     "Commons/ThemeIcons.qml"
+    "Services/Hardware/BrightnessService.qml"
+    "Services/System/NotificationService.qml"
     "Modules/Bar/Widgets/ActiveWindow.qml"
+    "Modules/Bar/Widgets/Brightness.qml"
     "Modules/Panels/Brightness/BrightnessPanel.qml"
     "Modules/Panels/Settings/Tabs/DisplayTab.qml"
 )

@@ -246,7 +246,7 @@ Singleton {
     // Guard against the previously-tracked notification's `closed` signal
     // arriving after refresh and removing the current toast.
     notification.closed.connect(() => {
-                                  if (activeNotifications[existingInternalId]?.notification === notification)
+                                  if (activeNotifications[existingInternalId] && activeNotifications[existingInternalId].notification === notification)
                                   removeNotification(existingInternalId);
                                 });
 
@@ -285,7 +285,7 @@ Singleton {
                                                                   });
     notification.tracked = true;
     notification.closed.connect(() => {
-                                  if (activeNotifications[internalId]?.notification === notification)
+                                  if (activeNotifications[internalId] && activeNotifications[internalId].notification === notification)
                                   removeNotification(internalId);
                                 });
 
@@ -319,7 +319,7 @@ Singleton {
 
     notification.tracked = true;
     notification.closed.connect(() => {
-                                  if (activeNotifications[data.id]?.notification === notification)
+                                  if (activeNotifications[data.id] && activeNotifications[data.id].notification === notification)
                                   removeNotification(data.id);
                                 });
 
@@ -329,7 +329,8 @@ Singleton {
     // Remove overflow
     while (activeList.count > maxVisible) {
       const last = activeList.get(activeList.count - 1);
-      activeNotifications[last.id]?.notification?.dismiss();
+      if (activeNotifications[last.id] && activeNotifications[last.id].notification)
+        activeNotifications[last.id].notification.dismiss();
       activeList.remove(activeList.count - 1);
       cleanupNotification(last.id);
     }
@@ -355,9 +356,14 @@ Singleton {
   }
 
   function calculateDuration(data) {
-    const durations = [Settings.data.notifications?.lowUrgencyDuration * 1000 || 3000, Settings.data.notifications?.normalUrgencyDuration * 1000 || 8000, Settings.data.notifications?.criticalUrgencyDuration * 1000 || 15000];
+    const notificationSettings = Settings.data.notifications;
+    const durations = [
+      notificationSettings && notificationSettings.lowUrgencyDuration ? notificationSettings.lowUrgencyDuration * 1000 : 3000,
+      notificationSettings && notificationSettings.normalUrgencyDuration ? notificationSettings.normalUrgencyDuration * 1000 : 8000,
+      notificationSettings && notificationSettings.criticalUrgencyDuration ? notificationSettings.criticalUrgencyDuration * 1000 : 15000
+    ];
 
-    if (Settings.data.notifications?.respectExpireTimeout) {
+    if (notificationSettings && notificationSettings.respectExpireTimeout) {
       if (data.expireTimeout === 0)
         return -1; // Never expire
       if (data.expireTimeout > 0)
@@ -443,7 +449,8 @@ Singleton {
   function cleanupNotification(id) {
     const notifData = activeNotifications[id];
     if (notifData) {
-      notifData.watcher?.destroy();
+      if (notifData.watcher)
+        notifData.watcher.destroy();
       delete activeNotifications[id];
     }
 
@@ -734,7 +741,8 @@ Singleton {
 
   // Public API
   function dismissActiveNotification(id) {
-    activeNotifications[id]?.notification?.dismiss();
+    if (activeNotifications[id] && activeNotifications[id].notification)
+      activeNotifications[id].notification.dismiss();
     removeNotification(id);
   }
 
@@ -747,8 +755,10 @@ Singleton {
 
   function dismissAllActive() {
     for (const id in activeNotifications) {
-      activeNotifications[id].notification?.dismiss();
-      activeNotifications[id].watcher?.destroy();
+      if (activeNotifications[id].notification)
+        activeNotifications[id].notification.dismiss();
+      if (activeNotifications[id].watcher)
+        activeNotifications[id].watcher.destroy();
     }
     activeList.clear();
     activeNotifications = {};
@@ -757,7 +767,7 @@ Singleton {
 
   function invokeAction(id, actionId) {
     const notifData = activeNotifications[id];
-    if (!notifData?.notification?.actions)
+    if (!notifData || !notifData.notification || !notifData.notification.actions)
       return false;
 
     for (const action of notifData.notification.actions) {

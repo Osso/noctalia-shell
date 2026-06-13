@@ -145,7 +145,11 @@ Item {
       }
     }
 
-    onClicked: PanelService.getPanel("brightnessPanel", screen)?.toggle(this)
+    onClicked: {
+      const panel = PanelService.getPanel("brightnessPanel", screen);
+      if (panel)
+        panel.toggle(this);
+    }
 
     onRightClicked: {
       var popupMenuWindow = PanelService.getPopupMenuWindow(screen);

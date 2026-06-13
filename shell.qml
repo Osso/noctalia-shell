@@ -50,7 +50,7 @@ ShellRoot {
       Quickshell.inhibitReloadPopup();
     }
     function onReloadFailed() {
-      if (!Settings?.isDebug) {
+      if (!Settings || !Settings.isDebug) {
         Quickshell.inhibitReloadPopup();
       }
     }

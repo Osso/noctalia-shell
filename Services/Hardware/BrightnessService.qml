@@ -8,18 +8,18 @@ import qs.Commons
 Singleton {
   id: root
 
-  property list<var> ddcMonitors: []
-  readonly property list<Monitor> monitors: variants.instances
+  property var ddcMonitors: []
+  readonly property var monitors: variants.instances
   property bool appleDisplayPresent: false
 
-  function getMonitorForScreen(screen: ShellScreen): var {
+  function getMonitorForScreen(screen) {
     return monitors.find(m => m.modelData === screen);
   }
 
   // Signal emitted when a specific monitor's brightness changes, includes monitor context
   signal monitorBrightnessChanged(var monitor, real newBrightness)
 
-  function getAvailableMethods(): list<string> {
+  function getAvailableMethods() {
     var methods = [];
     if (Settings.data.brightness.enableDdcSupport && monitors.some(m => m.isDdc))
       methods.push("ddcutil");
@@ -31,15 +31,15 @@ Singleton {
   }
 
   // Global helpers for IPC and shortcuts
-  function increaseBrightness(): void {
+  function increaseBrightness() {
     monitors.forEach(m => m.increaseBrightness());
   }
 
-  function decreaseBrightness(): void {
+  function decreaseBrightness() {
     monitors.forEach(m => m.decreaseBrightness());
   }
 
-  function getDetectedDisplays(): list<var> {
+  function getDetectedDisplays() {
     return detectedDisplays;
   }
 
@@ -91,7 +91,7 @@ Singleton {
   // Detect DDC monitors
   Process {
     id: ddcProc
-    property list<var> ddcMonitors: []
+    property var ddcMonitors: []
     command: ["ddcutil", "detect", "--sleep-multiplier=0.5"]
     stdout: StdioCollector {
       onStreamFinished: {
@@ -120,7 +120,10 @@ Singleton {
 
     required property ShellScreen modelData
     readonly property bool isDdc: Settings.data.brightness.enableDdcSupport && root.ddcMonitors.some(m => m.model === modelData.model)
-    readonly property string busNum: root.ddcMonitors.find(m => m.model === modelData.model)?.busNum ?? ""
+    readonly property string busNum: {
+      const ddcMonitor = root.ddcMonitors.find(m => m.model === modelData.model);
+      return ddcMonitor ? ddcMonitor.busNum : "";
+    }
     readonly property bool isAppleDisplay: root.appleDisplayPresent && modelData.model.startsWith("StudioDisplay")
     readonly property string method: isAppleDisplay ? "apple" : (isDdc ? "ddcutil" : "internal")
 
@@ -275,12 +278,12 @@ Singleton {
       }
     }
 
-    function setBrightnessDebounced(value: real): void {
+    function setBrightnessDebounced(value) {
       monitor.queuedBrightness = value;
       timer.start();
     }
 
-    function increaseBrightness(): void {
+    function increaseBrightness() {
       const value = !isNaN(monitor.queuedBrightness) ? monitor.queuedBrightness : monitor.brightness;
       // Enforce minimum brightness if enabled
       if (Settings.data.brightness.enforceMinimum && value < minBrightnessValue) {
@@ -291,12 +294,12 @@ Singleton {
       }
     }
 
-    function decreaseBrightness(): void {
+    function decreaseBrightness() {
       const value = !isNaN(monitor.queuedBrightness) ? monitor.queuedBrightness : monitor.brightness;
       setBrightnessDebounced(value - stepSize);
     }
 
-    function setBrightness(value: real): void {
+    function setBrightness(value) {
       value = Math.max(minBrightnessValue, Math.min(1, value));
       var rounded = Math.round(value * 100);
 
@@ -326,7 +329,7 @@ Singleton {
       }
     }
 
-    function initBrightness(): void {
+    function initBrightness() {
       if (isAppleDisplay) {
         initProc.command = ["asdbctl", "get"];
       } else if (isDdc) {
