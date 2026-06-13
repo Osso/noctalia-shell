@@ -332,6 +332,8 @@ PanelWindow {
 
       // Screen reference
       property ShellScreen screen: root.screen
+      readonly property real screenWidth: screen ? screen.width : 0
+      readonly property real screenHeight: screen ? screen.height : 0
 
       // Bar background positioning properties
       readonly property string barPosition: Settings.data.bar.position || "top"
@@ -345,23 +347,23 @@ PanelWindow {
       // Use screen dimensions directly
       x: {
         if (barPosition === "right")
-          return screen.width - Style.barHeight - barMarginH - attachmentOverlap; // Extend left towards panels
+          return screenWidth - Style.barHeight - barMarginH - attachmentOverlap; // Extend left towards panels
         return barMarginH;
       }
       y: {
         if (barPosition === "bottom")
-          return screen.height - Style.barHeight - barMarginV - attachmentOverlap;
+          return screenHeight - Style.barHeight - barMarginV - attachmentOverlap;
         return barMarginV;
       }
       width: {
         if (barIsVertical) {
           return Style.barHeight + attachmentOverlap;
         }
-        return screen.width - barMarginH * 2;
+        return screenWidth - barMarginH * 2;
       }
       height: {
         if (barIsVertical) {
-          return screen.height - barMarginV * 2;
+          return screenHeight - barMarginV * 2;
         }
         return Style.barHeight + attachmentOverlap;
       }

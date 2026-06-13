@@ -162,7 +162,7 @@ Variants {
     }
 
     function onBrightnessChanged(newBrightness) {
-      currentBrightness = newBrightness;
+      root.currentBrightness = newBrightness;
       showOSD(OSD.Type.Brightness);
     }
 
