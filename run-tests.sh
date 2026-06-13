@@ -12,7 +12,7 @@ Commands:
   regression     Same as all.
   log            Check the active Quickshell instance log for high-signal errors.
   unit           Run cheap pure JavaScript helper tests.
-  probes         Run read-only service probes for notifications, audio, and brightness.
+  probes         Run read-only service probes for notifications, audio, brightness, clipboard, and wallpaper/colors.
   notifications  Run notification probe scripts. This visibly sends notifications.
 USAGE
 }
@@ -30,8 +30,8 @@ run_service_probes() {
 }
 
 run_notifications() {
-    "$repo_root/Bin/dev/notifications-test.sh"
-    "$repo_root/Bin/dev/notifications-test-replace.sh"
+    "$repo_root/Bin/dev/notifications-test.sh" --run
+    "$repo_root/Bin/dev/notifications-test-replace.sh" --run
 }
 
 command="${1:-all}"

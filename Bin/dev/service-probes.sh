@@ -83,9 +83,57 @@ probe_brightness() {
     echo "ok probeBrightness"
 }
 
+probe_clipboard() {
+    require_command wl-paste
+    require_command rg
+
+    local types
+    types="$(wl-paste --list-types 2>/dev/null || true)"
+
+    if [[ -z "$types" ]]; then
+        echo "clipboard type list is empty; clipboard service may be unavailable" >&2
+        exit 1
+    fi
+
+    if ! printf '%s\n' "$types" | rg -q '^(text/plain|text/plain;charset=utf-8|text/html|image/)'; then
+        echo "clipboard has no expected text/html/image MIME types: $types" >&2
+        exit 1
+    fi
+
+    echo "ok probeClipboard"
+}
+
+probe_wallpaper_colors() {
+    require_command jq
+
+    local colors_file="/home/osso/.config/noctalia/colors.json"
+    local wallpapers_file="/home/osso/.cache/noctalia/wallpapers.json"
+
+    jq -e '.mPrimary and .mSurface and .mOnSurface and .mError' "$colors_file" >/dev/null
+    jq -e '.wallpapers and (.wallpapers | type == "object")' "$wallpapers_file" >/dev/null
+
+    local wallpaper_paths
+    mapfile -t wallpaper_paths < <(jq -r '.wallpapers[]' "$wallpapers_file")
+
+    if [ "${#wallpaper_paths[@]}" -eq 0 ]; then
+        echo "no active wallpaper paths found in $wallpapers_file" >&2
+        exit 1
+    fi
+
+    local wallpaper_path
+    for wallpaper_path in "${wallpaper_paths[@]}"; do
+        if [ ! -e "$wallpaper_path" ]; then
+            echo "active wallpaper path does not exist: $wallpaper_path" >&2
+            exit 1
+        fi
+    done
+
+    echo "ok probeWallpaperColors"
+}
+
 usage() {
     cat <<'USAGE'
-Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness]
+Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors]
 
 Runs read-only probes for services used by the local shell.
 USAGE
@@ -96,6 +144,8 @@ case "$probe" in
         probe_notifications
         probe_audio
         probe_brightness
+        probe_clipboard
+        probe_wallpaper_colors
         ;;
     notifications)
         probe_notifications
@@ -105,6 +155,12 @@ case "$probe" in
         ;;
     brightness)
         probe_brightness
+        ;;
+    clipboard)
+        probe_clipboard
+        ;;
+    wallpaper-colors)
+        probe_wallpaper_colors
         ;;
     -h | --help | help)
         usage

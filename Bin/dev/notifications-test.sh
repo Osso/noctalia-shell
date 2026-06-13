@@ -1,4 +1,15 @@
 #!/usr/bin/env -S bash
+set -euo pipefail
+
+if [ "${1:-}" != "--run" ]; then
+    cat <<'USAGE'
+Usage: Bin/dev/notifications-test.sh --run
+
+Visible manual probe. Sends multiple test notifications, icon/image notifications,
+and one action notification through org.freedesktop.Notifications.
+USAGE
+    exit 2
+fi
 
 echo "Sending test notifications..."
 

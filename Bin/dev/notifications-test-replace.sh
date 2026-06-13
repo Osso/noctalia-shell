@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
+set -euo pipefail
 # Test script for notification replacement functionality
+
+if [ "${1:-}" != "--run" ]; then
+    cat <<'USAGE'
+Usage: Bin/dev/notifications-test-replace.sh --run
+
+Visible manual probe. Sends one notification and replaces it by ID.
+USAGE
+    exit 2
+fi
 
 echo "Testing notification replacement..."
 echo ""
@@ -20,4 +30,3 @@ echo ""
 
 echo "The notification should now show 'test' instead of 'asdf'."
 echo "If it still shows 'asdf', the replacement is not working."
-
