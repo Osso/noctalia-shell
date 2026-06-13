@@ -1,4 +1,6 @@
 {
+# Legacy/reference Nix module only. The active local install does not use this
+# module; see nix/README.md before reviving it.
   config,
   lib,
   ...
@@ -24,7 +26,7 @@ in {
   config = lib.mkIf cfg.enable {
     systemd.user.services.noctalia-shell = {
       description = "Noctalia Shell - Wayland desktop shell";
-      documentation = ["https://docs.noctalia.dev/docs"];
+      documentation = ["file:///home/osso/Repos/noctalia-shell/nix/README.md"];
       after = [cfg.target];
       partOf = [cfg.target];
       wantedBy = [cfg.target];

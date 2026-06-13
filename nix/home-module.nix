@@ -1,4 +1,6 @@
 {
+# Legacy/reference Nix module only. The active local install does not use this
+# module; see nix/README.md before reviving it.
   config,
   lib,
   pkgs,
@@ -104,7 +106,7 @@ in {
       systemd.user.services.noctalia-shell = lib.mkIf cfg.systemd.enable {
         Unit = {
           Description = "Noctalia Shell - Wayland desktop shell";
-          Documentation = "https://docs.noctalia.dev/docs";
+          Documentation = "file://%h/Repos/noctalia-shell/nix/README.md";
           PartOf = [ config.wayland.systemd.target ];
           After = [ config.wayland.systemd.target ];
           X-Restart-Triggers =

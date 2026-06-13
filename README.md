@@ -1,142 +1,63 @@
-# Noctalia shell
+# Local Noctalia Shell Fork
 
-**_quiet by design_**
+This repository is Alessio's local, upstream-independent Noctalia v4/QML desktop shell.
 
-<p align="center">
-  <img src="https://assets.noctalia.dev/noctalia-logo.svg?v=2" alt="Noctalia Logo" style="width: 192px" />
-</p>
+It is maintained for this machine and session:
 
-<p align="center">
-  <a href="https://docs.noctalia.dev/getting-started/installation">
-    <img src="https://img.shields.io/badge/⚡_QUICK_INSTALL-Get_Started_Now-A8AEFF?style=for-the-badge&logoColor=FFFFFF&labelColor=0C0D11" alt="Quick Install" style="height: 50px" />
-  </a>
-</p>
+- OS: Arch Linux
+- Compositor: niri
+- Runtime: stock Arch `quickshell`
+- Launch command: `quickshell -p /home/osso/Repos/noctalia-shell`
+- User config: `/home/osso/.config/noctalia/settings.json`
+- User cache/state: `/home/osso/.cache/noctalia`
 
-<p align="center">
-  <a href="https://github.com/noctalia-dev/noctalia-shell/commits">
-    <img src="https://img.shields.io/github/last-commit/noctalia-dev/noctalia-shell?style=for-the-badge&labelColor=0C0D11&color=A8AEFF&logo=git&logoColor=FFFFFF&label=commit" alt="Last commit" />
-  </a>
-  <a href="https://github.com/noctalia-dev/noctalia-shell/stargazers">
-    <img src="https://img.shields.io/github/stars/noctalia-dev/noctalia-shell?style=for-the-badge&labelColor=0C0D11&color=A8AEFF&logo=github&logoColor=FFFFFF" alt="GitHub stars" />
-  </a>
-  <a href="https://docs.noctalia.dev">
-    <img src="https://img.shields.io/badge/docs-A8AEFF?style=for-the-badge&logo=gitbook&logoColor=FFFFFF&labelColor=0C0D11" alt="Documentation" />
-  </a>
-  <a href="https://discord.noctalia.dev">
-    <img src="https://img.shields.io/badge/discord-A8AEFF?style=for-the-badge&labelColor=0C0D11&logo=discord&logoColor=FFFFFF" alt="Discord" />
-  </a>
-</p>
+Upstream Noctalia v5 and `noctalia-qs` are not the target. Do not merge upstream
+changes by default. Treat upstream remotes as historical/reference material only.
 
----
+## Test Gate
 
-## What is Noctalia?
+Run the non-invasive local gate before committing:
 
-A beautiful, minimal desktop shell for Wayland that actually gets out of your way. Built on Quickshell with a warm lavender aesthetic that you can easily customize to match your vibe.
+```bash
+./run-tests.sh
+```
 
-**✨ Key Features:**
-- 🪟 Native support for Niri, Hyprland, Sway and MangoWC
-- ⚡ Built on Quickshell for performance
-- 🎯 Minimalist design philosophy
-- 🔧 Easily customizable to match your style
-- 🎨 Many color schemes available
----
+This runs:
 
-## Preview
+- Pure JavaScript helper regression tests.
+- Read-only service probes for notifications, audio, brightness/DDC, clipboard MIME
+  types, and wallpaper/color cache state.
+- Active Quickshell log checks for high-signal QML/runtime failures.
 
-https://github.com/user-attachments/assets/bf46f233-8d66-439a-a1ae-ab0446270f2d
+Visible notification probes are intentionally separate:
 
-<details>
-<summary>Screenshots</summary>
+```bash
+./run-tests.sh notifications
+```
 
-![Dark 1](/Assets/Screenshots/noctalia-dark-1.png)
-![Dark 2](/Assets/Screenshots/noctalia-dark-2.png)
-![Dark 3](/Assets/Screenshots/noctalia-dark-3.png)
+See [Bin/dev/PROBES.md](Bin/dev/PROBES.md) for probe details.
 
-![Light 1](/Assets/Screenshots/noctalia-light-1.png)
-![Light 2](/Assets/Screenshots/noctalia-light-2.png)
-![Light 3](/Assets/Screenshots/noctalia-light-3.png)
+## Runtime Maintenance
 
-</details>
+After Arch updates `quickshell`, Qt, niri, icon themes, PipeWire, DDC tools, or
+related runtime packages:
 
----
+1. Start or keep the shell running with `quickshell -p /home/osso/Repos/noctalia-shell`.
+2. Run `./run-tests.sh`.
+3. Inspect `quickshell log --pid "$(pgrep -u "$USER" -n quickshell)" --tail 500 --no-color`.
+4. Run the manual smoke checklist from `docs/local/maintenance.md`.
+5. Fix compatibility issues in this repo.
+6. Commit one verified fix at a time.
 
-## 📋 Requirements
+`docs/local/` and `PLAN.md` are intentionally local/ignored workspace notes.
 
-- Wayland compositor (Niri, Hyprland, Sway or MangoWC recommended)
-- Quickshell
-- Additional dependencies are listed in our [documentation](https://docs.noctalia.dev)
+## Packaging Notes
 
----
+The active install is not Nix-based. The tracked Nix files are legacy/reference
+packaging only unless they are explicitly updated for this local stock-Quickshell
+contract. See [nix/README.md](nix/README.md).
 
-## 🚀 Getting Started
+## License
 
-**New to Noctalia?**  
-Check out our comprehensive documentation and installation guide to get up and running!
-
-<p align="center">
-  <a href="https://docs.noctalia.dev/getting-started/installation">
-    <img src="https://img.shields.io/badge/📖_Installation_Guide-A8AEFF?style=for-the-badge&logoColor=FFFFFF&labelColor=0C0D11" alt="Installation Guide" />
-  </a>
-  <a href="https://docs.noctalia.dev/getting-started/faq/">
-    <img src="https://img.shields.io/badge/❓_FAQ-A8AEFF?style=for-the-badge&logoColor=FFFFFF&labelColor=0C0D11" alt="FAQ" />
-  </a>
-  <a href="https://discord.noctalia.dev">
-    <img src="https://img.shields.io/badge/💬_Get_Help-A8AEFF?style=for-the-badge&logo=discord&logoColor=FFFFFF&labelColor=0C0D11" alt="Discord" />
-  </a>
-</p>
-
----
-
-## 🖥️ Wayland Compositors
-
-Noctalia provides native support for **Niri**, **Hyprland** and **Sway**. Other Wayland compositors will work but may require additional workspace logic configuration.
-
----
-
-## 🤝 Contributing
-
-We welcome contributions of any size - bug fixes, new features, documentation improvements, or custom themes and configs.
-
-**Get involved:**
-- **Found a bug?** [Open an issue](https://github.com/noctalia-dev/noctalia-shell/issues/new)
-- **Want to code?** Check out our [development guidelines](https://docs.noctalia.dev/development/guideline)
-- **Need help?** Join our [Discord](https://discord.noctalia.dev)
-
-### ✨ Nix DevShell
-
-Nix users can use the flake's devShell to access a development environment. Run `nix develop` in the repo root to enter the dev shell. It includes packages, utilities and environment variables needed to develop Noctalia.
-
----
-
-## 💜 Credits
-
-A heartfelt thank you to our incredible community of [**contributors**](https://github.com/noctalia-dev/noctalia-shell/graphs/contributors). We are immensely grateful for your dedicated participation and the constructive feedback you've provided, which continue to shape and improve our project for everyone.
-
----
-
-## ☕ Donations
-
-While all donations are greatly appreciated, they are completely voluntary.
-
-<a href="https://ko-fi.com/lysec">
-  <img src="https://img.shields.io/badge/donate-ko--fi-A8AEFF?style=for-the-badge&logo=kofi&logoColor=FFFFFF&labelColor=0C0D11" alt="Ko-Fi" />
-</a>
-
-### Thank you to everyone who supports the project 💜!
-* Gohma
-* DiscoCevapi
-* <a href="https://pika-os.com/" target="_blank">PikaOS</a>
-* LionHeartP
-* Nyxion ツ
-* RockDuck
-* MrDowntempo
-* Tempus Thales
-* Raine
-* JustCurtis
-* llego
-
----
-
-## 📄 License
-
-MIT License - see [LICENSE](./LICENSE) for details.
+MIT License - see [LICENSE](LICENSE). Original Noctalia credits remain in
+[CREDITS.md](CREDITS.md).

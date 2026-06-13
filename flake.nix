@@ -1,4 +1,6 @@
 {
+  # Legacy/reference Nix packaging only. The active local install is stock Arch
+  # quickshell launched directly from this checkout; see README.md and nix/README.md.
   description = "Noctalia shell - a Wayland desktop shell built with Quickshell";
 
   inputs = {
