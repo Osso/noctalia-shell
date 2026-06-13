@@ -12,21 +12,42 @@ require_command() {
 }
 
 require_command qmllint
+require_command rg
 
-lint_files=(
-    "shell.qml"
-    "Commons/ThemeIcons.qml"
-    "Services/Hardware/BrightnessService.qml"
-    "Services/System/NotificationService.qml"
-    "Modules/Bar/Widgets/ActiveWindow.qml"
-    "Modules/Bar/Widgets/Brightness.qml"
-    "Modules/Panels/Brightness/BrightnessPanel.qml"
-    "Modules/Panels/Settings/Tabs/DisplayTab.qml"
-)
+exclusions_file="$repo_root/Bin/dev/qml-static-exclusions.txt"
 
-for file in "${lint_files[@]}"; do
+declare -A excluded_files=()
+while IFS= read -r file || [ -n "$file" ]; do
+    if [ -z "$file" ]; then
+        continue
+    fi
+    excluded_files["$file"]=1
+done <"$exclusions_file"
+
+checked_count=0
+skipped_count=0
+
+while IFS= read -r file; do
+    if [ -n "${excluded_files[$file]:-}" ]; then
+        skipped_count=$((skipped_count + 1))
+        continue
+    fi
+
     qmllint "$repo_root/$file"
+    checked_count=$((checked_count + 1))
+done < <(cd "$repo_root" && rg --files -g '*.qml' | sort)
+
+for file in "${!excluded_files[@]}"; do
+    if [ ! -f "$repo_root/$file" ]; then
+        echo "excluded QML file does not exist: $file" >&2
+        exit 1
+    fi
+
+    if qmllint "$repo_root/$file" >/dev/null 2>&1; then
+        echo "excluded QML file now passes qmllint; remove it from $exclusions_file: $file" >&2
+        exit 1
+    fi
 done
 
 echo "ok qmlStaticCheck"
-echo "Checked ${#lint_files[@]} QML files with qmllint."
+echo "Checked $checked_count QML files with qmllint; skipped $skipped_count documented exclusions."
