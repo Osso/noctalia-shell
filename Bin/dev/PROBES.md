@@ -11,8 +11,21 @@ These scripts are for Alessio's local Noctalia shell fork on stock Arch `quicksh
 Runs:
 
 - JavaScript helper unit tests.
+- Focused `qmllint` coverage for QML files that are lint-clean on current Arch
+  Quickshell/Qt tooling.
 - Read-only service probes from `Bin/dev/service-probes.sh`.
 - Active Quickshell log regression gate.
+
+## QML Static Check
+
+```bash
+./run-tests.sh qml
+Bin/dev/qml-static-check.sh
+```
+
+This is intentionally a curated baseline, not a whole-tree claim. Expand
+`lint_files` in `Bin/dev/qml-static-check.sh` as parser/tooling issues are fixed
+or as high-risk QML files become lint-clean.
 
 ## Read-Only Service Probes
 

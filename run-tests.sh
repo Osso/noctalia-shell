@@ -5,13 +5,14 @@ repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
     cat <<'USAGE'
-Usage: ./run-tests.sh [all|regression|log|unit|probes|notifications]
+Usage: ./run-tests.sh [all|regression|log|unit|qml|probes|notifications]
 
 Commands:
   all            Run non-invasive local regression checks.
   regression     Same as all.
   log            Check the active Quickshell instance log for high-signal errors.
   unit           Run cheap pure JavaScript helper tests.
+  qml            Run focused qmllint coverage for currently lint-clean QML files.
   probes         Run read-only service probes for notifications, audio, brightness, clipboard, and wallpaper/colors.
   notifications  Run notification probe scripts. This visibly sends notifications.
 USAGE
@@ -23,6 +24,10 @@ run_unit_tests() {
 
 run_log_gate() {
     "$repo_root/Bin/dev/quickshell-regression.sh"
+}
+
+run_qml_static_check() {
+    "$repo_root/Bin/dev/qml-static-check.sh"
 }
 
 run_service_probes() {
@@ -39,6 +44,7 @@ command="${1:-all}"
 case "$command" in
     all | regression)
         run_unit_tests
+        run_qml_static_check
         run_service_probes
         run_log_gate
         ;;
@@ -47,6 +53,9 @@ case "$command" in
         ;;
     unit)
         run_unit_tests
+        ;;
+    qml)
+        run_qml_static_check
         ;;
     probes)
         run_service_probes
