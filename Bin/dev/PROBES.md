@@ -23,9 +23,10 @@ Runs:
 Bin/dev/qml-static-check.sh
 ```
 
-This is intentionally a curated baseline, not a whole-tree claim. Expand
-`lint_files` in `Bin/dev/qml-static-check.sh` as parser/tooling issues are fixed
-or as high-risk QML files become lint-clean.
+This lints every QML file except the documented parser/tooling debt in
+`Bin/dev/qml-static-exclusions.txt`. The gate also checks that every excluded
+file still fails `qmllint`; if one becomes lint-clean, remove it from the
+exclusion file so coverage ratchets upward.
 
 ## Read-Only Service Probes
 
@@ -39,8 +40,9 @@ Bin/dev/service-probes.sh wallpaper-colors
 ```
 
 These probes do not change shell state. They verify that the notification server,
-PipeWire volume state, brightness/DDC state, clipboard MIME type list, and
-wallpaper/color cache are readable and coherent for this machine.
+PipeWire volume state, internal brightness state, optional LG DDC state when the
+display is detected, clipboard MIME type list, and wallpaper/color cache are
+readable and coherent for this machine.
 
 ## Visible Manual Notification Probes
 

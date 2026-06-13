@@ -67,17 +67,28 @@ probe_brightness() {
         exit 1
     fi
 
-    local ddc_output vcp_output
-    ddc_output="$(ddcutil detect)"
-    if [[ "$ddc_output" != *"Model:                LG ULTRAWIDE"* ]]; then
-        echo "expected LG ULTRAWIDE DDC display was not detected" >&2
-        exit 1
-    fi
+    local ddc_output vcp_output current_bus lg_bus
+    ddc_output="$(ddcutil detect 2>&1)"
+    current_bus=""
+    lg_bus=""
 
-    vcp_output="$(ddcutil -b 4 getvcp 10 --brief)"
-    if [[ ! "$vcp_output" =~ ^VCP\ 10\ C\ [0-9]+\ 100$ ]]; then
-        echo "unexpected DDC brightness output: $vcp_output" >&2
-        exit 1
+    while IFS= read -r line; do
+        if [[ "$line" =~ I2C\ bus:[[:space:]]+/dev/i2c-([0-9]+) ]]; then
+            current_bus="${BASH_REMATCH[1]}"
+        elif [[ "$line" == *"Model:                LG ULTRAWIDE"* ]]; then
+            lg_bus="$current_bus"
+        fi
+    done <<<"$ddc_output"
+
+    if [ -n "$lg_bus" ]; then
+        vcp_output="$(ddcutil -b "$lg_bus" getvcp 10 --brief 2>&1)"
+        if [[ ! "$vcp_output" =~ ^VCP\ 10\ C\ [0-9]+\ 100$ ]]; then
+            echo "unexpected DDC brightness output for LG ULTRAWIDE on bus $lg_bus: $vcp_output" >&2
+            exit 1
+        fi
+        echo "ok probeBrightnessDdc"
+    else
+        echo "ok probeBrightnessDdcSkipped"
     fi
 
     echo "ok probeBrightness"
