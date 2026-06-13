@@ -150,7 +150,7 @@ Singleton {
     property JsonObject bar: JsonObject {
       property string position: "top" // "top", "bottom", "left", or "right"
       property real backgroundOpacity: 1.0
-      property list<string> monitors: [] // holds bar visibility per monitor
+      property var monitors: [] // holds bar visibility per monitor
       property string density: "default" // "compact", "default", "comfortable"
       property bool showCapsule: true
       property real capsuleOpacity: 1.0
@@ -169,7 +169,7 @@ Singleton {
       // Widget configuration for modular bar system
       property JsonObject widgets
       widgets: JsonObject {
-        property list<var> left: [
+        property var left: [
           {
             "icon": "rocket",
             "id": "CustomButton",
@@ -189,12 +189,12 @@ Singleton {
             "id": "MediaMini"
           }
         ]
-        property list<var> center: [
+        property var center: [
           {
             "id": "Workspace"
           }
         ]
-        property list<var> right: [
+        property var right: [
           {
             "id": "ScreenRecorder"
           },
@@ -270,7 +270,7 @@ Singleton {
 
     // calendar
     property JsonObject calendar: JsonObject {
-      property list<var> cards: [
+      property var cards: [
         {
           "id": "calendar-header-card",
           "enabled": true
@@ -308,7 +308,7 @@ Singleton {
       property bool enabled: true
       property bool overviewEnabled: false
       property string directory: ""
-      property list<var> monitorDirectories: []
+      property var monitorDirectories: []
       property bool enableMultiMonitorDirectories: false
       property bool recursiveSearch: false
       property bool setWallpaperOnAllMonitors: true
@@ -339,7 +339,7 @@ Singleton {
       property bool enableClipPreview: true
       // Position: center, top_left, top_right, bottom_left, bottom_right, bottom_center, top_center
       property string position: "center"
-      property list<string> pinnedExecs: []
+      property var pinnedExecs: []
       property bool useApp2Unit: false
       property bool sortByMostUsed: true
       property string terminalCommand: "xterm -e"
@@ -355,7 +355,7 @@ Singleton {
       property string position: "close_to_bar_button"
       property JsonObject shortcuts
       shortcuts: JsonObject {
-        property list<var> left: [
+        property var left: [
           {
             "id": "WiFi"
           },
@@ -369,7 +369,7 @@ Singleton {
             "id": "WallpaperSelector"
           }
         ]
-        property list<var> right: [
+        property var right: [
           {
             "id": "Notifications"
           },
@@ -384,7 +384,7 @@ Singleton {
           }
         ]
       }
-      property list<var> cards: [
+      property var cards: [
         {
           "id": "profile-card",
           "enabled": true
@@ -436,9 +436,9 @@ Singleton {
       property real floatingRatio: 1.0
       property real size: 1
       property bool onlySameOutput: true
-      property list<string> monitors: [] // holds dock visibility per monitor
+      property var monitors: [] // holds dock visibility per monitor
       // Desktop entry IDs pinned to the dock (e.g., "org.kde.konsole", "firefox.desktop")
-      property list<string> pinnedApps: []
+      property var pinnedApps: []
       property bool colorizeIcons: false
     }
 
@@ -453,7 +453,7 @@ Singleton {
       property int countdownDuration: 10000
       property string position: "center"
       property bool showHeader: true
-      property list<var> powerOptions: [
+      property var powerOptions: [
         {
           "action": "lock",
           "enabled": true
@@ -484,7 +484,7 @@ Singleton {
     // notifications
     property JsonObject notifications: JsonObject {
       property bool enabled: true
-      property list<string> monitors: [] // holds notifications visibility per monitor
+      property var monitors: [] // holds notifications visibility per monitor
       property string location: "top_right"
       property bool overlayLayer: true
       property real backgroundOpacity: 1.0
@@ -502,8 +502,8 @@ Singleton {
       property int autoHideMs: 2000
       property bool overlayLayer: true
       property real backgroundOpacity: 1.0
-      property list<var> enabledTypes: [OSD.Type.Volume, OSD.Type.InputVolume, OSD.Type.Brightness]
-      property list<string> monitors: [] // holds osd visibility per monitor
+      property var enabledTypes: [OSD.Type.Volume, OSD.Type.InputVolume, OSD.Type.Brightness]
+      property var monitors: [] // holds osd visibility per monitor
     }
 
     // audio
@@ -513,7 +513,7 @@ Singleton {
       property int cavaFrameRate: 30
       property string visualizerType: "linear"
       property string visualizerQuality: "high"
-      property list<string> mprisBlacklist: []
+      property var mprisBlacklist: []
       property string preferredPlayer: ""
       property string externalMixer: "pwvucontrol || pavucontrol"
     }

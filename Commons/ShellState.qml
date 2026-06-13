@@ -175,7 +175,7 @@ Singleton {
   function buildStateSnapshot() {
     try {
       const settingsData = QtObj2JS.qtObjectToPlainObject(Settings.data);
-      const shellStateData = ShellState?.data ? QtObj2JS.qtObjectToPlainObject(ShellState.data) || {} : {};
+      const shellStateData = ShellState && ShellState.data ? QtObj2JS.qtObjectToPlainObject(ShellState.data) || {} : {};
 
       return {
         settings: settingsData,

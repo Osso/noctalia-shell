@@ -27,7 +27,7 @@ Singleton {
 
   // Debug log (only when Settings.isDebug is true)
   function d(...args) {
-    if (Settings?.isDebug) {
+    if (Settings && Settings.isDebug) {
       var msg = _formatMessage(...args);
       console.debug(msg);
     }
