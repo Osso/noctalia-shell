@@ -18,7 +18,8 @@ function loadHelper(relativePath) {
     isNaN,
   });
   const source = fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
-  vm.runInContext(source, context, {
+  const runnableSource = source.replace(/^\.pragma library\s*$/m, "");
+  vm.runInContext(runnableSource, context, {
     filename: relativePath,
   });
   return context;
@@ -86,10 +87,51 @@ function testSha256() {
   );
 }
 
+function testThemeIconResolver() {
+  const resolver = loadHelper("Helpers/ThemeIconResolver.js");
+  const calls = [];
+  const iconApi = {
+    hasThemeIcon(name) {
+      calls.push(["hasThemeIcon", name]);
+      return name === "known-primary" || name === "application-x-executable";
+    },
+    iconPath(name, check) {
+      calls.push(["iconPath", name, check]);
+      if (typeof check !== "boolean")
+        return `${name}?fallback=${check}`;
+      return check ? `image://icon/${name}` : "";
+    },
+  };
+
+  assert.equal(
+    resolver.resolveIconPath(iconApi, "known-primary", "application-x-executable"),
+    "image://icon/known-primary",
+  );
+  assert.equal(
+    resolver.resolveIconPath(iconApi, "missing-primary", "application-x-executable"),
+    "image://icon/application-x-executable",
+  );
+  assert.equal(
+    resolver.resolveIconPath(iconApi, "", "application-x-executable"),
+    "image://icon/application-x-executable",
+  );
+  assert.equal(
+    resolver.resolveIconPath({ hasThemeIcon: () => false, iconPath: () => "" }, "missing", "also-missing"),
+    "",
+  );
+
+  assert.equal(
+    calls.some(call => call[0] === "iconPath" && typeof call[2] === "string"),
+    false,
+    "resolver must not call iconPath(icon, fallbackString)",
+  );
+}
+
 const tests = [
   testColorsConvert,
   testAdvancedMath,
   testSha256,
+  testThemeIconResolver,
 ];
 
 for (const test of tests) {
