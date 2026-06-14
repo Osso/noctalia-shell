@@ -131,6 +131,11 @@ if is_gpu_screen_recorder_monitor_row "HDMI-A-1 3440x1440"; then
     exit 1
 fi
 
+if is_gpu_screen_recorder_monitor_row "   |3440x1440"; then
+    echo "blank gpu-screen-recorder monitor name was accepted" >&2
+    exit 1
+fi
+
 if has_gpu_screen_recorder_capture_option $'   '; then
     echo "invalid gpu-screen-recorder capture option was accepted" >&2
     exit 1
