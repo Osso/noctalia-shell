@@ -420,6 +420,11 @@ if has_niri_start_wrapper '// spawn-at-startup "/home/osso/bin/start-quickshell"
     exit 1
 fi
 
+if has_quickshell_ipc_call "// spawn quickshell ipc -p $canonical_repo call launcher toggle" "$canonical_repo" "launcher" "toggle"; then
+    echo "commented Niri IPC call was accepted" >&2
+    exit 1
+fi
+
 if has_quickshell_ipc_call "$niri_config_fixture" "$canonical_repo" "sessionMenu" "toggle"; then
     echo "missing Niri IPC call was accepted" >&2
     exit 1
