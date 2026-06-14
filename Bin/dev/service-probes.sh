@@ -114,6 +114,46 @@ probe_clipboard() {
     echo "ok probeClipboard"
 }
 
+probe_lock_keys() {
+    require_command grep
+
+    local has_led_input=false
+    local lock_name brightness_file
+    for lock_name in capslock numlock scrolllock; do
+        for brightness_file in /sys/class/leds/input*::"$lock_name"/brightness; do
+            if [[ -r "$brightness_file" ]]; then
+                has_led_input=true
+                break 2
+            fi
+        done
+    done
+
+    if [[ "$has_led_input" != true ]]; then
+        echo "no readable lock-key LED brightness inputs found" >&2
+        exit 1
+    fi
+
+    local state_output
+    state_output="$(sh -c 'caps=0; cat /sys/class/leds/input*::capslock/brightness 2>/dev/null | grep -q 1 && caps=1; echo "caps:${caps}"; num=0; cat /sys/class/leds/input*::numlock/brightness 2>/dev/null | grep -q 1 && num=1; echo "num:${num}"; scroll=0; cat /sys/class/leds/input*::scrolllock/brightness 2>/dev/null | grep -q 1 && scroll=1; echo "scroll:${scroll}"')"
+
+    if [[ ! "$state_output" =~ (^|$'\n')caps:[01]($'\n'|$) ]]; then
+        echo "lock-key state output is missing caps row: $state_output" >&2
+        exit 1
+    fi
+
+    if [[ ! "$state_output" =~ (^|$'\n')num:[01]($'\n'|$) ]]; then
+        echo "lock-key state output is missing num row: $state_output" >&2
+        exit 1
+    fi
+
+    if [[ ! "$state_output" =~ (^|$'\n')scroll:[01]($'\n'|$) ]]; then
+        echo "lock-key state output is missing scroll row: $state_output" >&2
+        exit 1
+    fi
+
+    echo "ok probeLockKeys"
+}
+
 probe_wallpaper_colors() {
     require_command jq
 
@@ -743,7 +783,7 @@ probe_host_fonts() {
 
 usage() {
     cat <<'USAGE'
-Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth|vpn|screen-recorder|programs|system-stats|host-fonts]
+Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|lock-keys|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth|vpn|screen-recorder|programs|system-stats|host-fonts]
 
 Runs read-only probes for services used by the local shell.
 USAGE
@@ -755,6 +795,7 @@ case "$probe" in
         probe_audio
         probe_brightness
         probe_clipboard
+        probe_lock_keys
         probe_wallpaper_colors
         probe_settings
         probe_state_cache
@@ -779,6 +820,9 @@ case "$probe" in
         ;;
     clipboard)
         probe_clipboard
+        ;;
+    lock-keys)
+        probe_lock_keys
         ;;
     wallpaper-colors)
         probe_wallpaper_colors
