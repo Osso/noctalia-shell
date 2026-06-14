@@ -71,7 +71,7 @@ Item {
 
     // ===== REGEX PATTERNS =====
 
-    readonly property var patterns: QtObject {
+    readonly property QtObject patterns: QtObject {
       // Detailed tag format: "OUTPUT tag N STATE CLIENTS FOCUSED"
       readonly property var tagDetail: /^(\S+)\s+tag\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)$/
 

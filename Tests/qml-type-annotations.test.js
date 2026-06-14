@@ -150,6 +150,13 @@ function testClockSettingsFocusedInputIsTyped() {
   assertNoPropertyType(settingsFile, "focusedInput", "var");
 }
 
+function testMangoPatternContainerIsTyped() {
+  const mangoServiceFile = "Services/Compositor/MangoService.qml";
+
+  assertPropertyType(mangoServiceFile, "patterns", "QtObject");
+  assertNoPropertyType(mangoServiceFile, "patterns", "var");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -169,6 +176,7 @@ const tests = [
   testEffectSourcePropertiesAreTyped,
   testBarWidgetLoaderScreenIsTyped,
   testClockSettingsFocusedInputIsTyped,
+  testMangoPatternContainerIsTyped,
 ];
 
 for (const test of tests) {
