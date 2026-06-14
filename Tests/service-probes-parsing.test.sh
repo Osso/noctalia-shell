@@ -247,6 +247,11 @@ if has_upower_battery_state "notstate:               discharging"; then
     exit 1
 fi
 
+if has_upower_battery_state "state:               discharging trailing"; then
+    echo "malformed UPower battery state row was accepted" >&2
+    exit 1
+fi
+
 if has_physical_upower_battery_details $'native-path:          BAT0\nrechargeable:        no'; then
     echo "incomplete UPower battery details were accepted" >&2
     exit 1

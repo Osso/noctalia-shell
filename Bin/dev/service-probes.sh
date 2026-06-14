@@ -187,7 +187,7 @@ has_upower_percentage() {
 has_upower_battery_state() {
     local device_info="$1"
 
-    [[ "$device_info" =~ (^|$'\n')[[:space:]]*state:[[:space:]]+(charging|discharging|empty|fully-charged|pending-charge|pending-discharge|unknown) ]]
+    [[ "$device_info" =~ (^|$'\n')[[:space:]]*state:[[:space:]]+(charging|discharging|empty|fully-charged|pending-charge|pending-discharge|unknown)[[:space:]]*($'\n'|$) ]]
 }
 
 has_physical_upower_battery_details() {
