@@ -78,6 +78,31 @@ function testColorsConvertGeneratedVariants() {
   assert.equal(colors.generateSurfaceVariant("#222222", 3, true), "#393939");
 }
 
+function testColorListShape() {
+  const colorList = loadHelper("Helpers/ColorList.js");
+  const colors = plain(colorList.colors);
+
+  assert.ok(Array.isArray(colors), "color list must export an array");
+  assert.equal(colors.length, 170);
+
+  const seenPairs = new Set();
+  for (const entry of colors) {
+    assert.equal(typeof entry.name, "string");
+    assert.equal(typeof entry.color, "string");
+    assert.notEqual(entry.name.trim(), "");
+    assert.match(entry.color, /^(#[0-9a-fA-F]{6}|[a-z]+)$/);
+
+    const pair = `${entry.name}\0${entry.color}`;
+    assert.equal(seenPairs.has(pair), false, `duplicate color entry: ${entry.name}`);
+    seenPairs.add(pair);
+  }
+
+  assert.deepEqual(colors[0], { name: "MistyRose", color: "mistyrose" });
+  assert.deepEqual(colors[colors.length - 1], { name: "Black", color: "black" });
+  assert.ok(colors.some(entry => entry.name === "Blue 500" && entry.color === "#2196F3"));
+  assert.ok(colors.some(entry => entry.name === "Wet Asphalt" && entry.color === "#34495E"));
+}
+
 function testAdvancedMath() {
   const advancedMath = loadHelper("Helpers/AdvancedMath.js");
 
@@ -237,6 +262,7 @@ function testDebugStringifyHandlesCircularReferences() {
 const tests = [
   testColorsConvert,
   testColorsConvertGeneratedVariants,
+  testColorListShape,
   testAdvancedMath,
   testSha256,
   testThemeIconResolver,
