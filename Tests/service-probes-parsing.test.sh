@@ -190,4 +190,17 @@ if has_connected_wifi_device_status "wlan0:wifi:disconnected:Home WiFi" "Home Wi
     exit 1
 fi
 
+is_passwd_row "osso:x:1000:1000:Alessio:/home/osso:/usr/bin/zsh"
+has_readable_font_family $'JetBrains Mono\nNoto Sans Mono'
+
+if is_passwd_row "osso:x:not-a-uid:1000:Alessio:/home/osso:/usr/bin/zsh"; then
+    echo "invalid passwd row was accepted" >&2
+    exit 1
+fi
+
+if has_readable_font_family $'   \n12345'; then
+    echo "font output without readable family names was accepted" >&2
+    exit 1
+fi
+
 echo "ok testServiceProbeParsing"

@@ -181,6 +181,29 @@ has_connected_wifi_device_status() {
     [[ "$device_status" == *":wifi:connected:$wifi_name"* ]]
 }
 
+is_passwd_row() {
+    local passwd_row="$1"
+
+    [[ "$passwd_row" =~ ^[^:]+:[^:]*:[0-9]+:[0-9]+:[^:]*:[^:]+:[^:]+$ ]]
+}
+
+has_readable_font_family() {
+    local fontconfig_fonts="$1"
+    local font_line
+
+    if [[ -z "${fontconfig_fonts//[[:space:]]/}" ]]; then
+        return 1
+    fi
+
+    while IFS= read -r font_line; do
+        if [[ "$font_line" =~ [[:alpha:]] ]]; then
+            return 0
+        fi
+    done <<<"$fontconfig_fonts"
+
+    return 1
+}
+
 probe_notifications() {
     require_command gdbus
 
@@ -1075,26 +1098,13 @@ probe_host_fonts() {
     fi
 
     passwd_row="$(getent passwd "$USER" || true)"
-    if [[ ! "$passwd_row" =~ ^[^:]+:[^:]*:[0-9]+:[0-9]+:[^:]*:[^:]+:[^:]+$ ]]; then
+    if ! is_passwd_row "$passwd_row"; then
         echo "passwd row for USER is missing or malformed: $passwd_row" >&2
         exit 1
     fi
 
     fontconfig_fonts="$(fc-list :mono family)"
-    if [[ -z "${fontconfig_fonts//[[:space:]]/}" ]]; then
-        echo "fc-list returned no monospace font families" >&2
-        exit 1
-    fi
-
-    local has_font_family=false
-    while IFS= read -r font_line; do
-        if [[ "$font_line" =~ [[:alpha:]] ]]; then
-            has_font_family=true
-            break
-        fi
-    done <<<"$fontconfig_fonts"
-
-    if [[ "$has_font_family" != true ]]; then
+    if ! has_readable_font_family "$fontconfig_fonts"; then
         echo "fc-list monospace output has no readable family names" >&2
         exit 1
     fi
