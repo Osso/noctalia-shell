@@ -154,6 +154,11 @@ if has_active_power_profile_marker $'performance:\nbalanced:\npower-saver:' "bal
     exit 1
 fi
 
+if has_active_power_profile_marker $'performance:\n* balanced: extra\npower-saver:' "balanced"; then
+    echo "malformed active power profile row was accepted" >&2
+    exit 1
+fi
+
 is_vpn_connection_type "vpn"
 is_vpn_connection_type "wireguard"
 is_nm_uuid "123e4567-e89b-12d3-a456-426614174000"

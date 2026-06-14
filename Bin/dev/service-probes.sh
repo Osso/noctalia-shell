@@ -138,7 +138,7 @@ has_active_power_profile_marker() {
     local profiles="$1"
     local current="$2"
 
-    [[ "$profiles" =~ (^|$'\n')[[:space:]]*[*][[:space:]]+$current: ]]
+    [[ "$profiles" =~ (^|$'\n')[[:space:]]*[*][[:space:]]+$current:[[:space:]]*($'\n'|$) ]]
 }
 
 is_vpn_connection_type() {
