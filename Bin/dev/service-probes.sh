@@ -33,7 +33,8 @@ find_lg_ultrawide_bus() {
 is_ddc_brightness_output() {
     local vcp_output="$1"
 
-    [[ "$vcp_output" =~ ^VCP\ 10\ C\ [0-9]+\ 100$ ]]
+    [[ "$vcp_output" =~ ^VCP\ 10\ C\ ([0-9]+)\ 100$ ]] || return 1
+    ((${BASH_REMATCH[1]} <= 100))
 }
 
 is_wpctl_volume_output() {
