@@ -142,9 +142,43 @@ probe_wallpaper_colors() {
     echo "ok probeWallpaperColors"
 }
 
+probe_settings() {
+    require_command jq
+
+    local settings_file="/home/osso/.config/noctalia/settings.json"
+
+    jq -e '
+        .settingsVersion
+        and (.general | type == "object")
+        and (.ui | type == "object")
+        and (.bar | type == "object")
+        and (.bar.position | IN("top", "bottom", "left", "right"))
+        and (.bar.widgets | type == "object")
+        and (.bar.widgets.left | type == "array")
+        and (.bar.widgets.center | type == "array")
+        and (.bar.widgets.right | type == "array")
+        and ([
+            .bar.widgets.left[],
+            .bar.widgets.center[],
+            .bar.widgets.right[]
+        ] | all(.id and (.id | type == "string")))
+        and (.controlCenter.cards | type == "array")
+        and (.controlCenter.cards | length > 0)
+        and (.controlCenter.cards | all(.id and (.id | type == "string") and (.enabled | type == "boolean")))
+        and (.audio.volumeStep | type == "number")
+        and (.audio.volumeStep > 0)
+        and (.brightness.brightnessStep | type == "number")
+        and (.brightness.brightnessStep > 0)
+        and (.notifications.location | type == "string")
+        and (.wallpaper.directory | type == "string")
+    ' "$settings_file" >/dev/null
+
+    echo "ok probeSettings"
+}
+
 usage() {
     cat <<'USAGE'
-Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors]
+Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings]
 
 Runs read-only probes for services used by the local shell.
 USAGE
@@ -157,6 +191,7 @@ case "$probe" in
         probe_brightness
         probe_clipboard
         probe_wallpaper_colors
+        probe_settings
         ;;
     notifications)
         probe_notifications
@@ -172,6 +207,9 @@ case "$probe" in
         ;;
     wallpaper-colors)
         probe_wallpaper_colors
+        ;;
+    settings)
+        probe_settings
         ;;
     -h | --help | help)
         usage

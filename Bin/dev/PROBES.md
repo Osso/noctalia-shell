@@ -37,12 +37,15 @@ Bin/dev/service-probes.sh audio
 Bin/dev/service-probes.sh brightness
 Bin/dev/service-probes.sh clipboard
 Bin/dev/service-probes.sh wallpaper-colors
+Bin/dev/service-probes.sh settings
 ```
 
 These probes do not change shell state. They verify that the notification server,
 PipeWire volume state, internal brightness state, optional LG DDC state when the
 display is detected, clipboard MIME type list, and wallpaper/color cache are
-readable and coherent for this machine.
+readable and coherent for this machine. The settings probe validates the local
+settings file shape for the bar, control center, audio, brightness,
+notifications, and wallpaper sections that the shell reads at runtime.
 
 ## Visible Manual Notification Probes
 
