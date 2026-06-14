@@ -131,6 +131,11 @@ function testTimeNowPropertiesAreTypedDates() {
   }
 }
 
+function testEffectSourcePropertiesAreTyped() {
+  assertPropertyType("Modules/Cards/WeatherCard.qml", "source", "ShaderEffectSource");
+  assertPropertyType("Widgets/NDropShadow.qml", "source", "Item");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -147,6 +152,7 @@ const tests = [
   testContextMenuDelegatePopupIsTyped,
   testGeometryReferencesAreTypedItems,
   testTimeNowPropertiesAreTypedDates,
+  testEffectSourcePropertiesAreTyped,
 ];
 
 for (const test of tests) {

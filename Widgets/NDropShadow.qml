@@ -7,7 +7,7 @@ import qs.Services.Power
 Item {
   id: root
 
-  required property var source
+  required property Item source
 
   property bool autoPaddingEnabled: false
   property real shadowHorizontalOffset: Settings.data.general.shadowOffsetX

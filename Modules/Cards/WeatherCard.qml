@@ -50,7 +50,7 @@ NBox {
         // Snow fills the box, rain matches content margins
         anchors.margins: root.isSnowing ? root.border.width : Style.marginXL
 
-        property var source: ShaderEffectSource {
+        property ShaderEffectSource source: ShaderEffectSource {
           sourceItem: content
           hideSource: root.isRaining // Only hide for rain (distortion), show for snow
         }
