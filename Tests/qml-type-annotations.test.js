@@ -143,6 +143,13 @@ function testBarWidgetLoaderScreenIsTyped() {
   assertNoPropertyType(loaderFile, "widgetScreen", "var");
 }
 
+function testClockSettingsFocusedInputIsTyped() {
+  const settingsFile = "Modules/Panels/Settings/Bar/WidgetSettings/ClockSettings.qml";
+
+  assertPropertyType(settingsFile, "focusedInput", "NTextInput");
+  assertNoPropertyType(settingsFile, "focusedInput", "var");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -161,6 +168,7 @@ const tests = [
   testTimeNowPropertiesAreTypedDates,
   testEffectSourcePropertiesAreTyped,
   testBarWidgetLoaderScreenIsTyped,
+  testClockSettingsFocusedInputIsTyped,
 ];
 
 for (const test of tests) {

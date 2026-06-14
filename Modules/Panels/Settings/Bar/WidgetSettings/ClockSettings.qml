@@ -22,7 +22,7 @@ ColumnLayout {
   property string valueFormatVertical: widgetData.formatVertical !== undefined ? widgetData.formatVertical : widgetMetadata.formatVertical
 
   // Track the currently focused input field
-  property var focusedInput: null
+  property NTextInput focusedInput: null
   property int focusedLineIndex: -1
 
   readonly property date now: Time.now
