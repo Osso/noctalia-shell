@@ -1026,7 +1026,7 @@ probe_programs() {
         fi
     done
 
-    local required_available=(kitty ghostty gpu-screen-recorder wlsunset niri)
+    local required_available=(ghostty gpu-screen-recorder wlsunset niri)
     for program in "${required_available[@]}"; do
         if ! command -v "$program" >/dev/null 2>&1; then
             echo "expected local program is missing: $program" >&2

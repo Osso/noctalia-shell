@@ -658,4 +658,9 @@ if ! has_stale_launch_path "quickshell -p /home/osso/Repos/noctalia-shell" "/hom
     exit 1
 fi
 
+if [[ "$(declare -f probe_programs)" == *"local required_available=(kitty "* ]]; then
+    echo "disabled Kitty template still requires the kitty binary" >&2
+    exit 1
+fi
+
 echo "ok testServiceProbeParsing"
