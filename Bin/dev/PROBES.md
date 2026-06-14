@@ -63,14 +63,14 @@ live Quickshell IPC target/function availability for configured shortcuts,
 system/process-stat inputs, host
 identity/logo/fontconfig inputs, and wallpaper/color cache are readable and
 coherent for this machine. The settings probe validates the local settings file
-shape for
-the bar, control center, audio, brightness, notifications, and wallpaper sections
-that the shell reads at runtime. The state-cache probe validates persisted shell
-state, network cache, location weather cache, and notification history shape. The
-network probe validates NetworkManager connectivity, active Wi-Fi/ethernet state,
-and active Wi-Fi cache coherence. The power profile probe validates the active
-`powerprofilesctl` profile and available profile list used by
-`PowerProfileService`.
+shape and default/local section parity for the bar, control center, audio,
+brightness, notifications, wallpaper, OSD, templates, dock, launcher, screen
+recorder, network, night-light, and color-scheme sections that the shell reads at
+runtime. The state-cache probe validates persisted shell state, network cache,
+location weather cache, and notification history shape. The network probe
+validates NetworkManager connectivity, active Wi-Fi/ethernet state, and active
+Wi-Fi cache coherence. The power profile probe validates the active
+`powerprofilesctl` profile and available profile list used by `PowerProfileService`.
 
 ## Visible Manual Notification Probes
 

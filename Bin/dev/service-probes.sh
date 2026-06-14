@@ -188,6 +188,14 @@ probe_settings() {
     require_command jq
 
     local settings_file="/home/osso/.config/noctalia/settings.json"
+    local defaults_file="$repo_root/Assets/settings-default.json"
+
+    jq -e --slurp '
+        .[0] as $settings
+        | .[1] as $defaults
+        | (($settings | keys | sort) == ($defaults | keys | sort))
+        and (($settings.templates | keys | sort) == ($defaults.templates | keys | sort))
+    ' "$settings_file" "$defaults_file" >/dev/null
 
     jq -e '
         .settingsVersion
@@ -213,6 +221,41 @@ probe_settings() {
         and (.brightness.brightnessStep > 0)
         and (.notifications.location | type == "string")
         and (.wallpaper.directory | type == "string")
+        and (.osd | type == "object")
+        and (.osd.enabled | type == "boolean")
+        and (.osd.autoHideMs | type == "number")
+        and (.osd.autoHideMs > 0)
+        and (.osd.enabledTypes | type == "array")
+        and (.osd.enabledTypes | all(type == "number" and . >= 0 and . <= 3))
+        and (.osd.monitors | type == "array")
+        and (.osd.monitors | all(type == "string"))
+        and (.templates | type == "object")
+        and (.templates | to_entries | all(.value | type == "boolean"))
+        and (.dock | type == "object")
+        and (.dock.enabled | type == "boolean")
+        and (.dock.displayMode | IN("always_visible", "auto_hide", "dodges_windows"))
+        and (.dock.monitors | type == "array")
+        and (.dock.pinnedApps | type == "array")
+        and (.appLauncher | type == "object")
+        and (.appLauncher.position | IN("center", "top", "bottom"))
+        and (.appLauncher.viewMode | IN("list", "grid"))
+        and (.appLauncher.terminalCommand | type == "string")
+        and (.screenRecorder | type == "object")
+        and (.screenRecorder.frameRate | type == "number")
+        and (.screenRecorder.frameRate > 0)
+        and (.screenRecorder.videoCodec | type == "string")
+        and (.screenRecorder.audioCodec | type == "string")
+        and (.network.wifiEnabled | type == "boolean")
+        and (.nightLight | type == "object")
+        and (.nightLight.enabled | type == "boolean")
+        and (.nightLight.autoSchedule | type == "boolean")
+        and (.nightLight.nightTemp | test("^[0-9]+$"))
+        and (.nightLight.dayTemp | test("^[0-9]+$"))
+        and (.colorSchemes | type == "object")
+        and (.colorSchemes.darkMode | type == "boolean")
+        and (.colorSchemes.useWallpaperColors | type == "boolean")
+        and (.colorSchemes.schedulingMode | IN("off", "manual", "location"))
+        and (.colorSchemes.predefinedScheme | type == "string")
     ' "$settings_file" >/dev/null
 
     echo "ok probeSettings"
