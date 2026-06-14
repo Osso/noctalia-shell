@@ -1230,7 +1230,7 @@ find_host_logo_path() {
     local exts=(svg png)
     local ext size candidate
 
-    [[ "$logo_name" =~ ^[A-Za-z0-9._-]+$ ]] || return 1
+    [[ "$logo_name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || return 1
 
     for ext in "${exts[@]}"; do
         candidate="${usr_root}/share/pixmaps/${logo_name}.${ext}"
