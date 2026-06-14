@@ -30,7 +30,7 @@ Singleton {
   signal windowListChanged
 
   // Backend service loader
-  property var backend: null
+  property Item backend: null
 
   Component.onCompleted: {
     // Load display scales from ShellState

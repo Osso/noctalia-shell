@@ -192,6 +192,13 @@ function testLauncherPluginBackReferencesAreTyped() {
   }
 }
 
+function testCompositorBackendIsTyped() {
+  const compositorServiceFile = "Services/Compositor/CompositorService.qml";
+
+  assertPropertyType(compositorServiceFile, "backend", "Item");
+  assertNoPropertyType(compositorServiceFile, "backend", "var");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -216,6 +223,7 @@ const tests = [
   testLauncherActivePluginIsTyped,
   testDockCurrentContextMenuIsTyped,
   testLauncherPluginBackReferencesAreTyped,
+  testCompositorBackendIsTyped,
 ];
 
 for (const test of tests) {
