@@ -364,6 +364,16 @@ if read_os_release_value MISSING_KEY "$os_release_fixture" >/dev/null; then
     exit 1
 fi
 
+host_logo_fixture_root="$(mktemp -d)"
+trap 'rm -rf "$host_logo_fixture_root"' EXIT
+mkdir -p "$host_logo_fixture_root/usr/share/icons/hicolor/48x48/apps"
+mkdir -p "$host_logo_fixture_root/run/share/icons/hicolor/scalable/apps"
+touch "$host_logo_fixture_root/usr/share/icons/hicolor/48x48/apps/noctalia-test-logo.png"
+touch "$host_logo_fixture_root/run/share/icons/hicolor/scalable/apps/nix-test-logo.svg"
+
+assert_equal "$(find_host_logo_path noctalia-test-logo "$host_logo_fixture_root/usr" "$host_logo_fixture_root/run")" "$host_logo_fixture_root/usr/share/icons/hicolor/48x48/apps/noctalia-test-logo.png" "host logo hicolor app icon lookup failed"
+assert_equal "$(find_host_logo_path nix-test-logo "$host_logo_fixture_root/usr" "$host_logo_fixture_root/run")" "$host_logo_fixture_root/run/share/icons/hicolor/scalable/apps/nix-test-logo.svg" "host logo Nix profile icon lookup failed"
+
 ipc_fixture=$'target launcher\n  function toggle(): void\ntarget settings\n  function toggle(): void\n  function open(): void'
 
 has_ipc_target "$ipc_fixture" "launcher"

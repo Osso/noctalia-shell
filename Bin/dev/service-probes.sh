@@ -1191,19 +1191,21 @@ read_os_release_value() {
 
 find_host_logo_path() {
     local logo_name="$1"
+    local usr_root="${2:-/usr}"
+    local run_root="${3:-/run/current-system/sw}"
     local sizes=(512x512 256x256 128x128 64x64 48x48 32x32 24x24 22x22 16x16)
     local exts=(svg png)
     local ext size candidate
 
     for ext in "${exts[@]}"; do
-        candidate="/usr/share/pixmaps/${logo_name}.${ext}"
+        candidate="${usr_root}/share/pixmaps/${logo_name}.${ext}"
         if [[ -f "$candidate" ]]; then
             printf '%s\n' "$candidate"
             return 0
         fi
     done
 
-    candidate="/usr/share/icons/hicolor/scalable/apps/${logo_name}.svg"
+    candidate="${usr_root}/share/icons/hicolor/scalable/apps/${logo_name}.svg"
     if [[ -f "$candidate" ]]; then
         printf '%s\n' "$candidate"
         return 0
@@ -1211,7 +1213,7 @@ find_host_logo_path() {
 
     for size in "${sizes[@]}"; do
         for ext in "${exts[@]}"; do
-            candidate="/usr/share/icons/hicolor/${size}/apps/${logo_name}.${ext}"
+            candidate="${usr_root}/share/icons/hicolor/${size}/apps/${logo_name}.${ext}"
             if [[ -f "$candidate" ]]; then
                 printf '%s\n' "$candidate"
                 return 0
@@ -1219,7 +1221,7 @@ find_host_logo_path() {
         done
     done
 
-    candidate="/run/current-system/sw/share/icons/hicolor/scalable/apps/${logo_name}.svg"
+    candidate="${run_root}/share/icons/hicolor/scalable/apps/${logo_name}.svg"
     if [[ -f "$candidate" ]]; then
         printf '%s\n' "$candidate"
         return 0
@@ -1227,7 +1229,7 @@ find_host_logo_path() {
 
     for size in "${sizes[@]}"; do
         for ext in "${exts[@]}"; do
-            candidate="/run/current-system/sw/share/icons/hicolor/${size}/apps/${logo_name}.${ext}"
+            candidate="${run_root}/share/icons/hicolor/${size}/apps/${logo_name}.${ext}"
             if [[ -f "$candidate" ]]; then
                 printf '%s\n' "$candidate"
                 return 0
@@ -1237,9 +1239,9 @@ find_host_logo_path() {
 
     for ext in "${exts[@]}"; do
         for candidate in \
-            "/usr/share/icons/${logo_name}.${ext}" \
-            "/usr/share/icons/${logo_name}/${logo_name}.${ext}" \
-            "/usr/share/icons/${logo_name}/apps/${logo_name}.${ext}"; do
+            "${usr_root}/share/icons/${logo_name}.${ext}" \
+            "${usr_root}/share/icons/${logo_name}/${logo_name}.${ext}" \
+            "${usr_root}/share/icons/${logo_name}/apps/${logo_name}.${ext}"; do
             if [[ -f "$candidate" ]]; then
                 printf '%s\n' "$candidate"
                 return 0
