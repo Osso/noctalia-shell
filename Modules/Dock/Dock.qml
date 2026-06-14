@@ -85,7 +85,7 @@ Loader {
       property bool dockLoaded: !autoHide // Start loaded if autoHide is off
 
       // Track the currently open context menu
-      property var currentContextMenu: null
+      property DockMenu currentContextMenu: null
 
       // Combined model of running apps and pinned apps
       property var dockApps: []

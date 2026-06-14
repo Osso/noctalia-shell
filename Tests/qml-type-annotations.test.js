@@ -171,6 +171,13 @@ function testLauncherActivePluginIsTyped() {
   assertNoPropertyType(launcherFile, "activePlugin", "var");
 }
 
+function testDockCurrentContextMenuIsTyped() {
+  const dockFile = "Modules/Dock/Dock.qml";
+
+  assertPropertyType(dockFile, "currentContextMenu", "DockMenu");
+  assertNoPropertyType(dockFile, "currentContextMenu", "var");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -193,6 +200,7 @@ const tests = [
   testMangoPatternContainerIsTyped,
   testPopupMenuWindowContentItemIsTyped,
   testLauncherActivePluginIsTyped,
+  testDockCurrentContextMenuIsTyped,
 ];
 
 for (const test of tests) {
