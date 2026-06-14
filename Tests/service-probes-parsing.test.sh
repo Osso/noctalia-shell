@@ -62,6 +62,13 @@ ddc_detect_similar_lg_model='Display 1
 
 assert_equal "$(find_lg_ultrawide_bus "$ddc_detect_similar_lg_model")" "" "similar LG display model must not select the ULTRAWIDE DDC bus"
 
+is_quickshell_notification_server_info "('quickshell', 'quickshell', '', '1.2')"
+
+if is_quickshell_notification_server_info "('not-quickshell', 'other', '', '1.0')"; then
+    echo "non-quickshell notification server info was accepted" >&2
+    exit 1
+fi
+
 is_ddc_brightness_output "VCP 10 C 25 100"
 
 if is_ddc_brightness_output "VCP 10 C unsupported"; then

@@ -43,6 +43,12 @@ is_wpctl_volume_output() {
     [[ "$volume_output" =~ ^Volume:\ [0-9]+(\.[0-9]+)?( \[MUTED\])?$ ]]
 }
 
+is_quickshell_notification_server_info() {
+    local info="$1"
+
+    [[ "$info" =~ ^\(\'quickshell\',\ \'quickshell\',\ \'[^\']*\',\ \'[^\']*\'\)$ ]]
+}
+
 has_supported_clipboard_mime() {
     local mime_types="$1"
     local mime_type
@@ -406,7 +412,7 @@ probe_notifications() {
         --object-path /org/freedesktop/Notifications \
         --method org.freedesktop.Notifications.GetCapabilities)"
 
-    if [[ "$info" != *"quickshell"* ]]; then
+    if ! is_quickshell_notification_server_info "$info"; then
         echo "notification server is not quickshell: $info" >&2
         exit 1
     fi
