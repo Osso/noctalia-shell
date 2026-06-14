@@ -24,7 +24,7 @@ ColumnLayout {
   }
 
   Connections {
-    target: AudioService.sink?.audio ? AudioService.sink?.audio : null
+    target: AudioService.sink && AudioService.sink.audio ? AudioService.sink.audio : null
     function onVolumeChanged() {
       localVolume = AudioService.volume;
     }
@@ -200,7 +200,7 @@ ColumnLayout {
           ButtonGroup.group: sinks
           required property PwNode modelData
           text: modelData.description
-          checked: AudioService.sink?.id === modelData.id
+          checked: AudioService.sink && AudioService.sink.id === modelData.id
           onClicked: {
             AudioService.setAudioSink(modelData);
             localVolume = AudioService.volume;
@@ -232,7 +232,7 @@ ColumnLayout {
           ButtonGroup.group: sources
           required property PwNode modelData
           text: modelData.description
-          checked: AudioService.source?.id === modelData.id
+          checked: AudioService.source && AudioService.source.id === modelData.id
           onClicked: AudioService.setAudioSource(modelData)
           Layout.fillWidth: true
         }

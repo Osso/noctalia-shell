@@ -23,9 +23,6 @@ Modules/Panels/Audio/AudioPanel.qml
 Modules/Panels/ControlCenter/ControlCenterPanel.qml
 Modules/Panels/Settings/Bar/WidgetSettings/CustomButtonSettings.qml
 Modules/Panels/Settings/ControlCenter/WidgetSettings/CustomButtonSettings.qml
-Modules/Panels/Settings/SettingsPanel.qml
-Modules/Panels/Settings/Tabs/AudioTab.qml
-Modules/Panels/Settings/Tabs/WallpaperTab.qml
 Modules/Panels/Tray/TrayDrawerPanel.qml
 Modules/Panels/VPN/VPNConnectionItem.qml
 Modules/Panels/Wallpaper/WallpaperPanel.qml

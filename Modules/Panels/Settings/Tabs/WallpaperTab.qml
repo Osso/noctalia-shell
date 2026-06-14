@@ -71,7 +71,11 @@ ColumnLayout {
       NIconButton {
         icon: "wallpaper-selector"
         tooltipText: I18n.tr("settings.wallpaper.settings.selector.tooltip")
-        onClicked: PanelService.getPanel("wallpaperPanel", screen)?.toggle()
+        onClicked: {
+          const panel = PanelService.getPanel("wallpaperPanel", screen);
+          if (panel)
+            panel.toggle();
+        }
       }
     }
 

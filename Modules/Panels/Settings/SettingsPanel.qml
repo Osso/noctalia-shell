@@ -555,14 +555,14 @@ SmartPanel {
 
               // Main icon
               NIcon {
-                icon: root.tabsModel[currentTabIndex]?.icon
+                icon: root.tabsModel[currentTabIndex] ? root.tabsModel[currentTabIndex].icon : ""
                 color: Color.mPrimary
                 pointSize: Style.fontSizeXXL
               }
 
               // Main title
               NText {
-                text: I18n.tr(root.tabsModel[currentTabIndex]?.label) || ""
+                text: root.tabsModel[currentTabIndex] ? I18n.tr(root.tabsModel[currentTabIndex].label) || "" : ""
                 pointSize: Style.fontSizeXL
                 font.weight: Style.fontWeightBold
                 color: Color.mPrimary
@@ -625,7 +625,7 @@ SmartPanel {
 
                       Loader {
                         active: true
-                        sourceComponent: root.tabsModel[index]?.source
+                        sourceComponent: root.tabsModel[index] ? root.tabsModel[index].source : null
                         width: scrollView.availableWidth
                       }
                     }
