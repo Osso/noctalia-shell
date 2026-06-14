@@ -1,5 +1,6 @@
 pragma Singleton
 
+import QtQuick
 import Quickshell
 import qs.Commons
 
@@ -7,7 +8,7 @@ Singleton {
   id: root
 
   // A ref. to the lockScreen, so it's accessible from anywhere.
-  property var lockScreen: null
+  property Loader lockScreen: null
 
   // Panels
   property var registeredPanels: ({})
