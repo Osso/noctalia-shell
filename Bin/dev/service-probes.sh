@@ -420,9 +420,59 @@ probe_bluetooth() {
     echo "ok probeBluetooth"
 }
 
+probe_vpn() {
+    require_command nmcli
+
+    local rows vpn_count active_count
+    rows="$(nmcli -t -f NAME,UUID,TYPE,DEVICE connection show)"
+    vpn_count=0
+    active_count=0
+
+    while IFS= read -r row; do
+        if [[ -z "$row" ]]; then
+            continue
+        fi
+
+        local device remaining type uuid name
+        device="${row##*:}"
+        remaining="${row%:*}"
+        type="${remaining##*:}"
+        remaining="${remaining%:*}"
+        uuid="${remaining##*:}"
+        name="${remaining%:*}"
+
+        if [[ "$type" != "vpn" && "$type" != "wireguard" ]]; then
+            continue
+        fi
+
+        vpn_count=$((vpn_count + 1))
+
+        if [[ -z "$name" ]]; then
+            echo "VPN connection row is missing a name: $row" >&2
+            exit 1
+        fi
+
+        if [[ ! "$uuid" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
+            echo "VPN connection row has malformed UUID: $row" >&2
+            exit 1
+        fi
+
+        if [[ -n "$device" && "$device" != "--" ]]; then
+            active_count=$((active_count + 1))
+        fi
+    done <<<"$rows"
+
+    if [[ "$vpn_count" -eq 0 ]]; then
+        echo "no NetworkManager VPN or WireGuard profiles found" >&2
+        exit 1
+    fi
+
+    echo "ok probeVpn ($vpn_count profiles, $active_count active)"
+}
+
 usage() {
     cat <<'USAGE'
-Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth]
+Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth|vpn]
 
 Runs read-only probes for services used by the local shell.
 USAGE
@@ -441,6 +491,7 @@ case "$probe" in
         probe_power_profile
         probe_battery
         probe_bluetooth
+        probe_vpn
         ;;
     notifications)
         probe_notifications
@@ -474,6 +525,9 @@ case "$probe" in
         ;;
     bluetooth)
         probe_bluetooth
+        ;;
+    vpn)
+        probe_vpn
         ;;
     -h | --help | help)
         usage
