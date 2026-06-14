@@ -273,7 +273,7 @@ has_ipc_target_function() {
             continue
         fi
 
-        if [[ "$in_target" == true && "$line" =~ ^[[:space:]]+function[[:space:]]+$function_name\( ]]; then
+        if [[ "$in_target" == true && "$line" =~ ^[[:blank:]]+function[[:blank:]]+$function_name\(\):[[:blank:]]+void[[:blank:]]*$ ]]; then
             return 0
         fi
     done <<<"$ipc_output"
