@@ -240,6 +240,11 @@ if is_active_nm_device "   "; then
     exit 1
 fi
 
+if is_active_nm_device "wg0:extra"; then
+    echo "malformed NetworkManager active device was accepted" >&2
+    exit 1
+fi
+
 is_proc_cpu_aggregate_row "cpu  123 0 456 789 0 0 0 0 0 0"
 has_meminfo_kb_row $'MemTotal:       32768000 kB\nMemAvailable:   12345678 kB' "MemTotal"
 is_ps_process_row " 1234  1.5  0.4  65536 quickshell"
