@@ -61,6 +61,25 @@ has_lock_key_state_rows() {
         && [[ "$state_output" =~ (^|$'\n')scroll:[01]($'\n'|$) ]]
 }
 
+is_bluetooth_controller_row() {
+    local controller_row="$1"
+
+    [[ "$controller_row" =~ ^Controller[[:space:]][0-9A-Fa-f:]{17}[[:space:]] ]]
+}
+
+has_bluetooth_toggle_state() {
+    local controller_info="$1"
+
+    [[ "$controller_info" =~ Powered:[[:space:]]+(yes|no) ]] \
+        && [[ "$controller_info" =~ Discovering:[[:space:]]+(yes|no) ]]
+}
+
+is_bluetooth_device_row() {
+    local device_row="$1"
+
+    [[ "$device_row" =~ ^Device[[:space:]][0-9A-Fa-f:]{17}[[:space:]] ]]
+}
+
 probe_notifications() {
     require_command gdbus
 
@@ -531,27 +550,22 @@ probe_bluetooth() {
     controller_info="$(bluetoothctl show)"
     connected_devices="$(bluetoothctl devices Connected)"
 
-    if [[ ! "$controllers" =~ ^Controller[[:space:]][0-9A-Fa-f:]{17}[[:space:]].*\[default\] ]]; then
+    if [[ "$controllers" != *"[default]"* ]] || ! is_bluetooth_controller_row "$controllers"; then
         echo "default Bluetooth controller was not found: $controllers" >&2
         exit 1
     fi
 
-    if [[ ! "$controller_info" =~ ^Controller[[:space:]][0-9A-Fa-f:]{17}[[:space:]] ]]; then
+    if ! is_bluetooth_controller_row "$controller_info"; then
         echo "Bluetooth controller details are missing" >&2
         exit 1
     fi
 
-    if [[ ! "$controller_info" =~ Powered:[[:space:]]+(yes|no) ]]; then
-        echo "Bluetooth powered state is missing" >&2
+    if ! has_bluetooth_toggle_state "$controller_info"; then
+        echo "Bluetooth powered/discovering state is missing or unexpected" >&2
         exit 1
     fi
 
-    if [[ ! "$controller_info" =~ Discovering:[[:space:]]+(yes|no) ]]; then
-        echo "Bluetooth discovering state is missing" >&2
-        exit 1
-    fi
-
-    if [[ -n "$connected_devices" && ! "$connected_devices" =~ ^Device[[:space:]][0-9A-Fa-f:]{17}[[:space:]] ]]; then
+    if [[ -n "$connected_devices" ]] && ! is_bluetooth_device_row "$connected_devices"; then
         echo "Bluetooth connected device list is malformed: $connected_devices" >&2
         exit 1
     fi

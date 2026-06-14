@@ -67,4 +67,23 @@ if has_lock_key_state_rows $'caps:0\nnum:1'; then
     exit 1
 fi
 
+is_bluetooth_controller_row "Controller AA:BB:CC:DD:EE:FF aso [default]"
+has_bluetooth_toggle_state $'Powered: yes\nDiscovering: no'
+is_bluetooth_device_row "Device 11:22:33:44:55:66 Keyboard"
+
+if is_bluetooth_controller_row "Controller missing-address"; then
+    echo "invalid Bluetooth controller row was accepted" >&2
+    exit 1
+fi
+
+if has_bluetooth_toggle_state $'Powered: maybe\nDiscovering: no'; then
+    echo "invalid Bluetooth toggle state was accepted" >&2
+    exit 1
+fi
+
+if is_bluetooth_device_row "Device not-a-mac Keyboard"; then
+    echo "invalid Bluetooth device row was accepted" >&2
+    exit 1
+fi
+
 echo "ok testServiceProbeParsing"
