@@ -15,7 +15,7 @@ NBox {
   implicitHeight: calendarContent.implicitHeight + Style.marginM * 2
 
   // Internal state - independent from header
-  readonly property var now: Time.now
+  readonly property date now: Time.now
   property int calendarMonth: now.getMonth()
   property int calendarYear: now.getFullYear()
   readonly property int firstDayOfWeek: Settings.data.location.firstDayOfWeek === -1 ? I18n.locale.firstDayOfWeek : Settings.data.location.firstDayOfWeek

@@ -25,7 +25,7 @@ ColumnLayout {
   property var focusedInput: null
   property int focusedLineIndex: -1
 
-  readonly property var now: Time.now
+  readonly property date now: Time.now
 
   function saveSettings() {
     var settings = Object.assign({}, widgetData || {});

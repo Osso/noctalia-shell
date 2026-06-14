@@ -17,7 +17,7 @@ Rectangle {
   color: Color.mPrimary
 
   // Internal state
-  readonly property var now: Time.now
+  readonly property date now: Time.now
   readonly property bool weatherReady: Settings.data.location.weatherEnabled && (LocationService.data.weather !== null)
 
   // Expose current month/year for potential synchronization with CalendarMonthCard

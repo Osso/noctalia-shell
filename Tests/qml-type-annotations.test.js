@@ -17,6 +17,13 @@ function assertPropertyType(relativePath, propertyName, expectedType) {
   assert.match(source, declaration, `${relativePath} must declare ${propertyName} as ${expectedType}`);
 }
 
+function assertNoPropertyType(relativePath, propertyName, unexpectedType) {
+  const source = readQml(relativePath);
+  const declaration = new RegExp(`\\bproperty\\s+${unexpectedType}\\s+${propertyName}\\b`);
+
+  assert.doesNotMatch(source, declaration, `${relativePath} must not declare ${propertyName} as ${unexpectedType}`);
+}
+
 function testSliderCutoutColorsAreTyped() {
   const sliderFiles = [
     "Widgets/NSlider.qml",
@@ -108,6 +115,22 @@ function testGeometryReferencesAreTypedItems() {
   assertPropertyType("Modules/MainScreen/Backgrounds/PanelBackground.qml", "panelBg", "Item");
 }
 
+function testTimeNowPropertiesAreTypedDates() {
+  const clockFiles = [
+    "Modules/Bar/Widgets/Clock.qml",
+    "Modules/Cards/CalendarHeaderCard.qml",
+    "Modules/Cards/CalendarMonthCard.qml",
+    "Modules/LockScreen/LockScreen.qml",
+    "Modules/Panels/Settings/Bar/WidgetSettings/ClockSettings.qml",
+    "Widgets/NClock.qml",
+  ];
+
+  for (const clockFile of clockFiles) {
+    assertPropertyType(clockFile, "now", "date");
+    assertNoPropertyType(clockFile, "now", "var");
+  }
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -123,6 +146,7 @@ const tests = [
   testPanelServiceOpenedPanelIsTyped,
   testContextMenuDelegatePopupIsTyped,
   testGeometryReferencesAreTypedItems,
+  testTimeNowPropertiesAreTypedDates,
 ];
 
 for (const test of tests) {

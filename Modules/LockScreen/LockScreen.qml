@@ -61,7 +61,7 @@ Loader {
         locked: root.active
 
         WlSessionLockSurface {
-          readonly property var now: Time.now
+          readonly property date now: Time.now
 
           Item {
             id: batteryIndicator

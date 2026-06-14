@@ -8,7 +8,7 @@ import qs.Widgets
 Item {
   id: root
 
-  property var now: Time.now
+  property date now: Time.now
 
   // Style: "analog" or "digital"
   property string clockStyle: "analog"
@@ -97,7 +97,7 @@ Item {
 
   // Analog Clock Component
   component NClockAnalog: Item {
-    property var now
+    property date now
     property color backgroundColor: Color.mPrimary
     property color clockColor: Color.mOnPrimary
     property color secondHandColor: Color.mError
@@ -197,7 +197,7 @@ Item {
 
   // Digital Clock Component
   component NClockDigital: Item {
-    property var now
+    property date now
     property color backgroundColor: Color.mPrimary
     property color clockColor: Color.mOnPrimary
     property color progressColor: Color.mError
