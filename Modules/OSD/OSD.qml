@@ -202,7 +202,7 @@ Variants {
     }
 
     function hideOSD() {
-      if (root.item?.osdItem) {
+      if (root.item && root.item.osdItem) {
         root.item.osdItem.hideImmediately();
       } else if (root.active) {
         root.active = false;
@@ -302,8 +302,11 @@ Variants {
       id: panel
       screen: modelData
 
+      readonly property string screenName: screen ? screen.name : "unknown"
+      readonly property var osdSettings: Settings.data.osd || {}
+
       // Position configuration
-      readonly property string location: Settings.data.osd?.location || "top_right"
+      readonly property string location: osdSettings.location || "top_right"
       readonly property bool isTop: location === "top" || location.startsWith("top")
       readonly property bool isBottom: location === "bottom" || location.startsWith("bottom")
       readonly property bool isLeft: location.includes("_left") || location === "left"
@@ -351,9 +354,9 @@ Variants {
       implicitHeight: verticalMode ? (isShortMode ? shortVHeight : longVHeight) : longHHeight
       color: Color.transparent
 
-      WlrLayershell.namespace: "noctalia-osd-" + (screen?.name || "unknown")
+      WlrLayershell.namespace: "noctalia-osd-" + screenName
       WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-      WlrLayershell.layer: Settings.data.osd?.overlayLayer ? WlrLayer.Overlay : WlrLayer.Top
+      WlrLayershell.layer: osdSettings.overlayLayer ? WlrLayer.Overlay : WlrLayer.Top
       WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
       Item {

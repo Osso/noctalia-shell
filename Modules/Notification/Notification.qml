@@ -44,15 +44,18 @@ Variants {
       id: notifWindow
       screen: modelData
 
-      WlrLayershell.namespace: "noctalia-notifications-" + (screen?.name || "unknown")
-      WlrLayershell.layer: (Settings.data.notifications?.overlayLayer) ? WlrLayer.Overlay : WlrLayer.Top
+      readonly property string screenName: screen ? screen.name : "unknown"
+      readonly property var notificationSettings: Settings.data.notifications || {}
+
+      WlrLayershell.namespace: "noctalia-notifications-" + screenName
+      WlrLayershell.layer: notificationSettings.overlayLayer ? WlrLayer.Overlay : WlrLayer.Top
       WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
       WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
       color: Color.transparent
 
       // Parse location setting
-      readonly property string location: Settings.data.notifications?.location || "top_right"
+      readonly property string location: notificationSettings.location || "top_right"
       readonly property bool isTop: location.startsWith("top")
       readonly property bool isBottom: location.startsWith("bottom")
       readonly property bool isLeft: location.endsWith("_left")
@@ -134,14 +137,14 @@ Variants {
           if (notificationRepeater) {
             for (var i = 0; i < notificationRepeater.count; i++) {
               var item = notificationRepeater.itemAt(i);
-              if (item?.notificationId === notificationId) {
+              if (item && item.notificationId === notificationId) {
                 delegate = item;
                 break;
               }
             }
           }
 
-          if (delegate?.animateOut) {
+          if (delegate && delegate.animateOut) {
             delegate.animateOut();
           } else {
             NotificationService.dismissActiveNotification(notificationId);

@@ -105,7 +105,7 @@ PopupWindow {
     }
 
     // Create a menu entry for each app-specific action definied in its .desktop file
-    if (typeof DesktopEntries !== 'undefined' && DesktopEntries.byId && root.toplevel?.appId) {
+    if (typeof DesktopEntries !== 'undefined' && DesktopEntries.byId && root.toplevel && root.toplevel.appId) {
       const appId = root.toplevel.appId;
       const entry = (DesktopEntries.heuristicLookup) ? DesktopEntries.heuristicLookup(appId) : DesktopEntries.byId(appId);
       if (entry != null) {
@@ -243,14 +243,14 @@ PopupWindow {
   }
 
   function handleFocus() {
-    if (root.toplevel?.activate) {
+    if (root.toplevel && root.toplevel.activate) {
       root.toplevel.activate();
     }
     root.requestClose();
   }
 
   function handlePin() {
-    if (root.toplevel?.appId) {
+    if (root.toplevel && root.toplevel.appId) {
       root.toggleAppPin(root.toplevel.appId);
     }
     root.requestClose();
