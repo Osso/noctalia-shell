@@ -49,6 +49,12 @@ is_quickshell_notification_server_info() {
     [[ "$info" =~ ^\(\'quickshell\',\ \'quickshell\',\ \'[^\']*\',\ \'[^\']*\'\)$ ]]
 }
 
+has_notification_capabilities() {
+    local capabilities="$1"
+
+    [[ "$capabilities" == *"'body'"* && "$capabilities" == *"'actions'"* ]]
+}
+
 has_supported_clipboard_mime() {
     local mime_types="$1"
     local mime_type
@@ -417,7 +423,7 @@ probe_notifications() {
         exit 1
     fi
 
-    if [[ "$capabilities" != *"body"* || "$capabilities" != *"actions"* ]]; then
+    if ! has_notification_capabilities "$capabilities"; then
         echo "notification capabilities are missing body/actions: $capabilities" >&2
         exit 1
     fi

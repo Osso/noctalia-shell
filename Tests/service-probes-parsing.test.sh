@@ -69,6 +69,13 @@ if is_quickshell_notification_server_info "('not-quickshell', 'other', '', '1.0'
     exit 1
 fi
 
+has_notification_capabilities "(['body', 'actions', 'icon-static'],)"
+
+if has_notification_capabilities "(['nobody', 'transactions'],)"; then
+    echo "notification capabilities substring false positive was accepted" >&2
+    exit 1
+fi
+
 is_ddc_brightness_output "VCP 10 C 25 100"
 
 if is_ddc_brightness_output "VCP 10 C unsupported"; then
