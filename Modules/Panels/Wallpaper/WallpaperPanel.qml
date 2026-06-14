@@ -37,7 +37,7 @@ SmartPanel {
   panelAnchorTop: panelPosition.startsWith("top_")
 
   // Store direct reference to content for instant access
-  property var contentItem: null
+  property Item contentItem: null
 
   function currentWallpaperView() {
     if (!contentItem) {

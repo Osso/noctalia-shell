@@ -67,6 +67,16 @@ function testSmartPanelButtonItemIsTyped() {
   assertPropertyType("Modules/MainScreen/SmartPanel.qml", "buttonItem", "Item");
 }
 
+function testPanelContentItemsAreTyped() {
+  const contentItemFiles = [
+    "Modules/Panels/Wallpaper/WallpaperPanel.qml",
+  ];
+
+  for (const contentItemFile of contentItemFiles) {
+    assertPropertyType(contentItemFile, "contentItem", "Item");
+  }
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -74,6 +84,7 @@ const tests = [
   testTooltipServiceCallsUseTargetItemFirst,
   testTooltipServiceTracksTypedTooltipInstances,
   testSmartPanelButtonItemIsTyped,
+  testPanelContentItemsAreTyped,
 ];
 
 for (const test of tests) {
