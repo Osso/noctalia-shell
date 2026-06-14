@@ -268,6 +268,13 @@ function testTrayMenuItemIsTyped() {
   assertNoPropertyType(trayMenuFile, "trayItem", "var");
 }
 
+function testTrayMenuSubMenuIsTyped() {
+  const trayMenuFile = "Modules/Bar/Extras/TrayMenu.qml";
+
+  assertPropertyType(trayMenuFile, "subMenu", "TrayMenu");
+  assertNoPropertyType(trayMenuFile, "subMenu", "var");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -299,6 +306,7 @@ const tests = [
   testUPowerBatteryReferencesAreTyped,
   testAudioNodeHandlesAreTyped,
   testTrayMenuItemIsTyped,
+  testTrayMenuSubMenuIsTyped,
 ];
 
 for (const test of tests) {

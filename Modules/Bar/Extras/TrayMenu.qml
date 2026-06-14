@@ -174,7 +174,7 @@ PopupWindow {
           }
 
           color: Color.transparent
-          property var subMenu: null
+          property TrayMenu subMenu: null
 
           NDivider {
             anchors.centerIn: parent
