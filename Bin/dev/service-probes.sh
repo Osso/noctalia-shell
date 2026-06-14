@@ -193,8 +193,8 @@ has_upower_battery_state() {
 has_physical_upower_battery_details() {
     local battery_info="$1"
 
-    [[ "$battery_info" =~ (^|$'\n')[[:space:]]*native-path: ]] \
-        && [[ "$battery_info" =~ (^|$'\n')[[:space:]]*rechargeable:[[:space:]]+yes[[:space:]]*($'\n'|$) ]]
+    [[ "$battery_info" =~ (^|$'\n')[[:blank:]]*native-path:[[:blank:]]+[^[:space:]].*($'\n'|$) ]] \
+        && [[ "$battery_info" =~ (^|$'\n')[[:blank:]]*rechargeable:[[:blank:]]+yes[[:blank:]]*($'\n'|$) ]]
 }
 
 is_network_connection_type() {
