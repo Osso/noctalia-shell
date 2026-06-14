@@ -124,6 +124,11 @@ if has_power_profile_entries $'performance:\n* balanced:'; then
     exit 1
 fi
 
+if has_power_profile_entries $'notperformance:\n* balanced:\npower-saver:'; then
+    echo "prefixed power profile name was accepted" >&2
+    exit 1
+fi
+
 if has_active_power_profile_marker $'performance:\nbalanced:\npower-saver:' "balanced"; then
     echo "unmarked active power profile was accepted" >&2
     exit 1

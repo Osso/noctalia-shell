@@ -100,19 +100,37 @@ is_power_profile_name() {
     [[ "$profile" == "performance" || "$profile" == "balanced" || "$profile" == "power-saver" ]]
 }
 
+has_power_profile_row() {
+    local profiles="$1"
+    local profile="$2"
+    local line
+
+    while IFS= read -r line; do
+        line="${line#"${line%%[![:space:]]*}"}"
+        if [[ "$line" == "* "* ]]; then
+            line="${line#\* }"
+        fi
+        if [[ "$line" == "$profile:" ]]; then
+            return 0
+        fi
+    done <<<"$profiles"
+
+    return 1
+}
+
 has_power_profile_entries() {
     local profiles="$1"
 
-    [[ "$profiles" == *"performance:"* ]] \
-        && [[ "$profiles" == *"balanced:"* ]] \
-        && [[ "$profiles" == *"power-saver:"* ]]
+    has_power_profile_row "$profiles" "performance" \
+        && has_power_profile_row "$profiles" "balanced" \
+        && has_power_profile_row "$profiles" "power-saver"
 }
 
 has_active_power_profile_marker() {
     local profiles="$1"
     local current="$2"
 
-    [[ "$profiles" == *"* $current:"* ]]
+    [[ "$profiles" =~ (^|$'\n')[[:space:]]*[*][[:space:]]+$current: ]]
 }
 
 is_vpn_connection_type() {
