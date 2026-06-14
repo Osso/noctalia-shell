@@ -227,7 +227,7 @@ has_connected_wifi_device_status() {
 is_passwd_row() {
     local passwd_row="$1"
 
-    [[ "$passwd_row" =~ ^[^:]+:[^:]*:[0-9]+:[0-9]+:[^:]*:[^:]+:[^:]+$ ]]
+    [[ "$passwd_row" =~ ^[^:]+:[^:]*:[0-9]+:[0-9]+:[^:]*:/[^:]+:/[^:]+$ ]]
 }
 
 has_readable_font_family() {
