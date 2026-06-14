@@ -38,9 +38,11 @@ function testOsdBrightnessHandlerRejectsInvalidValues() {
   const source = readQml("Modules/OSD/OSD.qml");
   const body = extractFunctionBody(source, "onBrightnessChanged");
 
-  assert.match(body, /BrightnessParsing\.isValidBrightnessRatio\(newBrightness\)/);
+  assert.match(body, /BrightnessParsing\.isValidBrightnessRatio\(normalizedBrightness\)/);
+  assert.match(body, /newBrightness === null \|\| newBrightness === undefined/);
+  assert.match(body, /const normalizedBrightness = Number\(newBrightness\)/);
   assert.match(body, /return;/);
-  assert.match(body, /root\.currentBrightness = newBrightness/);
+  assert.match(body, /root\.currentBrightness = normalizedBrightness/);
 }
 
 const tests = [

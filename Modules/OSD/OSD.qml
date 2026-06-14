@@ -163,11 +163,16 @@ Variants {
     }
 
     function onBrightnessChanged(newBrightness) {
-      if (!BrightnessParsing.isValidBrightnessRatio(newBrightness)) {
+      if (newBrightness === null || newBrightness === undefined) {
         return;
       }
 
-      root.currentBrightness = newBrightness;
+      const normalizedBrightness = Number(newBrightness);
+      if (!BrightnessParsing.isValidBrightnessRatio(normalizedBrightness)) {
+        return;
+      }
+
+      root.currentBrightness = normalizedBrightness;
       showOSD(OSD.Type.Brightness);
     }
 
