@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import qs.Commons
+import qs.Modules.MainScreen
 
 Singleton {
   id: root
@@ -12,7 +13,7 @@ Singleton {
 
   // Panels
   property var registeredPanels: ({})
-  property var openedPanel: null
+  property SmartPanel openedPanel: null
   signal willOpen
   signal didClose
 

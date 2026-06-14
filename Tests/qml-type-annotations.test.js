@@ -93,6 +93,10 @@ function testComboBoxDelegateParentIsTyped() {
   assertPropertyType("Widgets/NComboBox.qml", "parentComboBox", "ComboBox");
 }
 
+function testPanelServiceOpenedPanelIsTyped() {
+  assertPropertyType("Services/UI/PanelService.qml", "openedPanel", "SmartPanel");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -105,6 +109,7 @@ const tests = [
   testNotificationServerInstanceIsTyped,
   testSettingsPanelActiveScrollViewIsTyped,
   testComboBoxDelegateParentIsTyped,
+  testPanelServiceOpenedPanelIsTyped,
 ];
 
 for (const test of tests) {
