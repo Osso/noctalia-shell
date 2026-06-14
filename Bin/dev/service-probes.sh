@@ -166,6 +166,13 @@ is_active_nm_device() {
     [[ "$device" =~ ^[^:[:space:]]+$ && "$device" != "--" ]]
 }
 
+is_network_manager_connected_state() {
+    local state="$1"
+    local connected_variant_regex='^connected[[:space:]]+\([^)]+\)$'
+
+    [[ "$state" == "connecting" || "$state" == "connected" || "$state" =~ $connected_variant_regex ]]
+}
+
 is_proc_cpu_aggregate_row() {
     local cpu_line="$1"
 
@@ -708,7 +715,7 @@ probe_network() {
     active_connections="$(nmcli -t -f NAME,TYPE,DEVICE connection show --active)"
     device_status="$(nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device status)"
 
-    if [[ "$state" != "connected" && "$state" != "connecting" ]]; then
+    if ! is_network_manager_connected_state "$state"; then
         echo "NetworkManager is not connected or connecting: $state" >&2
         exit 1
     fi

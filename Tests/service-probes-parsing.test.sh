@@ -221,6 +221,9 @@ is_vpn_connection_type "vpn"
 is_vpn_connection_type "wireguard"
 is_nm_uuid "123e4567-e89b-12d3-a456-426614174000"
 is_active_nm_device "wg0"
+is_network_manager_connected_state "connected"
+is_network_manager_connected_state "connected (site only)"
+is_network_manager_connected_state "connecting"
 
 if is_vpn_connection_type "802-11-wireless"; then
     echo "non-VPN NetworkManager type was accepted" >&2
@@ -249,6 +252,16 @@ fi
 
 if is_active_nm_device "wg0:extra"; then
     echo "malformed NetworkManager active device was accepted" >&2
+    exit 1
+fi
+
+if is_network_manager_connected_state "disconnected"; then
+    echo "disconnected NetworkManager state was accepted" >&2
+    exit 1
+fi
+
+if is_network_manager_connected_state "connectedness"; then
+    echo "malformed NetworkManager connected state was accepted" >&2
     exit 1
 fi
 
