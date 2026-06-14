@@ -97,6 +97,10 @@ function testPanelServiceOpenedPanelIsTyped() {
   assertPropertyType("Services/UI/PanelService.qml", "openedPanel", "SmartPanel");
 }
 
+function testContextMenuDelegatePopupIsTyped() {
+  assertPropertyType("Widgets/NContextMenu.qml", "popup", "Popup");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -110,6 +114,7 @@ const tests = [
   testSettingsPanelActiveScrollViewIsTyped,
   testComboBoxDelegateParentIsTyped,
   testPanelServiceOpenedPanelIsTyped,
+  testContextMenuDelegatePopupIsTyped,
 ];
 
 for (const test of tests) {

@@ -41,7 +41,7 @@ Popup {
       enabled: modelData.enabled !== false
 
       // Store reference to the popup
-      property var popup: root
+      property Popup popup: root
 
       background: Rectangle {
         color: menuItem.hovered && menuItem.enabled ? Color.mHover : Color.transparent
