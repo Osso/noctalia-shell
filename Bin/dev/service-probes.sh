@@ -92,7 +92,7 @@ is_bluetooth_device_row() {
 is_gpu_screen_recorder_monitor_row() {
     local monitor_row="$1"
 
-    [[ "$monitor_row" =~ ^[^|[:space:]][^|]*[|][0-9]+x[0-9]+$ ]]
+    [[ "$monitor_row" =~ ^[^|[:space:]][^|[:space:]]*[|][0-9]+x[0-9]+$ ]]
 }
 
 has_gpu_screen_recorder_capture_option() {
@@ -100,7 +100,7 @@ has_gpu_screen_recorder_capture_option() {
     local capture_option
 
     while IFS= read -r capture_option; do
-        if [[ "$capture_option" =~ ^[^|[:space:]][^|]*[|][0-9]+x[0-9]+@[0-9]+hz[|][A-Za-z0-9_-]+$ ]] \
+        if [[ "$capture_option" =~ ^[^|[:space:]][^|[:space:]]*[|][0-9]+x[0-9]+@[0-9]+hz[|][A-Za-z0-9_-]+$ ]] \
             || [[ "$capture_option" =~ ^[^|[:space:]]+$ ]]; then
             return 0
         fi
