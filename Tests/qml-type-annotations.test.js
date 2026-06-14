@@ -321,6 +321,15 @@ function testBackgroundShapeContainersAreTyped() {
   }
 }
 
+function testWallpaperPanelScreenReferencesAreTyped() {
+  const wallpaperPanelFile = "Modules/Panels/Wallpaper/WallpaperPanel.qml";
+
+  assertPropertyType(wallpaperPanelFile, "currentScreen", "ShellScreen");
+  assertPropertyType(wallpaperPanelFile, "targetScreen", "ShellScreen");
+  assertNoPropertyType(wallpaperPanelFile, "currentScreen", "var");
+  assertNoPropertyType(wallpaperPanelFile, "targetScreen", "var");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -358,6 +367,7 @@ const tests = [
   testDisplayTabBrightnessMonitorIsTyped,
   testBrightnessPanelBrightnessMonitorIsTyped,
   testBackgroundShapeContainersAreTyped,
+  testWallpaperPanelScreenReferencesAreTyped,
 ];
 
 for (const test of tests) {

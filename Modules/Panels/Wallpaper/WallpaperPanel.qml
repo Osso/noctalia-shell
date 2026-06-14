@@ -116,7 +116,7 @@ SmartPanel {
       }
       return 0;
     }
-    property var currentScreen: Quickshell.screens[currentScreenIndex]
+    property ShellScreen currentScreen: Quickshell.screens[currentScreenIndex]
     property string filterText: ""
     property alias screenRepeater: screenRepeater
 
@@ -491,7 +491,7 @@ SmartPanel {
 
   // Component for each screen's wallpaper view
   component WallpaperScreenView: Item {
-    property var targetScreen
+    property ShellScreen targetScreen
     property alias gridView: wallpaperGridView
 
     // Local reactive state for this screen
