@@ -285,13 +285,17 @@ has_ipc_target_function() {
 has_quickshell_launch_path() {
     local launcher_config="$1"
     local repo_path="$2"
-    local line
+    local line active_line
 
     while IFS= read -r line; do
         if [[ "$line" =~ ^[[:blank:]]*(//|#) ]]; then
             continue
         fi
-        if [[ "$line" =~ quickshell[[:blank:]]+-p[[:blank:]]+\"?$repo_path(\"|[[:blank:]]|$) ]]; then
+        active_line="$line"
+        if [[ "$active_line" =~ ^(.*)[[:blank:]](//|#).*$ ]]; then
+            active_line="${BASH_REMATCH[1]}"
+        fi
+        if [[ "$active_line" =~ quickshell[[:blank:]]+-p[[:blank:]]+\"?$repo_path(\"|[[:blank:]]|$) ]]; then
             return 0
         fi
     done <<<"$launcher_config"
