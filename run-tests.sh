@@ -30,6 +30,7 @@ run_unit_tests() {
     node "$repo_root/Tests/shell-state-contract.test.js"
     bash "$repo_root/Tests/i18n-json.test.sh"
     bash "$repo_root/Tests/calendar-scripts.test.sh"
+    bash "$repo_root/Tests/service-probes-parsing.test.sh"
 }
 
 run_log_gate() {

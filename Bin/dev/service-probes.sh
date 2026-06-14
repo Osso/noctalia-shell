@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-probe="${1:-all}"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd -- "$script_dir/../.." && pwd)"
 
@@ -11,6 +10,28 @@ require_command() {
         echo "missing required command: $name" >&2
         exit 2
     fi
+}
+
+find_lg_ultrawide_bus() {
+    local ddc_output="$1"
+    local current_bus=""
+    local lg_bus=""
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ I2C\ bus:[[:space:]]+/dev/i2c-([0-9]+) ]]; then
+            current_bus="${BASH_REMATCH[1]}"
+        elif [[ "$line" == *"Model:                LG ULTRAWIDE"* ]]; then
+            lg_bus="$current_bus"
+        fi
+    done <<<"$ddc_output"
+
+    printf '%s\n' "$lg_bus"
+}
+
+is_ddc_brightness_output() {
+    local vcp_output="$1"
+
+    [[ "$vcp_output" =~ ^VCP\ 10\ C\ [0-9]+\ 100$ ]]
 }
 
 probe_notifications() {
@@ -69,22 +90,13 @@ probe_brightness() {
         exit 1
     fi
 
-    local ddc_output vcp_output current_bus lg_bus
+    local ddc_output vcp_output lg_bus
     ddc_output="$(ddcutil detect 2>&1)"
-    current_bus=""
-    lg_bus=""
-
-    while IFS= read -r line; do
-        if [[ "$line" =~ I2C\ bus:[[:space:]]+/dev/i2c-([0-9]+) ]]; then
-            current_bus="${BASH_REMATCH[1]}"
-        elif [[ "$line" == *"Model:                LG ULTRAWIDE"* ]]; then
-            lg_bus="$current_bus"
-        fi
-    done <<<"$ddc_output"
+    lg_bus="$(find_lg_ultrawide_bus "$ddc_output")"
 
     if [ -n "$lg_bus" ]; then
         vcp_output="$(ddcutil -b "$lg_bus" getvcp 10 --brief 2>&1)"
-        if [[ ! "$vcp_output" =~ ^VCP\ 10\ C\ [0-9]+\ 100$ ]]; then
+        if ! is_ddc_brightness_output "$vcp_output"; then
             echo "unexpected DDC brightness output for LG ULTRAWIDE on bus $lg_bus: $vcp_output" >&2
             exit 1
         fi
@@ -973,90 +985,98 @@ Runs read-only probes for services used by the local shell.
 USAGE
 }
 
-case "$probe" in
-    all)
-        probe_notifications
-        probe_audio
-        probe_brightness
-        probe_clipboard
-        probe_lock_keys
-        probe_wallpaper_colors
-        probe_settings
-        probe_state_cache
-        probe_network
-        probe_power_profile
-        probe_battery
-        probe_bluetooth
-        probe_vpn
-        probe_screen_recorder
-        probe_programs
-        probe_launch_contract
-        probe_ipc_targets
-        probe_system_stats
-        probe_host_fonts
-        ;;
-    notifications)
-        probe_notifications
-        ;;
-    audio)
-        probe_audio
-        ;;
-    brightness)
-        probe_brightness
-        ;;
-    clipboard)
-        probe_clipboard
-        ;;
-    lock-keys)
-        probe_lock_keys
-        ;;
-    wallpaper-colors)
-        probe_wallpaper_colors
-        ;;
-    settings)
-        probe_settings
-        ;;
-    state-cache)
-        probe_state_cache
-        ;;
-    network)
-        probe_network
-        ;;
-    power-profile)
-        probe_power_profile
-        ;;
-    battery)
-        probe_battery
-        ;;
-    bluetooth)
-        probe_bluetooth
-        ;;
-    vpn)
-        probe_vpn
-        ;;
-    screen-recorder)
-        probe_screen_recorder
-        ;;
-    programs)
-        probe_programs
-        ;;
-    launch-contract)
-        probe_launch_contract
-        ;;
-    ipc-targets)
-        probe_ipc_targets
-        ;;
-    system-stats)
-        probe_system_stats
-        ;;
-    host-fonts)
-        probe_host_fonts
-        ;;
-    -h | --help | help)
-        usage
-        ;;
-    *)
-        usage >&2
-        exit 2
-        ;;
-esac
+main() {
+    local probe="${1:-all}"
+
+    case "$probe" in
+        all)
+            probe_notifications
+            probe_audio
+            probe_brightness
+            probe_clipboard
+            probe_lock_keys
+            probe_wallpaper_colors
+            probe_settings
+            probe_state_cache
+            probe_network
+            probe_power_profile
+            probe_battery
+            probe_bluetooth
+            probe_vpn
+            probe_screen_recorder
+            probe_programs
+            probe_launch_contract
+            probe_ipc_targets
+            probe_system_stats
+            probe_host_fonts
+            ;;
+        notifications)
+            probe_notifications
+            ;;
+        audio)
+            probe_audio
+            ;;
+        brightness)
+            probe_brightness
+            ;;
+        clipboard)
+            probe_clipboard
+            ;;
+        lock-keys)
+            probe_lock_keys
+            ;;
+        wallpaper-colors)
+            probe_wallpaper_colors
+            ;;
+        settings)
+            probe_settings
+            ;;
+        state-cache)
+            probe_state_cache
+            ;;
+        network)
+            probe_network
+            ;;
+        power-profile)
+            probe_power_profile
+            ;;
+        battery)
+            probe_battery
+            ;;
+        bluetooth)
+            probe_bluetooth
+            ;;
+        vpn)
+            probe_vpn
+            ;;
+        screen-recorder)
+            probe_screen_recorder
+            ;;
+        programs)
+            probe_programs
+            ;;
+        launch-contract)
+            probe_launch_contract
+            ;;
+        ipc-targets)
+            probe_ipc_targets
+            ;;
+        system-stats)
+            probe_system_stats
+            ;;
+        host-fonts)
+            probe_host_fonts
+            ;;
+        -h | --help | help)
+            usage
+            ;;
+        *)
+            usage >&2
+            exit 2
+            ;;
+    esac
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi
