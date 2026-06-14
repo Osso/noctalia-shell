@@ -342,7 +342,9 @@ function testSettingsMonitorModelsAreTyped() {
     "Modules/Panels/Settings/Tabs/BarTab.qml",
     "Modules/Panels/Settings/Tabs/DisplayTab.qml",
     "Modules/Panels/Settings/Tabs/DockTab.qml",
+    "Modules/Panels/Settings/Tabs/NotificationsTab.qml",
     "Modules/Panels/Settings/Tabs/OsdTab.qml",
+    "Modules/Panels/Settings/Tabs/WallpaperTab.qml",
   ];
 
   for (const monitorSettingFile of monitorSettingFiles) {

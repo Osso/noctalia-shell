@@ -121,6 +121,8 @@ ColumnLayout {
         Repeater {
           model: Quickshell.screens || []
           delegate: ColumnLayout {
+            required property ShellScreen modelData
+
             Layout.fillWidth: true
             spacing: Style.marginS
 
