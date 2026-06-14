@@ -136,6 +136,13 @@ function testEffectSourcePropertiesAreTyped() {
   assertPropertyType("Widgets/NDropShadow.qml", "source", "Item");
 }
 
+function testBarWidgetLoaderScreenIsTyped() {
+  const loaderFile = "Modules/Bar/Extras/BarWidgetLoader.qml";
+
+  assertPropertyType(loaderFile, "widgetScreen", "ShellScreen");
+  assertNoPropertyType(loaderFile, "widgetScreen", "var");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -153,6 +160,7 @@ const tests = [
   testGeometryReferencesAreTypedItems,
   testTimeNowPropertiesAreTypedDates,
   testEffectSourcePropertiesAreTyped,
+  testBarWidgetLoaderScreenIsTyped,
 ];
 
 for (const test of tests) {

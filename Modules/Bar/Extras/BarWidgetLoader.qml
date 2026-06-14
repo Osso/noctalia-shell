@@ -7,7 +7,7 @@ Item {
   id: root
 
   required property string widgetId
-  required property var widgetScreen
+  required property ShellScreen widgetScreen
   required property var widgetProps
 
   property string barDensity: "default"
