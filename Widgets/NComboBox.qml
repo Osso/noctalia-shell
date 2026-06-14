@@ -115,7 +115,7 @@ RowLayout {
         verticalPolicy: ScrollBar.AsNeeded
 
         delegate: ItemDelegate {
-          property var parentComboBox: combo
+          property ComboBox parentComboBox: combo
           property int itemIndex: index
           width: ListView.view ? ListView.view.width : (parentComboBox ? parentComboBox.width - Style.marginM * 3 : 0)
           hoverEnabled: true

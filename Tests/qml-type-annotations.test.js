@@ -89,6 +89,10 @@ function testSettingsPanelActiveScrollViewIsTyped() {
   assertPropertyType("Modules/Panels/Settings/SettingsPanel.qml", "activeScrollView", "NScrollView");
 }
 
+function testComboBoxDelegateParentIsTyped() {
+  assertPropertyType("Widgets/NComboBox.qml", "parentComboBox", "ComboBox");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -100,6 +104,7 @@ const tests = [
   testPanelServiceLockScreenIsTyped,
   testNotificationServerInstanceIsTyped,
   testSettingsPanelActiveScrollViewIsTyped,
+  testComboBoxDelegateParentIsTyped,
 ];
 
 for (const test of tests) {
