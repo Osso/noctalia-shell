@@ -384,9 +384,45 @@ probe_battery() {
     echo "ok probeBattery"
 }
 
+probe_bluetooth() {
+    require_command bluetoothctl
+
+    local controllers controller_info connected_devices
+    controllers="$(bluetoothctl list)"
+    controller_info="$(bluetoothctl show)"
+    connected_devices="$(bluetoothctl devices Connected)"
+
+    if [[ ! "$controllers" =~ ^Controller[[:space:]][0-9A-Fa-f:]{17}[[:space:]].*\[default\] ]]; then
+        echo "default Bluetooth controller was not found: $controllers" >&2
+        exit 1
+    fi
+
+    if [[ ! "$controller_info" =~ ^Controller[[:space:]][0-9A-Fa-f:]{17}[[:space:]] ]]; then
+        echo "Bluetooth controller details are missing" >&2
+        exit 1
+    fi
+
+    if [[ ! "$controller_info" =~ Powered:[[:space:]]+(yes|no) ]]; then
+        echo "Bluetooth powered state is missing" >&2
+        exit 1
+    fi
+
+    if [[ ! "$controller_info" =~ Discovering:[[:space:]]+(yes|no) ]]; then
+        echo "Bluetooth discovering state is missing" >&2
+        exit 1
+    fi
+
+    if [[ -n "$connected_devices" && ! "$connected_devices" =~ ^Device[[:space:]][0-9A-Fa-f:]{17}[[:space:]] ]]; then
+        echo "Bluetooth connected device list is malformed: $connected_devices" >&2
+        exit 1
+    fi
+
+    echo "ok probeBluetooth"
+}
+
 usage() {
     cat <<'USAGE'
-Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network|power-profile|battery]
+Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth]
 
 Runs read-only probes for services used by the local shell.
 USAGE
@@ -404,6 +440,7 @@ case "$probe" in
         probe_network
         probe_power_profile
         probe_battery
+        probe_bluetooth
         ;;
     notifications)
         probe_notifications
@@ -434,6 +471,9 @@ case "$probe" in
         ;;
     battery)
         probe_battery
+        ;;
+    bluetooth)
+        probe_bluetooth
         ;;
     -h | --help | help)
         usage
