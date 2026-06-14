@@ -597,9 +597,153 @@ probe_system_stats() {
     echo "ok probeSystemStats"
 }
 
+read_os_release_value() {
+    local wanted="$1"
+    local key value
+
+    while IFS='=' read -r key value; do
+        if [[ "$key" != "$wanted" ]]; then
+            continue
+        fi
+
+        value="${value%\"}"
+        value="${value#\"}"
+        printf '%s\n' "$value"
+        return 0
+    done </etc/os-release
+
+    return 1
+}
+
+find_host_logo_path() {
+    local logo_name="$1"
+    local sizes=(512x512 256x256 128x128 64x64 48x48 32x32 24x24 22x22 16x16)
+    local exts=(svg png)
+    local ext size candidate
+
+    for ext in "${exts[@]}"; do
+        candidate="/usr/share/pixmaps/${logo_name}.${ext}"
+        if [[ -f "$candidate" ]]; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+
+    candidate="/usr/share/icons/hicolor/scalable/apps/${logo_name}.svg"
+    if [[ -f "$candidate" ]]; then
+        printf '%s\n' "$candidate"
+        return 0
+    fi
+
+    for size in "${sizes[@]}"; do
+        for ext in "${exts[@]}"; do
+            candidate="/usr/share/icons/hicolor/${size}/apps/${logo_name}.${ext}"
+            if [[ -f "$candidate" ]]; then
+                printf '%s\n' "$candidate"
+                return 0
+            fi
+        done
+    done
+
+    candidate="/run/current-system/sw/share/icons/hicolor/scalable/apps/${logo_name}.svg"
+    if [[ -f "$candidate" ]]; then
+        printf '%s\n' "$candidate"
+        return 0
+    fi
+
+    for size in "${sizes[@]}"; do
+        for ext in "${exts[@]}"; do
+            candidate="/run/current-system/sw/share/icons/hicolor/${size}/apps/${logo_name}.${ext}"
+            if [[ -f "$candidate" ]]; then
+                printf '%s\n' "$candidate"
+                return 0
+            fi
+        done
+    done
+
+    for ext in "${exts[@]}"; do
+        for candidate in \
+            "/usr/share/icons/${logo_name}.${ext}" \
+            "/usr/share/icons/${logo_name}/${logo_name}.${ext}" \
+            "/usr/share/icons/${logo_name}/apps/${logo_name}.${ext}"; do
+            if [[ -f "$candidate" ]]; then
+                printf '%s\n' "$candidate"
+                return 0
+            fi
+        done
+    done
+
+    return 1
+}
+
+probe_host_fonts() {
+    require_command getent
+    require_command fc-list
+
+    if [[ ! -r /etc/os-release ]]; then
+        echo "/etc/os-release is not readable" >&2
+        exit 1
+    fi
+
+    local os_name os_id os_logo logo_path passwd_row fontconfig_fonts
+    os_name="$(read_os_release_value PRETTY_NAME || read_os_release_value NAME || true)"
+    os_id="$(read_os_release_value ID || true)"
+    os_logo="$(read_os_release_value LOGO || true)"
+
+    if [[ -z "$os_name" ]]; then
+        echo "/etc/os-release is missing PRETTY_NAME and NAME" >&2
+        exit 1
+    fi
+
+    if [[ -z "$os_id" ]]; then
+        echo "/etc/os-release is missing ID" >&2
+        exit 1
+    fi
+
+    if [[ -n "$os_logo" ]]; then
+        logo_path="$(find_host_logo_path "$os_logo" || true)"
+        if [[ -z "$logo_path" ]]; then
+            echo "host logo listed in /etc/os-release is not resolvable: $os_logo" >&2
+            exit 1
+        fi
+    fi
+
+    if [[ -z "${USER:-}" ]]; then
+        echo "USER is not set for HostService passwd lookup" >&2
+        exit 1
+    fi
+
+    passwd_row="$(getent passwd "$USER" || true)"
+    if [[ ! "$passwd_row" =~ ^[^:]+:[^:]*:[0-9]+:[0-9]+:[^:]*:[^:]+:[^:]+$ ]]; then
+        echo "passwd row for USER is missing or malformed: $passwd_row" >&2
+        exit 1
+    fi
+
+    fontconfig_fonts="$(fc-list :mono family)"
+    if [[ -z "${fontconfig_fonts//[[:space:]]/}" ]]; then
+        echo "fc-list returned no monospace font families" >&2
+        exit 1
+    fi
+
+    local has_font_family=false
+    while IFS= read -r font_line; do
+        if [[ "$font_line" =~ [[:alpha:]] ]]; then
+            has_font_family=true
+            break
+        fi
+    done <<<"$fontconfig_fonts"
+
+    if [[ "$has_font_family" != true ]]; then
+        echo "fc-list monospace output has no readable family names" >&2
+        exit 1
+    fi
+
+    echo "ok probeHostFonts"
+}
+
 usage() {
     cat <<'USAGE'
-Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth|vpn|screen-recorder|programs|system-stats]
+Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth|vpn|screen-recorder|programs|system-stats|host-fonts]
 
 Runs read-only probes for services used by the local shell.
 USAGE
@@ -622,6 +766,7 @@ case "$probe" in
         probe_screen_recorder
         probe_programs
         probe_system_stats
+        probe_host_fonts
         ;;
     notifications)
         probe_notifications
@@ -667,6 +812,9 @@ case "$probe" in
         ;;
     system-stats)
         probe_system_stats
+        ;;
+    host-fonts)
+        probe_host_fonts
         ;;
     -h | --help | help)
         usage
