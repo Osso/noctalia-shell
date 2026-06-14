@@ -22,6 +22,7 @@ run_unit_tests() {
     node "$repo_root/Tests/helpers.test.js"
     node "$repo_root/Tests/widget-registry.test.js"
     node "$repo_root/Tests/settings-references.test.js"
+    node "$repo_root/Tests/i18n-references.test.js"
     node "$repo_root/Tests/color-schemes.test.js"
     node "$repo_root/Tests/template-registry.test.js"
     node "$repo_root/Tests/shell-state-contract.test.js"

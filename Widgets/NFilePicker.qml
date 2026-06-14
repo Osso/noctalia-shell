@@ -12,7 +12,7 @@ Popup {
   id: root
 
   // Properties
-  property string title: I18n.tr("widget.file-picker.title")
+  property string title: I18n.tr("widgets.file-picker.title")
   property string initialPath: Quickshell.env("HOME") || "/home"
   property string selectionMode: "files" // "files" or "folders"
   property var nameFilters: ["*"]

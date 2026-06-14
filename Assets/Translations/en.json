@@ -433,7 +433,8 @@
     "panel": {
       "buttons": {
         "discord": "Join our Discord",
-        "dismiss": "Ok"
+        "dismiss": "Ok",
+        "feedback": "Send feedback"
       },
       "empty": "Release notes are not available yet.",
       "highlight-title": "Highlights",
@@ -1118,6 +1119,9 @@
           "discord": {
             "description": "Write {filepath} for {client}. Hyprluna theme needs to be activated manually",
             "description-missing": "No Discord client detected. Install vencord, vesktop, webcord, armcord, equibop, lightcord, or dorion"
+          },
+          "emacs": {
+            "description-missing": "Requires {app} to be installed"
           },
           "fuzzel": {
             "description": "Write {filepath} and reload",
@@ -2276,6 +2280,7 @@
     "list-view": "List view",
     "manage-vpn": "VPN connections",
     "manage-wifi": "Wi-Fi",
+    "max-widgets-reached": "Maximum widgets reached",
     "microphone-volume-at": "Microphone volume: {volume}%",
     "move-to-center-section": "Center section",
     "move-to-left-section": "Left section",

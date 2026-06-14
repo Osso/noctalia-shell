@@ -248,7 +248,7 @@ ColumnLayout {
             }
 
             NText {
-              text: I18n.tr("settings.color-scheme.color-source.matugen-scheme-type.description")
+              text: I18n.tr("settings.color-scheme.color-source.use-wallpaper-colors.description")
               pointSize: Style.fontSizeS
               color: Color.mOnSurfaceVariant
             }
