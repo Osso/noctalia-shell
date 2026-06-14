@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 
 const repoRoot = path.resolve(__dirname, "..");
+const defaultSettings = JSON.parse(fs.readFileSync(path.join(repoRoot, "Assets/settings-default.json"), "utf8"));
 
 function readQml(relativePath) {
   return fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
@@ -148,6 +149,12 @@ function assertSameMembers(actual, expected, message) {
   assert.deepEqual([...actual].sort(), [...expected].sort(), message);
 }
 
+function configuredWidgetIds(sections) {
+  return Object.values(sections)
+    .flat()
+    .map(widget => widget.id);
+}
+
 function testBarWidgetRegistryMetadata() {
   const source = readQml("Services/UI/BarWidgetRegistry.qml");
   const widgetPairs = extractTopLevelStringPairs(extractPropertyObjectBody(source, "widgets"));
@@ -189,9 +196,33 @@ function testControlCenterWidgetRegistryMetadata() {
   assert.ok(widgetKeys.includes("WallpaperSelector"));
 }
 
+function testDefaultBarWidgetsExistInRegistry() {
+  const source = readQml("Services/UI/BarWidgetRegistry.qml");
+  const widgetKeys = new Set(keysFromPairs(extractTopLevelStringPairs(extractPropertyObjectBody(source, "widgets"))));
+  const configuredIds = configuredWidgetIds(defaultSettings.bar.widgets);
+
+  assert.equal(configuredIds.length, 12);
+  for (const widgetId of configuredIds) {
+    assert.ok(widgetKeys.has(widgetId), `default bar widget is missing from BarWidgetRegistry: ${widgetId}`);
+  }
+}
+
+function testDefaultControlCenterShortcutsExistInRegistry() {
+  const source = readQml("Services/UI/ControlCenterWidgetRegistry.qml");
+  const widgetKeys = new Set(keysFromPairs(extractTopLevelStringPairs(extractPropertyObjectBody(source, "widgets"))));
+  const configuredIds = configuredWidgetIds(defaultSettings.controlCenter.shortcuts);
+
+  assert.equal(configuredIds.length, 8);
+  for (const widgetId of configuredIds) {
+    assert.ok(widgetKeys.has(widgetId), `default control center shortcut is missing from ControlCenterWidgetRegistry: ${widgetId}`);
+  }
+}
+
 const tests = [
   testBarWidgetRegistryMetadata,
   testControlCenterWidgetRegistryMetadata,
+  testDefaultBarWidgetsExistInRegistry,
+  testDefaultControlCenterShortcutsExistInRegistry,
 ];
 
 for (const test of tests) {
