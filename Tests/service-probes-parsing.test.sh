@@ -44,4 +44,12 @@ if is_ddc_brightness_output "VCP 10 C unsupported"; then
     exit 1
 fi
 
+is_wpctl_volume_output "Volume: 0.42"
+is_wpctl_volume_output "Volume: 1 [MUTED]"
+
+if is_wpctl_volume_output "Volume: muted"; then
+    echo "invalid wpctl volume output was accepted" >&2
+    exit 1
+fi
+
 echo "ok testServiceProbeParsing"

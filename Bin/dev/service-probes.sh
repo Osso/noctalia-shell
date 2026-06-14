@@ -34,6 +34,12 @@ is_ddc_brightness_output() {
     [[ "$vcp_output" =~ ^VCP\ 10\ C\ [0-9]+\ 100$ ]]
 }
 
+is_wpctl_volume_output() {
+    local volume_output="$1"
+
+    [[ "$volume_output" =~ ^Volume:\ [0-9]+(\.[0-9]+)?( \[MUTED\])?$ ]]
+}
+
 probe_notifications() {
     require_command gdbus
 
@@ -67,12 +73,12 @@ probe_audio() {
     sink="$(wpctl get-volume @DEFAULT_AUDIO_SINK@)"
     source="$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@)"
 
-    if [[ ! "$sink" =~ ^Volume:\ [0-9]+(\.[0-9]+)?( \[MUTED\])?$ ]]; then
+    if ! is_wpctl_volume_output "$sink"; then
         echo "unexpected default sink volume output: $sink" >&2
         exit 1
     fi
 
-    if [[ ! "$source" =~ ^Volume:\ [0-9]+(\.[0-9]+)?( \[MUTED\])?$ ]]; then
+    if ! is_wpctl_volume_output "$source"; then
         echo "unexpected default source volume output: $source" >&2
         exit 1
     fi
