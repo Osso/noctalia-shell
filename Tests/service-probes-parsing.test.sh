@@ -328,6 +328,11 @@ if has_physical_upower_battery_details $'native-path:          BAT0\nrechargeabl
     exit 1
 fi
 
+if has_physical_upower_battery_details $'native-path:          BAT0 trailing\nrechargeable:        yes'; then
+    echo "malformed physical UPower native path was accepted" >&2
+    exit 1
+fi
+
 if has_physical_upower_battery_details $'native-path:          \nrechargeable:        yes'; then
     echo "empty physical UPower native path was accepted" >&2
     exit 1

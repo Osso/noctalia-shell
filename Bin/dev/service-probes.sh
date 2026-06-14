@@ -201,7 +201,7 @@ has_upower_battery_state() {
 has_physical_upower_battery_details() {
     local battery_info="$1"
 
-    [[ "$battery_info" =~ (^|$'\n')[[:blank:]]*native-path:[[:blank:]]+[^[:space:]].*($'\n'|$) ]] \
+    [[ "$battery_info" =~ (^|$'\n')[[:blank:]]*native-path:[[:blank:]]+[^[:space:]]+[[:blank:]]*($'\n'|$) ]] \
         && [[ "$battery_info" =~ (^|$'\n')[[:blank:]]*rechargeable:[[:blank:]]+yes[[:blank:]]*($'\n'|$) ]]
 }
 
