@@ -261,6 +261,13 @@ function testAudioNodeHandlesAreTyped() {
   assertNoPropertyType(audioServiceFile, "sourceAudio", "var");
 }
 
+function testTrayMenuItemIsTyped() {
+  const trayMenuFile = "Modules/Bar/Extras/TrayMenu.qml";
+
+  assertPropertyType(trayMenuFile, "trayItem", "SystemTrayItem");
+  assertNoPropertyType(trayMenuFile, "trayItem", "var");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -291,6 +298,7 @@ const tests = [
   testPowerProfilesReferenceIsTyped,
   testUPowerBatteryReferencesAreTyped,
   testAudioNodeHandlesAreTyped,
+  testTrayMenuItemIsTyped,
 ];
 
 for (const test of tests) {

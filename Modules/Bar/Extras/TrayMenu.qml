@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Services.SystemTray
 import qs.Commons
 import qs.Services.UI
 import qs.Widgets
@@ -11,7 +12,7 @@ PopupWindow {
 
   property ShellScreen screen
 
-  property var trayItem: null
+  property SystemTrayItem trayItem: null
   property Item anchorItem: null
   property real anchorX
   property real anchorY
