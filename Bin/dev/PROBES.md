@@ -40,6 +40,7 @@ Bin/dev/service-probes.sh wallpaper-colors
 Bin/dev/service-probes.sh settings
 Bin/dev/service-probes.sh state-cache
 Bin/dev/service-probes.sh network
+Bin/dev/service-probes.sh power-profile
 ```
 
 These probes do not change shell state. They verify that the notification server,
@@ -51,7 +52,8 @@ notifications, and wallpaper sections that the shell reads at runtime. The
 state-cache probe validates persisted shell state, network cache, location
 weather cache, and notification history shape. The network probe validates
 NetworkManager connectivity, active Wi-Fi/ethernet state, and active Wi-Fi cache
-coherence.
+coherence. The power profile probe validates the active `powerprofilesctl`
+profile and available profile list used by `PowerProfileService`.
 
 ## Visible Manual Notification Probes
 

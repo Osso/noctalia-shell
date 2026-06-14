@@ -297,9 +297,40 @@ probe_network() {
     echo "ok probeNetwork"
 }
 
+probe_power_profile() {
+    require_command powerprofilesctl
+
+    local current profiles
+    current="$(powerprofilesctl get)"
+    profiles="$(powerprofilesctl list)"
+
+    case "$current" in
+        performance | balanced | power-saver)
+            ;;
+        *)
+            echo "unexpected active power profile: $current" >&2
+            exit 1
+            ;;
+    esac
+
+    for profile in performance balanced power-saver; do
+        if [[ "$profiles" != *"$profile:"* ]]; then
+            echo "power profile is missing from list: $profile" >&2
+            exit 1
+        fi
+    done
+
+    if [[ "$profiles" != *"* $current:"* ]]; then
+        echo "active power profile is not marked in profile list: $current" >&2
+        exit 1
+    fi
+
+    echo "ok probePowerProfile"
+}
+
 usage() {
     cat <<'USAGE'
-Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network]
+Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network|power-profile]
 
 Runs read-only probes for services used by the local shell.
 USAGE
@@ -315,6 +346,7 @@ case "$probe" in
         probe_settings
         probe_state_cache
         probe_network
+        probe_power_profile
         ;;
     notifications)
         probe_notifications
@@ -339,6 +371,9 @@ case "$probe" in
         ;;
     network)
         probe_network
+        ;;
+    power-profile)
+        probe_power_profile
         ;;
     -h | --help | help)
         usage
