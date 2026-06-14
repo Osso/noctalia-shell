@@ -375,6 +375,11 @@ if is_passwd_row "osso:x:1000:1000:Alessio:/home/osso:not-a-shell"; then
     exit 1
 fi
 
+if is_passwd_row "osso:x:1000:1000:Alessio:/home/osso:/usr/bin/zsh trailing"; then
+    echo "passwd row with malformed shell path was accepted" >&2
+    exit 1
+fi
+
 if is_passwd_row "bad user:x:1000:1000:Alessio:/home/osso:/usr/bin/zsh"; then
     echo "passwd row with whitespace in username was accepted" >&2
     exit 1
