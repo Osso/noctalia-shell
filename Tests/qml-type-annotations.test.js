@@ -79,6 +79,33 @@ function testSmartPanelPanelRegionIsTyped() {
   assertNoPropertyType("Modules/MainScreen/SmartPanel.qml", "panelRegion", "var");
 }
 
+function testMainScreenPanelPlaceholdersAreTyped() {
+  const placeholderNames = [
+    "audioPanelPlaceholder",
+    "batteryPanelPlaceholder",
+    "bluetoothPanelPlaceholder",
+    "brightnessPanelPlaceholder",
+    "clockPanelPlaceholder",
+    "changelogPanelPlaceholder",
+    "controlCenterPanelPlaceholder",
+    "launcherPanelPlaceholder",
+    "notificationHistoryPanelPlaceholder",
+    "sessionMenuPanelPlaceholder",
+    "settingsPanelPlaceholder",
+    "setupWizardPanelPlaceholder",
+    "trayDrawerPanelPlaceholder",
+    "wallpaperPanelPlaceholder",
+    "wifiPanelPlaceholder",
+    "vpnPanelPlaceholder",
+    "processPanelPlaceholder",
+  ];
+
+  for (const placeholderName of placeholderNames) {
+    assertPropertyType("Modules/MainScreen/MainScreen.qml", placeholderName, "Item");
+    assertNoPropertyType("Modules/MainScreen/MainScreen.qml", placeholderName, "var");
+  }
+}
+
 function testPanelContentItemsAreTyped() {
   const contentItemFiles = [
     "Modules/Panels/Wallpaper/WallpaperPanel.qml",
@@ -219,6 +246,7 @@ const tests = [
   testTooltipServiceTracksTypedTooltipInstances,
   testSmartPanelButtonItemIsTyped,
   testSmartPanelPanelRegionIsTyped,
+  testMainScreenPanelPlaceholdersAreTyped,
   testPanelContentItemsAreTyped,
   testPanelServiceLockScreenIsTyped,
   testNotificationServerInstanceIsTyped,

@@ -57,23 +57,23 @@ PanelWindow {
   readonly property string screenName: screen ? screen.name : "unknown"
 
   // Expose panel backgrounds for AllBackgrounds
-  readonly property var audioPanelPlaceholder: audioPanel.panelRegion
-  readonly property var batteryPanelPlaceholder: batteryPanel.panelRegion
-  readonly property var bluetoothPanelPlaceholder: bluetoothPanel.panelRegion
-  readonly property var brightnessPanelPlaceholder: brightnessPanel.panelRegion
-  readonly property var clockPanelPlaceholder: clockPanel.panelRegion
-  readonly property var changelogPanelPlaceholder: changelogPanel.panelRegion
-  readonly property var controlCenterPanelPlaceholder: controlCenterPanel.panelRegion
-  readonly property var launcherPanelPlaceholder: launcherPanel.panelRegion
-  readonly property var notificationHistoryPanelPlaceholder: notificationHistoryPanel.panelRegion
-  readonly property var sessionMenuPanelPlaceholder: sessionMenuPanel.panelRegion
-  readonly property var settingsPanelPlaceholder: settingsPanel.panelRegion
-  readonly property var setupWizardPanelPlaceholder: setupWizardPanel.panelRegion
-  readonly property var trayDrawerPanelPlaceholder: trayDrawerPanel.panelRegion
-  readonly property var wallpaperPanelPlaceholder: wallpaperPanel.panelRegion
-  readonly property var wifiPanelPlaceholder: wifiPanel.panelRegion
-  readonly property var vpnPanelPlaceholder: vpnPanel.panelRegion
-  readonly property var processPanelPlaceholder: processPanel.panelRegion
+  readonly property Item audioPanelPlaceholder: audioPanel.panelRegion
+  readonly property Item batteryPanelPlaceholder: batteryPanel.panelRegion
+  readonly property Item bluetoothPanelPlaceholder: bluetoothPanel.panelRegion
+  readonly property Item brightnessPanelPlaceholder: brightnessPanel.panelRegion
+  readonly property Item clockPanelPlaceholder: clockPanel.panelRegion
+  readonly property Item changelogPanelPlaceholder: changelogPanel.panelRegion
+  readonly property Item controlCenterPanelPlaceholder: controlCenterPanel.panelRegion
+  readonly property Item launcherPanelPlaceholder: launcherPanel.panelRegion
+  readonly property Item notificationHistoryPanelPlaceholder: notificationHistoryPanel.panelRegion
+  readonly property Item sessionMenuPanelPlaceholder: sessionMenuPanel.panelRegion
+  readonly property Item settingsPanelPlaceholder: settingsPanel.panelRegion
+  readonly property Item setupWizardPanelPlaceholder: setupWizardPanel.panelRegion
+  readonly property Item trayDrawerPanelPlaceholder: trayDrawerPanel.panelRegion
+  readonly property Item wallpaperPanelPlaceholder: wallpaperPanel.panelRegion
+  readonly property Item wifiPanelPlaceholder: wifiPanel.panelRegion
+  readonly property Item vpnPanelPlaceholder: vpnPanel.panelRegion
+  readonly property Item processPanelPlaceholder: processPanel.panelRegion
 
   Component.onCompleted: {
     const screenWidth = screen ? screen.width : 0;
