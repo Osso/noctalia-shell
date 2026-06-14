@@ -232,6 +232,11 @@ if has_upower_percentage "notpercentage:          87%"; then
     exit 1
 fi
 
+if has_upower_percentage "percentage:          87% trailing"; then
+    echo "malformed UPower percentage row was accepted" >&2
+    exit 1
+fi
+
 if has_upower_battery_state "state:               broken"; then
     echo "invalid UPower battery state was accepted" >&2
     exit 1

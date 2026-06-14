@@ -181,7 +181,7 @@ is_ps_process_row() {
 has_upower_percentage() {
     local device_info="$1"
 
-    [[ "$device_info" =~ (^|$'\n')[[:space:]]*percentage:[[:space:]]+[0-9]+% ]]
+    [[ "$device_info" =~ (^|$'\n')[[:space:]]*percentage:[[:space:]]+[0-9]+%[[:space:]]*($'\n'|$) ]]
 }
 
 has_upower_battery_state() {
