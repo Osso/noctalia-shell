@@ -56,11 +56,19 @@ function testTooltipServiceCallsUseTargetItemFirst() {
   }
 }
 
+function testTooltipServiceTracksTypedTooltipInstances() {
+  const tooltipServiceFile = "Services/UI/TooltipService.qml";
+
+  assertPropertyType(tooltipServiceFile, "activeTooltip", "Tooltip");
+  assertPropertyType(tooltipServiceFile, "pendingTooltip", "Tooltip");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
   testTooltipTargetItemIsTyped,
   testTooltipServiceCallsUseTargetItemFirst,
+  testTooltipServiceTracksTypedTooltipInstances,
 ];
 
 for (const test of tests) {

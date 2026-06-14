@@ -8,8 +8,8 @@ import qs.Modules.Tooltip
 Singleton {
   id: root
 
-  property var activeTooltip: null
-  property var pendingTooltip: null // Track tooltip being created
+  property Tooltip activeTooltip: null
+  property Tooltip pendingTooltip: null // Track tooltip being created
 
   property Component tooltipComponent: Component {
     Tooltip {}
