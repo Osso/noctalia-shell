@@ -176,6 +176,8 @@ ColumnLayout {
       visible: Settings.data.dock.enabled
       model: Quickshell.screens || []
       delegate: NCheckbox {
+        required property ShellScreen modelData
+
         Layout.fillWidth: true
         label: modelData.name || "Unknown"
         visible: Settings.data.dock.enabled

@@ -362,6 +362,13 @@ function testWallpaperServiceScannerModelIsTyped() {
   assert.match(source, scannerModelDelegate, "WallpaperService scanner must type screen modelData as ShellScreen");
 }
 
+function testSetupDockStepMonitorModelIsTyped() {
+  const source = readQml("Modules/Panels/SetupWizard/SetupDockStep.qml");
+  const monitorModelDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?required\s+property\s+ShellScreen\s+modelData/;
+
+  assert.match(source, monitorModelDelegate, "SetupDockStep monitor delegate must type screen modelData as ShellScreen");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -403,6 +410,7 @@ const tests = [
   testWallpaperPanelMonitorTabModelIsTyped,
   testSettingsMonitorModelsAreTyped,
   testWallpaperServiceScannerModelIsTyped,
+  testSetupDockStepMonitorModelIsTyped,
 ];
 
 for (const test of tests) {
