@@ -287,7 +287,7 @@ Item {
       const title = getAppTitle(toplevel);
       const wsId = toplevel.workspace ? toplevel.workspace.id : null;
       const focused = toplevel.activated === true;
-      const output = toplevel.monitor?.name || "";
+      const output = toplevel.monitor ? (toplevel.monitor.name || "") : "";
 
       return {
         "id": windowId,

@@ -1,3 +1,2 @@
-Services/Compositor/HyprlandService.qml
 Services/Control/IPCService.qml
 Services/Media/AudioService.qml
