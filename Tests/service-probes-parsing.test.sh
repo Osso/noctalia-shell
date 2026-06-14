@@ -370,9 +370,16 @@ mkdir -p "$host_logo_fixture_root/usr/share/icons/hicolor/48x48/apps"
 mkdir -p "$host_logo_fixture_root/run/share/icons/hicolor/scalable/apps"
 touch "$host_logo_fixture_root/usr/share/icons/hicolor/48x48/apps/noctalia-test-logo.png"
 touch "$host_logo_fixture_root/run/share/icons/hicolor/scalable/apps/nix-test-logo.svg"
+mkdir -p "$host_logo_fixture_root/usr/share/pixmaps"
+touch "$host_logo_fixture_root/usr/share/escape.svg"
 
 assert_equal "$(find_host_logo_path noctalia-test-logo "$host_logo_fixture_root/usr" "$host_logo_fixture_root/run")" "$host_logo_fixture_root/usr/share/icons/hicolor/48x48/apps/noctalia-test-logo.png" "host logo hicolor app icon lookup failed"
 assert_equal "$(find_host_logo_path nix-test-logo "$host_logo_fixture_root/usr" "$host_logo_fixture_root/run")" "$host_logo_fixture_root/run/share/icons/hicolor/scalable/apps/nix-test-logo.svg" "host logo Nix profile icon lookup failed"
+
+if find_host_logo_path "../escape" "$host_logo_fixture_root/usr" "$host_logo_fixture_root/run" >/dev/null; then
+    echo "path-like host logo name escaped the icon roots" >&2
+    exit 1
+fi
 
 ipc_fixture=$'target launcher\n  function toggle(): void\ntarget settings\n  function toggle(): void\n  function open(): void'
 
