@@ -168,6 +168,19 @@ has_physical_upower_battery_details() {
     [[ "$battery_info" == *"native-path:"* && "$battery_info" == *"rechargeable:        yes"* ]]
 }
 
+is_network_connection_type() {
+    local connection_type="$1"
+
+    [[ "$connection_type" == "802-11-wireless" || "$connection_type" == "802-3-ethernet" ]]
+}
+
+has_connected_wifi_device_status() {
+    local device_status="$1"
+    local wifi_name="$2"
+
+    [[ "$device_status" == *":wifi:connected:$wifi_name"* ]]
+}
+
 probe_notifications() {
     require_command gdbus
 
@@ -508,15 +521,15 @@ probe_network() {
             exit 1
         fi
 
-        case "$type" in
-            802-11-wireless)
-                has_network_connection=true
-                active_wifi_name="$name"
-                ;;
-            802-3-ethernet)
-                has_network_connection=true
-                ;;
-        esac
+        if ! is_network_connection_type "$type"; then
+            continue
+        fi
+
+        has_network_connection=true
+
+        if [[ "$type" == "802-11-wireless" ]]; then
+            active_wifi_name="$name"
+        fi
     done <<<"$active_connections"
 
     if [[ "$has_network_connection" != true ]]; then
@@ -534,7 +547,7 @@ probe_network() {
             exit 1
         fi
 
-        if [[ "$device_status" != *":wifi:connected:$active_wifi_name"* ]]; then
+        if ! has_connected_wifi_device_status "$device_status" "$active_wifi_name"; then
             echo "active Wi-Fi connection is not reflected in device status: $active_wifi_name" >&2
             exit 1
         fi

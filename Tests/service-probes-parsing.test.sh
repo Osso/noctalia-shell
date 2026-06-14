@@ -176,4 +176,18 @@ if has_physical_upower_battery_details $'native-path:          BAT0\nrechargeabl
     exit 1
 fi
 
+is_network_connection_type "802-11-wireless"
+is_network_connection_type "802-3-ethernet"
+has_connected_wifi_device_status "wlan0:wifi:connected:Home WiFi" "Home WiFi"
+
+if is_network_connection_type "bridge"; then
+    echo "unsupported NetworkManager connection type was accepted" >&2
+    exit 1
+fi
+
+if has_connected_wifi_device_status "wlan0:wifi:disconnected:Home WiFi" "Home WiFi"; then
+    echo "disconnected Wi-Fi device status was accepted" >&2
+    exit 1
+fi
+
 echo "ok testServiceProbeParsing"
