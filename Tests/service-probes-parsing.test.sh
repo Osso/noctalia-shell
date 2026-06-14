@@ -262,6 +262,11 @@ if has_physical_upower_battery_details $'notnative-path:          BAT0\nnotrecha
     exit 1
 fi
 
+if has_physical_upower_battery_details $'native-path:          BAT0\nrechargeable:        yes trailing'; then
+    echo "malformed physical UPower battery details were accepted" >&2
+    exit 1
+fi
+
 is_network_connection_type "802-11-wireless"
 is_network_connection_type "802-3-ethernet"
 has_connected_wifi_device_status "wlan0:wifi:connected:Home WiFi" "Home WiFi"
