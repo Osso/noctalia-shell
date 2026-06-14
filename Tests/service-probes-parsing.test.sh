@@ -329,6 +329,11 @@ if has_ipc_target_function "$ipc_fixture" "launcher" "open"; then
     exit 1
 fi
 
+if has_ipc_toggle_handler $'target launcher\n  notfunction toggle(): void'; then
+    echo "malformed IPC toggle handler was accepted" >&2
+    exit 1
+fi
+
 canonical_repo="/syncthing/Sync/Projects/apps/noctalia-shell"
 start_wrapper_fixture=$'#!/usr/bin/env bash\nexec quickshell -p /syncthing/Sync/Projects/apps/noctalia-shell "$@"'
 niri_config_fixture=$'spawn-at-startup "/home/osso/bin/start-quickshell"\nbinds {\n    Mod+Space { spawn "quickshell" "ipc" "-p" "/syncthing/Sync/Projects/apps/noctalia-shell" "call" "launcher" "toggle"; }\n    Mod+Shift+S { spawn "quickshell" "ipc" "-p" "/syncthing/Sync/Projects/apps/noctalia-shell" "call" "settings" "toggle"; }\n}'

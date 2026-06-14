@@ -251,7 +251,7 @@ has_ipc_target() {
 has_ipc_toggle_handler() {
     local ipc_output="$1"
 
-    [[ "$ipc_output" =~ function[[:space:]]+toggle\(\):[[:space:]]+void ]]
+    [[ "$ipc_output" =~ (^|$'\n')[[:blank:]]*function[[:blank:]]+toggle\(\):[[:blank:]]+void[[:blank:]]*($'\n'|$) ]]
 }
 
 has_ipc_target_function() {
