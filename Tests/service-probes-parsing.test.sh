@@ -293,6 +293,11 @@ if has_upower_percentage "percentage:          87% trailing"; then
     exit 1
 fi
 
+if has_upower_percentage "percentage:          101%"; then
+    echo "out-of-range UPower percentage was accepted" >&2
+    exit 1
+fi
+
 if has_upower_battery_state "state:               broken"; then
     echo "invalid UPower battery state was accepted" >&2
     exit 1
