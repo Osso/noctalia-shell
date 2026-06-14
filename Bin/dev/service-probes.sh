@@ -328,9 +328,65 @@ probe_power_profile() {
     echo "ok probePowerProfile"
 }
 
+probe_battery() {
+    require_command upower
+
+    local devices display_device battery_device display_info battery_info
+    devices="$(upower -e)"
+    display_device="/org/freedesktop/UPower/devices/DisplayDevice"
+    battery_device=""
+
+    if [[ "$devices" != *"$display_device"* ]]; then
+        echo "UPower display device was not found" >&2
+        exit 1
+    fi
+
+    while IFS= read -r device; do
+        if [[ "$device" == *"/battery_"* ]]; then
+            battery_device="$device"
+            break
+        fi
+    done <<<"$devices"
+
+    if [[ -z "$battery_device" ]]; then
+        echo "no physical UPower battery device was found" >&2
+        exit 1
+    fi
+
+    display_info="$(upower -i "$display_device")"
+    battery_info="$(upower -i "$battery_device")"
+
+    if [[ "$display_info" != *"battery"* ]]; then
+        echo "UPower display device is not reporting battery details" >&2
+        exit 1
+    fi
+
+    if [[ "$display_info" != *"present:             yes"* ]]; then
+        echo "UPower display battery is not present" >&2
+        exit 1
+    fi
+
+    if [[ ! "$display_info" =~ percentage:[[:space:]]+[0-9]+% ]]; then
+        echo "UPower display battery percentage is missing or malformed" >&2
+        exit 1
+    fi
+
+    if [[ ! "$display_info" =~ state:[[:space:]]+(charging|discharging|empty|fully-charged|pending-charge|pending-discharge|unknown) ]]; then
+        echo "UPower display battery state is missing or unexpected" >&2
+        exit 1
+    fi
+
+    if [[ "$battery_info" != *"native-path:"* || "$battery_info" != *"rechargeable:        yes"* ]]; then
+        echo "physical UPower battery details are incomplete: $battery_device" >&2
+        exit 1
+    fi
+
+    echo "ok probeBattery"
+}
+
 usage() {
     cat <<'USAGE'
-Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network|power-profile]
+Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network|power-profile|battery]
 
 Runs read-only probes for services used by the local shell.
 USAGE
@@ -347,6 +403,7 @@ case "$probe" in
         probe_state_cache
         probe_network
         probe_power_profile
+        probe_battery
         ;;
     notifications)
         probe_notifications
@@ -374,6 +431,9 @@ case "$probe" in
         ;;
     power-profile)
         probe_power_profile
+        ;;
+    battery)
+        probe_battery
         ;;
     -h | --help | help)
         usage
