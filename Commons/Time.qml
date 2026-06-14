@@ -9,7 +9,7 @@ Singleton {
   id: root
 
   // Current date
-  property var now: new Date()
+  property date now: new Date()
 
   // Returns a Unix Timestamp (in seconds)
   readonly property int timestamp: {

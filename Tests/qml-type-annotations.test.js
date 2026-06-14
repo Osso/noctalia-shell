@@ -149,6 +149,7 @@ function testGeometryReferencesAreTypedItems() {
 
 function testTimeNowPropertiesAreTypedDates() {
   const clockFiles = [
+    "Commons/Time.qml",
     "Modules/Bar/Widgets/Clock.qml",
     "Modules/Cards/CalendarHeaderCard.qml",
     "Modules/Cards/CalendarMonthCard.qml",
