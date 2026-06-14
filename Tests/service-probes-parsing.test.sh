@@ -60,4 +60,11 @@ if has_supported_clipboard_mime $'application/x-special\napplication/octet-strea
     exit 1
 fi
 
+has_lock_key_state_rows $'caps:0\nnum:1\nscroll:0'
+
+if has_lock_key_state_rows $'caps:0\nnum:1'; then
+    echo "incomplete lock-key state rows were accepted" >&2
+    exit 1
+fi
+
 echo "ok testServiceProbeParsing"

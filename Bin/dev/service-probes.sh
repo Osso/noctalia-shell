@@ -53,6 +53,14 @@ has_supported_clipboard_mime() {
     return 1
 }
 
+has_lock_key_state_rows() {
+    local state_output="$1"
+
+    [[ "$state_output" =~ (^|$'\n')caps:[01]($'\n'|$) ]] \
+        && [[ "$state_output" =~ (^|$'\n')num:[01]($'\n'|$) ]] \
+        && [[ "$state_output" =~ (^|$'\n')scroll:[01]($'\n'|$) ]]
+}
+
 probe_notifications() {
     require_command gdbus
 
@@ -168,18 +176,8 @@ probe_lock_keys() {
     local state_output
     state_output="$(sh -c 'caps=0; cat /sys/class/leds/input*::capslock/brightness 2>/dev/null | grep -q 1 && caps=1; echo "caps:${caps}"; num=0; cat /sys/class/leds/input*::numlock/brightness 2>/dev/null | grep -q 1 && num=1; echo "num:${num}"; scroll=0; cat /sys/class/leds/input*::scrolllock/brightness 2>/dev/null | grep -q 1 && scroll=1; echo "scroll:${scroll}"')"
 
-    if [[ ! "$state_output" =~ (^|$'\n')caps:[01]($'\n'|$) ]]; then
-        echo "lock-key state output is missing caps row: $state_output" >&2
-        exit 1
-    fi
-
-    if [[ ! "$state_output" =~ (^|$'\n')num:[01]($'\n'|$) ]]; then
-        echo "lock-key state output is missing num row: $state_output" >&2
-        exit 1
-    fi
-
-    if [[ ! "$state_output" =~ (^|$'\n')scroll:[01]($'\n'|$) ]]; then
-        echo "lock-key state output is missing scroll row: $state_output" >&2
+    if ! has_lock_key_state_rows "$state_output"; then
+        echo "lock-key state output is missing or malformed: $state_output" >&2
         exit 1
     fi
 
