@@ -415,6 +415,11 @@ if has_quickshell_launch_path "exec quickshell -p ${canonical_repo}-old" "$canon
     exit 1
 fi
 
+if has_quickshell_launch_path "# exec quickshell -p $canonical_repo" "$canonical_repo"; then
+    echo "commented wrapper launch path was accepted" >&2
+    exit 1
+fi
+
 if has_niri_start_wrapper '// spawn-at-startup "/home/osso/bin/start-quickshell"'; then
     echo "commented Niri start wrapper was accepted" >&2
     exit 1

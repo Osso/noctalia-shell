@@ -285,8 +285,18 @@ has_ipc_target_function() {
 has_quickshell_launch_path() {
     local launcher_config="$1"
     local repo_path="$2"
+    local line
 
-    [[ "$launcher_config" =~ quickshell[[:blank:]]+-p[[:blank:]]+\"?$repo_path(\"|[[:blank:]]|$) ]]
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^[[:blank:]]*(//|#) ]]; then
+            continue
+        fi
+        if [[ "$line" =~ quickshell[[:blank:]]+-p[[:blank:]]+\"?$repo_path(\"|[[:blank:]]|$) ]]; then
+            return 0
+        fi
+    done <<<"$launcher_config"
+
+    return 1
 }
 
 has_niri_start_wrapper() {
