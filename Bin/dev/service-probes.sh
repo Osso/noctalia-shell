@@ -154,7 +154,7 @@ is_active_nm_device() {
 is_proc_cpu_aggregate_row() {
     local cpu_line="$1"
 
-    [[ "$cpu_line" =~ ^cpu[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+ ]]
+    [[ "$cpu_line" =~ ^cpu[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+$ ]]
 }
 
 has_meminfo_kb_row() {

@@ -163,6 +163,11 @@ if is_proc_cpu_aggregate_row "cpu not-numbers"; then
     exit 1
 fi
 
+if is_proc_cpu_aggregate_row "cpu  123 0 456 789 trailing"; then
+    echo "truncated /proc/stat CPU row was accepted" >&2
+    exit 1
+fi
+
 if has_meminfo_kb_row $'MemTotal: none kB' "MemAvailable"; then
     echo "missing /proc/meminfo row was accepted" >&2
     exit 1
