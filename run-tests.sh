@@ -20,6 +20,7 @@ USAGE
 
 run_unit_tests() {
     node "$repo_root/Tests/helpers.test.js"
+    node "$repo_root/Tests/widget-registry.test.js"
     bash "$repo_root/Tests/i18n-json.test.sh"
     bash "$repo_root/Tests/calendar-scripts.test.sh"
 }
