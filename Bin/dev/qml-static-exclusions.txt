@@ -25,11 +25,7 @@ Modules/Panels/Settings/Bar/WidgetSettings/CustomButtonSettings.qml
 Modules/Panels/Settings/ControlCenter/WidgetSettings/CustomButtonSettings.qml
 Modules/Panels/Settings/SettingsPanel.qml
 Modules/Panels/Settings/Tabs/AudioTab.qml
-Modules/Panels/Settings/Tabs/ControlCenterTab.qml
-Modules/Panels/Settings/Tabs/LocationTab.qml
-Modules/Panels/Settings/Tabs/SessionMenuTab.qml
 Modules/Panels/Settings/Tabs/WallpaperTab.qml
-Modules/Panels/SetupWizard/SetupWallpaperStep.qml
 Modules/Panels/Tray/TrayDrawerPanel.qml
 Modules/Panels/VPN/VPNConnectionItem.qml
 Modules/Panels/Wallpaper/WallpaperPanel.qml
@@ -38,7 +34,6 @@ Services/Compositor/HyprlandService.qml
 Services/Compositor/MangoService.qml
 Services/Control/HooksService.qml
 Services/Control/IPCService.qml
-Services/Hardware/FanService.qml
 Services/Media/AudioService.qml
 Services/Media/CavaService.qml
 Services/Networking/BluetoothService.qml

@@ -10,8 +10,8 @@ ColumnLayout {
   id: root
   spacing: Style.marginL
 
-  property list<var> cardsModel: []
-  property list<var> cardsDefault: [
+  property var cardsModel: []
+  property var cardsDefault: [
     {
       "id": "profile-card",
       "text": "Profile",

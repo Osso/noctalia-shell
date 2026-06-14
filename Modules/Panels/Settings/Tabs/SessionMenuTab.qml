@@ -11,8 +11,8 @@ ColumnLayout {
 
   spacing: Style.marginL
 
-  property list<var> entriesModel: []
-  property list<var> entriesDefault: [
+  property var entriesModel: []
+  property var entriesDefault: [
     {
       "id": "lock",
       "text": I18n.tr("session-menu.lock"),

@@ -12,7 +12,7 @@ Singleton {
   property int sleepDuration: 5000
 
   // Public values - list of fan objects with rpm and label
-  property list<var> fans: []
+  property var fans: []
   property bool available: fans.length > 0
 
   // Supported fan sensor names (hwmon drivers that expose fan_input)

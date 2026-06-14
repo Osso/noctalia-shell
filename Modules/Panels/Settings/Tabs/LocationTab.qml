@@ -9,8 +9,8 @@ ColumnLayout {
   id: root
   spacing: Style.marginL
 
-  property list<var> cardsModel: []
-  property list<var> cardsDefault: [
+  property var cardsModel: []
+  property var cardsDefault: [
     {
       "id": "calendar-header-card",
       "text": I18n.tr("settings.location.calendar.header.label"),

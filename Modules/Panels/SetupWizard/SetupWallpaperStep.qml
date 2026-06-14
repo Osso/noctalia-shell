@@ -330,8 +330,8 @@ ColumnLayout {
   }
 
   // Internal properties and functions
-  property list<string> wallpapersList: []
-  property list<string> filteredWallpapers: []
+  property var wallpapersList: []
+  property var filteredWallpapers: []
 
   function updateFilteredWallpapers() {
     filteredWallpapers = wallpapersList;
