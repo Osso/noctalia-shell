@@ -1,2 +1,1 @@
-Services/Control/IPCService.qml
 Services/Media/AudioService.qml
