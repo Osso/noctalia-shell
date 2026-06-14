@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../../Helpers/BrightnessParsing.js" as BrightnessParsing
 import qs.Commons
 
 Singleton {
@@ -95,21 +96,18 @@ Singleton {
     command: ["ddcutil", "detect", "--sleep-multiplier=0.5"]
     stdout: StdioCollector {
       onStreamFinished: {
-        var displays = text.trim().split("\n\n");
-        ddcProc.ddcMonitors = displays.map(d => {
-                                             var ddcModelMatch = d.match(/(This monitor does not support DDC\/CI|Invalid display)/);
-                                             var modelMatch = d.match(/Model:\s*(.*)/);
-                                             var busMatch = d.match(/I2C bus:[ ]*\/dev\/i2c-([0-9]+)/);
-                                             var ddcModel = ddcModelMatch ? ddcModelMatch.length > 0 : false;
-                                             var model = modelMatch ? modelMatch[1] : "Unknown";
-                                             var bus = busMatch ? busMatch[1] : "Unknown";
-                                             Logger.i("Brigthness", "Detected DDC Monitor:", model, "on bus", bus, "is DDC:", !ddcModel);
-                                             return {
-                                               "model": model,
-                                               "busNum": bus,
-                                               "isDdc": !ddcModel
-                                             };
-                                           });
+        ddcProc.ddcMonitors = BrightnessParsing.parseDdcMonitors(text);
+        ddcProc.ddcMonitors.forEach(monitor => {
+                                      Logger.i(
+                                        "Brigthness",
+                                        "Detected DDC Monitor:",
+                                        monitor.model,
+                                        "on bus",
+                                        monitor.busNum,
+                                        "is DDC:",
+                                        monitor.isDdc
+                                      );
+                                    });
         root.ddcMonitors = ddcProc.ddcMonitors.filter(m => m.isDdc);
       }
     }
@@ -223,37 +221,28 @@ Singleton {
 
           //Logger.i("Brightness", "Raw brightness data for", monitor.modelData.name + ":", dataText)
           if (monitor.isAppleDisplay) {
-            var val = parseInt(dataText);
-            if (!isNaN(val)) {
-              monitor.brightness = val / 101;
+            var appleBrightness = BrightnessParsing.parseAppleBrightness(dataText);
+            if (appleBrightness) {
+              monitor.brightness = appleBrightness.ratio;
               Logger.d("Brightness", "Apple display brightness:", monitor.brightness);
             }
           } else if (monitor.isDdc) {
-            var parts = dataText.split(" ");
-            if (parts.length >= 4) {
-              var current = parseInt(parts[3]);
-              var max = parseInt(parts[4]);
-              if (!isNaN(current) && !isNaN(max) && max > 0) {
-                monitor.brightness = current / max;
-                Logger.d("Brightness", "DDC brightness:", current + "/" + max + " =", monitor.brightness);
-              }
+            var ddcBrightness = BrightnessParsing.parseDdcBrightness(dataText);
+            if (ddcBrightness) {
+              monitor.brightness = ddcBrightness.ratio;
+              Logger.d("Brightness", "DDC brightness:", ddcBrightness.current + "/" + ddcBrightness.max + " =", monitor.brightness);
             }
           } else {
             // Internal backlight - parse the response which includes device path
-            var lines = dataText.split("\n");
-            if (lines.length >= 3) {
-              monitor.backlightDevice = lines[0];
-              monitor.brightnessPath = monitor.backlightDevice + "/brightness";
-              monitor.maxBrightnessPath = monitor.backlightDevice + "/max_brightness";
-
-              var current = parseInt(lines[1]);
-              var max = parseInt(lines[2]);
-              if (!isNaN(current) && !isNaN(max) && max > 0) {
-                monitor.maxBrightness = max;
-                monitor.brightness = current / max;
-                Logger.d("Brightness", "Internal brightness:", current + "/" + max + " =", monitor.brightness);
-                Logger.d("Brightness", "Using backlight device:", monitor.backlightDevice);
-              }
+            var internalBrightness = BrightnessParsing.parseInternalBacklight(dataText);
+            if (internalBrightness) {
+              monitor.backlightDevice = internalBrightness.devicePath;
+              monitor.brightnessPath = internalBrightness.brightnessPath;
+              monitor.maxBrightnessPath = internalBrightness.maxBrightnessPath;
+              monitor.maxBrightness = internalBrightness.max;
+              monitor.brightness = internalBrightness.ratio;
+              Logger.d("Brightness", "Internal brightness:", internalBrightness.current + "/" + internalBrightness.max + " =", monitor.brightness);
+              Logger.d("Brightness", "Using backlight device:", monitor.backlightDevice);
             }
           }
 

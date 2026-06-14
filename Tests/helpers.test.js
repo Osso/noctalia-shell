@@ -324,6 +324,45 @@ function testTimerDigitsParser() {
   assert.equal(timerDigits.formatDuration(3661, true), "01:01:01");
 }
 
+function testBrightnessParsing() {
+  const brightness = loadHelper("Helpers/BrightnessParsing.js");
+  const ddcOutput = `Invalid display
+   I2C bus:  /dev/i2c-3
+   EDID synopsis:
+      Model:                Internal Panel
+   This is a laptop display.  Laptop displays do not support DDC/CI.
+
+Display 1
+   I2C bus:  /dev/i2c-4
+   EDID synopsis:
+      Model:                DELL 2707WFP
+   VCP version:         2.0`;
+
+  assert.deepEqual(plain(brightness.parseDdcMonitors(ddcOutput)), [
+    { model: "Internal Panel", busNum: "3", isDdc: false },
+    { model: "DELL 2707WFP", busNum: "4", isDdc: true },
+  ]);
+  assert.deepEqual(plain(brightness.parseDdcBrightness("VCP 10 C 56 100")), {
+    current: 56,
+    max: 100,
+    ratio: 0.56,
+  });
+  assert.equal(brightness.parseDdcBrightness("VCP 10 C bad 100"), null);
+  assert.deepEqual(plain(brightness.parseAppleBrightness("50")), {
+    current: 50,
+    max: 101,
+    ratio: 50 / 101,
+  });
+  assert.deepEqual(plain(brightness.parseInternalBacklight("/sys/class/backlight/amdgpu_bl1\n36268\n64764")), {
+    devicePath: "/sys/class/backlight/amdgpu_bl1",
+    brightnessPath: "/sys/class/backlight/amdgpu_bl1/brightness",
+    maxBrightnessPath: "/sys/class/backlight/amdgpu_bl1/max_brightness",
+    current: 36268,
+    max: 64764,
+    ratio: 36268 / 64764,
+  });
+}
+
 function testDebugStringifyHandlesCircularReferences() {
   const debug = loadHelper("Helpers/Debug.js");
   const source = {
@@ -352,6 +391,7 @@ const tests = [
   testTextFormatterEscapesHtml,
   testCustomButtonContentParser,
   testTimerDigitsParser,
+  testBrightnessParsing,
   testDebugStringifyHandlesCircularReferences,
 ];
 
