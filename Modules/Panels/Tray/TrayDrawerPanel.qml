@@ -115,7 +115,7 @@ SmartPanel {
     return PanelService.getPopupMenuWindow(screen);
   }
 
-  readonly property var trayMenu: popupMenuWindow ? popupMenuWindow.trayMenuLoader : null
+  readonly property Loader trayMenu: popupMenuWindow ? popupMenuWindow.trayMenuLoader : null
 
   Connections {
     target: PanelService

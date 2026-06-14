@@ -275,6 +275,18 @@ function testTrayMenuSubMenuIsTyped() {
   assertNoPropertyType(trayMenuFile, "subMenu", "var");
 }
 
+function testTrayMenuLoaderReferencesAreTyped() {
+  const trayMenuLoaderFiles = [
+    "Modules/Bar/Widgets/Tray.qml",
+    "Modules/Panels/Tray/TrayDrawerPanel.qml",
+  ];
+
+  for (const trayMenuLoaderFile of trayMenuLoaderFiles) {
+    assertPropertyType(trayMenuLoaderFile, "trayMenu", "Loader");
+    assertNoPropertyType(trayMenuLoaderFile, "trayMenu", "var");
+  }
+}
+
 function testSectionEditorRegistryIsTyped() {
   const sectionEditorFile = "Widgets/NSectionEditor.qml";
 
@@ -314,6 +326,7 @@ const tests = [
   testAudioNodeHandlesAreTyped,
   testTrayMenuItemIsTyped,
   testTrayMenuSubMenuIsTyped,
+  testTrayMenuLoaderReferencesAreTyped,
   testSectionEditorRegistryIsTyped,
 ];
 
