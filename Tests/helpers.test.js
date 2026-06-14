@@ -189,6 +189,32 @@ function testQtObjectToPlainObject() {
   });
 }
 
+function testTextFormatterEscapesHtml() {
+  const textFormatter = loadHelper("Helpers/TextFormatter.js");
+  const formatted = textFormatter.wrapTextForDisplay("<tag attr=\"value\">Tom & 'Jerry'</tag>");
+
+  assert.match(formatted, /font-family:/);
+  assert.match(formatted, /white-space: pre-wrap/);
+  assert.match(formatted, /&lt;tag attr=&quot;value&quot;&gt;Tom &amp; &#39;Jerry&#39;&lt;\/tag&gt;/);
+  assert.equal(formatted.includes("<tag attr=\"value\">"), false);
+}
+
+function testDebugStringifyHandlesCircularReferences() {
+  const debug = loadHelper("Helpers/Debug.js");
+  const source = {
+    name: "root",
+    nested: {},
+  };
+  source.self = source;
+  source.nested.parent = source;
+
+  const formatted = debug.stringify(source, null, 2);
+
+  assert.match(formatted, /"name": "root"/);
+  assert.match(formatted, /"self": "\[Circular ~\]"/);
+  assert.match(formatted, /"parent": "\[Circular ~\]"/);
+}
+
 const tests = [
   testColorsConvert,
   testAdvancedMath,
@@ -196,6 +222,8 @@ const tests = [
   testThemeIconResolver,
   testFuzzySort,
   testQtObjectToPlainObject,
+  testTextFormatterEscapesHtml,
+  testDebugStringifyHandlesCircularReferences,
 ];
 
 for (const test of tests) {
