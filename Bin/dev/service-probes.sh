@@ -206,8 +206,16 @@ is_network_connection_type() {
 has_connected_wifi_device_status() {
     local device_status="$1"
     local wifi_name="$2"
+    local status_row device type state connection
 
-    [[ "$device_status" == *":wifi:connected:$wifi_name"* ]]
+    while IFS= read -r status_row; do
+        IFS=: read -r device type state connection <<<"$status_row"
+        if [[ "$type" == "wifi" && "$state" == "connected" && "$connection" == "$wifi_name" ]]; then
+            return 0
+        fi
+    done <<<"$device_status"
+
+    return 1
 }
 
 is_passwd_row() {
