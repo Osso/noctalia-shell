@@ -358,6 +358,11 @@ if has_quickshell_launch_path "$start_wrapper_fixture" "/home/osso/Repos/noctali
     exit 1
 fi
 
+if has_quickshell_launch_path "exec quickshell -p ${canonical_repo}-old" "$canonical_repo"; then
+    echo "prefixed wrapper launch path was accepted" >&2
+    exit 1
+fi
+
 if has_quickshell_ipc_call "$niri_config_fixture" "$canonical_repo" "sessionMenu" "toggle"; then
     echo "missing Niri IPC call was accepted" >&2
     exit 1

@@ -285,7 +285,7 @@ has_quickshell_launch_path() {
     local launcher_config="$1"
     local repo_path="$2"
 
-    [[ "$launcher_config" == *"quickshell -p $repo_path"* ]]
+    [[ "$launcher_config" =~ quickshell[[:blank:]]+-p[[:blank:]]+\"?$repo_path(\"|[[:blank:]]|$) ]]
 }
 
 has_niri_start_wrapper() {
