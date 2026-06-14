@@ -78,7 +78,7 @@ Item {
     return null;
   }
 
-  readonly property var battery: findBatteryDevice(deviceNativePath)
+  readonly property UPowerDevice battery: findBatteryDevice(deviceNativePath)
   readonly property var bluetoothDevice: deviceNativePath ? findBluetoothDevice(deviceNativePath) : null
   readonly property bool hasBluetoothBattery: bluetoothDevice && bluetoothDevice.batteryAvailable && bluetoothDevice.battery !== undefined
   readonly property bool isBluetoothConnected: bluetoothDevice && bluetoothDevice.connected === true

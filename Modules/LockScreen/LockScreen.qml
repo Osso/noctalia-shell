@@ -89,7 +89,7 @@ Loader {
 
             readonly property var bluetoothDevice: findBluetoothBatteryDevice()
             readonly property bool hasBluetoothBattery: bluetoothDevice && bluetoothDevice.batteryAvailable && bluetoothDevice.battery !== undefined
-            readonly property var battery: UPower.displayDevice
+            readonly property UPowerDevice battery: UPower.displayDevice
             readonly property bool isDevicePresent: {
               if (hasBluetoothBattery) {
                 return bluetoothDevice.connected === true;

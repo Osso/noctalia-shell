@@ -238,6 +238,20 @@ function testPowerProfilesReferenceIsTyped() {
   assertNoPropertyType(powerProfileServiceFile, "powerProfiles", "var");
 }
 
+function testUPowerBatteryReferencesAreTyped() {
+  const batteryFiles = [
+    "Modules/Bar/Widgets/Battery.qml",
+    "Modules/LockScreen/LockScreen.qml",
+    "Modules/Panels/Battery/BatteryPanel.qml",
+    "Modules/Panels/Settings/Tabs/BatteryTab.qml",
+  ];
+
+  for (const batteryFile of batteryFiles) {
+    assertPropertyType(batteryFile, "battery", "UPowerDevice");
+    assertNoPropertyType(batteryFile, "battery", "var");
+  }
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -266,6 +280,7 @@ const tests = [
   testLauncherPluginBackReferencesAreTyped,
   testCompositorBackendIsTyped,
   testPowerProfilesReferenceIsTyped,
+  testUPowerBatteryReferencesAreTyped,
 ];
 
 for (const test of tests) {

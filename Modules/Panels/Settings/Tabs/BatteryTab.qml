@@ -13,7 +13,7 @@ ColumnLayout {
   spacing: Style.marginL
 
   // Battery device (using UPower displayDevice)
-  readonly property var battery: UPower.displayDevice
+  readonly property UPowerDevice battery: UPower.displayDevice
   readonly property bool isReady: battery && battery.ready && battery.percentage !== undefined
   readonly property int percent: isReady ? Math.round(battery.percentage * 100) : -1
   readonly property bool charging: isReady ? battery.state === UPowerDeviceState.Charging : false
