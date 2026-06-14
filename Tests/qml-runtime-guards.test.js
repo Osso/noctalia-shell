@@ -45,8 +45,20 @@ function testOsdBrightnessHandlerRejectsInvalidValues() {
   assert.match(body, /root\.currentBrightness = normalizedBrightness/);
 }
 
+function testOsdShowRequiresScreenBeforeActivatingLoader() {
+  const source = readQml("Modules/OSD/OSD.qml");
+  const body = extractFunctionBody(source, "showOSD");
+  const screenGuard = body.indexOf("if (!modelData)");
+  const activation = body.indexOf("root.active = true");
+
+  assert.notEqual(screenGuard, -1, "showOSD must guard missing screen model data");
+  assert.notEqual(activation, -1, "showOSD must still activate the loader for valid screens");
+  assert.ok(screenGuard < activation, "showOSD must guard missing screen model data before activating the loader");
+}
+
 const tests = [
   testOsdBrightnessHandlerRejectsInvalidValues,
+  testOsdShowRequiresScreenBeforeActivatingLoader,
 ];
 
 for (const test of tests) {

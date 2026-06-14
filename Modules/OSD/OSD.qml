@@ -195,6 +195,9 @@ Variants {
       if (!isTypeEnabled(type))
         return;
 
+      if (!modelData)
+        return;
+
       currentOSDType = type;
 
       if (!root.active) {
