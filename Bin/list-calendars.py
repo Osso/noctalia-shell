@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 import gi
-
-gi.require_version('EDataServer', '1.2')
 import json
 
-from gi.repository import EDataServer
+try:
+    gi.require_version('EDataServer', '1.2')
+    from gi.repository import EDataServer
+except (ImportError, ValueError):
+    print(json.dumps([]))
+    raise SystemExit(0)
 
 registry = EDataServer.SourceRegistry.new_sync(None)
 sources = registry.list_sources(EDataServer.SOURCE_EXTENSION_CALENDAR)

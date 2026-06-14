@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 import gi
 
-gi.require_version('EDataServer', '1.2')
-gi.require_version('ECal', '2.0')
-gi.require_version('ICalGLib', "3.0")
 import json
 import sys
 import time
 from datetime import datetime, timezone
 
-from gi.repository import ECal, EDataServer, ICalGLib
+try:
+    gi.require_version('EDataServer', '1.2')
+    gi.require_version('ECal', '2.0')
+    gi.require_version('ICalGLib', "3.0")
+    from gi.repository import ECal, EDataServer, ICalGLib
+except (ImportError, ValueError):
+    print(json.dumps([]))
+    raise SystemExit(0)
 
 start_time = int(sys.argv[1])
 end_time = int(sys.argv[2])
