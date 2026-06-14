@@ -309,6 +309,18 @@ function testBrightnessPanelBrightnessMonitorIsTyped() {
   assertNoPropertyType(brightnessPanelFile, "brightnessMonitor", "var");
 }
 
+function testBackgroundShapeContainersAreTyped() {
+  const backgroundFiles = [
+    "Modules/MainScreen/Backgrounds/BarBackground.qml",
+    "Modules/MainScreen/Backgrounds/PanelBackground.qml",
+  ];
+
+  for (const backgroundFile of backgroundFiles) {
+    assertPropertyType(backgroundFile, "shapeContainer", "Shape");
+    assertNoPropertyType(backgroundFile, "shapeContainer", "var");
+  }
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -345,6 +357,7 @@ const tests = [
   testSectionEditorRegistryIsTyped,
   testDisplayTabBrightnessMonitorIsTyped,
   testBrightnessPanelBrightnessMonitorIsTyped,
+  testBackgroundShapeContainersAreTyped,
 ];
 
 for (const test of tests) {

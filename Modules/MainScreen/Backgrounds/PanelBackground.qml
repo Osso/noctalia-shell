@@ -25,7 +25,7 @@ ShapePath {
   required property var panel
 
   // Required reference to AllBackgrounds shapeContainer
-  required property var shapeContainer
+  required property Shape shapeContainer
 
   // Corner radius (from Style)
   readonly property real radius: Style.radiusL

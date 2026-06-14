@@ -23,7 +23,7 @@ ShapePath {
   required property var bar
 
   // Required reference to AllBackgrounds shapeContainer
-  required property var shapeContainer
+  required property Shape shapeContainer
 
   // Required reference to windowRoot for screen access
   required property var windowRoot
