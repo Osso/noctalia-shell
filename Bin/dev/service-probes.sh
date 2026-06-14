@@ -92,6 +92,27 @@ has_gpu_screen_recorder_capture_option() {
     [[ "$capture_options" =~ (^|$'\n')([^|]+[|][0-9]+x[0-9]+@[0-9]+hz[|][A-Za-z0-9_-]+|[^|[:space:]]+) ]]
 }
 
+is_power_profile_name() {
+    local profile="$1"
+
+    [[ "$profile" == "performance" || "$profile" == "balanced" || "$profile" == "power-saver" ]]
+}
+
+has_power_profile_entries() {
+    local profiles="$1"
+
+    [[ "$profiles" == *"performance:"* ]] \
+        && [[ "$profiles" == *"balanced:"* ]] \
+        && [[ "$profiles" == *"power-saver:"* ]]
+}
+
+has_active_power_profile_marker() {
+    local profiles="$1"
+    local current="$2"
+
+    [[ "$profiles" == *"* $current:"* ]]
+}
+
 probe_notifications() {
     require_command gdbus
 
@@ -474,23 +495,17 @@ probe_power_profile() {
     current="$(powerprofilesctl get)"
     profiles="$(powerprofilesctl list)"
 
-    case "$current" in
-        performance | balanced | power-saver)
-            ;;
-        *)
-            echo "unexpected active power profile: $current" >&2
-            exit 1
-            ;;
-    esac
+    if ! is_power_profile_name "$current"; then
+        echo "unexpected active power profile: $current" >&2
+        exit 1
+    fi
 
-    for profile in performance balanced power-saver; do
-        if [[ "$profiles" != *"$profile:"* ]]; then
-            echo "power profile is missing from list: $profile" >&2
-            exit 1
-        fi
-    done
+    if ! has_power_profile_entries "$profiles"; then
+        echo "power profile list is missing expected entries" >&2
+        exit 1
+    fi
 
-    if [[ "$profiles" != *"* $current:"* ]]; then
+    if ! has_active_power_profile_marker "$profiles" "$current"; then
         echo "active power profile is not marked in profile list: $current" >&2
         exit 1
     fi

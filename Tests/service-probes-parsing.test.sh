@@ -99,4 +99,23 @@ if has_gpu_screen_recorder_capture_option $'   '; then
     exit 1
 fi
 
+is_power_profile_name "balanced"
+has_power_profile_entries $'performance:\n* balanced:\npower-saver:'
+has_active_power_profile_marker $'performance:\n* balanced:\npower-saver:' "balanced"
+
+if is_power_profile_name "turbo"; then
+    echo "invalid power profile name was accepted" >&2
+    exit 1
+fi
+
+if has_power_profile_entries $'performance:\n* balanced:'; then
+    echo "incomplete power profile list was accepted" >&2
+    exit 1
+fi
+
+if has_active_power_profile_marker $'performance:\nbalanced:\npower-saver:' "balanced"; then
+    echo "unmarked active power profile was accepted" >&2
+    exit 1
+fi
+
 echo "ok testServiceProbeParsing"
