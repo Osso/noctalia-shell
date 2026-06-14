@@ -6,8 +6,8 @@
 set -euo pipefail
 
 # Configuration
-FOLDER_PATH="Assets/Translations"
-REFERENCE_FILE="en.json"
+FOLDER_PATH="${FOLDER_PATH:-Assets/Translations}"
+REFERENCE_FILE="${REFERENCE_FILE:-en.json}"
 TRANSLATE_MODE=false
 
 # Colors for terminal output
@@ -811,7 +811,7 @@ show_usage() {
     echo "                 If not provided, all language files will be compared" >&2
     echo "" >&2
     echo "Configuration:" >&2
-    echo "  - Folder path: $FOLDER_PATH (hardcoded)" >&2
+    echo "  - Folder path: $FOLDER_PATH" >&2
     echo "  - Reference file: $REFERENCE_FILE" >&2
     echo "" >&2
     echo "Examples:" >&2
