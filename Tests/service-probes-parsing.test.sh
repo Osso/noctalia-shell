@@ -118,4 +118,24 @@ if has_active_power_profile_marker $'performance:\nbalanced:\npower-saver:' "bal
     exit 1
 fi
 
+is_vpn_connection_type "vpn"
+is_vpn_connection_type "wireguard"
+is_nm_uuid "123e4567-e89b-12d3-a456-426614174000"
+is_active_nm_device "wg0"
+
+if is_vpn_connection_type "802-11-wireless"; then
+    echo "non-VPN NetworkManager type was accepted" >&2
+    exit 1
+fi
+
+if is_nm_uuid "not-a-uuid"; then
+    echo "malformed NetworkManager UUID was accepted" >&2
+    exit 1
+fi
+
+if is_active_nm_device "--"; then
+    echo "inactive NetworkManager device placeholder was accepted" >&2
+    exit 1
+fi
+
 echo "ok testServiceProbeParsing"

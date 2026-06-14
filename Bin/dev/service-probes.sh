@@ -113,6 +113,24 @@ has_active_power_profile_marker() {
     [[ "$profiles" == *"* $current:"* ]]
 }
 
+is_vpn_connection_type() {
+    local connection_type="$1"
+
+    [[ "$connection_type" == "vpn" || "$connection_type" == "wireguard" ]]
+}
+
+is_nm_uuid() {
+    local uuid="$1"
+
+    [[ "$uuid" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]
+}
+
+is_active_nm_device() {
+    local device="$1"
+
+    [[ -n "$device" && "$device" != "--" ]]
+}
+
 probe_notifications() {
     require_command gdbus
 
@@ -621,7 +639,7 @@ probe_vpn() {
         uuid="${remaining##*:}"
         name="${remaining%:*}"
 
-        if [[ "$type" != "vpn" && "$type" != "wireguard" ]]; then
+        if ! is_vpn_connection_type "$type"; then
             continue
         fi
 
@@ -632,12 +650,12 @@ probe_vpn() {
             exit 1
         fi
 
-        if [[ ! "$uuid" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
+        if ! is_nm_uuid "$uuid"; then
             echo "VPN connection row has malformed UUID: $row" >&2
             exit 1
         fi
 
-        if [[ -n "$device" && "$device" != "--" ]]; then
+        if is_active_nm_device "$device"; then
             active_count=$((active_count + 1))
         fi
     done <<<"$rows"
