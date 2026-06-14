@@ -82,6 +82,11 @@ if has_supported_clipboard_mime $'text/plain-bad\nimage/'; then
     exit 1
 fi
 
+if has_supported_clipboard_mime $'application/x-special\nimage/;bad'; then
+    echo "malformed image clipboard MIME subtype was accepted" >&2
+    exit 1
+fi
+
 has_lock_key_state_rows $'caps:0\nnum:1\nscroll:0'
 
 if has_lock_key_state_rows $'caps:0\nnum:1'; then

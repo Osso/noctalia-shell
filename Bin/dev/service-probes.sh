@@ -48,7 +48,7 @@ has_supported_clipboard_mime() {
     local mime_type
 
     while IFS= read -r mime_type; do
-        if [[ "$mime_type" =~ ^(text/plain|text/plain\;charset=utf-8|text/html|image/[^[:space:]/]+)$ ]]; then
+        if [[ "$mime_type" =~ ^(text/plain|text/plain\;charset=utf-8|text/html|image/[A-Za-z0-9][A-Za-z0-9._+-]*)$ ]]; then
             return 0
         fi
     done <<<"$mime_types"
