@@ -315,13 +315,17 @@ has_quickshell_ipc_call() {
     local target="$3"
     local function_name="$4"
     local normalized_config="${niri_config//\"/}"
-    local line
+    local line active_line
 
     while IFS= read -r line; do
         if [[ "$line" =~ ^[[:blank:]]*(//|#) ]]; then
             continue
         fi
-        if [[ "$line" =~ quickshell[[:blank:]]+ipc[[:blank:]]+-p[[:blank:]]+$repo_path[[:blank:]]+call[[:blank:]]+$target[[:blank:]]+$function_name($|[[:space:]]|[;}]) ]]; then
+        active_line="$line"
+        if [[ "$active_line" =~ ^(.*)[[:blank:]](//|#).*$ ]]; then
+            active_line="${BASH_REMATCH[1]}"
+        fi
+        if [[ "$active_line" =~ quickshell[[:blank:]]+ipc[[:blank:]]+-p[[:blank:]]+$repo_path[[:blank:]]+call[[:blank:]]+$target[[:blank:]]+$function_name($|[[:space:]]|[;}]) ]]; then
             return 0
         fi
     done <<<"$normalized_config"

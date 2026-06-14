@@ -435,6 +435,11 @@ if has_quickshell_ipc_call "// spawn quickshell ipc -p $canonical_repo call laun
     exit 1
 fi
 
+if has_quickshell_ipc_call "echo active # spawn quickshell ipc -p $canonical_repo call launcher toggle" "$canonical_repo" "launcher" "toggle"; then
+    echo "inline-commented Niri IPC call was accepted" >&2
+    exit 1
+fi
+
 if has_quickshell_ipc_call "$niri_config_fixture" "$canonical_repo" "sessionMenu" "toggle"; then
     echo "missing Niri IPC call was accepted" >&2
     exit 1
