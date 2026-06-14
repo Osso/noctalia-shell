@@ -65,7 +65,7 @@ ColumnLayout {
   }
 
   RowLayout {
-    spacing: Style?.marginM ?? 8
+    spacing: Style.marginM
 
     NLabel {
       label: I18n.tr("settings.control-center.shortcuts.custom-button.icon.label")
@@ -75,7 +75,7 @@ ColumnLayout {
     NIcon {
       Layout.alignment: Qt.AlignVCenter
       icon: _settings.icon || widgetMetadata.icon
-      pointSize: Style?.fontSizeXL ?? 24
+      pointSize: Style.fontSizeXL
       visible: (_settings.icon || widgetMetadata.icon) !== ""
     }
 
@@ -143,7 +143,7 @@ ColumnLayout {
   ColumnLayout {
     Layout.fillWidth: true
     visible: _settings.enableOnStateLogic
-    spacing: (Style?.marginM ?? 8) * 2
+    spacing: Style.marginM * 2
 
     NLabel {
       label: I18n.tr("settings.control-center.shortcuts.custom-button.state-checks.label")
@@ -160,7 +160,7 @@ ColumnLayout {
         RowLayout {
           id: contentRow
           anchors.fill: parent
-          spacing: Style?.marginM ?? 8
+          spacing: Style.marginM
 
           NTextInput {
             Layout.fillWidth: true
@@ -174,25 +174,25 @@ ColumnLayout {
 
           RowLayout {
             Layout.alignment: Qt.AlignVCenter
-            spacing: Style?.marginS ?? 4
+            spacing: Style.marginS
 
             NIcon {
               icon: model.icon
-              pointSize: Style?.fontSizeL ?? 20
+              pointSize: Style.fontSizeL
               visible: model.icon !== undefined && model.icon !== ""
             }
 
             NIconButton {
               icon: "folder"
               tooltipText: I18n.tr("settings.control-center.shortcuts.custom-button.state-checks.browse-icon")
-              baseSize: Style?.buttonSizeS ?? 24
+              baseSize: Style.buttonSizeS
               onClicked: iconPickerDelegate.open()
             }
 
             NIconButton {
               icon: "close"
               tooltipText: I18n.tr("settings.control-center.shortcuts.custom-button.state-checks.remove")
-              baseSize: Style?.buttonSizeS ?? 24
+              baseSize: Style.buttonSizeS
               colorBorder: Qt.alpha(Color.mOutline, Style.opacityLight)
               colorBg: Color.mError
               colorFg: Color.mOnError
@@ -224,7 +224,7 @@ ColumnLayout {
 
     RowLayout {
       Layout.fillWidth: true
-      spacing: Style?.marginM ?? 8
+      spacing: Style.marginM
 
       NButton {
         text: I18n.tr("settings.control-center.shortcuts.custom-button.state-checks.add")

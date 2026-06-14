@@ -8,7 +8,6 @@ Modules/MainScreen/MainScreen.qml
 Modules/Notification/Notification.qml
 Modules/OSD/OSD.qml
 Modules/Panels/Settings/Bar/WidgetSettings/CustomButtonSettings.qml
-Modules/Panels/Settings/ControlCenter/WidgetSettings/CustomButtonSettings.qml
 Services/Compositor/HyprlandService.qml
 Services/Control/IPCService.qml
 Services/Media/AudioService.qml
