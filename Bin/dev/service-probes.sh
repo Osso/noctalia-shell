@@ -1176,7 +1176,7 @@ read_os_release_value() {
 
         value="${value%\"}"
         value="${value#\"}"
-        if [[ -z "$value" ]]; then
+        if [[ -z "${value//[[:space:]]/}" ]]; then
             return 1
         fi
         printf '%s\n' "$value"

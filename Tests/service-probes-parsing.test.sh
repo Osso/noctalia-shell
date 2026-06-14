@@ -374,6 +374,16 @@ if read_os_release_value EMPTY_QUOTED_VALUE $'EMPTY_QUOTED_VALUE=""\nID=noctalia
     exit 1
 fi
 
+if read_os_release_value BLANK_VALUE $'BLANK_VALUE=   \nID=noctalia-test' >/dev/null; then
+    echo "blank os-release value was accepted" >&2
+    exit 1
+fi
+
+if read_os_release_value BLANK_QUOTED_VALUE $'BLANK_QUOTED_VALUE="   "\nID=noctalia-test' >/dev/null; then
+    echo "blank quoted os-release value was accepted" >&2
+    exit 1
+fi
+
 host_logo_fixture_root="$(mktemp -d)"
 trap 'rm -rf "$host_logo_fixture_root"' EXIT
 mkdir -p "$host_logo_fixture_root/usr/share/icons/hicolor/48x48/apps"
