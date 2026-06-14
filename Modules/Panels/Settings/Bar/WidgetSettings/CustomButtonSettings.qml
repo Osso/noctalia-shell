@@ -16,8 +16,29 @@ ColumnLayout {
   property string valueIcon: widgetData.icon !== undefined ? widgetData.icon : widgetMetadata.icon
   property bool valueTextStream: widgetData.textStream !== undefined ? widgetData.textStream : widgetMetadata.textStream
   property bool valueParseJson: widgetData.parseJson !== undefined ? widgetData.parseJson : widgetMetadata.parseJson
-  property int valueMaxTextLengthHorizontal: widgetData?.maxTextLength?.horizontal ?? widgetMetadata?.maxTextLength?.horizontal
-  property int valueMaxTextLengthVertical: widgetData?.maxTextLength?.vertical ?? widgetMetadata?.maxTextLength?.vertical
+  property int valueMaxTextLengthHorizontal: nestedSettingValue("maxTextLength", "horizontal", 0)
+  property int valueMaxTextLengthVertical: nestedSettingValue("maxTextLength", "vertical", 0)
+
+  function valueOrDefault(source, key, defaultValue) {
+    if (source && source[key] !== undefined) {
+      return source[key];
+    }
+    return defaultValue;
+  }
+
+  function settingValue(key, defaultValue) {
+    return valueOrDefault(widgetData, key, valueOrDefault(widgetMetadata, key, defaultValue));
+  }
+
+  function textSettingValue(key) {
+    return widgetData && widgetData[key] ? widgetData[key] : valueOrDefault(widgetMetadata, key, "");
+  }
+
+  function nestedSettingValue(parentKey, childKey, defaultValue) {
+    const dataParent = widgetData ? widgetData[parentKey] : null;
+    const metadataParent = widgetMetadata ? widgetMetadata[parentKey] : null;
+    return valueOrDefault(dataParent, childKey, valueOrDefault(metadataParent, childKey, defaultValue));
+  }
 
   function saveSettings() {
     var settings = Object.assign({}, widgetData || {});
@@ -97,7 +118,7 @@ ColumnLayout {
           label: I18n.tr("bar.widget-settings.custom-button.left-click.label")
           description: I18n.tr("bar.widget-settings.custom-button.left-click.description")
           placeholderText: I18n.tr("placeholders.enter-command")
-          text: widgetData?.leftClickExec || widgetMetadata.leftClickExec
+          text: textSettingValue("leftClickExec")
         }
 
         NToggle {
@@ -107,7 +128,7 @@ ColumnLayout {
           Layout.bottomMargin: Style.marginS
           onEntered: TooltipService.show(leftClickUpdateText, I18n.tr("bar.widget-settings.custom-button.left-click.update-text"), "auto")
           onExited: TooltipService.hide()
-          checked: widgetData?.leftClickUpdateText ?? widgetMetadata.leftClickUpdateText
+          checked: settingValue("leftClickUpdateText", false)
           onToggled: isChecked => checked = isChecked
         }
       }
@@ -121,7 +142,7 @@ ColumnLayout {
           label: I18n.tr("bar.widget-settings.custom-button.right-click.label")
           description: I18n.tr("bar.widget-settings.custom-button.right-click.description")
           placeholderText: I18n.tr("placeholders.enter-command")
-          text: widgetData?.rightClickExec || widgetMetadata.rightClickExec
+          text: textSettingValue("rightClickExec")
         }
 
         NToggle {
@@ -131,7 +152,7 @@ ColumnLayout {
           Layout.bottomMargin: Style.marginS
           onEntered: TooltipService.show(rightClickUpdateText, I18n.tr("bar.widget-settings.custom-button.right-click.update-text"), "auto")
           onExited: TooltipService.hide()
-          checked: widgetData?.rightClickUpdateText ?? widgetMetadata.rightClickUpdateText
+          checked: settingValue("rightClickUpdateText", false)
           onToggled: isChecked => checked = isChecked
         }
       }
@@ -155,7 +176,7 @@ ColumnLayout {
           Layout.bottomMargin: Style.marginS
           onEntered: TooltipService.show(middleClickUpdateText, I18n.tr("bar.widget-settings.custom-button.middle-click.update-text"), "auto")
           onExited: TooltipService.hide()
-          checked: widgetData?.middleClickUpdateText ?? widgetMetadata.middleClickUpdateText
+          checked: settingValue("middleClickUpdateText", false)
           onToggled: isChecked => checked = isChecked
         }
       }
@@ -166,7 +187,7 @@ ColumnLayout {
         Layout.fillWidth: true
         label: I18n.tr("bar.widget-settings.custom-button.wheel-mode-separate.label", "Separate wheel commands")
         description: I18n.tr("bar.widget-settings.custom-button.wheel-mode-separate.description", "Enable separate commands for wheel up and down")
-        property bool internalChecked: (widgetData?.wheelMode || widgetMetadata?.wheelMode || "unified") === "separate"
+        property bool internalChecked: textSettingValue("wheelMode") === "separate"
         checked: internalChecked
         onToggled: checked => {
                      internalChecked = checked;
@@ -188,7 +209,7 @@ ColumnLayout {
             label: I18n.tr("bar.widget-settings.custom-button.wheel.label")
             description: I18n.tr("bar.widget-settings.custom-button.wheel.description")
             placeholderText: I18n.tr("placeholders.enter-command")
-            text: widgetData?.wheelExec || widgetMetadata?.wheelExec || ""
+            text: textSettingValue("wheelExec")
           }
 
           NToggle {
@@ -198,7 +219,7 @@ ColumnLayout {
             Layout.bottomMargin: Style.marginS
             onEntered: TooltipService.show(wheelUpdateText, I18n.tr("bar.widget-settings.custom-button.wheel.update-text"), "auto")
             onExited: TooltipService.hide()
-            checked: widgetData?.wheelUpdateText ?? widgetMetadata?.wheelUpdateText
+            checked: settingValue("wheelUpdateText", false)
             onToggled: isChecked => checked = isChecked
           }
         }
@@ -217,7 +238,7 @@ ColumnLayout {
               label: I18n.tr("bar.widget-settings.custom-button.wheel-up.label")
               description: I18n.tr("bar.widget-settings.custom-button.wheel-up.description")
               placeholderText: I18n.tr("placeholders.enter-command")
-              text: widgetData?.wheelUpExec || widgetMetadata?.wheelUpExec || ""
+              text: textSettingValue("wheelUpExec")
             }
 
             NToggle {
@@ -227,7 +248,7 @@ ColumnLayout {
               Layout.bottomMargin: Style.marginS
               onEntered: TooltipService.show(wheelUpUpdateText, I18n.tr("bar.widget-settings.custom-button.wheel.update-text"), "auto")
               onExited: TooltipService.hide()
-              checked: (widgetData?.wheelUpUpdateText !== undefined) ? widgetData.wheelUpUpdateText : (widgetMetadata?.wheelUpUpdateText ?? false)
+              checked: settingValue("wheelUpUpdateText", false)
               onToggled: isChecked => checked = isChecked
             }
           }
@@ -241,7 +262,7 @@ ColumnLayout {
               label: I18n.tr("bar.widget-settings.custom-button.wheel-down.label")
               description: I18n.tr("bar.widget-settings.custom-button.wheel-down.description")
               placeholderText: I18n.tr("placeholders.enter-command")
-              text: widgetData?.wheelDownExec || widgetMetadata?.wheelDownExec || ""
+              text: textSettingValue("wheelDownExec")
             }
 
             NToggle {
@@ -251,7 +272,7 @@ ColumnLayout {
               Layout.bottomMargin: Style.marginS
               onEntered: TooltipService.show(wheelDownUpdateText, I18n.tr("bar.widget-settings.custom-button.wheel.update-text"), "auto")
               onExited: TooltipService.hide()
-              checked: (widgetData?.wheelDownUpdateText !== undefined) ? widgetData.wheelDownUpdateText : (widgetMetadata?.wheelDownUpdateText ?? false)
+              checked: settingValue("wheelDownUpdateText", false)
               onToggled: isChecked => checked = isChecked
             }
           }
@@ -306,7 +327,7 @@ ColumnLayout {
         label: I18n.tr("bar.widget-settings.custom-button.display-command-output.label")
         description: valueTextStream ? I18n.tr("bar.widget-settings.custom-button.display-command-output.stream-description") : I18n.tr("bar.widget-settings.custom-button.display-command-output.description")
         placeholderText: I18n.tr("placeholders.command-example")
-        text: widgetData?.textCommand || widgetMetadata.textCommand
+        text: textSettingValue("textCommand")
       }
 
       NTextInput {
@@ -316,7 +337,7 @@ ColumnLayout {
         label: I18n.tr("bar.widget-settings.custom-button.collapse-condition.label")
         description: I18n.tr("bar.widget-settings.custom-button.collapse-condition.description")
         placeholderText: I18n.tr("placeholders.enter-text-to-collapse")
-        text: widgetData?.textCollapse || widgetMetadata.textCollapse
+        text: textSettingValue("textCollapse")
       }
 
       NTextInput {

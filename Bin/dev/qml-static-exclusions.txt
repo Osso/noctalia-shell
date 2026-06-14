@@ -1,4 +1,3 @@
-Modules/Panels/Settings/Bar/WidgetSettings/CustomButtonSettings.qml
 Services/Compositor/HyprlandService.qml
 Services/Control/IPCService.qml
 Services/Media/AudioService.qml
