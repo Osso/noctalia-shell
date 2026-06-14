@@ -217,7 +217,7 @@ has_connected_wifi_device_status() {
 
     while IFS= read -r status_row; do
         IFS=: read -r device type state connection <<<"$status_row"
-        if [[ "$type" == "wifi" && "$state" == "connected" && "$connection" == "$wifi_name" ]]; then
+        if [[ -n "$device" && "$type" == "wifi" && "$state" == "connected" && "$connection" == "$wifi_name" ]]; then
             return 0
         fi
     done <<<"$device_status"

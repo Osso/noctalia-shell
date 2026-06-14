@@ -332,6 +332,11 @@ if has_connected_wifi_device_status "wlan0:wifi:connected:Home WiFi Guest" "Home
     exit 1
 fi
 
+if has_connected_wifi_device_status ":wifi:connected:Home WiFi" "Home WiFi"; then
+    echo "connected Wi-Fi status without a device was accepted" >&2
+    exit 1
+fi
+
 is_passwd_row "osso:x:1000:1000:Alessio:/home/osso:/usr/bin/zsh"
 has_readable_font_family $'JetBrains Mono\nNoto Sans Mono'
 
