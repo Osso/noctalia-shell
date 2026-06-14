@@ -9,7 +9,7 @@ import qs.Services.UI
 Singleton {
   id: root
 
-  readonly property var powerProfiles: PowerProfiles
+  readonly property QtObject powerProfiles: PowerProfiles
   readonly property bool available: powerProfiles && powerProfiles.hasPerformanceProfile
   property int profile: powerProfiles ? powerProfiles.profile : PowerProfile.Balanced
 

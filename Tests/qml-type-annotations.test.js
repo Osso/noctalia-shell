@@ -199,6 +199,13 @@ function testCompositorBackendIsTyped() {
   assertNoPropertyType(compositorServiceFile, "backend", "var");
 }
 
+function testPowerProfilesReferenceIsTyped() {
+  const powerProfileServiceFile = "Services/Power/PowerProfileService.qml";
+
+  assertPropertyType(powerProfileServiceFile, "powerProfiles", "QtObject");
+  assertNoPropertyType(powerProfileServiceFile, "powerProfiles", "var");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -224,6 +231,7 @@ const tests = [
   testDockCurrentContextMenuIsTyped,
   testLauncherPluginBackReferencesAreTyped,
   testCompositorBackendIsTyped,
+  testPowerProfilesReferenceIsTyped,
 ];
 
 for (const test of tests) {
