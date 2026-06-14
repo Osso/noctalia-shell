@@ -16,7 +16,9 @@ NIconButtonHot {
   onClicked: {
     ScreenRecorderService.toggleRecording();
     if (!ScreenRecorderService.isRecording) {
-      PanelService.getPanel("controlCenterPanel", screen)?.close;
+      const panel = PanelService.getPanel("controlCenterPanel", screen);
+      if (panel)
+        panel.close;
     }
   }
 }

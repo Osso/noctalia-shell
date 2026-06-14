@@ -11,6 +11,10 @@ NIconButtonHot {
   icon: NotificationService.doNotDisturb ? "bell-off" : "bell"
   hot: NotificationService.doNotDisturb
   tooltipText: I18n.tr("quickSettings.notifications.tooltip.action")
-  onClicked: PanelService.getPanel("notificationHistoryPanel", screen)?.toggle(this)
+  onClicked: {
+    const panel = PanelService.getPanel("notificationHistoryPanel", screen);
+    if (panel)
+      panel.toggle(this);
+  }
   onRightClicked: NotificationService.doNotDisturb = !NotificationService.doNotDisturb
 }

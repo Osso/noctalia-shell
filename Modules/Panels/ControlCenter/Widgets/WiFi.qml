@@ -30,6 +30,10 @@ NIconButtonHot {
   }
 
   tooltipText: I18n.tr("quickSettings.wifi.tooltip.action")
-  onClicked: PanelService.getPanel("wifiPanel", screen)?.toggle(this)
+  onClicked: {
+    const panel = PanelService.getPanel("wifiPanel", screen);
+    if (panel)
+      panel.toggle(this);
+  }
   onRightClicked: NetworkService.setWifiEnabled(!Settings.data.network.wifiEnabled)
 }

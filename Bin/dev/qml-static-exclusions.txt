@@ -21,12 +21,6 @@ Modules/Notification/Notification.qml
 Modules/OSD/OSD.qml
 Modules/Panels/Audio/AudioPanel.qml
 Modules/Panels/ControlCenter/ControlCenterPanel.qml
-Modules/Panels/ControlCenter/Widgets/Bluetooth.qml
-Modules/Panels/ControlCenter/Widgets/Notifications.qml
-Modules/Panels/ControlCenter/Widgets/ScreenRecorder.qml
-Modules/Panels/ControlCenter/Widgets/VPN.qml
-Modules/Panels/ControlCenter/Widgets/WallpaperSelector.qml
-Modules/Panels/ControlCenter/Widgets/WiFi.qml
 Modules/Panels/Settings/Bar/WidgetSettings/CustomButtonSettings.qml
 Modules/Panels/Settings/ControlCenter/WidgetSettings/CustomButtonSettings.qml
 Modules/Panels/Settings/SettingsPanel.qml

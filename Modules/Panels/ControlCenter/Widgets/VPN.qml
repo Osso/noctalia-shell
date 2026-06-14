@@ -17,5 +17,9 @@ NIconButtonHot {
     return I18n.tr("tooltips.manage-vpn");
   }
 
-  onClicked: PanelService.getPanel("vpnPanel", screen)?.toggle(this)
+  onClicked: {
+    const panel = PanelService.getPanel("vpnPanel", screen);
+    if (panel)
+      panel.toggle(this);
+  }
 }
