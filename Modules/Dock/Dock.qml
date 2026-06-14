@@ -66,7 +66,7 @@ Loader {
       readonly property int hideAnimationDuration: Style.animationFast
       readonly property int showAnimationDuration: Style.animationFast
       readonly property int peekHeight: 1
-      readonly property int iconSize: Math.round(12 + 24 * (Settings.data.dock.size ?? 1))
+      readonly property int iconSize: Math.round(12 + 24 * (Settings.data.dock.size !== undefined ? Settings.data.dock.size : 1))
       readonly property int floatingMargin: Settings.data.dock.floatingRatio * Style.marginL
 
       // Bar detection and positioning properties
@@ -258,7 +258,7 @@ Loader {
           focusable: false
           color: Color.transparent
 
-          WlrLayershell.namespace: "noctalia-dock-peek-" + (screen?.name || "unknown")
+          WlrLayershell.namespace: "noctalia-dock-peek-" + (screen ? screen.name : "unknown")
           WlrLayershell.exclusionMode: ExclusionMode.Ignore
           implicitHeight: peekHeight
 
@@ -297,7 +297,7 @@ Loader {
           focusable: false
           color: Color.transparent
 
-          WlrLayershell.namespace: "noctalia-dock-" + (screen?.name || "unknown")
+          WlrLayershell.namespace: "noctalia-dock-" + (screen ? screen.name : "unknown")
           WlrLayershell.exclusionMode: exclusive ? ExclusionMode.Auto : ExclusionMode.Ignore
 
           // Size to fit the dock container exactly
@@ -393,7 +393,7 @@ Loader {
                 function getAppIcon(appData): string {
                   if (!appData || !appData.appId)
                     return "";
-                  return ThemeIcons.iconForAppId(appData.appId?.toLowerCase());
+                  return ThemeIcons.iconForAppId(appData.appId.toLowerCase());
                 }
 
                 RowLayout {
@@ -433,7 +433,7 @@ Loader {
 
                       // Listen for the toplevel being closed
                       Connections {
-                        target: modelData?.toplevel
+                        target: modelData ? modelData.toplevel : null
                         function onClosed() {
                           Qt.callLater(root.updateDockApps);
                         }
@@ -604,7 +604,7 @@ Loader {
                           root.closeAllContextMenus();
 
                           // Check if toplevel is still valid (not a stale reference)
-                          const isValidToplevel = modelData?.toplevel && ToplevelManager && ToplevelManager.toplevels.values.includes(modelData.toplevel);
+                          const isValidToplevel = modelData && modelData.toplevel && ToplevelManager && ToplevelManager.toplevels.values.includes(modelData.toplevel);
 
                           if (mouse.button === Qt.MiddleButton && isValidToplevel && modelData.toplevel.close) {
                             modelData.toplevel.close();
@@ -613,7 +613,7 @@ Loader {
                             if (isValidToplevel && modelData.toplevel.activate) {
                               // Running app - activate it
                               modelData.toplevel.activate();
-                            } else if (modelData?.appId) {
+                            } else if (modelData && modelData.appId) {
                               // Pinned app not running - launch it
                               Quickshell.execDetached(["gtk-launch", modelData.appId]);
                             }

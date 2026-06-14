@@ -1,5 +1,4 @@
 Modules/Bar/Extras/TrayMenu.qml
-Modules/Dock/Dock.qml
 Modules/MainScreen/MainScreen.qml
 Modules/Panels/Settings/Bar/WidgetSettings/CustomButtonSettings.qml
 Services/Compositor/HyprlandService.qml
