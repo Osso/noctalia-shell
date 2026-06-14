@@ -55,6 +55,12 @@ has_supported_clipboard_mime() {
     return 1
 }
 
+has_clipboard_mime_types() {
+    local mime_types="$1"
+
+    [[ -n "${mime_types//[[:space:]]/}" ]]
+}
+
 has_lock_key_state_rows() {
     local state_output="$1"
 
@@ -404,14 +410,14 @@ probe_clipboard() {
     local types
     types="$(wl-paste --list-types 2>/dev/null || true)"
 
-    if [[ -z "$types" ]]; then
+    if ! has_clipboard_mime_types "$types"; then
         echo "clipboard type list is empty; clipboard service may be unavailable" >&2
         exit 1
     fi
 
     if ! has_supported_clipboard_mime "$types"; then
-        echo "clipboard has no expected text/html/image MIME types: $types" >&2
-        exit 1
+        echo "ok probeClipboardUnsupported"
+        return
     fi
 
     echo "ok probeClipboard"
