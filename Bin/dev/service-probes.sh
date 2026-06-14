@@ -359,14 +359,18 @@ has_stale_launch_path() {
 list_quickshell_ipc_calls() {
     local niri_config="$1"
     local normalized_config="${niri_config//\"/}"
-    local line
+    local line active_line
 
     while IFS= read -r line; do
         if [[ "$line" =~ ^[[:blank:]]*(//|#) ]]; then
             continue
         fi
-        if [[ "$line" =~ quickshell[[:blank:]]+ipc[[:blank:]] ]] \
-            && [[ "$line" =~ call[[:space:]]+([A-Za-z0-9_]+)[[:space:]]+([A-Za-z0-9_]+) ]]; then
+        active_line="$line"
+        if [[ "$active_line" =~ ^(.*)[[:blank:]](//|#).*$ ]]; then
+            active_line="${BASH_REMATCH[1]}"
+        fi
+        if [[ "$active_line" =~ quickshell[[:blank:]]+ipc[[:blank:]] ]] \
+            && [[ "$active_line" =~ call[[:space:]]+([A-Za-z0-9_]+)[[:space:]]+([A-Za-z0-9_]+) ]]; then
             printf '%s %s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
         fi
     done <<<"$normalized_config"

@@ -404,6 +404,7 @@ assert_equal "$(list_quickshell_ipc_calls "$spawn_sh_niri_fixture")" $'launcher 
 assert_equal "$(list_quickshell_ipc_calls "$niri_config_fixture")" $'launcher toggle\nsettings toggle' "quoted spawn IPC call extraction failed"
 assert_equal "$(list_quickshell_ipc_calls 'spawn not-quickshell call launcher toggle')" "" "non-Quickshell IPC call extraction failed"
 assert_equal "$(list_quickshell_ipc_calls '// spawn-sh "quickshell ipc -p /syncthing/Sync/Projects/apps/noctalia-shell call launcher toggle"')" "" "commented IPC call extraction failed"
+assert_equal "$(list_quickshell_ipc_calls 'echo active # quickshell ipc -p /syncthing/Sync/Projects/apps/noctalia-shell call launcher toggle')" "" "inline-commented IPC call extraction failed"
 
 if has_quickshell_launch_path "$start_wrapper_fixture" "/home/osso/Repos/noctalia-shell"; then
     echo "stale wrapper launch path was accepted" >&2
