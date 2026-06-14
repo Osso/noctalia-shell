@@ -1068,6 +1068,7 @@ probe_system_stats() {
 
 read_os_release_value() {
     local wanted="$1"
+    local os_release_content="${2:-}"
     local key value
 
     while IFS='=' read -r key value; do
@@ -1079,7 +1080,13 @@ read_os_release_value() {
         value="${value#\"}"
         printf '%s\n' "$value"
         return 0
-    done </etc/os-release
+    done < <(
+        if [[ -n "$os_release_content" ]]; then
+            printf '%s\n' "$os_release_content"
+        else
+            cat /etc/os-release
+        fi
+    )
 
     return 1
 }

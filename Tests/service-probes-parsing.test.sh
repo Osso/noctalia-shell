@@ -203,6 +203,15 @@ if has_readable_font_family $'   \n12345'; then
     exit 1
 fi
 
+os_release_fixture=$'PRETTY_NAME="Noctalia Test OS"\nNAME=NoctaliaTest\nID=noctalia-test\nLOGO=noctalia-test-logo'
+assert_equal "$(read_os_release_value PRETTY_NAME "$os_release_fixture")" "Noctalia Test OS" "quoted os-release value parse failed"
+assert_equal "$(read_os_release_value ID "$os_release_fixture")" "noctalia-test" "unquoted os-release value parse failed"
+
+if read_os_release_value MISSING_KEY "$os_release_fixture" >/dev/null; then
+    echo "missing os-release key was accepted" >&2
+    exit 1
+fi
+
 ipc_fixture=$'target launcher\n  function toggle(): void\ntarget settings\n  function toggle(): void\n  function open(): void'
 
 has_ipc_target "$ipc_fixture" "launcher"
