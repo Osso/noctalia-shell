@@ -90,8 +90,16 @@ is_gpu_screen_recorder_monitor_row() {
 
 has_gpu_screen_recorder_capture_option() {
     local capture_options="$1"
+    local capture_option
 
-    [[ "$capture_options" =~ (^|$'\n')([^|]+[|][0-9]+x[0-9]+@[0-9]+hz[|][A-Za-z0-9_-]+|[^|[:space:]]+) ]]
+    while IFS= read -r capture_option; do
+        if [[ "$capture_option" =~ ^[^|]+[|][0-9]+x[0-9]+@[0-9]+hz[|][A-Za-z0-9_-]+$ ]] \
+            || [[ "$capture_option" =~ ^[^|[:space:]]+$ ]]; then
+            return 0
+        fi
+    done <<<"$capture_options"
+
+    return 1
 }
 
 is_power_profile_name() {
