@@ -114,28 +114,33 @@ NIconButton {
     ]
 
     onTriggered: action => {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.close();
-                   }
+      var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+      if (popupMenuWindow) {
+        popupMenuWindow.close();
+      }
 
-                   if (action === "open-launcher") {
-                     PanelService.getPanel("launcherPanel", screen)?.toggle();
-                   } else if (action === "open-settings") {
-                     PanelService.getPanel("settingsPanel", screen)?.toggle();
-                   } else if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                   }
-                 }
+      if (action === "open-launcher") {
+        const panel = PanelService.getPanel("launcherPanel", screen);
+        if (panel)
+          panel.toggle();
+      } else if (action === "open-settings") {
+        const panel = PanelService.getPanel("settingsPanel", screen);
+        if (panel)
+          panel.toggle();
+      } else if (action === "widget-settings") {
+        BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
+      }
+    }
   }
 
   onClicked: {
     var controlCenterPanel = PanelService.getPanel("controlCenterPanel", screen);
     if (Settings.data.controlCenter.position === "close_to_bar_button") {
       // Will open the panel next to the bar button.
-      controlCenterPanel?.toggle(this);
-    } else {
-      controlCenterPanel?.toggle();
+      if (controlCenterPanel)
+        controlCenterPanel.toggle(this);
+    } else if (controlCenterPanel) {
+      controlCenterPanel.toggle();
     }
   }
   onRightClicked: {
@@ -146,7 +151,11 @@ NIconButton {
       contextMenu.openAtItem(root, pos.x, pos.y);
     }
   }
-  onMiddleClicked: PanelService.getPanel("launcherPanel", screen)?.toggle()
+  onMiddleClicked: {
+    const panel = PanelService.getPanel("launcherPanel", screen);
+    if (panel)
+      panel.toggle();
+  }
 
   IconImage {
     id: customOrDistroLogo

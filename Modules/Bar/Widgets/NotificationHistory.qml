@@ -96,7 +96,8 @@ NIconButton {
 
   onClicked: {
     var panel = PanelService.getPanel("notificationHistoryPanel", screen);
-    panel?.toggle(this);
+    if (panel)
+      panel.toggle(this);
   }
 
   onRightClicked: {

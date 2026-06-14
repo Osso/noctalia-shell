@@ -25,7 +25,7 @@ Rectangle {
       var widgets = Settings.data.bar.widgets[section];
       if (widgets && sectionWidgetIndex < widgets.length) {
         return widgets[sectionWidgetIndex];
-      }
+    }
     }
     return {};
   }
@@ -134,18 +134,20 @@ Rectangle {
     ]
 
     onTriggered: action => {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.close();
-                   }
+      var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+      if (popupMenuWindow) {
+        popupMenuWindow.close();
+      }
 
-                   if (action === "open-calendar") {
-                     PanelService.getPanel("clockPanel", screen)?.toggle(root);
-                   } else if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                   }
-                 }
-  }
+      if (action === "open-calendar") {
+        const panel = PanelService.getPanel("clockPanel", screen);
+        if (panel)
+          panel.toggle(root);
+      } else if (action === "widget-settings") {
+        BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
+      }
+    }
+    }
 
   MouseArea {
     id: clockMouseArea
@@ -154,7 +156,8 @@ Rectangle {
     hoverEnabled: true
     acceptedButtons: Qt.LeftButton | Qt.RightButton
     onEntered: {
-      if (!PanelService.getPanel("clockPanel", screen)?.active) {
+      const panel = PanelService.getPanel("clockPanel", screen);
+      if (!panel || !panel.active) {
         TooltipService.show(root, I18n.tr("clock.tooltip"), BarService.getTooltipDirection());
       }
     }
@@ -162,17 +165,19 @@ Rectangle {
       TooltipService.hide();
     }
     onClicked: mouse => {
-                 TooltipService.hide();
-                 if (mouse.button === Qt.RightButton) {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.showContextMenu(contextMenu);
-                     const pos = BarService.getContextMenuPosition(root, contextMenu.implicitWidth, contextMenu.implicitHeight);
-                     contextMenu.openAtItem(root, pos.x, pos.y);
-                   }
-                 } else {
-                   PanelService.getPanel("clockPanel", screen)?.toggle(this);
-                 }
-               }
-  }
+      TooltipService.hide();
+      if (mouse.button === Qt.RightButton) {
+        var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+        if (popupMenuWindow) {
+          popupMenuWindow.showContextMenu(contextMenu);
+          const pos = BarService.getContextMenuPosition(root, contextMenu.implicitWidth, contextMenu.implicitHeight);
+          contextMenu.openAtItem(root, pos.x, pos.y);
+    }
+      } else {
+        const panel = PanelService.getPanel("clockPanel", screen);
+        if (panel)
+          panel.toggle(this);
+      }
+    }
+    }
 }

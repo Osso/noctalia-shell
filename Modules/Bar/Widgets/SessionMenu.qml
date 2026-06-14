@@ -81,7 +81,11 @@ NIconButton {
                  }
   }
 
-  onClicked: PanelService.getPanel("sessionMenuPanel", screen)?.toggle()
+  onClicked: {
+    const panel = PanelService.getPanel("sessionMenuPanel", screen);
+    if (panel)
+      panel.toggle();
+  }
   onRightClicked: {
     var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
     if (popupMenuWindow) {

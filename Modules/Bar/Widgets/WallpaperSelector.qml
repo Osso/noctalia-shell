@@ -49,9 +49,10 @@ NIconButton {
   onClicked: {
     var wallpaperPanel = PanelService.getPanel("wallpaperPanel", screen);
     if (Settings.data.wallpaper.panelPosition === "follow_bar") {
-      wallpaperPanel?.toggle(this);
-    } else {
-      wallpaperPanel?.toggle();
+      if (wallpaperPanel)
+        wallpaperPanel.toggle(this);
+    } else if (wallpaperPanel) {
+      wallpaperPanel.toggle();
     }
   }
   onRightClicked: {
