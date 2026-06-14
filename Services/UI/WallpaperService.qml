@@ -324,7 +324,7 @@ Singleton {
 
   // -------------------------------------------------------------------
   function restartRandomWallpaperTimer() {
-    if (Settings.data.wallpaper.isRandom) {
+    if (Settings.data.wallpaper.randomEnabled) {
       randomWallpaperTimer.restart();
     }
   }

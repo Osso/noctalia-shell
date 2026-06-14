@@ -362,7 +362,7 @@ Item {
 
     if (!query || query.trim() === "") {
       // Return filtered apps, optionally sorted by usage
-      const favoriteApps = Settings.data.appLauncher.favoriteApps || [];
+      const favoriteApps = Settings.data.appLauncher.pinnedExecs || [];
       let sorted;
       if (Settings.data.appLauncher.sortByMostUsed) {
         sorted = filteredEntries.slice().sort((a, b) => {
@@ -398,7 +398,7 @@ Item {
                                         });
 
       // Sort favorites first within fuzzy results while preserving fuzzysort order otherwise
-      const favoriteApps = Settings.data.appLauncher.favoriteApps || [];
+      const favoriteApps = Settings.data.appLauncher.pinnedExecs || [];
       const fav = [];
       const nonFav = [];
       for (const r of fuzzyResults) {
