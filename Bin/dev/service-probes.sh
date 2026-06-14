@@ -291,7 +291,7 @@ has_quickshell_launch_path() {
 has_niri_start_wrapper() {
     local niri_config="$1"
 
-    [[ "$niri_config" == *'spawn-at-startup "/home/osso/bin/start-quickshell"'* ]]
+    [[ "$niri_config" =~ (^|$'\n')[[:blank:]]*spawn-at-startup[[:blank:]]+\"/home/osso/bin/start-quickshell\"[[:blank:]]*($'\n'|$) ]]
 }
 
 has_quickshell_ipc_call() {
