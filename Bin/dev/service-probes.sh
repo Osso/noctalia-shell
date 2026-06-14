@@ -387,7 +387,7 @@ list_quickshell_ipc_calls() {
         fi
         active_line="$(strip_inline_launch_comment "$line")"
         if [[ "$active_line" =~ quickshell[[:blank:]]+ipc[[:blank:]] ]] \
-            && [[ "$active_line" =~ call[[:space:]]+([A-Za-z0-9_]+)[[:space:]]+([A-Za-z0-9_]+) ]]; then
+            && [[ "$active_line" =~ call[[:space:]]+([A-Za-z0-9_]+)[[:space:]]+([A-Za-z0-9_]+)($|[[:space:]]|[;}]) ]]; then
             printf '%s %s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
         fi
     done <<<"$normalized_config"
