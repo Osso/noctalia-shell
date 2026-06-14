@@ -7,7 +7,7 @@ import qs.Commons
 Item {
   id: root
 
-  property var launcher: null
+  property Item launcher: null
   property string name: I18n.tr("plugins.applications")
   property bool handleSearch: true
   property var entries: []

@@ -8,7 +8,7 @@ Item {
 
   // Plugin metadata
   property string name: I18n.tr("plugins.clipboard")
-  property var launcher: null
+  property Item launcher: null
 
   // Plugin capabilities
   property bool handleSearch: false // Don't handle regular search

@@ -3,7 +3,7 @@ import "../../../../Helpers/AdvancedMath.js" as AdvancedMath
 import qs.Commons
 
 Item {
-  property var launcher: null
+  property Item launcher: null
   property string name: I18n.tr("plugins.calculator")
 
   function handleCommand(query) {

@@ -8,7 +8,7 @@ Item {
 
   // Plugin metadata
   property string name: I18n.tr("plugins.emoji")
-  property var launcher: null
+  property Item launcher: null
   property bool handleSearch: false
 
   property string selectedCategory: "recent"

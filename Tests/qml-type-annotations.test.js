@@ -178,6 +178,20 @@ function testDockCurrentContextMenuIsTyped() {
   assertNoPropertyType(dockFile, "currentContextMenu", "var");
 }
 
+function testLauncherPluginBackReferencesAreTyped() {
+  const pluginFiles = [
+    "Modules/Panels/Launcher/Plugins/ApplicationsPlugin.qml",
+    "Modules/Panels/Launcher/Plugins/CalculatorPlugin.qml",
+    "Modules/Panels/Launcher/Plugins/ClipboardPlugin.qml",
+    "Modules/Panels/Launcher/Plugins/EmojiPlugin.qml",
+  ];
+
+  for (const pluginFile of pluginFiles) {
+    assertPropertyType(pluginFile, "launcher", "Item");
+    assertNoPropertyType(pluginFile, "launcher", "var");
+  }
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -201,6 +215,7 @@ const tests = [
   testPopupMenuWindowContentItemIsTyped,
   testLauncherActivePluginIsTyped,
   testDockCurrentContextMenuIsTyped,
+  testLauncherPluginBackReferencesAreTyped,
 ];
 
 for (const test of tests) {
