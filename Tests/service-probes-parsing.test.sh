@@ -219,4 +219,33 @@ if has_ipc_target_function "$ipc_fixture" "launcher" "open"; then
     exit 1
 fi
 
+canonical_repo="/syncthing/Sync/Projects/apps/noctalia-shell"
+start_wrapper_fixture=$'#!/usr/bin/env bash\nexec quickshell -p /syncthing/Sync/Projects/apps/noctalia-shell "$@"'
+niri_config_fixture=$'spawn-at-startup "/home/osso/bin/start-quickshell"\nbinds {\n    Mod+Space { spawn "quickshell" "ipc" "-p" "/syncthing/Sync/Projects/apps/noctalia-shell" "call" "launcher" "toggle"; }\n    Mod+Shift+S { spawn "quickshell" "ipc" "-p" "/syncthing/Sync/Projects/apps/noctalia-shell" "call" "settings" "toggle"; }\n}'
+
+has_quickshell_launch_path "$start_wrapper_fixture" "$canonical_repo"
+has_niri_start_wrapper "$niri_config_fixture"
+has_quickshell_ipc_call "$niri_config_fixture" "$canonical_repo" "launcher" "toggle"
+has_quickshell_ipc_call "$niri_config_fixture" "$canonical_repo" "settings" "toggle"
+
+if has_quickshell_launch_path "$start_wrapper_fixture" "/home/osso/Repos/noctalia-shell"; then
+    echo "stale wrapper launch path was accepted" >&2
+    exit 1
+fi
+
+if has_quickshell_ipc_call "$niri_config_fixture" "$canonical_repo" "sessionMenu" "toggle"; then
+    echo "missing Niri IPC call was accepted" >&2
+    exit 1
+fi
+
+if has_stale_launch_path "$start_wrapper_fixture"$'\n'"$niri_config_fixture" "/home/osso/Repos/noctalia-shell" "~/Repos/noctalia-shell"; then
+    echo "stale-free launch fixtures were flagged as stale" >&2
+    exit 1
+fi
+
+if ! has_stale_launch_path "quickshell -p /home/osso/Repos/noctalia-shell" "/home/osso/Repos/noctalia-shell" "~/Repos/noctalia-shell"; then
+    echo "stale launch path was not detected" >&2
+    exit 1
+fi
+
 echo "ok testServiceProbeParsing"

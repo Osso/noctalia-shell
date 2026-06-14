@@ -238,6 +238,43 @@ has_ipc_target_function() {
     return 1
 }
 
+has_quickshell_launch_path() {
+    local launcher_config="$1"
+    local repo_path="$2"
+
+    [[ "$launcher_config" == *"quickshell -p $repo_path"* ]]
+}
+
+has_niri_start_wrapper() {
+    local niri_config="$1"
+
+    [[ "$niri_config" == *'spawn-at-startup "/home/osso/bin/start-quickshell"'* ]]
+}
+
+has_quickshell_ipc_call() {
+    local niri_config="$1"
+    local repo_path="$2"
+    local target="$3"
+    local function_name="$4"
+    local normalized_config="${niri_config//\"/}"
+
+    [[ "$normalized_config" == *"quickshell ipc -p $repo_path call $target $function_name"* ]]
+}
+
+has_stale_launch_path() {
+    local launch_config="$1"
+    shift
+    local stale_path
+
+    for stale_path in "$@"; do
+        if [[ "$launch_config" == *"$stale_path"* ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 probe_notifications() {
     require_command gdbus
 
@@ -872,8 +909,6 @@ probe_programs() {
 }
 
 probe_launch_contract() {
-    require_command rg
-
     local start_wrapper="/home/osso/bin/start-quickshell"
     local niri_config="/home/osso/.config/niri/config.kdl"
     local stale_repo_path="/home/osso/Repos/noctalia-shell"
@@ -889,37 +924,42 @@ probe_launch_contract() {
         exit 1
     fi
 
-    if ! rg -F -q "quickshell -p $repo_root" "$start_wrapper"; then
+    local start_wrapper_source niri_config_source launch_sources
+    start_wrapper_source="$(cat "$start_wrapper")"
+    niri_config_source="$(cat "$niri_config")"
+    launch_sources="$start_wrapper_source"$'\n'"$niri_config_source"
+
+    if ! has_quickshell_launch_path "$start_wrapper_source" "$repo_root"; then
         echo "Noctalia start wrapper does not launch the canonical repo path: $repo_root" >&2
         exit 1
     fi
 
-    if ! rg -F -q 'spawn-at-startup "/home/osso/bin/start-quickshell"' "$niri_config"; then
+    if ! has_niri_start_wrapper "$niri_config_source"; then
         echo "Niri config does not autostart the Noctalia wrapper" >&2
         exit 1
     fi
 
-    if ! rg -F -q "quickshell ipc -p $repo_root call launcher toggle" "$niri_config"; then
+    if ! has_quickshell_ipc_call "$niri_config_source" "$repo_root" "launcher" "toggle"; then
         echo "Niri launcher keybind does not target the canonical Noctalia path: $repo_root" >&2
         exit 1
     fi
 
-    if ! rg -F -q "quickshell ipc -p $repo_root call sessionMenu toggle" "$niri_config"; then
+    if ! has_quickshell_ipc_call "$niri_config_source" "$repo_root" "sessionMenu" "toggle"; then
         echo "Niri session menu keybind does not target the canonical Noctalia path: $repo_root" >&2
         exit 1
     fi
 
-    if ! rg -F -q "quickshell ipc -p $repo_root call settings toggle" "$niri_config"; then
+    if ! has_quickshell_ipc_call "$niri_config_source" "$repo_root" "settings" "toggle"; then
         echo "Niri settings keybind does not target the canonical Noctalia path: $repo_root" >&2
         exit 1
     fi
 
-    if rg -F -q "$stale_repo_path" "$start_wrapper" "$niri_config"; then
+    if has_stale_launch_path "$launch_sources" "$stale_repo_path"; then
         echo "launch contract still references stale repo path: $stale_repo_path" >&2
         exit 1
     fi
 
-    if rg -F -q "$stale_tilde_path" "$start_wrapper" "$niri_config"; then
+    if has_stale_launch_path "$launch_sources" "$stale_tilde_path"; then
         echo "launch contract still references stale repo path: $stale_tilde_path" >&2
         exit 1
     fi
