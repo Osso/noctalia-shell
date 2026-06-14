@@ -54,6 +54,7 @@ PanelWindow {
   readonly property alias wifiPanel: wifiPanel
   readonly property alias vpnPanel: vpnPanel
   readonly property alias processPanel: processPanel
+  readonly property string screenName: screen ? screen.name : "unknown"
 
   // Expose panel backgrounds for AllBackgrounds
   readonly property var audioPanelPlaceholder: audioPanel.panelRegion
@@ -75,12 +76,16 @@ PanelWindow {
   readonly property var processPanelPlaceholder: processPanel.panelRegion
 
   Component.onCompleted: {
-    Logger.d("MainScreen", "Initialized for screen:", screen?.name, "- Dimensions:", screen?.width, "x", screen?.height, "- Position:", screen?.x, ",", screen?.y);
+    const screenWidth = screen ? screen.width : 0;
+    const screenHeight = screen ? screen.height : 0;
+    const screenX = screen ? screen.x : 0;
+    const screenY = screen ? screen.y : 0;
+    Logger.d("MainScreen", "Initialized for screen:", screenName, "- Dimensions:", screenWidth, "x", screenHeight, "- Position:", screenX, ",", screenY);
   }
 
   // Wayland
   WlrLayershell.layer: WlrLayer.Top
-  WlrLayershell.namespace: "noctalia-background-" + (screen?.name || "unknown")
+  WlrLayershell.namespace: "noctalia-background-" + screenName
   WlrLayershell.exclusionMode: ExclusionMode.Ignore // Don't reserve space - BarExclusionZone handles that
   WlrLayershell.keyboardFocus: {
     if (!root.isPanelOpen) {
@@ -97,7 +102,7 @@ PanelWindow {
   }
 
   // Desktop dimming when panels are open
-  property real dimmerOpacity: Settings.data.general.dimmerOpacity ?? 0.8
+  property real dimmerOpacity: Settings.data.general.dimmerOpacity !== undefined ? Settings.data.general.dimmerOpacity : 0.8
   property bool isPanelOpen: (PanelService.openedPanel !== null) && (PanelService.openedPanel.screen === screen)
   property bool isPanelClosing: (PanelService.openedPanel !== null) && PanelService.openedPanel.isClosing
 
@@ -123,11 +128,11 @@ PanelWindow {
 
     // Check screen-specific configuration
     var monitors = Settings.data.bar.monitors || [];
-    var screenName = screen?.name || "";
+    var currentScreenName = screen ? screen.name : "";
 
     // If no monitors specified, show on all screens
     // If monitors specified, only show if this screen is in the list
-    return monitors.length === 0 || monitors.includes(screenName);
+    return monitors.length === 0 || monitors.includes(currentScreenName);
   }
 
   // Make everything click-through except bar
@@ -206,119 +211,119 @@ PanelWindow {
     // ---------------------------------------
     AudioPanel {
       id: audioPanel
-      objectName: "audioPanel-" + (root.screen?.name || "unknown")
+      objectName: "audioPanel-" + root.screenName
       screen: root.screen
       z: 50
     }
 
     BatteryPanel {
       id: batteryPanel
-      objectName: "batteryPanel-" + (root.screen?.name || "unknown")
+      objectName: "batteryPanel-" + root.screenName
       screen: root.screen
       z: 50
     }
 
     BluetoothPanel {
       id: bluetoothPanel
-      objectName: "bluetoothPanel-" + (root.screen?.name || "unknown")
+      objectName: "bluetoothPanel-" + root.screenName
       screen: root.screen
       z: 50
     }
 
     BrightnessPanel {
       id: brightnessPanel
-      objectName: "brightnessPanel-" + (root.screen?.name || "unknown")
+      objectName: "brightnessPanel-" + root.screenName
       screen: root.screen
       z: 50
     }
 
     ControlCenterPanel {
       id: controlCenterPanel
-      objectName: "controlCenterPanel-" + (root.screen?.name || "unknown")
+      objectName: "controlCenterPanel-" + root.screenName
       screen: root.screen
       z: 50
     }
 
     ChangelogPanel {
       id: changelogPanel
-      objectName: "changelogPanel-" + (root.screen?.name || "unknown")
+      objectName: "changelogPanel-" + root.screenName
       screen: root.screen
       z: 50
     }
 
     ClockPanel {
       id: clockPanel
-      objectName: "clockPanel-" + (root.screen?.name || "unknown")
+      objectName: "clockPanel-" + root.screenName
       screen: root.screen
       z: 50
     }
 
     Launcher {
       id: launcherPanel
-      objectName: "launcherPanel-" + (root.screen?.name || "unknown")
+      objectName: "launcherPanel-" + root.screenName
       screen: root.screen
       z: 50
     }
 
     NotificationHistoryPanel {
       id: notificationHistoryPanel
-      objectName: "notificationHistoryPanel-" + (root.screen?.name || "unknown")
+      objectName: "notificationHistoryPanel-" + root.screenName
       screen: root.screen
       z: 50
     }
 
     SessionMenu {
       id: sessionMenuPanel
-      objectName: "sessionMenuPanel-" + (root.screen?.name || "unknown")
+      objectName: "sessionMenuPanel-" + root.screenName
       screen: root.screen
       z: 50
     }
 
     SettingsPanel {
       id: settingsPanel
-      objectName: "settingsPanel-" + (root.screen?.name || "unknown")
+      objectName: "settingsPanel-" + root.screenName
       screen: root.screen
       z: 50
     }
 
     SetupWizard {
       id: setupWizardPanel
-      objectName: "setupWizardPanel-" + (root.screen?.name || "unknown")
+      objectName: "setupWizardPanel-" + root.screenName
       screen: root.screen
       z: 50
     }
 
     TrayDrawerPanel {
       id: trayDrawerPanel
-      objectName: "trayDrawerPanel-" + (root.screen?.name || "unknown")
+      objectName: "trayDrawerPanel-" + root.screenName
       screen: root.screen
       z: 50
     }
 
     WallpaperPanel {
       id: wallpaperPanel
-      objectName: "wallpaperPanel-" + (root.screen?.name || "unknown")
+      objectName: "wallpaperPanel-" + root.screenName
       screen: root.screen
       z: 50
     }
 
     WiFiPanel {
       id: wifiPanel
-      objectName: "wifiPanel-" + (root.screen?.name || "unknown")
+      objectName: "wifiPanel-" + root.screenName
       screen: root.screen
       z: 50
     }
 
     VPNPanel {
       id: vpnPanel
-      objectName: "vpnPanel-" + (root.screen?.name || "unknown")
+      objectName: "vpnPanel-" + root.screenName
       screen: root.screen
       z: 50
     }
 
     ProcessPanel {
       id: processPanel
-      objectName: "processPanel-" + (root.screen?.name || "unknown")
+      objectName: "processPanel-" + root.screenName
       screen: root.screen
     }
 
