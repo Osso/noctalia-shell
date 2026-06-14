@@ -541,6 +541,11 @@ if has_ipc_target_function "$ipc_fixture" "launcher" "open"; then
     exit 1
 fi
 
+if has_ipc_target_function "$ipc_fixture" "settings" "op.n"; then
+    echo "regex-like IPC target function was accepted" >&2
+    exit 1
+fi
+
 if has_ipc_target_function $'target settings\n  function open(): void trailing' "settings" "open"; then
     echo "malformed IPC target function was accepted" >&2
     exit 1

@@ -309,8 +309,10 @@ has_ipc_target_function() {
             continue
         fi
 
-        if [[ "$in_target" == true && "$line" =~ ^[[:blank:]]+function[[:blank:]]+$function_name\(\):[[:blank:]]+void[[:blank:]]*$ ]]; then
-            return 0
+        if [[ "$in_target" == true && "$line" =~ ^[[:blank:]]+function[[:blank:]]+([A-Za-z0-9_]+)\(\):[[:blank:]]+void[[:blank:]]*$ ]]; then
+            if [[ "${BASH_REMATCH[1]}" == "$function_name" ]]; then
+                return 0
+            fi
         fi
     done <<<"$ipc_output"
 
