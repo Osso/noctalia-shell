@@ -8,6 +8,7 @@ import qs.Services.Hardware
 import qs.Services.Keyboard
 import qs.Services.Media
 import qs.Widgets
+import "../../Helpers/BrightnessParsing.js" as BrightnessParsing
 
 // Unified OSD component that displays volume, input volume, and brightness changes
 Variants {
@@ -162,6 +163,10 @@ Variants {
     }
 
     function onBrightnessChanged(newBrightness) {
+      if (!BrightnessParsing.isValidBrightnessRatio(newBrightness)) {
+        return;
+      }
+
       root.currentBrightness = newBrightness;
       showOSD(OSD.Type.Brightness);
     }
