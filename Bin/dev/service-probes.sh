@@ -301,7 +301,7 @@ has_quickshell_ipc_call() {
     local function_name="$4"
     local normalized_config="${niri_config//\"/}"
 
-    [[ "$normalized_config" == *"quickshell ipc -p $repo_path call $target $function_name"* ]]
+    [[ "$normalized_config" =~ quickshell[[:blank:]]+ipc[[:blank:]]+-p[[:blank:]]+$repo_path[[:blank:]]+call[[:blank:]]+$target[[:blank:]]+$function_name($|[[:space:]]|[;}]) ]]
 }
 
 has_stale_launch_path() {

@@ -368,6 +368,11 @@ if has_quickshell_ipc_call "$niri_config_fixture" "$canonical_repo" "sessionMenu
     exit 1
 fi
 
+if has_quickshell_ipc_call "spawn quickshell ipc -p $canonical_repo call launcher toggleExtra" "$canonical_repo" "launcher" "toggle"; then
+    echo "prefixed Niri IPC function was accepted" >&2
+    exit 1
+fi
+
 if has_stale_launch_path "$start_wrapper_fixture"$'\n'"$niri_config_fixture" "/home/osso/Repos/noctalia-shell" "~/Repos/noctalia-shell"; then
     echo "stale-free launch fixtures were flagged as stale" >&2
     exit 1
