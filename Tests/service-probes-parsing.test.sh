@@ -102,6 +102,11 @@ if has_bluetooth_toggle_state $'NotPowered: yes\nNotDiscovering: no'; then
     exit 1
 fi
 
+if has_bluetooth_toggle_state $'Powered: yes trailing\nDiscovering: no'; then
+    echo "malformed Bluetooth toggle state rows were accepted" >&2
+    exit 1
+fi
+
 if is_bluetooth_device_row "Device not-a-mac Keyboard"; then
     echo "invalid Bluetooth device row was accepted" >&2
     exit 1

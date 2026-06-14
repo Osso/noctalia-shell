@@ -72,8 +72,8 @@ is_bluetooth_controller_row() {
 has_bluetooth_toggle_state() {
     local controller_info="$1"
 
-    [[ "$controller_info" =~ (^|$'\n')[[:space:]]*Powered:[[:space:]]+(yes|no) ]] \
-        && [[ "$controller_info" =~ (^|$'\n')[[:space:]]*Discovering:[[:space:]]+(yes|no) ]]
+    [[ "$controller_info" =~ (^|$'\n')[[:space:]]*Powered:[[:space:]]+(yes|no)[[:space:]]*($'\n'|$) ]] \
+        && [[ "$controller_info" =~ (^|$'\n')[[:space:]]*Discovering:[[:space:]]+(yes|no)[[:space:]]*($'\n'|$) ]]
 }
 
 is_bluetooth_device_row() {
