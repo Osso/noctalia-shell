@@ -59,7 +59,8 @@ display is detected, UPower display/physical battery state, clipboard MIME type
 list, lock-key LED state inputs, Bluetooth controller state, NetworkManager
 VPN/WireGuard profile rows, screen-recorder monitor/source enumeration, program
 availability checks, local Niri/start-wrapper launch path wiring,
-live Quickshell IPC target availability, system/process-stat inputs, host
+live Quickshell IPC target/function availability for configured shortcuts,
+system/process-stat inputs, host
 identity/logo/fontconfig inputs, and wallpaper/color cache are readable and
 coherent for this machine. The settings probe validates the local settings file
 shape for

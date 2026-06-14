@@ -668,6 +668,7 @@ probe_ipc_targets() {
     require_command quickshell
     require_command rg
 
+    local niri_config="/home/osso/.config/niri/config.kdl"
     local ipc_output required_targets
     ipc_output="$(quickshell ipc -p "$repo_root" show)"
     required_targets=(
@@ -685,6 +686,11 @@ probe_ipc_targets() {
         exit 1
     fi
 
+    if [[ ! -r "$niri_config" ]]; then
+        echo "Niri config is not readable: $niri_config" >&2
+        exit 1
+    fi
+
     local target
     for target in "${required_targets[@]}"; do
         if ! printf '%s\n' "$ipc_output" | rg -q "^target $target$"; then
@@ -697,6 +703,20 @@ probe_ipc_targets() {
         echo "Quickshell IPC target list is missing toggle handlers" >&2
         exit 1
     fi
+
+    local ipc_calls target_name function_name
+    ipc_calls="$(rg -o 'call [A-Za-z0-9_]+ [A-Za-z0-9_]+' "$niri_config" || true)"
+    if [[ -z "$ipc_calls" ]]; then
+        echo "Niri config has no Quickshell IPC calls to validate" >&2
+        exit 1
+    fi
+
+    while read -r _ target_name function_name; do
+        if ! printf '%s\n' "$ipc_output" | rg -U -q "^target $target_name$\\n(  function .+\\n)*  function $function_name\\("; then
+            echo "Niri IPC call target/function is missing from live Quickshell IPC: $target_name $function_name" >&2
+            exit 1
+        fi
+    done <<<"$ipc_calls"
 
     echo "ok probeIpcTargets"
 }
