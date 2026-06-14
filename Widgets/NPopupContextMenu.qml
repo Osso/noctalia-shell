@@ -15,7 +15,7 @@ PopupWindow {
   property int verticalPolicy: ScrollBar.AsNeeded
   property int horizontalPolicy: ScrollBar.AsNeeded
 
-  property var anchorItem: null
+  property Item anchorItem: null
   property real anchorX: 0
   property real anchorY: 0
   property real calculatedWidth: 180

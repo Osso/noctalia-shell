@@ -29,8 +29,20 @@ function testSliderCutoutColorsAreTyped() {
   }
 }
 
+function testPopupAnchorItemsAreTyped() {
+  const popupFiles = [
+    "Widgets/NPopupContextMenu.qml",
+    "Modules/Bar/Extras/TrayMenu.qml",
+  ];
+
+  for (const popupFile of popupFiles) {
+    assertPropertyType(popupFile, "anchorItem", "Item");
+  }
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
+  testPopupAnchorItemsAreTyped,
 ];
 
 for (const test of tests) {

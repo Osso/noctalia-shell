@@ -12,7 +12,7 @@ PopupWindow {
   property ShellScreen screen
 
   property var trayItem: null
-  property var anchorItem: null
+  property Item anchorItem: null
   property real anchorX
   property real anchorY
   property bool isSubMenu: false
@@ -67,7 +67,6 @@ PopupWindow {
     }
 
     if (!opener.children || opener.children.values.length === 0) {
-      //Logger.w("TrayMenu", "Menu not ready, delaying show")
       Qt.callLater(() => showAt(item, x, y));
       return;
     }
