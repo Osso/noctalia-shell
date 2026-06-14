@@ -39,56 +39,59 @@ SmartPanel {
   // Store direct reference to content for instant access
   property var contentItem: null
 
+  function currentWallpaperView() {
+    if (!contentItem) {
+      return null;
+    }
+    return contentItem.screenRepeater.itemAt(contentItem.currentScreenIndex);
+  }
+
+  function currentGridView() {
+    let view = currentWallpaperView();
+    return view && view.gridView ? view.gridView : null;
+  }
+
   // Override keyboard handlers to enable grid navigation
   function onDownPressed() {
-    if (!contentItem)
+    let gridView = currentGridView();
+    if (!gridView) {
       return;
-    let view = contentItem.screenRepeater.itemAt(contentItem.currentScreenIndex);
-    if (view?.gridView) {
-      if (!view.gridView.activeFocus) {
-        view.gridView.forceActiveFocus();
-        if (view.gridView.currentIndex < 0) {
-          view.gridView.currentIndex = 0;
-        }
-      } else {
-        view.gridView.moveCurrentIndexDown();
+    }
+    if (!gridView.activeFocus) {
+      gridView.forceActiveFocus();
+      if (gridView.currentIndex < 0) {
+        gridView.currentIndex = 0;
       }
+    } else {
+      gridView.moveCurrentIndexDown();
     }
   }
 
   function onUpPressed() {
-    if (!contentItem)
-      return;
-    let view = contentItem.screenRepeater.itemAt(contentItem.currentScreenIndex);
-    if (view?.gridView?.activeFocus) {
-      view.gridView.moveCurrentIndexUp();
+    let gridView = currentGridView();
+    if (gridView && gridView.activeFocus) {
+      gridView.moveCurrentIndexUp();
     }
   }
 
   function onLeftPressed() {
-    if (!contentItem)
-      return;
-    let view = contentItem.screenRepeater.itemAt(contentItem.currentScreenIndex);
-    if (view?.gridView?.activeFocus) {
-      view.gridView.moveCurrentIndexLeft();
+    let gridView = currentGridView();
+    if (gridView && gridView.activeFocus) {
+      gridView.moveCurrentIndexLeft();
     }
   }
 
   function onRightPressed() {
-    if (!contentItem)
-      return;
-    let view = contentItem.screenRepeater.itemAt(contentItem.currentScreenIndex);
-    if (view?.gridView?.activeFocus) {
-      view.gridView.moveCurrentIndexRight();
+    let gridView = currentGridView();
+    if (gridView && gridView.activeFocus) {
+      gridView.moveCurrentIndexRight();
     }
   }
 
   function onReturnPressed() {
-    if (!contentItem)
-      return;
-    let view = contentItem.screenRepeater.itemAt(contentItem.currentScreenIndex);
-    if (view?.gridView?.activeFocus) {
-      let gridView = view.gridView;
+    let view = currentWallpaperView();
+    let gridView = view && view.gridView ? view.gridView : null;
+    if (gridView && gridView.activeFocus) {
       if (gridView.currentIndex >= 0 && gridView.currentIndex < gridView.model.length) {
         let path = gridView.model[gridView.currentIndex];
         if (Settings.data.wallpaper.setWallpaperOnAllMonitors) {
@@ -492,9 +495,9 @@ SmartPanel {
     property alias gridView: wallpaperGridView
 
     // Local reactive state for this screen
-    property list<string> wallpapersList: []
+    property var wallpapersList: []
     property string currentWallpaper: ""
-    property list<string> filteredWallpapers: []
+    property var filteredWallpapers: []
     property var wallpapersWithNames: [] // Cached basenames
 
     // Expose updateFiltered as a proper function property

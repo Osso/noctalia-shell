@@ -14,14 +14,9 @@ Modules/MainScreen/PopupMenuWindow.qml
 Modules/MainScreen/SmartPanel.qml
 Modules/Notification/Notification.qml
 Modules/OSD/OSD.qml
-Modules/Panels/Audio/AudioPanel.qml
-Modules/Panels/ControlCenter/ControlCenterPanel.qml
 Modules/Panels/Settings/Bar/WidgetSettings/CustomButtonSettings.qml
 Modules/Panels/Settings/ControlCenter/WidgetSettings/CustomButtonSettings.qml
-Modules/Panels/Wallpaper/WallpaperPanel.qml
 Services/Compositor/HyprlandService.qml
 Services/Control/IPCService.qml
 Services/Media/AudioService.qml
-Services/Networking/BluetoothService.qml
-Services/UI/BarService.qml
 Widgets/NColorPickerDialog.qml

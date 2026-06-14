@@ -68,7 +68,7 @@ SmartPanel {
   }
 
   Connections {
-    target: AudioService.sink?.audio ? AudioService.sink?.audio : null
+    target: AudioService.sink && AudioService.sink.audio ? AudioService.sink.audio : null
     function onVolumeChanged() {
       if (!localOutputVolumeChanging && AudioService.sink && AudioService.sink.id === lastSinkId) {
         localOutputVolume = AudioService.volume;
@@ -86,7 +86,7 @@ SmartPanel {
   }
 
   Connections {
-    target: AudioService.source?.audio ? AudioService.source?.audio : null
+    target: AudioService.source && AudioService.source.audio ? AudioService.source.audio : null
     function onVolumeChanged() {
       if (!localInputVolumeChanging && AudioService.source && AudioService.source.id === lastSourceId) {
         localInputVolume = AudioService.inputVolume;
@@ -241,7 +241,7 @@ SmartPanel {
                   required property PwNode modelData
                   pointSize: Style.fontSizeS
                   text: modelData.description
-                  checked: AudioService.sink?.id === modelData.id
+                  checked: AudioService.sink ? AudioService.sink.id === modelData.id : false
                   onClicked: {
                     AudioService.setAudioSink(modelData);
                     localOutputVolume = AudioService.volume;
@@ -298,7 +298,7 @@ SmartPanel {
                   required property PwNode modelData
                   pointSize: Style.fontSizeS
                   text: modelData.description
-                  checked: AudioService.source?.id === modelData.id
+                  checked: AudioService.source ? AudioService.source.id === modelData.id : false
                   onClicked: AudioService.setAudioSource(modelData)
                   Layout.fillWidth: true
                 }

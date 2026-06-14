@@ -173,9 +173,13 @@ Singleton {
 
     // Sort by index to maintain order
     widgets.sort(function (a, b) {
-      var aWidget = getWidgetWithMetadata(a.widgetId, a.screen?.name, a.section);
-      var bWidget = getWidgetWithMetadata(b.widgetId, b.screen?.name, b.section);
-      return (aWidget?.index || 0) - (bWidget?.index || 0);
+      var aScreenName = a.screen ? a.screen.name : null;
+      var bScreenName = b.screen ? b.screen.name : null;
+      var aWidget = getWidgetWithMetadata(a.widgetId, aScreenName, a.section);
+      var bWidget = getWidgetWithMetadata(b.widgetId, bScreenName, b.section);
+      var aIndex = aWidget ? aWidget.index : 0;
+      var bIndex = bWidget ? bWidget.index : 0;
+      return aIndex - bIndex;
     });
 
     return widgets;
