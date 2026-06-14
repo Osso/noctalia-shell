@@ -71,6 +71,8 @@ location weather cache, and notification history shape. The network probe
 validates NetworkManager connectivity, active Wi-Fi/ethernet state, and active
 Wi-Fi cache coherence. The power profile probe validates the active
 `powerprofilesctl` profile and available profile list used by `PowerProfileService`.
+The wallpaper section checks supported fill modes, transition modes, random
+timing, monitor-directory entries, Wallhaven options, and color formats.
 
 ## Visible Manual Notification Probes
 
