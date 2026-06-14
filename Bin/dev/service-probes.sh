@@ -22,7 +22,7 @@ find_lg_ultrawide_bus() {
             current_bus=""
         elif [[ "$line" =~ I2C\ bus:[[:space:]]+/dev/i2c-([0-9]+)[[:space:]]*$ ]]; then
             current_bus="${BASH_REMATCH[1]}"
-        elif [[ -n "$current_bus" && "$line" == *"Model:                LG ULTRAWIDE"* ]]; then
+        elif [[ -n "$current_bus" && "$line" =~ ^[[:space:]]*Model:[[:space:]]+LG\ ULTRAWIDE[[:space:]]*$ ]]; then
             lg_bus="$current_bus"
         fi
     done <<<"$ddc_output"

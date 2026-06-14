@@ -55,6 +55,13 @@ ddc_detect_lg_with_malformed_bus='Display 1
 
 assert_equal "$(find_lg_ultrawide_bus "$ddc_detect_lg_with_malformed_bus")" "" "LG display with malformed I2C bus must not select a DDC bus"
 
+ddc_detect_similar_lg_model='Display 1
+   I2C bus:  /dev/i2c-4
+   EDID synopsis:
+      Model:                LG ULTRAWIDE Pro'
+
+assert_equal "$(find_lg_ultrawide_bus "$ddc_detect_similar_lg_model")" "" "similar LG display model must not select the ULTRAWIDE DDC bus"
+
 is_ddc_brightness_output "VCP 10 C 25 100"
 
 if is_ddc_brightness_output "VCP 10 C unsupported"; then
