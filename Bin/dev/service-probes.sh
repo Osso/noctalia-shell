@@ -66,7 +66,7 @@ has_lock_key_state_rows() {
 is_bluetooth_controller_row() {
     local controller_row="$1"
 
-    [[ "$controller_row" =~ ^Controller[[:space:]][0-9A-Fa-f:]{17}[[:space:]] ]]
+    [[ "$controller_row" =~ ^Controller[[:space:]]([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}[[:space:]] ]]
 }
 
 has_bluetooth_toggle_state() {
@@ -79,7 +79,7 @@ has_bluetooth_toggle_state() {
 is_bluetooth_device_row() {
     local device_row="$1"
 
-    [[ "$device_row" =~ ^Device[[:space:]][0-9A-Fa-f:]{17}[[:space:]] ]]
+    [[ "$device_row" =~ ^Device[[:space:]]([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}[[:space:]] ]]
 }
 
 is_gpu_screen_recorder_monitor_row() {
