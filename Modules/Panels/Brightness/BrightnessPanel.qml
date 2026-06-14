@@ -83,7 +83,7 @@ SmartPanel {
               Layout.fillWidth: true
               Layout.preferredHeight: outputColumn.implicitHeight + (Style.marginM * 2)
 
-              property var brightnessMonitor: BrightnessService.getMonitorForScreen(modelData)
+              property QtObject brightnessMonitor: BrightnessService.getMonitorForScreen(modelData)
 
               ColumnLayout {
                 id: outputColumn
