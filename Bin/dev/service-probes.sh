@@ -312,8 +312,19 @@ has_quickshell_launch_path() {
 
 has_niri_start_wrapper() {
     local niri_config="$1"
+    local line active_line
 
-    [[ "$niri_config" =~ (^|$'\n')[[:blank:]]*spawn-at-startup[[:blank:]]+\"/home/osso/bin/start-quickshell\"[[:blank:]]*($'\n'|$) ]]
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^[[:blank:]]*(//|#) ]]; then
+            continue
+        fi
+        active_line="$(strip_inline_launch_comment "$line")"
+        if [[ "$active_line" =~ ^[[:blank:]]*spawn-at-startup[[:blank:]]+\"/home/osso/bin/start-quickshell\"[[:blank:]]*$ ]]; then
+            return 0
+        fi
+    done <<<"$niri_config"
+
+    return 1
 }
 
 has_quickshell_ipc_call() {

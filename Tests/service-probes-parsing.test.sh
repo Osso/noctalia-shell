@@ -400,6 +400,17 @@ assert_equal "$(strip_inline_launch_comment 'exec quickshell#not-comment -p /syn
 
 has_quickshell_launch_path "$start_wrapper_fixture" "$canonical_repo"
 has_niri_start_wrapper "$niri_config_fixture"
+
+if ! has_niri_start_wrapper 'spawn-at-startup "/home/osso/bin/start-quickshell" # managed by local shell'; then
+    echo "Niri start wrapper with trailing hash comment was rejected" >&2
+    exit 1
+fi
+
+if ! has_niri_start_wrapper 'spawn-at-startup "/home/osso/bin/start-quickshell" // managed by local shell'; then
+    echo "Niri start wrapper with trailing slash comment was rejected" >&2
+    exit 1
+fi
+
 has_quickshell_ipc_call "$niri_config_fixture" "$canonical_repo" "launcher" "toggle"
 has_quickshell_ipc_call "$niri_config_fixture" "$canonical_repo" "settings" "toggle"
 
