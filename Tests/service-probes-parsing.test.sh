@@ -55,6 +55,13 @@ ddc_detect_lg_with_malformed_bus='Display 1
 
 assert_equal "$(find_lg_ultrawide_bus "$ddc_detect_lg_with_malformed_bus")" "" "LG display with malformed I2C bus must not select a DDC bus"
 
+ddc_detect_lg_with_malformed_display_header='Display 1 trailing
+   I2C bus:  /dev/i2c-4
+   EDID synopsis:
+      Model:                LG ULTRAWIDE'
+
+assert_equal "$(find_lg_ultrawide_bus "$ddc_detect_lg_with_malformed_display_header")" "" "LG display with malformed display header must not select a DDC bus"
+
 ddc_detect_similar_lg_model='Display 1
    I2C bus:  /dev/i2c-4
    EDID synopsis:

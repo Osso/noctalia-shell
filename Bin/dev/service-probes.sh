@@ -16,11 +16,16 @@ find_lg_ultrawide_bus() {
     local ddc_output="$1"
     local current_bus=""
     local lg_bus=""
+    local in_display=false
 
     while IFS= read -r line; do
-        if [[ "$line" =~ ^Display[[:space:]]+[0-9]+ ]]; then
+        if [[ "$line" =~ ^Display[[:space:]]+ ]]; then
             current_bus=""
-        elif [[ "$line" =~ I2C\ bus:[[:space:]]+/dev/i2c-([0-9]+)[[:space:]]*$ ]]; then
+            in_display=false
+            if [[ "$line" =~ ^Display[[:space:]]+[0-9]+[[:space:]]*$ ]]; then
+                in_display=true
+            fi
+        elif [[ "$in_display" == true && "$line" =~ I2C\ bus:[[:space:]]+/dev/i2c-([0-9]+)[[:space:]]*$ ]]; then
             current_bus="${BASH_REMATCH[1]}"
         elif [[ -n "$current_bus" && "$line" =~ ^[[:space:]]*Model:[[:space:]]+LG\ ULTRAWIDE[[:space:]]*$ ]]; then
             lg_bus="$current_bus"
