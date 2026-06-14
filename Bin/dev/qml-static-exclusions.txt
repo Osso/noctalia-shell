@@ -18,12 +18,8 @@ Modules/Panels/Audio/AudioPanel.qml
 Modules/Panels/ControlCenter/ControlCenterPanel.qml
 Modules/Panels/Settings/Bar/WidgetSettings/CustomButtonSettings.qml
 Modules/Panels/Settings/ControlCenter/WidgetSettings/CustomButtonSettings.qml
-Modules/Panels/Tray/TrayDrawerPanel.qml
-Modules/Panels/VPN/VPNConnectionItem.qml
 Modules/Panels/Wallpaper/WallpaperPanel.qml
-Modules/Toast/ToastScreen.qml
 Services/Compositor/HyprlandService.qml
-Services/Compositor/MangoService.qml
 Services/Control/IPCService.qml
 Services/Media/AudioService.qml
 Services/Networking/BluetoothService.qml

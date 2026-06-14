@@ -61,7 +61,7 @@ SmartPanel {
   function isPinned(item) {
     if (!pinnedList || pinnedList.length === 0)
       return false;
-    const title = item?.tooltipTitle || item?.name || item?.id || "";
+    const title = item ? (item.tooltipTitle || item.name || item.id || "") : "";
     for (var i = 0; i < pinnedList.length; i++) {
       if (wildCardMatch(title, pinnedList[i]))
         return true;
@@ -156,7 +156,7 @@ SmartPanel {
             asynchronous: true
             backer.fillMode: Image.PreserveAspectFit
             source: {
-              let icon = modelData?.icon || "";
+              let icon = modelData ? (modelData.icon || "") : "";
               if (!icon)
                 return "";
               if (icon.includes("?path=")) {
@@ -237,10 +237,14 @@ SmartPanel {
                          }
 
               onWheel: wheel => {
-                         if (wheel.angleDelta.y > 0)
-                         modelData?.scrollUp();
-                         else if (wheel.angleDelta.y < 0)
-                         modelData?.scrollDown();
+                         if (!modelData) {
+                           return;
+                         }
+                         if (wheel.angleDelta.y > 0) {
+                           modelData.scrollUp();
+                         } else if (wheel.angleDelta.y < 0) {
+                           modelData.scrollDown();
+                         }
                        }
 
               onEntered: {

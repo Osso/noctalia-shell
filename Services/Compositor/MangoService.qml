@@ -344,8 +344,8 @@ Item {
           continue;
         }
 
-        const appId = toplevel.appId || toplevel.wayland?.appId || "";
-        const title = toplevel.title || toplevel.wayland?.title || "";
+        const appId = toplevel.appId || (toplevel.wayland ? toplevel.wayland.appId : "");
+        const title = toplevel.title || (toplevel.wayland ? toplevel.wayland.title : "");
         const isFocused = toplevel.activated;
 
         // Get or assign a unique ID for this toplevel window

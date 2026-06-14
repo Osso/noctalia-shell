@@ -12,8 +12,8 @@ Rectangle {
   required property var connection
 
   readonly property bool isActive: connection && connection.active
-  readonly property bool isConnecting: VPNService.connectingUuid === connection?.uuid
-  readonly property bool isDisconnecting: VPNService.disconnectingUuid === connection?.uuid
+  readonly property bool isConnecting: connection ? VPNService.connectingUuid === connection.uuid : false
+  readonly property bool isDisconnecting: connection ? VPNService.disconnectingUuid === connection.uuid : false
   readonly property bool isBusy: isConnecting || isDisconnecting
 
   Layout.fillWidth: true
@@ -41,7 +41,7 @@ Rectangle {
       spacing: Style.marginXXS
 
       NText {
-        text: connection?.name || ""
+        text: connection ? connection.name : ""
         pointSize: Style.fontSizeM
         font.weight: isActive ? Style.fontWeightBold : Style.fontWeightMedium
         elide: Text.ElideRight

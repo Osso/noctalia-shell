@@ -134,7 +134,10 @@ Item {
       screen: root.screen
 
       // Parse location setting
-      readonly property string location: Settings.data.notifications?.location || "top_right"
+      readonly property string location: {
+        const notifications = Settings.data.notifications;
+        return notifications ? (notifications.location || "top_right") : "top_right";
+      }
       readonly property bool isTop: location.startsWith("top")
       readonly property bool isBottom: location.startsWith("bottom")
       readonly property bool isLeft: location.endsWith("_left")
