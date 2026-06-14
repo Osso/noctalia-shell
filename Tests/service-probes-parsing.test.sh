@@ -384,6 +384,16 @@ if read_os_release_value BLANK_QUOTED_VALUE $'BLANK_QUOTED_VALUE="   "\nID=nocta
     exit 1
 fi
 
+if read_os_release_value BROKEN_OPEN_QUOTE $'BROKEN_OPEN_QUOTE="Noctalia Test OS\nID=noctalia-test' >/dev/null; then
+    echo "os-release value with missing closing quote was accepted" >&2
+    exit 1
+fi
+
+if read_os_release_value BROKEN_CLOSE_QUOTE $'BROKEN_CLOSE_QUOTE=Noctalia Test OS"\nID=noctalia-test' >/dev/null; then
+    echo "os-release value with missing opening quote was accepted" >&2
+    exit 1
+fi
+
 host_logo_fixture_root="$(mktemp -d)"
 trap 'rm -rf "$host_logo_fixture_root"' EXIT
 mkdir -p "$host_logo_fixture_root/usr/share/icons/hicolor/48x48/apps"

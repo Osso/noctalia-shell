@@ -1174,8 +1174,13 @@ read_os_release_value() {
             continue
         fi
 
-        value="${value%\"}"
-        value="${value#\"}"
+        if [[ "$value" == \"* && "$value" != *\" ]] || [[ "$value" != \"* && "$value" == *\" ]]; then
+            return 1
+        fi
+        if [[ "$value" == \"* ]]; then
+            value="${value%\"}"
+            value="${value#\"}"
+        fi
         if [[ -z "${value//[[:space:]]/}" ]]; then
             return 1
         fi
