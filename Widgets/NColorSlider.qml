@@ -8,7 +8,7 @@ Slider {
   id: root
 
   property color fillColor: "transparent"
-  property var cutoutColor: Color.mSurface
+  property color cutoutColor: Color.mSurface
   property bool snapAlways: true
   property real widthRatio: 0.7
   property string tooltipText
@@ -22,7 +22,6 @@ Slider {
   readonly property real trackWidth: Math.round((knobDiameter * 0.4 * Style.uiScaleRatio) / 2) * 2
   readonly property real cutoutExtra: Math.round((Style.baseWidgetSize * 0.1 * Style.uiScaleRatio) / 2) * 2
 
-  //horizontal: false
   orientation: Qt.Vertical
 
   padding: cutoutExtra / 2

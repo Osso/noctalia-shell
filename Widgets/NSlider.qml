@@ -8,7 +8,7 @@ Slider {
   id: root
 
   property color fillColor: Color.mPrimary
-  property var cutoutColor: Color.mSurface
+  property color cutoutColor: Color.mSurface
   property bool snapAlways: true
   property real heightRatio: 0.7
   property string tooltipText
