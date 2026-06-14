@@ -57,7 +57,7 @@ Loader {
       screen: modelData
       WlrLayershell.layer: WlrLayer.Background
       WlrLayershell.exclusionMode: ExclusionMode.Ignore
-      WlrLayershell.namespace: "noctalia-overview-" + (screen?.name || "unknown")
+      WlrLayershell.namespace: "noctalia-overview-" + (screen ? screen.name : "unknown")
 
       anchors {
         top: true

@@ -38,7 +38,7 @@ ShapePath {
 
     // Check screen-specific configuration
     var monitors = Settings.data.bar.monitors || [];
-    var screenName = windowRoot?.screen?.name || "";
+    var screenName = windowRoot && windowRoot.screen ? windowRoot.screen.name : "";
 
     // If no monitors specified, show on all screens
     // If monitors specified, only show if this screen is in the list

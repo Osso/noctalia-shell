@@ -1,5 +1,3 @@
-Modules/Background/Background.qml
-Modules/Background/Overview.qml
 Modules/Bar/Bar.qml
 Modules/Bar/Extras/BarExclusionZone.qml
 Modules/Bar/Extras/TrayMenu.qml
@@ -9,7 +7,6 @@ Modules/Bar/Widgets/Tray.qml
 Modules/Dock/Dock.qml
 Modules/Dock/DockMenu.qml
 Modules/MainScreen/AllScreens.qml
-Modules/MainScreen/Backgrounds/BarBackground.qml
 Modules/MainScreen/BarContentWindow.qml
 Modules/MainScreen/BarExclusionZone.qml
 Modules/MainScreen/MainScreen.qml
