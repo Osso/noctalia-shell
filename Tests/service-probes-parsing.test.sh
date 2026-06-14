@@ -234,6 +234,11 @@ if is_ps_process_row "pid cpu mem rss args"; then
     exit 1
 fi
 
+if is_ps_process_row " 1234  1.5  0.4  65536    "; then
+    echo "ps process row without command text was accepted" >&2
+    exit 1
+fi
+
 has_upower_percentage "percentage:          87%"
 has_upower_battery_state "state:               discharging"
 has_physical_upower_battery_details $'native-path:          BAT0\nrechargeable:        yes'

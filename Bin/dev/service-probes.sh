@@ -181,7 +181,7 @@ has_meminfo_kb_row() {
 is_ps_process_row() {
     local ps_row="$1"
 
-    [[ "$ps_row" =~ ^[[:space:]]*[0-9]+[[:space:]]+[0-9]+(\.[0-9]+)?[[:space:]]+[0-9]+(\.[0-9]+)?[[:space:]]+[0-9]+[[:space:]]+.+ ]]
+    [[ "$ps_row" =~ ^[[:space:]]*[0-9]+[[:space:]]+[0-9]+(\.[0-9]+)?[[:space:]]+[0-9]+(\.[0-9]+)?[[:space:]]+[0-9]+[[:space:]]+[^[:space:]].* ]]
 }
 
 has_upower_percentage() {
