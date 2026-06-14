@@ -664,6 +664,43 @@ probe_launch_contract() {
     echo "ok probeLaunchContract"
 }
 
+probe_ipc_targets() {
+    require_command quickshell
+    require_command rg
+
+    local ipc_output required_targets
+    ipc_output="$(quickshell ipc -p "$repo_root" show)"
+    required_targets=(
+        launcher
+        sessionMenu
+        settings
+        brightness
+        volume
+        notifications
+        state
+    )
+
+    if [[ -z "$ipc_output" ]]; then
+        echo "Quickshell IPC target list is empty for: $repo_root" >&2
+        exit 1
+    fi
+
+    local target
+    for target in "${required_targets[@]}"; do
+        if ! printf '%s\n' "$ipc_output" | rg -q "^target $target$"; then
+            echo "Quickshell IPC target is missing: $target" >&2
+            exit 1
+        fi
+    done
+
+    if ! printf '%s\n' "$ipc_output" | rg -q "function toggle\\(\\): void"; then
+        echo "Quickshell IPC target list is missing toggle handlers" >&2
+        exit 1
+    fi
+
+    echo "ok probeIpcTargets"
+}
+
 probe_system_stats() {
     require_command ps
 
@@ -841,7 +878,7 @@ probe_host_fonts() {
 
 usage() {
     cat <<'USAGE'
-Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|lock-keys|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth|vpn|screen-recorder|programs|launch-contract|system-stats|host-fonts]
+Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|lock-keys|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth|vpn|screen-recorder|programs|launch-contract|ipc-targets|system-stats|host-fonts]
 
 Runs read-only probes for services used by the local shell.
 USAGE
@@ -865,6 +902,7 @@ case "$probe" in
         probe_screen_recorder
         probe_programs
         probe_launch_contract
+        probe_ipc_targets
         probe_system_stats
         probe_host_fonts
         ;;
@@ -915,6 +953,9 @@ case "$probe" in
         ;;
     launch-contract)
         probe_launch_contract
+        ;;
+    ipc-targets)
+        probe_ipc_targets
         ;;
     system-stats)
         probe_system_stats
