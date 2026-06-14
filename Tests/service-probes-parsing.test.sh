@@ -394,6 +394,10 @@ canonical_repo="/syncthing/Sync/Projects/apps/noctalia-shell"
 start_wrapper_fixture=$'#!/usr/bin/env bash\nexec quickshell -p /syncthing/Sync/Projects/apps/noctalia-shell "$@"'
 niri_config_fixture=$'spawn-at-startup "/home/osso/bin/start-quickshell"\nbinds {\n    Mod+Space { spawn "quickshell" "ipc" "-p" "/syncthing/Sync/Projects/apps/noctalia-shell" "call" "launcher" "toggle"; }\n    Mod+Shift+S { spawn "quickshell" "ipc" "-p" "/syncthing/Sync/Projects/apps/noctalia-shell" "call" "settings" "toggle"; }\n}'
 
+assert_equal "$(strip_inline_launch_comment 'exec quickshell -p /syncthing/Sync/Projects/apps/noctalia-shell # old path')" "exec quickshell -p /syncthing/Sync/Projects/apps/noctalia-shell" "hash inline launch comment stripping failed"
+assert_equal "$(strip_inline_launch_comment 'echo active // quickshell ipc -p /syncthing/Sync/Projects/apps/noctalia-shell call launcher toggle')" "echo active" "slash inline launch comment stripping failed"
+assert_equal "$(strip_inline_launch_comment 'exec quickshell#not-comment -p /syncthing/Sync/Projects/apps/noctalia-shell')" "exec quickshell#not-comment -p /syncthing/Sync/Projects/apps/noctalia-shell" "non-comment hash marker was stripped"
+
 has_quickshell_launch_path "$start_wrapper_fixture" "$canonical_repo"
 has_niri_start_wrapper "$niri_config_fixture"
 has_quickshell_ipc_call "$niri_config_fixture" "$canonical_repo" "launcher" "toggle"

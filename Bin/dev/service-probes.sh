@@ -282,6 +282,16 @@ has_ipc_target_function() {
     return 1
 }
 
+strip_inline_launch_comment() {
+    local line="$1"
+
+    if [[ "$line" =~ ^(.*)[[:blank:]](//|#).*$ ]]; then
+        line="${BASH_REMATCH[1]}"
+    fi
+
+    printf '%s\n' "$line"
+}
+
 has_quickshell_launch_path() {
     local launcher_config="$1"
     local repo_path="$2"
@@ -291,10 +301,7 @@ has_quickshell_launch_path() {
         if [[ "$line" =~ ^[[:blank:]]*(//|#) ]]; then
             continue
         fi
-        active_line="$line"
-        if [[ "$active_line" =~ ^(.*)[[:blank:]](//|#).*$ ]]; then
-            active_line="${BASH_REMATCH[1]}"
-        fi
+        active_line="$(strip_inline_launch_comment "$line")"
         if [[ "$active_line" =~ quickshell[[:blank:]]+-p[[:blank:]]+\"?$repo_path(\"|[[:blank:]]|$) ]]; then
             return 0
         fi
@@ -321,10 +328,7 @@ has_quickshell_ipc_call() {
         if [[ "$line" =~ ^[[:blank:]]*(//|#) ]]; then
             continue
         fi
-        active_line="$line"
-        if [[ "$active_line" =~ ^(.*)[[:blank:]](//|#).*$ ]]; then
-            active_line="${BASH_REMATCH[1]}"
-        fi
+        active_line="$(strip_inline_launch_comment "$line")"
         if [[ "$active_line" =~ quickshell[[:blank:]]+ipc[[:blank:]]+-p[[:blank:]]+$repo_path[[:blank:]]+call[[:blank:]]+$target[[:blank:]]+$function_name($|[[:space:]]|[;}]) ]]; then
             return 0
         fi
@@ -342,10 +346,7 @@ has_stale_launch_path() {
         if [[ "$line" =~ ^[[:blank:]]*(//|#) ]]; then
             continue
         fi
-        active_line="$line"
-        if [[ "$active_line" =~ ^(.*)[[:blank:]](//|#).*$ ]]; then
-            active_line="${BASH_REMATCH[1]}"
-        fi
+        active_line="$(strip_inline_launch_comment "$line")"
         for stale_path in "$@"; do
             if [[ "$active_line" =~ $stale_path($|[[:space:]]|[\";}]) ]]; then
                 return 0
@@ -365,10 +366,7 @@ list_quickshell_ipc_calls() {
         if [[ "$line" =~ ^[[:blank:]]*(//|#) ]]; then
             continue
         fi
-        active_line="$line"
-        if [[ "$active_line" =~ ^(.*)[[:blank:]](//|#).*$ ]]; then
-            active_line="${BASH_REMATCH[1]}"
-        fi
+        active_line="$(strip_inline_launch_comment "$line")"
         if [[ "$active_line" =~ quickshell[[:blank:]]+ipc[[:blank:]] ]] \
             && [[ "$active_line" =~ call[[:space:]]+([A-Za-z0-9_]+)[[:space:]]+([A-Za-z0-9_]+) ]]; then
             printf '%s %s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
