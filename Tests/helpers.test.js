@@ -59,6 +59,25 @@ function testColorsConvert() {
   assert.equal(colors.isLightColor("#000000"), false);
 }
 
+function testColorsConvertGeneratedVariants() {
+  const colors = loadHelper("Helpers/ColorsConvert.js");
+
+  assert.deepEqual(plain(colors.rgbToHsv(0, 0, 255)), { h: 240, s: 100, v: 100 });
+  assert.deepEqual(plain(colors.hsvToRgb(30, 100, 100)), { r: 255, g: 128, b: 0 });
+
+  assert.equal(colors.adjustLightness("#336699", 20), "#6699cc");
+  assert.equal(colors.adjustLightness("#ffffff", 20), "#ffffff");
+  assert.equal(colors.adjustSaturation("#336699", -50), "#666666");
+  assert.equal(colors.adjustLightnessAndSaturation("#336699", 10, -20), "#597fa6");
+
+  assert.equal(colors.generateOnColor("#eeeeee", false), "#000000");
+  assert.equal(colors.generateOnColor("#222222", true), "#ffffff");
+  assert.equal(colors.generateContainerColor("#336699", false), "#a6bfd9");
+  assert.equal(colors.generateContainerColor("#336699", true), "#143352");
+  assert.equal(colors.generateSurfaceVariant("#eeeeee", 3, false), "#dfdfdf");
+  assert.equal(colors.generateSurfaceVariant("#222222", 3, true), "#393939");
+}
+
 function testAdvancedMath() {
   const advancedMath = loadHelper("Helpers/AdvancedMath.js");
 
@@ -217,6 +236,7 @@ function testDebugStringifyHandlesCircularReferences() {
 
 const tests = [
   testColorsConvert,
+  testColorsConvertGeneratedVariants,
   testAdvancedMath,
   testSha256,
   testThemeIconResolver,
