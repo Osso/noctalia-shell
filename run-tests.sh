@@ -13,7 +13,7 @@ Commands:
   log            Check the active Quickshell instance log for high-signal errors.
   unit           Run cheap pure JavaScript helper tests.
   qml            Run focused qmllint coverage for currently lint-clean QML files.
-  probes         Run read-only service probes for notifications, audio, brightness, battery, Bluetooth, clipboard, VPN, wallpaper/colors, settings, state cache, network state, and power profile.
+  probes         Run read-only service probes for notifications, audio, brightness, battery, Bluetooth, clipboard, VPN, screen recorder, wallpaper/colors, settings, state cache, network state, and power profile.
   notifications  Run notification probe scripts. This visibly sends notifications.
 USAGE
 }

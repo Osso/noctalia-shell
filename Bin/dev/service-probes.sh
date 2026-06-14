@@ -470,9 +470,40 @@ probe_vpn() {
     echo "ok probeVpn ($vpn_count profiles, $active_count active)"
 }
 
+probe_screen_recorder() {
+    require_command gpu-screen-recorder
+    require_command pidof
+
+    local monitors capture_options
+    monitors="$(gpu-screen-recorder --list-monitors 2>/dev/null)"
+    capture_options="$(gpu-screen-recorder --list-capture-options 2>/dev/null)"
+
+    if [[ ! "$monitors" =~ ^[^|]+[|][0-9]+x[0-9]+$ ]]; then
+        echo "gpu-screen-recorder monitor list is missing or malformed: $monitors" >&2
+        exit 1
+    fi
+
+    if [[ ! "$capture_options" =~ (^|$'\n')([^|]+[|][0-9]+x[0-9]+@[0-9]+hz[|][A-Za-z0-9_-]+|[^|[:space:]]+) ]]; then
+        echo "gpu-screen-recorder capture options are missing or malformed: $capture_options" >&2
+        exit 1
+    fi
+
+    if ! pidof xdg-desktop-portal >/dev/null; then
+        echo "xdg-desktop-portal is not running" >&2
+        exit 1
+    fi
+
+    if ! pidof xdg-desktop-portal-wlr xdg-desktop-portal-hyprland xdg-desktop-portal-gnome xdg-desktop-portal-kde xdg-desktop-portal-gtk >/dev/null; then
+        echo "no supported xdg-desktop-portal backend is running" >&2
+        exit 1
+    fi
+
+    echo "ok probeScreenRecorder"
+}
+
 usage() {
     cat <<'USAGE'
-Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth|vpn]
+Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth|vpn|screen-recorder]
 
 Runs read-only probes for services used by the local shell.
 USAGE
@@ -492,6 +523,7 @@ case "$probe" in
         probe_battery
         probe_bluetooth
         probe_vpn
+        probe_screen_recorder
         ;;
     notifications)
         probe_notifications
@@ -528,6 +560,9 @@ case "$probe" in
         ;;
     vpn)
         probe_vpn
+        ;;
+    screen-recorder)
+        probe_screen_recorder
         ;;
     -h | --help | help)
         usage
