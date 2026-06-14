@@ -14,20 +14,32 @@ Variants {
   delegate: Item {
     required property ShellScreen modelData
 
+    function screenName() {
+      return modelData ? modelData.name : "";
+    }
+
+    function screenHasBar() {
+      const name = screenName();
+      if (!name) {
+        return false;
+      }
+      var monitors = Settings.data.bar.monitors || [];
+      return monitors.length === 0 || monitors.includes(name);
+    }
+
     property bool shouldBeActive: {
-      if (!modelData || !modelData.name) {
+      const name = screenName();
+      if (!name) {
         return false;
       }
 
       let shouldLoad = true;
       if (!Settings.data.general.allowPanelsOnScreenWithoutBar) {
-        // Check if bar is configured for this screen
-        var monitors = Settings.data.bar.monitors || [];
-        shouldLoad = monitors.length === 0 || monitors.includes(modelData?.name);
+        shouldLoad = screenHasBar();
       }
 
       if (shouldLoad) {
-        Logger.d("AllScreens", "Screen activated: ", modelData?.name);
+        Logger.d("AllScreens", "Screen activated: ", name);
       }
       return shouldLoad;
     }
@@ -58,9 +70,7 @@ Variants {
         if (!parent.windowLoaded || !parent.shouldBeActive || !BarService.isVisible)
           return false;
 
-        // Check if bar is configured for this screen
-        var monitors = Settings.data.bar.monitors || [];
-        return monitors.length === 0 || monitors.includes(modelData?.name);
+        return parent.screenHasBar();
       }
       asynchronous: false
 
@@ -69,7 +79,7 @@ Variants {
       }
 
       onLoaded: {
-        Logger.d("AllScreens", "BarContentWindow created for", modelData?.name);
+        Logger.d("AllScreens", "BarContentWindow created for", parent.screenName());
       }
     }
 
@@ -80,9 +90,7 @@ Variants {
         if (!parent.windowLoaded || !parent.shouldBeActive || !BarService.isVisible)
           return false;
 
-        // Check if bar is configured for this screen
-        var monitors = Settings.data.bar.monitors || [];
-        return monitors.length === 0 || monitors.includes(modelData?.name);
+        return parent.screenHasBar();
       }
       asynchronous: false
 
@@ -91,7 +99,7 @@ Variants {
       }
 
       onLoaded: {
-        Logger.d("AllScreens", "BarExclusionZone created for", modelData?.name);
+        Logger.d("AllScreens", "BarExclusionZone created for", parent.screenName());
       }
     }
 
@@ -102,9 +110,7 @@ Variants {
         if (!parent.windowLoaded || !parent.shouldBeActive || !BarService.isVisible)
           return false;
 
-        // Check if bar is configured for this screen
-        var monitors = Settings.data.bar.monitors || [];
-        return monitors.length === 0 || monitors.includes(modelData?.name);
+        return parent.screenHasBar();
       }
       asynchronous: false
 
@@ -113,7 +119,7 @@ Variants {
       }
 
       onLoaded: {
-        Logger.d("AllScreens", "PopupMenuWindow created for", modelData?.name);
+        Logger.d("AllScreens", "PopupMenuWindow created for", parent.screenName());
       }
     }
   }

@@ -699,7 +699,8 @@ Item {
 
       // A panel can only be attached to a bar if there is a bar on that screen
       var monitors = Settings.data.bar.monitors || [];
-      var result = monitors.length === 0 || monitors.includes(root.screen?.name || "");
+      var screenName = root.screen ? root.screen.name : "";
+      var result = monitors.length === 0 || monitors.includes(screenName);
       return result;
     }
 

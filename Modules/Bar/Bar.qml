@@ -18,7 +18,13 @@ Item {
   property ShellScreen screen: null
 
   // Expose bar region for click-through mask
-  readonly property var barRegion: barContentLoader.item?.children[0] || null
+  readonly property var barRegion: {
+    const contentItem = barContentLoader.item;
+    if (!contentItem || contentItem.children.length === 0) {
+      return null;
+    }
+    return contentItem.children[0];
+  }
 
   // Expose the actual bar Item for unified background system
   readonly property var barItem: barRegion
@@ -37,6 +43,18 @@ Item {
       Logger.d("Bar", "Bar screen set to:", screen.name);
       Logger.d("Bar", "  Position:", barPosition, "Floating:", barFloating);
       BarService.registerBar(screen.name);
+    }
+  }
+
+  function toggleControlCenterPanel() {
+    var controlCenterPanel = PanelService.getPanel("controlCenterPanel", screen);
+    if (!controlCenterPanel) {
+      return;
+    }
+    if (Settings.data.controlCenter.position === "close_to_bar_button") {
+      controlCenterPanel.toggle(null, "ControlCenter");
+    } else {
+      controlCenterPanel.toggle();
     }
   }
 
@@ -151,13 +169,7 @@ Item {
           preventStealing: true
           onClicked: function (mouse) {
             if (mouse.button === Qt.RightButton) {
-              var controlCenterPanel = PanelService.getPanel("controlCenterPanel", screen);
-              if (Settings.data.controlCenter.position === "close_to_bar_button") {
-                // Will attempt to open the panel next to the bar button if any.
-                controlCenterPanel?.toggle(null, "ControlCenter");
-              } else {
-                controlCenterPanel?.toggle();
-              }
+              root.toggleControlCenterPanel();
               mouse.accepted = true;
             }
           }

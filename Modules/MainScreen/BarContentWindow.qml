@@ -17,15 +17,17 @@ import qs.Services.UI
 PanelWindow {
   id: barWindow
 
+  readonly property string screenName: barWindow.screen ? barWindow.screen.name : "unknown"
+
   // Note: screen property is inherited from PanelWindow and should be set by parent
   color: Color.transparent // Transparent - background is in MainScreen below
 
   Component.onCompleted: {
-    Logger.d("BarContentWindow", "Bar content window created for screen:", barWindow.screen?.name);
+    Logger.d("BarContentWindow", "Bar content window created for screen:", screenName);
   }
 
   // Wayland layer configuration
-  WlrLayershell.namespace: "noctalia-bar-content-" + (barWindow.screen?.name || "unknown")
+  WlrLayershell.namespace: "noctalia-bar-content-" + screenName
   WlrLayershell.layer: WlrLayer.Top
   WlrLayershell.exclusionMode: ExclusionMode.Ignore // Don't reserve space - BarExclusionZone in MainScreen handles that
 

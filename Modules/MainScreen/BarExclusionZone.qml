@@ -14,6 +14,7 @@ PanelWindow {
 
   property bool exclusive: Settings.data.bar.exclusive !== undefined ? Settings.data.bar.exclusive : false
 
+  readonly property string screenName: screen ? screen.name : "unknown"
   readonly property string barPosition: Settings.data.bar.position || "top"
   readonly property bool barIsVertical: barPosition === "left" || barPosition === "right"
   readonly property bool barFloating: Settings.data.bar.floating || false
@@ -27,7 +28,7 @@ PanelWindow {
 
   // Wayland layer shell configuration
   WlrLayershell.layer: WlrLayer.Top
-  WlrLayershell.namespace: "noctalia-bar-exclusion-" + (screen?.name || "unknown")
+  WlrLayershell.namespace: "noctalia-bar-exclusion-" + screenName
   WlrLayershell.exclusionMode: exclusive ? ExclusionMode.Auto : ExclusionMode.Ignore
 
   // Anchor based on bar position
@@ -65,6 +66,6 @@ PanelWindow {
   }
 
   Component.onCompleted: {
-    Logger.d("BarExclusionZone", "Created for screen:", screen?.name);
+    Logger.d("BarExclusionZone", "Created for screen:", screenName);
   }
 }

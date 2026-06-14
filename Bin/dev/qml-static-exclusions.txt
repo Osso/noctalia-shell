@@ -1,17 +1,10 @@
-Modules/Bar/Bar.qml
-Modules/Bar/Extras/BarExclusionZone.qml
 Modules/Bar/Extras/TrayMenu.qml
 Modules/Bar/Widgets/SystemMonitor.qml
 Modules/Bar/Widgets/Taskbar.qml
 Modules/Bar/Widgets/Tray.qml
 Modules/Dock/Dock.qml
 Modules/Dock/DockMenu.qml
-Modules/MainScreen/AllScreens.qml
-Modules/MainScreen/BarContentWindow.qml
-Modules/MainScreen/BarExclusionZone.qml
 Modules/MainScreen/MainScreen.qml
-Modules/MainScreen/PopupMenuWindow.qml
-Modules/MainScreen/SmartPanel.qml
 Modules/Notification/Notification.qml
 Modules/OSD/OSD.qml
 Modules/Panels/Settings/Bar/WidgetSettings/CustomButtonSettings.qml

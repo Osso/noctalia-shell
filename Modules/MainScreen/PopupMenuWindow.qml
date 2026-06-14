@@ -13,6 +13,7 @@ PanelWindow {
 
   required property ShellScreen screen
   property string windowType: "popupmenu"  // Used for namespace and registration
+  readonly property string screenName: screen ? screen.name : "unknown"
 
   // Content item to display (set by the popup that uses this window)
   property var contentItem: null
@@ -30,7 +31,7 @@ PanelWindow {
   // Use Top layer (same as MainScreen) for proper event handling
   WlrLayershell.layer: WlrLayer.Top
   WlrLayershell.keyboardFocus: hasDialog ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
-  WlrLayershell.namespace: "noctalia-" + windowType + "-" + (screen?.name || "unknown")
+  WlrLayershell.namespace: "noctalia-" + windowType + "-" + screenName
   WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
   // Track if a dialog is currently open (needed for keyboard focus)
@@ -38,7 +39,7 @@ PanelWindow {
 
   // Register with PanelService so widgets can find this window
   Component.onCompleted: {
-    objectName = "popupMenuWindow-" + (screen?.name || "unknown");
+    objectName = "popupMenuWindow-" + screenName;
     PanelService.registerPopupMenuWindow(screen, root);
   }
 
