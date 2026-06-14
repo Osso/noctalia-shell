@@ -157,6 +157,13 @@ function testMangoPatternContainerIsTyped() {
   assertNoPropertyType(mangoServiceFile, "patterns", "var");
 }
 
+function testPopupMenuWindowContentItemIsTyped() {
+  const popupMenuWindowFile = "Modules/MainScreen/PopupMenuWindow.qml";
+
+  assertPropertyType(popupMenuWindowFile, "contentItem", "QtObject");
+  assertNoPropertyType(popupMenuWindowFile, "contentItem", "var");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -177,6 +184,7 @@ const tests = [
   testBarWidgetLoaderScreenIsTyped,
   testClockSettingsFocusedInputIsTyped,
   testMangoPatternContainerIsTyped,
+  testPopupMenuWindowContentItemIsTyped,
 ];
 
 for (const test of tests) {

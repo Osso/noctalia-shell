@@ -16,7 +16,7 @@ PanelWindow {
   readonly property string screenName: screen ? screen.name : "unknown"
 
   // Content item to display (set by the popup that uses this window)
-  property var contentItem: null
+  property QtObject contentItem: null
 
   // Expose the trayMenu Loader directly (for backward compatibility)
   readonly property alias trayMenuLoader: trayMenuLoader
