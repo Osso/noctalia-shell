@@ -85,6 +85,10 @@ function testNotificationServerInstanceIsTyped() {
   assertPropertyType("Services/System/NotificationService.qml", "notificationServerLoader", "NotificationServer");
 }
 
+function testSettingsPanelActiveScrollViewIsTyped() {
+  assertPropertyType("Modules/Panels/Settings/SettingsPanel.qml", "activeScrollView", "NScrollView");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -95,6 +99,7 @@ const tests = [
   testPanelContentItemsAreTyped,
   testPanelServiceLockScreenIsTyped,
   testNotificationServerInstanceIsTyped,
+  testSettingsPanelActiveScrollViewIsTyped,
 ];
 
 for (const test of tests) {

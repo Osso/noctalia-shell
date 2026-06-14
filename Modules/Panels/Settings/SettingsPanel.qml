@@ -87,7 +87,7 @@ SmartPanel {
   property int requestedTab: SettingsPanel.Tab.General
   property int currentTabIndex: 0
   property var tabsModel: []
-  property var activeScrollView: null
+  property NScrollView activeScrollView: null
 
   Component.onCompleted: {
     updateTabsModel();
