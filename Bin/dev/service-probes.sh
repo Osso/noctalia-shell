@@ -310,7 +310,7 @@ has_stale_launch_path() {
     local stale_path
 
     for stale_path in "$@"; do
-        if [[ "$launch_config" == *"$stale_path"* ]]; then
+        if [[ "$launch_config" =~ $stale_path($|[[:space:]]|[\";}]) ]]; then
             return 0
         fi
     done
