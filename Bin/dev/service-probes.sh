@@ -40,6 +40,19 @@ is_wpctl_volume_output() {
     [[ "$volume_output" =~ ^Volume:\ [0-9]+(\.[0-9]+)?( \[MUTED\])?$ ]]
 }
 
+has_supported_clipboard_mime() {
+    local mime_types="$1"
+    local mime_type
+
+    while IFS= read -r mime_type; do
+        if [[ "$mime_type" =~ ^(text/plain|text/plain;charset=utf-8|text/html|image/) ]]; then
+            return 0
+        fi
+    done <<<"$mime_types"
+
+    return 1
+}
+
 probe_notifications() {
     require_command gdbus
 
@@ -116,7 +129,6 @@ probe_brightness() {
 
 probe_clipboard() {
     require_command wl-paste
-    require_command rg
 
     local types
     types="$(wl-paste --list-types 2>/dev/null || true)"
@@ -126,7 +138,7 @@ probe_clipboard() {
         exit 1
     fi
 
-    if ! printf '%s\n' "$types" | rg -q '^(text/plain|text/plain;charset=utf-8|text/html|image/)'; then
+    if ! has_supported_clipboard_mime "$types"; then
         echo "clipboard has no expected text/html/image MIME types: $types" >&2
         exit 1
     fi
