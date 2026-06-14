@@ -203,4 +203,20 @@ if has_readable_font_family $'   \n12345'; then
     exit 1
 fi
 
+ipc_fixture=$'target launcher\n  function toggle(): void\ntarget settings\n  function toggle(): void\n  function open(): void'
+
+has_ipc_target "$ipc_fixture" "launcher"
+has_ipc_toggle_handler "$ipc_fixture"
+has_ipc_target_function "$ipc_fixture" "settings" "open"
+
+if has_ipc_target "$ipc_fixture" "missing"; then
+    echo "missing IPC target was accepted" >&2
+    exit 1
+fi
+
+if has_ipc_target_function "$ipc_fixture" "launcher" "open"; then
+    echo "missing IPC target function was accepted" >&2
+    exit 1
+fi
+
 echo "ok testServiceProbeParsing"

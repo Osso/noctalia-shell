@@ -204,6 +204,40 @@ has_readable_font_family() {
     return 1
 }
 
+has_ipc_target() {
+    local ipc_output="$1"
+    local target="$2"
+
+    [[ "$ipc_output" =~ (^|$'\n')target[[:space:]]+$target($'\n'|$) ]]
+}
+
+has_ipc_toggle_handler() {
+    local ipc_output="$1"
+
+    [[ "$ipc_output" =~ function[[:space:]]+toggle\(\):[[:space:]]+void ]]
+}
+
+has_ipc_target_function() {
+    local ipc_output="$1"
+    local target="$2"
+    local function_name="$3"
+    local in_target=false
+    local line
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^target[[:space:]]+(.+)$ ]]; then
+            [[ "${BASH_REMATCH[1]}" == "$target" ]] && in_target=true || in_target=false
+            continue
+        fi
+
+        if [[ "$in_target" == true && "$line" =~ ^[[:space:]]+function[[:space:]]+$function_name\( ]]; then
+            return 0
+        fi
+    done <<<"$ipc_output"
+
+    return 1
+}
+
 probe_notifications() {
     require_command gdbus
 
@@ -922,13 +956,13 @@ probe_ipc_targets() {
 
     local target
     for target in "${required_targets[@]}"; do
-        if ! printf '%s\n' "$ipc_output" | rg -q "^target $target$"; then
+        if ! has_ipc_target "$ipc_output" "$target"; then
             echo "Quickshell IPC target is missing: $target" >&2
             exit 1
         fi
     done
 
-    if ! printf '%s\n' "$ipc_output" | rg -q "function toggle\\(\\): void"; then
+    if ! has_ipc_toggle_handler "$ipc_output"; then
         echo "Quickshell IPC target list is missing toggle handlers" >&2
         exit 1
     fi
@@ -941,7 +975,7 @@ probe_ipc_targets() {
     fi
 
     while read -r _ target_name function_name; do
-        if ! printf '%s\n' "$ipc_output" | rg -U -q "^target $target_name$\\n(  function .+\\n)*  function $function_name\\("; then
+        if ! has_ipc_target_function "$ipc_output" "$target_name" "$function_name"; then
             echo "Niri IPC call target/function is missing from live Quickshell IPC: $target_name $function_name" >&2
             exit 1
         fi
