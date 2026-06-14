@@ -156,6 +156,11 @@ if has_gpu_screen_recorder_capture_option $'   '; then
     exit 1
 fi
 
+if has_gpu_screen_recorder_capture_option "   |3440x1440@165hz|card1"; then
+    echo "blank gpu-screen-recorder capture option name was accepted" >&2
+    exit 1
+fi
+
 if has_gpu_screen_recorder_capture_option "portal trailing"; then
     echo "malformed gpu-screen-recorder capture option line was accepted" >&2
     exit 1
