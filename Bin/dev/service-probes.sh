@@ -566,9 +566,40 @@ probe_programs() {
     echo "ok probePrograms"
 }
 
+probe_system_stats() {
+    require_command ps
+
+    local cpu_line meminfo ps_output
+    cpu_line="$(awk '/^cpu / { print; exit }' /proc/stat)"
+    meminfo="$(cat /proc/meminfo)"
+    ps_output="$(ps -eo pid,%cpu,%mem,rss,args --sort=-%cpu --no-headers)"
+
+    if [[ ! "$cpu_line" =~ ^cpu[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+ ]]; then
+        echo "/proc/stat CPU aggregate row is missing or malformed: $cpu_line" >&2
+        exit 1
+    fi
+
+    if [[ ! "$meminfo" =~ MemTotal:[[:space:]]+[0-9]+[[:space:]]+kB ]]; then
+        echo "/proc/meminfo is missing MemTotal" >&2
+        exit 1
+    fi
+
+    if [[ ! "$meminfo" =~ MemAvailable:[[:space:]]+[0-9]+[[:space:]]+kB ]]; then
+        echo "/proc/meminfo is missing MemAvailable" >&2
+        exit 1
+    fi
+
+    if [[ ! "$ps_output" =~ ^[[:space:]]*[0-9]+[[:space:]]+[0-9]+(\.[0-9]+)?[[:space:]]+[0-9]+(\.[0-9]+)?[[:space:]]+[0-9]+[[:space:]]+.+ ]]; then
+        echo "ps output for ProcessService is missing or malformed" >&2
+        exit 1
+    fi
+
+    echo "ok probeSystemStats"
+}
+
 usage() {
     cat <<'USAGE'
-Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth|vpn|screen-recorder|programs]
+Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth|vpn|screen-recorder|programs|system-stats]
 
 Runs read-only probes for services used by the local shell.
 USAGE
@@ -590,6 +621,7 @@ case "$probe" in
         probe_vpn
         probe_screen_recorder
         probe_programs
+        probe_system_stats
         ;;
     notifications)
         probe_notifications
@@ -632,6 +664,9 @@ case "$probe" in
         ;;
     programs)
         probe_programs
+        ;;
+    system-stats)
+        probe_system_stats
         ;;
     -h | --help | help)
         usage
