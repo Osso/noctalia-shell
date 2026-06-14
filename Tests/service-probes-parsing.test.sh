@@ -37,6 +37,17 @@ ddc_detect_without_lg='Display 1
 
 assert_equal "$(find_lg_ultrawide_bus "$ddc_detect_without_lg")" "" "non-LG display must not select a DDC bus"
 
+ddc_detect_lg_without_bus='Display 1
+   I2C bus:  /dev/i2c-3
+   EDID synopsis:
+      Model:                Other Display
+
+Display 2
+   EDID synopsis:
+      Model:                LG ULTRAWIDE'
+
+assert_equal "$(find_lg_ultrawide_bus "$ddc_detect_lg_without_bus")" "" "LG display without its own I2C bus must not reuse previous display bus"
+
 is_ddc_brightness_output "VCP 10 C 25 100"
 
 if is_ddc_brightness_output "VCP 10 C unsupported"; then
