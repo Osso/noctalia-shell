@@ -74,6 +74,11 @@ function testSmartPanelButtonItemIsTyped() {
   assertPropertyType("Modules/MainScreen/SmartPanel.qml", "buttonItem", "Item");
 }
 
+function testSmartPanelPanelRegionIsTyped() {
+  assertPropertyType("Modules/MainScreen/SmartPanel.qml", "panelRegion", "Item");
+  assertNoPropertyType("Modules/MainScreen/SmartPanel.qml", "panelRegion", "var");
+}
+
 function testPanelContentItemsAreTyped() {
   const contentItemFiles = [
     "Modules/Panels/Wallpaper/WallpaperPanel.qml",
@@ -213,6 +218,7 @@ const tests = [
   testTooltipServiceCallsUseTargetItemFirst,
   testTooltipServiceTracksTypedTooltipInstances,
   testSmartPanelButtonItemIsTyped,
+  testSmartPanelPanelRegionIsTyped,
   testPanelContentItemsAreTyped,
   testPanelServiceLockScreenIsTyped,
   testNotificationServerInstanceIsTyped,

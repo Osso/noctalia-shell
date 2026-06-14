@@ -102,7 +102,7 @@ Item {
   }
 
   // Expose panel region for click-through mask
-  readonly property var panelRegion: panelContent.maskRegion
+  readonly property Item panelRegion: panelContent.maskRegion
 
   readonly property string barPosition: Settings.data.bar.position
   readonly property bool barIsVertical: barPosition === "left" || barPosition === "right"
