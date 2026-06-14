@@ -445,6 +445,11 @@ if has_stale_launch_path "$start_wrapper_fixture"$'\n'"$niri_config_fixture" "/h
     exit 1
 fi
 
+if has_stale_launch_path "# quickshell -p /home/osso/Repos/noctalia-shell" "/home/osso/Repos/noctalia-shell"; then
+    echo "commented stale launch path was detected" >&2
+    exit 1
+fi
+
 if has_stale_launch_path "quickshell -p /home/osso/Repos/noctalia-shell-old" "/home/osso/Repos/noctalia-shell"; then
     echo "prefixed stale launch path was detected" >&2
     exit 1

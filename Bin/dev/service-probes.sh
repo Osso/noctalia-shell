@@ -328,13 +328,18 @@ has_quickshell_ipc_call() {
 has_stale_launch_path() {
     local launch_config="$1"
     shift
-    local stale_path
+    local line stale_path
 
-    for stale_path in "$@"; do
-        if [[ "$launch_config" =~ $stale_path($|[[:space:]]|[\";}]) ]]; then
-            return 0
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^[[:blank:]]*(//|#) ]]; then
+            continue
         fi
-    done
+        for stale_path in "$@"; do
+            if [[ "$line" =~ $stale_path($|[[:space:]]|[\";}]) ]]; then
+                return 0
+            fi
+        done
+    done <<<"$launch_config"
 
     return 1
 }
