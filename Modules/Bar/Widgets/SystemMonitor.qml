@@ -63,7 +63,9 @@ Rectangle {
   readonly property int percentTextWidth: Math.ceil(percentMetrics.boundingRect.width + 3)
   readonly property int tempTextWidth: Math.ceil(tempMetrics.boundingRect.width + 3)
   readonly property int memTextWidth: Math.ceil(memMetrics.boundingRect.width + 3)
-  readonly property bool isHovered: mainMouseArea.containsMouse || (diskHoverArea?.containsMouse ?? false) || (fanHoverArea?.containsMouse ?? false)
+  readonly property bool diskHovered: diskHoverArea ? diskHoverArea.containsMouse : false
+  readonly property bool fanHovered: fanHoverArea ? fanHoverArea.containsMouse : false
+  readonly property bool isHovered: mainMouseArea.containsMouse || diskHovered || fanHovered
   readonly property color textColor: isHovered ? Color.mOnHover : (usePrimaryColor ? Color.mPrimary : Color.mOnSurface)
   readonly property color iconColor: isHovered ? Color.mOnHover : Color.mOnSurface
 
@@ -159,7 +161,10 @@ Rectangle {
     onClicked: mouse => {
                  if (mouse.button === Qt.LeftButton) {
                    // Open process panel on left click
-                   PanelService.getPanel("processPanel", screen)?.toggle(root);
+                   var processPanel = PanelService.getPanel("processPanel", screen);
+                   if (processPanel) {
+                     processPanel.toggle(root);
+                   }
                  } else if (mouse.button === Qt.RightButton) {
                    var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
                    if (popupMenuWindow) {
