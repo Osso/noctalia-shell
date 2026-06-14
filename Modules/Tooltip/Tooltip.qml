@@ -18,7 +18,7 @@ PopupWindow {
   property real animationScale: 0.85
 
   // Internal properties
-  property var targetItem: null
+  property Item targetItem: null
   property real anchorX: 0
   property real anchorY: 0
   property bool isPositioned: false

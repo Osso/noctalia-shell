@@ -40,9 +40,27 @@ function testPopupAnchorItemsAreTyped() {
   }
 }
 
+function testTooltipTargetItemIsTyped() {
+  assertPropertyType("Modules/Tooltip/Tooltip.qml", "targetItem", "Item");
+}
+
+function testTooltipServiceCallsUseTargetItemFirst() {
+  const callSiteFiles = [
+    "Widgets/NColorSlider.qml",
+    "Widgets/NColorPickerDialog.qml",
+  ];
+
+  for (const callSiteFile of callSiteFiles) {
+    const source = readQml(callSiteFile);
+    assert.doesNotMatch(source, /TooltipService\.show\(screen,/, `${callSiteFile} must pass the target item as the first TooltipService.show argument`);
+  }
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
+  testTooltipTargetItemIsTyped,
+  testTooltipServiceCallsUseTargetItemFirst,
 ];
 
 for (const test of tests) {
