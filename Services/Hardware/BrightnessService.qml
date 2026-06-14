@@ -149,6 +149,16 @@ Singleton {
     // Signal for brightness changes
     signal brightnessUpdated(real newBrightness)
 
+    function publishBrightnessUpdate() {
+      if (!BrightnessParsing.isValidBrightnessRatio(monitor.brightness)) {
+        Logger.w("Brightness", "Skipping invalid brightness update for", monitor.modelData.name);
+        return;
+      }
+
+      monitor.brightnessUpdated(monitor.brightness);
+      root.monitorBrightnessChanged(monitor, monitor.brightness);
+    }
+
     // Execute a system command to get the current brightness value directly
     readonly property Process refreshProc: Process {
       stdout: StdioCollector {
@@ -168,8 +178,7 @@ Singleton {
               if (Math.abs(newBrightness - monitor.brightness) > 0.01) {
                 // Update internal value to match system state
                 monitor.brightness = newBrightness;
-                monitor.brightnessUpdated(monitor.brightness);
-                root.monitorBrightnessChanged(monitor, monitor.brightness);
+              monitor.publishBrightnessUpdate();
                 //Logger.i("Brightness", "Refreshed brightness from system:", monitor.modelData.name, monitor.brightness)
               }
             }
@@ -246,9 +255,7 @@ Singleton {
             }
           }
 
-          // Always update
-          monitor.brightnessUpdated(monitor.brightness);
-          root.monitorBrightnessChanged(monitor, monitor.brightness);
+          monitor.publishBrightnessUpdate();
         }
       }
     }
@@ -299,8 +306,7 @@ Singleton {
 
       // Update internal value and trigger UI feedback
       monitor.brightness = value;
-      monitor.brightnessUpdated(value);
-      root.monitorBrightnessChanged(monitor, monitor.brightness);
+      monitor.publishBrightnessUpdate();
 
       if (isAppleDisplay) {
         monitor.ignoreNextChange = true;

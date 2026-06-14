@@ -2,6 +2,8 @@
 set -euo pipefail
 
 probe="${1:-all}"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd -- "$script_dir/../.." && pwd)"
 
 require_command() {
     local name="$1"
@@ -544,7 +546,7 @@ probe_screen_recorder() {
 probe_programs() {
     require_command rg
 
-    local service_file="$PWD/Services/System/ProgramCheckerService.qml"
+    local service_file="$repo_root/Services/System/ProgramCheckerService.qml"
     if [[ ! -r "$service_file" ]]; then
         echo "ProgramCheckerService.qml is not readable" >&2
         exit 1
@@ -604,6 +606,62 @@ probe_programs() {
     fi
 
     echo "ok probePrograms"
+}
+
+probe_launch_contract() {
+    require_command rg
+
+    local start_wrapper="/home/osso/bin/start-quickshell"
+    local niri_config="/home/osso/.config/niri/config.kdl"
+    local stale_repo_path="/home/osso/Repos/noctalia-shell"
+    local stale_tilde_path="~/Repos/noctalia-shell"
+
+    if [[ ! -x "$start_wrapper" ]]; then
+        echo "Noctalia start wrapper is missing or not executable: $start_wrapper" >&2
+        exit 1
+    fi
+
+    if [[ ! -r "$niri_config" ]]; then
+        echo "Niri config is not readable: $niri_config" >&2
+        exit 1
+    fi
+
+    if ! rg -F -q "quickshell -p $repo_root" "$start_wrapper"; then
+        echo "Noctalia start wrapper does not launch the canonical repo path: $repo_root" >&2
+        exit 1
+    fi
+
+    if ! rg -F -q 'spawn-at-startup "/home/osso/bin/start-quickshell"' "$niri_config"; then
+        echo "Niri config does not autostart the Noctalia wrapper" >&2
+        exit 1
+    fi
+
+    if ! rg -F -q "quickshell ipc -p $repo_root call launcher toggle" "$niri_config"; then
+        echo "Niri launcher keybind does not target the canonical Noctalia path: $repo_root" >&2
+        exit 1
+    fi
+
+    if ! rg -F -q "quickshell ipc -p $repo_root call sessionMenu toggle" "$niri_config"; then
+        echo "Niri session menu keybind does not target the canonical Noctalia path: $repo_root" >&2
+        exit 1
+    fi
+
+    if ! rg -F -q "quickshell ipc -p $repo_root call settings toggle" "$niri_config"; then
+        echo "Niri settings keybind does not target the canonical Noctalia path: $repo_root" >&2
+        exit 1
+    fi
+
+    if rg -F -q "$stale_repo_path" "$start_wrapper" "$niri_config"; then
+        echo "launch contract still references stale repo path: $stale_repo_path" >&2
+        exit 1
+    fi
+
+    if rg -F -q "$stale_tilde_path" "$start_wrapper" "$niri_config"; then
+        echo "launch contract still references stale repo path: $stale_tilde_path" >&2
+        exit 1
+    fi
+
+    echo "ok probeLaunchContract"
 }
 
 probe_system_stats() {
@@ -783,7 +841,7 @@ probe_host_fonts() {
 
 usage() {
     cat <<'USAGE'
-Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|lock-keys|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth|vpn|screen-recorder|programs|system-stats|host-fonts]
+Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|lock-keys|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth|vpn|screen-recorder|programs|launch-contract|system-stats|host-fonts]
 
 Runs read-only probes for services used by the local shell.
 USAGE
@@ -806,6 +864,7 @@ case "$probe" in
         probe_vpn
         probe_screen_recorder
         probe_programs
+        probe_launch_contract
         probe_system_stats
         probe_host_fonts
         ;;
@@ -853,6 +912,9 @@ case "$probe" in
         ;;
     programs)
         probe_programs
+        ;;
+    launch-contract)
+        probe_launch_contract
         ;;
     system-stats)
         probe_system_stats

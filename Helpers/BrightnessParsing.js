@@ -72,3 +72,7 @@ function parseInternalBacklight(output) {
     ratio: current / max,
   };
 }
+
+function isValidBrightnessRatio(value) {
+  return typeof value === "number" && isFinite(value);
+}

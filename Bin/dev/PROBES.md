@@ -42,6 +42,7 @@ Bin/dev/service-probes.sh lock-keys
 Bin/dev/service-probes.sh vpn
 Bin/dev/service-probes.sh screen-recorder
 Bin/dev/service-probes.sh programs
+Bin/dev/service-probes.sh launch-contract
 Bin/dev/service-probes.sh system-stats
 Bin/dev/service-probes.sh host-fonts
 Bin/dev/service-probes.sh wallpaper-colors
@@ -56,7 +57,8 @@ PipeWire volume state, internal brightness state, optional LG DDC state when the
 display is detected, UPower display/physical battery state, clipboard MIME type
 list, lock-key LED state inputs, Bluetooth controller state, NetworkManager
 VPN/WireGuard profile rows, screen-recorder monitor/source enumeration, program
-availability checks, and system/process-stat inputs, host
+availability checks, local Niri/start-wrapper launch path wiring,
+system/process-stat inputs, host
 identity/logo/fontconfig inputs, and wallpaper/color cache are readable and
 coherent for this machine. The settings probe validates the local settings file
 shape for

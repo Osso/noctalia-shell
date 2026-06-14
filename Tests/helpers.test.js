@@ -361,6 +361,10 @@ Display 1
     max: 64764,
     ratio: 36268 / 64764,
   });
+  assert.equal(brightness.isValidBrightnessRatio(0), true);
+  assert.equal(brightness.isValidBrightnessRatio(0.5), true);
+  assert.equal(brightness.isValidBrightnessRatio(null), false);
+  assert.equal(brightness.isValidBrightnessRatio(NaN), false);
 }
 
 function testDebugStringifyHandlesCircularReferences() {
