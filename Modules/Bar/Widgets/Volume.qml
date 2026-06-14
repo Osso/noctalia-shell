@@ -43,7 +43,7 @@ Item {
 
   // Connection used to open the pill when volume changes
   Connections {
-    target: AudioService.sink?.audio ? AudioService.sink?.audio : null
+    target: AudioService.sink && AudioService.sink.audio ? AudioService.sink.audio : null
     function onVolumeChanged() {
       // Logger.i("Bar:Volume", "onVolumeChanged")
       if (!firstVolumeReceived) {
@@ -147,7 +147,9 @@ Item {
       }
     }
     onClicked: {
-      PanelService.getPanel("audioPanel", screen)?.toggle(this);
+      const panel = PanelService.getPanel("audioPanel", screen);
+      if (panel)
+        panel.toggle(this);
     }
     onRightClicked: {
       // Get the shared popup menu window for this screen

@@ -44,7 +44,7 @@ Item {
 
   // Connection used to open the pill when input volume changes
   Connections {
-    target: AudioService.source?.audio ? AudioService.source?.audio : null
+    target: AudioService.source && AudioService.source.audio ? AudioService.source.audio : null
     function onVolumeChanged() {
       // Logger.i("Bar:Microphone", "onInputVolumeChanged")
       if (!firstInputVolumeReceived) {
@@ -62,7 +62,7 @@ Item {
 
   // Connection used to open the pill when input mute state changes
   Connections {
-    target: AudioService.source?.audio ? AudioService.source?.audio : null
+    target: AudioService.source && AudioService.source.audio ? AudioService.source.audio : null
     function onMutedChanged() {
       // Logger.i("Bar:Microphone", "onInputMutedChanged")
       if (!firstInputVolumeReceived) {
@@ -164,7 +164,9 @@ Item {
       }
     }
     onClicked: {
-      PanelService.getPanel("audioPanel", screen)?.toggle(this);
+      const panel = PanelService.getPanel("audioPanel", screen);
+      if (panel)
+        panel.toggle(this);
     }
     onRightClicked: {
       var popupMenuWindow = PanelService.getPopupMenuWindow(screen);

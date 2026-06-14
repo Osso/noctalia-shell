@@ -243,7 +243,11 @@ Item {
       }
       return lines.join("\n");
     }
-    onClicked: PanelService.getPanel("batteryPanel", screen)?.toggle(this)
+    onClicked: {
+      const panel = PanelService.getPanel("batteryPanel", screen);
+      if (panel)
+        panel.toggle(this);
+    }
     onRightClicked: {
       var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
       if (popupMenuWindow) {
