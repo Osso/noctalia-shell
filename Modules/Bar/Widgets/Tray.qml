@@ -58,8 +58,8 @@ Rectangle {
   readonly property bool density: Settings.data.bar.density
   readonly property real iconSize: Math.round(Style.capsuleHeight * 0.65)
 
-  property list<string> blacklist: widgetSettings.blacklist || widgetMetadata.blacklist || [] // Read from settings
-  property list<string> pinned: widgetSettings.pinned || widgetMetadata.pinned || [] // Pinned items (shown inline)
+  property var blacklist: widgetSettings.blacklist || widgetMetadata.blacklist || [] // Read from settings
+  property var pinned: widgetSettings.pinned || widgetMetadata.pinned || [] // Pinned items (shown inline)
   property bool drawerEnabled: widgetSettings.drawerEnabled !== undefined ? widgetSettings.drawerEnabled : (widgetMetadata.drawerEnabled !== undefined ? widgetMetadata.drawerEnabled : true) // Enable drawer panel
   property var filteredItems: [] // Items to show inline (pinned)
   property var dropdownItems: [] // Items to show in drawer (unpinned)
@@ -287,7 +287,7 @@ Rectangle {
           property bool menuJustOpened: false
 
           source: {
-            let icon = modelData?.icon || "";
+            let icon = modelData ? (modelData.icon || "") : "";
             if (!icon) {
               return "";
             }

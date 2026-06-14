@@ -164,10 +164,13 @@ Rectangle {
         id: taskbarItem
         required property var modelData
         property ShellScreen screen: root.screen
-
-        visible: (!onlySameOutput || modelData.output === screen?.name) && (!onlyActiveWorkspaces || CompositorService.getActiveWorkspaces().map(function (ws) {
+        readonly property string screenName: screen ? screen.name : ""
+        readonly property bool matchesOutput: !onlySameOutput || modelData.output === screenName
+        readonly property bool matchesWorkspace: !onlyActiveWorkspaces || CompositorService.getActiveWorkspaces().map(function (ws) {
           return ws.id;
-        }).includes(modelData.workspaceId))
+        }).includes(modelData.workspaceId)
+
+        visible: matchesOutput && matchesWorkspace
 
         Layout.preferredWidth: root.itemSize
         Layout.preferredHeight: root.itemSize
