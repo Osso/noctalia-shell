@@ -80,6 +80,18 @@ is_bluetooth_device_row() {
     [[ "$device_row" =~ ^Device[[:space:]][0-9A-Fa-f:]{17}[[:space:]] ]]
 }
 
+is_gpu_screen_recorder_monitor_row() {
+    local monitor_row="$1"
+
+    [[ "$monitor_row" =~ ^[^|]+[|][0-9]+x[0-9]+$ ]]
+}
+
+has_gpu_screen_recorder_capture_option() {
+    local capture_options="$1"
+
+    [[ "$capture_options" =~ (^|$'\n')([^|]+[|][0-9]+x[0-9]+@[0-9]+hz[|][A-Za-z0-9_-]+|[^|[:space:]]+) ]]
+}
+
 probe_notifications() {
     require_command gdbus
 
@@ -631,12 +643,12 @@ probe_screen_recorder() {
     monitors="$(gpu-screen-recorder --list-monitors 2>/dev/null)"
     capture_options="$(gpu-screen-recorder --list-capture-options 2>/dev/null)"
 
-    if [[ ! "$monitors" =~ ^[^|]+[|][0-9]+x[0-9]+$ ]]; then
+    if ! is_gpu_screen_recorder_monitor_row "$monitors"; then
         echo "gpu-screen-recorder monitor list is missing or malformed: $monitors" >&2
         exit 1
     fi
 
-    if [[ ! "$capture_options" =~ (^|$'\n')([^|]+[|][0-9]+x[0-9]+@[0-9]+hz[|][A-Za-z0-9_-]+|[^|[:space:]]+) ]]; then
+    if ! has_gpu_screen_recorder_capture_option "$capture_options"; then
         echo "gpu-screen-recorder capture options are missing or malformed: $capture_options" >&2
         exit 1
     fi
