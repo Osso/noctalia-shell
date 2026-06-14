@@ -228,6 +228,10 @@ has_niri_start_wrapper "$niri_config_fixture"
 has_quickshell_ipc_call "$niri_config_fixture" "$canonical_repo" "launcher" "toggle"
 has_quickshell_ipc_call "$niri_config_fixture" "$canonical_repo" "settings" "toggle"
 
+spawn_sh_niri_fixture=$'Mod+Space { spawn-sh "quickshell ipc -p /syncthing/Sync/Projects/apps/noctalia-shell call launcher toggle"; }\nMod+P { spawn-sh "quickshell ipc -p /syncthing/Sync/Projects/apps/noctalia-shell call sessionMenu toggle"; }'
+assert_equal "$(list_quickshell_ipc_calls "$spawn_sh_niri_fixture")" $'launcher toggle\nsessionMenu toggle' "spawn-sh IPC call extraction failed"
+assert_equal "$(list_quickshell_ipc_calls "$niri_config_fixture")" $'launcher toggle\nsettings toggle' "quoted spawn IPC call extraction failed"
+
 if has_quickshell_launch_path "$start_wrapper_fixture" "/home/osso/Repos/noctalia-shell"; then
     echo "stale wrapper launch path was accepted" >&2
     exit 1

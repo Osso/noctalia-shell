@@ -275,6 +275,18 @@ has_stale_launch_path() {
     return 1
 }
 
+list_quickshell_ipc_calls() {
+    local niri_config="$1"
+    local normalized_config="${niri_config//\"/}"
+    local line
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ call[[:space:]]+([A-Za-z0-9_]+)[[:space:]]+([A-Za-z0-9_]+) ]]; then
+            printf '%s %s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+        fi
+    done <<<"$normalized_config"
+}
+
 probe_notifications() {
     require_command gdbus
 
@@ -969,7 +981,6 @@ probe_launch_contract() {
 
 probe_ipc_targets() {
     require_command quickshell
-    require_command rg
 
     local niri_config="/home/osso/.config/niri/config.kdl"
     local ipc_output required_targets
@@ -1008,13 +1019,13 @@ probe_ipc_targets() {
     fi
 
     local ipc_calls target_name function_name
-    ipc_calls="$(rg -o 'call [A-Za-z0-9_]+ [A-Za-z0-9_]+' "$niri_config" || true)"
+    ipc_calls="$(list_quickshell_ipc_calls "$(cat "$niri_config")")"
     if [[ -z "$ipc_calls" ]]; then
         echo "Niri config has no Quickshell IPC calls to validate" >&2
         exit 1
     fi
 
-    while read -r _ target_name function_name; do
+    while read -r target_name function_name; do
         if ! has_ipc_target_function "$ipc_output" "$target_name" "$function_name"; then
             echo "Niri IPC call target/function is missing from live Quickshell IPC: $target_name $function_name" >&2
             exit 1
