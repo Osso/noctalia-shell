@@ -71,7 +71,7 @@ ColumnLayout {
         border.color: Color.mOutline
         border.width: Style.borderS
 
-        property var brightnessMonitor: BrightnessService.getMonitorForScreen(modelData)
+        property QtObject brightnessMonitor: BrightnessService.getMonitorForScreen(modelData)
 
         ColumnLayout {
           id: contentCol

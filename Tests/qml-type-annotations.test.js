@@ -295,6 +295,13 @@ function testSectionEditorRegistryIsTyped() {
   assertNoPropertyType(sectionEditorFile, "widgetRegistry", "var");
 }
 
+function testDisplayTabBrightnessMonitorIsTyped() {
+  const displayTabFile = "Modules/Panels/Settings/Tabs/DisplayTab.qml";
+
+  assertPropertyType(displayTabFile, "brightnessMonitor", "QtObject");
+  assertNoPropertyType(displayTabFile, "brightnessMonitor", "var");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -329,6 +336,7 @@ const tests = [
   testTrayMenuSubMenuIsTyped,
   testTrayMenuLoaderReferencesAreTyped,
   testSectionEditorRegistryIsTyped,
+  testDisplayTabBrightnessMonitorIsTyped,
 ];
 
 for (const test of tests) {
