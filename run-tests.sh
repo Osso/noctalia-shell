@@ -23,6 +23,7 @@ run_unit_tests() {
     node "$repo_root/Tests/widget-registry.test.js"
     node "$repo_root/Tests/settings-references.test.js"
     node "$repo_root/Tests/color-schemes.test.js"
+    node "$repo_root/Tests/shell-state-contract.test.js"
     bash "$repo_root/Tests/i18n-json.test.sh"
     bash "$repo_root/Tests/calendar-scripts.test.sh"
 }
