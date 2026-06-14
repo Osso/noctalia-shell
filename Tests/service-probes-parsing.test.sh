@@ -195,6 +195,11 @@ if has_gpu_screen_recorder_capture_option "portal trailing"; then
     exit 1
 fi
 
+if has_gpu_screen_recorder_capture_option "portal;bad"; then
+    echo "malformed simple gpu-screen-recorder capture option was accepted" >&2
+    exit 1
+fi
+
 is_power_profile_name "balanced"
 has_power_profile_entries $'performance:\n* balanced:\npower-saver:'
 has_active_power_profile_marker $'performance:\n* balanced:\npower-saver:' "balanced"

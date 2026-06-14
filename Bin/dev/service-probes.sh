@@ -101,7 +101,7 @@ has_gpu_screen_recorder_capture_option() {
 
     while IFS= read -r capture_option; do
         if [[ "$capture_option" =~ ^[^|[:space:]][^|[:space:]]*[|][0-9]+x[0-9]+@[0-9]+hz[|][A-Za-z0-9_-]+$ ]] \
-            || [[ "$capture_option" =~ ^[^|[:space:]]+$ ]]; then
+            || [[ "$capture_option" =~ ^[A-Za-z0-9_-]+$ ]]; then
             return 0
         fi
     done <<<"$capture_options"
