@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import "../../Helpers/TimerDigits.js" as TimerDigits
 import qs.Commons
 import qs.Services.System
 import qs.Widgets
@@ -365,67 +366,15 @@ NBox {
   readonly property bool soundPlaying: Time.timerSoundPlaying
 
   function formatTime(seconds, hideHoursWhenZero) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-
-    // If hideHoursWhenZero is true (when running), only show hours if > 0
-    // Otherwise (when not running or editing), always show hours
-    if (hideHoursWhenZero && hours === 0) {
-      return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return TimerDigits.formatDuration(seconds, hideHoursWhenZero);
   }
 
   function formatTimeFromDigits(digits) {
-    // Parse digits right-to-left: last 2 = seconds, next 2 = minutes, rest = hours
-    const len = digits.length;
-    let seconds = 0;
-    let minutes = 0;
-    let hours = 0;
-
-    if (len > 0) {
-      seconds = parseInt(digits.substring(Math.max(0, len - 2))) || 0;
-    }
-    if (len > 2) {
-      minutes = parseInt(digits.substring(Math.max(0, len - 4), len - 2)) || 0;
-    }
-    if (len > 4) {
-      hours = parseInt(digits.substring(0, len - 4)) || 0;
-    }
-
-    // Clamp values
-    seconds = Math.min(59, seconds);
-    minutes = Math.min(59, minutes);
-    hours = Math.min(99, hours);
-
-    // Always show HH:MM:SS format in edit mode
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return TimerDigits.formatFromDigits(digits);
   }
 
   function parseDigitsToTime(digits) {
-    // Parse digits right-to-left: last 2 = seconds, next 2 = minutes, rest = hours
-    const len = digits.length;
-    let seconds = 0;
-    let minutes = 0;
-    let hours = 0;
-
-    if (len > 0) {
-      seconds = parseInt(digits.substring(Math.max(0, len - 2))) || 0;
-    }
-    if (len > 2) {
-      minutes = parseInt(digits.substring(Math.max(0, len - 4), len - 2)) || 0;
-    }
-    if (len > 4) {
-      hours = parseInt(digits.substring(0, len - 4)) || 0;
-    }
-
-    // Clamp values
-    seconds = Math.min(59, seconds);
-    minutes = Math.min(59, minutes);
-    hours = Math.min(99, hours);
-
-    Time.timerRemainingSeconds = (hours * 3600) + (minutes * 60) + seconds;
+    Time.timerRemainingSeconds = TimerDigits.totalSecondsFromDigits(digits);
   }
 
   function applyTimeFromBuffer() {

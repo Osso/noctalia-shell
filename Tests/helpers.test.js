@@ -306,6 +306,24 @@ function testCustomButtonContentParser() {
   assert.equal(scrolling.tooltip, "abcdefghijkl");
 }
 
+function testTimerDigitsParser() {
+  const timerDigits = loadHelper("Helpers/TimerDigits.js");
+
+  assert.deepEqual(plain(timerDigits.parseDigits("")), { hours: 0, minutes: 0, seconds: 0 });
+  assert.deepEqual(plain(timerDigits.parseDigits("5")), { hours: 0, minutes: 0, seconds: 5 });
+  assert.deepEqual(plain(timerDigits.parseDigits("1234")), { hours: 0, minutes: 12, seconds: 34 });
+  assert.deepEqual(plain(timerDigits.parseDigits("123456")), { hours: 12, minutes: 34, seconds: 56 });
+  assert.deepEqual(plain(timerDigits.parseDigits("999999")), { hours: 99, minutes: 59, seconds: 59 });
+  assert.deepEqual(plain(timerDigits.parseDigits("1h2m3s")), { hours: 0, minutes: 1, seconds: 23 });
+
+  assert.equal(timerDigits.totalSecondsFromDigits("123456"), 45296);
+  assert.equal(timerDigits.totalSecondsFromDigits("999999"), 359999);
+  assert.equal(timerDigits.formatFromDigits("1234"), "00:12:34");
+  assert.equal(timerDigits.formatDuration(75, true), "01:15");
+  assert.equal(timerDigits.formatDuration(75, false), "00:01:15");
+  assert.equal(timerDigits.formatDuration(3661, true), "01:01:01");
+}
+
 function testDebugStringifyHandlesCircularReferences() {
   const debug = loadHelper("Helpers/Debug.js");
   const source = {
@@ -333,6 +351,7 @@ const tests = [
   testQtObjectToPlainObject,
   testTextFormatterEscapesHtml,
   testCustomButtonContentParser,
+  testTimerDigitsParser,
   testDebugStringifyHandlesCircularReferences,
 ];
 
