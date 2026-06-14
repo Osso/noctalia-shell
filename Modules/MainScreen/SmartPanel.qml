@@ -22,7 +22,7 @@ Item {
   property real preferredHeightRatio
   property color panelBackgroundColor: Color.mSurface
   property color panelBorderColor: Color.mOutline
-  property var buttonItem: null
+  property Item buttonItem: null
   property bool forceAttachToBar: false
 
   // Anchoring properties

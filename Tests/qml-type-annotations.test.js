@@ -63,12 +63,17 @@ function testTooltipServiceTracksTypedTooltipInstances() {
   assertPropertyType(tooltipServiceFile, "pendingTooltip", "Tooltip");
 }
 
+function testSmartPanelButtonItemIsTyped() {
+  assertPropertyType("Modules/MainScreen/SmartPanel.qml", "buttonItem", "Item");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
   testTooltipTargetItemIsTyped,
   testTooltipServiceCallsUseTargetItemFirst,
   testTooltipServiceTracksTypedTooltipInstances,
+  testSmartPanelButtonItemIsTyped,
 ];
 
 for (const test of tests) {
