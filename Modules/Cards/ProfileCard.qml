@@ -70,8 +70,13 @@ NBox {
         icon: "power"
         tooltipText: I18n.tr("tooltips.session-menu")
         onClicked: {
-          PanelService.getPanel("sessionMenuPanel", screen)?.open();
-          PanelService.getPanel("controlCenterPanel", screen)?.close();
+          const sessionMenuPanel = PanelService.getPanel("sessionMenuPanel", screen);
+          if (sessionMenuPanel)
+            sessionMenuPanel.open();
+
+          const controlCenterPanel = PanelService.getPanel("controlCenterPanel", screen);
+          if (controlCenterPanel)
+            controlCenterPanel.close();
         }
       }
 
@@ -79,7 +84,9 @@ NBox {
         icon: "close"
         tooltipText: I18n.tr("tooltips.close")
         onClicked: {
-          PanelService.getPanel("controlCenterPanel", screen)?.close();
+          const panel = PanelService.getPanel("controlCenterPanel", screen);
+          if (panel)
+            panel.close();
         }
       }
     }

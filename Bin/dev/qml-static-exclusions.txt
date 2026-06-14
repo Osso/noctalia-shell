@@ -6,8 +6,6 @@ Modules/Bar/Extras/TrayMenu.qml
 Modules/Bar/Widgets/SystemMonitor.qml
 Modules/Bar/Widgets/Taskbar.qml
 Modules/Bar/Widgets/Tray.qml
-Modules/Cards/AudioCard.qml
-Modules/Cards/ProfileCard.qml
 Modules/Dock/Dock.qml
 Modules/Dock/DockMenu.qml
 Modules/MainScreen/AllScreens.qml

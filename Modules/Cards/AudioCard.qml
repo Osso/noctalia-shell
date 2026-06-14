@@ -101,7 +101,7 @@ NBox {
   }
 
   Connections {
-    target: AudioService.sink?.audio ? AudioService.sink?.audio : null
+    target: AudioService.sink && AudioService.sink.audio ? AudioService.sink.audio : null
     function onVolumeChanged() {
       if (!localOutputVolumeChanging && AudioService.sink && AudioService.sink.id === lastSinkId) {
         var vol = AudioService.volume;
@@ -121,7 +121,7 @@ NBox {
   }
 
   Connections {
-    target: AudioService.source?.audio ? AudioService.source?.audio : null
+    target: AudioService.source && AudioService.source.audio ? AudioService.source.audio : null
     function onVolumeChanged() {
       if (!localInputVolumeChanging && AudioService.source && AudioService.source.id === lastSourceId) {
         var vol = AudioService.inputVolume;
