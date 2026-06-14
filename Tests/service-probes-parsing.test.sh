@@ -128,6 +128,16 @@ if is_bluetooth_device_row "Device AAAAAAAAAAAAAAAAA Keyboard"; then
     exit 1
 fi
 
+if is_bluetooth_controller_row "Controller AA:BB:CC:DD:EE:FF    "; then
+    echo "Bluetooth controller row without a name was accepted" >&2
+    exit 1
+fi
+
+if is_bluetooth_device_row "Device 11:22:33:44:55:66    "; then
+    echo "Bluetooth device row without a name was accepted" >&2
+    exit 1
+fi
+
 is_gpu_screen_recorder_monitor_row "HDMI-A-1|3440x1440"
 has_gpu_screen_recorder_capture_option $'HDMI-A-1|3440x1440@165hz|card1\nportal'
 
