@@ -155,6 +155,41 @@ function configuredWidgetIds(sections) {
     .map(widget => widget.id);
 }
 
+function configuredCardIds(cards) {
+  return cards.map(card => card.id);
+}
+
+function switchCaseIdsAfter(source, precedingMarker, switchExpression) {
+  const markerStart = source.indexOf(precedingMarker);
+  assert.notEqual(markerStart, -1, `missing marker before switch: ${precedingMarker}`);
+
+  const switchStart = source.indexOf(`switch (${switchExpression})`, markerStart);
+  assert.notEqual(switchStart, -1, `missing switch for ${switchExpression} after ${precedingMarker}`);
+
+  const blockStart = source.indexOf("{", switchStart);
+  let depth = 0;
+
+  for (let index = blockStart; index < source.length; index++) {
+    const char = source[index];
+
+    if (char === "{") {
+      depth++;
+    } else if (char === "}") {
+      depth--;
+      if (depth === 0) {
+        const block = source.slice(blockStart, index + 1);
+        return Array.from(block.matchAll(/case "([^"]+)":/g), match => match[1]);
+      }
+    }
+  }
+
+  throw new Error(`unterminated switch for ${switchExpression}`);
+}
+
+function quotedIds(source) {
+  return new Set(Array.from(source.matchAll(/"([a-z][a-z0-9-]*-card)"/g), match => match[1]));
+}
+
 function testBarWidgetRegistryMetadata() {
   const source = readQml("Services/UI/BarWidgetRegistry.qml");
   const widgetPairs = extractTopLevelStringPairs(extractPropertyObjectBody(source, "widgets"));
@@ -218,11 +253,46 @@ function testDefaultControlCenterShortcutsExistInRegistry() {
   }
 }
 
+function testDefaultControlCenterCardsAreLoadable() {
+  const source = readQml("Modules/Panels/ControlCenter/ControlCenterPanel.qml");
+  const loadableIds = new Set(switchCaseIdsAfter(source, "sourceComponent:", "modelData.id"));
+  const sizedIds = new Set(switchCaseIdsAfter(source, "Layout.preferredHeight:", "modelData.id"));
+  const configuredIds = configuredCardIds(defaultSettings.controlCenter.cards);
+
+  assert.equal(configuredIds.length, 5);
+  for (const cardId of configuredIds) {
+    assert.ok(loadableIds.has(cardId), `default control center card is missing from ControlCenterPanel loader: ${cardId}`);
+    assert.ok(sizedIds.has(cardId), `default control center card is missing from ControlCenterPanel height switch: ${cardId}`);
+  }
+}
+
+function testDefaultCalendarCardsAreLoadableOrMigrated() {
+  const panelSource = readQml("Modules/Panels/Clock/ClockPanel.qml");
+  const migrationSource = readQml("Commons/Migrations/Migration26.qml");
+  const loadableIds = new Set(switchCaseIdsAfter(panelSource, "sourceComponent:", "modelData.id"));
+  const migrationIds = quotedIds(migrationSource);
+  const configuredIds = configuredCardIds(defaultSettings.calendar.cards);
+
+  assert.equal(configuredIds.length, 4);
+  for (const cardId of configuredIds) {
+    assert.ok(
+      loadableIds.has(cardId) || migrationIds.has(cardId),
+      `default calendar card is neither loadable nor covered by Migration26: ${cardId}`,
+    );
+  }
+  assert.ok(loadableIds.has("calendar-header-card"), "ClockPanel must load Migration26 calendar-header-card");
+  assert.ok(loadableIds.has("calendar-month-card"), "ClockPanel must load Migration26 calendar-month-card");
+  assert.ok(migrationIds.has("banner-card"), "Migration26 must handle legacy banner-card");
+  assert.ok(migrationIds.has("calendar-card"), "Migration26 must handle legacy calendar-card");
+}
+
 const tests = [
   testBarWidgetRegistryMetadata,
   testControlCenterWidgetRegistryMetadata,
   testDefaultBarWidgetsExistInRegistry,
   testDefaultControlCenterShortcutsExistInRegistry,
+  testDefaultControlCenterCardsAreLoadable,
+  testDefaultCalendarCardsAreLoadableOrMigrated,
 ];
 
 for (const test of tests) {
