@@ -501,9 +501,74 @@ probe_screen_recorder() {
     echo "ok probeScreenRecorder"
 }
 
+probe_programs() {
+    require_command rg
+
+    local service_file="$PWD/Services/System/ProgramCheckerService.qml"
+    if [[ ! -r "$service_file" ]]; then
+        echo "ProgramCheckerService.qml is not readable" >&2
+        exit 1
+    fi
+
+    local expected_programs=(
+        matugen
+        pywalfox
+        alacritty
+        kitty
+        ghostty
+        foot
+        wezterm
+        fuzzel
+        walker
+        app2unit
+        gpu-screen-recorder
+        wlsunset
+        code
+        gnome-calendar
+        spicetify
+        cava
+        niri
+    )
+
+    for program in "${expected_programs[@]}"; do
+        if ! rg -q "$program" "$service_file"; then
+            echo "ProgramCheckerService no longer checks expected program: $program" >&2
+            exit 1
+        fi
+    done
+
+    local required_available=(kitty ghostty wezterm gpu-screen-recorder wlsunset niri)
+    for program in "${required_available[@]}"; do
+        if ! command -v "$program" >/dev/null 2>&1; then
+            echo "expected local program is missing: $program" >&2
+            exit 1
+        fi
+    done
+
+    if ! command -v vicinae >/dev/null 2>&1; then
+        local found_appimage=false
+        local dir candidate
+        IFS=: read -ra path_dirs <<<"$PATH"
+        for dir in "${path_dirs[@]}"; do
+            for candidate in "$dir"/vicinae*.appimage "$dir"/Vicinae*.AppImage; do
+                if [[ -x "$candidate" ]]; then
+                    found_appimage=true
+                    break 2
+                fi
+            done
+        done
+
+        if [[ "$found_appimage" != false ]]; then
+            echo "vicinae AppImage fallback is available"
+        fi
+    fi
+
+    echo "ok probePrograms"
+}
+
 usage() {
     cat <<'USAGE'
-Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth|vpn|screen-recorder]
+Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network|power-profile|battery|bluetooth|vpn|screen-recorder|programs]
 
 Runs read-only probes for services used by the local shell.
 USAGE
@@ -524,6 +589,7 @@ case "$probe" in
         probe_bluetooth
         probe_vpn
         probe_screen_recorder
+        probe_programs
         ;;
     notifications)
         probe_notifications
@@ -563,6 +629,9 @@ case "$probe" in
         ;;
     screen-recorder)
         probe_screen_recorder
+        ;;
+    programs)
+        probe_programs
         ;;
     -h | --help | help)
         usage
