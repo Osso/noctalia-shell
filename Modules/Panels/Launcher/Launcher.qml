@@ -50,7 +50,7 @@ SmartPanel {
   property int selectedIndex: 0
   property var results: []
   property var plugins: []
-  property var activePlugin: null
+  property Item activePlugin: null
   property bool resultsReady: false
   property bool ignoreMouseHover: false
 

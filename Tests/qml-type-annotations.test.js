@@ -164,6 +164,13 @@ function testPopupMenuWindowContentItemIsTyped() {
   assertNoPropertyType(popupMenuWindowFile, "contentItem", "var");
 }
 
+function testLauncherActivePluginIsTyped() {
+  const launcherFile = "Modules/Panels/Launcher/Launcher.qml";
+
+  assertPropertyType(launcherFile, "activePlugin", "Item");
+  assertNoPropertyType(launcherFile, "activePlugin", "var");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -185,6 +192,7 @@ const tests = [
   testClockSettingsFocusedInputIsTyped,
   testMangoPatternContainerIsTyped,
   testPopupMenuWindowContentItemIsTyped,
+  testLauncherActivePluginIsTyped,
 ];
 
 for (const test of tests) {
