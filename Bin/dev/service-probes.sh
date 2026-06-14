@@ -279,8 +279,15 @@ has_readable_font_family() {
 has_ipc_target() {
     local ipc_output="$1"
     local target="$2"
+    local line
 
-    [[ "$ipc_output" =~ (^|$'\n')target[[:space:]]+$target($'\n'|$) ]]
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^target[[:space:]]+(.+)$ && "${BASH_REMATCH[1]}" == "$target" ]]; then
+            return 0
+        fi
+    done <<<"$ipc_output"
+
+    return 1
 }
 
 has_ipc_toggle_handler() {

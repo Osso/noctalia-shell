@@ -531,6 +531,11 @@ if has_ipc_target "$ipc_fixture" "missing"; then
     exit 1
 fi
 
+if has_ipc_target "$ipc_fixture" "launch.r"; then
+    echo "regex-like IPC target was accepted" >&2
+    exit 1
+fi
+
 if has_ipc_target_function "$ipc_fixture" "launcher" "open"; then
     echo "missing IPC target function was accepted" >&2
     exit 1
