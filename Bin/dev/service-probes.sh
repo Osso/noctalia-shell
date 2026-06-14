@@ -173,13 +173,13 @@ is_ps_process_row() {
 has_upower_percentage() {
     local device_info="$1"
 
-    [[ "$device_info" =~ percentage:[[:space:]]+[0-9]+% ]]
+    [[ "$device_info" =~ (^|$'\n')[[:space:]]*percentage:[[:space:]]+[0-9]+% ]]
 }
 
 has_upower_battery_state() {
     local device_info="$1"
 
-    [[ "$device_info" =~ state:[[:space:]]+(charging|discharging|empty|fully-charged|pending-charge|pending-discharge|unknown) ]]
+    [[ "$device_info" =~ (^|$'\n')[[:space:]]*state:[[:space:]]+(charging|discharging|empty|fully-charged|pending-charge|pending-discharge|unknown) ]]
 }
 
 has_physical_upower_battery_details() {

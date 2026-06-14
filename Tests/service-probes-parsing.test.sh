@@ -197,8 +197,18 @@ if has_upower_percentage "percentage: unknown"; then
     exit 1
 fi
 
+if has_upower_percentage "notpercentage:          87%"; then
+    echo "prefixed UPower percentage row was accepted" >&2
+    exit 1
+fi
+
 if has_upower_battery_state "state:               broken"; then
     echo "invalid UPower battery state was accepted" >&2
+    exit 1
+fi
+
+if has_upower_battery_state "notstate:               discharging"; then
+    echo "prefixed UPower battery state row was accepted" >&2
     exit 1
 fi
 
