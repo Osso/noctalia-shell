@@ -1176,6 +1176,9 @@ read_os_release_value() {
 
         value="${value%\"}"
         value="${value#\"}"
+        if [[ -z "$value" ]]; then
+            return 1
+        fi
         printf '%s\n' "$value"
         return 0
     done < <(
