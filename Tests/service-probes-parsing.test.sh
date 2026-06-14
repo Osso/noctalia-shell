@@ -157,4 +157,23 @@ if is_ps_process_row "pid cpu mem rss args"; then
     exit 1
 fi
 
+has_upower_percentage "percentage:          87%"
+has_upower_battery_state "state:               discharging"
+has_physical_upower_battery_details $'native-path:          BAT0\nrechargeable:        yes'
+
+if has_upower_percentage "percentage: unknown"; then
+    echo "invalid UPower percentage was accepted" >&2
+    exit 1
+fi
+
+if has_upower_battery_state "state:               broken"; then
+    echo "invalid UPower battery state was accepted" >&2
+    exit 1
+fi
+
+if has_physical_upower_battery_details $'native-path:          BAT0\nrechargeable:        no'; then
+    echo "incomplete UPower battery details were accepted" >&2
+    exit 1
+fi
+
 echo "ok testServiceProbeParsing"

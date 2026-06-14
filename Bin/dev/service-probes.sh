@@ -150,6 +150,24 @@ is_ps_process_row() {
     [[ "$ps_row" =~ ^[[:space:]]*[0-9]+[[:space:]]+[0-9]+(\.[0-9]+)?[[:space:]]+[0-9]+(\.[0-9]+)?[[:space:]]+[0-9]+[[:space:]]+.+ ]]
 }
 
+has_upower_percentage() {
+    local device_info="$1"
+
+    [[ "$device_info" =~ percentage:[[:space:]]+[0-9]+% ]]
+}
+
+has_upower_battery_state() {
+    local device_info="$1"
+
+    [[ "$device_info" =~ state:[[:space:]]+(charging|discharging|empty|fully-charged|pending-charge|pending-discharge|unknown) ]]
+}
+
+has_physical_upower_battery_details() {
+    local battery_info="$1"
+
+    [[ "$battery_info" == *"native-path:"* && "$battery_info" == *"rechargeable:        yes"* ]]
+}
+
 probe_notifications() {
     require_command gdbus
 
@@ -588,17 +606,17 @@ probe_battery() {
         exit 1
     fi
 
-    if [[ ! "$display_info" =~ percentage:[[:space:]]+[0-9]+% ]]; then
+    if ! has_upower_percentage "$display_info"; then
         echo "UPower display battery percentage is missing or malformed" >&2
         exit 1
     fi
 
-    if [[ ! "$display_info" =~ state:[[:space:]]+(charging|discharging|empty|fully-charged|pending-charge|pending-discharge|unknown) ]]; then
+    if ! has_upower_battery_state "$display_info"; then
         echo "UPower display battery state is missing or unexpected" >&2
         exit 1
     fi
 
-    if [[ "$battery_info" != *"native-path:"* || "$battery_info" != *"rechargeable:        yes"* ]]; then
+    if ! has_physical_upower_battery_details "$battery_info"; then
         echo "physical UPower battery details are incomplete: $battery_device" >&2
         exit 1
     fi
