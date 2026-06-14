@@ -176,9 +176,61 @@ probe_settings() {
     echo "ok probeSettings"
 }
 
+probe_state_cache() {
+    require_command jq
+
+    local cache_dir="/home/osso/.cache/noctalia"
+    local shell_state_file="$cache_dir/shell-state.json"
+    local network_file="$cache_dir/network.json"
+    local location_file="$cache_dir/location.json"
+    local notifications_file="$cache_dir/notifications.json"
+
+    jq -e '
+        (.notificationsState | type == "object")
+        and (.changelogState | type == "object")
+        and (.colorSchemesList | type == "object")
+        and (.display | type == "object")
+        and (.display | to_entries | all(
+            (.value.name | type == "string")
+            and (.value.width | type == "number")
+            and (.value.height | type == "number")
+            and (.value.scale | type == "number")
+        ))
+    ' "$shell_state_file" >/dev/null
+
+    jq -e '
+        (.knownNetworks | type == "object")
+        and (.knownNetworks | to_entries | all(
+            (.value.profileName | type == "string")
+            and (.value.lastConnected | type == "number")
+        ))
+        and ((.lastConnected | type == "string") or (.lastConnected == null))
+    ' "$network_file" >/dev/null
+
+    jq -e '
+        (.name | type == "string")
+        and (.latitude | type == "string")
+        and (.longitude | type == "string")
+        and (.weatherLastFetch | type == "number")
+        and ((.weather | type == "object") or (.weather == null))
+    ' "$location_file" >/dev/null
+
+    jq -e '
+        (.notifications | type == "array")
+        and (.notifications | all(
+            (.id | type == "string")
+            and (.summary | type == "string")
+            and (.timestamp | type == "number")
+            and (.urgency | type == "number")
+        ))
+    ' "$notifications_file" >/dev/null
+
+    echo "ok probeStateCache"
+}
+
 usage() {
     cat <<'USAGE'
-Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings]
+Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache]
 
 Runs read-only probes for services used by the local shell.
 USAGE
@@ -192,6 +244,7 @@ case "$probe" in
         probe_clipboard
         probe_wallpaper_colors
         probe_settings
+        probe_state_cache
         ;;
     notifications)
         probe_notifications
@@ -210,6 +263,9 @@ case "$probe" in
         ;;
     settings)
         probe_settings
+        ;;
+    state-cache)
+        probe_state_cache
         ;;
     -h | --help | help)
         usage
