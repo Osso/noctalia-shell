@@ -29,11 +29,8 @@ Modules/Panels/Wallpaper/WallpaperPanel.qml
 Modules/Toast/ToastScreen.qml
 Services/Compositor/HyprlandService.qml
 Services/Compositor/MangoService.qml
-Services/Control/HooksService.qml
 Services/Control/IPCService.qml
 Services/Media/AudioService.qml
-Services/Media/CavaService.qml
 Services/Networking/BluetoothService.qml
-Services/Networking/NetworkService.qml
 Services/UI/BarService.qml
 Widgets/NColorPickerDialog.qml

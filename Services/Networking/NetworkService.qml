@@ -148,7 +148,7 @@ Singleton {
     lastError = "";
 
     // Check if we have a saved connection
-    if (networks[ssid]?.existing || cachedNetworks[ssid]) {
+    if ((networks[ssid] && networks[ssid].existing) || cachedNetworks[ssid]) {
       connectProcess.mode = "saved";
       connectProcess.ssid = ssid;
       connectProcess.password = "";

@@ -25,11 +25,12 @@ Singleton {
 
   // Execute wallpaper change hook
   function executeWallpaperHook(wallpaperPath, screenName) {
-    if (!Settings.data.hooks?.enabled) {
+    const hooks = Settings.data.hooks;
+    if (!hooks || !hooks.enabled) {
       return;
     }
 
-    const script = Settings.data.hooks?.wallpaperChange;
+    const script = hooks.wallpaperChange;
     if (!script || script === "") {
       return;
     }
@@ -46,11 +47,12 @@ Singleton {
 
   // Execute dark mode change hook
   function executeDarkModeHook(isDarkMode) {
-    if (!Settings.data.hooks?.enabled) {
+    const hooks = Settings.data.hooks;
+    if (!hooks || !hooks.enabled) {
       return;
     }
 
-    const script = Settings.data.hooks?.darkModeChange;
+    const script = hooks.darkModeChange;
     if (!script || script === "") {
       return;
     }
