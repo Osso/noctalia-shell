@@ -83,6 +83,11 @@ if has_notification_capabilities "(['nobody', 'transactions'],)"; then
     exit 1
 fi
 
+if has_notification_capabilities "('body', 'actions')"; then
+    echo "malformed notification capabilities tuple was accepted" >&2
+    exit 1
+fi
+
 is_ddc_brightness_output "VCP 10 C 25 100"
 
 if is_ddc_brightness_output "VCP 10 C unsupported"; then

@@ -56,8 +56,11 @@ is_quickshell_notification_server_info() {
 
 has_notification_capabilities() {
     local capabilities="$1"
+    local capabilities_shape_regex='^\(\[.*\],\)$'
 
-    [[ "$capabilities" == *"'body'"* && "$capabilities" == *"'actions'"* ]]
+    [[ "$capabilities" =~ $capabilities_shape_regex ]] \
+        && [[ "$capabilities" == *"'body'"* ]] \
+        && [[ "$capabilities" == *"'actions'"* ]]
 }
 
 has_supported_clipboard_mime() {
