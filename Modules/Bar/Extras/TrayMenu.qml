@@ -42,11 +42,12 @@ PopupWindow {
   }
 
   readonly property int menuWidth: 220
+  readonly property real maxMenuHeight: screen ? screen.height * 0.9 : flickable.contentHeight
 
   implicitWidth: menuWidth
 
   // Use the content height of the Flickable for implicit height
-  implicitHeight: Math.min(screen?.height * 0.9, flickable.contentHeight + (Style.marginS * 2))
+  implicitHeight: Math.min(maxMenuHeight, flickable.contentHeight + (Style.marginS * 2))
   visible: false
   color: Color.transparent
   anchor.item: anchorItem
@@ -90,7 +91,7 @@ PopupWindow {
     // Clean up all submenus recursively
     for (var i = 0; i < columnLayout.children.length; i++) {
       const child = columnLayout.children[i];
-      if (child?.subMenu) {
+      if (child && child.subMenu) {
         child.subMenu.hideMenu();
         child.subMenu.destroy();
         child.subMenu = null;
@@ -155,10 +156,15 @@ PopupWindow {
         delegate: Rectangle {
           id: entry
           required property var modelData
+          readonly property bool isSeparator: modelData ? modelData.isSeparator : false
+          readonly property bool isEnabled: modelData && modelData.enabled !== undefined ? modelData.enabled : true
+          readonly property bool hasChildren: modelData ? modelData.hasChildren : false
+          readonly property string iconSource: modelData ? (modelData.icon || "") : ""
+          readonly property string menuText: modelData && modelData.text !== "" ? modelData.text.replace(/[\n\r]+/g, ' ') : "..."
 
           Layout.preferredWidth: parent.width
           Layout.preferredHeight: {
-            if (modelData?.isSeparator) {
+            if (isSeparator) {
               return 8;
             } else {
               // Calculate based on text content
@@ -173,7 +179,7 @@ PopupWindow {
           NDivider {
             anchors.centerIn: parent
             width: parent.width - (Style.marginM * 2)
-            visible: modelData?.isSeparator ?? false
+            visible: entry.isSeparator
           }
 
           Rectangle {
@@ -181,7 +187,7 @@ PopupWindow {
             anchors.fill: parent
             color: mouseArea.containsMouse ? Color.mHover : Color.transparent
             radius: Style.radiusS
-            visible: !(modelData?.isSeparator ?? false)
+            visible: !entry.isSeparator
 
             RowLayout {
               anchors.fill: parent
@@ -192,8 +198,8 @@ PopupWindow {
               NText {
                 id: text
                 Layout.fillWidth: true
-                color: (modelData?.enabled ?? true) ? (mouseArea.containsMouse ? Color.mOnHover : Color.mOnSurface) : Color.mOnSurfaceVariant
-                text: modelData?.text !== "" ? modelData?.text.replace(/[\n\r]+/g, ' ') : "..."
+                color: entry.isEnabled ? (mouseArea.containsMouse ? Color.mOnHover : Color.mOnSurface) : Color.mOnSurfaceVariant
+                text: entry.menuText
                 pointSize: Style.fontSizeS
                 verticalAlignment: Text.AlignVCenter
                 wrapMode: Text.WordWrap
@@ -202,17 +208,17 @@ PopupWindow {
               Image {
                 Layout.preferredWidth: Style.marginL
                 Layout.preferredHeight: Style.marginL
-                source: modelData?.icon ?? ""
-                visible: (modelData?.icon ?? "") !== ""
+                source: entry.iconSource
+                visible: entry.iconSource !== ""
                 fillMode: Image.PreserveAspectFit
               }
 
               NIcon {
-                icon: modelData?.hasChildren ? "menu" : ""
+                icon: entry.hasChildren ? "menu" : ""
                 pointSize: Style.fontSizeS
                 applyUiScale: false
                 verticalAlignment: Text.AlignVCenter
-                visible: modelData?.hasChildren ?? false
+                visible: entry.hasChildren
                 color: (mouseArea.containsMouse ? Color.mOnTertiary : Color.mOnSurface)
               }
             }
@@ -221,7 +227,7 @@ PopupWindow {
               id: mouseArea
               anchors.fill: parent
               hoverEnabled: true
-              enabled: (modelData?.enabled ?? true) && !(modelData?.isSeparator ?? false) && root.visible
+              enabled: entry.isEnabled && !entry.isSeparator && root.visible
               acceptedButtons: Qt.LeftButton | Qt.RightButton
 
               onClicked: mouse => {
