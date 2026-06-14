@@ -81,6 +81,10 @@ function testPanelServiceLockScreenIsTyped() {
   assertPropertyType("Services/UI/PanelService.qml", "lockScreen", "Loader");
 }
 
+function testNotificationServerInstanceIsTyped() {
+  assertPropertyType("Services/System/NotificationService.qml", "notificationServerLoader", "NotificationServer");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -90,6 +94,7 @@ const tests = [
   testSmartPanelButtonItemIsTyped,
   testPanelContentItemsAreTyped,
   testPanelServiceLockScreenIsTyped,
+  testNotificationServerInstanceIsTyped,
 ];
 
 for (const test of tests) {

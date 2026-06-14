@@ -79,7 +79,7 @@ Singleton {
   }
 
   // Notification server
-  property var notificationServerLoader: null
+  property NotificationServer notificationServerLoader: null
 
   Component {
     id: notificationServerComponent
