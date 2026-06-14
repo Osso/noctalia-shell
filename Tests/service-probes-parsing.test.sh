@@ -138,4 +138,23 @@ if is_active_nm_device "--"; then
     exit 1
 fi
 
+is_proc_cpu_aggregate_row "cpu  123 0 456 789 0 0 0 0 0 0"
+has_meminfo_kb_row $'MemTotal:       32768000 kB\nMemAvailable:   12345678 kB' "MemTotal"
+is_ps_process_row " 1234  1.5  0.4  65536 quickshell"
+
+if is_proc_cpu_aggregate_row "cpu not-numbers"; then
+    echo "invalid /proc/stat CPU row was accepted" >&2
+    exit 1
+fi
+
+if has_meminfo_kb_row $'MemTotal: none kB' "MemAvailable"; then
+    echo "missing /proc/meminfo row was accepted" >&2
+    exit 1
+fi
+
+if is_ps_process_row "pid cpu mem rss args"; then
+    echo "invalid ps process row was accepted" >&2
+    exit 1
+fi
+
 echo "ok testServiceProbeParsing"

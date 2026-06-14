@@ -131,6 +131,25 @@ is_active_nm_device() {
     [[ -n "$device" && "$device" != "--" ]]
 }
 
+is_proc_cpu_aggregate_row() {
+    local cpu_line="$1"
+
+    [[ "$cpu_line" =~ ^cpu[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+ ]]
+}
+
+has_meminfo_kb_row() {
+    local meminfo="$1"
+    local key="$2"
+
+    [[ "$meminfo" =~ (^|$'\n')${key}:[[:space:]]+[0-9]+[[:space:]]+kB ]]
+}
+
+is_ps_process_row() {
+    local ps_row="$1"
+
+    [[ "$ps_row" =~ ^[[:space:]]*[0-9]+[[:space:]]+[0-9]+(\.[0-9]+)?[[:space:]]+[0-9]+(\.[0-9]+)?[[:space:]]+[0-9]+[[:space:]]+.+ ]]
+}
+
 probe_notifications() {
     require_command gdbus
 
@@ -885,22 +904,22 @@ probe_system_stats() {
     meminfo="$(cat /proc/meminfo)"
     ps_output="$(ps -eo pid,%cpu,%mem,rss,args --sort=-%cpu --no-headers)"
 
-    if [[ ! "$cpu_line" =~ ^cpu[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+ ]]; then
+    if ! is_proc_cpu_aggregate_row "$cpu_line"; then
         echo "/proc/stat CPU aggregate row is missing or malformed: $cpu_line" >&2
         exit 1
     fi
 
-    if [[ ! "$meminfo" =~ MemTotal:[[:space:]]+[0-9]+[[:space:]]+kB ]]; then
+    if ! has_meminfo_kb_row "$meminfo" "MemTotal"; then
         echo "/proc/meminfo is missing MemTotal" >&2
         exit 1
     fi
 
-    if [[ ! "$meminfo" =~ MemAvailable:[[:space:]]+[0-9]+[[:space:]]+kB ]]; then
+    if ! has_meminfo_kb_row "$meminfo" "MemAvailable"; then
         echo "/proc/meminfo is missing MemAvailable" >&2
         exit 1
     fi
 
-    if [[ ! "$ps_output" =~ ^[[:space:]]*[0-9]+[[:space:]]+[0-9]+(\.[0-9]+)?[[:space:]]+[0-9]+(\.[0-9]+)?[[:space:]]+[0-9]+[[:space:]]+.+ ]]; then
+    if ! is_ps_process_row "$ps_output"; then
         echo "ps output for ProcessService is missing or malformed" >&2
         exit 1
     fi
