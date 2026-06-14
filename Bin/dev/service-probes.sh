@@ -324,6 +324,9 @@ list_quickshell_ipc_calls() {
     local line
 
     while IFS= read -r line; do
+        if [[ "$line" =~ ^[[:blank:]]*(//|#) ]]; then
+            continue
+        fi
         if [[ "$line" =~ quickshell[[:blank:]]+ipc[[:blank:]] ]] \
             && [[ "$line" =~ call[[:space:]]+([A-Za-z0-9_]+)[[:space:]]+([A-Za-z0-9_]+) ]]; then
             printf '%s %s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
