@@ -275,6 +275,13 @@ function testTrayMenuSubMenuIsTyped() {
   assertNoPropertyType(trayMenuFile, "subMenu", "var");
 }
 
+function testSectionEditorRegistryIsTyped() {
+  const sectionEditorFile = "Widgets/NSectionEditor.qml";
+
+  assertPropertyType(sectionEditorFile, "widgetRegistry", "QtObject");
+  assertNoPropertyType(sectionEditorFile, "widgetRegistry", "var");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -307,6 +314,7 @@ const tests = [
   testAudioNodeHandlesAreTyped,
   testTrayMenuItemIsTyped,
   testTrayMenuSubMenuIsTyped,
+  testSectionEditorRegistryIsTyped,
 ];
 
 for (const test of tests) {

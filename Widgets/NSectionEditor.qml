@@ -15,7 +15,7 @@ NBox {
   property var availableSections: ["left", "center", "right"]
   property int maxWidgets: -1 // -1 means unlimited
 
-  property var widgetRegistry: null
+  property QtObject widgetRegistry: null
   property string settingsDialogComponent: "BarWidgetSettingsDialog.qml"
 
   readonly property real miniButtonSize: Style.baseWidgetSize * 0.65
