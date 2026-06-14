@@ -355,6 +355,13 @@ function testSettingsMonitorModelsAreTyped() {
   }
 }
 
+function testWallpaperServiceScannerModelIsTyped() {
+  const source = readQml("Services/UI/WallpaperService.qml");
+  const scannerModelDelegate = /Instantiator\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?required\s+property\s+ShellScreen\s+modelData/;
+
+  assert.match(source, scannerModelDelegate, "WallpaperService scanner must type screen modelData as ShellScreen");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -395,6 +402,7 @@ const tests = [
   testWallpaperPanelScreenReferencesAreTyped,
   testWallpaperPanelMonitorTabModelIsTyped,
   testSettingsMonitorModelsAreTyped,
+  testWallpaperServiceScannerModelIsTyped,
 ];
 
 for (const test of tests) {

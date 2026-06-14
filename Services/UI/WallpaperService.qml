@@ -461,6 +461,8 @@ Singleton {
     id: wallpaperScanners
     model: Quickshell.screens
     delegate: FolderListModel {
+      required property ShellScreen modelData
+
       property string screenName: modelData.name
       property string currentDirectory: root.getMonitorDirectory(screenName)
 
