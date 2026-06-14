@@ -228,9 +228,78 @@ probe_state_cache() {
     echo "ok probeStateCache"
 }
 
+probe_network() {
+    require_command nmcli
+    require_command jq
+
+    local cache_file="${XDG_CACHE_HOME:-$HOME/.cache}/noctalia/network.json"
+    if [ ! -r "$cache_file" ]; then
+        echo "network cache is not readable: $cache_file" >&2
+        exit 1
+    fi
+
+    local state connectivity active_connections device_status
+    state="$(nmcli -t -f STATE general)"
+    connectivity="$(nmcli -t -f CONNECTIVITY general)"
+    active_connections="$(nmcli -t -f NAME,TYPE,DEVICE connection show --active)"
+    device_status="$(nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device status)"
+
+    if [[ "$state" != "connected" && "$state" != "connecting" ]]; then
+        echo "NetworkManager is not connected or connecting: $state" >&2
+        exit 1
+    fi
+
+    if [[ "$state" == "connected" && "$connectivity" == "none" ]]; then
+        echo "NetworkManager reports connected state with no connectivity" >&2
+        exit 1
+    fi
+
+    local has_network_connection=false
+    local active_wifi_name=""
+    while IFS=: read -r name type device; do
+        if [[ -z "$name" || -z "$type" || -z "$device" ]]; then
+            echo "malformed active NetworkManager connection row: $name:$type:$device" >&2
+            exit 1
+        fi
+
+        case "$type" in
+            802-11-wireless)
+                has_network_connection=true
+                active_wifi_name="$name"
+                ;;
+            802-3-ethernet)
+                has_network_connection=true
+                ;;
+        esac
+    done <<<"$active_connections"
+
+    if [[ "$has_network_connection" != true ]]; then
+        echo "no active Wi-Fi or ethernet NetworkManager connection found" >&2
+        exit 1
+    fi
+
+    if [[ -n "$active_wifi_name" ]]; then
+        if ! jq -e --arg ssid "$active_wifi_name" '
+            (.knownNetworks[$ssid] | type == "object")
+            and (.knownNetworks[$ssid].profileName | type == "string")
+            and (.lastConnected == $ssid)
+        ' "$cache_file" >/dev/null; then
+            echo "active Wi-Fi connection is missing from network cache: $active_wifi_name" >&2
+            exit 1
+        fi
+
+        if [[ "$device_status" != *":wifi:connected:$active_wifi_name"* ]]; then
+            echo "active Wi-Fi connection is not reflected in device status: $active_wifi_name" >&2
+            exit 1
+        fi
+    fi
+
+    echo "ok probeNetwork"
+}
+
 usage() {
     cat <<'USAGE'
-Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache]
+Usage: Bin/dev/service-probes.sh [all|notifications|audio|brightness|clipboard|wallpaper-colors|settings|state-cache|network]
 
 Runs read-only probes for services used by the local shell.
 USAGE
@@ -245,6 +314,7 @@ case "$probe" in
         probe_wallpaper_colors
         probe_settings
         probe_state_cache
+        probe_network
         ;;
     notifications)
         probe_notifications
@@ -266,6 +336,9 @@ case "$probe" in
         ;;
     state-cache)
         probe_state_cache
+        ;;
+    network)
+        probe_network
         ;;
     -h | --help | help)
         usage
