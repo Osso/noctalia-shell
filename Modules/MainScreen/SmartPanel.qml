@@ -724,7 +724,7 @@ Item {
       id: panelBackground
 
       // Expose self as panelItem for PanelBackground compatibility
-      readonly property var panelItem: panelBackground
+      readonly property Item panelItem: panelBackground
 
       // Store target dimensions (Initialize to 0, set by setPosition())
       property real targetWidth: 0

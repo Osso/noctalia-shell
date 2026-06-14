@@ -101,6 +101,13 @@ function testContextMenuDelegatePopupIsTyped() {
   assertPropertyType("Widgets/NContextMenu.qml", "popup", "Popup");
 }
 
+function testGeometryReferencesAreTypedItems() {
+  assertPropertyType("Modules/Bar/Bar.qml", "barItem", "Item");
+  assertPropertyType("Modules/MainScreen/MainScreen.qml", "barItem", "Item");
+  assertPropertyType("Modules/MainScreen/SmartPanel.qml", "panelItem", "Item");
+  assertPropertyType("Modules/MainScreen/Backgrounds/PanelBackground.qml", "panelBg", "Item");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -115,6 +122,7 @@ const tests = [
   testComboBoxDelegateParentIsTyped,
   testPanelServiceOpenedPanelIsTyped,
   testContextMenuDelegatePopupIsTyped,
+  testGeometryReferencesAreTypedItems,
 ];
 
 for (const test of tests) {

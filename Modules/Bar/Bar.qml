@@ -18,7 +18,7 @@ Item {
   property ShellScreen screen: null
 
   // Expose bar region for click-through mask
-  readonly property var barRegion: {
+  readonly property Item barRegion: {
     const contentItem = barContentLoader.item;
     if (!contentItem || contentItem.children.length === 0) {
       return null;
@@ -27,7 +27,7 @@ Item {
   }
 
   // Expose the actual bar Item for unified background system
-  readonly property var barItem: barRegion
+  readonly property Item barItem: barRegion
 
   // Bar positioning properties
   readonly property string barPosition: Settings.data.bar.position || "top"

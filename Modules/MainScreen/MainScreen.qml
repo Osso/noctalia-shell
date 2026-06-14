@@ -333,7 +333,7 @@ PanelWindow {
       id: barPlaceholder
 
       // Expose self as barItem for AllBackgrounds compatibility
-      readonly property var barItem: barPlaceholder
+      readonly property Item barItem: barPlaceholder
 
       // Screen reference
       property ShellScreen screen: root.screen

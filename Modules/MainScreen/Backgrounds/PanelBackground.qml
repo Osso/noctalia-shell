@@ -34,7 +34,7 @@ ShapePath {
 
   // Get the actual panelBackground Item from PanelPlaceholder
   // Only access panelItem if panel exists and is visible
-  readonly property var panelBg: (panel && panel.visible) ? panel.panelItem : null
+  readonly property Item panelBg: (panel && panel.visible) ? panel.panelItem : null
 
   // Panel position - panelBg is in screen coordinates already
   readonly property real panelX: panelBg ? panelBg.x : 0
