@@ -195,6 +195,11 @@ if is_active_nm_device "--"; then
     exit 1
 fi
 
+if is_active_nm_device "-- "; then
+    echo "padded inactive NetworkManager device placeholder was accepted" >&2
+    exit 1
+fi
+
 if is_active_nm_device "   "; then
     echo "blank NetworkManager active device was accepted" >&2
     exit 1

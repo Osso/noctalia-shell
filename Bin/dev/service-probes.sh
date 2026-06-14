@@ -162,7 +162,7 @@ is_nm_uuid() {
 is_active_nm_device() {
     local device="$1"
 
-    [[ "$device" =~ [^[:space:]] && "$device" != "--" ]]
+    [[ "$device" =~ ^[^[:space:]]+$ && "$device" != "--" ]]
 }
 
 is_proc_cpu_aggregate_row() {
