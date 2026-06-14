@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import qs.Commons
+import "../../../Helpers/CustomButtonContent.js" as CustomButtonContent
 import qs.Modules.Bar.Extras
 import qs.Modules.Panels.Settings
 import qs.Services.UI
@@ -229,105 +230,31 @@ Item {
   }
 
   function parseDynamicContent(content) {
-    var contentStr = String(content || "").trim();
+    const parserOptions = {
+      "parseJson": parseJson,
+      "textStream": textStream,
+      "textCollapse": textCollapse,
+      "maxTextLength": currentMaxTextLength
+    };
+    const result = CustomButtonContent.parseDynamicContent(content, parserOptions);
 
-    if (parseJson) {
-      var lineToParse = contentStr;
-
-      if (!textStream && contentStr.includes('\n')) {
-        const lines = contentStr.split('\n').filter(line => line.trim() !== '');
-        if (lines.length > 0) {
-          lineToParse = lines[lines.length - 1];
-        }
-      }
-
-      try {
-        const parsed = JSON.parse(lineToParse);
-        const text = parsed.text || "";
-        const icon = parsed.icon || "";
-        let tooltip = parsed.tooltip || "";
-
-        if (checkCollapse(text)) {
-          _scrollState.originalText = "";
-          _dynamicText = "";
-          _dynamicIcon = "";
-          _dynamicTooltip = "";
-          _scrollState.needsScrolling = false;
-          _scrollState.phase = 0;
-          _scrollState.phaseCounter = 0;
-          return;
-        }
-
-        _scrollState.originalText = text;
-        _scrollState.needsScrolling = text.length > currentMaxTextLength && currentMaxTextLength > 0;
-        if (_scrollState.needsScrolling) {
-          // Start with the beginning of the text
-          _dynamicText = text.substring(0, currentMaxTextLength);
-          _scrollState.phase = 0;  // Start at phase 0 (static beginning)
-          _scrollState.phaseCounter = 0;
-          _scrollState.offset = 0;
-          scrollTimer.start();  // Start the scrolling timer
-        } else {
-          _dynamicText = text;
-          scrollTimer.stop();
-        }
-        _dynamicIcon = icon;
-
-        _dynamicTooltip = toHtml(tooltip);
-        _scrollState.offset = 0;
-        return;
-      } catch (e) {
-        Logger.w("CustomButton", `Failed to parse JSON. Content: "${lineToParse}"`);
-      }
+    if (result.parseFailed) {
+      Logger.w("CustomButton", `Failed to parse JSON. Content: "${String(content || "").trim()}"`);
     }
 
-    if (checkCollapse(contentStr)) {
-      _scrollState.originalText = "";
-      _dynamicText = "";
-      _dynamicIcon = "";
-      _dynamicTooltip = "";
-      _scrollState.needsScrolling = false;
-      _scrollState.phase = 0;
-      _scrollState.phaseCounter = 0;
-      return;
-    }
-
-    _scrollState.originalText = contentStr;
-    _scrollState.needsScrolling = contentStr.length > currentMaxTextLength && currentMaxTextLength > 0;
-    if (_scrollState.needsScrolling) {
-      // Start with the beginning of the text
-      _dynamicText = contentStr.substring(0, currentMaxTextLength);
-      _scrollState.phase = 0;  // Start at phase 0 (static beginning)
-      _scrollState.phaseCounter = 0;
-      _scrollState.offset = 0;
-      scrollTimer.start();  // Start the scrolling timer
-    } else {
-      _dynamicText = contentStr;
-      scrollTimer.stop();
-    }
-    _dynamicIcon = "";
-    _dynamicTooltip = toHtml(contentStr);
+    _scrollState.originalText = result.originalText;
+    _scrollState.needsScrolling = result.needsScrolling;
+    _dynamicText = result.visibleText;
+    _dynamicIcon = result.icon;
+    _dynamicTooltip = result.tooltip;
+    _scrollState.phase = 0;
+    _scrollState.phaseCounter = 0;
     _scrollState.offset = 0;
-  }
 
-  function checkCollapse(text) {
-    if (!textCollapse || textCollapse.length === 0) {
-      return false;
-    }
-
-    if (textCollapse.startsWith("/") && textCollapse.endsWith("/") && textCollapse.length > 1) {
-      // Treat as regex
-      var pattern = textCollapse.substring(1, textCollapse.length - 1);
-      try {
-        var regex = new RegExp(pattern);
-        return regex.test(text);
-      } catch (e) {
-        Logger.w("CustomButton", `Invalid regex for textCollapse: ${textCollapse} - ${e.message}`);
-        return (textCollapse === text); // Fallback to exact match on invalid regex
-      }
+    if (result.needsScrolling) {
+      scrollTimer.start();
     } else {
-      // Treat as plain string
-      return (textCollapse === text);
+      scrollTimer.stop();
     }
   }
 
@@ -364,22 +291,6 @@ Item {
     if (!textStream && middleClickUpdateText) {
       runTextCommand();
     }
-  }
-
-  function toHtml(str) {
-    const htmlTagRegex = /<\/?[a-zA-Z][^>]*>/g;
-    const placeholders = [];
-    let i = 0;
-    const protectedStr = str.replace(htmlTagRegex, tag => {
-                                       placeholders.push(tag);
-                                       return `___HTML_TAG_${i++}___`;
-                                     });
-
-    let escaped = protectedStr.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/\r\n|\r|\n/g, "<br/>");
-
-    escaped = escaped.replace(/___HTML_TAG_(\d+)___/g, (_, index) => placeholders[Number(index)]);
-
-    return escaped;
   }
 
   function runTextCommand() {

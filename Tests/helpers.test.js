@@ -243,6 +243,69 @@ function testTextFormatterEscapesHtml() {
   assert.equal(formatted.includes("<tag attr=\"value\">"), false);
 }
 
+function testCustomButtonContentParser() {
+  const customButton = loadHelper("Helpers/CustomButtonContent.js");
+
+  assert.deepEqual(
+    plain(customButton.parseDynamicContent("old\n{\"text\":\"CPU 12%\",\"icon\":\"cpu\",\"tooltip\":\"<b>Load</b> & ok\"}", {
+      parseJson: true,
+      textStream: false,
+      maxTextLength: 20,
+    })),
+    {
+      collapsed: false,
+      text: "CPU 12%",
+      icon: "cpu",
+      tooltip: "<b>Load</b> &amp; ok",
+      originalText: "CPU 12%",
+      needsScrolling: false,
+      visibleText: "CPU 12%",
+      parseFailed: false,
+    },
+  );
+
+  assert.deepEqual(
+    plain(customButton.parseDynamicContent("plain & text", {
+      parseJson: true,
+      maxTextLength: 20,
+    })),
+    {
+      collapsed: false,
+      text: "plain & text",
+      icon: "",
+      tooltip: "plain &amp; text",
+      originalText: "plain & text",
+      needsScrolling: false,
+      visibleText: "plain & text",
+      parseFailed: true,
+    },
+  );
+
+  assert.deepEqual(
+    plain(customButton.parseDynamicContent("hidden", {
+      textCollapse: "/^hid/",
+      maxTextLength: 10,
+    })),
+    {
+      collapsed: true,
+      text: "",
+      icon: "",
+      tooltip: "",
+      originalText: "",
+      needsScrolling: false,
+      visibleText: "",
+      parseFailed: false,
+    },
+  );
+
+  const scrolling = customButton.parseDynamicContent("abcdefghijkl", {
+    maxTextLength: 5,
+  });
+  assert.equal(scrolling.needsScrolling, true);
+  assert.equal(scrolling.visibleText, "abcde");
+  assert.equal(scrolling.tooltip, "abcdefghijkl");
+}
+
 function testDebugStringifyHandlesCircularReferences() {
   const debug = loadHelper("Helpers/Debug.js");
   const source = {
@@ -269,6 +332,7 @@ const tests = [
   testFuzzySort,
   testQtObjectToPlainObject,
   testTextFormatterEscapesHtml,
+  testCustomButtonContentParser,
   testDebugStringifyHandlesCircularReferences,
 ];
 
