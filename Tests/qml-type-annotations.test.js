@@ -337,6 +337,22 @@ function testWallpaperPanelMonitorTabModelIsTyped() {
   assert.match(source, monitorTabModel, "WallpaperPanel monitor tabs must type screen modelData as ShellScreen");
 }
 
+function testSettingsMonitorModelsAreTyped() {
+  const monitorSettingFiles = [
+    "Modules/Panels/Settings/Tabs/BarTab.qml",
+    "Modules/Panels/Settings/Tabs/DisplayTab.qml",
+    "Modules/Panels/Settings/Tabs/DockTab.qml",
+    "Modules/Panels/Settings/Tabs/OsdTab.qml",
+  ];
+
+  for (const monitorSettingFile of monitorSettingFiles) {
+    const source = readQml(monitorSettingFile);
+    const screenModelDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?required\s+property\s+ShellScreen\s+modelData/;
+
+    assert.match(source, screenModelDelegate, `${monitorSettingFile} monitor delegate must type screen modelData as ShellScreen`);
+  }
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -376,6 +392,7 @@ const tests = [
   testBackgroundShapeContainersAreTyped,
   testWallpaperPanelScreenReferencesAreTyped,
   testWallpaperPanelMonitorTabModelIsTyped,
+  testSettingsMonitorModelsAreTyped,
 ];
 
 for (const test of tests) {

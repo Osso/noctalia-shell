@@ -302,6 +302,8 @@ ColumnLayout {
     Repeater {
       model: Quickshell.screens || []
       delegate: NCheckbox {
+        required property ShellScreen modelData
+
         Layout.fillWidth: true
         label: modelData.name || "Unknown"
         description: {

@@ -64,6 +64,8 @@ ColumnLayout {
     Repeater {
       model: Quickshell.screens || []
       delegate: Rectangle {
+        required property ShellScreen modelData
+
         Layout.fillWidth: true
         implicitHeight: contentCol.implicitHeight + Style.marginL * 2
         radius: Style.radiusM
