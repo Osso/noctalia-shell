@@ -328,14 +328,18 @@ has_quickshell_ipc_call() {
 has_stale_launch_path() {
     local launch_config="$1"
     shift
-    local line stale_path
+    local line active_line stale_path
 
     while IFS= read -r line; do
         if [[ "$line" =~ ^[[:blank:]]*(//|#) ]]; then
             continue
         fi
+        active_line="$line"
+        if [[ "$active_line" =~ ^(.*)[[:blank:]](//|#).*$ ]]; then
+            active_line="${BASH_REMATCH[1]}"
+        fi
         for stale_path in "$@"; do
-            if [[ "$line" =~ $stale_path($|[[:space:]]|[\";}]) ]]; then
+            if [[ "$active_line" =~ $stale_path($|[[:space:]]|[\";}]) ]]; then
                 return 0
             fi
         done
