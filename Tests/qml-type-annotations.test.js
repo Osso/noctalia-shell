@@ -330,6 +330,13 @@ function testWallpaperPanelScreenReferencesAreTyped() {
   assertNoPropertyType(wallpaperPanelFile, "targetScreen", "var");
 }
 
+function testWallpaperPanelMonitorTabModelIsTyped() {
+  const source = readQml("Modules/Panels/Wallpaper/WallpaperPanel.qml");
+  const monitorTabModel = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?required\s+property\s+ShellScreen\s+modelData/;
+
+  assert.match(source, monitorTabModel, "WallpaperPanel monitor tabs must type screen modelData as ShellScreen");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -368,6 +375,7 @@ const tests = [
   testBrightnessPanelBrightnessMonitorIsTyped,
   testBackgroundShapeContainersAreTyped,
   testWallpaperPanelScreenReferencesAreTyped,
+  testWallpaperPanelMonitorTabModelIsTyped,
 ];
 
 for (const test of tests) {

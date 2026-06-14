@@ -298,7 +298,7 @@ SmartPanel {
         Repeater {
           model: Quickshell.screens
           NTabButton {
-            required property var modelData
+            required property ShellScreen modelData
             required property int index
             text: modelData.name || `Screen ${index + 1}`
             tabIndex: index
