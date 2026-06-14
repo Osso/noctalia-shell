@@ -198,6 +198,11 @@ if has_meminfo_kb_row $'MemTotal: none kB' "MemAvailable"; then
     exit 1
 fi
 
+if has_meminfo_kb_row $'MemAvailable: 12345678 kB trailing' "MemAvailable"; then
+    echo "malformed /proc/meminfo row was accepted" >&2
+    exit 1
+fi
+
 if is_ps_process_row "pid cpu mem rss args"; then
     echo "invalid ps process row was accepted" >&2
     exit 1

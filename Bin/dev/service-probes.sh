@@ -169,7 +169,7 @@ has_meminfo_kb_row() {
     local meminfo="$1"
     local key="$2"
 
-    [[ "$meminfo" =~ (^|$'\n')${key}:[[:space:]]+[0-9]+[[:space:]]+kB ]]
+    [[ "$meminfo" =~ (^|$'\n')${key}:[[:space:]]+[0-9]+[[:space:]]+kB($'\n'|$) ]]
 }
 
 is_ps_process_row() {
