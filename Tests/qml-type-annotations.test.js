@@ -252,6 +252,15 @@ function testUPowerBatteryReferencesAreTyped() {
   }
 }
 
+function testAudioNodeHandlesAreTyped() {
+  const audioServiceFile = "Services/Media/AudioService.qml";
+
+  assertPropertyType(audioServiceFile, "sinkAudio", "PwNodeAudio");
+  assertPropertyType(audioServiceFile, "sourceAudio", "PwNodeAudio");
+  assertNoPropertyType(audioServiceFile, "sinkAudio", "var");
+  assertNoPropertyType(audioServiceFile, "sourceAudio", "var");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -281,6 +290,7 @@ const tests = [
   testCompositorBackendIsTyped,
   testPowerProfilesReferenceIsTyped,
   testUPowerBatteryReferencesAreTyped,
+  testAudioNodeHandlesAreTyped,
 ];
 
 for (const test of tests) {

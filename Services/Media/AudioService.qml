@@ -11,8 +11,8 @@ Singleton {
   // Devices
   readonly property PwNode sink: Pipewire.ready ? Pipewire.defaultAudioSink : null
   readonly property PwNode source: validatedSource
-  readonly property var sinkAudio: sink ? sink.audio : null
-  readonly property var sourceAudio: source ? source.audio : null
+  readonly property PwNodeAudio sinkAudio: sink ? sink.audio : null
+  readonly property PwNodeAudio sourceAudio: source ? source.audio : null
   readonly property bool hasInput: !!source
   readonly property var sinks: deviceNodes.sinks
   readonly property var sources: deviceNodes.sources
