@@ -170,6 +170,7 @@ NBox {
             id: widgetItem
             required property int index
             required property var modelData
+            required property string id
 
             width: widgetContent.implicitWidth + Style.marginL
             height: Style.baseWidgetSize * 1.15 * Style.uiScaleRatio
@@ -181,7 +182,7 @@ NBox {
             // Store the widget index for drag operations
             property int widgetIndex: index
             readonly property int buttonsWidth: Math.round(20)
-            readonly property int buttonsCount: 1 + (root.widgetRegistry ? root.widgetRegistry.widgetHasUserSettings(modelData.id) : 0)
+            readonly property int buttonsCount: 1 + (root.widgetRegistry ? root.widgetRegistry.widgetHasUserSettings(id) : 0)
 
             // Visual feedback during drag
             opacity: flowDragArea.draggedIndex === index ? 0.5 : 1.0
@@ -253,7 +254,7 @@ NBox {
               spacing: Style.marginXXS
 
               NText {
-                text: modelData.id
+                text: id
                 pointSize: Style.fontSizeXS
                 color: root.getWidgetColor(modelData)[1]
                 horizontalAlignment: Text.AlignHCenter
@@ -266,7 +267,7 @@ NBox {
                 Layout.preferredWidth: buttonsCount * buttonsWidth * Style.uiScaleRatio
 
                 Loader {
-                  active: root.widgetRegistry && root.widgetRegistry.widgetHasUserSettings(modelData.id)
+                  active: root.widgetRegistry && root.widgetRegistry.widgetHasUserSettings(id)
                   sourceComponent: NIconButton {
                     icon: "settings"
                     tooltipText: I18n.tr("tooltips.widget-settings")
@@ -282,7 +283,7 @@ NBox {
                         var dialog = component.createObject(Overlay.overlay, {
                                                               "widgetIndex": index,
                                                               "widgetData": modelData,
-                                                              "widgetId": modelData.id,
+                                                              "widgetId": id,
                                                               "sectionId": root.sectionId
                                                             });
                         if (dialog) {

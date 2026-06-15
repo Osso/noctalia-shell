@@ -254,6 +254,14 @@ function testShortcutsCardShortcutIdsAreTyped() {
   assert.doesNotMatch(source, /modelData\.id/, "ShortcutsCard shortcut delegates must use typed id role instead of modelData.id");
 }
 
+function testSectionEditorWidgetIdsAreTyped() {
+  const source = readQml("Widgets/NSectionEditor.qml");
+  const widgetDelegate = /Repeater\s*\{[\s\S]*?model:\s*widgetModel[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*widgetItem[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+string\s+id[\s\S]*?widgetHasUserSettings\(id\)[\s\S]*?text:\s*id[\s\S]*?"widgetId":\s*id/;
+
+  assert.match(source, widgetDelegate, "NSectionEditor widget delegate must type id role");
+  assert.doesNotMatch(source, /modelData\.id/, "NSectionEditor widget delegate must use typed id role instead of modelData.id");
+}
+
 function testAboutTabContributorDelegateIndexesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/AboutTab.qml");
   const topContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.min\(root\.contributors\.length,\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\]\.login/;
@@ -614,6 +622,7 @@ const tests = [
   testFilePickerDelegatesUseTypedFileRoles,
   testTaskbarWindowDelegateRolesAreTyped,
   testShortcutsCardShortcutIdsAreTyped,
+  testSectionEditorWidgetIdsAreTyped,
   testAboutTabContributorDelegateIndexesAreTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,
