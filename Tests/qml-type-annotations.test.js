@@ -390,6 +390,21 @@ function testContextMenuDelegateRolesAreTyped() {
   assert.match(source, /popup\.triggered\(itemAction\)/, "NContextMenu click handler must use itemAction");
 }
 
+function testPopupContextMenuDelegateRolesAreTyped() {
+  const source = readQml("Widgets/NPopupContextMenu.qml");
+  const delegateRoles = /delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*menuItem[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+bool\s+itemVisible:\s+modelData\.visible\s*!==\s*false[\s\S]*?readonly\s+property\s+bool\s+itemEnabled:\s+modelData\.enabled\s*!==\s*false[\s\S]*?readonly\s+property\s+bool\s+hasIcon:\s+modelData\.icon\s*!==\s*undefined[\s\S]*?readonly\s+property\s+string\s+itemIcon:\s+modelData\.icon\s*\|\|\s*""[\s\S]*?readonly\s+property\s+string\s+itemText:\s+modelData\.label\s*\|\|\s*modelData\.text\s*\|\|\s*""[\s\S]*?readonly\s+property\s+string\s+itemAction:\s+modelData\.action\s*\|\|\s*modelData\.key\s*\|\|\s*index\.toString\(\)/;
+
+  assert.match(source, delegateRoles, "NPopupContextMenu delegate must declare modelData/index and typed aliases for menu entry fields");
+  assert.match(source, /Layout\.preferredHeight:\s*itemVisible\s*\?\s*root\.itemHeight\s*:\s*0/, "NPopupContextMenu delegate height must use itemVisible");
+  assert.match(source, /visible:\s*itemVisible/, "NPopupContextMenu delegate visible binding must use itemVisible");
+  assert.match(source, /opacity:\s*menuItem\.itemEnabled\s*\?\s*1\.0\s*:\s*0\.5/, "NPopupContextMenu opacity must use itemEnabled");
+  assert.match(source, /visible:\s*menuItem\.hasIcon/, "NPopupContextMenu icon visibility must use hasIcon");
+  assert.match(source, /icon:\s*menuItem\.itemIcon/, "NPopupContextMenu icon must use itemIcon");
+  assert.match(source, /text:\s*menuItem\.itemText/, "NPopupContextMenu label must use itemText");
+  assert.match(source, /enabled:\s*menuItem\.itemEnabled\s*&&\s*root\.visible/, "NPopupContextMenu mouse area must use itemEnabled");
+  assert.match(source, /root\.triggered\(menuItem\.itemAction\)/, "NPopupContextMenu click handler must use itemAction");
+}
+
 function testGeometryReferencesAreTypedItems() {
   assertPropertyType("Modules/Bar/Bar.qml", "barItem", "Item");
   assertPropertyType("Modules/MainScreen/MainScreen.qml", "barItem", "Item");
@@ -890,6 +905,7 @@ const tests = [
   testPanelServiceOpenedPanelIsTyped,
   testContextMenuDelegatePopupIsTyped,
   testContextMenuDelegateRolesAreTyped,
+  testPopupContextMenuDelegateRolesAreTyped,
   testGeometryReferencesAreTypedItems,
   testTimeNowPropertiesAreTypedDates,
   testEffectSourcePropertiesAreTyped,

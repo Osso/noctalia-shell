@@ -133,10 +133,16 @@ PopupWindow {
           id: menuItem
           required property var modelData
           required property int index
+          readonly property bool itemVisible: modelData.visible !== false
+          readonly property bool itemEnabled: modelData.enabled !== false
+          readonly property bool hasIcon: modelData.icon !== undefined
+          readonly property string itemIcon: modelData.icon || ""
+          readonly property string itemText: modelData.label || modelData.text || ""
+          readonly property string itemAction: modelData.action || modelData.key || index.toString()
 
           Layout.preferredWidth: parent.width
-          Layout.preferredHeight: modelData.visible !== false ? root.itemHeight : 0
-          visible: modelData.visible !== false
+          Layout.preferredHeight: itemVisible ? root.itemHeight : 0
+          visible: itemVisible
           color: Color.transparent
 
           Rectangle {
@@ -144,7 +150,7 @@ PopupWindow {
             anchors.fill: parent
             color: mouseArea.containsMouse ? Color.mHover : Color.transparent
             radius: Style.radiusS
-            opacity: modelData.enabled !== false ? 1.0 : 0.5
+            opacity: menuItem.itemEnabled ? 1.0 : 0.5
 
             Behavior on color {
               ColorAnimation {
@@ -159,8 +165,8 @@ PopupWindow {
               spacing: Style.marginS
 
               NIcon {
-                visible: modelData.icon !== undefined
-                icon: modelData.icon || ""
+                visible: menuItem.hasIcon
+                icon: menuItem.itemIcon
                 pointSize: Style.fontSizeS
                 applyUiScale: false
                 color: mouseArea.containsMouse ? Color.mOnHover : Color.mOnSurface
@@ -174,7 +180,7 @@ PopupWindow {
               }
 
               NText {
-                text: modelData.label || modelData.text || ""
+                text: menuItem.itemText
                 pointSize: Style.fontSizeS
                 color: mouseArea.containsMouse ? Color.mOnHover : Color.mOnSurface
                 verticalAlignment: Text.AlignVCenter
@@ -192,12 +198,12 @@ PopupWindow {
               id: mouseArea
               anchors.fill: parent
               hoverEnabled: true
-              enabled: (modelData.enabled !== false) && root.visible
+              enabled: menuItem.itemEnabled && root.visible
               cursorShape: Qt.PointingHandCursor
 
               onClicked: {
-                if (menuItem.modelData.enabled !== false) {
-                  root.triggered(menuItem.modelData.action || menuItem.modelData.key || menuItem.index.toString());
+                if (menuItem.itemEnabled) {
+                  root.triggered(menuItem.itemAction);
                   // Don't call root.close() here - let the parent PopupMenuWindow handle closing
                 }
               }
