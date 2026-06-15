@@ -192,6 +192,8 @@ Variants {
           delegate: Item {
             id: card
 
+            required property int index
+
             property string notificationId: model.id
             property var notificationData: model
             property int hoverCount: 0
