@@ -36,12 +36,12 @@ Popup {
       id: menuItem
       required property var modelData
       required property int index
-      readonly property bool itemVisible: modelData.visible !== false
-      readonly property bool itemEnabled: modelData.enabled !== false
-      readonly property bool hasIcon: modelData.icon !== undefined
-      readonly property string itemIcon: modelData.icon || ""
-      readonly property string itemText: modelData.label || modelData.text || ""
-      readonly property string itemAction: modelData.action || modelData.key || index.toString()
+      readonly property bool itemVisible: modelData ? modelData.visible !== false : false
+      readonly property bool itemEnabled: modelData ? modelData.enabled !== false : false
+      readonly property string itemIcon: modelData ? (modelData.icon || "") : ""
+      readonly property bool hasIcon: itemIcon !== ""
+      readonly property string itemText: modelData ? (modelData.label || modelData.text || "") : ""
+      readonly property string itemAction: modelData ? (modelData.action || modelData.key || index.toString()) : index.toString()
 
       width: listView.width
       height: itemVisible ? root.itemHeight : 0

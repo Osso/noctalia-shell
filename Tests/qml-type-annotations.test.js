@@ -424,9 +424,9 @@ function testContextMenuDelegatePopupIsTyped() {
 
 function testContextMenuDelegateRolesAreTyped() {
   const source = readQml("Widgets/NContextMenu.qml");
-  const delegateRoles = /delegate:\s*ItemDelegate\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+bool\s+itemVisible:\s+modelData\.visible\s*!==\s*false[\s\S]*?readonly\s+property\s+bool\s+itemEnabled:\s+modelData\.enabled\s*!==\s*false[\s\S]*?readonly\s+property\s+bool\s+hasIcon:\s+modelData\.icon\s*!==\s*undefined[\s\S]*?readonly\s+property\s+string\s+itemIcon:\s+modelData\.icon\s*\|\|\s*""[\s\S]*?readonly\s+property\s+string\s+itemText:\s+modelData\.label\s*\|\|\s*modelData\.text\s*\|\|\s*""[\s\S]*?readonly\s+property\s+string\s+itemAction:\s+modelData\.action\s*\|\|\s*modelData\.key\s*\|\|\s*index\.toString\(\)/;
+  const delegateRoles = /delegate:\s*ItemDelegate\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+bool\s+itemVisible:\s+modelData\s*\?\s*modelData\.visible\s*!==\s*false\s*:\s*false[\s\S]*?readonly\s+property\s+bool\s+itemEnabled:\s+modelData\s*\?\s*modelData\.enabled\s*!==\s*false\s*:\s*false[\s\S]*?readonly\s+property\s+string\s+itemIcon:\s+modelData\s*\?\s*\(modelData\.icon\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+bool\s+hasIcon:\s*itemIcon\s*!==\s*""[\s\S]*?readonly\s+property\s+string\s+itemText:\s+modelData\s*\?\s*\(modelData\.label\s*\|\|\s*modelData\.text\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+itemAction:\s+modelData\s*\?\s*\(modelData\.action\s*\|\|\s*modelData\.key\s*\|\|\s*index\.toString\(\)\)\s*:\s*index\.toString\(\)/;
 
-  assert.match(source, delegateRoles, "NContextMenu delegate must declare modelData/index and typed aliases for menu entry fields");
+  assert.match(source, delegateRoles, "NContextMenu delegate must declare null-safe typed aliases for menu entry fields");
   assert.match(source, /height:\s*itemVisible\s*\?\s*root\.itemHeight\s*:\s*0/, "NContextMenu delegate height must use itemVisible");
   assert.match(source, /visible:\s*itemVisible/, "NContextMenu delegate visible binding must use itemVisible");
   assert.match(source, /opacity:\s*itemEnabled\s*\?\s*1\.0\s*:\s*0\.5/, "NContextMenu delegate opacity must use itemEnabled");
