@@ -833,11 +833,12 @@ Popup {
           Rectangle {
             id: schemeItem
             required property var modelData
+            required property string name
 
             Layout.fillWidth: true
             Layout.preferredHeight: 50 * Style.uiScaleRatio
             radius: Style.radiusS
-            property string schemeName: modelData.name
+            property string schemeName: name
             color: root.getSchemeColor(schemeName, "mSurface")
             border.width: Style.borderL
             border.color: hoverHandler.hovered ? root.getSchemeColor(schemeName, "mPrimary") : Color.mOutline
@@ -875,7 +876,7 @@ Popup {
               anchors.rightMargin: Style.marginL
               spacing: Style.marginS
 
-              property string schemeName: modelData.name
+              property string schemeName: schemeItem.schemeName
               property int diameter: 16 * Style.uiScaleRatio
               property var colorKeys: ["mPrimary", "mSecondary", "mTertiary", "mError"]
 

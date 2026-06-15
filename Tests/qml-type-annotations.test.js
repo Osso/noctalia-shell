@@ -332,11 +332,12 @@ function testColorSchemeTabSchemeModelDataIsTyped() {
 
 function testSchemeDownloaderDelegatesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/ColorScheme/SchemeDownloader.qml");
-  const schemeDelegate = /Repeater\s*\{[\s\S]*?model:\s*availableSchemes[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?property\s+string\s+schemeName:\s*modelData\.name[\s\S]*?root\.fetchSchemeColors\(modelData\)/;
+  const schemeDelegate = /Repeater\s*\{[\s\S]*?model:\s*availableSchemes[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+string\s+name[\s\S]*?property\s+string\s+schemeName:\s*name[\s\S]*?root\.fetchSchemeColors\(modelData\)[\s\S]*?property\s+string\s+schemeName:\s*schemeItem\.schemeName/;
   const swatchDelegate = /Repeater\s*\{[\s\S]*?model:\s*schemeRow\.colorKeys[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?color:\s*root\.getSchemeColor\(schemeRow\.schemeName,\s*modelData\)/;
 
   assert.match(source, schemeDelegate, "SchemeDownloader scheme delegate must declare modelData");
   assert.match(source, swatchDelegate, "SchemeDownloader swatch delegate must type string modelData");
+  assert.doesNotMatch(source, /modelData\.name/, "SchemeDownloader scheme delegate must use typed name role instead of modelData.name");
 }
 
 function testControlCenterPanelCardDelegateIsTyped() {
