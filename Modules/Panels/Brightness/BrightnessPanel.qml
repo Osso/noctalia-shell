@@ -81,6 +81,10 @@ SmartPanel {
             model: Quickshell.screens || []
             delegate: NBox {
               required property ShellScreen modelData
+              readonly property string monitorName: modelData ? modelData.name : ""
+              readonly property string monitorModel: modelData ? modelData.model : ""
+              readonly property int monitorWidth: modelData ? modelData.width : 0
+              readonly property int monitorHeight: modelData ? modelData.height : 0
 
               Layout.fillWidth: true
               Layout.preferredHeight: outputColumn.implicitHeight + (Style.marginM * 2)
@@ -96,14 +100,14 @@ SmartPanel {
                 spacing: Style.marginS
 
                 NLabel {
-                  label: modelData.name || "Unknown"
+                  label: monitorName || "Unknown"
                   labelColor: Color.mPrimary
                   description: {
-                    const compositorScale = CompositorService.getDisplayScale(modelData.name);
+                    const compositorScale = CompositorService.getDisplayScale(monitorName);
                     I18n.tr("system.monitor-description", {
-                              "model": modelData.model,
-                              "width": modelData.width * compositorScale,
-                              "height": modelData.height * compositorScale,
+                              "model": monitorModel,
+                              "width": monitorWidth * compositorScale,
+                              "height": monitorHeight * compositorScale,
                               "scale": compositorScale
                             });
                   }

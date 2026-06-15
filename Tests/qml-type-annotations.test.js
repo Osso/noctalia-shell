@@ -925,9 +925,18 @@ function testSetupWizardProgressDelegateModelIsTyped() {
 
 function testBrightnessPanelScreenModelIsTyped() {
   const source = readQml("Modules/Panels/Brightness/BrightnessPanel.qml");
-  const screenModelDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?required\s+property\s+ShellScreen\s+modelData/;
+  const screenModelDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?delegate:\s*NBox\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s*modelData\s*\?\s*modelData\.name\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+monitorModel:\s*modelData\s*\?\s*modelData\.model\s*:\s*""[\s\S]*?readonly\s+property\s+int\s+monitorWidth:\s*modelData\s*\?\s*modelData\.width\s*:\s*0[\s\S]*?readonly\s+property\s+int\s+monitorHeight:\s*modelData\s*\?\s*modelData\.height\s*:\s*0/;
 
-  assert.match(source, screenModelDelegate, "BrightnessPanel monitor delegate must type screen modelData as ShellScreen");
+  assert.match(source, screenModelDelegate, "BrightnessPanel monitor delegate must expose null-safe typed screen aliases");
+  assert.match(source, /label:\s*monitorName\s*\|\|\s*"Unknown"/, "BrightnessPanel monitor label must use monitorName");
+  assert.match(source, /CompositorService\.getDisplayScale\(monitorName\)/, "BrightnessPanel monitor scale lookup must use monitorName");
+  assert.match(source, /"model":\s*monitorModel/, "BrightnessPanel monitor description must use monitorModel");
+  assert.match(source, /"width":\s*monitorWidth\s*\*\s*compositorScale/, "BrightnessPanel monitor description must use monitorWidth");
+  assert.match(source, /"height":\s*monitorHeight\s*\*\s*compositorScale/, "BrightnessPanel monitor description must use monitorHeight");
+  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "BrightnessPanel monitor delegate must use monitorName after declaration");
+  assert.equal((source.match(/modelData\.model/g) ?? []).length, 1, "BrightnessPanel monitor delegate must use monitorModel after declaration");
+  assert.equal((source.match(/modelData\.width/g) ?? []).length, 1, "BrightnessPanel monitor delegate must use monitorWidth after declaration");
+  assert.equal((source.match(/modelData\.height/g) ?? []).length, 1, "BrightnessPanel monitor delegate must use monitorHeight after declaration");
 }
 
 function testWiFiNetworkDelegateAliasesAreTyped() {
