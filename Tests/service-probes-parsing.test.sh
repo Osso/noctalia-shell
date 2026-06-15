@@ -553,6 +553,55 @@ if has_settings_value_shape "$settings_bad_shape_fixture"; then
     exit 1
 fi
 
+wallpaper_colors_fixture="$state_cache_fixture_root/colors.json"
+wallpaper_cache_fixture="$state_cache_fixture_root/wallpapers.json"
+wallpaper_bad_colors_fixture="$state_cache_fixture_root/colors-bad.json"
+wallpaper_bad_cache_fixture="$state_cache_fixture_root/wallpapers-bad.json"
+
+cat >"$wallpaper_colors_fixture" <<'JSON'
+{
+  "mPrimary": "#e6b450",
+  "mSurface": "#1e222a",
+  "mOnSurface": "#bfbdb6",
+  "mError": "#d95757"
+}
+JSON
+
+cat >"$wallpaper_cache_fixture" <<'JSON'
+{
+  "wallpapers": {
+    "HDMI-A-1": "/tmp/noctalia-wallpaper.jpg"
+  }
+}
+JSON
+
+cat >"$wallpaper_bad_colors_fixture" <<'JSON'
+{
+  "mPrimary": "#e6b450",
+  "mSurface": "#1e222a",
+  "mOnSurface": "#bfbdb6"
+}
+JSON
+
+cat >"$wallpaper_bad_cache_fixture" <<'JSON'
+{
+  "wallpapers": []
+}
+JSON
+
+has_wallpaper_colors_shape "$wallpaper_colors_fixture"
+has_wallpaper_cache_shape "$wallpaper_cache_fixture"
+
+if has_wallpaper_colors_shape "$wallpaper_bad_colors_fixture"; then
+    echo "wallpaper colors without error color were accepted" >&2
+    exit 1
+fi
+
+if has_wallpaper_cache_shape "$wallpaper_bad_cache_fixture"; then
+    echo "wallpaper cache with non-object wallpapers was accepted" >&2
+    exit 1
+fi
+
 os_release_fixture=$'PRETTY_NAME="Noctalia Test OS"\nNAME=NoctaliaTest\nID=noctalia-test\nLOGO=noctalia-test-logo'
 assert_equal "$(read_os_release_value PRETTY_NAME "$os_release_fixture")" "Noctalia Test OS" "quoted os-release value parse failed"
 assert_equal "$(read_os_release_value ID "$os_release_fixture")" "noctalia-test" "unquoted os-release value parse failed"

@@ -604,14 +604,26 @@ probe_lock_keys() {
     echo "ok probeLockKeys"
 }
 
+has_wallpaper_colors_shape() {
+    local colors_file="$1"
+
+    jq -e '.mPrimary and .mSurface and .mOnSurface and .mError' "$colors_file" >/dev/null
+}
+
+has_wallpaper_cache_shape() {
+    local wallpapers_file="$1"
+
+    jq -e '.wallpapers and (.wallpapers | type == "object")' "$wallpapers_file" >/dev/null
+}
+
 probe_wallpaper_colors() {
     require_command jq
 
     local colors_file="/home/osso/.config/noctalia/colors.json"
     local wallpapers_file="/home/osso/.cache/noctalia/wallpapers.json"
 
-    jq -e '.mPrimary and .mSurface and .mOnSurface and .mError' "$colors_file" >/dev/null
-    jq -e '.wallpapers and (.wallpapers | type == "object")' "$wallpapers_file" >/dev/null
+    has_wallpaper_colors_shape "$colors_file"
+    has_wallpaper_cache_shape "$wallpapers_file"
 
     local wallpaper_paths
     mapfile -t wallpaper_paths < <(jq -r '.wallpapers[]' "$wallpapers_file")
