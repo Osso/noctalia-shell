@@ -155,6 +155,15 @@ function testWeatherCardForecastDelegateIndexIsTyped() {
   assert.match(source, forecastDelegate, "WeatherCard forecast delegate must declare index role before reading forecast arrays");
 }
 
+function testAboutTabContributorDelegateIndexesAreTyped() {
+  const source = readQml("Modules/Panels/Settings/Tabs/AboutTab.qml");
+  const topContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.min\(root\.contributors\.length,\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\]\.login/;
+  const remainingContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.max\(0,\s*root\.contributors\.length\s*-\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\s*\+\s*root\.topContributorsCount\]\.login/;
+
+  assert.match(source, topContributorDelegate, "AboutTab top contributor delegate must declare index role");
+  assert.match(source, remainingContributorDelegate, "AboutTab remaining contributor delegate must declare index role");
+}
+
 function testCustomButtonStateCheckDelegateRolesAreTyped() {
   const source = readQml("Modules/Panels/Settings/ControlCenter/WidgetSettings/CustomButtonSettings.qml");
   const stateCheckDelegate = /Repeater\s*\{[\s\S]*?model:\s*_settings\._stateChecksListModel[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+string\s+command[\s\S]*?required\s+property\s+string\s+icon[\s\S]*?required\s+property\s+int\s+index[\s\S]*?property\s+int\s+currentIndex:\s*index/;
@@ -494,6 +503,7 @@ const tests = [
   testComboBoxDelegateParentIsTyped,
   testComboBoxDelegateIndexIsTyped,
   testWeatherCardForecastDelegateIndexIsTyped,
+  testAboutTabContributorDelegateIndexesAreTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,
   testColorSchemeTabSchemeModelDataIsTyped,

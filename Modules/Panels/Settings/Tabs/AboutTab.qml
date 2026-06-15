@@ -303,6 +303,8 @@ ColumnLayout {
       model: Math.min(root.contributors.length, root.topContributorsCount)
 
       delegate: Rectangle {
+        required property int index
+
         width: Math.round(Style.baseWidgetSize * 6.8)
         height: Math.round(Style.baseWidgetSize * 2.3)
         radius: Style.radiusM
@@ -465,6 +467,8 @@ ColumnLayout {
       model: Math.max(0, root.contributors.length - root.topContributorsCount)
 
       delegate: Rectangle {
+        required property int index
+
         width: nameText.implicitWidth + Style.marginM * 2
         height: nameText.implicitHeight + Style.marginS * 2
         radius: Style.radiusS
