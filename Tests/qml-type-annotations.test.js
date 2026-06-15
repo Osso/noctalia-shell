@@ -324,9 +324,9 @@ function testTraySettingsBlacklistDelegateRolesAreTyped() {
 
 function testReorderCheckboxDelegateRolesAreTyped() {
   const source = readQml("Widgets/NReorderCheckboxes.qml");
-  const checkboxDelegate = /ListView\s*\{[\s\S]*?model:\s*root\.model[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?id:\s*delegateItem[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+id[\s\S]*?required\s+property\s+string\s+text[\s\S]*?property\s+bool\s+itemEnabled:\s*modelData\.enabled\s*\|\|\s*false[\s\S]*?root\.disabledIds\s*\|\|\s*\[\]\)\.indexOf\(id\)[\s\S]*?color:\s*delegateItem\.itemEnabled\s*\?[\s\S]*?visible:\s*delegateItem\.itemEnabled/;
+  const checkboxDelegate = /ListView\s*\{[\s\S]*?model:\s*root\.model[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?id:\s*delegateItem[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+id[\s\S]*?required\s+property\s+string\s+text[\s\S]*?readonly\s+property\s+bool\s+itemEnabled:\s*modelData\.enabled\s*\|\|\s*false[\s\S]*?readonly\s+property\s+bool\s+required:\s*modelData\.required\s*\|\|\s*false[\s\S]*?root\.disabledIds\s*\|\|\s*\[\]\)\.indexOf\(id\)[\s\S]*?color:\s*delegateItem\.itemEnabled\s*\?[\s\S]*?visible:\s*delegateItem\.itemEnabled/;
 
-  assert.match(source, checkboxDelegate, "NReorderCheckboxes delegate must type item roles");
+  assert.match(source, checkboxDelegate, "NReorderCheckboxes delegate must type item roles and readonly derived flags");
   assert.doesNotMatch(source, /required\s+property\s+bool\s+enabled/, "NReorderCheckboxes must not bind the enabled role to Item.enabled");
   assert.doesNotMatch(source, /modelData\.(?:id|text)/, "NReorderCheckboxes delegate must use typed roles instead of modelData.*");
 }
