@@ -141,6 +141,13 @@ function testComboBoxDelegateParentIsTyped() {
   assertPropertyType("Widgets/NComboBox.qml", "parentComboBox", "ComboBox");
 }
 
+function testComboBoxDelegateIndexIsTyped() {
+  const source = readQml("Widgets/NComboBox.qml");
+  const delegateIndex = /delegate:\s*ItemDelegate\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?property\s+int\s+itemIndex:\s*index/;
+
+  assert.match(source, delegateIndex, "NComboBox delegate must declare index role before using it");
+}
+
 function testCustomButtonStateCheckDelegateRolesAreTyped() {
   const source = readQml("Modules/Panels/Settings/ControlCenter/WidgetSettings/CustomButtonSettings.qml");
   const stateCheckDelegate = /Repeater\s*\{[\s\S]*?model:\s*_settings\._stateChecksListModel[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+string\s+command[\s\S]*?required\s+property\s+string\s+icon[\s\S]*?required\s+property\s+int\s+index[\s\S]*?property\s+int\s+currentIndex:\s*index/;
@@ -478,6 +485,7 @@ const tests = [
   testSettingsPanelActiveScrollViewIsTyped,
   testSettingsPanelTabsDelegatesAreTyped,
   testComboBoxDelegateParentIsTyped,
+  testComboBoxDelegateIndexIsTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,
   testColorSchemeTabSchemeModelDataIsTyped,
