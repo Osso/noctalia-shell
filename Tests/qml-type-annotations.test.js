@@ -184,9 +184,10 @@ function testChangelogPanelHighlightDelegatesAreTyped() {
 
 function testNotificationDelegateIndexIsTyped() {
   const source = readQml("Modules/Notification/Notification.qml");
-  const notificationDelegate = /Repeater\s*\{[\s\S]*?model:\s*notificationModel[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?animationDelay:\s*index\s*\*\s*100/;
+  const notificationDelegate = /Repeater\s*\{[\s\S]*?model:\s*notificationModel[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+real\s+progress[\s\S]*?required\s+property\s+int\s+urgency[\s\S]*?required\s+property\s+string\s+appName[\s\S]*?required\s+property\s+string\s+summary[\s\S]*?required\s+property\s+string\s+body[\s\S]*?required\s+property\s+string\s+originalImage[\s\S]*?required\s+property\s+string\s+actionsJson[\s\S]*?required\s+property\s+var\s+timestamp[\s\S]*?animationDelay:\s*index\s*\*\s*100[\s\S]*?text:\s*appName\s*\|\|\s*"Unknown App"[\s\S]*?Time\.formatRelativeTime\(timestamp\)[\s\S]*?text:\s*summary\s*\|\|\s*I18n\.tr\("general\.no-summary"\)[\s\S]*?text:\s*body\s*\|\|\s*""/;
 
-  assert.match(source, notificationDelegate, "Notification card delegate must declare index role before using it for animation delay");
+  assert.match(source, notificationDelegate, "Notification card delegate must declare typed roles before using notification fields");
+  assert.doesNotMatch(source, /model\.(?:appName|summary|body|timestamp|urgency|originalImage|actionsJson|progress)/, "Notification card delegate must use typed roles instead of model.* display fields");
 }
 
 function testWallpaperTabIntervalPresetModelDataIsTyped() {

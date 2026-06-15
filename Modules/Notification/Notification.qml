@@ -193,6 +193,14 @@ Variants {
             id: card
 
             required property int index
+            required property real progress
+            required property int urgency
+            required property string appName
+            required property string summary
+            required property string body
+            required property string originalImage
+            required property string actionsJson
+            required property var timestamp
 
             property string notificationId: model.id
             property var notificationData: model
@@ -243,11 +251,11 @@ Variants {
                 Rectangle {
                   id: progressBar
                   height: parent.height
-                  x: parent.parent.radius + (parent.availableWidth * (1 - model.progress)) / 2
-                  width: parent.availableWidth * model.progress
+                  x: parent.parent.radius + (parent.availableWidth * (1 - progress)) / 2
+                  width: parent.availableWidth * progress
 
                   color: {
-                    var baseColor = model.urgency === 2 ? Color.mError : model.urgency === 0 ? Color.mOnSurface : Color.mPrimary;
+                    var baseColor = urgency === 2 ? Color.mError : urgency === 0 ? Color.mOnSurface : Color.mPrimary;
                     return Qt.alpha(baseColor, Settings.data.notifications.backgroundOpacity || 1.0);
                   }
 
@@ -427,7 +435,7 @@ Variants {
                   Layout.preferredHeight: Math.round(40 * Style.uiScaleRatio)
                   Layout.alignment: Qt.AlignVCenter
                   radius: Math.min(Style.radiusL, Layout.preferredWidth / 2)
-                  imagePath: model.originalImage || ""
+                  imagePath: originalImage || ""
                   borderColor: Color.transparent
                   borderWidth: 0
                   fallbackIcon: "bell"
@@ -448,11 +456,11 @@ Variants {
                       Layout.preferredHeight: 6
                       Layout.alignment: Qt.AlignVCenter
                       radius: Style.radiusXS
-                      color: model.urgency === 2 ? Color.mError : model.urgency === 0 ? Color.mOnSurface : Color.mPrimary
+                      color: urgency === 2 ? Color.mError : urgency === 0 ? Color.mOnSurface : Color.mPrimary
                     }
 
                     NText {
-                      text: model.appName || "Unknown App"
+                      text: appName || "Unknown App"
                       pointSize: Style.fontSizeXS
                       font.weight: Style.fontWeightBold
                       color: Color.mSecondary
@@ -460,7 +468,7 @@ Variants {
 
                     NText {
                       textFormat: Text.PlainText
-                      text: " " + Time.formatRelativeTime(model.timestamp)
+                      text: " " + Time.formatRelativeTime(timestamp)
                       pointSize: Style.fontSizeXXS
                       color: Color.mOnSurfaceVariant
                       Layout.alignment: Qt.AlignBottom
@@ -472,7 +480,7 @@ Variants {
                   }
 
                   NText {
-                    text: model.summary || I18n.tr("general.no-summary")
+                    text: summary || I18n.tr("general.no-summary")
                     pointSize: Style.fontSizeM
                     font.weight: Style.fontWeightMedium
                     color: Color.mOnSurface
@@ -486,7 +494,7 @@ Variants {
                   }
 
                   NText {
-                    text: model.body || ""
+                    text: body || ""
                     pointSize: Style.fontSizeM
                     color: Color.mOnSurface
                     textFormat: Text.PlainText
@@ -509,7 +517,7 @@ Variants {
                     property string parentNotificationId: notificationId
                     property var parsedActions: {
                       try {
-                        return model.actionsJson ? JSON.parse(model.actionsJson) : [];
+                        return actionsJson ? JSON.parse(actionsJson) : [];
                       } catch (e) {
                         return [];
                       }
