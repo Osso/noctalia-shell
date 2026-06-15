@@ -202,7 +202,7 @@ Item {
           delegate: BarWidgetLoader {
             required property var modelData
             required property int index
-            readonly property string configuredWidgetId: modelData.id || ""
+            readonly property string configuredWidgetId: modelData ? modelData.id : ""
 
             widgetId: configuredWidgetId
             barDensity: Settings.data.bar.density
@@ -229,7 +229,7 @@ Item {
           delegate: BarWidgetLoader {
             required property var modelData
             required property int index
-            readonly property string configuredWidgetId: modelData.id || ""
+            readonly property string configuredWidgetId: modelData ? modelData.id : ""
 
             widgetId: configuredWidgetId
             barDensity: Settings.data.bar.density
@@ -257,7 +257,7 @@ Item {
           delegate: BarWidgetLoader {
             required property var modelData
             required property int index
-            readonly property string configuredWidgetId: modelData.id || ""
+            readonly property string configuredWidgetId: modelData ? modelData.id : ""
 
             widgetId: configuredWidgetId
             barDensity: Settings.data.bar.density
@@ -296,7 +296,7 @@ Item {
           delegate: BarWidgetLoader {
             required property var modelData
             required property int index
-            readonly property string configuredWidgetId: modelData.id || ""
+            readonly property string configuredWidgetId: modelData ? modelData.id : ""
 
             widgetId: configuredWidgetId
             barDensity: Settings.data.bar.density
@@ -325,7 +325,7 @@ Item {
           delegate: BarWidgetLoader {
             required property var modelData
             required property int index
-            readonly property string configuredWidgetId: modelData.id || ""
+            readonly property string configuredWidgetId: modelData ? modelData.id : ""
 
             widgetId: configuredWidgetId
             barDensity: Settings.data.bar.density
@@ -355,7 +355,7 @@ Item {
           delegate: BarWidgetLoader {
             required property var modelData
             required property int index
-            readonly property string configuredWidgetId: modelData.id || ""
+            readonly property string configuredWidgetId: modelData ? modelData.id : ""
 
             widgetId: configuredWidgetId
             barDensity: Settings.data.bar.density
