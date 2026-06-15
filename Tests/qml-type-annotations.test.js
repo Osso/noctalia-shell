@@ -716,9 +716,10 @@ function testWallpaperPanelScreenReferencesAreTyped() {
 
 function testWallpaperPanelMonitorTabModelIsTyped() {
   const source = readQml("Modules/Panels/Wallpaper/WallpaperPanel.qml");
-  const monitorTabModel = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?required\s+property\s+ShellScreen\s+modelData/;
+  const monitorTabModel = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?NTabButton\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+screenName:\s*modelData\s*\?\s*modelData\.name\s*:\s*""[\s\S]*?text:\s*screenName\s*\|\|\s*`Screen \$\{index \+ 1\}`/;
 
-  assert.match(source, monitorTabModel, "WallpaperPanel monitor tabs must type screen modelData as ShellScreen");
+  assert.match(source, monitorTabModel, "WallpaperPanel monitor tabs must expose a null-safe typed screenName alias");
+  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "WallpaperPanel monitor tabs must use screenName after declaration");
 }
 
 function testWallpaperPanelScreenViewModelIsTyped() {

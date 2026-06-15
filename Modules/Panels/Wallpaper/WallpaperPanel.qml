@@ -300,7 +300,9 @@ SmartPanel {
           NTabButton {
             required property ShellScreen modelData
             required property int index
-            text: modelData.name || `Screen ${index + 1}`
+            readonly property string screenName: modelData ? modelData.name : ""
+
+            text: screenName || `Screen ${index + 1}`
             tabIndex: index
             checked: {
               screenTabBar.currentIndex === index;
