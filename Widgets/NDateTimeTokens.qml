@@ -204,6 +204,9 @@ Rectangle {
 
         required property var modelData
         required property int index
+        required property string category
+        required property string token
+        required property string description
 
         width: tokensList.width
         height: layout.implicitHeight + Style.marginS
@@ -223,7 +226,7 @@ Rectangle {
           cursorShape: Qt.PointingHandCursor
 
           onClicked: {
-            root.tokenClicked(modelData.token);
+            root.tokenClicked(token);
             clickAnimation.start();
           }
         }
@@ -256,7 +259,7 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
             width: 70
             height: 22
-            color: getCategoryColor(modelData.category)[0]
+            color: getCategoryColor(category)[0]
             radius: Style.radiusS
             opacity: tokenMouseArea.containsMouse ? 0.9 : 1.0
 
@@ -268,8 +271,8 @@ Rectangle {
 
             NText {
               anchors.centerIn: parent
-              text: modelData.category
-              color: getCategoryColor(modelData.category)[1]
+              text: category
+              color: getCategoryColor(category)[1]
               pointSize: Style.fontSizeXS
             }
           }
@@ -291,7 +294,7 @@ Rectangle {
 
             NText {
               anchors.centerIn: parent
-              text: modelData.token
+              text: token
               color: tokenMouseArea.containsMouse ? Color.mOnPrimary : Color.mSurface
               pointSize: Style.fontSizeS
               font.weight: Style.fontWeightBold
@@ -308,7 +311,7 @@ Rectangle {
           NText {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter // Added this line
-            text: modelData.description
+            text: description
             color: tokenMouseArea.containsMouse ? Color.mOnSurface : Color.mOnSurfaceVariant
             pointSize: Style.fontSizeS
             wrapMode: Text.WordWrap
@@ -344,7 +347,7 @@ Rectangle {
 
             NText {
               anchors.centerIn: parent
-              text: I18n.locale.toString(root.sampleDate, modelData.token)
+              text: I18n.locale.toString(root.sampleDate, token)
               color: tokenMouseArea.containsMouse ? Color.mOnPrimary : Color.mSurfaceVariant
               pointSize: Style.fontSizeS
 

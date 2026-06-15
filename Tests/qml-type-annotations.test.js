@@ -196,9 +196,10 @@ function testLauncherResultDelegatesAreTyped() {
 
 function testDateTimeTokenDelegateRolesAreTyped() {
   const source = readQml("Widgets/NDateTimeTokens.qml");
-  const tokenDelegate = /delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*tokenDelegate[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?index\s*%\s*2[\s\S]*?modelData\.token/;
+  const tokenDelegate = /delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*tokenDelegate[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+category[\s\S]*?required\s+property\s+string\s+token[\s\S]*?required\s+property\s+string\s+description[\s\S]*?root\.tokenClicked\(token\)[\s\S]*?getCategoryColor\(category\)[\s\S]*?text:\s*description[\s\S]*?toString\(root\.sampleDate,\s*token\)/;
 
-  assert.match(source, tokenDelegate, "NDateTimeTokens delegate must declare modelData and index roles");
+  assert.match(source, tokenDelegate, "NDateTimeTokens delegate must type scalar token roles");
+  assert.doesNotMatch(source, /modelData\.(?:category|token|description)/, "NDateTimeTokens delegate must use typed roles instead of modelData.*");
 }
 
 function testSetupCustomizeOptionDelegatesAreTyped() {
