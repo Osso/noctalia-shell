@@ -26,6 +26,7 @@ run_unit_tests() {
     node "$repo_root/Tests/qml-type-annotations.test.js"
     node "$repo_root/Tests/qml-runtime-guards.test.js"
     node "$repo_root/Tests/launcher-guards.test.js"
+    node "$repo_root/Tests/emoji-service-guards.test.js"
     node "$repo_root/Tests/audio-service-guards.test.js"
     node "$repo_root/Tests/applications-plugin-guards.test.js"
     node "$repo_root/Tests/bar-service-guards.test.js"
