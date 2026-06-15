@@ -201,6 +201,10 @@ Rectangle {
 
       delegate: Rectangle {
         id: tokenDelegate
+
+        required property var modelData
+        required property int index
+
         width: tokensList.width
         height: layout.implicitHeight + Style.marginS
         radius: Style.radiusS
