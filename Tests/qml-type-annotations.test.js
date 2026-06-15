@@ -788,6 +788,28 @@ function testSetupDockStepMonitorModelIsTyped() {
   assert.match(source, monitorModelDelegate, "SetupDockStep monitor delegate must type screen modelData as ShellScreen");
 }
 
+function testSetupDockStepMonitorAliasesAreTyped() {
+  const setupDockStepFile = "Modules/Panels/SetupWizard/SetupDockStep.qml";
+  const source = readQml(setupDockStepFile);
+  const monitorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?delegate:\s*NCheckbox\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s+modelData\.name[\s\S]*?readonly\s+property\s+string\s+monitorModel:\s+modelData\.model[\s\S]*?readonly\s+property\s+int\s+monitorWidth:\s+modelData\.width[\s\S]*?readonly\s+property\s+int\s+monitorHeight:\s+modelData\.height/;
+
+  assert.match(source, monitorDelegate, "SetupDockStep monitor delegate must expose typed aliases for ShellScreen fields");
+  assert.match(source, /label:\s*monitorName\s*\|\|\s*"Unknown"/, "SetupDockStep monitor label must use monitorName");
+  assert.match(source, /CompositorService\.getDisplayScale\(monitorName\)/, "SetupDockStep monitor scale lookup must use monitorName");
+  assert.match(source, /"model":\s*monitorModel/, "SetupDockStep monitor description must use monitorModel");
+  assert.match(source, /"width":\s*monitorWidth\s*\*\s*compositorScale/, "SetupDockStep monitor description must use monitorWidth");
+  assert.match(source, /"height":\s*monitorHeight\s*\*\s*compositorScale/, "SetupDockStep monitor description must use monitorHeight");
+  assert.match(source, /indexOf\(monitorName\)\s*!==\s*-1/, "SetupDockStep monitor selection must use monitorName");
+  assert.match(source, /arr\.indexOf\(monitorName\)\s*===\s*-1/, "SetupDockStep monitor add guard must use monitorName");
+  assert.match(source, /arr\.push\(monitorName\)/, "SetupDockStep monitor add action must use monitorName");
+  assert.match(source, /return\s+n\s*!==\s*monitorName/, "SetupDockStep monitor remove filter must use monitorName");
+
+  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "SetupDockStep monitor delegate must use monitorName after declaration");
+  assert.equal((source.match(/modelData\.model/g) ?? []).length, 1, "SetupDockStep monitor delegate must use monitorModel after declaration");
+  assert.equal((source.match(/modelData\.width/g) ?? []).length, 1, "SetupDockStep monitor delegate must use monitorWidth after declaration");
+  assert.equal((source.match(/modelData\.height/g) ?? []).length, 1, "SetupDockStep monitor delegate must use monitorHeight after declaration");
+}
+
 function testSetupWizardProgressDelegateModelIsTyped() {
   const source = readQml("Modules/Panels/SetupWizard/SetupWizard.qml");
   const progressDelegate = /Repeater\s*\{[\s\S]*?"label":\s*"Dock"[\s\S]*?delegate:\s*RowLayout\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?icon:\s*modelData\.icon[\s\S]*?text:\s*modelData\.label/;
@@ -885,6 +907,7 @@ const tests = [
   testNotificationsTabMonitorAliasesAreTyped,
   testWallpaperServiceScannerModelIsTyped,
   testSetupDockStepMonitorModelIsTyped,
+  testSetupDockStepMonitorAliasesAreTyped,
   testSetupWizardProgressDelegateModelIsTyped,
   testBrightnessPanelScreenModelIsTyped,
 ];

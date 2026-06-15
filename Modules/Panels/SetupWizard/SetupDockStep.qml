@@ -177,29 +177,33 @@ ColumnLayout {
       model: Quickshell.screens || []
       delegate: NCheckbox {
         required property ShellScreen modelData
+        readonly property string monitorName: modelData.name
+        readonly property string monitorModel: modelData.model
+        readonly property int monitorWidth: modelData.width
+        readonly property int monitorHeight: modelData.height
 
         Layout.fillWidth: true
-        label: modelData.name || "Unknown"
+        label: monitorName || "Unknown"
         visible: Settings.data.dock.enabled
         description: {
-          const compositorScale = CompositorService.getDisplayScale(modelData.name);
+          const compositorScale = CompositorService.getDisplayScale(monitorName);
           I18n.tr("system.monitor-description", {
-                    "model": modelData.model,
-                    "width": modelData.width * compositorScale,
-                    "height": modelData.height * compositorScale,
+                    "model": monitorModel,
+                    "width": monitorWidth * compositorScale,
+                    "height": monitorHeight * compositorScale,
                     "scale": compositorScale
                   });
         }
-        checked: (Settings.data.dock.monitors || []).indexOf(modelData.name) !== -1
+        checked: (Settings.data.dock.monitors || []).indexOf(monitorName) !== -1
         onToggled: checked => {
                      if (checked) {
                        const arr = (Settings.data.dock.monitors || []).slice();
-                       if (arr.indexOf(modelData.name) === -1)
-                       arr.push(modelData.name);
+                       if (arr.indexOf(monitorName) === -1)
+                       arr.push(monitorName);
                        Settings.data.dock.monitors = arr;
                      } else {
                        Settings.data.dock.monitors = (Settings.data.dock.monitors || []).filter(function (n) {
-                         return n !== modelData.name;
+                         return n !== monitorName;
                        });
                      }
                    }
