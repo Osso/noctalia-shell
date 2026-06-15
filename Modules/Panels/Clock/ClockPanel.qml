@@ -35,8 +35,8 @@ SmartPanel {
         Loader {
           required property var modelData
 
-          readonly property string cardId: modelData.id || ""
-          readonly property bool cardEnabled: modelData.enabled === true
+          readonly property string cardId: modelData ? (modelData.id || "") : ""
+          readonly property bool cardEnabled: modelData ? modelData.enabled === true : false
 
           active: cardEnabled && (cardId !== "weather-card" || Settings.data.location.weatherEnabled)
           visible: active
