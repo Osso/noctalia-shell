@@ -49,12 +49,12 @@ NBox {
 
         required property var modelData
 
-        readonly property string networkSsid: modelData.ssid || ""
-        readonly property bool networkConnected: modelData.connected === true
-        readonly property int networkSignal: modelData.signal || 0
-        readonly property string networkSecurity: modelData.security || "Open"
-        readonly property bool networkExisting: modelData.existing === true
-        readonly property bool networkCached: modelData.cached === true
+        readonly property string networkSsid: modelData ? (modelData.ssid || "") : ""
+        readonly property bool networkConnected: modelData ? modelData.connected === true : false
+        readonly property int networkSignal: modelData ? (modelData.signal || 0) : 0
+        readonly property string networkSecurity: modelData ? (modelData.security || "Open") : "Open"
+        readonly property bool networkExisting: modelData ? modelData.existing === true : false
+        readonly property bool networkCached: modelData ? modelData.cached === true : false
         readonly property bool connectingToNetwork: NetworkService.connectingTo === networkSsid
         readonly property bool disconnectingFromNetwork: NetworkService.disconnectingFrom === networkSsid
         readonly property bool forgettingNetwork: NetworkService.forgettingNetwork === networkSsid
