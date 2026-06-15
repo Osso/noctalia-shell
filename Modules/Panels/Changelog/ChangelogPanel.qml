@@ -142,13 +142,13 @@ SmartPanel {
             Repeater {
               model: releaseHighlights
               delegate: ColumnLayout {
-                required property var modelData
+                required property var entries
 
                 width: parent.width
                 spacing: Style.marginXS
 
                 Repeater {
-                  model: modelData.entries
+                  model: entries
                   delegate: NText {
                     required property string modelData
 

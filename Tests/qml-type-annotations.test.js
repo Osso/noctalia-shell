@@ -166,11 +166,12 @@ function testLockScreenForecastDelegateIndexIsTyped() {
 
 function testChangelogPanelHighlightDelegatesAreTyped() {
   const source = readQml("Modules/Panels/Changelog/ChangelogPanel.qml");
-  const highlightDelegate = /Repeater\s*\{[\s\S]*?model:\s*releaseHighlights[\s\S]*?delegate:\s*ColumnLayout\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?model:\s*modelData\.entries/;
-  const entryDelegate = /Repeater\s*\{[\s\S]*?model:\s*modelData\.entries[\s\S]*?delegate:\s*NText\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?headingLevel\(modelData\)/;
+  const highlightDelegate = /Repeater\s*\{[\s\S]*?model:\s*releaseHighlights[\s\S]*?delegate:\s*ColumnLayout\s*\{[\s\S]*?required\s+property\s+var\s+entries[\s\S]*?model:\s*entries/;
+  const entryDelegate = /Repeater\s*\{[\s\S]*?model:\s*entries[\s\S]*?delegate:\s*NText\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?headingLevel\(modelData\)/;
 
-  assert.match(source, highlightDelegate, "ChangelogPanel highlight delegate must declare modelData");
+  assert.match(source, highlightDelegate, "ChangelogPanel highlight delegate must type entries role");
   assert.match(source, entryDelegate, "ChangelogPanel entry delegate must type string modelData");
+  assert.doesNotMatch(source, /modelData\.entries/, "ChangelogPanel highlight delegate must use typed entries role instead of modelData.entries");
 }
 
 function testNotificationDelegateIndexIsTyped() {
