@@ -175,6 +175,13 @@ function testSchemeDownloaderDelegatesAreTyped() {
   assert.match(source, swatchDelegate, "SchemeDownloader swatch delegate must type string modelData");
 }
 
+function testControlCenterPanelCardDelegateIsTyped() {
+  const source = readQml("Modules/Panels/ControlCenter/ControlCenterPanel.qml");
+  const cardDelegate = /Repeater\s*\{[\s\S]*?model:\s*Settings\.data\.controlCenter\.cards[\s\S]*?Loader\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?active:\s*modelData\.enabled[\s\S]*?switch\s*\(modelData\.id\)/;
+
+  assert.match(source, cardDelegate, "ControlCenterPanel card delegate must declare modelData");
+}
+
 function testPanelServiceOpenedPanelIsTyped() {
   assertPropertyType("Services/UI/PanelService.qml", "openedPanel", "SmartPanel");
 }
@@ -461,6 +468,7 @@ const tests = [
   testTraySettingsBlacklistDelegateRolesAreTyped,
   testColorSchemeTabSchemeModelDataIsTyped,
   testSchemeDownloaderDelegatesAreTyped,
+  testControlCenterPanelCardDelegateIsTyped,
   testPanelServiceOpenedPanelIsTyped,
   testContextMenuDelegatePopupIsTyped,
   testGeometryReferencesAreTypedItems,

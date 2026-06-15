@@ -95,6 +95,8 @@ SmartPanel {
       Repeater {
         model: Settings.data.controlCenter.cards
         Loader {
+          required property var modelData
+
           active: modelData.enabled && (modelData.id !== "weather-card" || Settings.data.location.weatherEnabled)
           visible: active
           Layout.fillWidth: true
