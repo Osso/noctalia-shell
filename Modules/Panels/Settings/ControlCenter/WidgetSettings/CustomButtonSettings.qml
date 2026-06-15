@@ -152,6 +152,10 @@ ColumnLayout {
     Repeater {
       model: _settings._stateChecksListModel
       delegate: Item {
+        required property string command
+        required property string icon
+        required property int index
+
         property int currentIndex: index
 
         implicitHeight: contentRow.implicitHeight + ((divider.visible) ? divider.height : 0)
@@ -165,10 +169,10 @@ ColumnLayout {
           NTextInput {
             Layout.fillWidth: true
             placeholderText: I18n.tr("settings.control-center.shortcuts.custom-button.state-checks.command")
-            text: model.command
+            text: command
             onEditingFinished: _settings._stateChecksListModel.set(currentIndex, {
                                                                      "command": text,
-                                                                     "icon": model.icon
+                                                                     "icon": icon
                                                                    })
           }
 
@@ -177,9 +181,9 @@ ColumnLayout {
             spacing: Style.marginS
 
             NIcon {
-              icon: model.icon
+              icon: icon
               pointSize: Style.fontSizeL
-              visible: model.icon !== undefined && model.icon !== ""
+              visible: icon !== ""
             }
 
             NIconButton {
@@ -205,10 +209,10 @@ ColumnLayout {
 
         NIconPicker {
           id: iconPickerDelegate
-          initialIcon: model.icon
+          initialIcon: icon
           onIconSelected: function (iconName) {
             _settings._stateChecksListModel.set(currentIndex, {
-                                                  "command": model.command,
+                                                  "command": command,
                                                   "icon": iconName
                                                 });
           }

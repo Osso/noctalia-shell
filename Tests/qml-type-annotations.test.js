@@ -141,6 +141,14 @@ function testComboBoxDelegateParentIsTyped() {
   assertPropertyType("Widgets/NComboBox.qml", "parentComboBox", "ComboBox");
 }
 
+function testCustomButtonStateCheckDelegateRolesAreTyped() {
+  const source = readQml("Modules/Panels/Settings/ControlCenter/WidgetSettings/CustomButtonSettings.qml");
+  const stateCheckDelegate = /Repeater\s*\{[\s\S]*?model:\s*_settings\._stateChecksListModel[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+string\s+command[\s\S]*?required\s+property\s+string\s+icon[\s\S]*?required\s+property\s+int\s+index[\s\S]*?property\s+int\s+currentIndex:\s*index/;
+
+  assert.match(source, stateCheckDelegate, "CustomButtonSettings state-check delegate must type command, icon, and index roles");
+  assert.doesNotMatch(source, /model\.(?:command|icon)/, "CustomButtonSettings state-check delegate must use typed role properties instead of model.*");
+}
+
 function testPanelServiceOpenedPanelIsTyped() {
   assertPropertyType("Services/UI/PanelService.qml", "openedPanel", "SmartPanel");
 }
@@ -423,6 +431,7 @@ const tests = [
   testSettingsPanelActiveScrollViewIsTyped,
   testSettingsPanelTabsDelegatesAreTyped,
   testComboBoxDelegateParentIsTyped,
+  testCustomButtonStateCheckDelegateRolesAreTyped,
   testPanelServiceOpenedPanelIsTyped,
   testContextMenuDelegatePopupIsTyped,
   testGeometryReferencesAreTypedItems,
