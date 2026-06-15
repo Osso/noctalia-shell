@@ -675,6 +675,16 @@ function testBackgroundShapeContainersAreTyped() {
   }
 }
 
+function testBackgroundScreenAliasesAreTyped() {
+  const source = readQml("Modules/Background/Background.qml");
+  const screenDelegate = /Variants\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?delegate:\s*Loader\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s*modelData\.name[\s\S]*?readonly\s+property\s+int\s+monitorWidth:\s*modelData\.width[\s\S]*?readonly\s+property\s+int\s+monitorHeight:\s*modelData\.height[\s\S]*?screenName\s*===\s*monitorName[\s\S]*?CompositorService\.getDisplayScale\(monitorName\)[\s\S]*?monitorWidth\s*\*\s*compositorScale[\s\S]*?monitorHeight\s*\*\s*compositorScale[\s\S]*?WallpaperService\.getWallpaper\(monitorName\)/;
+
+  assert.match(source, screenDelegate, "Background screen delegate must expose typed screen aliases");
+  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "Background must use monitorName after declaration");
+  assert.equal((source.match(/modelData\.width/g) ?? []).length, 1, "Background must use monitorWidth after declaration");
+  assert.equal((source.match(/modelData\.height/g) ?? []).length, 1, "Background must use monitorHeight after declaration");
+}
+
 function testWallpaperPanelScreenReferencesAreTyped() {
   const wallpaperPanelFile = "Modules/Panels/Wallpaper/WallpaperPanel.qml";
 
@@ -986,6 +996,7 @@ const tests = [
   testBrightnessPanelBrightnessMonitorIsTyped,
   testBrightnessServiceMonitorScreenModelAliasIsTyped,
   testBackgroundShapeContainersAreTyped,
+  testBackgroundScreenAliasesAreTyped,
   testWallpaperPanelScreenReferencesAreTyped,
   testWallpaperPanelMonitorTabModelIsTyped,
   testWallpaperPanelScreenViewModelIsTyped,

@@ -12,6 +12,9 @@ Variants {
   delegate: Loader {
 
     required property ShellScreen modelData
+    readonly property string monitorName: modelData.name
+    readonly property int monitorWidth: modelData.width
+    readonly property int monitorHeight: modelData.height
 
     active: modelData && Settings.data.wallpaper.enabled
 
@@ -66,7 +69,7 @@ Variants {
       Connections {
         target: WallpaperService
         function onWallpaperChanged(screenName, path) {
-          if (screenName === modelData.name) {
+          if (screenName === monitorName) {
             // Update wallpaper display
             // Set wallpaper immediately on startup
             futureWallpaper = path;
@@ -325,25 +328,25 @@ Variants {
 
       // ------------------------------------------------------
       function calculateOptimalWallpaperSize(wpWidth, wpHeight) {
-        const compositorScale = CompositorService.getDisplayScale(modelData.name);
-        const screenWidth = modelData.width * compositorScale;
-        const screenHeight = modelData.height * compositorScale;
-        if (wpWidth <= screenWidth || wpHeight <= screenHeight || wpWidth <= 0 || wpHeight <= 0) {
+        const compositorScale = CompositorService.getDisplayScale(monitorName);
+        const scaledScreenWidth = monitorWidth * compositorScale;
+        const scaledScreenHeight = monitorHeight * compositorScale;
+        if (wpWidth <= scaledScreenWidth || wpHeight <= scaledScreenHeight || wpWidth <= 0 || wpHeight <= 0) {
           // Do not resize if wallpaper is smaller than one of the screen dimension
           return;
         }
 
         const imageAspectRatio = wpWidth / wpHeight;
         var dim = Qt.size(0, 0);
-        if (screenWidth >= screenHeight) {
-          const w = Math.min(screenWidth, wpWidth);
+        if (scaledScreenWidth >= scaledScreenHeight) {
+          const w = Math.min(scaledScreenWidth, wpWidth);
           dim = Qt.size(Math.round(w), Math.round(w / imageAspectRatio));
         } else {
-          const h = Math.min(screenHeight, wpHeight);
+          const h = Math.min(scaledScreenHeight, wpHeight);
           dim = Qt.size(Math.round(h * imageAspectRatio), Math.round(h));
         }
 
-        Logger.d("Background", `Wallpaper resized on ${modelData.name} ${screenWidth}x${screenHeight} @ ${compositorScale}x`, "src:", wpWidth, wpHeight, "dst:", dim.width, dim.height);
+        Logger.d("Background", `Wallpaper resized on ${monitorName} ${scaledScreenWidth}x${scaledScreenHeight} @ ${compositorScale}x`, "src:", wpWidth, wpHeight, "dst:", dim.width, dim.height);
         return dim;
       }
 
@@ -377,7 +380,7 @@ Variants {
           return;
         }
 
-        const wallpaperPath = WallpaperService.getWallpaper(modelData.name);
+        const wallpaperPath = WallpaperService.getWallpaper(monitorName);
 
         futureWallpaper = wallpaperPath;
         performStartupTransition();
@@ -449,7 +452,6 @@ Variants {
           transitionType = "fade";
         }
 
-        //Logger.i("Background", "New wallpaper: ", futureWallpaper, "On:", modelData.name, "Transition:", transitionType)
         switch (transitionType) {
         case "none":
           setWallpaperImmediate(futureWallpaper);
