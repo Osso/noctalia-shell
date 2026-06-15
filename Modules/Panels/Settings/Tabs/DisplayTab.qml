@@ -65,6 +65,10 @@ ColumnLayout {
       model: Quickshell.screens || []
       delegate: Rectangle {
         required property ShellScreen modelData
+        readonly property string monitorName: modelData.name
+        readonly property string monitorModel: modelData.model
+        readonly property int monitorWidth: modelData.width
+        readonly property int monitorHeight: modelData.height
 
         Layout.fillWidth: true
         implicitHeight: contentCol.implicitHeight + Style.marginL * 2
@@ -83,13 +87,13 @@ ColumnLayout {
           spacing: Style.marginXXS
 
           NLabel {
-            label: modelData.name || "Unknown"
+            label: monitorName || "Unknown"
             description: {
-              const compositorScale = CompositorService.getDisplayScale(modelData.name);
+              const compositorScale = CompositorService.getDisplayScale(monitorName);
               I18n.tr("system.monitor-description", {
-                        "model": modelData.model,
-                        "width": modelData.width * compositorScale,
-                        "height": modelData.height * compositorScale,
+                        "model": monitorModel,
+                        "width": monitorWidth * compositorScale,
+                        "height": monitorHeight * compositorScale,
                         "scale": compositorScale
                       });
             }
