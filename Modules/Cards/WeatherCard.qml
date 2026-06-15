@@ -150,6 +150,8 @@ NBox {
       Repeater {
         model: weatherReady ? Math.min(root.forecastDays, LocationService.data.weather.daily.time.length) : 0
         delegate: ColumnLayout {
+          required property int index
+
           Layout.fillWidth: true
           spacing: Style.marginXS
           Item {

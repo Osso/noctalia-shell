@@ -148,6 +148,13 @@ function testComboBoxDelegateIndexIsTyped() {
   assert.match(source, delegateIndex, "NComboBox delegate must declare index role before using it");
 }
 
+function testWeatherCardForecastDelegateIndexIsTyped() {
+  const source = readQml("Modules/Cards/WeatherCard.qml");
+  const forecastDelegate = /Repeater\s*\{[\s\S]*?model:\s*weatherReady\s*\?[\s\S]*?delegate:\s*ColumnLayout\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?daily\.time\[index\]/;
+
+  assert.match(source, forecastDelegate, "WeatherCard forecast delegate must declare index role before reading forecast arrays");
+}
+
 function testCustomButtonStateCheckDelegateRolesAreTyped() {
   const source = readQml("Modules/Panels/Settings/ControlCenter/WidgetSettings/CustomButtonSettings.qml");
   const stateCheckDelegate = /Repeater\s*\{[\s\S]*?model:\s*_settings\._stateChecksListModel[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+string\s+command[\s\S]*?required\s+property\s+string\s+icon[\s\S]*?required\s+property\s+int\s+index[\s\S]*?property\s+int\s+currentIndex:\s*index/;
@@ -486,6 +493,7 @@ const tests = [
   testSettingsPanelTabsDelegatesAreTyped,
   testComboBoxDelegateParentIsTyped,
   testComboBoxDelegateIndexIsTyped,
+  testWeatherCardForecastDelegateIndexIsTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,
   testColorSchemeTabSchemeModelDataIsTyped,
