@@ -183,6 +183,15 @@ function testClockSettingsFocusedInputIsTyped() {
   assertNoPropertyType(settingsFile, "focusedInput", "var");
 }
 
+function testClockSettingsPreviewModelsAreTyped() {
+  const source = readQml("Modules/Panels/Settings/Bar/WidgetSettings/ClockSettings.qml");
+  const horizontalPreview = /model:\s*I18n\.locale\.toString\(now,\s*valueFormatHorizontal\.trim\(\)\)\.split\("\\\\n"\)[\s\S]*?delegate:\s*NText\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?text:\s*modelData/;
+  const verticalPreview = /model:\s*I18n\.locale\.toString\(now,\s*valueFormatVertical\.trim\(\)\)\.split\(" "\)[\s\S]*?delegate:\s*NText\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?text:\s*modelData/;
+
+  assert.match(source, horizontalPreview, "ClockSettings horizontal preview delegate must type string modelData");
+  assert.match(source, verticalPreview, "ClockSettings vertical preview delegate must type string modelData");
+}
+
 function testMangoPatternContainerIsTyped() {
   const mangoServiceFile = "Services/Compositor/MangoService.qml";
 
@@ -411,6 +420,7 @@ const tests = [
   testEffectSourcePropertiesAreTyped,
   testBarWidgetLoaderScreenIsTyped,
   testClockSettingsFocusedInputIsTyped,
+  testClockSettingsPreviewModelsAreTyped,
   testMangoPatternContainerIsTyped,
   testPopupMenuWindowContentItemIsTyped,
   testLauncherActivePluginIsTyped,

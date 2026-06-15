@@ -202,6 +202,8 @@ ColumnLayout {
               Layout.topMargin: Style.marginM
               model: I18n.locale.toString(now, valueFormatHorizontal.trim()).split("\\n")
               delegate: NText {
+                required property string modelData
+
                 visible: text !== ""
                 text: modelData
                 family: valueUseCustomFont && valueCustomFont ? valueCustomFont : Settings.data.ui.fontDefault
@@ -233,6 +235,8 @@ ColumnLayout {
               Layout.topMargin: Style.marginM
               model: I18n.locale.toString(now, valueFormatVertical.trim()).split(" ")
               delegate: NText {
+                required property string modelData
+
                 visible: text !== ""
                 text: modelData
                 family: valueUseCustomFont && valueCustomFont ? valueCustomFont : Settings.data.ui.fontDefault
