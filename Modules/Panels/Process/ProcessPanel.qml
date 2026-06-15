@@ -386,6 +386,9 @@ SmartPanel {
         model: root.processList
 
         delegate: Rectangle {
+          required property var modelData
+          required property int index
+
           Layout.fillWidth: true
           Layout.preferredHeight: 32
           Layout.topMargin: index === 0 ? 0 : -2

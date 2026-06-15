@@ -542,6 +542,13 @@ function testAudioPanelDeviceDelegatesAreTyped() {
   assert.match(source, sourceDelegate, "AudioPanel source delegate must type modelData and index");
 }
 
+function testProcessPanelProcessDelegateInputsAreTyped() {
+  const source = readQml("Modules/Panels/Process/ProcessPanel.qml");
+  const processDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.processList[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?ProcessService\.getProcessIcon\(modelData\.command\)/;
+
+  assert.match(source, processDelegate, "ProcessPanel process delegate must declare modelData and index");
+}
+
 function testTrayMenuItemIsTyped() {
   const trayMenuFile = "Modules/Bar/Extras/TrayMenu.qml";
 
@@ -740,6 +747,7 @@ const tests = [
   testBluetoothDeviceDelegateInputsAreTyped,
   testAudioNodeHandlesAreTyped,
   testAudioPanelDeviceDelegatesAreTyped,
+  testProcessPanelProcessDelegateInputsAreTyped,
   testTrayMenuItemIsTyped,
   testTrayMenuSubMenuIsTyped,
   testTrayMenuLoaderReferencesAreTyped,
