@@ -663,6 +663,27 @@ function testSettingsMonitorModelsAreTyped() {
   }
 }
 
+function testDockTabMonitorAliasesAreTyped() {
+  const dockTabFile = "Modules/Panels/Settings/Tabs/DockTab.qml";
+  const source = readQml(dockTabFile);
+  const monitorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?delegate:\s*NCheckbox\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s+modelData\.name[\s\S]*?readonly\s+property\s+string\s+monitorModel:\s+modelData\.model[\s\S]*?readonly\s+property\s+int\s+monitorWidth:\s+modelData\.width[\s\S]*?readonly\s+property\s+int\s+monitorHeight:\s+modelData\.height/;
+
+  assert.match(source, monitorDelegate, "DockTab monitor delegate must expose typed aliases for ShellScreen fields");
+  assert.match(source, /label:\s*monitorName\s*\|\|\s*"Unknown"/, "DockTab monitor label must use monitorName");
+  assert.match(source, /CompositorService\.getDisplayScale\(monitorName\)/, "DockTab monitor scale lookup must use monitorName");
+  assert.match(source, /"model":\s*monitorModel/, "DockTab monitor description must use monitorModel");
+  assert.match(source, /"width":\s*monitorWidth\s*\*\s*compositorScale/, "DockTab monitor description must use monitorWidth");
+  assert.match(source, /"height":\s*monitorHeight\s*\*\s*compositorScale/, "DockTab monitor description must use monitorHeight");
+  assert.match(source, /indexOf\(monitorName\)\s*!==\s*-1/, "DockTab monitor selection must use monitorName");
+  assert.match(source, /addMonitor\(Settings\.data\.dock\.monitors,\s*monitorName\)/, "DockTab monitor add action must use monitorName");
+  assert.match(source, /removeMonitor\(Settings\.data\.dock\.monitors,\s*monitorName\)/, "DockTab monitor remove action must use monitorName");
+
+  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "DockTab monitor delegate must use monitorName after declaration");
+  assert.equal((source.match(/modelData\.model/g) ?? []).length, 1, "DockTab monitor delegate must use monitorModel after declaration");
+  assert.equal((source.match(/modelData\.width/g) ?? []).length, 1, "DockTab monitor delegate must use monitorWidth after declaration");
+  assert.equal((source.match(/modelData\.height/g) ?? []).length, 1, "DockTab monitor delegate must use monitorHeight after declaration");
+}
+
 function testOsdTabTypeOptionRolesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/OsdTab.qml");
   const osdTypeDelegate = /Repeater\s*\{[\s\S]*?type:\s*OSD\.Type\.Volume[\s\S]*?delegate:\s*NCheckbox\s*\{[\s\S]*?required\s+property\s+int\s+type[\s\S]*?required\s+property\s+string\s+key[\s\S]*?settings\.osd\.types\."\s*\+\s*key\s*\+\s*"\.label"[\s\S]*?enabledTypes\s*\|\|\s*\[\]\)\.includes\(type\)/;
@@ -774,6 +795,7 @@ const tests = [
   testWallpaperPanelMonitorTabModelIsTyped,
   testWallpaperPanelScreenViewModelIsTyped,
   testSettingsMonitorModelsAreTyped,
+  testDockTabMonitorAliasesAreTyped,
   testOsdTabTypeOptionRolesAreTyped,
   testWallpaperServiceScannerModelIsTyped,
   testSetupDockStepMonitorModelIsTyped,
