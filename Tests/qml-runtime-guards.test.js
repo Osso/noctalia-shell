@@ -34,6 +34,33 @@ function extractFunctionBody(source, functionName) {
   throw new Error(`unterminated function: ${functionName}`);
 }
 
+function extractIpcHandlerBlock(source, targetName) {
+  const marker = `target: "${targetName}"`;
+  const targetIndex = source.indexOf(marker);
+  assert.notEqual(targetIndex, -1, `missing IPC target: ${targetName}`);
+
+  const blockStart = source.lastIndexOf("IpcHandler", targetIndex);
+  assert.notEqual(blockStart, -1, `missing IPC handler for target: ${targetName}`);
+
+  const braceStart = source.indexOf("{", blockStart);
+  let depth = 0;
+
+  for (let index = braceStart; index < source.length; index++) {
+    const char = source[index];
+
+    if (char === "{") {
+      depth++;
+    } else if (char === "}") {
+      depth--;
+      if (depth === 0) {
+        return source.slice(blockStart, index + 1);
+      }
+    }
+  }
+
+  throw new Error(`unterminated IPC handler: ${targetName}`);
+}
+
 function testOsdBrightnessHandlerRejectsInvalidValues() {
   const source = readQml("Modules/OSD/OSD.qml");
   const body = extractFunctionBody(source, "onBrightnessChanged");
@@ -285,6 +312,104 @@ function testNotificationHistoryRemovalOnlyDeletesOwnedCachedImages() {
   assert.match(clearBody, /saveHistory\(\)/, "clearHistory must persist the cleared history");
 }
 
+function testIpcPanelHelpersGuardMissingPanelsAndModes() {
+  const source = readQml("Services/Control/IPCService.qml");
+  const togglePanelBody = extractFunctionBody(source, "togglePanel");
+  const setLauncherModeBody = extractFunctionBody(source, "setLauncherMode");
+
+  assert.match(togglePanelBody, /if \(!panel\)\s*\{\s*return;/, "togglePanel must ignore missing panels");
+  assert.match(togglePanelBody, /if \(anchorName\)/, "togglePanel must route anchored panel toggles");
+  assert.match(togglePanelBody, /panel\.toggle\(null,\s*anchorName\)/, "togglePanel must pass anchor names to panel toggles");
+  assert.match(togglePanelBody, /panel\.toggle\(\)/, "togglePanel must support unanchored panel toggles");
+  assert.match(setLauncherModeBody, /if \(!launcherPanel\)\s*\{\s*return;/, "setLauncherMode must ignore missing launcher panels");
+  assert.match(setLauncherModeBody, /const inactive = !launcherPanel\.windowActive/, "setLauncherMode must detect inactive launcher windows");
+  assert.match(setLauncherModeBody, /activePrefix === "" \? !launcherPanel\.activePlugin : launcherPanel\.searchText\.startsWith\(activePrefix\)/, "setLauncherMode must compare the active launcher mode");
+  assert.match(setLauncherModeBody, /if \(inactive \|\| sameMode\)/, "setLauncherMode must toggle only inactive or same-mode launchers");
+  assert.match(setLauncherModeBody, /launcherPanel\.setSearchText\(searchText\)/, "setLauncherMode must set the requested launcher search text");
+}
+
+function testIpcLauncherAndPanelTargetsUseTargetScreen() {
+  const source = readQml("Services/Control/IPCService.qml");
+  const settingsBlock = extractIpcHandlerBlock(source, "settings");
+  const calendarBlock = extractIpcHandlerBlock(source, "calendar");
+  const launcherBlock = extractIpcHandlerBlock(source, "launcher");
+  const controlCenterBlock = extractIpcHandlerBlock(source, "controlCenter");
+
+  assert.match(settingsBlock, /root\.withTargetScreen\(screen =>/, "settings IPC must resolve the target screen");
+  assert.match(settingsBlock, /PanelService\.getPanel\("settingsPanel",\s*screen\)/, "settings IPC must target the settings panel on that screen");
+  assert.match(settingsBlock, /root\.togglePanel\(settingsPanel\)/, "settings IPC must toggle the settings panel");
+  assert.match(calendarBlock, /PanelService\.getPanel\("clockPanel",\s*screen\)/, "calendar IPC must target the clock panel");
+  assert.match(calendarBlock, /root\.togglePanel\(clockPanel,\s*"Clock"\)/, "calendar IPC must open the Clock anchor");
+  assert.match(launcherBlock, /root\.setLauncherMode\(launcherPanel,\s*"",\s*""\)/, "launcher toggle IPC must clear launcher mode");
+  assert.match(launcherBlock, /root\.setLauncherMode\(launcherPanel,\s*">clip ",\s*">clip"\)/, "launcher clipboard IPC must select clipboard mode");
+  assert.match(launcherBlock, /root\.setLauncherMode\(launcherPanel,\s*">calc ",\s*">calc"\)/, "launcher calculator IPC must select calculator mode");
+  assert.match(launcherBlock, /root\.setLauncherMode\(launcherPanel,\s*">emoji ",\s*">emoji"\)/, "launcher emoji IPC must select emoji mode");
+  assert.match(controlCenterBlock, /Settings\.data\.controlCenter\.position === "close_to_bar_button"/, "controlCenter IPC must respect anchored position setting");
+  assert.match(controlCenterBlock, /root\.togglePanel\(controlCenterPanel,\s*"ControlCenter"\)/, "controlCenter IPC must open near the bar button when configured");
+}
+
+function testIpcModeTargetsMapArgumentsToServices() {
+  const source = readQml("Services/Control/IPCService.qml");
+  const batteryBlock = extractIpcHandlerBlock(source, "batteryManager");
+  const powerBlock = extractIpcHandlerBlock(source, "powerProfile");
+  const wallpaperBlock = extractIpcHandlerBlock(source, "wallpaper");
+  const darkModeBlock = extractIpcHandlerBlock(source, "darkMode");
+
+  assert.match(batteryBlock, /BatteryService\.cycleModes\(\)/, "batteryManager cycle must delegate to BatteryService");
+  assert.match(batteryBlock, /case "full":[\s\S]*BatteryService\.ChargingMode\.Full/, "batteryManager full mode must map to full charging");
+  assert.match(batteryBlock, /case "balanced":[\s\S]*BatteryService\.ChargingMode\.Balanced/, "batteryManager balanced mode must map to balanced charging");
+  assert.match(batteryBlock, /case "lifespan":[\s\S]*BatteryService\.ChargingMode\.Lifespan/, "batteryManager lifespan mode must map to lifespan charging");
+  assert.match(powerBlock, /PowerProfileService\.cycleProfile\(\)/, "powerProfile cycle must delegate to PowerProfileService");
+  assert.match(powerBlock, /case "performance":[\s\S]*PowerProfileService\.setProfile\(2\)/, "powerProfile performance must map to profile 2");
+  assert.match(powerBlock, /case "balanced":[\s\S]*PowerProfileService\.setProfile\(1\)/, "powerProfile balanced must map to profile 1");
+  assert.match(powerBlock, /case "powersaver":[\s\S]*PowerProfileService\.setProfile\(0\)/, "powerProfile powersaver must map to profile 0");
+  assert.match(powerBlock, /toggleNoctaliaPerformance[\s\S]*PowerProfileService\.toggleNoctaliaPerformance\(\)/, "powerProfile must expose Noctalia performance toggle");
+  assert.match(powerBlock, /enableNoctaliaPerformance[\s\S]*PowerProfileService\.setNoctaliaPerformance\(true\)/, "powerProfile must expose Noctalia performance enable");
+  assert.match(powerBlock, /disableNoctaliaPerformance[\s\S]*PowerProfileService\.setNoctaliaPerformance\(false\)/, "powerProfile must expose Noctalia performance disable");
+  assert.match(wallpaperBlock, /if \(Settings\.data\.wallpaper\.enabled\)/, "wallpaper panel and random IPC must respect wallpaper enablement");
+  assert.match(wallpaperBlock, /WallpaperService\.setRandomWallpaper\(\)/, "wallpaper random IPC must request a random wallpaper");
+  assert.match(wallpaperBlock, /if \(screen === "all" \|\| screen === ""\)[\s\S]*screen = undefined/, "wallpaper set IPC must normalize all-screen aliases");
+  assert.match(wallpaperBlock, /WallpaperService\.changeWallpaper\(path,\s*screen\)/, "wallpaper set IPC must pass normalized screen to WallpaperService");
+  assert.match(darkModeBlock, /Settings\.data\.colorSchemes\.darkMode = !Settings\.data\.colorSchemes\.darkMode/, "darkMode toggle must invert the setting");
+  assert.match(darkModeBlock, /setDark[\s\S]*Settings\.data\.colorSchemes\.darkMode = true/, "darkMode setDark must force dark mode");
+  assert.match(darkModeBlock, /setLight[\s\S]*Settings\.data\.colorSchemes\.darkMode = false/, "darkMode setLight must force light mode");
+}
+
+function testIpcMediaCommandsValidateNumericArguments() {
+  const source = readQml("Services/Control/IPCService.qml");
+  const mediaBlock = extractIpcHandlerBlock(source, "media");
+
+  assert.match(mediaBlock, /MediaService\.playPause\(\)/, "media playPause IPC must call MediaService");
+  assert.match(mediaBlock, /MediaService\.play\(\)/, "media play IPC must call MediaService");
+  assert.match(mediaBlock, /MediaService\.stop\(\)/, "media stop IPC must call MediaService");
+  assert.match(mediaBlock, /MediaService\.pause\(\)/, "media pause IPC must call MediaService");
+  assert.match(mediaBlock, /MediaService\.next\(\)/, "media next IPC must call MediaService");
+  assert.match(mediaBlock, /MediaService\.previous\(\)/, "media previous IPC must call MediaService");
+  assert.match(mediaBlock, /var offsetVal = parseFloat\(offset\)/, "seekRelative must parse numeric offsets");
+  assert.match(mediaBlock, /Number\.isNaN\(offsetVal\)[\s\S]*Logger\.w\("Media",\s*"Argument to ipc call 'media seekRelative' must be a number"\)[\s\S]*return;/, "seekRelative must reject non-numeric offsets");
+  assert.match(mediaBlock, /MediaService\.seekRelative\(offsetVal\)/, "seekRelative must pass parsed offsets to MediaService");
+  assert.match(mediaBlock, /var positionVal = parseFloat\(position\)/, "seekByRatio must parse numeric positions");
+  assert.match(mediaBlock, /Number\.isNaN\(positionVal\)[\s\S]*Logger\.w\("Media",\s*"Argument to ipc call 'media seekByRatio' must be a number"\)[\s\S]*return;/, "seekByRatio must reject non-numeric positions");
+  assert.match(mediaBlock, /MediaService\.seekByRatio\(positionVal\)/, "seekByRatio must pass parsed positions to MediaService");
+}
+
+function testIpcStateAndScreenRoutingFailSafely() {
+  const source = readQml("Services/Control/IPCService.qml");
+  const stateBlock = extractIpcHandlerBlock(source, "state");
+  const screenBody = extractFunctionBody(source, "withTargetScreen");
+
+  assert.match(stateBlock, /ShellState\.buildStateSnapshot\(\)/, "state all must build a shell state snapshot");
+  assert.match(stateBlock, /throw new Error\("State snapshot unavailable"\)/, "state all must reject missing snapshots");
+  assert.match(stateBlock, /return JSON\.stringify\(snapshot,\s*null,\s*2\)/, "state all must serialize snapshots as formatted JSON");
+  assert.match(stateBlock, /Logger\.e\("IPC",\s*"Failed to serialize state:",\s*error\)/, "state all must log serialization errors");
+  assert.match(stateBlock, /"error": "Failed to serialize state: " \+ error/, "state all must return a structured error JSON object");
+  assert.match(screenBody, /if \(pendingCallback\)[\s\S]*Logger\.w\("IPC",\s*"Another IPC call is pending, ignoring new call"\)[\s\S]*return;/, "withTargetScreen must reject concurrent pending calls");
+  assert.match(screenBody, /if \(Quickshell\.screens\.length === 1\)[\s\S]*callback\(Quickshell\.screens\[0\]\)/, "withTargetScreen must execute immediately on single-screen setups");
+  assert.match(screenBody, /detectedScreen = null/, "withTargetScreen must reset detected screen for multi-screen detection");
+  assert.match(screenBody, /pendingCallback = callback/, "withTargetScreen must store pending multi-screen callbacks");
+  assert.match(screenBody, /screenDetectorLoader\.active = true/, "withTargetScreen must activate screen detection for multi-screen setups");
+}
+
 function testGithubServiceFollowsRedirectsAndValidatesResponses() {
   const source = readQml("Services/Noctalia/GitHubService.qml");
 
@@ -319,6 +444,11 @@ const tests = [
   testNotificationTimeoutPauseAndResumeTrackElapsedTime,
   testNotificationDismissAndActionFunctionsFailClosed,
   testNotificationHistoryRemovalOnlyDeletesOwnedCachedImages,
+  testIpcPanelHelpersGuardMissingPanelsAndModes,
+  testIpcLauncherAndPanelTargetsUseTargetScreen,
+  testIpcModeTargetsMapArgumentsToServices,
+  testIpcMediaCommandsValidateNumericArguments,
+  testIpcStateAndScreenRoutingFailSafely,
   testGithubServiceFollowsRedirectsAndValidatesResponses,
   testOsdDisconnectsBrightnessMonitorsOnDestruction,
 ];
