@@ -185,6 +185,15 @@ function testWallpaperTabIntervalPresetModelDataIsTyped() {
   assert.match(source, intervalPresetDelegate, "WallpaperTab interval preset delegate must type numeric modelData");
 }
 
+function testLauncherResultDelegatesAreTyped() {
+  const source = readQml("Modules/Panels/Launcher/Launcher.qml");
+  const listDelegate = /NListView\s*\{[\s\S]*?model:\s*results[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*entry[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?index\s*===\s*selectedIndex/;
+  const gridDelegate = /GridView\s*\{[\s\S]*?model:\s*results[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*gridEntry[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?index\s*===\s*selectedIndex/;
+
+  assert.match(source, listDelegate, "Launcher list result delegate must declare modelData and index roles");
+  assert.match(source, gridDelegate, "Launcher grid result delegate must declare modelData and index roles");
+}
+
 function testAboutTabContributorDelegateIndexesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/AboutTab.qml");
   const topContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.min\(root\.contributors\.length,\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\]\.login/;
@@ -537,6 +546,7 @@ const tests = [
   testChangelogPanelHighlightDelegatesAreTyped,
   testNotificationDelegateIndexIsTyped,
   testWallpaperTabIntervalPresetModelDataIsTyped,
+  testLauncherResultDelegatesAreTyped,
   testAboutTabContributorDelegateIndexesAreTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,

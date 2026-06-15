@@ -724,6 +724,9 @@ SmartPanel {
             delegate: Rectangle {
               id: entry
 
+              required property var modelData
+              required property int index
+
               property bool isSelected: (!root.ignoreMouseHover && mouseArea.containsMouse) || (index === selectedIndex)
               property string appId: (modelData && modelData.appId) ? String(modelData.appId) : ""
 
@@ -1056,6 +1059,9 @@ SmartPanel {
 
             delegate: Rectangle {
               id: gridEntry
+
+              required property var modelData
+              required property int index
 
               property bool isSelected: (!root.ignoreMouseHover && mouseArea.containsMouse) || (index === selectedIndex)
               property string appId: (modelData && modelData.appId) ? String(modelData.appId) : ""
