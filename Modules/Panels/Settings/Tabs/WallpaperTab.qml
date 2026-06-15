@@ -122,25 +122,26 @@ ColumnLayout {
           model: Quickshell.screens || []
           delegate: ColumnLayout {
             required property ShellScreen modelData
+            readonly property string monitorName: modelData.name
 
             Layout.fillWidth: true
             spacing: Style.marginS
 
             NText {
-              text: (modelData.name || "Unknown")
+              text: (monitorName || "Unknown")
               color: Color.mPrimary
               font.weight: Style.fontWeightBold
               pointSize: Style.fontSizeM
             }
 
             NTextInputButton {
-              text: WallpaperService.getMonitorDirectory(modelData.name)
+              text: WallpaperService.getMonitorDirectory(monitorName)
               buttonIcon: "folder-open"
               buttonTooltip: I18n.tr("settings.wallpaper.settings.monitor-specific.tooltip")
               Layout.fillWidth: true
-              onInputEditingFinished: WallpaperService.setMonitorDirectory(modelData.name, text)
+              onInputEditingFinished: WallpaperService.setMonitorDirectory(monitorName, text)
               onButtonClicked: {
-                specificFolderMonitorName = modelData.name;
+                specificFolderMonitorName = monitorName;
                 monitorFolderPicker.open();
               }
             }

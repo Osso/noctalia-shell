@@ -645,6 +645,20 @@ function testWallpaperPanelScreenViewModelIsTyped() {
   assert.match(source, screenViewModel, "WallpaperPanel screen views must type screen modelData as ShellScreen");
 }
 
+function testWallpaperTabMonitorNameAliasIsTyped() {
+  const wallpaperTabFile = "Modules/Panels/Settings/Tabs/WallpaperTab.qml";
+  const source = readQml(wallpaperTabFile);
+  const monitorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?delegate:\s*ColumnLayout\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s+modelData\.name/;
+
+  assert.match(source, monitorDelegate, "WallpaperTab monitor delegate must expose typed monitorName alias from ShellScreen modelData");
+  assert.match(source, /text:\s*\(monitorName\s*\|\|\s*"Unknown"\)/, "WallpaperTab monitor label must use monitorName");
+  assert.match(source, /WallpaperService\.getMonitorDirectory\(monitorName\)/, "WallpaperTab monitor directory lookup must use monitorName");
+  assert.match(source, /WallpaperService\.setMonitorDirectory\(monitorName,\s*text\)/, "WallpaperTab monitor directory save must use monitorName");
+  assert.match(source, /specificFolderMonitorName\s*=\s*monitorName/, "WallpaperTab folder picker state must use monitorName");
+
+  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "WallpaperTab monitor delegate must use monitorName after declaration");
+}
+
 function testSettingsMonitorModelsAreTyped() {
   const monitorSettingFiles = [
     "Modules/Panels/Settings/Tabs/BarTab.qml",
@@ -898,6 +912,7 @@ const tests = [
   testWallpaperPanelScreenReferencesAreTyped,
   testWallpaperPanelMonitorTabModelIsTyped,
   testWallpaperPanelScreenViewModelIsTyped,
+  testWallpaperTabMonitorNameAliasIsTyped,
   testSettingsMonitorModelsAreTyped,
   testBarTabMonitorAliasesAreTyped,
   testDisplayTabMonitorAliasesAreTyped,
