@@ -921,9 +921,11 @@ function testSetupDockStepMonitorAliasesAreTyped() {
 
 function testSetupWizardProgressDelegateModelIsTyped() {
   const source = readQml("Modules/Panels/SetupWizard/SetupWizard.qml");
-  const progressDelegate = /Repeater\s*\{[\s\S]*?"label":\s*"Dock"[\s\S]*?delegate:\s*RowLayout\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?icon:\s*modelData\.icon[\s\S]*?text:\s*modelData\.label/;
+  const progressDelegate = /Repeater\s*\{[\s\S]*?"label":\s*"Dock"[\s\S]*?delegate:\s*RowLayout\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+stepIcon:\s*modelData\s*\?\s*\(modelData\.icon\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+stepLabel:\s*modelData\s*\?\s*\(modelData\.label\s*\|\|\s*""\)\s*:\s*""[\s\S]*?icon:\s*stepIcon[\s\S]*?text:\s*stepLabel/;
 
-  assert.match(source, progressDelegate, "SetupWizard progress delegate must declare modelData and index roles");
+  assert.match(source, progressDelegate, "SetupWizard progress delegate must expose typed aliases for icon and label");
+  assert.equal((source.match(/modelData\.icon/g) ?? []).length, 1, "SetupWizard progress delegate must use stepIcon after declaration");
+  assert.equal((source.match(/modelData\.label/g) ?? []).length, 1, "SetupWizard progress delegate must use stepLabel after declaration");
 }
 
 function testBrightnessPanelScreenModelIsTyped() {

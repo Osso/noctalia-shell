@@ -271,6 +271,8 @@ SmartPanel {
               delegate: RowLayout {
                 required property var modelData
                 required property int index
+                readonly property string stepIcon: modelData ? (modelData.icon || "") : ""
+                readonly property string stepLabel: modelData ? (modelData.label || "") : ""
 
                 spacing: Style.marginS
 
@@ -283,7 +285,7 @@ SmartPanel {
                   border.width: index === currentStep ? 2 : 0
 
                   NIcon {
-                    icon: modelData.icon
+                    icon: stepIcon
                     pointSize: Style.fontSizeS
                     color: index <= currentStep ? Color.mOnPrimary : Color.mOnSurfaceVariant
                     anchors.centerIn: parent
@@ -297,7 +299,7 @@ SmartPanel {
                 }
 
                 NText {
-                  text: modelData.label
+                  text: stepLabel
                   pointSize: Style.fontSizeS
                   color: index <= currentStep ? Color.mPrimary : Color.mOnSurfaceVariant
                   font.weight: index === currentStep ? Style.fontWeightBold : Style.fontWeightRegular
