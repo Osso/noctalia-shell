@@ -696,6 +696,14 @@ function testBackgroundScreenAliasesAreTyped() {
   assert.equal((source.match(/modelData\.height/g) ?? []).length, 1, "Background must use monitorHeight after declaration");
 }
 
+function testOverviewScreenAliasIsTyped() {
+  const source = readQml("Modules/Background/Overview.qml");
+  const screenDelegate = /Variants\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?delegate:\s*PanelWindow\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s*modelData\.name[\s\S]*?Loading overview for Niri on",\s*monitorName[\s\S]*?screenName\s*===\s*monitorName[\s\S]*?WallpaperService\.getWallpaper\(monitorName\)/;
+
+  assert.match(source, screenDelegate, "Overview screen delegate must expose typed monitorName alias");
+  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "Overview must use monitorName after declaration");
+}
+
 function testWallpaperPanelScreenReferencesAreTyped() {
   const wallpaperPanelFile = "Modules/Panels/Wallpaper/WallpaperPanel.qml";
 
@@ -1009,6 +1017,7 @@ const tests = [
   testBrightnessServiceMonitorScreenModelAliasIsTyped,
   testBackgroundShapeContainersAreTyped,
   testBackgroundScreenAliasesAreTyped,
+  testOverviewScreenAliasIsTyped,
   testWallpaperPanelScreenReferencesAreTyped,
   testWallpaperPanelMonitorTabModelIsTyped,
   testWallpaperPanelScreenViewModelIsTyped,

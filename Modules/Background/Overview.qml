@@ -16,11 +16,12 @@ Loader {
       id: panelWindow
 
       required property ShellScreen modelData
+      readonly property string monitorName: modelData.name
       property string wallpaper: ""
 
       Component.onCompleted: {
         if (modelData) {
-          Logger.d("Overview", "Loading overview for Niri on", modelData.name);
+          Logger.d("Overview", "Loading overview for Niri on", monitorName);
         }
         setWallpaperInitial();
       }
@@ -36,7 +37,7 @@ Loader {
       Connections {
         target: WallpaperService
         function onWallpaperChanged(screenName, path) {
-          if (screenName === modelData.name) {
+          if (screenName === monitorName) {
             wallpaper = path;
           }
         }
@@ -47,7 +48,7 @@ Loader {
           Qt.callLater(setWallpaperInitial);
           return;
         }
-        const wallpaperPath = WallpaperService.getWallpaper(modelData.name);
+        const wallpaperPath = WallpaperService.getWallpaper(monitorName);
         if (wallpaperPath && wallpaperPath !== wallpaper) {
           wallpaper = wallpaperPath;
         }
