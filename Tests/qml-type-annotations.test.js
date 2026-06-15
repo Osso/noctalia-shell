@@ -226,6 +226,16 @@ function testSetupAppearanceSchemeLoaderModelDataIsTyped() {
   assert.match(source, schemeLoaderDelegate, "SetupAppearanceStep scheme loader delegate must type string modelData");
 }
 
+function testFilePickerDelegatesUseTypedFileRoles() {
+  const source = readQml("Widgets/NFilePicker.qml");
+  const gridDelegate = /GridView\s*\{[\s\S]*?model:\s*filteredModel[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*gridItem[\s\S]*?required\s+property\s+string\s+fileName[\s\S]*?required\s+property\s+string\s+filePath[\s\S]*?required\s+property\s+bool\s+fileIsDir[\s\S]*?required\s+property\s+int\s+fileSize[\s\S]*?currentSelection\.includes\(filePath\)/;
+  const listDelegate = /NListView\s*\{[\s\S]*?model:\s*filteredModel[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*listItem[\s\S]*?required\s+property\s+string\s+fileName[\s\S]*?required\s+property\s+string\s+filePath[\s\S]*?required\s+property\s+bool\s+fileIsDir[\s\S]*?required\s+property\s+int\s+fileSize[\s\S]*?currentSelection\.includes\(filePath\)/;
+
+  assert.match(source, gridDelegate, "NFilePicker grid delegate must declare file roles");
+  assert.match(source, listDelegate, "NFilePicker list delegate must declare file roles");
+  assert.doesNotMatch(source, /model\.file(?:Name|Path|IsDir|Size)/, "NFilePicker delegates must use typed file role properties instead of model.*");
+}
+
 function testAboutTabContributorDelegateIndexesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/AboutTab.qml");
   const topContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.min\(root\.contributors\.length,\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\]\.login/;
@@ -583,6 +593,7 @@ const tests = [
   testSetupCustomizeOptionDelegatesAreTyped,
   testColorPickerSwatchDelegatesAreTyped,
   testSetupAppearanceSchemeLoaderModelDataIsTyped,
+  testFilePickerDelegatesUseTypedFileRoles,
   testAboutTabContributorDelegateIndexesAreTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,

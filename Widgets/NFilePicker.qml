@@ -470,12 +470,17 @@ Popup {
 
           delegate: Rectangle {
             id: gridItem
+            required property string fileName
+            required property string filePath
+            required property bool fileIsDir
+            required property int fileSize
+
             width: gridView.itemSize
             height: gridView.cellHeight
             color: Color.transparent
             radius: Style.radiusM
 
-            property bool isSelected: filePickerPanel.currentSelection.includes(model.filePath)
+            property bool isSelected: filePickerPanel.currentSelection.includes(filePath)
 
             Rectangle {
               anchors.fill: parent
@@ -520,9 +525,9 @@ Popup {
                 color: Color.transparent
 
                 property bool isImage: {
-                  if (model.fileIsDir)
+                  if (fileIsDir)
                     return false;
-                  const ext = model.fileName.split('.').pop().toLowerCase();
+                  const ext = fileName.split('.').pop().toLowerCase();
                   return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'].includes(ext);
                 }
 
@@ -530,7 +535,7 @@ Popup {
                   id: thumbnail
                   anchors.fill: parent
                   anchors.margins: Style.marginXS
-                  source: iconContainer.isImage ? "file://" + model.filePath : ""
+                  source: iconContainer.isImage ? "file://" + filePath : ""
                   fillMode: Image.PreserveAspectFit
                   visible: iconContainer.isImage && status === Image.Ready
                   smooth: false
@@ -558,7 +563,7 @@ Popup {
                 }
 
                 NIcon {
-                  icon: model.fileIsDir ? "filepicker-folder" : root.getFileIcon(model.fileName)
+                  icon: fileIsDir ? "filepicker-folder" : root.getFileIcon(fileName)
                   pointSize: Style.fontSizeXXL * 2
                   color: {
                     if (isSelected)
@@ -566,7 +571,7 @@ Popup {
                     else if (mouseArea.containsMouse)
                       return Color.mOnHover;
                     else
-                      return model.fileIsDir ? Color.mPrimary : Color.mOnSurfaceVariant;
+                      return fileIsDir ? Color.mPrimary : Color.mOnSurfaceVariant;
                   }
                   anchors.centerIn: parent
                   visible: !iconContainer.isImage || thumbnail.status !== Image.Ready
@@ -593,7 +598,7 @@ Popup {
               }
 
               NText {
-                text: model.fileName
+                text: fileName
                 color: {
                   if (isSelected)
                     return Color.mSecondary;
@@ -620,16 +625,16 @@ Popup {
 
               onClicked: mouse => {
                            if (mouse.button === Qt.LeftButton) {
-                             if (model.fileIsDir) {
+                             if (fileIsDir) {
                                // In folder mode, single click selects the folder
                                if (root.selectionMode === "folders") {
-                                 filePickerPanel.currentSelection = [model.filePath];
+                                 filePickerPanel.currentSelection = [filePath];
                                }
                                // In file mode, single click on folder does nothing (must double-click to enter)
                              } else {
                                // Single click on file selects it (only in file mode)
                                if (root.selectionMode === "files") {
-                                 filePickerPanel.currentSelection = [model.filePath];
+                                 filePickerPanel.currentSelection = [filePath];
                                }
                              }
                            }
@@ -637,14 +642,14 @@ Popup {
 
               onDoubleClicked: mouse => {
                                  if (mouse.button === Qt.LeftButton) {
-                                   if (model.fileIsDir) {
+                                   if (fileIsDir) {
                                      // Double-click on folder always navigates into it
-                                     folderModel.folder = "file://" + model.filePath;
-                                     root.currentPath = model.filePath;
+                                     folderModel.folder = "file://" + filePath;
+                                     root.currentPath = filePath;
                                    } else {
                                      // Double-click on file selects and confirms (only in file mode)
                                      if (root.selectionMode === "files") {
-                                       filePickerPanel.currentSelection = [model.filePath];
+                                       filePickerPanel.currentSelection = [filePath];
                                        root.confirmSelection();
                                      }
                                    }
@@ -664,10 +669,15 @@ Popup {
 
           delegate: Rectangle {
             id: listItem
+            required property string fileName
+            required property string filePath
+            required property bool fileIsDir
+            required property int fileSize
+
             width: listView.width
             height: 40
             color: {
-              if (filePickerPanel.currentSelection.includes(model.filePath))
+              if (filePickerPanel.currentSelection.includes(filePath))
                 return Color.mSecondary;
               if (mouseArea.containsMouse)
                 return Color.mHover;
@@ -687,25 +697,25 @@ Popup {
               spacing: Style.marginM
 
               NIcon {
-                icon: model.fileIsDir ? "filepicker-folder" : root.getFileIcon(model.fileName)
+                icon: fileIsDir ? "filepicker-folder" : root.getFileIcon(fileName)
                 pointSize: Style.fontSizeL
-                color: model.fileIsDir ? (filePickerPanel.currentSelection.includes(model.filePath) ? Color.mOnSecondary : Color.mPrimary) : Color.mOnSurfaceVariant
+                color: fileIsDir ? (filePickerPanel.currentSelection.includes(filePath) ? Color.mOnSecondary : Color.mPrimary) : Color.mOnSurfaceVariant
               }
 
               NText {
-                text: model.fileName
-                color: filePickerPanel.currentSelection.includes(model.filePath) ? Color.mOnSecondary : Color.mOnSurface
+                text: fileName
+                color: filePickerPanel.currentSelection.includes(filePath) ? Color.mOnSecondary : Color.mOnSurface
                 pointSize: Style.fontSizeM
-                font.weight: filePickerPanel.currentSelection.includes(model.filePath) ? Style.fontWeightBold : Style.fontWeightRegular
+                font.weight: filePickerPanel.currentSelection.includes(filePath) ? Style.fontWeightBold : Style.fontWeightRegular
                 Layout.fillWidth: true
                 elide: Text.ElideRight
               }
 
               NText {
-                text: model.fileIsDir ? "" : root.formatFileSize(model.fileSize)
-                color: filePickerPanel.currentSelection.includes(model.filePath) ? Color.mOnSecondary : Color.mOnSurfaceVariant
+                text: fileIsDir ? "" : root.formatFileSize(fileSize)
+                color: filePickerPanel.currentSelection.includes(filePath) ? Color.mOnSecondary : Color.mOnSurfaceVariant
                 pointSize: Style.fontSizeS
-                visible: !model.fileIsDir
+                visible: !fileIsDir
                 Layout.preferredWidth: implicitWidth
               }
             }
@@ -718,16 +728,16 @@ Popup {
 
               onClicked: mouse => {
                            if (mouse.button === Qt.LeftButton) {
-                             if (model.fileIsDir) {
+                             if (fileIsDir) {
                                // In folder mode, single click selects the folder
                                if (root.selectionMode === "folders") {
-                                 filePickerPanel.currentSelection = [model.filePath];
+                                 filePickerPanel.currentSelection = [filePath];
                                }
                                // In file mode, single click on folder does nothing (must double-click to enter)
                              } else {
                                // Single click on file selects it (only in file mode)
                                if (root.selectionMode === "files") {
-                                 filePickerPanel.currentSelection = [model.filePath];
+                                 filePickerPanel.currentSelection = [filePath];
                                }
                              }
                            }
@@ -735,14 +745,14 @@ Popup {
 
               onDoubleClicked: mouse => {
                                  if (mouse.button === Qt.LeftButton) {
-                                   if (model.fileIsDir) {
+                                   if (fileIsDir) {
                                      // Double-click on folder always navigates into it
-                                     folderModel.folder = "file://" + model.filePath;
-                                     root.currentPath = model.filePath;
+                                     folderModel.folder = "file://" + filePath;
+                                     root.currentPath = filePath;
                                    } else {
                                      // Double-click on file selects and confirms (only in file mode)
                                      if (root.selectionMode === "files") {
-                                       filePickerPanel.currentSelection = [model.filePath];
+                                       filePickerPanel.currentSelection = [filePath];
                                        root.confirmSelection();
                                      }
                                    }
