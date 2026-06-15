@@ -732,9 +732,9 @@ SmartPanel {
               readonly property bool resultIsImage: modelData ? modelData.isImage === true : false
               readonly property string resultEmojiChar: modelData ? (modelData.emojiChar || "") : ""
               readonly property string resultClipboardId: modelData ? (modelData.clipboardId || "") : ""
-              readonly property string resultMime: modelData ? (modelData.mime || "") : ""
               readonly property string resultIcon: modelData ? (modelData.icon || "") : ""
               readonly property string resultName: modelData ? (modelData.name || "") : ""
+              readonly property string resultMime: modelData ? (modelData.mime || "") : ""
               readonly property string resultDescription: modelData ? (modelData.description || "") : ""
 
               // Helper function to normalize app IDs for case-insensitive matching
@@ -1075,6 +1075,8 @@ SmartPanel {
               readonly property bool resultIsImage: modelData ? modelData.isImage === true : false
               readonly property string resultEmojiChar: modelData ? (modelData.emojiChar || "") : ""
               readonly property string resultClipboardId: modelData ? (modelData.clipboardId || "") : ""
+              readonly property string resultIcon: modelData ? (modelData.icon || "") : ""
+              readonly property string resultName: modelData ? (modelData.name || "") : ""
 
               // Helper function to normalize app IDs for case-insensitive matching
               function normalizeAppId(appId) {
@@ -1201,8 +1203,8 @@ SmartPanel {
                     sourceComponent: Component {
                       IconImage {
                         anchors.fill: parent
-                        source: modelData.icon ? ThemeIcons.iconFromName(modelData.icon, "application-x-executable") : ""
-                        visible: modelData.icon && source !== "" && !resultEmojiChar
+                        source: resultIcon ? ThemeIcons.iconFromName(resultIcon, "application-x-executable") : ""
+                        visible: resultIcon && source !== "" && !resultEmojiChar
                         asynchronous: true
                       }
                     }
@@ -1213,7 +1215,7 @@ SmartPanel {
                     id: gridEmojiDisplay
                     anchors.centerIn: parent
                     visible: resultEmojiChar || (!gridImagePreview.visible && !gridIconLoader.visible)
-                    text: resultEmojiChar ? resultEmojiChar : modelData.name.charAt(0).toUpperCase()
+                    text: resultEmojiChar ? resultEmojiChar : resultName.charAt(0).toUpperCase()
                     pointSize: {
                       if (resultEmojiChar) {
                         if (root.activePlugin === emojiPlugin && emojiPlugin.isBrowsingMode) {
@@ -1230,7 +1232,7 @@ SmartPanel {
 
                 // Text content
                 NText {
-                  text: modelData.name || "Unknown"
+                  text: resultName || "Unknown"
                   pointSize: {
                     if (root.activePlugin === emojiPlugin && emojiPlugin.isBrowsingMode && resultEmojiChar) {
                       return Style.fontSizeS;
