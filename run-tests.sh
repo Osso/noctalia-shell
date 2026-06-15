@@ -31,6 +31,7 @@ run_unit_tests() {
     node "$repo_root/Tests/compositor-service-guards.test.js"
     node "$repo_root/Tests/hyprland-service-guards.test.js"
     node "$repo_root/Tests/niri-service-guards.test.js"
+    node "$repo_root/Tests/notification-service-gap-guards.test.js"
     node "$repo_root/Tests/sway-service-guards.test.js"
     node "$repo_root/Tests/template-processor-guards.test.js"
     node "$repo_root/Tests/update-service-guards.test.js"
