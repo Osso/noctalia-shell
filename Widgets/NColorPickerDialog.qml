@@ -662,8 +662,8 @@ Popup {
                 Rectangle {
                   required property var modelData
                   required property int index
-                  readonly property string swatchName: modelData.name
-                  readonly property color swatchColor: modelData.color
+                  readonly property string swatchName: modelData ? (modelData.name || "") : ""
+                  readonly property color swatchColor: modelData ? (modelData.color || Color.transparent) : Color.transparent
 
                   width: 24
                   height: 24
@@ -704,8 +704,8 @@ Popup {
                 Rectangle {
                   required property var modelData
                   required property int index
-                  readonly property string swatchName: modelData.name
-                  readonly property color swatchColor: modelData.color
+                  readonly property string swatchName: modelData ? (modelData.name || "") : ""
+                  readonly property color swatchColor: modelData ? (modelData.color || Color.transparent) : Color.transparent
 
                   width: 24
                   height: 24

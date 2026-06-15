@@ -254,8 +254,8 @@ function testSetupCustomizeOptionDelegatesAreTyped() {
 
 function testColorPickerSwatchDelegatesAreTyped() {
   const source = readQml("Widgets/NColorPickerDialog.qml");
-  const themeSwatchDelegate = /model:\s*\[[\s\S]*?name:\s*"mPrimary"[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+swatchName:\s*modelData\.name[\s\S]*?readonly\s+property\s+color\s+swatchColor:\s*modelData\.color[\s\S]*?color:\s*swatchColor/;
-  const paletteSwatchDelegate = /Repeater\s*\{[\s\S]*?model:\s*ColorList\.colors[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+swatchName:\s*modelData\.name[\s\S]*?readonly\s+property\s+color\s+swatchColor:\s*modelData\.color[\s\S]*?color:\s*swatchColor/;
+  const themeSwatchDelegate = /model:\s*\[[\s\S]*?name:\s*"mPrimary"[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+swatchName:\s*modelData\s*\?\s*\(modelData\.name\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+color\s+swatchColor:\s*modelData\s*\?\s*\(modelData\.color\s*\|\|\s*Color\.transparent\)\s*:\s*Color\.transparent[\s\S]*?color:\s*swatchColor/;
+  const paletteSwatchDelegate = /Repeater\s*\{[\s\S]*?model:\s*ColorList\.colors[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+swatchName:\s*modelData\s*\?\s*\(modelData\.name\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+color\s+swatchColor:\s*modelData\s*\?\s*\(modelData\.color\s*\|\|\s*Color\.transparent\)\s*:\s*Color\.transparent[\s\S]*?color:\s*swatchColor/;
 
   assert.match(source, themeSwatchDelegate, "NColorPickerDialog theme swatch delegate must declare typed swatch aliases");
   assert.match(source, paletteSwatchDelegate, "NColorPickerDialog palette swatch delegate must declare typed swatch aliases");
