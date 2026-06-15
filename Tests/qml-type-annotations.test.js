@@ -862,6 +862,19 @@ function testBrightnessPanelScreenModelIsTyped() {
   assert.match(source, screenModelDelegate, "BrightnessPanel monitor delegate must type screen modelData as ShellScreen");
 }
 
+function testWiFiNetworkDelegateAliasesAreTyped() {
+  const source = readQml("Modules/Panels/WiFi/WiFiNetworksList.qml");
+  const networkDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.model[\s\S]*?Rectangle\s*\{[\s\S]*?id:\s*networkItem[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?readonly\s+property\s+string\s+networkSsid:\s*modelData\.ssid\s*\|\|\s*""[\s\S]*?readonly\s+property\s+bool\s+networkConnected:\s*modelData\.connected\s*===\s*true[\s\S]*?readonly\s+property\s+int\s+networkSignal:\s*modelData\.signal\s*\|\|\s*0[\s\S]*?readonly\s+property\s+string\s+networkSecurity:\s*modelData\.security\s*\|\|\s*"Open"[\s\S]*?readonly\s+property\s+bool\s+networkExisting:\s*modelData\.existing\s*===\s*true[\s\S]*?readonly\s+property\s+bool\s+networkCached:\s*modelData\.cached\s*===\s*true/;
+
+  assert.match(source, networkDelegate, "WiFiNetworksList delegate must type stable network aliases");
+  assert.equal((source.match(/modelData\.ssid/g) ?? []).length, 1, "WiFiNetworksList delegate must use networkSsid after declaration");
+  assert.equal((source.match(/modelData\.connected/g) ?? []).length, 1, "WiFiNetworksList delegate must use networkConnected after declaration");
+  assert.equal((source.match(/modelData\.signal/g) ?? []).length, 1, "WiFiNetworksList delegate must use networkSignal after declaration");
+  assert.equal((source.match(/modelData\.security/g) ?? []).length, 1, "WiFiNetworksList delegate must use networkSecurity after declaration");
+  assert.equal((source.match(/modelData\.existing/g) ?? []).length, 1, "WiFiNetworksList delegate must use networkExisting after declaration");
+  assert.equal((source.match(/modelData\.cached/g) ?? []).length, 1, "WiFiNetworksList delegate must use networkCached after declaration");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -950,6 +963,7 @@ const tests = [
   testSetupDockStepMonitorAliasesAreTyped,
   testSetupWizardProgressDelegateModelIsTyped,
   testBrightnessPanelScreenModelIsTyped,
+  testWiFiNetworkDelegateAliasesAreTyped,
 ];
 
 for (const test of tests) {

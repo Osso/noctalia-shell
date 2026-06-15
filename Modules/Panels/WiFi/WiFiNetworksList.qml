@@ -47,17 +47,31 @@ NBox {
       Rectangle {
         id: networkItem
 
+        required property var modelData
+
+        readonly property string networkSsid: modelData.ssid || ""
+        readonly property bool networkConnected: modelData.connected === true
+        readonly property int networkSignal: modelData.signal || 0
+        readonly property string networkSecurity: modelData.security || "Open"
+        readonly property bool networkExisting: modelData.existing === true
+        readonly property bool networkCached: modelData.cached === true
+        readonly property bool connectingToNetwork: NetworkService.connectingTo === networkSsid
+        readonly property bool disconnectingFromNetwork: NetworkService.disconnectingFrom === networkSsid
+        readonly property bool forgettingNetwork: NetworkService.forgettingNetwork === networkSsid
+        readonly property bool networkBusy: connectingToNetwork || disconnectingFromNetwork || forgettingNetwork
+        readonly property bool savedNetwork: networkExisting || networkCached
+
         Layout.fillWidth: true
         Layout.leftMargin: Style.marginXS
         Layout.rightMargin: Style.marginXS
         implicitHeight: netColumn.implicitHeight + (Style.marginM * 2)
         radius: Style.radiusM
         border.width: Style.borderS
-        border.color: modelData.connected ? Color.mPrimary : Color.mOutline
+        border.color: networkConnected ? Color.mPrimary : Color.mOutline
 
-        opacity: (NetworkService.disconnectingFrom === modelData.ssid || NetworkService.forgettingNetwork === modelData.ssid) ? 0.6 : 1.0
+        opacity: (disconnectingFromNetwork || forgettingNetwork) ? 0.6 : 1.0
 
-        color: modelData.connected ? Qt.rgba(Color.mPrimary.r, Color.mPrimary.g, Color.mPrimary.b, 0.05) : Color.mSurface
+        color: networkConnected ? Qt.rgba(Color.mPrimary.r, Color.mPrimary.g, Color.mPrimary.b, 0.05) : Color.mSurface
 
         Behavior on opacity {
           NumberAnimation {
@@ -78,9 +92,9 @@ NBox {
             spacing: Style.marginS
 
             NIcon {
-              icon: NetworkService.signalIcon(modelData.signal, modelData.connected)
+              icon: NetworkService.signalIcon(networkSignal, networkConnected)
               pointSize: Style.fontSizeXXL
-              color: modelData.connected ? Color.mPrimary : Color.mOnSurface
+              color: networkConnected ? Color.mPrimary : Color.mOnSurface
             }
 
             ColumnLayout {
@@ -88,9 +102,9 @@ NBox {
               spacing: 2
 
               NText {
-                text: modelData.ssid
+                text: networkSsid
                 pointSize: Style.fontSizeM
-                font.weight: modelData.connected ? Style.fontWeightBold : Style.fontWeightMedium
+                font.weight: networkConnected ? Style.fontWeightBold : Style.fontWeightMedium
                 color: Color.mOnSurface
                 elide: Text.ElideRight
                 Layout.fillWidth: true
@@ -101,7 +115,7 @@ NBox {
 
                 NText {
                   text: I18n.tr("system.signal-strength", {
-                                  "signal": modelData.signal
+                                  "signal": networkSignal
                                 })
                   pointSize: Style.fontSizeXXS
                   color: Color.mOnSurfaceVariant
@@ -114,7 +128,7 @@ NBox {
                 }
 
                 NText {
-                  text: NetworkService.isSecured(modelData.security) ? modelData.security : "Open"
+                  text: NetworkService.isSecured(networkSecurity) ? networkSecurity : "Open"
                   pointSize: Style.fontSizeXXS
                   color: Color.mOnSurfaceVariant
                 }
@@ -125,7 +139,7 @@ NBox {
 
                 // Status badges
                 Rectangle {
-                  visible: modelData.connected && NetworkService.disconnectingFrom !== modelData.ssid
+                  visible: networkConnected && !disconnectingFromNetwork
                   color: Color.mPrimary
                   radius: height * 0.5
                   width: connectedText.implicitWidth + (Style.marginS * 2)
@@ -141,7 +155,7 @@ NBox {
                 }
 
                 Rectangle {
-                  visible: NetworkService.disconnectingFrom === modelData.ssid
+                  visible: disconnectingFromNetwork
                   color: Color.mError
                   radius: height * 0.5
                   width: disconnectingText.implicitWidth + (Style.marginS * 2)
@@ -157,7 +171,7 @@ NBox {
                 }
 
                 Rectangle {
-                  visible: NetworkService.forgettingNetwork === modelData.ssid
+                  visible: forgettingNetwork
                   color: Color.mError
                   radius: height * 0.5
                   width: forgettingText.implicitWidth + (Style.marginS * 2)
@@ -173,7 +187,7 @@ NBox {
                 }
 
                 Rectangle {
-                  visible: modelData.cached && !modelData.connected && NetworkService.forgettingNetwork !== modelData.ssid && NetworkService.disconnectingFrom !== modelData.ssid
+                  visible: networkCached && !networkConnected && !forgettingNetwork && !disconnectingFromNetwork
                   color: Color.transparent
                   border.color: Color.mOutline
                   border.width: Style.borderS
@@ -197,26 +211,26 @@ NBox {
               spacing: Style.marginS
 
               NBusyIndicator {
-                visible: NetworkService.connectingTo === modelData.ssid || NetworkService.disconnectingFrom === modelData.ssid || NetworkService.forgettingNetwork === modelData.ssid
+                visible: networkBusy
                 running: visible
                 color: Color.mPrimary
                 size: Style.baseWidgetSize * 0.5
               }
 
               NIconButton {
-                visible: (modelData.existing || modelData.cached) && !modelData.connected && NetworkService.connectingTo !== modelData.ssid && NetworkService.forgettingNetwork !== modelData.ssid && NetworkService.disconnectingFrom !== modelData.ssid
+                visible: savedNetwork && !networkConnected && !networkBusy
                 icon: "trash"
                 tooltipText: I18n.tr("tooltips.forget-network")
                 baseSize: Style.baseWidgetSize * 0.8
-                onClicked: root.forgetRequested(modelData.ssid)
+                onClicked: root.forgetRequested(networkSsid)
               }
 
               NButton {
-                visible: !modelData.connected && NetworkService.connectingTo !== modelData.ssid && root.passwordSsid !== modelData.ssid && NetworkService.forgettingNetwork !== modelData.ssid && NetworkService.disconnectingFrom !== modelData.ssid
+                visible: !networkConnected && !networkBusy && root.passwordSsid !== networkSsid
                 text: {
-                  if (modelData.existing || modelData.cached)
+                  if (savedNetwork)
                     return I18n.tr("wifi.panel.connect");
-                  if (!NetworkService.isSecured(modelData.security))
+                  if (!NetworkService.isSecured(networkSecurity))
                     return I18n.tr("wifi.panel.connect");
                   return I18n.tr("wifi.panel.password");
                 }
@@ -224,28 +238,28 @@ NBox {
                 fontSize: Style.fontSizeXS
                 enabled: !NetworkService.connecting
                 onClicked: {
-                  if (modelData.existing || modelData.cached || !NetworkService.isSecured(modelData.security)) {
-                    NetworkService.connect(modelData.ssid);
+                  if (savedNetwork || !NetworkService.isSecured(networkSecurity)) {
+                    NetworkService.connect(networkSsid);
                   } else {
-                    root.passwordRequested(modelData.ssid);
+                    root.passwordRequested(networkSsid);
                   }
                 }
               }
 
               NButton {
-                visible: modelData.connected && NetworkService.disconnectingFrom !== modelData.ssid
+                visible: networkConnected && !disconnectingFromNetwork
                 text: I18n.tr("wifi.panel.disconnect")
                 outlined: !hovered
                 fontSize: Style.fontSizeXS
                 backgroundColor: Color.mError
-                onClicked: NetworkService.disconnect(modelData.ssid)
+                onClicked: NetworkService.disconnect(networkSsid)
               }
             }
           }
 
           // Password input
           Rectangle {
-            visible: root.passwordSsid === modelData.ssid && NetworkService.disconnectingFrom !== modelData.ssid && NetworkService.forgettingNetwork !== modelData.ssid
+            visible: root.passwordSsid === networkSsid && !disconnectingFromNetwork && !forgettingNetwork
             Layout.fillWidth: true
             height: passwordRow.implicitHeight + Style.marginS * 2
             color: Color.mSurfaceVariant
@@ -286,7 +300,7 @@ NBox {
                                     }
                   onAccepted: {
                     if (text && !NetworkService.connecting) {
-                      root.passwordSubmitted(modelData.ssid, text);
+                      root.passwordSubmitted(networkSsid, text);
                     }
                   }
 
@@ -305,7 +319,7 @@ NBox {
                 fontSize: Style.fontSizeXXS
                 enabled: pwdInput.text.length > 0 && !NetworkService.connecting
                 outlined: true
-                onClicked: root.passwordSubmitted(modelData.ssid, pwdInput.text)
+                onClicked: root.passwordSubmitted(networkSsid, pwdInput.text)
               }
 
               NIconButton {
@@ -318,7 +332,7 @@ NBox {
 
           // Forget network
           Rectangle {
-            visible: root.expandedSsid === modelData.ssid && NetworkService.disconnectingFrom !== modelData.ssid && NetworkService.forgettingNetwork !== modelData.ssid
+            visible: root.expandedSsid === networkSsid && !disconnectingFromNetwork && !forgettingNetwork
             Layout.fillWidth: true
             height: forgetRow.implicitHeight + Style.marginS * 2
             color: Color.mSurfaceVariant
@@ -353,7 +367,7 @@ NBox {
                 fontSize: Style.fontSizeXXS
                 backgroundColor: Color.mError
                 outlined: forgetButton.hovered ? false : true
-                onClicked: root.forgetConfirmed(modelData.ssid)
+                onClicked: root.forgetConfirmed(networkSsid)
               }
 
               NIconButton {
