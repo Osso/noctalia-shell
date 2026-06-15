@@ -792,9 +792,9 @@ function testBarTabMonitorAliasesAreTyped() {
 function testDisplayTabMonitorAliasesAreTyped() {
   const displayTabFile = "Modules/Panels/Settings/Tabs/DisplayTab.qml";
   const source = readQml(displayTabFile);
-  const monitorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s+modelData\.name[\s\S]*?readonly\s+property\s+string\s+monitorModel:\s+modelData\.model[\s\S]*?readonly\s+property\s+int\s+monitorWidth:\s+modelData\.width[\s\S]*?readonly\s+property\s+int\s+monitorHeight:\s+modelData\.height/;
+  const monitorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s*modelData\s*\?\s*modelData\.name\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+monitorModel:\s*modelData\s*\?\s*modelData\.model\s*:\s*""[\s\S]*?readonly\s+property\s+int\s+monitorWidth:\s*modelData\s*\?\s*modelData\.width\s*:\s*0[\s\S]*?readonly\s+property\s+int\s+monitorHeight:\s*modelData\s*\?\s*modelData\.height\s*:\s*0/;
 
-  assert.match(source, monitorDelegate, "DisplayTab monitor delegate must expose typed aliases for ShellScreen fields");
+  assert.match(source, monitorDelegate, "DisplayTab monitor delegate must expose null-safe typed aliases for ShellScreen fields");
   assert.match(source, /BrightnessService\.getMonitorForScreen\(modelData\)/, "DisplayTab brightness lookup must keep using the typed ShellScreen object");
   assert.match(source, /label:\s*monitorName\s*\|\|\s*"Unknown"/, "DisplayTab monitor label must use monitorName");
   assert.match(source, /CompositorService\.getDisplayScale\(monitorName\)/, "DisplayTab monitor scale lookup must use monitorName");

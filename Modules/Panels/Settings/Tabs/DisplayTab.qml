@@ -65,10 +65,10 @@ ColumnLayout {
       model: Quickshell.screens || []
       delegate: Rectangle {
         required property ShellScreen modelData
-        readonly property string monitorName: modelData.name
-        readonly property string monitorModel: modelData.model
-        readonly property int monitorWidth: modelData.width
-        readonly property int monitorHeight: modelData.height
+        readonly property string monitorName: modelData ? modelData.name : ""
+        readonly property string monitorModel: modelData ? modelData.model : ""
+        readonly property int monitorWidth: modelData ? modelData.width : 0
+        readonly property int monitorHeight: modelData ? modelData.height : 0
 
         Layout.fillWidth: true
         implicitHeight: contentCol.implicitHeight + Style.marginL * 2
