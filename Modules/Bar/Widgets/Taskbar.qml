@@ -163,12 +163,18 @@ Rectangle {
       delegate: Item {
         id: taskbarItem
         required property var modelData
+        required property string appId
+        required property string title
+        required property string output
+        required property int workspaceId
+        required property bool isFocused
+
         property ShellScreen screen: root.screen
         readonly property string screenName: screen ? screen.name : ""
-        readonly property bool matchesOutput: !onlySameOutput || modelData.output === screenName
+        readonly property bool matchesOutput: !onlySameOutput || output === screenName
         readonly property bool matchesWorkspace: !onlyActiveWorkspaces || CompositorService.getActiveWorkspaces().map(function (ws) {
           return ws.id;
-        }).includes(modelData.workspaceId)
+        }).includes(workspaceId)
 
         visible: matchesOutput && matchesWorkspace
 
@@ -180,10 +186,10 @@ Rectangle {
           id: appIcon
           width: parent.width
           height: parent.height
-          source: ThemeIcons.iconForAppId(taskbarItem.modelData.appId)
+          source: ThemeIcons.iconForAppId(taskbarItem.appId)
           smooth: true
           asynchronous: true
-          opacity: modelData.isFocused ? Style.opacityFull : 0.6
+          opacity: taskbarItem.isFocused ? Style.opacityFull : 0.6
 
           // Apply dock shader to all taskbar icons
           layer.enabled: widgetSettings.colorizeIcons !== false
@@ -201,7 +207,7 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             width: 4
             height: 4
-            color: modelData.isFocused ? Color.mPrimary : Color.transparent
+            color: taskbarItem.isFocused ? Color.mPrimary : Color.transparent
             radius: Math.min(Style.radiusXXS, width / 2)
           }
         }
@@ -232,7 +238,7 @@ Rectangle {
               mouse.accepted = true;
               TooltipService.hide();
               root.selectedWindow = taskbarItem.modelData;
-              root.selectedAppName = CompositorService.getCleanAppName(taskbarItem.modelData.appId, taskbarItem.modelData.title);
+              root.selectedAppName = CompositorService.getCleanAppName(taskbarItem.appId, taskbarItem.title);
 
               // Store position and size for timer callback
               const globalPos = taskbarItem.mapToItem(root, 0, 0);
@@ -243,7 +249,7 @@ Rectangle {
               contextMenuOpenTimer.restart();
             }
           }
-          onEntered: TooltipService.show(taskbarItem, taskbarItem.modelData.title || taskbarItem.modelData.appId || "Unknown app.", BarService.getTooltipDirection())
+          onEntered: TooltipService.show(taskbarItem, taskbarItem.title || taskbarItem.appId || "Unknown app.", BarService.getTooltipDirection())
           onExited: TooltipService.hide()
         }
       }

@@ -236,6 +236,14 @@ function testFilePickerDelegatesUseTypedFileRoles() {
   assert.doesNotMatch(source, /model\.file(?:Name|Path|IsDir|Size)/, "NFilePicker delegates must use typed file role properties instead of model.*");
 }
 
+function testTaskbarWindowDelegateRolesAreTyped() {
+  const source = readQml("Modules/Bar/Widgets/Taskbar.qml");
+  const taskbarDelegate = /Repeater\s*\{[\s\S]*?model:\s*CompositorService\.windows[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+string\s+appId[\s\S]*?required\s+property\s+string\s+title[\s\S]*?required\s+property\s+string\s+output[\s\S]*?required\s+property\s+int\s+workspaceId[\s\S]*?required\s+property\s+bool\s+isFocused/;
+
+  assert.match(source, taskbarDelegate, "Taskbar window delegate must type scalar window roles");
+  assert.doesNotMatch(source, /modelData\.(?:appId|title|output|workspaceId|isFocused)/, "Taskbar window delegate must use typed scalar roles instead of modelData.* field reads");
+}
+
 function testAboutTabContributorDelegateIndexesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/AboutTab.qml");
   const topContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.min\(root\.contributors\.length,\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\]\.login/;
@@ -594,6 +602,7 @@ const tests = [
   testColorPickerSwatchDelegatesAreTyped,
   testSetupAppearanceSchemeLoaderModelDataIsTyped,
   testFilePickerDelegatesUseTypedFileRoles,
+  testTaskbarWindowDelegateRolesAreTyped,
   testAboutTabContributorDelegateIndexesAreTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,
