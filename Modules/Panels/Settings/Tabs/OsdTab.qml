@@ -216,24 +216,28 @@ ColumnLayout {
       model: Quickshell.screens || []
       delegate: NCheckbox {
         required property ShellScreen modelData
+        readonly property string monitorName: modelData.name
+        readonly property string monitorModel: modelData.model
+        readonly property int monitorWidth: modelData.width
+        readonly property int monitorHeight: modelData.height
 
         Layout.fillWidth: true
-        label: modelData.name || I18n.tr("system.unknown")
+        label: monitorName || I18n.tr("system.unknown")
         description: {
-          const compositorScale = CompositorService.getDisplayScale(modelData.name);
+          const compositorScale = CompositorService.getDisplayScale(monitorName);
           I18n.tr("system.monitor-description", {
-                    "model": modelData.model,
-                    "width": modelData.width * compositorScale,
-                    "height": modelData.height * compositorScale,
+                    "model": monitorModel,
+                    "width": monitorWidth * compositorScale,
+                    "height": monitorHeight * compositorScale,
                     "scale": compositorScale
                   });
         }
-        checked: (Settings.data.osd.monitors || []).indexOf(modelData.name) !== -1
+        checked: (Settings.data.osd.monitors || []).indexOf(monitorName) !== -1
         onToggled: checked => {
                      if (checked) {
-                       Settings.data.osd.monitors = addMonitor(Settings.data.osd.monitors, modelData.name);
+                       Settings.data.osd.monitors = addMonitor(Settings.data.osd.monitors, monitorName);
                      } else {
-                       Settings.data.osd.monitors = removeMonitor(Settings.data.osd.monitors, modelData.name);
+                       Settings.data.osd.monitors = removeMonitor(Settings.data.osd.monitors, monitorName);
                      }
                    }
       }
