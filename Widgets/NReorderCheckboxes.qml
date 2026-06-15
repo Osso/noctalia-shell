@@ -76,8 +76,8 @@ Item {
       required property string id
       required property string text
 
-      readonly property bool itemEnabled: modelData.enabled || false
-      readonly property bool required: modelData.required || false
+      readonly property bool itemEnabled: modelData ? modelData.enabled === true : false
+      readonly property bool required: modelData ? modelData.required === true : false
       readonly property bool isDisabled: (root.disabledIds || []).indexOf(id) !== -1
       readonly property bool canDrag: !delegateItem.isDisabled
       property bool dragging: false
