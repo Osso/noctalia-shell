@@ -239,6 +239,8 @@ SmartPanel {
                 NRadioButton {
                   ButtonGroup.group: sinks
                   required property PwNode modelData
+                  required property int index
+
                   pointSize: Style.fontSizeS
                   text: modelData.description
                   checked: AudioService.sink ? AudioService.sink.id === modelData.id : false
@@ -296,6 +298,8 @@ SmartPanel {
                 NRadioButton {
                   ButtonGroup.group: sources
                   required property PwNode modelData
+                  required property int index
+
                   pointSize: Style.fontSizeS
                   text: modelData.description
                   checked: AudioService.source ? AudioService.source.id === modelData.id : false

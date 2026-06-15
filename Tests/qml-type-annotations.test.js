@@ -523,6 +523,15 @@ function testAudioNodeHandlesAreTyped() {
   assertNoPropertyType(audioServiceFile, "sourceAudio", "var");
 }
 
+function testAudioPanelDeviceDelegatesAreTyped() {
+  const source = readQml("Modules/Panels/Audio/AudioPanel.qml");
+  const sinkDelegate = /Repeater\s*\{[\s\S]*?model:\s*AudioService\.sinks[\s\S]*?NRadioButton\s*\{[\s\S]*?required\s+property\s+PwNode\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?text:\s*modelData\.description/;
+  const sourceDelegate = /Repeater\s*\{[\s\S]*?model:\s*AudioService\.sources[\s\S]*?NRadioButton\s*\{[\s\S]*?required\s+property\s+PwNode\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?text:\s*modelData\.description/;
+
+  assert.match(source, sinkDelegate, "AudioPanel sink delegate must type modelData and index");
+  assert.match(source, sourceDelegate, "AudioPanel source delegate must type modelData and index");
+}
+
 function testTrayMenuItemIsTyped() {
   const trayMenuFile = "Modules/Bar/Extras/TrayMenu.qml";
 
@@ -720,6 +729,7 @@ const tests = [
   testUPowerBatteryReferencesAreTyped,
   testBluetoothDeviceDelegateInputsAreTyped,
   testAudioNodeHandlesAreTyped,
+  testAudioPanelDeviceDelegatesAreTyped,
   testTrayMenuItemIsTyped,
   testTrayMenuSubMenuIsTyped,
   testTrayMenuLoaderReferencesAreTyped,
