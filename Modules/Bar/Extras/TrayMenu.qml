@@ -161,6 +161,7 @@ PopupWindow {
           readonly property bool hasChildren: modelData ? modelData.hasChildren : false
           readonly property string iconSource: modelData ? (modelData.icon || "") : ""
           readonly property string menuText: modelData && modelData.text !== "" ? modelData.text.replace(/[\n\r]+/g, ' ') : "..."
+          readonly property var menuItem: modelData || null
 
           Layout.preferredWidth: parent.width
           Layout.preferredHeight: {
@@ -231,8 +232,8 @@ PopupWindow {
               acceptedButtons: Qt.LeftButton | Qt.RightButton
 
               onClicked: mouse => {
-                           if (modelData && !modelData.isSeparator) {
-                             if (modelData.hasChildren) {
+                           if (entry.menuItem && !entry.isSeparator) {
+                             if (entry.hasChildren) {
                                // Click on items with children toggles submenu
                                if (entry.subMenu) {
                                  // Close existing submenu
@@ -265,7 +266,7 @@ PopupWindow {
 
                                  // Open new submenu
                                  entry.subMenu = Qt.createComponent("TrayMenu.qml").createObject(root, {
-                                                                                                   "menu": modelData,
+                                                                                                   "menu": entry.menuItem,
                                                                                                    "isSubMenu": true,
                                                                                                    "screen": root.screen
                                                                                                  });
@@ -284,7 +285,7 @@ PopupWindow {
                                }
                              } else {
                                // Click on regular items triggers them
-                               modelData.triggered();
+                               entry.menuItem.triggered();
                                root.hideMenu();
 
                                // Close the drawer if it's open

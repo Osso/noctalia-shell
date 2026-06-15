@@ -618,9 +618,15 @@ function testProcessPanelProcessDelegateInputsAreTyped() {
 
 function testTrayMenuItemIsTyped() {
   const trayMenuFile = "Modules/Bar/Extras/TrayMenu.qml";
+  const source = readQml(trayMenuFile);
+  const trayEntryDelegate = /Repeater\s*\{[\s\S]*?model:\s*opener\.children\s*\?[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*entry[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?readonly\s+property\s+bool\s+isSeparator:\s*modelData\s*\?\s*modelData\.isSeparator\s*:\s*false[\s\S]*?readonly\s+property\s+bool\s+hasChildren:\s*modelData\s*\?\s*modelData\.hasChildren\s*:\s*false[\s\S]*?readonly\s+property\s+var\s+menuItem:\s*modelData\s*\|\|\s*null[\s\S]*?if\s*\(entry\.menuItem\s*&&\s*!entry\.isSeparator\)[\s\S]*?if\s*\(entry\.hasChildren\)[\s\S]*?"menu":\s*entry\.menuItem[\s\S]*?entry\.menuItem\.triggered\(\)/;
 
   assertPropertyType(trayMenuFile, "trayItem", "SystemTrayItem");
   assertNoPropertyType(trayMenuFile, "trayItem", "var");
+  assert.match(source, trayEntryDelegate, "TrayMenu entry delegate must use typed aliases for interaction state");
+  assert.equal((source.match(/modelData\.isSeparator/g) ?? []).length, 1, "TrayMenu entry delegate must use isSeparator after declaration");
+  assert.equal((source.match(/modelData\.hasChildren/g) ?? []).length, 1, "TrayMenu entry delegate must use hasChildren after declaration");
+  assert.doesNotMatch(source, /modelData\.triggered\(\)/, "TrayMenu entry delegate must use menuItem when triggering actions");
 }
 
 function testTrayMenuSubMenuIsTyped() {
