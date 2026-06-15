@@ -517,6 +517,8 @@ ColumnLayout {
     Repeater {
       model: ColorSchemeService.schemes
       delegate: Item {
+        required property string modelData
+
         FileView {
           path: modelData
           blockLoading: false

@@ -219,6 +219,13 @@ function testColorPickerSwatchDelegatesAreTyped() {
   assert.match(source, paletteSwatchDelegate, "NColorPickerDialog palette swatch delegate must declare modelData");
 }
 
+function testSetupAppearanceSchemeLoaderModelDataIsTyped() {
+  const source = readQml("Modules/Panels/SetupWizard/SetupAppearanceStep.qml");
+  const schemeLoaderDelegate = /Repeater\s*\{[\s\S]*?model:\s*ColorSchemeService\.schemes[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?path:\s*modelData/;
+
+  assert.match(source, schemeLoaderDelegate, "SetupAppearanceStep scheme loader delegate must type string modelData");
+}
+
 function testAboutTabContributorDelegateIndexesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/AboutTab.qml");
   const topContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.min\(root\.contributors\.length,\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\]\.login/;
@@ -575,6 +582,7 @@ const tests = [
   testDateTimeTokenDelegateRolesAreTyped,
   testSetupCustomizeOptionDelegatesAreTyped,
   testColorPickerSwatchDelegatesAreTyped,
+  testSetupAppearanceSchemeLoaderModelDataIsTyped,
   testAboutTabContributorDelegateIndexesAreTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,
