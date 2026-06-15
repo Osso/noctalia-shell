@@ -178,6 +178,13 @@ function testNotificationDelegateIndexIsTyped() {
   assert.match(source, notificationDelegate, "Notification card delegate must declare index role before using it for animation delay");
 }
 
+function testWallpaperTabIntervalPresetModelDataIsTyped() {
+  const source = readQml("Modules/Panels/Settings/Tabs/WallpaperTab.qml");
+  const intervalPresetDelegate = /Repeater\s*\{[\s\S]*?model:\s*presetRow\.intervalPresets[\s\S]*?delegate:\s*IntervalPresetChip\s*\{[\s\S]*?required\s+property\s+int\s+modelData[\s\S]*?seconds:\s*modelData/;
+
+  assert.match(source, intervalPresetDelegate, "WallpaperTab interval preset delegate must type numeric modelData");
+}
+
 function testAboutTabContributorDelegateIndexesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/AboutTab.qml");
   const topContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.min\(root\.contributors\.length,\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\]\.login/;
@@ -529,6 +536,7 @@ const tests = [
   testLockScreenForecastDelegateIndexIsTyped,
   testChangelogPanelHighlightDelegatesAreTyped,
   testNotificationDelegateIndexIsTyped,
+  testWallpaperTabIntervalPresetModelDataIsTyped,
   testAboutTabContributorDelegateIndexesAreTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,

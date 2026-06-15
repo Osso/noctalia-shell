@@ -349,6 +349,8 @@ ColumnLayout {
         Repeater {
           model: presetRow.intervalPresets
           delegate: IntervalPresetChip {
+            required property int modelData
+
             seconds: modelData
             label: Time.formatVagueHumanReadableDuration(modelData)
             selected: presetRow.isSelected(modelData)
