@@ -517,9 +517,11 @@ function testDockCurrentContextMenuIsTyped() {
 
 function testDockMenuItemDelegateInputsAreTyped() {
   const source = readQml("Modules/Dock/DockMenu.qml");
-  const itemDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.items[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?icon:\s*modelData\.icon[\s\S]*?text:\s*modelData\.text/;
+  const itemDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.items[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+menuIcon:\s*modelData\s*\?\s*\(modelData\.icon\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+menuText:\s*modelData\s*\?\s*\(modelData\.text\s*\|\|\s*""\)\s*:\s*""[\s\S]*?icon:\s*menuIcon[\s\S]*?text:\s*menuText/;
 
-  assert.match(source, itemDelegate, "DockMenu item delegate must declare modelData and index inputs");
+  assert.match(source, itemDelegate, "DockMenu item delegate must expose typed aliases for icon and text");
+  assert.equal((source.match(/modelData\.icon/g) ?? []).length, 1, "DockMenu item delegate must use menuIcon after declaration");
+  assert.equal((source.match(/modelData\.text/g) ?? []).length, 1, "DockMenu item delegate must use menuText after declaration");
 }
 
 function testLauncherPluginBackReferencesAreTyped() {

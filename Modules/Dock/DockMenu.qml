@@ -345,6 +345,8 @@ PopupWindow {
         Rectangle {
           required property var modelData
           required property int index
+          readonly property string menuIcon: modelData ? (modelData.icon || "") : ""
+          readonly property string menuText: modelData ? (modelData.text || "") : ""
 
           Layout.fillWidth: true
           height: 32
@@ -361,7 +363,7 @@ PopupWindow {
             spacing: Style.marginS
 
             NIcon {
-              icon: modelData.icon
+              icon: menuIcon
               pointSize: Style.fontSizeL
               color: root.hoveredItem === index ? Color.mOnHover : Color.mOnSurfaceVariant
               visible: icon !== ""
@@ -369,7 +371,7 @@ PopupWindow {
             }
 
             NText {
-              text: modelData.text
+              text: menuText
               pointSize: Style.fontSizeS
               color: root.hoveredItem === index ? Color.mOnHover : Color.mOnSurfaceVariant
               anchors.verticalCenter: parent.verticalCenter
