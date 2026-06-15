@@ -155,6 +155,13 @@ function testWeatherCardForecastDelegateIndexIsTyped() {
   assert.match(source, forecastDelegate, "WeatherCard forecast delegate must declare index role before reading forecast arrays");
 }
 
+function testLockScreenForecastDelegateIndexIsTyped() {
+  const source = readQml("Modules/LockScreen/LockScreen.qml");
+  const forecastDelegate = /Repeater\s*\{[\s\S]*?model:\s*MediaService\.currentPlayer\s*&&\s*MediaService\.canPlay\s*\?\s*3\s*:\s*4[\s\S]*?delegate:\s*ColumnLayout\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?daily\.time\[index\]/;
+
+  assert.match(source, forecastDelegate, "LockScreen forecast delegate must declare index role before reading forecast arrays");
+}
+
 function testAboutTabContributorDelegateIndexesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/AboutTab.qml");
   const topContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.min\(root\.contributors\.length,\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\]\.login/;
@@ -503,6 +510,7 @@ const tests = [
   testComboBoxDelegateParentIsTyped,
   testComboBoxDelegateIndexIsTyped,
   testWeatherCardForecastDelegateIndexIsTyped,
+  testLockScreenForecastDelegateIndexIsTyped,
   testAboutTabContributorDelegateIndexesAreTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,

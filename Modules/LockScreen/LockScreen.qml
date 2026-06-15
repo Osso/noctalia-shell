@@ -799,6 +799,8 @@ Loader {
                     Repeater {
                       model: MediaService.currentPlayer && MediaService.canPlay ? 3 : 4
                       delegate: ColumnLayout {
+                        required property int index
+
                         Layout.fillWidth: true
                         spacing: 3
 
