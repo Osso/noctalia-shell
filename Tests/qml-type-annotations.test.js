@@ -333,10 +333,11 @@ function testReorderCheckboxDelegateRolesAreTyped() {
 
 function testSessionMenuTabEntryDelegateRolesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/SessionMenuTab.qml");
-  const entryDelegate = /ListView\s*\{[\s\S]*?model:\s*entriesModel[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?id:\s*delegateItem[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+id[\s\S]*?required\s+property\s+string\s+text[\s\S]*?required\s+property\s+bool\s+countdownEnabled[\s\S]*?property\s+bool\s+entryEnabled:\s*modelData\.enabled\s*\|\|\s*false[\s\S]*?color:\s*delegateItem\.entryEnabled\s*\?\s*Color\.mPrimary[\s\S]*?text:\s*delegateItem\.text[\s\S]*?checked:\s*delegateItem\.countdownEnabled/;
+  const entryDelegate = /ListView\s*\{[\s\S]*?model:\s*entriesModel[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?id:\s*delegateItem[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+id[\s\S]*?required\s+property\s+string\s+text[\s\S]*?required\s+property\s+bool\s+countdownEnabled[\s\S]*?readonly\s+property\s+bool\s+entryEnabled:\s*modelData\.enabled\s*\|\|\s*false[\s\S]*?color:\s*delegateItem\.entryEnabled\s*\?\s*Color\.mPrimary[\s\S]*?text:\s*delegateItem\.text[\s\S]*?checked:\s*delegateItem\.countdownEnabled/;
 
   assert.match(source, entryDelegate, "SessionMenuTab entry delegate must type scalar roles");
   assert.doesNotMatch(source, /required\s+property\s+bool\s+enabled/, "SessionMenuTab must not bind the enabled role to Item.enabled");
+  assert.doesNotMatch(source, /(?<!readonly\s)property\s+bool\s+entryEnabled/, "SessionMenuTab entryEnabled alias must be readonly");
   assert.doesNotMatch(source, /modelData\.(?:id|text|countdownEnabled)/, "SessionMenuTab entry delegate must use typed roles instead of modelData.*");
 }
 
@@ -663,9 +664,9 @@ function testBrightnessPanelBrightnessMonitorIsTyped() {
 function testBrightnessServiceMonitorScreenModelAliasIsTyped() {
   const brightnessServiceFile = "Services/Hardware/BrightnessService.qml";
   const source = readQml(brightnessServiceFile);
-  const monitorComponent = /component\s+Monitor:\s+QtObject\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+screenModel:\s+modelData\.model/;
+  const monitorComponent = /component\s+Monitor:\s+QtObject\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+screenModel:\s+modelData\s*\?\s*modelData\.model\s*:\s*""/;
 
-  assert.match(source, monitorComponent, "BrightnessService Monitor must expose typed screenModel alias from ShellScreen modelData");
+  assert.match(source, monitorComponent, "BrightnessService Monitor must expose null-safe typed screenModel alias from ShellScreen modelData");
   assert.match(source, /root\.ddcMonitors\.some\(m\s*=>\s*m\.model\s*===\s*screenModel\)/, "BrightnessService DDC detection must use screenModel");
   assert.match(source, /root\.ddcMonitors\.find\(m\s*=>\s*m\.model\s*===\s*screenModel\)/, "BrightnessService DDC bus lookup must use screenModel");
   assert.match(source, /root\.appleDisplayPresent\s*&&\s*screenModel\.startsWith\("StudioDisplay"\)/, "BrightnessService Apple display detection must use screenModel");
@@ -688,9 +689,9 @@ function testBackgroundShapeContainersAreTyped() {
 
 function testBackgroundScreenAliasesAreTyped() {
   const source = readQml("Modules/Background/Background.qml");
-  const screenDelegate = /Variants\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?delegate:\s*Loader\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s*modelData\.name[\s\S]*?readonly\s+property\s+int\s+monitorWidth:\s*modelData\.width[\s\S]*?readonly\s+property\s+int\s+monitorHeight:\s*modelData\.height[\s\S]*?screenName\s*===\s*monitorName[\s\S]*?CompositorService\.getDisplayScale\(monitorName\)[\s\S]*?monitorWidth\s*\*\s*compositorScale[\s\S]*?monitorHeight\s*\*\s*compositorScale[\s\S]*?WallpaperService\.getWallpaper\(monitorName\)/;
+  const screenDelegate = /Variants\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?delegate:\s*Loader\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s*modelData\s*\?\s*modelData\.name\s*:\s*""[\s\S]*?readonly\s+property\s+int\s+monitorWidth:\s*modelData\s*\?\s*modelData\.width\s*:\s*0[\s\S]*?readonly\s+property\s+int\s+monitorHeight:\s*modelData\s*\?\s*modelData\.height\s*:\s*0[\s\S]*?screenName\s*===\s*monitorName[\s\S]*?CompositorService\.getDisplayScale\(monitorName\)[\s\S]*?monitorWidth\s*\*\s*compositorScale[\s\S]*?monitorHeight\s*\*\s*compositorScale[\s\S]*?WallpaperService\.getWallpaper\(monitorName\)/;
 
-  assert.match(source, screenDelegate, "Background screen delegate must expose typed screen aliases");
+  assert.match(source, screenDelegate, "Background screen delegate must expose null-safe typed screen aliases");
   assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "Background must use monitorName after declaration");
   assert.equal((source.match(/modelData\.width/g) ?? []).length, 1, "Background must use monitorWidth after declaration");
   assert.equal((source.match(/modelData\.height/g) ?? []).length, 1, "Background must use monitorHeight after declaration");

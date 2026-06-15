@@ -31,6 +31,7 @@ run_unit_tests() {
     bash "$repo_root/Tests/i18n-json.test.sh"
     bash "$repo_root/Tests/calendar-scripts.test.sh"
     bash "$repo_root/Tests/service-probes-parsing.test.sh"
+    bash "$repo_root/Tests/quickshell-regression.test.sh"
 }
 
 run_log_gate() {

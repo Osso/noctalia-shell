@@ -117,7 +117,7 @@ Singleton {
     id: monitor
 
     required property ShellScreen modelData
-    readonly property string screenModel: modelData.model
+    readonly property string screenModel: modelData ? modelData.model : ""
     readonly property bool isDdc: Settings.data.brightness.enableDdcSupport && root.ddcMonitors.some(m => m.model === screenModel)
     readonly property string busNum: {
       const ddcMonitor = root.ddcMonitors.find(m => m.model === screenModel);

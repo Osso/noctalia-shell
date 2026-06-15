@@ -12,9 +12,9 @@ Variants {
   delegate: Loader {
 
     required property ShellScreen modelData
-    readonly property string monitorName: modelData.name
-    readonly property int monitorWidth: modelData.width
-    readonly property int monitorHeight: modelData.height
+    readonly property string monitorName: modelData ? modelData.name : ""
+    readonly property int monitorWidth: modelData ? modelData.width : 0
+    readonly property int monitorHeight: modelData ? modelData.height : 0
 
     active: modelData && Settings.data.wallpaper.enabled
 
