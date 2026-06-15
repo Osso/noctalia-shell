@@ -663,6 +663,27 @@ function testSettingsMonitorModelsAreTyped() {
   }
 }
 
+function testBarTabMonitorAliasesAreTyped() {
+  const barTabFile = "Modules/Panels/Settings/Tabs/BarTab.qml";
+  const source = readQml(barTabFile);
+  const monitorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?delegate:\s*NCheckbox\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s+modelData\.name[\s\S]*?readonly\s+property\s+string\s+monitorModel:\s+modelData\.model[\s\S]*?readonly\s+property\s+int\s+monitorWidth:\s+modelData\.width[\s\S]*?readonly\s+property\s+int\s+monitorHeight:\s+modelData\.height/;
+
+  assert.match(source, monitorDelegate, "BarTab monitor delegate must expose typed aliases for ShellScreen fields");
+  assert.match(source, /label:\s*monitorName\s*\|\|\s*"Unknown"/, "BarTab monitor label must use monitorName");
+  assert.match(source, /CompositorService\.getDisplayScale\(monitorName\)/, "BarTab monitor scale lookup must use monitorName");
+  assert.match(source, /"model":\s*monitorModel/, "BarTab monitor description must use monitorModel");
+  assert.match(source, /"width":\s*monitorWidth\s*\*\s*compositorScale/, "BarTab monitor description must use monitorWidth");
+  assert.match(source, /"height":\s*monitorHeight\s*\*\s*compositorScale/, "BarTab monitor description must use monitorHeight");
+  assert.match(source, /indexOf\(monitorName\)\s*!==\s*-1/, "BarTab monitor selection must use monitorName");
+  assert.match(source, /addMonitor\(Settings\.data\.bar\.monitors,\s*monitorName\)/, "BarTab monitor add action must use monitorName");
+  assert.match(source, /removeMonitor\(Settings\.data\.bar\.monitors,\s*monitorName\)/, "BarTab monitor remove action must use monitorName");
+
+  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "BarTab monitor delegate must use monitorName after declaration");
+  assert.equal((source.match(/modelData\.model/g) ?? []).length, 1, "BarTab monitor delegate must use monitorModel after declaration");
+  assert.equal((source.match(/modelData\.width/g) ?? []).length, 1, "BarTab monitor delegate must use monitorWidth after declaration");
+  assert.equal((source.match(/modelData\.height/g) ?? []).length, 1, "BarTab monitor delegate must use monitorHeight after declaration");
+}
+
 function testDockTabMonitorAliasesAreTyped() {
   const dockTabFile = "Modules/Panels/Settings/Tabs/DockTab.qml";
   const source = readQml(dockTabFile);
@@ -816,6 +837,7 @@ const tests = [
   testWallpaperPanelMonitorTabModelIsTyped,
   testWallpaperPanelScreenViewModelIsTyped,
   testSettingsMonitorModelsAreTyped,
+  testBarTabMonitorAliasesAreTyped,
   testDockTabMonitorAliasesAreTyped,
   testOsdTabTypeOptionRolesAreTyped,
   testOsdTabMonitorAliasesAreTyped,
