@@ -393,6 +393,42 @@ function testIpcMediaCommandsValidateNumericArguments() {
   assert.match(mediaBlock, /MediaService\.seekByRatio\(positionVal\)/, "seekByRatio must pass parsed positions to MediaService");
 }
 
+function testIpcNotificationAndHardwareActionsDelegateToServices() {
+  const source = readQml("Services/Control/IPCService.qml");
+  const notificationsBlock = extractIpcHandlerBlock(source, "notifications");
+  const brightnessBlock = extractIpcHandlerBlock(source, "brightness");
+  const volumeBlock = extractIpcHandlerBlock(source, "volume");
+  const sessionBlock = extractIpcHandlerBlock(source, "sessionMenu");
+
+  assert.match(notificationsBlock, /PanelService\.getPanel\("notificationHistoryPanel",\s*screen\)/, "notifications toggleHistory must target notification history on the selected screen");
+  assert.match(notificationsBlock, /notificationHistoryPanel\.toggle\(null,\s*"NotificationHistory"\)/, "notifications toggleHistory must open the NotificationHistory anchor");
+  assert.match(notificationsBlock, /NotificationService\.doNotDisturb = !NotificationService\.doNotDisturb/, "notifications toggleDND must invert DND state");
+  assert.match(notificationsBlock, /NotificationService\.doNotDisturb = true/, "notifications enableDND must force DND on");
+  assert.match(notificationsBlock, /NotificationService\.doNotDisturb = false/, "notifications disableDND must force DND off");
+  assert.match(notificationsBlock, /NotificationService\.clearHistory\(\)/, "notifications clear must delegate to NotificationService");
+  assert.match(notificationsBlock, /NotificationService\.dismissOldestActive\(\)/, "notifications dismissOldest must delegate to NotificationService");
+  assert.match(notificationsBlock, /NotificationService\.removeOldestHistory\(\)/, "notifications removeOldestHistory must delegate to NotificationService");
+  assert.match(notificationsBlock, /NotificationService\.dismissAllActive\(\)/, "notifications dismissAll must delegate to NotificationService");
+  assert.match(brightnessBlock, /BrightnessService\.increaseBrightness\(\)/, "brightness increase must delegate to BrightnessService");
+  assert.match(brightnessBlock, /BrightnessService\.decreaseBrightness\(\)/, "brightness decrease must delegate to BrightnessService");
+  assert.match(volumeBlock, /AudioService\.increaseVolume\(\)/, "volume increase must delegate to AudioService");
+  assert.match(volumeBlock, /AudioService\.decreaseVolume\(\)/, "volume decrease must delegate to AudioService");
+  assert.match(volumeBlock, /AudioService\.setOutputMuted\(!AudioService\.muted\)/, "volume muteOutput must toggle output mute state");
+  assert.match(volumeBlock, /AudioService\.increaseInputVolume\(\)/, "volume increaseInput must delegate to AudioService");
+  assert.match(volumeBlock, /AudioService\.decreaseInputVolume\(\)/, "volume decreaseInput must delegate to AudioService");
+  assert.match(volumeBlock, /AudioService\.setInputMuted\(!AudioService\.inputMuted\)/, "volume muteInput must toggle input mute state");
+  assert.match(sessionBlock, /CompositorService\.lockAndSuspend\(\)/, "sessionMenu lockAndSuspend must delegate to CompositorService");
+}
+
+function testIpcWallpaperAutomationActionsFlipSettings() {
+  const source = readQml("Services/Control/IPCService.qml");
+  const wallpaperBlock = extractIpcHandlerBlock(source, "wallpaper");
+
+  assert.match(wallpaperBlock, /Settings\.data\.wallpaper\.randomEnabled = !Settings\.data\.wallpaper\.randomEnabled/, "wallpaper toggleAutomation must invert random wallpaper automation");
+  assert.match(wallpaperBlock, /Settings\.data\.wallpaper\.randomEnabled = false/, "wallpaper disableAutomation must force random wallpaper automation off");
+  assert.match(wallpaperBlock, /Settings\.data\.wallpaper\.randomEnabled = true/, "wallpaper enableAutomation must force random wallpaper automation on");
+}
+
 function testIpcStateAndScreenRoutingFailSafely() {
   const source = readQml("Services/Control/IPCService.qml");
   const stateBlock = extractIpcHandlerBlock(source, "state");
@@ -448,6 +484,8 @@ const tests = [
   testIpcLauncherAndPanelTargetsUseTargetScreen,
   testIpcModeTargetsMapArgumentsToServices,
   testIpcMediaCommandsValidateNumericArguments,
+  testIpcNotificationAndHardwareActionsDelegateToServices,
+  testIpcWallpaperAutomationActionsFlipSettings,
   testIpcStateAndScreenRoutingFailSafely,
   testGithubServiceFollowsRedirectsAndValidatesResponses,
   testOsdDisconnectsBrightnessMonitorsOnDestruction,
