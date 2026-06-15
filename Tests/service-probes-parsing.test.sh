@@ -458,6 +458,80 @@ if has_readable_font_family $'   \n12345'; then
     exit 1
 fi
 
+state_cache_fixture_root="$(mktemp -d)"
+trap 'rm -rf "$state_cache_fixture_root"' EXIT
+
+cat >"$state_cache_fixture_root/shell-state.json" <<'JSON'
+{
+  "notificationsState": {},
+  "changelogState": {},
+  "colorSchemesList": {},
+  "display": {
+    "HDMI-A-1": {
+      "name": "HDMI-A-1",
+      "width": 3440,
+      "height": 1440,
+      "scale": 1
+    }
+  }
+}
+JSON
+
+cat >"$state_cache_fixture_root/notifications.json" <<'JSON'
+{
+  "notifications": [
+    {
+      "id": "42",
+      "summary": "Terminal bell",
+      "timestamp": 1710000000000,
+      "urgency": 1
+    }
+  ]
+}
+JSON
+
+has_shell_state_cache_shape "$state_cache_fixture_root/shell-state.json"
+has_notifications_cache_shape "$state_cache_fixture_root/notifications.json"
+
+cat >"$state_cache_fixture_root/bad-shell-state.json" <<'JSON'
+{
+  "notificationsState": {},
+  "changelogState": {},
+  "colorSchemesList": {},
+  "display": {
+    "HDMI-A-1": {
+      "name": "HDMI-A-1",
+      "width": "3440",
+      "height": 1440,
+      "scale": 1
+    }
+  }
+}
+JSON
+
+cat >"$state_cache_fixture_root/bad-notifications.json" <<'JSON'
+{
+  "notifications": [
+    {
+      "id": 42,
+      "summary": "Terminal bell",
+      "timestamp": 1710000000000,
+      "urgency": 1
+    }
+  ]
+}
+JSON
+
+if has_shell_state_cache_shape "$state_cache_fixture_root/bad-shell-state.json"; then
+    echo "shell-state cache with string display width was accepted" >&2
+    exit 1
+fi
+
+if has_notifications_cache_shape "$state_cache_fixture_root/bad-notifications.json"; then
+    echo "notifications cache with numeric id was accepted" >&2
+    exit 1
+fi
+
 os_release_fixture=$'PRETTY_NAME="Noctalia Test OS"\nNAME=NoctaliaTest\nID=noctalia-test\nLOGO=noctalia-test-logo'
 assert_equal "$(read_os_release_value PRETTY_NAME "$os_release_fixture")" "Noctalia Test OS" "quoted os-release value parse failed"
 assert_equal "$(read_os_release_value ID "$os_release_fixture")" "noctalia-test" "unquoted os-release value parse failed"
@@ -498,7 +572,7 @@ if read_os_release_value BROKEN_CLOSE_QUOTE $'BROKEN_CLOSE_QUOTE=Noctalia Test O
 fi
 
 host_logo_fixture_root="$(mktemp -d)"
-trap 'rm -rf "$host_logo_fixture_root"' EXIT
+trap 'rm -rf "$host_logo_fixture_root" "$state_cache_fixture_root"' EXIT
 mkdir -p "$host_logo_fixture_root/usr/share/icons/hicolor/48x48/apps"
 mkdir -p "$host_logo_fixture_root/run/share/icons/hicolor/scalable/apps"
 touch "$host_logo_fixture_root/usr/share/icons/hicolor/48x48/apps/noctalia-test-logo.png"

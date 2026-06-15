@@ -253,6 +253,62 @@ has_connected_wifi_device_status() {
     return 1
 }
 
+has_shell_state_cache_shape() {
+    local shell_state_file="$1"
+
+    jq -e '
+        (.notificationsState | type == "object")
+        and (.changelogState | type == "object")
+        and (.colorSchemesList | type == "object")
+        and (.display | type == "object")
+        and (.display | to_entries | all(
+            (.value.name | type == "string")
+            and (.value.width | type == "number")
+            and (.value.height | type == "number")
+            and (.value.scale | type == "number")
+        ))
+    ' "$shell_state_file" >/dev/null
+}
+
+has_network_cache_shape() {
+    local network_file="$1"
+
+    jq -e '
+        (.knownNetworks | type == "object")
+        and (.knownNetworks | to_entries | all(
+            (.value.profileName | type == "string")
+            and (.value.lastConnected | type == "number")
+        ))
+        and ((.lastConnected | type == "string") or (.lastConnected == null))
+    ' "$network_file" >/dev/null
+}
+
+has_location_cache_shape() {
+    local location_file="$1"
+
+    jq -e '
+        (.name | type == "string")
+        and (.latitude | type == "string")
+        and (.longitude | type == "string")
+        and (.weatherLastFetch | type == "number")
+        and ((.weather | type == "object") or (.weather == null))
+    ' "$location_file" >/dev/null
+}
+
+has_notifications_cache_shape() {
+    local notifications_file="$1"
+
+    jq -e '
+        (.notifications | type == "array")
+        and (.notifications | all(
+            (.id | type == "string")
+            and (.summary | type == "string")
+            and (.timestamp | type == "number")
+            and (.urgency | type == "number")
+        ))
+    ' "$notifications_file" >/dev/null
+}
+
 is_passwd_row() {
     local passwd_row="$1"
 
@@ -688,45 +744,10 @@ probe_state_cache() {
     local location_file="$cache_dir/location.json"
     local notifications_file="$cache_dir/notifications.json"
 
-    jq -e '
-        (.notificationsState | type == "object")
-        and (.changelogState | type == "object")
-        and (.colorSchemesList | type == "object")
-        and (.display | type == "object")
-        and (.display | to_entries | all(
-            (.value.name | type == "string")
-            and (.value.width | type == "number")
-            and (.value.height | type == "number")
-            and (.value.scale | type == "number")
-        ))
-    ' "$shell_state_file" >/dev/null
-
-    jq -e '
-        (.knownNetworks | type == "object")
-        and (.knownNetworks | to_entries | all(
-            (.value.profileName | type == "string")
-            and (.value.lastConnected | type == "number")
-        ))
-        and ((.lastConnected | type == "string") or (.lastConnected == null))
-    ' "$network_file" >/dev/null
-
-    jq -e '
-        (.name | type == "string")
-        and (.latitude | type == "string")
-        and (.longitude | type == "string")
-        and (.weatherLastFetch | type == "number")
-        and ((.weather | type == "object") or (.weather == null))
-    ' "$location_file" >/dev/null
-
-    jq -e '
-        (.notifications | type == "array")
-        and (.notifications | all(
-            (.id | type == "string")
-            and (.summary | type == "string")
-            and (.timestamp | type == "number")
-            and (.urgency | type == "number")
-        ))
-    ' "$notifications_file" >/dev/null
+    has_shell_state_cache_shape "$shell_state_file"
+    has_network_cache_shape "$network_file"
+    has_location_cache_shape "$location_file"
+    has_notifications_cache_shape "$notifications_file"
 
     echo "ok probeStateCache"
 }
