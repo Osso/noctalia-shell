@@ -47,15 +47,15 @@ NBox {
         required property BluetoothDevice modelData
         required property int index
 
-        readonly property bool devicePairing: modelData.pairing === true
-        readonly property bool deviceBlocked: modelData.blocked === true
-        readonly property bool deviceConnected: modelData.connected === true
-        readonly property bool deviceConnecting: modelData.state === BluetoothDeviceState.Connecting
-        readonly property string deviceDisplayName: modelData.name || modelData.deviceName || ""
-        readonly property bool hasSignalStrength: modelData.signalStrength !== undefined
-        readonly property int deviceSignalStrength: modelData.signalStrength || 0
+        readonly property bool devicePairing: modelData ? modelData.pairing === true : false
+        readonly property bool deviceBlocked: modelData ? modelData.blocked === true : false
+        readonly property bool deviceConnected: modelData ? modelData.connected === true : false
+        readonly property bool deviceConnecting: modelData ? modelData.state === BluetoothDeviceState.Connecting : false
+        readonly property string deviceDisplayName: modelData ? (modelData.name || modelData.deviceName || "") : ""
+        readonly property bool hasSignalStrength: modelData ? modelData.signalStrength !== undefined : false
+        readonly property int deviceSignalStrength: modelData ? (modelData.signalStrength || 0) : 0
         readonly property bool showSignalStrength: deviceSignalStrength > 0 && !devicePairing && !deviceBlocked
-        readonly property bool hasBattery: modelData.batteryAvailable === true
+        readonly property bool hasBattery: modelData ? modelData.batteryAvailable === true : false
         readonly property bool canConnect: BluetoothService.canConnect(modelData)
         readonly property bool canDisconnect: BluetoothService.canDisconnect(modelData)
         readonly property bool isBusy: BluetoothService.isDeviceBusy(modelData)
