@@ -463,7 +463,7 @@ Singleton {
     delegate: FolderListModel {
       required property ShellScreen modelData
 
-      property string screenName: modelData.name
+      readonly property string screenName: modelData ? modelData.name : ""
       property string currentDirectory: root.getMonitorDirectory(screenName)
 
       folder: "file://" + currentDirectory

@@ -881,9 +881,10 @@ function testNotificationsTabMonitorAliasesAreTyped() {
 
 function testWallpaperServiceScannerModelIsTyped() {
   const source = readQml("Services/UI/WallpaperService.qml");
-  const scannerModelDelegate = /Instantiator\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?required\s+property\s+ShellScreen\s+modelData/;
+  const scannerModelDelegate = /Instantiator\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?delegate:\s*FolderListModel\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+screenName:\s*modelData\s*\?\s*modelData\.name\s*:\s*""[\s\S]*?property\s+string\s+currentDirectory:\s*root\.getMonitorDirectory\(screenName\)/;
 
-  assert.match(source, scannerModelDelegate, "WallpaperService scanner must type screen modelData as ShellScreen");
+  assert.match(source, scannerModelDelegate, "WallpaperService scanner must expose a null-safe typed screenName alias");
+  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "WallpaperService scanner must use screenName after declaration");
 }
 
 function testSetupDockStepMonitorModelIsTyped() {
