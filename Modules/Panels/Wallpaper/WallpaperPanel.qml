@@ -1014,8 +1014,8 @@ SmartPanel {
 
             required property var modelData
             required property int index
-            property string thumbnailUrl: (modelData && typeof WallhavenService !== "undefined") ? WallhavenService.getThumbnailUrl(modelData, "large") : ""
-            property string wallpaperId: (modelData && modelData.id) ? modelData.id : ""
+            readonly property string thumbnailUrl: (modelData && typeof WallhavenService !== "undefined") ? WallhavenService.getThumbnailUrl(modelData, "large") : ""
+            readonly property string wallpaperId: (modelData && modelData.id) || ""
 
             width: wallhavenGridView.itemSize
             spacing: Style.marginXS

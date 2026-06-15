@@ -680,6 +680,14 @@ function testWallpaperPanelScreenViewModelIsTyped() {
   assert.match(source, screenViewModel, "WallpaperPanel screen views must type screen modelData as ShellScreen");
 }
 
+function testWallpaperPanelWallhavenDelegateAliasesAreTyped() {
+  const source = readQml("Modules/Panels/Wallpaper/WallpaperPanel.qml");
+  const wallhavenDelegate = /delegate:\s*ColumnLayout\s*\{[\s\S]*?id:\s*wallhavenItem[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+thumbnailUrl:\s*\(modelData\s*&&\s*typeof\s+WallhavenService\s*!==\s*"undefined"\)\s*\?\s*WallhavenService\.getThumbnailUrl\(modelData,\s*"large"\)\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+wallpaperId:\s*\(modelData\s*&&\s*modelData\.id\)\s*\|\|\s*""[\s\S]*?source:\s*thumbnailUrl[\s\S]*?text:\s*wallpaperId\s*\|\|\s*I18n\.tr\("wallpaper\.unknown"\)/;
+
+  assert.match(source, wallhavenDelegate, "WallpaperPanel Wallhaven delegate must expose readonly typed aliases");
+  assert.equal((source.match(/modelData\.id/g) ?? []).length, 1, "WallpaperPanel Wallhaven delegate must use wallpaperId after declaration");
+}
+
 function testWallpaperTabMonitorNameAliasIsTyped() {
   const wallpaperTabFile = "Modules/Panels/Settings/Tabs/WallpaperTab.qml";
   const source = readQml(wallpaperTabFile);
@@ -962,6 +970,7 @@ const tests = [
   testWallpaperPanelScreenReferencesAreTyped,
   testWallpaperPanelMonitorTabModelIsTyped,
   testWallpaperPanelScreenViewModelIsTyped,
+  testWallpaperPanelWallhavenDelegateAliasesAreTyped,
   testWallpaperTabMonitorNameAliasIsTyped,
   testSettingsMonitorModelsAreTyped,
   testBarTabMonitorAliasesAreTyped,
