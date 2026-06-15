@@ -219,6 +219,13 @@ function testLauncherGridImageAliasesAreTyped() {
   assert.match(source, gridDelegate, "Launcher grid result delegate must expose typed image/emoji aliases");
 }
 
+function testLauncherListDisplayAliasesAreTyped() {
+  const source = readQml("Modules/Panels/Launcher/Launcher.qml");
+  const listDelegate = /NListView\s*\{[\s\S]*?model:\s*results[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*entry[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?readonly\s+property\s+string\s+resultIcon:\s*modelData\s*\?\s*\(modelData\.icon\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+resultName:\s*modelData\s*\?\s*\(modelData\.name\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+resultDescription:\s*modelData\s*\?\s*\(modelData\.description\s*\|\|\s*""\)\s*:\s*""[\s\S]*?ThemeIcons\.iconFromName\(resultIcon,\s*"application-x-executable"\)[\s\S]*?resultName\.charAt\(0\)\.toUpperCase\(\)[\s\S]*?const desc = resultDescription[\s\S]*?text:\s*resultName\s*\|\|\s*"Unknown"[\s\S]*?text:\s*resultDescription/;
+
+  assert.match(source, listDelegate, "Launcher list result delegate must expose typed display aliases");
+}
+
 function testDateTimeTokenDelegateRolesAreTyped() {
   const source = readQml("Widgets/NDateTimeTokens.qml");
   const tokenDelegate = /delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*tokenDelegate[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+category[\s\S]*?required\s+property\s+string\s+token[\s\S]*?required\s+property\s+string\s+description[\s\S]*?root\.tokenClicked\(token\)[\s\S]*?getCategoryColor\(category\)[\s\S]*?text:\s*description[\s\S]*?toString\(root\.sampleDate,\s*token\)/;
@@ -1010,6 +1017,7 @@ const tests = [
   testLauncherResultDelegatesAreTyped,
   testLauncherListImageAliasesAreTyped,
   testLauncherGridImageAliasesAreTyped,
+  testLauncherListDisplayAliasesAreTyped,
   testDateTimeTokenDelegateRolesAreTyped,
   testSetupCustomizeOptionDelegatesAreTyped,
   testColorPickerSwatchDelegatesAreTyped,

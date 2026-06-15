@@ -733,6 +733,9 @@ SmartPanel {
               readonly property string resultEmojiChar: modelData ? (modelData.emojiChar || "") : ""
               readonly property string resultClipboardId: modelData ? (modelData.clipboardId || "") : ""
               readonly property string resultMime: modelData ? (modelData.mime || "") : ""
+              readonly property string resultIcon: modelData ? (modelData.icon || "") : ""
+              readonly property string resultName: modelData ? (modelData.name || "") : ""
+              readonly property string resultDescription: modelData ? (modelData.description || "") : ""
 
               // Helper function to normalize app IDs for case-insensitive matching
               function normalizeAppId(appId) {
@@ -854,8 +857,8 @@ SmartPanel {
                       sourceComponent: Component {
                         IconImage {
                           anchors.fill: parent
-                          source: modelData.icon ? ThemeIcons.iconFromName(modelData.icon, "application-x-executable") : ""
-                          visible: modelData.icon && source !== "" && !resultEmojiChar
+                          source: resultIcon ? ThemeIcons.iconFromName(resultIcon, "application-x-executable") : ""
+                          visible: resultIcon && source !== "" && !resultEmojiChar
                           asynchronous: true
                         }
                       }
@@ -866,7 +869,7 @@ SmartPanel {
                       id: emojiDisplay
                       anchors.centerIn: parent
                       visible: resultEmojiChar || (!imagePreview.visible && !iconLoader.visible)
-                      text: resultEmojiChar ? resultEmojiChar : modelData.name.charAt(0).toUpperCase()
+                      text: resultEmojiChar ? resultEmojiChar : resultName.charAt(0).toUpperCase()
                       pointSize: resultEmojiChar ? Style.fontSizeXXXL : Style.fontSizeXXL  // Larger font for emojis
                       font.weight: Style.fontWeightBold
                       color: resultEmojiChar ? Color.mOnSurface : Color.mOnPrimary  // Different color for emojis
@@ -889,7 +892,7 @@ SmartPanel {
                         text: {
                           if (!resultIsImage)
                             return "";
-                          const desc = modelData.description || "";
+                          const desc = resultDescription;
                           const parts = desc.split(" • ");
                           return parts[0] || "IMG";
                         }
@@ -905,7 +908,7 @@ SmartPanel {
                     spacing: 0
 
                     NText {
-                      text: modelData.name || "Unknown"
+                      text: resultName || "Unknown"
                       pointSize: Style.fontSizeL
                       font.weight: Style.fontWeightBold
                       color: entry.isSelected ? Color.mOnHover : Color.mOnSurface
@@ -914,7 +917,7 @@ SmartPanel {
                     }
 
                     NText {
-                      text: modelData.description || ""
+                      text: resultDescription
                       pointSize: Style.fontSizeS
                       color: entry.isSelected ? Color.mOnHover : Color.mOnSurfaceVariant
                       elide: Text.ElideRight
