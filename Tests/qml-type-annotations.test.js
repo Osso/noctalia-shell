@@ -581,6 +581,14 @@ function testSettingsMonitorModelsAreTyped() {
   }
 }
 
+function testOsdTabTypeOptionRolesAreTyped() {
+  const source = readQml("Modules/Panels/Settings/Tabs/OsdTab.qml");
+  const osdTypeDelegate = /Repeater\s*\{[\s\S]*?type:\s*OSD\.Type\.Volume[\s\S]*?delegate:\s*NCheckbox\s*\{[\s\S]*?required\s+property\s+int\s+type[\s\S]*?required\s+property\s+string\s+key[\s\S]*?settings\.osd\.types\."\s*\+\s*key\s*\+\s*"\.label"[\s\S]*?enabledTypes\s*\|\|\s*\[\]\)\.includes\(type\)/;
+
+  assert.match(source, osdTypeDelegate, "OsdTab OSD type delegate must type scalar roles");
+  assert.doesNotMatch(source, /modelData\.(?:type|key)/, "OsdTab OSD type delegate must use typed roles instead of modelData.*");
+}
+
 function testWallpaperServiceScannerModelIsTyped() {
   const source = readQml("Services/UI/WallpaperService.qml");
   const scannerModelDelegate = /Instantiator\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?required\s+property\s+ShellScreen\s+modelData/;
@@ -677,6 +685,7 @@ const tests = [
   testWallpaperPanelMonitorTabModelIsTyped,
   testWallpaperPanelScreenViewModelIsTyped,
   testSettingsMonitorModelsAreTyped,
+  testOsdTabTypeOptionRolesAreTyped,
   testWallpaperServiceScannerModelIsTyped,
   testSetupDockStepMonitorModelIsTyped,
   testSetupWizardProgressDelegateModelIsTyped,

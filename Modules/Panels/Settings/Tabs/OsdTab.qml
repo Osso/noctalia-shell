@@ -178,16 +178,18 @@ ColumnLayout {
         }
       ]
       delegate: NCheckbox {
-        required property var modelData
+        required property int type
+        required property string key
+
         Layout.fillWidth: true
-        label: I18n.tr("settings.osd.types." + modelData.key + ".label")
-        description: I18n.tr("settings.osd.types." + modelData.key + ".description")
-        checked: (Settings.data.osd.enabledTypes || []).includes(modelData.type)
+        label: I18n.tr("settings.osd.types." + key + ".label")
+        description: I18n.tr("settings.osd.types." + key + ".description")
+        checked: (Settings.data.osd.enabledTypes || []).includes(type)
         onToggled: checked => {
                      if (checked) {
-                       Settings.data.osd.enabledTypes = addType(Settings.data.osd.enabledTypes, modelData.type);
+                       Settings.data.osd.enabledTypes = addType(Settings.data.osd.enabledTypes, type);
                      } else {
-                       Settings.data.osd.enabledTypes = removeType(Settings.data.osd.enabledTypes, modelData.type);
+                       Settings.data.osd.enabledTypes = removeType(Settings.data.osd.enabledTypes, type);
                      }
                    }
       }
