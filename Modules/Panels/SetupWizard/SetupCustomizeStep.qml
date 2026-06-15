@@ -138,21 +138,22 @@ ColumnLayout {
               }
             ]
             delegate: Rectangle {
-              required property var modelData
+              required property string key
+              required property string name
 
               Layout.fillWidth: true
               Layout.preferredHeight: 40
               radius: Style.radiusM
               border.width: Style.borderS
 
-              property bool isActive: selectedBarPosition === modelData.key
+              property bool isActive: selectedBarPosition === key
 
               color: (hoverHandler.hovered || isActive) ? Color.mPrimary : Color.mSurfaceVariant
               border.color: (hoverHandler.hovered || isActive) ? Color.mPrimary : Color.mOutline
               opacity: (hoverHandler.hovered || isActive) ? 1.0 : 0.8
 
               NText {
-                text: modelData.name
+                text: name
                 pointSize: Style.fontSizeM
                 font.weight: (hoverHandler.hovered || parent.isActive) ? Style.fontWeightBold : Style.fontWeightMedium
                 color: (hoverHandler.hovered || parent.isActive) ? Color.mOnPrimary : Color.mOnSurface
@@ -166,8 +167,8 @@ ColumnLayout {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  selectedBarPosition = modelData.key;
-                  barPositionChanged(modelData.key);
+                  selectedBarPosition = key;
+                  barPositionChanged(key);
                 }
               }
 
@@ -259,14 +260,15 @@ ColumnLayout {
               }
             ]
             delegate: Rectangle {
-              required property var modelData
+              required property string key
+              required property string name
 
               radius: Style.radiusM
               border.width: Style.borderS
               Layout.preferredHeight: 32
               Layout.preferredWidth: Math.max(90, densityText.implicitWidth + Style.marginXL * 2)
 
-              property bool isActive: Settings.data.bar.density === modelData.key
+              property bool isActive: Settings.data.bar.density === key
 
               color: (hoverHandler.hovered || isActive) ? Color.mPrimary : Color.mSurfaceVariant
               border.color: (hoverHandler.hovered || isActive) ? Color.mPrimary : Color.mOutline
@@ -274,7 +276,7 @@ ColumnLayout {
 
               NText {
                 id: densityText
-                text: modelData.name
+                text: name
                 pointSize: Style.fontSizeS
                 font.weight: (hoverHandler.hovered || parent.isActive) ? Style.fontWeightBold : Style.fontWeightMedium
                 color: (hoverHandler.hovered || parent.isActive) ? Color.mOnPrimary : Color.mOnSurface
@@ -288,7 +290,7 @@ ColumnLayout {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  Settings.data.bar.density = modelData.key;
+                  Settings.data.bar.density = key;
                 }
               }
 

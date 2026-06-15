@@ -203,11 +203,12 @@ function testDateTimeTokenDelegateRolesAreTyped() {
 
 function testSetupCustomizeOptionDelegatesAreTyped() {
   const source = readQml("Modules/Panels/SetupWizard/SetupCustomizeStep.qml");
-  const barPositionDelegate = /model:\s*\[[\s\S]*?"key":\s*"left"[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?selectedBarPosition\s*===\s*modelData\.key/;
-  const densityDelegate = /model:\s*\[[\s\S]*?"key":\s*"comfortable"[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?Settings\.data\.bar\.density\s*===\s*modelData\.key/;
+  const barPositionDelegate = /model:\s*\[[\s\S]*?"key":\s*"left"[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+string\s+key[\s\S]*?required\s+property\s+string\s+name[\s\S]*?selectedBarPosition\s*===\s*key[\s\S]*?text:\s*name[\s\S]*?barPositionChanged\(key\)/;
+  const densityDelegate = /model:\s*\[[\s\S]*?"key":\s*"comfortable"[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+string\s+key[\s\S]*?required\s+property\s+string\s+name[\s\S]*?Settings\.data\.bar\.density\s*===\s*key[\s\S]*?text:\s*name[\s\S]*?Settings\.data\.bar\.density\s*=\s*key/;
 
-  assert.match(source, barPositionDelegate, "SetupCustomizeStep bar position delegate must declare modelData");
-  assert.match(source, densityDelegate, "SetupCustomizeStep density delegate must declare modelData");
+  assert.match(source, barPositionDelegate, "SetupCustomizeStep bar position delegate must type key/name roles");
+  assert.match(source, densityDelegate, "SetupCustomizeStep density delegate must type key/name roles");
+  assert.doesNotMatch(source, /modelData\.(?:key|name)/, "SetupCustomizeStep option delegates must use typed roles instead of modelData.*");
 }
 
 function testColorPickerSwatchDelegatesAreTyped() {
