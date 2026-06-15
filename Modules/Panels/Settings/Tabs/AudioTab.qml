@@ -200,8 +200,8 @@ ColumnLayout {
           ButtonGroup.group: sinks
           required property PwNode modelData
 
-          readonly property string deviceId: modelData.id
-          readonly property string deviceDescription: modelData.description || deviceId
+          readonly property string deviceId: modelData ? (modelData.id || "") : ""
+          readonly property string deviceDescription: modelData ? (modelData.description || deviceId) : deviceId
 
           text: deviceDescription
           checked: AudioService.sink && AudioService.sink.id === deviceId
@@ -236,8 +236,8 @@ ColumnLayout {
           ButtonGroup.group: sources
           required property PwNode modelData
 
-          readonly property string deviceId: modelData.id
-          readonly property string deviceDescription: modelData.description || deviceId
+          readonly property string deviceId: modelData ? (modelData.id || "") : ""
+          readonly property string deviceDescription: modelData ? (modelData.description || deviceId) : deviceId
 
           text: deviceDescription
           checked: AudioService.source && AudioService.source.id === deviceId
