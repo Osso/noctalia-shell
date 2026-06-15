@@ -570,11 +570,13 @@ function testAudioNodeHandlesAreTyped() {
 
 function testAudioPanelDeviceDelegatesAreTyped() {
   const source = readQml("Modules/Panels/Audio/AudioPanel.qml");
-  const sinkDelegate = /Repeater\s*\{[\s\S]*?model:\s*AudioService\.sinks[\s\S]*?NRadioButton\s*\{[\s\S]*?required\s+property\s+PwNode\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?text:\s*modelData\.description/;
-  const sourceDelegate = /Repeater\s*\{[\s\S]*?model:\s*AudioService\.sources[\s\S]*?NRadioButton\s*\{[\s\S]*?required\s+property\s+PwNode\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?text:\s*modelData\.description/;
+  const sinkDelegate = /Repeater\s*\{[\s\S]*?model:\s*AudioService\.sinks[\s\S]*?NRadioButton\s*\{[\s\S]*?required\s+property\s+PwNode\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+deviceId:\s*modelData\.id[\s\S]*?readonly\s+property\s+string\s+deviceDescription:\s*modelData\.description\s*\|\|\s*deviceId[\s\S]*?text:\s*deviceDescription[\s\S]*?checked:\s*AudioService\.sink\s*\?\s*AudioService\.sink\.id\s*===\s*deviceId\s*:\s*false/;
+  const sourceDelegate = /Repeater\s*\{[\s\S]*?model:\s*AudioService\.sources[\s\S]*?NRadioButton\s*\{[\s\S]*?required\s+property\s+PwNode\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+deviceId:\s*modelData\.id[\s\S]*?readonly\s+property\s+string\s+deviceDescription:\s*modelData\.description\s*\|\|\s*deviceId[\s\S]*?text:\s*deviceDescription[\s\S]*?checked:\s*AudioService\.source\s*\?\s*AudioService\.source\.id\s*===\s*deviceId\s*:\s*false/;
 
-  assert.match(source, sinkDelegate, "AudioPanel sink delegate must type modelData and index");
-  assert.match(source, sourceDelegate, "AudioPanel source delegate must type modelData and index");
+  assert.match(source, sinkDelegate, "AudioPanel sink delegate must type modelData, index, and stable aliases");
+  assert.match(source, sourceDelegate, "AudioPanel source delegate must type modelData, index, and stable aliases");
+  assert.equal((source.match(/modelData\.id/g) ?? []).length, 2, "AudioPanel delegates must use deviceId after declaration");
+  assert.equal((source.match(/modelData\.description/g) ?? []).length, 2, "AudioPanel delegates must use deviceDescription after declaration");
 }
 
 function testProcessPanelProcessDelegateInputsAreTyped() {

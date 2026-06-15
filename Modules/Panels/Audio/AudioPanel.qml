@@ -241,9 +241,12 @@ SmartPanel {
                   required property PwNode modelData
                   required property int index
 
+                  readonly property string deviceId: modelData.id
+                  readonly property string deviceDescription: modelData.description || deviceId
+
                   pointSize: Style.fontSizeS
-                  text: modelData.description
-                  checked: AudioService.sink ? AudioService.sink.id === modelData.id : false
+                  text: deviceDescription
+                  checked: AudioService.sink ? AudioService.sink.id === deviceId : false
                   onClicked: {
                     AudioService.setAudioSink(modelData);
                     localOutputVolume = AudioService.volume;
@@ -300,9 +303,12 @@ SmartPanel {
                   required property PwNode modelData
                   required property int index
 
+                  readonly property string deviceId: modelData.id
+                  readonly property string deviceDescription: modelData.description || deviceId
+
                   pointSize: Style.fontSizeS
-                  text: modelData.description
-                  checked: AudioService.source ? AudioService.source.id === modelData.id : false
+                  text: deviceDescription
+                  checked: AudioService.source ? AudioService.source.id === deviceId : false
                   onClicked: AudioService.setAudioSource(modelData)
                   Layout.fillWidth: true
                 }
