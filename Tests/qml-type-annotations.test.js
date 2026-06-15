@@ -149,6 +149,14 @@ function testCustomButtonStateCheckDelegateRolesAreTyped() {
   assert.doesNotMatch(source, /model\.(?:command|icon)/, "CustomButtonSettings state-check delegate must use typed role properties instead of model.*");
 }
 
+function testTraySettingsBlacklistDelegateRolesAreTyped() {
+  const source = readQml("Modules/Panels/Settings/Bar/WidgetSettings/TraySettings.qml");
+  const blacklistDelegate = /ListView\s*\{[\s\S]*?model:\s*blacklistModel[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+string\s+rule[\s\S]*?required\s+property\s+int\s+index[\s\S]*?visible:\s*rule\s*!==\s*""[\s\S]*?text:\s*rule/;
+
+  assert.match(source, blacklistDelegate, "TraySettings blacklist delegate must type rule and index roles");
+  assert.doesNotMatch(source, /model\.rule/, "TraySettings blacklist delegate must use typed rule role instead of model.rule");
+}
+
 function testPanelServiceOpenedPanelIsTyped() {
   assertPropertyType("Services/UI/PanelService.qml", "openedPanel", "SmartPanel");
 }
@@ -432,6 +440,7 @@ const tests = [
   testSettingsPanelTabsDelegatesAreTyped,
   testComboBoxDelegateParentIsTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
+  testTraySettingsBlacklistDelegateRolesAreTyped,
   testPanelServiceOpenedPanelIsTyped,
   testContextMenuDelegatePopupIsTyped,
   testGeometryReferencesAreTypedItems,

@@ -94,6 +94,9 @@ ColumnLayout {
     clip: true
     model: blacklistModel
     delegate: Item {
+      required property string rule
+      required property int index
+
       width: ListView.width
       height: 40
 
@@ -105,7 +108,7 @@ ColumnLayout {
         border.color: Color.mOutline
         border.width: Style.borderS
         radius: Style.radiusS
-        visible: model.rule !== undefined && model.rule !== "" // Only visible if rule exists
+        visible: rule !== "" // Only visible if rule exists
       }
 
       Row {
@@ -115,7 +118,7 @@ ColumnLayout {
         spacing: Style.marginS
 
         NText {
-          text: model.rule
+          text: rule
           elide: Text.ElideRight
           verticalAlignment: Text.AlignVCenter
           Layout.fillWidth: true
