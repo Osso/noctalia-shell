@@ -122,7 +122,7 @@ ColumnLayout {
           model: Quickshell.screens || []
           delegate: ColumnLayout {
             required property ShellScreen modelData
-            readonly property string monitorName: modelData.name
+            readonly property string monitorName: modelData ? modelData.name : ""
 
             Layout.fillWidth: true
             spacing: Style.marginS

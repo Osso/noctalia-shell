@@ -739,9 +739,9 @@ function testWallpaperPanelWallhavenDelegateAliasesAreTyped() {
 function testWallpaperTabMonitorNameAliasIsTyped() {
   const wallpaperTabFile = "Modules/Panels/Settings/Tabs/WallpaperTab.qml";
   const source = readQml(wallpaperTabFile);
-  const monitorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?delegate:\s*ColumnLayout\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s+modelData\.name/;
+  const monitorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?delegate:\s*ColumnLayout\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s+modelData\s*\?\s*modelData\.name\s*:\s*""/;
 
-  assert.match(source, monitorDelegate, "WallpaperTab monitor delegate must expose typed monitorName alias from ShellScreen modelData");
+  assert.match(source, monitorDelegate, "WallpaperTab monitor delegate must expose null-safe typed monitorName alias from ShellScreen modelData");
   assert.match(source, /text:\s*\(monitorName\s*\|\|\s*"Unknown"\)/, "WallpaperTab monitor label must use monitorName");
   assert.match(source, /WallpaperService\.getMonitorDirectory\(monitorName\)/, "WallpaperTab monitor directory lookup must use monitorName");
   assert.match(source, /WallpaperService\.setMonitorDirectory\(monitorName,\s*text\)/, "WallpaperTab monitor directory save must use monitorName");
