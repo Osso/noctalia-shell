@@ -301,47 +301,54 @@ NBox {
           model: grid.daysModel
 
           Item {
+            id: dayCell
             Layout.fillWidth: true
             Layout.preferredHeight: Style.baseWidgetSize * 0.9
+
+            required property int day
+            required property int month
+            required property int year
+            required property bool today
+            required property bool currentMonth
 
             Rectangle {
               width: Style.baseWidgetSize * 0.9
               height: Style.baseWidgetSize * 0.9
               anchors.centerIn: parent
               radius: Style.radiusM
-              color: modelData.today ? Color.mSecondary : Color.transparent
+              color: dayCell.today ? Color.mSecondary : Color.transparent
 
               NText {
                 anchors.centerIn: parent
-                text: modelData.day
+                text: dayCell.day
                 color: {
-                  if (modelData.today)
+                  if (dayCell.today)
                     return Color.mOnSecondary;
-                  if (modelData.currentMonth)
+                  if (dayCell.currentMonth)
                     return Color.mOnSurface;
                   return Color.mOnSurfaceVariant;
                 }
-                opacity: modelData.currentMonth ? 1.0 : 0.4
+                opacity: dayCell.currentMonth ? 1.0 : 0.4
                 pointSize: Style.fontSizeM
-                font.weight: modelData.today ? Style.fontWeightBold : Style.fontWeightMedium
+                font.weight: dayCell.today ? Style.fontWeightBold : Style.fontWeightMedium
               }
 
               // Event indicator dots
               Row {
-                visible: Settings.data.location.showCalendarEvents && parent.parent.parent.parent.hasEventsOnDate(modelData.year, modelData.month, modelData.day)
+                visible: Settings.data.location.showCalendarEvents && parent.parent.parent.parent.hasEventsOnDate(dayCell.year, dayCell.month, dayCell.day)
                 spacing: 2
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: Style.marginXS
 
                 Repeater {
-                  model: parent.parent.parent.parent.parent.getEventsForDate(modelData.year, modelData.month, modelData.day)
+                  model: parent.parent.parent.parent.parent.getEventsForDate(dayCell.year, dayCell.month, dayCell.day)
 
                   Rectangle {
                     width: 4
                     height: width
                     radius: Style.radiusXXS
-                    color: parent.parent.parent.parent.parent.getEventColor(modelData, modelData.today)
+                    color: parent.parent.parent.parent.parent.getEventColor(modelData, dayCell.today)
                   }
                 }
               }
@@ -352,7 +359,7 @@ NBox {
                 enabled: Settings.data.location.showCalendarEvents
 
                 onEntered: {
-                  const events = parent.parent.parent.parent.getEventsForDate(modelData.year, modelData.month, modelData.day);
+                  const events = parent.parent.parent.parent.getEventsForDate(dayCell.year, dayCell.month, dayCell.day);
                   if (events.length > 0) {
                     const summaries = events.map(event => {
                                                    if (root.isAllDayEvent(event)) {
@@ -371,7 +378,7 @@ NBox {
                 }
 
                 onClicked: {
-                  const dateWithSlashes = `${(modelData.month + 1).toString().padStart(2, '0')}/${modelData.day.toString().padStart(2, '0')}/${modelData.year.toString().substring(2)}`;
+                  const dateWithSlashes = `${(dayCell.month + 1).toString().padStart(2, '0')}/${dayCell.day.toString().padStart(2, '0')}/${dayCell.year.toString().substring(2)}`;
                   if (ProgramCheckerService.gnomeCalendarAvailable) {
                     Quickshell.execDetached(["gnome-calendar", "--date", dateWithSlashes]);
                   }

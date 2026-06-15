@@ -270,6 +270,14 @@ function testSessionMenuPowerOptionRolesAreTyped() {
   assert.doesNotMatch(source, /modelData\.(?:icon|title|action|isShutdown)/, "SessionMenu power option delegate must use typed roles instead of modelData.*");
 }
 
+function testCalendarMonthDayDelegateRolesAreTyped() {
+  const source = readQml("Modules/Cards/CalendarMonthCard.qml");
+  const dayDelegate = /Repeater\s*\{[\s\S]*?model:\s*grid\.daysModel[\s\S]*?Item\s*\{[\s\S]*?id:\s*dayCell[\s\S]*?required\s+property\s+int\s+day[\s\S]*?required\s+property\s+int\s+month[\s\S]*?required\s+property\s+int\s+year[\s\S]*?required\s+property\s+bool\s+today[\s\S]*?required\s+property\s+bool\s+currentMonth[\s\S]*?text:\s*dayCell\.day[\s\S]*?hasEventsOnDate\(dayCell\.year,\s*dayCell\.month,\s*dayCell\.day\)/;
+
+  assert.match(source, dayDelegate, "CalendarMonthCard day delegate must type scalar date roles");
+  assert.doesNotMatch(source, /modelData\.(?:day|month|year|today|currentMonth)/, "CalendarMonthCard day delegate must use typed roles instead of modelData scalar date reads");
+}
+
 function testAboutTabContributorDelegateIndexesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/AboutTab.qml");
   const topContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.min\(root\.contributors\.length,\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\]\.login/;
@@ -632,6 +640,7 @@ const tests = [
   testShortcutsCardShortcutIdsAreTyped,
   testSectionEditorWidgetIdsAreTyped,
   testSessionMenuPowerOptionRolesAreTyped,
+  testCalendarMonthDayDelegateRolesAreTyped,
   testAboutTabContributorDelegateIndexesAreTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,
