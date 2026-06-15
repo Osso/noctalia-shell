@@ -337,6 +337,13 @@ function testWallpaperPanelMonitorTabModelIsTyped() {
   assert.match(source, monitorTabModel, "WallpaperPanel monitor tabs must type screen modelData as ShellScreen");
 }
 
+function testWallpaperPanelScreenViewModelIsTyped() {
+  const source = readQml("Modules/Panels/Wallpaper/WallpaperPanel.qml");
+  const screenViewModel = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?delegate:\s*WallpaperScreenView\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?targetScreen:\s*modelData/;
+
+  assert.match(source, screenViewModel, "WallpaperPanel screen views must type screen modelData as ShellScreen");
+}
+
 function testSettingsMonitorModelsAreTyped() {
   const monitorSettingFiles = [
     "Modules/Panels/Settings/Tabs/BarTab.qml",
@@ -415,6 +422,7 @@ const tests = [
   testBackgroundShapeContainersAreTyped,
   testWallpaperPanelScreenReferencesAreTyped,
   testWallpaperPanelMonitorTabModelIsTyped,
+  testWallpaperPanelScreenViewModelIsTyped,
   testSettingsMonitorModelsAreTyped,
   testWallpaperServiceScannerModelIsTyped,
   testSetupDockStepMonitorModelIsTyped,

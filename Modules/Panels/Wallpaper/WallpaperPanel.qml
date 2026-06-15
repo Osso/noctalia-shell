@@ -476,6 +476,8 @@ SmartPanel {
             id: screenRepeater
             model: Quickshell.screens
             delegate: WallpaperScreenView {
+              required property ShellScreen modelData
+
               targetScreen: modelData
             }
           }
