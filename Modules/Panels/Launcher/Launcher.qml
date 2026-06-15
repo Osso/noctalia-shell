@@ -1069,6 +1069,9 @@ SmartPanel {
 
               property bool isSelected: (!root.ignoreMouseHover && mouseArea.containsMouse) || (index === selectedIndex)
               property string appId: (modelData && modelData.appId) ? String(modelData.appId) : ""
+              readonly property bool resultIsImage: modelData ? modelData.isImage === true : false
+              readonly property string resultEmojiChar: modelData ? (modelData.emojiChar || "") : ""
+              readonly property string resultClipboardId: modelData ? (modelData.clipboardId || "") : ""
 
               // Helper function to normalize app IDs for case-insensitive matching
               function normalizeAppId(appId) {
@@ -1134,13 +1137,13 @@ SmartPanel {
                 // Icon badge or Image preview or Emoji
                 Rectangle {
                   Layout.preferredWidth: {
-                    if (root.activePlugin === emojiPlugin && emojiPlugin.isBrowsingMode && modelData.emojiChar) {
+                    if (root.activePlugin === emojiPlugin && emojiPlugin.isBrowsingMode && resultEmojiChar) {
                       return gridEntry.width - 8;
                     }
                     return badgeSize * 1.5;
                   }
                   Layout.preferredHeight: {
-                    if (root.activePlugin === emojiPlugin && emojiPlugin.isBrowsingMode && modelData.emojiChar) {
+                    if (root.activePlugin === emojiPlugin && emojiPlugin.isBrowsingMode && resultEmojiChar) {
                       return gridEntry.width - 8;
                     }
                     return badgeSize * 1.5;
@@ -1153,14 +1156,14 @@ SmartPanel {
                   NImageRounded {
                     id: gridImagePreview
                     anchors.fill: parent
-                    visible: modelData.isImage && !modelData.emojiChar
+                    visible: resultIsImage && !resultEmojiChar
                     radius: Style.radiusM
 
                     readonly property int _rev: ClipboardService.revision
 
                     imagePath: {
                       _rev;
-                      return ClipboardService.getImageData(modelData.clipboardId) || "";
+                      return ClipboardService.getImageData(resultClipboardId) || "";
                     }
 
                     Rectangle {
@@ -1189,14 +1192,14 @@ SmartPanel {
                     anchors.fill: parent
                     anchors.margins: Style.marginXS
 
-                    visible: !modelData.isImage && !modelData.emojiChar || (modelData.isImage && gridImagePreview.status === Image.Error)
+                    visible: !resultIsImage && !resultEmojiChar || (resultIsImage && gridImagePreview.status === Image.Error)
                     active: visible
 
                     sourceComponent: Component {
                       IconImage {
                         anchors.fill: parent
                         source: modelData.icon ? ThemeIcons.iconFromName(modelData.icon, "application-x-executable") : ""
-                        visible: modelData.icon && source !== "" && !modelData.emojiChar
+                        visible: modelData.icon && source !== "" && !resultEmojiChar
                         asynchronous: true
                       }
                     }
@@ -1206,10 +1209,10 @@ SmartPanel {
                   NText {
                     id: gridEmojiDisplay
                     anchors.centerIn: parent
-                    visible: modelData.emojiChar || (!gridImagePreview.visible && !gridIconLoader.visible)
-                    text: modelData.emojiChar ? modelData.emojiChar : modelData.name.charAt(0).toUpperCase()
+                    visible: resultEmojiChar || (!gridImagePreview.visible && !gridIconLoader.visible)
+                    text: resultEmojiChar ? resultEmojiChar : modelData.name.charAt(0).toUpperCase()
                     pointSize: {
-                      if (modelData.emojiChar) {
+                      if (resultEmojiChar) {
                         if (root.activePlugin === emojiPlugin && emojiPlugin.isBrowsingMode) {
                           return Math.max(Style.fontSizeL, gridEntry.width * 0.4);
                         }
@@ -1218,7 +1221,7 @@ SmartPanel {
                       return Style.fontSizeXL;
                     }
                     font.weight: Style.fontWeightBold
-                    color: modelData.emojiChar ? Color.mOnSurface : Color.mOnPrimary
+                    color: resultEmojiChar ? Color.mOnSurface : Color.mOnPrimary
                   }
                 }
 
@@ -1226,7 +1229,7 @@ SmartPanel {
                 NText {
                   text: modelData.name || "Unknown"
                   pointSize: {
-                    if (root.activePlugin === emojiPlugin && emojiPlugin.isBrowsingMode && modelData.emojiChar) {
+                    if (root.activePlugin === emojiPlugin && emojiPlugin.isBrowsingMode && resultEmojiChar) {
                       return Style.fontSizeS;
                     }
                     return Style.fontSizeS;
@@ -1244,7 +1247,7 @@ SmartPanel {
 
               // Pin/Unpin action icon button (overlay in top-right corner)
               NIconButton {
-                visible: !!gridEntry.appId && !modelData.isImage && gridEntry.isSelected && Settings.data.dock.enabled
+                visible: !!gridEntry.appId && !resultIsImage && gridEntry.isSelected && Settings.data.dock.enabled
                 anchors.top: parent.top
                 anchors.right: parent.right
                 anchors.margins: Style.marginXS
