@@ -226,6 +226,13 @@ function testBarWidgetLoaderScreenIsTyped() {
   assertNoPropertyType(loaderFile, "widgetScreen", "var");
 }
 
+function testControlCenterWidgetLoaderScreenIsTyped() {
+  const loaderFile = "Modules/Panels/ControlCenter/ControlCenterWidgetLoader.qml";
+
+  assertPropertyType(loaderFile, "widgetScreen", "ShellScreen");
+  assertNoPropertyType(loaderFile, "widgetScreen", "var");
+}
+
 function testClockSettingsFocusedInputIsTyped() {
   const settingsFile = "Modules/Panels/Settings/Bar/WidgetSettings/ClockSettings.qml";
 
@@ -475,6 +482,7 @@ const tests = [
   testTimeNowPropertiesAreTypedDates,
   testEffectSourcePropertiesAreTyped,
   testBarWidgetLoaderScreenIsTyped,
+  testControlCenterWidgetLoaderScreenIsTyped,
   testClockSettingsFocusedInputIsTyped,
   testClockSettingsPreviewModelsAreTyped,
   testMangoPatternContainerIsTyped,
