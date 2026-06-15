@@ -205,6 +205,13 @@ function testLauncherResultDelegatesAreTyped() {
   assert.match(source, gridDelegate, "Launcher grid result delegate must declare modelData and index roles");
 }
 
+function testLauncherListImageAliasesAreTyped() {
+  const source = readQml("Modules/Panels/Launcher/Launcher.qml");
+  const listDelegate = /NListView\s*\{[\s\S]*?model:\s*results[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*entry[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?readonly\s+property\s+bool\s+resultIsImage:\s*modelData\s*\?\s*modelData\.isImage\s*===\s*true\s*:\s*false[\s\S]*?readonly\s+property\s+string\s+resultEmojiChar:\s*modelData\s*\?\s*\(modelData\.emojiChar\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+resultClipboardId:\s*modelData\s*\?\s*\(modelData\.clipboardId\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+resultMime:\s*modelData\s*\?\s*\(modelData\.mime\s*\|\|\s*""\)\s*:\s*""[\s\S]*?currentClipboardId:\s*resultIsImage\s*\?\s*resultClipboardId\s*:\s*""[\s\S]*?ClipboardService\.decodeToDataUrl\(currentClipboardId,\s*resultMime,\s*null\)/;
+
+  assert.match(source, listDelegate, "Launcher list result delegate must expose typed image/emoji aliases");
+}
+
 function testDateTimeTokenDelegateRolesAreTyped() {
   const source = readQml("Widgets/NDateTimeTokens.qml");
   const tokenDelegate = /delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*tokenDelegate[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+category[\s\S]*?required\s+property\s+string\s+token[\s\S]*?required\s+property\s+string\s+description[\s\S]*?root\.tokenClicked\(token\)[\s\S]*?getCategoryColor\(category\)[\s\S]*?text:\s*description[\s\S]*?toString\(root\.sampleDate,\s*token\)/;
@@ -994,6 +1001,7 @@ const tests = [
   testNotificationDelegateIndexIsTyped,
   testWallpaperTabIntervalPresetModelDataIsTyped,
   testLauncherResultDelegatesAreTyped,
+  testLauncherListImageAliasesAreTyped,
   testDateTimeTokenDelegateRolesAreTyped,
   testSetupCustomizeOptionDelegatesAreTyped,
   testColorPickerSwatchDelegatesAreTyped,

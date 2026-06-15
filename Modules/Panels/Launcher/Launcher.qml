@@ -729,6 +729,10 @@ SmartPanel {
 
               property bool isSelected: (!root.ignoreMouseHover && mouseArea.containsMouse) || (index === selectedIndex)
               property string appId: (modelData && modelData.appId) ? String(modelData.appId) : ""
+              readonly property bool resultIsImage: modelData ? modelData.isImage === true : false
+              readonly property string resultEmojiChar: modelData ? (modelData.emojiChar || "") : ""
+              readonly property string resultClipboardId: modelData ? (modelData.clipboardId || "") : ""
+              readonly property string resultMime: modelData ? (modelData.mime || "") : ""
 
               // Helper function to normalize app IDs for case-insensitive matching
               function normalizeAppId(appId) {
@@ -761,13 +765,13 @@ SmartPanel {
 
               // Property to reliably track the current item's ID.
               // This changes whenever the delegate is recycled for a new item.
-              property var currentClipboardId: modelData.isImage ? modelData.clipboardId : ""
+              property string currentClipboardId: resultIsImage ? resultClipboardId : ""
 
               // When this delegate is assigned a new image item, trigger the decode.
               onCurrentClipboardIdChanged: {
                 // Check if it's a valid ID and if the data isn't already cached.
                 if (currentClipboardId && !ClipboardService.getImageData(currentClipboardId)) {
-                  ClipboardService.decodeToDataUrl(currentClipboardId, modelData.mime, null);
+                  ClipboardService.decodeToDataUrl(currentClipboardId, resultMime, null);
                 }
               }
 
@@ -805,7 +809,7 @@ SmartPanel {
                     NImageRounded {
                       id: imagePreview
                       anchors.fill: parent
-                      visible: modelData.isImage && !modelData.emojiChar
+                      visible: resultIsImage && !resultEmojiChar
                       radius: Style.radiusM
 
                       // This property creates a dependency on the service's revision counter
@@ -815,7 +819,7 @@ SmartPanel {
                       // The dependency on `_rev` ensures this binding is re-evaluated when the cache is updated.
                       imagePath: {
                         _rev;
-                        return ClipboardService.getImageData(modelData.clipboardId) || "";
+                        return ClipboardService.getImageData(resultClipboardId) || "";
                       }
 
                       Rectangle {
@@ -844,14 +848,14 @@ SmartPanel {
                       anchors.fill: parent
                       anchors.margins: Style.marginXS
 
-                      visible: !modelData.isImage && !modelData.emojiChar || (modelData.isImage && imagePreview.status === Image.Error)
+                      visible: !resultIsImage && !resultEmojiChar || (resultIsImage && imagePreview.status === Image.Error)
                       active: visible
 
                       sourceComponent: Component {
                         IconImage {
                           anchors.fill: parent
                           source: modelData.icon ? ThemeIcons.iconFromName(modelData.icon, "application-x-executable") : ""
-                          visible: modelData.icon && source !== "" && !modelData.emojiChar
+                          visible: modelData.icon && source !== "" && !resultEmojiChar
                           asynchronous: true
                         }
                       }
@@ -861,16 +865,16 @@ SmartPanel {
                     NText {
                       id: emojiDisplay
                       anchors.centerIn: parent
-                      visible: modelData.emojiChar || (!imagePreview.visible && !iconLoader.visible)
-                      text: modelData.emojiChar ? modelData.emojiChar : modelData.name.charAt(0).toUpperCase()
-                      pointSize: modelData.emojiChar ? Style.fontSizeXXXL : Style.fontSizeXXL  // Larger font for emojis
+                      visible: resultEmojiChar || (!imagePreview.visible && !iconLoader.visible)
+                      text: resultEmojiChar ? resultEmojiChar : modelData.name.charAt(0).toUpperCase()
+                      pointSize: resultEmojiChar ? Style.fontSizeXXXL : Style.fontSizeXXL  // Larger font for emojis
                       font.weight: Style.fontWeightBold
-                      color: modelData.emojiChar ? Color.mOnSurface : Color.mOnPrimary  // Different color for emojis
+                      color: resultEmojiChar ? Color.mOnSurface : Color.mOnPrimary  // Different color for emojis
                     }
 
                     // Image type indicator overlay
                     Rectangle {
-                      visible: modelData.isImage && imagePreview.visible
+                      visible: resultIsImage && imagePreview.visible
                       anchors.bottom: parent.bottom
                       anchors.right: parent.right
                       anchors.margins: 2
@@ -883,7 +887,7 @@ SmartPanel {
                         id: formatLabel
                         anchors.centerIn: parent
                         text: {
-                          if (!modelData.isImage)
+                          if (!resultIsImage)
                             return "";
                           const desc = modelData.description || "";
                           const parts = desc.split(" • ");
@@ -921,7 +925,7 @@ SmartPanel {
 
                   // Pin/Unpin action icon button
                   NIconButton {
-                    visible: !!entry.appId && !modelData.isImage && entry.isSelected && Settings.data.dock.enabled
+                    visible: !!entry.appId && !resultIsImage && entry.isSelected && Settings.data.dock.enabled
                     Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                     icon: entry.isPinned(entry.appId) ? "unpin" : "pin"
                     tooltipText: entry.isPinned(entry.appId) ? I18n.tr("launcher.unpin") : I18n.tr("launcher.pin")
