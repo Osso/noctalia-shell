@@ -311,10 +311,11 @@ function testShortcutsCardShortcutIdsAreTyped() {
 
 function testSectionEditorWidgetIdsAreTyped() {
   const source = readQml("Widgets/NSectionEditor.qml");
-  const widgetDelegate = /Repeater\s*\{[\s\S]*?model:\s*widgetModel[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*widgetItem[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+string\s+id[\s\S]*?widgetHasUserSettings\(id\)[\s\S]*?text:\s*id[\s\S]*?"widgetId":\s*id/;
+  const widgetDelegate = /Repeater\s*\{[\s\S]*?model:\s*widgetModel[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*widgetItem[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+string\s+id[\s\S]*?readonly\s+property\s+string\s+widgetId:\s*id[\s\S]*?widgetHasUserSettings\(widgetId\)[\s\S]*?text:\s*widgetId[\s\S]*?"widgetId":\s*widgetId/;
 
   assert.match(source, widgetDelegate, "NSectionEditor widget delegate must type id role");
   assert.doesNotMatch(source, /modelData\.id/, "NSectionEditor widget delegate must use typed id role instead of modelData.id");
+  assert.doesNotMatch(source, /widgetHasUserSettings\(id\)|text:\s*id|"widgetId":\s*id/, "NSectionEditor widget delegate must use widgetId after declaration");
 }
 
 function testSessionMenuPowerOptionRolesAreTyped() {
