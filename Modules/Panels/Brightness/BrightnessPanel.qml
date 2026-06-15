@@ -80,6 +80,8 @@ SmartPanel {
           Repeater {
             model: Quickshell.screens || []
             delegate: NBox {
+              required property ShellScreen modelData
+
               Layout.fillWidth: true
               Layout.preferredHeight: outputColumn.implicitHeight + (Style.marginM * 2)
 

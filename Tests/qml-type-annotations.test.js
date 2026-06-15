@@ -369,6 +369,13 @@ function testSetupDockStepMonitorModelIsTyped() {
   assert.match(source, monitorModelDelegate, "SetupDockStep monitor delegate must type screen modelData as ShellScreen");
 }
 
+function testBrightnessPanelScreenModelIsTyped() {
+  const source = readQml("Modules/Panels/Brightness/BrightnessPanel.qml");
+  const screenModelDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?required\s+property\s+ShellScreen\s+modelData/;
+
+  assert.match(source, screenModelDelegate, "BrightnessPanel monitor delegate must type screen modelData as ShellScreen");
+}
+
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
@@ -411,6 +418,7 @@ const tests = [
   testSettingsMonitorModelsAreTyped,
   testWallpaperServiceScannerModelIsTyped,
   testSetupDockStepMonitorModelIsTyped,
+  testBrightnessPanelScreenModelIsTyped,
 ];
 
 for (const test of tests) {
