@@ -389,11 +389,11 @@ SmartPanel {
           required property var modelData
           required property int index
 
-          readonly property string processCommand: modelData.command || ""
-          readonly property string processName: modelData.displayName || processCommand
-          readonly property real processCpu: modelData.cpu || 0
-          readonly property int processMemoryKb: modelData.memoryKB || 0
-          readonly property int processPid: modelData.pid || 0
+          readonly property string processCommand: modelData ? (modelData.command || "") : ""
+          readonly property string processName: modelData ? (modelData.displayName || processCommand) : processCommand
+          readonly property real processCpu: modelData ? (modelData.cpu || 0) : 0
+          readonly property int processMemoryKb: modelData ? (modelData.memoryKB || 0) : 0
+          readonly property int processPid: modelData ? (modelData.pid || 0) : 0
           readonly property color processCpuColor: {
             if (processCpu > 50)
               return Color.mError;
