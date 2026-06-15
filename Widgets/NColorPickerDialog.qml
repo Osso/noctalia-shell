@@ -661,6 +661,7 @@ Popup {
 
                 Rectangle {
                   required property var modelData
+                  required property int index
 
                   width: 24
                   height: 24
@@ -700,6 +701,7 @@ Popup {
 
                 Rectangle {
                   required property var modelData
+                  required property int index
 
                   width: 24
                   height: 24
