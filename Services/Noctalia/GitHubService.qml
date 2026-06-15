@@ -419,7 +419,7 @@ Singleton {
   Process {
     id: versionProcess
 
-    command: ["curl", "-s", "https://api.github.com/repos/noctalia-dev/noctalia-shell/releases/latest"]
+    command: ["curl", "-fsSL", "https://api.github.com/repos/noctalia-dev/noctalia-shell/releases/latest"]
 
     stdout: StdioCollector {
       onStreamFinished: {
@@ -453,7 +453,7 @@ Singleton {
   Process {
     id: contributorsProcess
 
-    command: ["curl", "-s", "https://api.github.com/repos/noctalia-dev/noctalia-shell/contributors?per_page=100"]
+    command: ["curl", "-fsSL", "https://api.github.com/repos/noctalia-dev/noctalia-shell/contributors?per_page=100"]
 
     stdout: StdioCollector {
       onStreamFinished: {
@@ -462,8 +462,15 @@ Singleton {
           Logger.d("GitHub", "Raw contributors response length:", response ? response.length : 0);
           if (response && response.trim()) {
             const data = JSON.parse(response);
-            Logger.d("GitHub", "Parsed contributors data type:", typeof data, "length:", Array.isArray(data) ? data.length : "not array");
-            root.data.contributors = data || [];
+            if (!Array.isArray(data)) {
+              Logger.w("GitHub", "Unexpected contributors response shape");
+              root.data.contributors = [];
+              root.contributors = [];
+              return;
+            }
+
+            Logger.d("GitHub", "Parsed contributors data type:", typeof data, "length:", data.length);
+            root.data.contributors = data;
             root.contributors = root.data.contributors;
             Logger.d("GitHub", "Contributors fetched from GitHub:", root.contributors.length);
           } else {

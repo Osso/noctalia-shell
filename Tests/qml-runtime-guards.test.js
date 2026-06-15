@@ -67,6 +67,15 @@ function testTaskbarGroupedUrgentBadgeHasCooldown() {
   assert.doesNotMatch(source, /if \(workspaceModel\.isUrgent\)\s+return Color\.mOnError/, "TaskbarGrouped badge text color must use the cooled urgent state");
 }
 
+function testGithubServiceFollowsRedirectsAndValidatesResponses() {
+  const source = readQml("Services/Noctalia/GitHubService.qml");
+
+  assert.match(source, /command:\s*\["curl",\s*"-fsSL",\s*"https:\/\/api\.github\.com\/repos\/noctalia-dev\/noctalia-shell\/releases\/latest"\]/, "GitHub version fetch must follow redirects and fail on HTTP errors");
+  assert.match(source, /command:\s*\["curl",\s*"-fsSL",\s*"https:\/\/api\.github\.com\/repos\/noctalia-dev\/noctalia-shell\/contributors\?per_page=100"\]/, "GitHub contributors fetch must follow redirects and fail on HTTP errors");
+  assert.match(source, /Array\.isArray\(data\)/, "GitHub contributors response must be validated before storing contributors");
+  assert.doesNotMatch(source, /root\.data\.contributors = data \|\| \[\]/, "GitHub contributors must not store non-array response objects");
+}
+
 function testOsdDisconnectsBrightnessMonitorsOnDestruction() {
   const source = readQml("Modules/OSD/OSD.qml");
 
@@ -79,6 +88,7 @@ const tests = [
   testOsdBrightnessHandlerRejectsInvalidValues,
   testOsdShowRequiresScreenBeforeActivatingLoader,
   testTaskbarGroupedUrgentBadgeHasCooldown,
+  testGithubServiceFollowsRedirectsAndValidatesResponses,
   testOsdDisconnectsBrightnessMonitorsOnDestruction,
 ];
 
