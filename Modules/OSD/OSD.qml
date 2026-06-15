@@ -162,6 +162,13 @@ Variants {
       }
     }
 
+    function disconnectBrightnessMonitors() {
+      for (var i = 0; i < BrightnessService.monitors.length; i++) {
+        const monitor = BrightnessService.monitors[i];
+        monitor.brightnessUpdated.disconnect(onBrightnessChanged);
+      }
+    }
+
     function onBrightnessChanged(newBrightness) {
       if (newBrightness === null || newBrightness === undefined) {
         return;
@@ -309,6 +316,8 @@ Variants {
         root.startupComplete = true;
       }
     }
+
+    Component.onDestruction: disconnectBrightnessMonitors()
 
     // Visual Component
     sourceComponent: PanelWindow {

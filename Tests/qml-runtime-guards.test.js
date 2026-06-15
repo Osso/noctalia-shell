@@ -56,9 +56,30 @@ function testOsdShowRequiresScreenBeforeActivatingLoader() {
   assert.ok(screenGuard < activation, "showOSD must guard missing screen model data before activating the loader");
 }
 
+function testTaskbarGroupedUrgentBadgeHasCooldown() {
+  const source = readQml("Modules/Bar/Widgets/TaskbarGrouped.qml");
+
+  assert.match(source, /property bool displayedBadgeUrgent:/, "TaskbarGrouped badge must keep a displayed urgent state");
+  assert.match(source, /id:\s*badgeUrgencyCooldown/, "TaskbarGrouped badge must define a cooldown timer");
+  assert.match(source, /interval:\s*5000/, "TaskbarGrouped badge cooldown must be 5 seconds");
+  assert.match(source, /displayedBadgeUrgent = container\.badgeUrgent/, "TaskbarGrouped badge cooldown must settle to current urgency");
+  assert.doesNotMatch(source, /if \(workspaceModel\.isUrgent\)\s+return Color\.mError/, "TaskbarGrouped badge color must use the cooled urgent state");
+  assert.doesNotMatch(source, /if \(workspaceModel\.isUrgent\)\s+return Color\.mOnError/, "TaskbarGrouped badge text color must use the cooled urgent state");
+}
+
+function testOsdDisconnectsBrightnessMonitorsOnDestruction() {
+  const source = readQml("Modules/OSD/OSD.qml");
+
+  assert.match(source, /function disconnectBrightnessMonitors\(\)/, "OSD must define brightness monitor disconnect cleanup");
+  assert.match(source, /monitor\.brightnessUpdated\.disconnect\(onBrightnessChanged\)/, "OSD cleanup must disconnect brightness monitor signals");
+  assert.match(source, /Component\.onDestruction:\s*disconnectBrightnessMonitors\(\)/, "OSD must disconnect brightness monitors when its delegate is destroyed");
+}
+
 const tests = [
   testOsdBrightnessHandlerRejectsInvalidValues,
   testOsdShowRequiresScreenBeforeActivatingLoader,
+  testTaskbarGroupedUrgentBadgeHasCooldown,
+  testOsdDisconnectsBrightnessMonitorsOnDestruction,
 ];
 
 for (const test of tests) {

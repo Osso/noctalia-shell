@@ -265,6 +265,8 @@ Item {
       required property var model
       property var workspaceModel: model
       property bool hasWindows: workspaceModel.windows.count > 0
+      property bool badgeUrgent: workspaceModel.isUrgent === true
+      property bool displayedBadgeUrgent: badgeUrgent
 
       radius: Style.radiusS
       border.color: workspaceModel.isFocused ? Color.mPrimary : Color.mOutline
@@ -272,6 +274,20 @@ Item {
       width: (hasWindows ? iconsFlow.implicitWidth : root.itemSize * 0.8) + (root.isVerticalBar ? Style.marginXS : Style.marginL)
       height: (hasWindows ? iconsFlow.implicitHeight : root.itemSize * 0.8) + (root.isVerticalBar ? Style.marginL : Style.marginXS)
       color: Style.capsuleColor
+
+      onBadgeUrgentChanged: {
+        if (badgeUrgent) {
+          displayedBadgeUrgent = true;
+        }
+        badgeUrgencyCooldown.restart();
+      }
+
+      Timer {
+        id: badgeUrgencyCooldown
+        interval: 5000
+        repeat: false
+        onTriggered: displayedBadgeUrgent = container.badgeUrgent
+      }
 
       MouseArea {
         anchors.fill: parent
@@ -440,7 +456,7 @@ Item {
           color: {
             if (workspaceModel.isFocused)
               return Color.mPrimary;
-            if (workspaceModel.isUrgent)
+            if (container.displayedBadgeUrgent)
               return Color.mError;
             if (hasWindows)
               return Color.mSecondary;
@@ -512,7 +528,7 @@ Item {
           color: {
             if (workspaceModel.isFocused)
               return Color.mOnPrimary;
-            if (workspaceModel.isUrgent)
+            if (container.displayedBadgeUrgent)
               return Color.mOnError;
             // if (hasWindows)
             //   return Color.mOnSecondary;
