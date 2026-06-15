@@ -229,9 +229,14 @@ Singleton {
   }
 
   function shouldSuppressEmptyNotification(data) {
-    return !(data.appName || "").trim()
-      && !(data.summary || "").trim()
+    return isPlaceholderNotificationText(data.appName, ["unknown", "unknown app"])
+      && isPlaceholderNotificationText(data.summary, ["no summary"])
       && !(data.body || "").trim();
+  }
+
+  function isPlaceholderNotificationText(value, placeholders) {
+    const normalized = String(value || "").trim().toLowerCase();
+    return !normalized || placeholders.indexOf(normalized) !== -1;
   }
 
   function shouldSuppressTerminalBellNotification(data) {

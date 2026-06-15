@@ -129,12 +129,23 @@ function testEmptyNotificationsAreSuppressedBeforeHistory() {
   assert.notEqual(addNewIndex, -1, "NotificationService must still display valid notifications");
   assert.ok(emptyGuardIndex < historyIndex, "empty notifications must be suppressed before history insertion");
   assert.ok(emptyGuardIndex < addNewIndex, "empty notifications must be suppressed before display insertion");
-  assert.match(guardBody, /!\(data\.appName \|\| ""\)\.trim\(\)/, "empty notification guard must require a missing app name");
-  assert.match(guardBody, /!\(data\.summary \|\| ""\)\.trim\(\)/, "empty notification guard must require a missing summary");
+  assert.match(guardBody, /isPlaceholderNotificationText\(data\.appName,\s*\["unknown",\s*"unknown app"\]\)/, "empty notification guard must require a missing or placeholder app name");
+  assert.match(guardBody, /isPlaceholderNotificationText\(data\.summary,\s*\["no summary"\]\)/, "empty notification guard must require a missing or placeholder summary");
   assert.match(guardBody, /!\(data\.body \|\| ""\)\.trim\(\)/, "empty notification guard must require a missing body");
   assert.match(createDataBody, /const notificationAppName = n\.appName \|\| n\.desktopEntry \|\| ""/, "createData must keep the raw notification app name separate from display formatting");
   assert.match(createDataBody, /"appName":\s*notificationAppName\s*\?\s*getAppName\(notificationAppName\)\s*:\s*""/, "createData must keep missing app names empty so the guard can suppress placeholder notifications");
   assert.doesNotMatch(createDataBody, /"appName":\s*getAppName\(n\.appName \|\| n\.desktopEntry \|\| ""\)/, "createData must not turn missing app names into a display fallback before suppression");
+}
+
+function testPlaceholderNotificationsAreSuppressedBeforeHistory() {
+  const source = readQml("Services/System/NotificationService.qml");
+  const guardBody = extractFunctionBody(source, "shouldSuppressEmptyNotification");
+  const placeholderBody = extractFunctionBody(source, "isPlaceholderNotificationText");
+
+  assert.match(guardBody, /isPlaceholderNotificationText\(data\.appName,\s*\["unknown",\s*"unknown app"\]\)/, "empty notification guard must treat unknown app labels as missing app names");
+  assert.match(guardBody, /isPlaceholderNotificationText\(data\.summary,\s*\["no summary"\]\)/, "empty notification guard must treat no-summary labels as missing summaries");
+  assert.match(placeholderBody, /String\(value \|\| ""\)\.trim\(\)\.toLowerCase\(\)/, "placeholder normalization must ignore whitespace and casing");
+  assert.match(placeholderBody, /placeholders\.indexOf\(normalized\) !== -1/, "placeholder normalization must match known fallback labels");
 }
 
 function testGithubServiceFollowsRedirectsAndValidatesResponses() {
@@ -162,6 +173,7 @@ const tests = [
   testFocusedWorkspaceBurstOnlyRunsOnFocusChange,
   testTerminalBellNotificationsHaveCooldown,
   testEmptyNotificationsAreSuppressedBeforeHistory,
+  testPlaceholderNotificationsAreSuppressedBeforeHistory,
   testGithubServiceFollowsRedirectsAndValidatesResponses,
   testOsdDisconnectsBrightnessMonitorsOnDestruction,
 ];
