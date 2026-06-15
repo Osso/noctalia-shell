@@ -117,12 +117,13 @@ Singleton {
     id: monitor
 
     required property ShellScreen modelData
-    readonly property bool isDdc: Settings.data.brightness.enableDdcSupport && root.ddcMonitors.some(m => m.model === modelData.model)
+    readonly property string screenModel: modelData.model
+    readonly property bool isDdc: Settings.data.brightness.enableDdcSupport && root.ddcMonitors.some(m => m.model === screenModel)
     readonly property string busNum: {
-      const ddcMonitor = root.ddcMonitors.find(m => m.model === modelData.model);
+      const ddcMonitor = root.ddcMonitors.find(m => m.model === screenModel);
       return ddcMonitor ? ddcMonitor.busNum : "";
     }
-    readonly property bool isAppleDisplay: root.appleDisplayPresent && modelData.model.startsWith("StudioDisplay")
+    readonly property bool isAppleDisplay: root.appleDisplayPresent && screenModel.startsWith("StudioDisplay")
     readonly property string method: isAppleDisplay ? "apple" : (isDdc ? "ddcutil" : "internal")
 
     // Check if brightness control is available for this monitor

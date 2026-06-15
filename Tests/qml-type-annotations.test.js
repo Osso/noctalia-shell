@@ -596,6 +596,20 @@ function testBrightnessPanelBrightnessMonitorIsTyped() {
   assertNoPropertyType(brightnessPanelFile, "brightnessMonitor", "var");
 }
 
+function testBrightnessServiceMonitorScreenModelAliasIsTyped() {
+  const brightnessServiceFile = "Services/Hardware/BrightnessService.qml";
+  const source = readQml(brightnessServiceFile);
+  const monitorComponent = /component\s+Monitor:\s+QtObject\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+screenModel:\s+modelData\.model/;
+
+  assert.match(source, monitorComponent, "BrightnessService Monitor must expose typed screenModel alias from ShellScreen modelData");
+  assert.match(source, /root\.ddcMonitors\.some\(m\s*=>\s*m\.model\s*===\s*screenModel\)/, "BrightnessService DDC detection must use screenModel");
+  assert.match(source, /root\.ddcMonitors\.find\(m\s*=>\s*m\.model\s*===\s*screenModel\)/, "BrightnessService DDC bus lookup must use screenModel");
+  assert.match(source, /root\.appleDisplayPresent\s*&&\s*screenModel\.startsWith\("StudioDisplay"\)/, "BrightnessService Apple display detection must use screenModel");
+
+  const modelReads = source.match(/modelData\.model/g) ?? [];
+  assert.deepEqual(modelReads, ["modelData.model"], "BrightnessService Monitor must use screenModel after declaration");
+}
+
 function testBackgroundShapeContainersAreTyped() {
   const backgroundFiles = [
     "Modules/MainScreen/Backgrounds/BarBackground.qml",
@@ -754,6 +768,7 @@ const tests = [
   testSectionEditorRegistryIsTyped,
   testDisplayTabBrightnessMonitorIsTyped,
   testBrightnessPanelBrightnessMonitorIsTyped,
+  testBrightnessServiceMonitorScreenModelAliasIsTyped,
   testBackgroundShapeContainersAreTyped,
   testWallpaperPanelScreenReferencesAreTyped,
   testWallpaperPanelMonitorTabModelIsTyped,
