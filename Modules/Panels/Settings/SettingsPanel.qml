@@ -450,8 +450,9 @@ SmartPanel {
 
             delegate: Rectangle {
               id: tabItem
-              required property var modelData
               required property int index
+              required property string icon
+              required property string label
 
               width: sidebarList.verticalScrollBarActive ? sidebarList.width - sidebarList.scrollBarWidth - Style.marginXS : sidebarList.width
               height: tabEntryRow.implicitHeight + Style.marginS * 2
@@ -488,14 +489,14 @@ SmartPanel {
 
                 // Tab icon
                 NIcon {
-                  icon: modelData.icon
+                  icon: tabItem.icon
                   color: tabTextColor
                   pointSize: Style.fontSizeXL
                 }
 
                 // Tab label
                 NText {
-                  text: I18n.tr(modelData.label)
+                  text: I18n.tr(tabItem.label)
                   color: tabTextColor
                   pointSize: Style.fontSizeM
                   font.weight: Style.fontWeightBold
@@ -596,7 +597,6 @@ SmartPanel {
               Repeater {
                 model: root.tabsModel
                 delegate: Loader {
-                  required property var modelData
                   required property int index
 
                   anchors.fill: parent

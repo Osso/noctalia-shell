@@ -130,11 +130,13 @@ function testSettingsPanelActiveScrollViewIsTyped() {
 
 function testSettingsPanelTabsDelegatesAreTyped() {
   const source = readQml("Modules/Panels/Settings/SettingsPanel.qml");
-  const sidebarDelegate = /NListView\s*\{[\s\S]*?model:\s*root\.tabsModel[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?icon:\s*modelData\.icon[\s\S]*?text:\s*I18n\.tr\(modelData\.label\)/;
-  const contentDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.tabsModel[\s\S]*?delegate:\s*Loader\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?active:\s*index\s*===\s*root\.currentTabIndex/;
+  const sidebarDelegate = /NListView\s*\{[\s\S]*?model:\s*root\.tabsModel[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+icon[\s\S]*?required\s+property\s+string\s+label[\s\S]*?icon:\s*tabItem\.icon[\s\S]*?text:\s*I18n\.tr\(tabItem\.label\)/;
+  const contentDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.tabsModel[\s\S]*?delegate:\s*Loader\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?active:\s*index\s*===\s*root\.currentTabIndex/;
 
-  assert.match(source, sidebarDelegate, "SettingsPanel sidebar tab delegate must declare modelData and index roles");
-  assert.match(source, contentDelegate, "SettingsPanel content loader delegate must declare modelData and index roles");
+  assert.match(source, sidebarDelegate, "SettingsPanel sidebar tab delegate must type scalar roles");
+  assert.match(source, contentDelegate, "SettingsPanel content loader delegate must declare index role");
+  assert.doesNotMatch(source, /modelData\.(?:icon|label)/, "SettingsPanel tab delegates must use typed roles instead of modelData.*");
+  assert.doesNotMatch(source, /delegate:\s*Loader\s*\{[\s\S]*?required\s+property\s+var\s+modelData/, "SettingsPanel content loader must not keep unused modelData");
 }
 
 function testComboBoxDelegateParentIsTyped() {
