@@ -303,6 +303,14 @@ function testTraySettingsBlacklistDelegateRolesAreTyped() {
   assert.doesNotMatch(source, /model\.rule/, "TraySettings blacklist delegate must use typed rule role instead of model.rule");
 }
 
+function testReorderCheckboxDelegateRolesAreTyped() {
+  const source = readQml("Widgets/NReorderCheckboxes.qml");
+  const checkboxDelegate = /ListView\s*\{[\s\S]*?model:\s*root\.model[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?id:\s*delegateItem[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+id[\s\S]*?required\s+property\s+string\s+text[\s\S]*?required\s+property\s+bool\s+enabled[\s\S]*?root\.disabledIds\s*\|\|\s*\[\]\)\.indexOf\(id\)/;
+
+  assert.match(source, checkboxDelegate, "NReorderCheckboxes delegate must type item roles");
+  assert.doesNotMatch(source, /modelData\.(?:id|text|enabled)/, "NReorderCheckboxes delegate must use typed roles instead of modelData.*");
+}
+
 function testColorSchemeTabSchemeModelDataIsTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/ColorScheme/ColorSchemeTab.qml");
   const fileLoaderDelegate = /Repeater\s*\{[\s\S]*?model:\s*ColorSchemeService\.schemes[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?path:\s*modelData/;
@@ -652,6 +660,7 @@ const tests = [
   testAboutTabContributorDelegateIndexesAreTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,
+  testReorderCheckboxDelegateRolesAreTyped,
   testColorSchemeTabSchemeModelDataIsTyped,
   testSchemeDownloaderDelegatesAreTyped,
   testControlCenterPanelCardDelegateIsTyped,

@@ -73,11 +73,12 @@ Item {
 
       required property int index
       required property var modelData
+      required property string id
+      required property string text
+      required property bool enabled
 
-      property string text: modelData.text || ""
-      property bool enabled: modelData.enabled || false
       property bool required: modelData.required || false
-      readonly property bool isDisabled: (root.disabledIds || []).indexOf(modelData.id) !== -1
+      readonly property bool isDisabled: (root.disabledIds || []).indexOf(id) !== -1
       readonly property bool canDrag: !delegateItem.isDisabled
       property bool dragging: false
       property int dragStartY: 0
