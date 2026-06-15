@@ -239,7 +239,7 @@ ColumnLayout {
           required property string text
           required property bool countdownEnabled
 
-          readonly property bool entryEnabled: modelData.enabled || false
+          readonly property bool entryEnabled: modelData ? modelData.enabled === true : false
           property bool dragging: false
           property int dragStartY: 0
           property int dragStartIndex: -1
