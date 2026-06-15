@@ -401,16 +401,18 @@ SmartPanel {
           Repeater {
             model: powerOptions
             delegate: PowerButton {
+              required property string icon
+              required property string title
+              required property string action
+              required property bool isShutdown
+
               Layout.fillWidth: true
-              icon: modelData.icon
-              title: modelData.title
-              isShutdown: modelData.isShutdown || false
               isSelected: index === selectedIndex
               onClicked: {
                 selectedIndex = index;
-                startTimer(modelData.action);
+                startTimer(action);
               }
-              pending: timerActive && pendingAction === modelData.action
+              pending: timerActive && pendingAction === action
             }
           }
         }

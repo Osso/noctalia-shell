@@ -262,6 +262,14 @@ function testSectionEditorWidgetIdsAreTyped() {
   assert.doesNotMatch(source, /modelData\.id/, "NSectionEditor widget delegate must use typed id role instead of modelData.id");
 }
 
+function testSessionMenuPowerOptionRolesAreTyped() {
+  const source = readQml("Modules/Panels/SessionMenu/SessionMenu.qml");
+  const powerOptionDelegate = /Repeater\s*\{[\s\S]*?model:\s*powerOptions[\s\S]*?delegate:\s*PowerButton\s*\{[\s\S]*?required\s+property\s+string\s+icon[\s\S]*?required\s+property\s+string\s+title[\s\S]*?required\s+property\s+string\s+action[\s\S]*?required\s+property\s+bool\s+isShutdown[\s\S]*?startTimer\(action\)[\s\S]*?pending:\s*timerActive\s*&&\s*pendingAction\s*===\s*action/;
+
+  assert.match(source, powerOptionDelegate, "SessionMenu power option delegate must type scalar roles");
+  assert.doesNotMatch(source, /modelData\.(?:icon|title|action|isShutdown)/, "SessionMenu power option delegate must use typed roles instead of modelData.*");
+}
+
 function testAboutTabContributorDelegateIndexesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/AboutTab.qml");
   const topContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.min\(root\.contributors\.length,\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\]\.login/;
@@ -623,6 +631,7 @@ const tests = [
   testTaskbarWindowDelegateRolesAreTyped,
   testShortcutsCardShortcutIdsAreTyped,
   testSectionEditorWidgetIdsAreTyped,
+  testSessionMenuPowerOptionRolesAreTyped,
   testAboutTabContributorDelegateIndexesAreTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,
