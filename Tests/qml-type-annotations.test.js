@@ -244,6 +244,16 @@ function testTaskbarWindowDelegateRolesAreTyped() {
   assert.doesNotMatch(source, /modelData\.(?:appId|title|output|workspaceId|isFocused)/, "Taskbar window delegate must use typed scalar roles instead of modelData.* field reads");
 }
 
+function testShortcutsCardShortcutIdsAreTyped() {
+  const source = readQml("Modules/Cards/ShortcutsCard.qml");
+  const leftDelegate = /model:\s*Settings\.data\.controlCenter\.shortcuts\.left[\s\S]*?delegate:\s*ControlCenterWidgetLoader\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+string\s+id[\s\S]*?widgetId:\s*id[\s\S]*?"widgetId":\s*id/;
+  const rightDelegate = /model:\s*Settings\.data\.controlCenter\.shortcuts\.right[\s\S]*?delegate:\s*ControlCenterWidgetLoader\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+string\s+id[\s\S]*?widgetId:\s*id[\s\S]*?"widgetId":\s*id/;
+
+  assert.match(source, leftDelegate, "ShortcutsCard left shortcut delegate must type id role");
+  assert.match(source, rightDelegate, "ShortcutsCard right shortcut delegate must type id role");
+  assert.doesNotMatch(source, /modelData\.id/, "ShortcutsCard shortcut delegates must use typed id role instead of modelData.id");
+}
+
 function testAboutTabContributorDelegateIndexesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/AboutTab.qml");
   const topContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.min\(root\.contributors\.length,\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\]\.login/;
@@ -603,6 +613,7 @@ const tests = [
   testSetupAppearanceSchemeLoaderModelDataIsTyped,
   testFilePickerDelegatesUseTypedFileRoles,
   testTaskbarWindowDelegateRolesAreTyped,
+  testShortcutsCardShortcutIdsAreTyped,
   testAboutTabContributorDelegateIndexesAreTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,
