@@ -36,12 +36,18 @@ Popup {
       id: menuItem
       required property var modelData
       required property int index
+      readonly property bool itemVisible: modelData.visible !== false
+      readonly property bool itemEnabled: modelData.enabled !== false
+      readonly property bool hasIcon: modelData.icon !== undefined
+      readonly property string itemIcon: modelData.icon || ""
+      readonly property string itemText: modelData.label || modelData.text || ""
+      readonly property string itemAction: modelData.action || modelData.key || index.toString()
 
       width: listView.width
-      height: modelData.visible !== false ? root.itemHeight : 0
-      visible: modelData.visible !== false
-      opacity: modelData.enabled !== false ? 1.0 : 0.5
-      enabled: modelData.enabled !== false
+      height: itemVisible ? root.itemHeight : 0
+      visible: itemVisible
+      opacity: itemEnabled ? 1.0 : 0.5
+      enabled: itemEnabled
 
       // Store reference to the popup
       property Popup popup: root
@@ -62,8 +68,8 @@ Popup {
 
         // Optional icon
         NIcon {
-          visible: modelData.icon !== undefined
-          icon: modelData.icon || ""
+          visible: hasIcon
+          icon: itemIcon
           pointSize: Style.fontSizeM
           color: menuItem.hovered && menuItem.enabled ? Color.mOnHover : Color.mOnSurface
           Layout.leftMargin: root.itemPadding
@@ -76,12 +82,12 @@ Popup {
         }
 
         NText {
-          text: modelData.label || modelData.text || ""
+          text: itemText
           pointSize: Style.fontSizeM
           color: menuItem.hovered && menuItem.enabled ? Color.mOnHover : Color.mOnSurface
           verticalAlignment: Text.AlignVCenter
           Layout.fillWidth: true
-          Layout.leftMargin: modelData.icon === undefined ? root.itemPadding : 0
+          Layout.leftMargin: hasIcon ? 0 : root.itemPadding
 
           Behavior on color {
             ColorAnimation {
@@ -93,7 +99,7 @@ Popup {
 
       onClicked: {
         if (enabled) {
-          popup.triggered(modelData.action || modelData.key || index.toString());
+          popup.triggered(itemAction);
           popup.close();
         }
       }
