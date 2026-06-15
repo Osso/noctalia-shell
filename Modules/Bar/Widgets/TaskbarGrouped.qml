@@ -55,6 +55,35 @@ Item {
   property var selectedWindow: null
   property string selectedAppName: ""
   property int modelUpdateTrigger: 0  // Dummy property to force model re-evaluation
+  property string focusedWorkspaceKey: ""
+  property var displayedUrgencyByWorkspace: ({})
+
+  function workspaceUrgencyKey(workspace) {
+    if (!workspace)
+      return "";
+
+    const workspaceId = workspace.id !== undefined ? workspace.id : workspace.idx;
+    const output = workspace.output || (screen ? screen.name : "");
+    return output + ":" + workspaceId;
+  }
+
+  function displayedUrgentForWorkspace(workspace) {
+    const key = workspaceUrgencyKey(workspace);
+    if (!key || displayedUrgencyByWorkspace[key] === undefined)
+      return workspace && workspace.isUrgent === true;
+
+    return displayedUrgencyByWorkspace[key] === true;
+  }
+
+  function setDisplayedUrgency(workspace, urgent) {
+    const key = workspaceUrgencyKey(workspace);
+    if (!key)
+      return;
+
+    const nextUrgency = Object.assign({}, displayedUrgencyByWorkspace);
+    nextUrgency[key] = urgent === true;
+    displayedUrgencyByWorkspace = nextUrgency;
+  }
 
   function refreshWorkspaces() {
     localWorkspaces.clear();
@@ -89,6 +118,10 @@ Item {
     for (var i = 0; i < localWorkspaces.count; i++) {
       const ws = localWorkspaces.get(i);
       if (ws.isFocused === true) {
+        const key = workspaceUrgencyKey(ws);
+        if (key === focusedWorkspaceKey)
+          return;
+        focusedWorkspaceKey = key;
         root.triggerUnifiedWave();
         break;
       }
@@ -266,7 +299,7 @@ Item {
       property var workspaceModel: model
       property bool hasWindows: workspaceModel.windows.count > 0
       property bool badgeUrgent: workspaceModel.isUrgent === true
-      property bool displayedBadgeUrgent: badgeUrgent
+      property bool displayedBadgeUrgent: root.displayedUrgentForWorkspace(workspaceModel)
 
       radius: Style.radiusS
       border.color: workspaceModel.isFocused ? Color.mPrimary : Color.mOutline
@@ -277,16 +310,22 @@ Item {
 
       onBadgeUrgentChanged: {
         if (badgeUrgent) {
-          displayedBadgeUrgent = true;
+          root.setDisplayedUrgency(workspaceModel, true);
         }
         badgeUrgencyCooldown.restart();
+      }
+
+      Component.onCompleted: {
+        if (displayedBadgeUrgent) {
+          badgeUrgencyCooldown.restart();
+        }
       }
 
       Timer {
         id: badgeUrgencyCooldown
         interval: 5000
         repeat: false
-        onTriggered: displayedBadgeUrgent = container.badgeUrgent
+        onTriggered: root.setDisplayedUrgency(workspaceModel, container.badgeUrgent)
       }
 
       MouseArea {

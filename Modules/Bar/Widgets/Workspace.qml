@@ -59,12 +59,41 @@ Item {
 
   property int horizontalPadding: Style.marginS
   property int spacingBetweenPills: Style.marginXS
+  property string focusedWorkspaceKey: ""
+  property var displayedUrgencyByWorkspace: ({})
 
   // Wheel scroll handling
   property int wheelAccumulatedDelta: 0
   property bool wheelCooldown: false
 
   signal workspaceChanged(int workspaceId, color accentColor)
+
+  function workspaceUrgencyKey(workspace) {
+    if (!workspace)
+      return "";
+
+    const workspaceId = workspace.id !== undefined ? workspace.id : workspace.idx;
+    const output = workspace.output || (screen ? screen.name : "");
+    return output + ":" + workspaceId;
+  }
+
+  function displayedUrgentForWorkspace(workspace) {
+    const key = workspaceUrgencyKey(workspace);
+    if (!key || displayedUrgencyByWorkspace[key] === undefined)
+      return workspace && workspace.isUrgent === true;
+
+    return displayedUrgencyByWorkspace[key] === true;
+  }
+
+  function setDisplayedUrgency(workspace, urgent) {
+    const key = workspaceUrgencyKey(workspace);
+    if (!key)
+      return;
+
+    const nextUrgency = Object.assign({}, displayedUrgencyByWorkspace);
+    nextUrgency[key] = urgent === true;
+    displayedUrgencyByWorkspace = nextUrgency;
+  }
 
   implicitWidth: isVertical ? Style.barHeight : computeWidth()
   implicitHeight: isVertical ? computeHeight() : Style.barHeight
@@ -198,6 +227,10 @@ Item {
     for (var i = 0; i < localWorkspaces.count; i++) {
       const ws = localWorkspaces.get(i);
       if (ws.isFocused === true) {
+        const key = workspaceUrgencyKey(ws);
+        if (key === focusedWorkspaceKey)
+          return;
+        focusedWorkspaceKey = key;
         root.triggerUnifiedWave();
         root.workspaceChanged(ws.id, Color.mPrimary);
         break;
@@ -334,8 +367,31 @@ Item {
       model: localWorkspaces
       Item {
         id: workspacePillContainer
+        property bool urgent: model.isUrgent === true
+        property bool displayedUrgent: root.displayedUrgentForWorkspace(model)
+
         width: root.getWorkspaceWidth(model)
         height: Style.capsuleHeight * root.baseDimensionRatio
+
+        onUrgentChanged: {
+          if (urgent) {
+            root.setDisplayedUrgency(model, true);
+          }
+          horizontalUrgencyCooldown.restart();
+        }
+
+        Component.onCompleted: {
+          if (displayedUrgent) {
+            horizontalUrgencyCooldown.restart();
+          }
+        }
+
+        Timer {
+          id: horizontalUrgencyCooldown
+          interval: 5000
+          repeat: false
+          onTriggered: root.setDisplayedUrgency(model, workspacePillContainer.urgent)
+        }
 
         Rectangle {
           id: pill
@@ -367,7 +423,7 @@ Item {
                 color: {
                   if (model.isFocused)
                     return Color.mOnPrimary;
-                  if (model.isUrgent)
+                  if (workspacePillContainer.displayedUrgent)
                     return Color.mOnError;
                   if (model.isOccupied)
                     return Color.mOnSecondary;
@@ -382,7 +438,7 @@ Item {
           color: {
             if (model.isFocused)
               return Color.mPrimary;
-            if (model.isUrgent)
+            if (workspacePillContainer.displayedUrgent)
               return Color.mError;
             if (model.isOccupied)
               return Color.mSecondary;
@@ -483,8 +539,31 @@ Item {
       model: localWorkspaces
       Item {
         id: workspacePillContainerVertical
+        property bool urgent: model.isUrgent === true
+        property bool displayedUrgent: root.displayedUrgentForWorkspace(model)
+
         width: Style.capsuleHeight * root.baseDimensionRatio
         height: root.getWorkspaceHeight(model)
+
+        onUrgentChanged: {
+          if (urgent) {
+            root.setDisplayedUrgency(model, true);
+          }
+          verticalUrgencyCooldown.restart();
+        }
+
+        Component.onCompleted: {
+          if (displayedUrgent) {
+            verticalUrgencyCooldown.restart();
+          }
+        }
+
+        Timer {
+          id: verticalUrgencyCooldown
+          interval: 5000
+          repeat: false
+          onTriggered: root.setDisplayedUrgency(model, workspacePillContainerVertical.urgent)
+        }
 
         Rectangle {
           id: pillVertical
@@ -516,7 +595,7 @@ Item {
                 color: {
                   if (model.isFocused)
                     return Color.mOnPrimary;
-                  if (model.isUrgent)
+                  if (workspacePillContainerVertical.displayedUrgent)
                     return Color.mOnError;
                   if (model.isOccupied)
                     return Color.mOnSecondary;
@@ -531,7 +610,7 @@ Item {
           color: {
             if (model.isFocused)
               return Color.mPrimary;
-            if (model.isUrgent)
+            if (workspacePillContainerVertical.displayedUrgent)
               return Color.mError;
             if (model.isOccupied)
               return Color.mSecondary;

@@ -59,12 +59,60 @@ function testOsdShowRequiresScreenBeforeActivatingLoader() {
 function testTaskbarGroupedUrgentBadgeHasCooldown() {
   const source = readQml("Modules/Bar/Widgets/TaskbarGrouped.qml");
 
-  assert.match(source, /property bool displayedBadgeUrgent:/, "TaskbarGrouped badge must keep a displayed urgent state");
+  assert.match(source, /property var displayedUrgencyByWorkspace:/, "TaskbarGrouped badge cooldown state must survive delegate rebuilds");
+  assert.match(source, /function workspaceUrgencyKey\(workspace\)/, "TaskbarGrouped badge cooldown must key state by workspace");
+  assert.match(source, /function displayedUrgentForWorkspace\(workspace\)/, "TaskbarGrouped badge cooldown must restore displayed state after model refresh");
   assert.match(source, /id:\s*badgeUrgencyCooldown/, "TaskbarGrouped badge must define a cooldown timer");
   assert.match(source, /interval:\s*5000/, "TaskbarGrouped badge cooldown must be 5 seconds");
-  assert.match(source, /displayedBadgeUrgent = container\.badgeUrgent/, "TaskbarGrouped badge cooldown must settle to current urgency");
+  assert.match(source, /root\.setDisplayedUrgency\(workspaceModel,\s*container\.badgeUrgent\)/, "TaskbarGrouped badge cooldown must settle persistent urgency state");
   assert.doesNotMatch(source, /if \(workspaceModel\.isUrgent\)\s+return Color\.mError/, "TaskbarGrouped badge color must use the cooled urgent state");
   assert.doesNotMatch(source, /if \(workspaceModel\.isUrgent\)\s+return Color\.mOnError/, "TaskbarGrouped badge text color must use the cooled urgent state");
+}
+
+function testWorkspaceUrgentBadgeHasCooldown() {
+  const source = readQml("Modules/Bar/Widgets/Workspace.qml");
+
+  assert.match(source, /property var displayedUrgencyByWorkspace:/, "Workspace badge cooldown state must survive delegate rebuilds");
+  assert.match(source, /function workspaceUrgencyKey\(workspace\)/, "Workspace badge cooldown must key state by workspace");
+  assert.match(source, /function displayedUrgentForWorkspace\(workspace\)/, "Workspace badge cooldown must restore displayed state after model refresh");
+  assert.match(source, /id:\s*horizontalUrgencyCooldown/, "Workspace horizontal badge must define a cooldown timer");
+  assert.match(source, /id:\s*verticalUrgencyCooldown/, "Workspace vertical badge must define a cooldown timer");
+  assert.match(source, /interval:\s*5000/, "Workspace badge cooldown must be 5 seconds");
+  assert.match(source, /root\.setDisplayedUrgency\(model,\s*workspacePillContainer\.urgent\)/, "Workspace horizontal badge cooldown must settle persistent urgency state");
+  assert.match(source, /root\.setDisplayedUrgency\(model,\s*workspacePillContainerVertical\.urgent\)/, "Workspace vertical badge cooldown must settle persistent urgency state");
+  assert.doesNotMatch(source, /if \(model\.isUrgent\)\s+return Color\.mError/, "Workspace badge color must use the cooled urgent state");
+  assert.doesNotMatch(source, /if \(model\.isUrgent\)\s+return Color\.mOnError/, "Workspace badge text color must use the cooled urgent state");
+}
+
+function testFocusedWorkspaceBurstOnlyRunsOnFocusChange() {
+  const workspaceSource = readQml("Modules/Bar/Widgets/Workspace.qml");
+  const groupedSource = readQml("Modules/Bar/Widgets/TaskbarGrouped.qml");
+  const workspaceBody = extractFunctionBody(workspaceSource, "updateWorkspaceFocus");
+  const groupedBody = extractFunctionBody(groupedSource, "updateWorkspaceFocus");
+
+  assert.match(workspaceSource, /property string focusedWorkspaceKey:/, "Workspace must remember the last focused workspace key");
+  assert.match(groupedSource, /property string focusedWorkspaceKey:/, "TaskbarGrouped must remember the last focused workspace key");
+  assert.match(workspaceBody, /if \(key === focusedWorkspaceKey\)\s+return;/, "Workspace must not restart focus burst for the same focused workspace");
+  assert.match(groupedBody, /if \(key === focusedWorkspaceKey\)\s+return;/, "TaskbarGrouped must not restart focus burst for the same focused workspace");
+  assert.match(workspaceBody, /focusedWorkspaceKey = key[\s\S]*root\.triggerUnifiedWave\(\)/, "Workspace must update focus key before running the burst");
+  assert.match(groupedBody, /focusedWorkspaceKey = key[\s\S]*root\.triggerUnifiedWave\(\)/, "TaskbarGrouped must update focus key before running the burst");
+}
+
+function testTerminalBellNotificationsHaveCooldown() {
+  const source = readQml("Services/System/NotificationService.qml");
+  const handleBody = extractFunctionBody(source, "handleNotification");
+  const cooldownIndex = handleBody.indexOf("shouldSuppressTerminalBellNotification(data)");
+  const historyIndex = handleBody.indexOf("addToHistory(data)");
+  const cooldownBody = extractFunctionBody(source, "shouldSuppressTerminalBellNotification");
+
+  assert.match(source, /readonly property int terminalBellCooldownMs:\s*5000/, "terminal bell cooldown must be 5 seconds");
+  assert.match(source, /property real lastTerminalBellNotificationMs:\s*0/, "terminal bell cooldown must track the last displayed bell");
+  assert.notEqual(cooldownIndex, -1, "NotificationService must check terminal bell cooldown");
+  assert.notEqual(historyIndex, -1, "NotificationService must still write normal notifications to history");
+  assert.ok(cooldownIndex < historyIndex, "terminal bell cooldown must suppress repeated bells before history insertion");
+  assert.match(cooldownBody, /isTerminalBellNotification\(data\)/, "cooldown must only apply to terminal bell notifications");
+  assert.match(cooldownBody, /nowMs - lastTerminalBellNotificationMs < terminalBellCooldownMs/, "cooldown must suppress bells inside the 5 second window");
+  assert.match(cooldownBody, /lastTerminalBellNotificationMs = nowMs/, "cooldown must record the displayed bell timestamp");
 }
 
 function testGithubServiceFollowsRedirectsAndValidatesResponses() {
@@ -88,6 +136,9 @@ const tests = [
   testOsdBrightnessHandlerRejectsInvalidValues,
   testOsdShowRequiresScreenBeforeActivatingLoader,
   testTaskbarGroupedUrgentBadgeHasCooldown,
+  testWorkspaceUrgentBadgeHasCooldown,
+  testFocusedWorkspaceBurstOnlyRunsOnFocusChange,
+  testTerminalBellNotificationsHaveCooldown,
   testGithubServiceFollowsRedirectsAndValidatesResponses,
   testOsdDisconnectsBrightnessMonitorsOnDestruction,
 ];

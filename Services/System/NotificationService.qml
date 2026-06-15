@@ -20,6 +20,8 @@ Singleton {
 
   // State
   property real lastSeenTs: 0
+  property real lastTerminalBellNotificationMs: 0
+  readonly property int terminalBellCooldownMs: 5000
   // Volatile property that doesn't persist to settings (similar to noctaliaPerformanceMode)
   property bool doNotDisturb: false
 
@@ -178,6 +180,9 @@ Singleton {
   function handleNotification(notification) {
     const quickshellId = notification.id;
     const data = createData(notification);
+    if (shouldSuppressTerminalBellNotification(data))
+      return;
+
     const isSuppressed = root.doNotDisturb || PowerProfileService.noctaliaPerformanceMode;
 
     // Check if this is a replacement notification
@@ -218,6 +223,37 @@ Singleton {
 
     // Add new notification
     addNewNotification(quickshellId, notification, data);
+  }
+
+  function shouldSuppressTerminalBellNotification(data) {
+    if (!isTerminalBellNotification(data))
+      return false;
+
+    const nowMs = Date.now();
+    if (nowMs - lastTerminalBellNotificationMs < terminalBellCooldownMs)
+      return true;
+
+    lastTerminalBellNotificationMs = nowMs;
+    return false;
+  }
+
+  function isTerminalBellNotification(data) {
+    const appName = (data.appName || "").toLowerCase();
+    const notificationContent = [
+      data.summary || "",
+      data.body || ""
+    ].join(" ").toLowerCase();
+    const terminalAppPattern = /\b(terminal|kitty|wezterm|foot|alacritty|ghostty)\b/;
+    const bellPattern = /\b(bell|beep)\b/;
+    const terminalBeforeBellPattern = /\bterminal\b.*\b(bell|beep)\b/;
+    const bellBeforeTerminalPattern = /\b(bell|beep)\b.*\bterminal\b/;
+
+    const isTerminalApp = terminalAppPattern.test(appName);
+    const isBellContent = bellPattern.test(notificationContent);
+    const terminalBeforeBell = terminalBeforeBellPattern.test(notificationContent);
+    const bellBeforeTerminal = bellBeforeTerminalPattern.test(notificationContent);
+    const mentionsTerminalBell = terminalBeforeBell || bellBeforeTerminal;
+    return (isTerminalApp && isBellContent) || mentionsTerminalBell;
   }
 
   function refreshDuplicateNotification(existingInternalId, quickshellId, notification, data) {
