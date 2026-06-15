@@ -162,6 +162,15 @@ function testLockScreenForecastDelegateIndexIsTyped() {
   assert.match(source, forecastDelegate, "LockScreen forecast delegate must declare index role before reading forecast arrays");
 }
 
+function testChangelogPanelHighlightDelegatesAreTyped() {
+  const source = readQml("Modules/Panels/Changelog/ChangelogPanel.qml");
+  const highlightDelegate = /Repeater\s*\{[\s\S]*?model:\s*releaseHighlights[\s\S]*?delegate:\s*ColumnLayout\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?model:\s*modelData\.entries/;
+  const entryDelegate = /Repeater\s*\{[\s\S]*?model:\s*modelData\.entries[\s\S]*?delegate:\s*NText\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?headingLevel\(modelData\)/;
+
+  assert.match(source, highlightDelegate, "ChangelogPanel highlight delegate must declare modelData");
+  assert.match(source, entryDelegate, "ChangelogPanel entry delegate must type string modelData");
+}
+
 function testAboutTabContributorDelegateIndexesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/AboutTab.qml");
   const topContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.min\(root\.contributors\.length,\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\]\.login/;
@@ -511,6 +520,7 @@ const tests = [
   testComboBoxDelegateIndexIsTyped,
   testWeatherCardForecastDelegateIndexIsTyped,
   testLockScreenForecastDelegateIndexIsTyped,
+  testChangelogPanelHighlightDelegatesAreTyped,
   testAboutTabContributorDelegateIndexesAreTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,
