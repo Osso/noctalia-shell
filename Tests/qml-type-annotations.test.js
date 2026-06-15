@@ -507,6 +507,13 @@ function testUPowerBatteryReferencesAreTyped() {
   }
 }
 
+function testBluetoothDeviceDelegateInputsAreTyped() {
+  const source = readQml("Modules/Panels/Bluetooth/BluetoothDevicesList.qml");
+  const deviceDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.model[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+BluetoothDevice\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?BluetoothService\.canConnect\(modelData\)/;
+
+  assert.match(source, deviceDelegate, "BluetoothDevicesList device delegate must type modelData as BluetoothDevice and declare index");
+}
+
 function testAudioNodeHandlesAreTyped() {
   const audioServiceFile = "Services/Media/AudioService.qml";
 
@@ -711,6 +718,7 @@ const tests = [
   testCompositorBackendIsTyped,
   testPowerProfilesReferenceIsTyped,
   testUPowerBatteryReferencesAreTyped,
+  testBluetoothDeviceDelegateInputsAreTyped,
   testAudioNodeHandlesAreTyped,
   testTrayMenuItemIsTyped,
   testTrayMenuSubMenuIsTyped,

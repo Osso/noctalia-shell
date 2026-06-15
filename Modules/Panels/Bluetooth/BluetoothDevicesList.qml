@@ -44,6 +44,9 @@ NBox {
       Rectangle {
         id: device
 
+        required property BluetoothDevice modelData
+        required property int index
+
         readonly property bool canConnect: BluetoothService.canConnect(modelData)
         readonly property bool canDisconnect: BluetoothService.canDisconnect(modelData)
         readonly property bool isBusy: BluetoothService.isDeviceBusy(modelData)
