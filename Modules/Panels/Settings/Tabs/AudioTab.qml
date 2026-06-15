@@ -199,8 +199,12 @@ ColumnLayout {
         NRadioButton {
           ButtonGroup.group: sinks
           required property PwNode modelData
-          text: modelData.description
-          checked: AudioService.sink && AudioService.sink.id === modelData.id
+
+          readonly property string deviceId: modelData.id
+          readonly property string deviceDescription: modelData.description || deviceId
+
+          text: deviceDescription
+          checked: AudioService.sink && AudioService.sink.id === deviceId
           onClicked: {
             AudioService.setAudioSink(modelData);
             localVolume = AudioService.volume;
@@ -231,8 +235,12 @@ ColumnLayout {
         NRadioButton {
           ButtonGroup.group: sources
           required property PwNode modelData
-          text: modelData.description
-          checked: AudioService.source && AudioService.source.id === modelData.id
+
+          readonly property string deviceId: modelData.id
+          readonly property string deviceDescription: modelData.description || deviceId
+
+          text: deviceDescription
+          checked: AudioService.source && AudioService.source.id === deviceId
           onClicked: AudioService.setAudioSource(modelData)
           Layout.fillWidth: true
         }

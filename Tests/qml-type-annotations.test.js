@@ -579,6 +579,17 @@ function testAudioPanelDeviceDelegatesAreTyped() {
   assert.equal((source.match(/modelData\.description/g) ?? []).length, 2, "AudioPanel delegates must use deviceDescription after declaration");
 }
 
+function testAudioTabDeviceDelegatesAreTyped() {
+  const source = readQml("Modules/Panels/Settings/Tabs/AudioTab.qml");
+  const sinkDelegate = /Repeater\s*\{[\s\S]*?model:\s*AudioService\.sinks[\s\S]*?NRadioButton\s*\{[\s\S]*?required\s+property\s+PwNode\s+modelData[\s\S]*?readonly\s+property\s+string\s+deviceId:\s*modelData\.id[\s\S]*?readonly\s+property\s+string\s+deviceDescription:\s*modelData\.description\s*\|\|\s*deviceId[\s\S]*?text:\s*deviceDescription[\s\S]*?checked:\s*AudioService\.sink\s*&&\s*AudioService\.sink\.id\s*===\s*deviceId/;
+  const sourceDelegate = /Repeater\s*\{[\s\S]*?model:\s*AudioService\.sources[\s\S]*?NRadioButton\s*\{[\s\S]*?required\s+property\s+PwNode\s+modelData[\s\S]*?readonly\s+property\s+string\s+deviceId:\s*modelData\.id[\s\S]*?readonly\s+property\s+string\s+deviceDescription:\s*modelData\.description\s*\|\|\s*deviceId[\s\S]*?text:\s*deviceDescription[\s\S]*?checked:\s*AudioService\.source\s*&&\s*AudioService\.source\.id\s*===\s*deviceId/;
+
+  assert.match(source, sinkDelegate, "AudioTab sink delegate must expose stable device aliases");
+  assert.match(source, sourceDelegate, "AudioTab source delegate must expose stable device aliases");
+  assert.equal((source.match(/modelData\.id/g) ?? []).length, 2, "AudioTab delegates must use deviceId after declaration");
+  assert.equal((source.match(/modelData\.description/g) ?? []).length, 2, "AudioTab delegates must use deviceDescription after declaration");
+}
+
 function testProcessPanelProcessDelegateInputsAreTyped() {
   const source = readQml("Modules/Panels/Process/ProcessPanel.qml");
   const processDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.processList[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?ProcessService\.getProcessIcon\(modelData\.command\)/;
@@ -960,6 +971,7 @@ const tests = [
   testBluetoothDeviceDelegateInputsAreTyped,
   testAudioNodeHandlesAreTyped,
   testAudioPanelDeviceDelegatesAreTyped,
+  testAudioTabDeviceDelegatesAreTyped,
   testProcessPanelProcessDelegateInputsAreTyped,
   testTrayMenuItemIsTyped,
   testTrayMenuSubMenuIsTyped,
