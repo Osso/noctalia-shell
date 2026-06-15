@@ -166,6 +166,15 @@ function testColorSchemeTabSchemeModelDataIsTyped() {
   assert.match(source, schemeGridDelegate, "ColorSchemeTab scheme grid delegate must type string modelData");
 }
 
+function testSchemeDownloaderDelegatesAreTyped() {
+  const source = readQml("Modules/Panels/Settings/Tabs/ColorScheme/SchemeDownloader.qml");
+  const schemeDelegate = /Repeater\s*\{[\s\S]*?model:\s*availableSchemes[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?property\s+string\s+schemeName:\s*modelData\.name[\s\S]*?root\.fetchSchemeColors\(modelData\)/;
+  const swatchDelegate = /Repeater\s*\{[\s\S]*?model:\s*schemeRow\.colorKeys[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?color:\s*root\.getSchemeColor\(schemeRow\.schemeName,\s*modelData\)/;
+
+  assert.match(source, schemeDelegate, "SchemeDownloader scheme delegate must declare modelData");
+  assert.match(source, swatchDelegate, "SchemeDownloader swatch delegate must type string modelData");
+}
+
 function testPanelServiceOpenedPanelIsTyped() {
   assertPropertyType("Services/UI/PanelService.qml", "openedPanel", "SmartPanel");
 }
@@ -451,6 +460,7 @@ const tests = [
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,
   testColorSchemeTabSchemeModelDataIsTyped,
+  testSchemeDownloaderDelegatesAreTyped,
   testPanelServiceOpenedPanelIsTyped,
   testContextMenuDelegatePopupIsTyped,
   testGeometryReferencesAreTypedItems,

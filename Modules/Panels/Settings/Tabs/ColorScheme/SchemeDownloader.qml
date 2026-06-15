@@ -832,6 +832,8 @@ Popup {
 
           Rectangle {
             id: schemeItem
+            required property var modelData
+
             Layout.fillWidth: true
             Layout.preferredHeight: 50 * Style.uiScaleRatio
             radius: Style.radiusS
@@ -890,6 +892,8 @@ Popup {
               Repeater {
                 model: schemeRow.colorKeys
                 Rectangle {
+                  required property string modelData
+
                   width: schemeRow.diameter
                   height: schemeRow.diameter
                   radius: schemeRow.diameter * 0.5
