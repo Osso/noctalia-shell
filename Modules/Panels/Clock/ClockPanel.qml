@@ -33,11 +33,16 @@ SmartPanel {
       Repeater {
         model: Settings.data.calendar.cards
         Loader {
-          active: modelData.enabled && (modelData.id !== "weather-card" || Settings.data.location.weatherEnabled)
+          required property var modelData
+
+          readonly property string cardId: modelData.id || ""
+          readonly property bool cardEnabled: modelData.enabled === true
+
+          active: cardEnabled && (cardId !== "weather-card" || Settings.data.location.weatherEnabled)
           visible: active
           Layout.fillWidth: true
           sourceComponent: {
-            switch (modelData.id) {
+            switch (cardId) {
             case "calendar-header-card":
               return calendarHeaderCard;
             case "calendar-month-card":

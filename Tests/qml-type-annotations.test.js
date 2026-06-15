@@ -361,9 +361,20 @@ function testSchemeDownloaderDelegatesAreTyped() {
 
 function testControlCenterPanelCardDelegateIsTyped() {
   const source = readQml("Modules/Panels/ControlCenter/ControlCenterPanel.qml");
-  const cardDelegate = /Repeater\s*\{[\s\S]*?model:\s*Settings\.data\.controlCenter\.cards[\s\S]*?Loader\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?active:\s*modelData\.enabled[\s\S]*?switch\s*\(modelData\.id\)/;
+  const cardDelegate = /Repeater\s*\{[\s\S]*?model:\s*Settings\.data\.controlCenter\.cards[\s\S]*?Loader\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?readonly\s+property\s+string\s+cardId:\s*modelData\.id\s*\|\|\s*""[\s\S]*?readonly\s+property\s+bool\s+cardEnabled:\s*modelData\.enabled\s*===\s*true[\s\S]*?active:\s*cardEnabled[\s\S]*?switch\s*\(cardId\)/;
 
-  assert.match(source, cardDelegate, "ControlCenterPanel card delegate must declare modelData");
+  assert.match(source, cardDelegate, "ControlCenterPanel card delegate must type card aliases");
+  assert.equal((source.match(/modelData\.id/g) ?? []).length, 1, "ControlCenterPanel card delegate must use cardId after declaration");
+  assert.equal((source.match(/modelData\.enabled/g) ?? []).length, 1, "ControlCenterPanel card delegate must use cardEnabled after declaration");
+}
+
+function testClockPanelCardDelegateIsTyped() {
+  const source = readQml("Modules/Panels/Clock/ClockPanel.qml");
+  const cardDelegate = /Repeater\s*\{[\s\S]*?model:\s*Settings\.data\.calendar\.cards[\s\S]*?Loader\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?readonly\s+property\s+string\s+cardId:\s*modelData\.id\s*\|\|\s*""[\s\S]*?readonly\s+property\s+bool\s+cardEnabled:\s*modelData\.enabled\s*===\s*true[\s\S]*?active:\s*cardEnabled[\s\S]*?switch\s*\(cardId\)/;
+
+  assert.match(source, cardDelegate, "ClockPanel card delegate must type card aliases");
+  assert.equal((source.match(/modelData\.id/g) ?? []).length, 1, "ClockPanel card delegate must use cardId after declaration");
+  assert.equal((source.match(/modelData\.enabled/g) ?? []).length, 1, "ClockPanel card delegate must use cardEnabled after declaration");
 }
 
 function testPanelServiceOpenedPanelIsTyped() {
@@ -915,6 +926,7 @@ const tests = [
   testColorSchemeTabSchemeModelDataIsTyped,
   testSchemeDownloaderDelegatesAreTyped,
   testControlCenterPanelCardDelegateIsTyped,
+  testClockPanelCardDelegateIsTyped,
   testPanelServiceOpenedPanelIsTyped,
   testContextMenuDelegatePopupIsTyped,
   testContextMenuDelegateRolesAreTyped,

@@ -255,8 +255,8 @@ function testDefaultControlCenterShortcutsExistInRegistry() {
 
 function testDefaultControlCenterCardsAreLoadable() {
   const source = readQml("Modules/Panels/ControlCenter/ControlCenterPanel.qml");
-  const loadableIds = new Set(switchCaseIdsAfter(source, "sourceComponent:", "modelData.id"));
-  const sizedIds = new Set(switchCaseIdsAfter(source, "Layout.preferredHeight:", "modelData.id"));
+  const loadableIds = new Set(switchCaseIdsAfter(source, "sourceComponent:", "cardId"));
+  const sizedIds = new Set(switchCaseIdsAfter(source, "Layout.preferredHeight:", "cardId"));
   const configuredIds = configuredCardIds(defaultSettings.controlCenter.cards);
 
   assert.equal(configuredIds.length, 5);
@@ -269,7 +269,7 @@ function testDefaultControlCenterCardsAreLoadable() {
 function testDefaultCalendarCardsAreLoadableOrMigrated() {
   const panelSource = readQml("Modules/Panels/Clock/ClockPanel.qml");
   const migrationSource = readQml("Commons/Migrations/Migration26.qml");
-  const loadableIds = new Set(switchCaseIdsAfter(panelSource, "sourceComponent:", "modelData.id"));
+  const loadableIds = new Set(switchCaseIdsAfter(panelSource, "sourceComponent:", "cardId"));
   const migrationIds = quotedIds(migrationSource);
   const configuredIds = configuredCardIds(defaultSettings.calendar.cards);
 

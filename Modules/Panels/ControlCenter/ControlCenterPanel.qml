@@ -97,11 +97,14 @@ SmartPanel {
         Loader {
           required property var modelData
 
-          active: modelData.enabled && (modelData.id !== "weather-card" || Settings.data.location.weatherEnabled)
+          readonly property string cardId: modelData.id || ""
+          readonly property bool cardEnabled: modelData.enabled === true
+
+          active: cardEnabled && (cardId !== "weather-card" || Settings.data.location.weatherEnabled)
           visible: active
           Layout.fillWidth: true
           Layout.preferredHeight: {
-            switch (modelData.id) {
+            switch (cardId) {
             case "profile-card":
               return profileHeight;
             case "shortcuts-card":
@@ -117,7 +120,7 @@ SmartPanel {
             }
           }
           sourceComponent: {
-            switch (modelData.id) {
+            switch (cardId) {
             case "profile-card":
               return profileCard;
             case "shortcuts-card":
