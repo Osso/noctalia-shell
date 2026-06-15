@@ -180,6 +180,9 @@ Singleton {
   function handleNotification(notification) {
     const quickshellId = notification.id;
     const data = createData(notification);
+    if (shouldSuppressEmptyNotification(data))
+      return;
+
     if (shouldSuppressTerminalBellNotification(data))
       return;
 
@@ -223,6 +226,12 @@ Singleton {
 
     // Add new notification
     addNewNotification(quickshellId, notification, data);
+  }
+
+  function shouldSuppressEmptyNotification(data) {
+    return !(data.appName || "").trim()
+      && !(data.summary || "").trim()
+      && !(data.body || "").trim();
   }
 
   function shouldSuppressTerminalBellNotification(data) {

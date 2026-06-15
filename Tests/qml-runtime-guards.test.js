@@ -115,6 +115,24 @@ function testTerminalBellNotificationsHaveCooldown() {
   assert.match(cooldownBody, /lastTerminalBellNotificationMs = nowMs/, "cooldown must record the displayed bell timestamp");
 }
 
+function testEmptyNotificationsAreSuppressedBeforeHistory() {
+  const source = readQml("Services/System/NotificationService.qml");
+  const handleBody = extractFunctionBody(source, "handleNotification");
+  const emptyGuardIndex = handleBody.indexOf("shouldSuppressEmptyNotification(data)");
+  const historyIndex = handleBody.indexOf("addToHistory(data)");
+  const addNewIndex = handleBody.indexOf("addNewNotification(quickshellId, notification, data)");
+  const guardBody = extractFunctionBody(source, "shouldSuppressEmptyNotification");
+
+  assert.notEqual(emptyGuardIndex, -1, "NotificationService must check empty notification suppression");
+  assert.notEqual(historyIndex, -1, "NotificationService must still write valid notifications to history");
+  assert.notEqual(addNewIndex, -1, "NotificationService must still display valid notifications");
+  assert.ok(emptyGuardIndex < historyIndex, "empty notifications must be suppressed before history insertion");
+  assert.ok(emptyGuardIndex < addNewIndex, "empty notifications must be suppressed before display insertion");
+  assert.match(guardBody, /!\(data\.appName \|\| ""\)\.trim\(\)/, "empty notification guard must require a missing app name");
+  assert.match(guardBody, /!\(data\.summary \|\| ""\)\.trim\(\)/, "empty notification guard must require a missing summary");
+  assert.match(guardBody, /!\(data\.body \|\| ""\)\.trim\(\)/, "empty notification guard must require a missing body");
+}
+
 function testGithubServiceFollowsRedirectsAndValidatesResponses() {
   const source = readQml("Services/Noctalia/GitHubService.qml");
 
@@ -139,6 +157,7 @@ const tests = [
   testWorkspaceUrgentBadgeHasCooldown,
   testFocusedWorkspaceBurstOnlyRunsOnFocusChange,
   testTerminalBellNotificationsHaveCooldown,
+  testEmptyNotificationsAreSuppressedBeforeHistory,
   testGithubServiceFollowsRedirectsAndValidatesResponses,
   testOsdDisconnectsBrightnessMonitorsOnDestruction,
 ];
