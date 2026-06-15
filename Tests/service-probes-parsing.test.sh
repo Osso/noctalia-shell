@@ -628,6 +628,16 @@ if has_quickshell_ipc_call "$niri_config_fixture" "$canonical_repo" "sessionMenu
     exit 1
 fi
 
+if has_quickshell_ipc_call "$niri_config_fixture" "$canonical_repo" "launch.r" "toggle"; then
+    echo "regex-like Niri IPC target was accepted" >&2
+    exit 1
+fi
+
+if has_quickshell_ipc_call "$niri_config_fixture" "$canonical_repo" "launcher" "tog.le"; then
+    echo "regex-like Niri IPC function was accepted" >&2
+    exit 1
+fi
+
 if has_quickshell_ipc_call "spawn quickshell ipc -p $canonical_repo call launcher toggleExtra" "$canonical_repo" "launcher" "toggle"; then
     echo "prefixed Niri IPC function was accepted" >&2
     exit 1

@@ -377,7 +377,10 @@ has_quickshell_ipc_call() {
             continue
         fi
         active_line="$(strip_inline_launch_comment "$line")"
-        if [[ "$active_line" =~ quickshell[[:blank:]]+ipc[[:blank:]]+-p[[:blank:]]+$repo_path[[:blank:]]+call[[:blank:]]+$target[[:blank:]]+$function_name($|[[:space:]]|[;}]) ]]; then
+        if [[ "$active_line" =~ quickshell[[:blank:]]+ipc[[:blank:]]+-p[[:blank:]]+([^[:space:];}]+)[[:blank:]]+call[[:blank:]]+([A-Za-z0-9_]+)[[:blank:]]+([A-Za-z0-9_]+)($|[[:space:]]|[;}]) ]] \
+            && [[ "${BASH_REMATCH[1]}" == "$repo_path" ]] \
+            && [[ "${BASH_REMATCH[2]}" == "$target" ]] \
+            && [[ "${BASH_REMATCH[3]}" == "$function_name" ]]; then
             return 0
         fi
     done <<<"$normalized_config"
