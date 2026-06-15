@@ -452,6 +452,17 @@ function testBarWidgetLoaderScreenIsTyped() {
   assertNoPropertyType(loaderFile, "widgetScreen", "var");
 }
 
+function testBarWidgetDelegatesUseTypedWidgetIdAliases() {
+  const source = readQml("Modules/Bar/Bar.qml");
+
+  assert.equal((source.match(/readonly\s+property\s+string\s+configuredWidgetId:\s*modelData\.id\s*\|\|\s*""/g) ?? []).length, 6, "Bar widget delegates must declare typed widget id aliases");
+  assert.equal((source.match(/widgetId:\s*configuredWidgetId/g) ?? []).length, 6, "Bar widget delegates must assign widgetId from the typed alias");
+  assert.equal((source.match(/"widgetId":\s*configuredWidgetId/g) ?? []).length, 6, "Bar widget delegates must pass widgetId props from the typed alias");
+  assert.equal((source.match(/modelData\.id/g) ?? []).length, 6, "Bar widget delegates must only read modelData.id when declaring the alias");
+  assert.doesNotMatch(source, /widgetId:\s*modelData\.id/, "Bar widget delegates must not assign widgetId directly from modelData.id");
+  assert.doesNotMatch(source, /"widgetId":\s*modelData\.id/, "Bar widget delegates must not pass widgetId props directly from modelData.id");
+}
+
 function testControlCenterWidgetLoaderScreenIsTyped() {
   const loaderFile = "Modules/Panels/ControlCenter/ControlCenterWidgetLoader.qml";
 
@@ -971,6 +982,7 @@ const tests = [
   testTimeNowPropertiesAreTypedDates,
   testEffectSourcePropertiesAreTyped,
   testBarWidgetLoaderScreenIsTyped,
+  testBarWidgetDelegatesUseTypedWidgetIdAliases,
   testControlCenterWidgetLoaderScreenIsTyped,
   testClockSettingsFocusedInputIsTyped,
   testClockSettingsPreviewModelsAreTyped,

@@ -202,12 +202,13 @@ Item {
           delegate: BarWidgetLoader {
             required property var modelData
             required property int index
+            readonly property string configuredWidgetId: modelData.id || ""
 
-            widgetId: modelData.id || ""
+            widgetId: configuredWidgetId
             barDensity: Settings.data.bar.density
             widgetScreen: root.screen
             widgetProps: ({
-                            "widgetId": modelData.id,
+                            "widgetId": configuredWidgetId,
                             "section": "left",
                             "sectionWidgetIndex": index,
                             "sectionWidgetsCount": Settings.data.bar.widgets.left.length
@@ -228,12 +229,13 @@ Item {
           delegate: BarWidgetLoader {
             required property var modelData
             required property int index
+            readonly property string configuredWidgetId: modelData.id || ""
 
-            widgetId: modelData.id || ""
+            widgetId: configuredWidgetId
             barDensity: Settings.data.bar.density
             widgetScreen: root.screen
             widgetProps: ({
-                            "widgetId": modelData.id,
+                            "widgetId": configuredWidgetId,
                             "section": "center",
                             "sectionWidgetIndex": index,
                             "sectionWidgetsCount": Settings.data.bar.widgets.center.length
@@ -255,12 +257,13 @@ Item {
           delegate: BarWidgetLoader {
             required property var modelData
             required property int index
+            readonly property string configuredWidgetId: modelData.id || ""
 
-            widgetId: modelData.id || ""
+            widgetId: configuredWidgetId
             barDensity: Settings.data.bar.density
             widgetScreen: root.screen
             widgetProps: ({
-                            "widgetId": modelData.id,
+                            "widgetId": configuredWidgetId,
                             "section": "right",
                             "sectionWidgetIndex": index,
                             "sectionWidgetsCount": Settings.data.bar.widgets.right.length
@@ -293,12 +296,13 @@ Item {
           delegate: BarWidgetLoader {
             required property var modelData
             required property int index
+            readonly property string configuredWidgetId: modelData.id || ""
 
-            widgetId: modelData.id || ""
+            widgetId: configuredWidgetId
             barDensity: Settings.data.bar.density
             widgetScreen: root.screen
             widgetProps: ({
-                            "widgetId": modelData.id,
+                            "widgetId": configuredWidgetId,
                             "section": "left",
                             "sectionWidgetIndex": index,
                             "sectionWidgetsCount": Settings.data.bar.widgets.left.length
@@ -321,12 +325,13 @@ Item {
           delegate: BarWidgetLoader {
             required property var modelData
             required property int index
+            readonly property string configuredWidgetId: modelData.id || ""
 
-            widgetId: modelData.id || ""
+            widgetId: configuredWidgetId
             barDensity: Settings.data.bar.density
             widgetScreen: root.screen
             widgetProps: ({
-                            "widgetId": modelData.id,
+                            "widgetId": configuredWidgetId,
                             "section": "center",
                             "sectionWidgetIndex": index,
                             "sectionWidgetsCount": Settings.data.bar.widgets.center.length
@@ -350,12 +355,13 @@ Item {
           delegate: BarWidgetLoader {
             required property var modelData
             required property int index
+            readonly property string configuredWidgetId: modelData.id || ""
 
-            widgetId: modelData.id || ""
+            widgetId: configuredWidgetId
             barDensity: Settings.data.bar.density
             widgetScreen: root.screen
             widgetProps: ({
-                            "widgetId": modelData.id,
+                            "widgetId": configuredWidgetId,
                             "section": "right",
                             "sectionWidgetIndex": index,
                             "sectionWidgetsCount": Settings.data.bar.widgets.right.length
