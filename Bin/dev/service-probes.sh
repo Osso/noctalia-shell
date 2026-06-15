@@ -632,11 +632,9 @@ probe_wallpaper_colors() {
     echo "ok probeWallpaperColors"
 }
 
-probe_settings() {
-    require_command jq
-
-    local settings_file="/home/osso/.config/noctalia/settings.json"
-    local defaults_file="$repo_root/Assets/settings-default.json"
+has_settings_default_keys() {
+    local settings_file="$1"
+    local defaults_file="$2"
 
     jq -e --slurp '
         .[0] as $settings
@@ -644,6 +642,10 @@ probe_settings() {
         | (($settings | keys | sort) == ($defaults | keys | sort))
         and (($settings.templates | keys | sort) == ($defaults.templates | keys | sort))
     ' "$settings_file" "$defaults_file" >/dev/null
+}
+
+has_settings_value_shape() {
+    local settings_file="$1"
 
     jq -e '
         .settingsVersion
@@ -731,6 +733,16 @@ probe_settings() {
         and (.colorSchemes.schedulingMode | IN("off", "manual", "location"))
         and (.colorSchemes.predefinedScheme | type == "string")
     ' "$settings_file" >/dev/null
+}
+
+probe_settings() {
+    require_command jq
+
+    local settings_file="/home/osso/.config/noctalia/settings.json"
+    local defaults_file="$repo_root/Assets/settings-default.json"
+
+    has_settings_default_keys "$settings_file" "$defaults_file"
+    has_settings_value_shape "$settings_file"
 
     echo "ok probeSettings"
 }

@@ -532,6 +532,27 @@ if has_notifications_cache_shape "$state_cache_fixture_root/bad-notifications.js
     exit 1
 fi
 
+settings_fixture="$state_cache_fixture_root/settings.json"
+settings_bad_templates_fixture="$state_cache_fixture_root/settings-bad-templates.json"
+settings_bad_shape_fixture="$state_cache_fixture_root/settings-bad-shape.json"
+
+cp "$repo_root/Assets/settings-default.json" "$settings_fixture"
+jq 'del(.templates.kitty)' "$settings_fixture" >"$settings_bad_templates_fixture"
+jq '.bar.position = "diagonal"' "$settings_fixture" >"$settings_bad_shape_fixture"
+
+has_settings_default_keys "$settings_fixture" "$repo_root/Assets/settings-default.json"
+has_settings_value_shape "$settings_fixture"
+
+if has_settings_default_keys "$settings_bad_templates_fixture" "$repo_root/Assets/settings-default.json"; then
+    echo "settings with missing template key were accepted" >&2
+    exit 1
+fi
+
+if has_settings_value_shape "$settings_bad_shape_fixture"; then
+    echo "settings with invalid bar position were accepted" >&2
+    exit 1
+fi
+
 os_release_fixture=$'PRETTY_NAME="Noctalia Test OS"\nNAME=NoctaliaTest\nID=noctalia-test\nLOGO=noctalia-test-logo'
 assert_equal "$(read_os_release_value PRETTY_NAME "$os_release_fixture")" "Noctalia Test OS" "quoted os-release value parse failed"
 assert_equal "$(read_os_release_value ID "$os_release_fixture")" "noctalia-test" "unquoted os-release value parse failed"
