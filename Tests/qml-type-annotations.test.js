@@ -201,6 +201,15 @@ function testDateTimeTokenDelegateRolesAreTyped() {
   assert.match(source, tokenDelegate, "NDateTimeTokens delegate must declare modelData and index roles");
 }
 
+function testSetupCustomizeOptionDelegatesAreTyped() {
+  const source = readQml("Modules/Panels/SetupWizard/SetupCustomizeStep.qml");
+  const barPositionDelegate = /model:\s*\[[\s\S]*?"key":\s*"left"[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?selectedBarPosition\s*===\s*modelData\.key/;
+  const densityDelegate = /model:\s*\[[\s\S]*?"key":\s*"comfortable"[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?Settings\.data\.bar\.density\s*===\s*modelData\.key/;
+
+  assert.match(source, barPositionDelegate, "SetupCustomizeStep bar position delegate must declare modelData");
+  assert.match(source, densityDelegate, "SetupCustomizeStep density delegate must declare modelData");
+}
+
 function testAboutTabContributorDelegateIndexesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/AboutTab.qml");
   const topContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.min\(root\.contributors\.length,\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\]\.login/;
@@ -555,6 +564,7 @@ const tests = [
   testWallpaperTabIntervalPresetModelDataIsTyped,
   testLauncherResultDelegatesAreTyped,
   testDateTimeTokenDelegateRolesAreTyped,
+  testSetupCustomizeOptionDelegatesAreTyped,
   testAboutTabContributorDelegateIndexesAreTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,

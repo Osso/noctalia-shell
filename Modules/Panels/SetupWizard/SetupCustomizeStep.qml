@@ -138,6 +138,8 @@ ColumnLayout {
               }
             ]
             delegate: Rectangle {
+              required property var modelData
+
               Layout.fillWidth: true
               Layout.preferredHeight: 40
               radius: Style.radiusM
@@ -257,6 +259,8 @@ ColumnLayout {
               }
             ]
             delegate: Rectangle {
+              required property var modelData
+
               radius: Style.radiusM
               border.width: Style.borderS
               Layout.preferredHeight: 32
