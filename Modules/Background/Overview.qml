@@ -16,7 +16,7 @@ Loader {
       id: panelWindow
 
       required property ShellScreen modelData
-      readonly property string monitorName: modelData.name
+      readonly property string monitorName: modelData ? modelData.name : ""
       property string wallpaper: ""
 
       Component.onCompleted: {

@@ -699,9 +699,9 @@ function testBackgroundScreenAliasesAreTyped() {
 
 function testOverviewScreenAliasIsTyped() {
   const source = readQml("Modules/Background/Overview.qml");
-  const screenDelegate = /Variants\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?delegate:\s*PanelWindow\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s*modelData\.name[\s\S]*?Loading overview for Niri on",\s*monitorName[\s\S]*?screenName\s*===\s*monitorName[\s\S]*?WallpaperService\.getWallpaper\(monitorName\)/;
+  const screenDelegate = /Variants\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?delegate:\s*PanelWindow\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s*modelData\s*\?\s*modelData\.name\s*:\s*""[\s\S]*?Loading overview for Niri on",\s*monitorName[\s\S]*?screenName\s*===\s*monitorName[\s\S]*?WallpaperService\.getWallpaper\(monitorName\)/;
 
-  assert.match(source, screenDelegate, "Overview screen delegate must expose typed monitorName alias");
+  assert.match(source, screenDelegate, "Overview screen delegate must expose null-safe typed monitorName alias");
   assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "Overview must use monitorName after declaration");
 }
 
