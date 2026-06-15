@@ -298,19 +298,22 @@ ColumnLayout {
               }
             ]
             delegate: Rectangle {
+              required property string key
+              required property string name
+
               Layout.fillWidth: true
               Layout.preferredHeight: 48
               radius: Style.radiusM
               border.width: Style.borderS
 
-              property bool isActive: Settings.data.colorSchemes.matugenSchemeType === modelData.key
+              property bool isActive: Settings.data.colorSchemes.matugenSchemeType === key
 
               color: (hoverHandler.hovered || isActive) ? Color.mPrimary : Color.mSurfaceVariant
               border.color: (hoverHandler.hovered || isActive) ? Color.mPrimary : Color.mOutline
               opacity: (hoverHandler.hovered || isActive) ? 1.0 : 0.8
 
               NText {
-                text: modelData.name
+                text: name
                 pointSize: Style.fontSizeM
                 font.weight: (hoverHandler.hovered || parent.isActive) ? Style.fontWeightBold : Style.fontWeightMedium
                 color: (hoverHandler.hovered || parent.isActive) ? Color.mOnPrimary : Color.mOnSurface
@@ -324,7 +327,7 @@ ColumnLayout {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  Settings.data.colorSchemes.matugenSchemeType = modelData.key;
+                  Settings.data.colorSchemes.matugenSchemeType = key;
                   AppThemeService.generate();
                 }
               }

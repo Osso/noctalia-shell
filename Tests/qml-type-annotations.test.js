@@ -223,8 +223,11 @@ function testColorPickerSwatchDelegatesAreTyped() {
 function testSetupAppearanceSchemeLoaderModelDataIsTyped() {
   const source = readQml("Modules/Panels/SetupWizard/SetupAppearanceStep.qml");
   const schemeLoaderDelegate = /Repeater\s*\{[\s\S]*?model:\s*ColorSchemeService\.schemes[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?path:\s*modelData/;
+  const materialSchemeDelegate = /model:\s*\[[\s\S]*?"key":\s*"scheme-tonal-spot"[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+string\s+key[\s\S]*?required\s+property\s+string\s+name[\s\S]*?matugenSchemeType\s*===\s*key[\s\S]*?text:\s*name[\s\S]*?matugenSchemeType\s*=\s*key/;
 
   assert.match(source, schemeLoaderDelegate, "SetupAppearanceStep scheme loader delegate must type string modelData");
+  assert.match(source, materialSchemeDelegate, "SetupAppearanceStep material scheme delegate must type key/name roles");
+  assert.doesNotMatch(source, /modelData\.(?:key|name)/, "SetupAppearanceStep material scheme delegate must use typed roles instead of modelData.*");
 }
 
 function testFilePickerDelegatesUseTypedFileRoles() {
