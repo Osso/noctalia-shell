@@ -660,6 +660,8 @@ Popup {
                 ]
 
                 Rectangle {
+                  required property var modelData
+
                   width: 24
                   height: 24
                   radius: Style.radiusXXS
@@ -697,6 +699,8 @@ Popup {
                 model: ColorList.colors
 
                 Rectangle {
+                  required property var modelData
+
                   width: 24
                   height: 24
                   radius: Math.min(Style.radiusXS, width / 2)

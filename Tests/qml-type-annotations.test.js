@@ -210,6 +210,15 @@ function testSetupCustomizeOptionDelegatesAreTyped() {
   assert.match(source, densityDelegate, "SetupCustomizeStep density delegate must declare modelData");
 }
 
+function testColorPickerSwatchDelegatesAreTyped() {
+  const source = readQml("Widgets/NColorPickerDialog.qml");
+  const themeSwatchDelegate = /model:\s*\[[\s\S]*?name:\s*"mPrimary"[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?color:\s*modelData\.color/;
+  const paletteSwatchDelegate = /Repeater\s*\{[\s\S]*?model:\s*ColorList\.colors[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?color:\s*modelData\.color/;
+
+  assert.match(source, themeSwatchDelegate, "NColorPickerDialog theme swatch delegate must declare modelData");
+  assert.match(source, paletteSwatchDelegate, "NColorPickerDialog palette swatch delegate must declare modelData");
+}
+
 function testAboutTabContributorDelegateIndexesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/AboutTab.qml");
   const topContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.min\(root\.contributors\.length,\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\]\.login/;
@@ -565,6 +574,7 @@ const tests = [
   testLauncherResultDelegatesAreTyped,
   testDateTimeTokenDelegateRolesAreTyped,
   testSetupCustomizeOptionDelegatesAreTyped,
+  testColorPickerSwatchDelegatesAreTyped,
   testAboutTabContributorDelegateIndexesAreTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,
