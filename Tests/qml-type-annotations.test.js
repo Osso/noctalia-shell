@@ -218,11 +218,21 @@ function testSetupCustomizeOptionDelegatesAreTyped() {
 
 function testColorPickerSwatchDelegatesAreTyped() {
   const source = readQml("Widgets/NColorPickerDialog.qml");
-  const themeSwatchDelegate = /model:\s*\[[\s\S]*?name:\s*"mPrimary"[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?color:\s*modelData\.color/;
-  const paletteSwatchDelegate = /Repeater\s*\{[\s\S]*?model:\s*ColorList\.colors[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?color:\s*modelData\.color/;
+  const themeSwatchDelegate = /model:\s*\[[\s\S]*?name:\s*"mPrimary"[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+swatchName:\s*modelData\.name[\s\S]*?readonly\s+property\s+color\s+swatchColor:\s*modelData\.color[\s\S]*?color:\s*swatchColor/;
+  const paletteSwatchDelegate = /Repeater\s*\{[\s\S]*?model:\s*ColorList\.colors[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+swatchName:\s*modelData\.name[\s\S]*?readonly\s+property\s+color\s+swatchColor:\s*modelData\.color[\s\S]*?color:\s*swatchColor/;
 
-  assert.match(source, themeSwatchDelegate, "NColorPickerDialog theme swatch delegate must declare modelData and index");
-  assert.match(source, paletteSwatchDelegate, "NColorPickerDialog palette swatch delegate must declare modelData and index");
+  assert.match(source, themeSwatchDelegate, "NColorPickerDialog theme swatch delegate must declare typed swatch aliases");
+  assert.match(source, paletteSwatchDelegate, "NColorPickerDialog palette swatch delegate must declare typed swatch aliases");
+
+  const dynamicSwatchFieldReads = source
+    .match(/modelData\.(?:name|color)/g)
+    ?? [];
+  assert.deepEqual(dynamicSwatchFieldReads, [
+    "modelData.name",
+    "modelData.color",
+    "modelData.name",
+    "modelData.color",
+  ], "NColorPickerDialog swatch bindings must use typed local aliases after declaration");
 }
 
 function testSetupAppearanceSchemeLoaderModelDataIsTyped() {

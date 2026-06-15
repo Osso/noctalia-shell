@@ -662,13 +662,15 @@ Popup {
                 Rectangle {
                   required property var modelData
                   required property int index
+                  readonly property string swatchName: modelData.name
+                  readonly property color swatchColor: modelData.color
 
                   width: 24
                   height: 24
                   radius: Style.radiusXXS
-                  color: modelData.color
-                  border.color: root.selectedColor.toString() === modelData.color.toString() ? Color.mPrimary : Color.mOutline
-                  border.width: Math.max(1, root.selectedColor.toString() === modelData.color.toString() ? Style.borderM : Style.borderS)
+                  color: swatchColor
+                  border.color: root.selectedColor.toString() === swatchColor.toString() ? Color.mPrimary : Color.mOutline
+                  border.width: Math.max(1, root.selectedColor.toString() === swatchColor.toString() ? Style.borderM : Style.borderS)
 
                   MouseArea {
                     anchors.fill: parent
@@ -676,13 +678,13 @@ Popup {
                     hoverEnabled: true
 
                     onEntered: {
-                      TooltipService.show(parent, modelData.name + "\n" + parent.color.toString().toUpperCase());
+                      TooltipService.show(parent, swatchName + "\n" + parent.color.toString().toUpperCase());
                     }
                     onExited: {
                       TooltipService.hide();
                     }
                     onClicked: {
-                      root.selectedColor = modelData.color;
+                      root.selectedColor = swatchColor;
                       TooltipService.hide();
                     }
                   }
@@ -702,13 +704,15 @@ Popup {
                 Rectangle {
                   required property var modelData
                   required property int index
+                  readonly property string swatchName: modelData.name
+                  readonly property color swatchColor: modelData.color
 
                   width: 24
                   height: 24
                   radius: Math.min(Style.radiusXS, width / 2)
-                  color: modelData.color
-                  border.color: root.selectedColor.toString() === modelData.color.toString() ? Color.mPrimary : Color.mOutline
-                  border.width: root.selectedColor.toString() === modelData.color.toString() ? 2 : 1
+                  color: swatchColor
+                  border.color: root.selectedColor.toString() === swatchColor.toString() ? Color.mPrimary : Color.mOutline
+                  border.width: root.selectedColor.toString() === swatchColor.toString() ? 2 : 1
 
                   MouseArea {
                     anchors.fill: parent
@@ -716,13 +720,13 @@ Popup {
                     hoverEnabled: true
 
                     onEntered: {
-                      TooltipService.show(parent, modelData.name + "\n" + parent.color.toString().toUpperCase(), "auto");
+                      TooltipService.show(parent, swatchName + "\n" + parent.color.toString().toUpperCase(), "auto");
                     }
                     onExited: {
                       TooltipService.hide();
                     }
                     onClicked: {
-                      root.selectedColor = modelData.color;
+                      root.selectedColor = swatchColor;
                       TooltipService.hide();
                     }
                   }
