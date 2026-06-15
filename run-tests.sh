@@ -34,6 +34,7 @@ run_unit_tests() {
     node "$repo_root/Tests/wallpaper-service-guards.test.js"
     node "$repo_root/Tests/clipboard-service-guards.test.js"
     node "$repo_root/Tests/font-service-guards.test.js"
+    node "$repo_root/Tests/view-wrapper-guards.test.js"
     node "$repo_root/Tests/audio-service-guards.test.js"
     node "$repo_root/Tests/applications-plugin-guards.test.js"
     node "$repo_root/Tests/bar-service-guards.test.js"
