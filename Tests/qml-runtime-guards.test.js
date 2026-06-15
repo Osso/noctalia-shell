@@ -122,6 +122,7 @@ function testEmptyNotificationsAreSuppressedBeforeHistory() {
   const historyIndex = handleBody.indexOf("addToHistory(data)");
   const addNewIndex = handleBody.indexOf("addNewNotification(quickshellId, notification, data)");
   const guardBody = extractFunctionBody(source, "shouldSuppressEmptyNotification");
+  const createDataBody = extractFunctionBody(source, "createData");
 
   assert.notEqual(emptyGuardIndex, -1, "NotificationService must check empty notification suppression");
   assert.notEqual(historyIndex, -1, "NotificationService must still write valid notifications to history");
@@ -131,6 +132,9 @@ function testEmptyNotificationsAreSuppressedBeforeHistory() {
   assert.match(guardBody, /!\(data\.appName \|\| ""\)\.trim\(\)/, "empty notification guard must require a missing app name");
   assert.match(guardBody, /!\(data\.summary \|\| ""\)\.trim\(\)/, "empty notification guard must require a missing summary");
   assert.match(guardBody, /!\(data\.body \|\| ""\)\.trim\(\)/, "empty notification guard must require a missing body");
+  assert.match(createDataBody, /const notificationAppName = n\.appName \|\| n\.desktopEntry \|\| ""/, "createData must keep the raw notification app name separate from display formatting");
+  assert.match(createDataBody, /"appName":\s*notificationAppName\s*\?\s*getAppName\(notificationAppName\)\s*:\s*""/, "createData must keep missing app names empty so the guard can suppress placeholder notifications");
+  assert.doesNotMatch(createDataBody, /"appName":\s*getAppName\(n\.appName \|\| n\.desktopEntry \|\| ""\)/, "createData must not turn missing app names into a display fallback before suppression");
 }
 
 function testGithubServiceFollowsRedirectsAndValidatesResponses() {

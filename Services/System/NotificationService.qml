@@ -429,13 +429,14 @@ Singleton {
 
     const image = n.image || getIcon(n.appIcon);
     const imageId = generateImageId(n, image);
+    const notificationAppName = n.appName || n.desktopEntry || "";
     queueImage(image, imageId);
 
     return {
       "id": id,
       "summary": n.summary || "",
       "body": stripTags(n.body || ""),
-      "appName": getAppName(n.appName || n.desktopEntry || ""),
+      "appName": notificationAppName ? getAppName(notificationAppName) : "",
       "urgency": n.urgency < 0 || n.urgency > 2 ? 1 : n.urgency,
       "expireTimeout": n.expireTimeout,
       "timestamp": time,
