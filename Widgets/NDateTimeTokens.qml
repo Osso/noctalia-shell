@@ -202,7 +202,6 @@ Rectangle {
       delegate: Rectangle {
         id: tokenDelegate
 
-        required property var modelData
         required property int index
         required property string category
         required property string token
