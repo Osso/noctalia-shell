@@ -106,6 +106,14 @@ function testMainScreenPanelPlaceholdersAreTyped() {
   }
 }
 
+function testAllScreensScreenNameAliasIsTyped() {
+  const source = readQml("Modules/MainScreen/AllScreens.qml");
+  const screenDelegate = /Variants\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+currentScreenName:\s*modelData\s*\?\s*modelData\.name\s*:\s*""[\s\S]*?function\s+screenName\(\)\s*\{[\s\S]*?return\s+currentScreenName;/;
+
+  assert.match(source, screenDelegate, "AllScreens delegate must expose a null-safe typed screen name alias");
+  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "AllScreens delegate must use currentScreenName after declaration");
+}
+
 function testPanelContentItemsAreTyped() {
   const contentItemFiles = [
     "Modules/Panels/Wallpaper/WallpaperPanel.qml",
@@ -972,6 +980,7 @@ const tests = [
   testSmartPanelButtonItemIsTyped,
   testSmartPanelPanelRegionIsTyped,
   testMainScreenPanelPlaceholdersAreTyped,
+  testAllScreensScreenNameAliasIsTyped,
   testPanelContentItemsAreTyped,
   testPanelServiceLockScreenIsTyped,
   testNotificationServerInstanceIsTyped,

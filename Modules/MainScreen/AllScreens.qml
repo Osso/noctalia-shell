@@ -13,9 +13,10 @@ Variants {
   model: Quickshell.screens
   delegate: Item {
     required property ShellScreen modelData
+    readonly property string currentScreenName: modelData ? modelData.name : ""
 
     function screenName() {
-      return modelData ? modelData.name : "";
+      return currentScreenName;
     }
 
     function screenHasBar() {
