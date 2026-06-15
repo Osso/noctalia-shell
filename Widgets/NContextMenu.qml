@@ -34,6 +34,9 @@ Popup {
 
     delegate: ItemDelegate {
       id: menuItem
+      required property var modelData
+      required property int index
+
       width: listView.width
       height: modelData.visible !== false ? root.itemHeight : 0
       visible: modelData.visible !== false

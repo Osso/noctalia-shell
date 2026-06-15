@@ -190,6 +190,13 @@ function testContextMenuDelegatePopupIsTyped() {
   assertPropertyType("Widgets/NContextMenu.qml", "popup", "Popup");
 }
 
+function testContextMenuDelegateRolesAreTyped() {
+  const source = readQml("Widgets/NContextMenu.qml");
+  const delegateRoles = /delegate:\s*ItemDelegate\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?height:\s*modelData\.visible[\s\S]*?popup\.triggered\(modelData\.action\s*\|\|\s*modelData\.key\s*\|\|\s*index\.toString\(\)\)/;
+
+  assert.match(source, delegateRoles, "NContextMenu delegate must declare modelData and index roles");
+}
+
 function testGeometryReferencesAreTypedItems() {
   assertPropertyType("Modules/Bar/Bar.qml", "barItem", "Item");
   assertPropertyType("Modules/MainScreen/MainScreen.qml", "barItem", "Item");
@@ -478,6 +485,7 @@ const tests = [
   testControlCenterPanelCardDelegateIsTyped,
   testPanelServiceOpenedPanelIsTyped,
   testContextMenuDelegatePopupIsTyped,
+  testContextMenuDelegateRolesAreTyped,
   testGeometryReferencesAreTypedItems,
   testTimeNowPropertiesAreTypedDates,
   testEffectSourcePropertiesAreTyped,
