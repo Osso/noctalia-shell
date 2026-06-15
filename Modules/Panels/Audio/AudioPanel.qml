@@ -241,8 +241,8 @@ SmartPanel {
                   required property PwNode modelData
                   required property int index
 
-                  readonly property string deviceId: modelData.id
-                  readonly property string deviceDescription: modelData.description || deviceId
+                  readonly property string deviceId: modelData ? (modelData.id || "") : ""
+                  readonly property string deviceDescription: modelData ? (modelData.description || deviceId) : deviceId
 
                   pointSize: Style.fontSizeS
                   text: deviceDescription
@@ -303,8 +303,8 @@ SmartPanel {
                   required property PwNode modelData
                   required property int index
 
-                  readonly property string deviceId: modelData.id
-                  readonly property string deviceDescription: modelData.description || deviceId
+                  readonly property string deviceId: modelData ? (modelData.id || "") : ""
+                  readonly property string deviceDescription: modelData ? (modelData.description || deviceId) : deviceId
 
                   pointSize: Style.fontSizeS
                   text: deviceDescription
