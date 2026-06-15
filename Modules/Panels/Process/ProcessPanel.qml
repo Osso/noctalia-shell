@@ -389,6 +389,19 @@ SmartPanel {
           required property var modelData
           required property int index
 
+          readonly property string processCommand: modelData.command || ""
+          readonly property string processName: modelData.displayName || processCommand
+          readonly property real processCpu: modelData.cpu || 0
+          readonly property int processMemoryKb: modelData.memoryKB || 0
+          readonly property int processPid: modelData.pid || 0
+          readonly property color processCpuColor: {
+            if (processCpu > 50)
+              return Color.mError;
+            if (processCpu > 20)
+              return Color.mWarning;
+            return Color.mOnSurfaceVariant;
+          }
+
           Layout.fillWidth: true
           Layout.preferredHeight: 32
           Layout.topMargin: index === 0 ? 0 : -2
@@ -418,7 +431,7 @@ SmartPanel {
 
             // Process icon
             NIcon {
-              icon: ProcessService.getProcessIcon(modelData.command)
+              icon: ProcessService.getProcessIcon(processCommand)
               pointSize: Style.fontSizeM
               color: Color.mOnSurfaceVariant
             }
@@ -426,7 +439,7 @@ SmartPanel {
             // Process name
             NText {
               Layout.fillWidth: true
-              text: modelData.displayName
+              text: processName
               pointSize: Style.fontSizeS
               color: Color.mOnSurface
               elide: Text.ElideRight
@@ -435,17 +448,17 @@ SmartPanel {
             // CPU usage
             NText {
               Layout.preferredWidth: 55
-              text: ProcessService.formatCpu(modelData.cpu)
+              text: ProcessService.formatCpu(processCpu)
               pointSize: Style.fontSizeS
               family: Settings.data.ui.fontFixed
-              color: modelData.cpu > 50 ? Color.mError : (modelData.cpu > 20 ? Color.mWarning : Color.mOnSurfaceVariant)
+              color: processCpuColor
               horizontalAlignment: Text.AlignRight
             }
 
             // Memory usage
             NText {
               Layout.preferredWidth: 65
-              text: ProcessService.formatMemory(modelData.memoryKB)
+              text: ProcessService.formatMemory(processMemoryKb)
               pointSize: Style.fontSizeS
               family: Settings.data.ui.fontFixed
               color: Color.mOnSurfaceVariant
@@ -455,7 +468,7 @@ SmartPanel {
             // PID
             NText {
               Layout.preferredWidth: 50
-              text: modelData.pid.toString()
+              text: processPid.toString()
               pointSize: Style.fontSizeXS
               family: Settings.data.ui.fontFixed
               color: Color.mOnSurfaceVariant

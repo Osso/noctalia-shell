@@ -592,9 +592,14 @@ function testAudioTabDeviceDelegatesAreTyped() {
 
 function testProcessPanelProcessDelegateInputsAreTyped() {
   const source = readQml("Modules/Panels/Process/ProcessPanel.qml");
-  const processDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.processList[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?ProcessService\.getProcessIcon\(modelData\.command\)/;
+  const processDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.processList[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+processCommand:\s*modelData\.command\s*\|\|\s*""[\s\S]*?readonly\s+property\s+string\s+processName:\s*modelData\.displayName\s*\|\|\s*processCommand[\s\S]*?readonly\s+property\s+real\s+processCpu:\s*modelData\.cpu\s*\|\|\s*0[\s\S]*?readonly\s+property\s+int\s+processMemoryKb:\s*modelData\.memoryKB\s*\|\|\s*0[\s\S]*?readonly\s+property\s+int\s+processPid:\s*modelData\.pid\s*\|\|\s*0[\s\S]*?readonly\s+property\s+color\s+processCpuColor:[\s\S]*?processCpu\s*>\s*50[\s\S]*?ProcessService\.getProcessIcon\(processCommand\)[\s\S]*?text:\s*processName[\s\S]*?ProcessService\.formatCpu\(processCpu\)[\s\S]*?color:\s*processCpuColor[\s\S]*?ProcessService\.formatMemory\(processMemoryKb\)[\s\S]*?processPid\.toString\(\)/;
 
-  assert.match(source, processDelegate, "ProcessPanel process delegate must declare modelData and index");
+  assert.match(source, processDelegate, "ProcessPanel process delegate must declare typed aliases for process fields");
+  assert.equal((source.match(/modelData\.command/g) ?? []).length, 1, "ProcessPanel process delegate must use processCommand after declaration");
+  assert.equal((source.match(/modelData\.displayName/g) ?? []).length, 1, "ProcessPanel process delegate must use processName after declaration");
+  assert.equal((source.match(/modelData\.cpu/g) ?? []).length, 1, "ProcessPanel process delegate must use processCpu after declaration");
+  assert.equal((source.match(/modelData\.memoryKB/g) ?? []).length, 1, "ProcessPanel process delegate must use processMemoryKb after declaration");
+  assert.equal((source.match(/modelData\.pid/g) ?? []).length, 1, "ProcessPanel process delegate must use processPid after declaration");
 }
 
 function testTrayMenuItemIsTyped() {
