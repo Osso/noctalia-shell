@@ -450,6 +450,9 @@ SmartPanel {
 
             delegate: Rectangle {
               id: tabItem
+              required property var modelData
+              required property int index
+
               width: sidebarList.verticalScrollBarActive ? sidebarList.width - sidebarList.scrollBarWidth - Style.marginXS : sidebarList.width
               height: tabEntryRow.implicitHeight + Style.marginS * 2
               radius: Style.radiusS
@@ -593,6 +596,9 @@ SmartPanel {
               Repeater {
                 model: root.tabsModel
                 delegate: Loader {
+                  required property var modelData
+                  required property int index
+
                   anchors.fill: parent
                   active: index === root.currentTabIndex
 

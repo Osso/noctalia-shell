@@ -128,6 +128,15 @@ function testSettingsPanelActiveScrollViewIsTyped() {
   assertPropertyType("Modules/Panels/Settings/SettingsPanel.qml", "activeScrollView", "NScrollView");
 }
 
+function testSettingsPanelTabsDelegatesAreTyped() {
+  const source = readQml("Modules/Panels/Settings/SettingsPanel.qml");
+  const sidebarDelegate = /NListView\s*\{[\s\S]*?model:\s*root\.tabsModel[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?icon:\s*modelData\.icon[\s\S]*?text:\s*I18n\.tr\(modelData\.label\)/;
+  const contentDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.tabsModel[\s\S]*?delegate:\s*Loader\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?active:\s*index\s*===\s*root\.currentTabIndex/;
+
+  assert.match(source, sidebarDelegate, "SettingsPanel sidebar tab delegate must declare modelData and index roles");
+  assert.match(source, contentDelegate, "SettingsPanel content loader delegate must declare modelData and index roles");
+}
+
 function testComboBoxDelegateParentIsTyped() {
   assertPropertyType("Widgets/NComboBox.qml", "parentComboBox", "ComboBox");
 }
@@ -412,6 +421,7 @@ const tests = [
   testPanelServiceLockScreenIsTyped,
   testNotificationServerInstanceIsTyped,
   testSettingsPanelActiveScrollViewIsTyped,
+  testSettingsPanelTabsDelegatesAreTyped,
   testComboBoxDelegateParentIsTyped,
   testPanelServiceOpenedPanelIsTyped,
   testContextMenuDelegatePopupIsTyped,
