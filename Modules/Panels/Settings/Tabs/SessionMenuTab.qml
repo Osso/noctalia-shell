@@ -235,7 +235,11 @@ ColumnLayout {
 
           required property int index
           required property var modelData
+          required property string id
+          required property string text
+          required property bool countdownEnabled
 
+          property bool entryEnabled: modelData.enabled || false
           property bool dragging: false
           property int dragStartY: 0
           property int dragStartIndex: -1
@@ -345,7 +349,7 @@ ColumnLayout {
               Layout.preferredHeight: Style.baseWidgetSize * 0.7
               Layout.alignment: Qt.AlignVCenter
               radius: Style.radiusXS
-              color: modelData.enabled ? Color.mPrimary : Color.mSurface
+              color: delegateItem.entryEnabled ? Color.mPrimary : Color.mSurface
               border.color: Color.mOutline
               border.width: Style.borderS
 
@@ -356,7 +360,7 @@ ColumnLayout {
               }
 
               NIcon {
-                visible: modelData.enabled
+                visible: delegateItem.entryEnabled
                 anchors.centerIn: parent
                 anchors.horizontalCenterOffset: -1
                 icon: "check"
@@ -369,7 +373,7 @@ ColumnLayout {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                   root.updateEntry(index, {
-                                     "enabled": !modelData.enabled
+                                     "enabled": !delegateItem.entryEnabled
                                    });
                 }
               }
@@ -378,7 +382,7 @@ ColumnLayout {
             // Label
             NText {
               Layout.fillWidth: true
-              text: modelData.text
+              text: delegateItem.text
               color: Color.mOnSurface
               verticalAlignment: Text.AlignVCenter
               elide: Text.ElideRight
@@ -397,7 +401,7 @@ ColumnLayout {
               }
 
               NToggle {
-                checked: modelData.countdownEnabled !== undefined ? modelData.countdownEnabled : true
+                checked: delegateItem.countdownEnabled
                 onToggled: function (checked) {
                   root.updateEntry(delegateItem.index, {
                                      "countdownEnabled": checked

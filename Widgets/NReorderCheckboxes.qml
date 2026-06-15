@@ -75,8 +75,8 @@ Item {
       required property var modelData
       required property string id
       required property string text
-      required property bool enabled
 
+      property bool itemEnabled: modelData.enabled || false
       property bool required: modelData.required || false
       readonly property bool isDisabled: (root.disabledIds || []).indexOf(id) !== -1
       readonly property bool canDrag: !delegateItem.isDisabled
@@ -201,7 +201,7 @@ Item {
           Layout.preferredWidth: root.baseSize
           Layout.preferredHeight: root.baseSize
           radius: Style.radiusXS
-          color: delegateItem.enabled ? root.activeColor : Color.mSurface
+          color: delegateItem.itemEnabled ? root.activeColor : Color.mSurface
           border.color: delegateItem.required ? root.activeColor : Color.mOutline
           border.width: Style.borderS
           opacity: delegateItem.required ? 0.7 : 1.0
@@ -219,7 +219,7 @@ Item {
           }
 
           NIcon {
-            visible: delegateItem.enabled
+            visible: delegateItem.itemEnabled
             anchors.centerIn: parent
             anchors.horizontalCenterOffset: -1
             icon: "check"
