@@ -82,6 +82,22 @@ has_clipboard_mime_types() {
     [[ -n "${mime_types//[[:space:]]/}" ]]
 }
 
+clipboard_probe_status() {
+    local mime_types="$1"
+
+    if ! has_clipboard_mime_types "$mime_types"; then
+        printf '%s\n' "unavailable"
+        return
+    fi
+
+    if ! has_supported_clipboard_mime "$mime_types"; then
+        printf '%s\n' "unsupported"
+        return
+    fi
+
+    printf '%s\n' "supported"
+}
+
 has_lock_key_state_rows() {
     local state_output="$1"
 
@@ -558,15 +574,16 @@ probe_brightness() {
 probe_clipboard() {
     require_command wl-paste
 
-    local types
+    local types status
     types="$(wl-paste --list-types 2>/dev/null || true)"
+    status="$(clipboard_probe_status "$types")"
 
-    if ! has_clipboard_mime_types "$types"; then
-        echo "clipboard type list is empty; clipboard service may be unavailable" >&2
-        exit 1
+    if [ "$status" = "unavailable" ]; then
+        echo "ok probeClipboardUnavailable"
+        return
     fi
 
-    if ! has_supported_clipboard_mime "$types"; then
+    if [ "$status" = "unsupported" ]; then
         echo "ok probeClipboardUnsupported"
         return
     fi

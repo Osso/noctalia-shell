@@ -554,9 +554,9 @@ function testUPowerBatteryReferencesAreTyped() {
 
 function testBluetoothDeviceDelegateInputsAreTyped() {
   const source = readQml("Modules/Panels/Bluetooth/BluetoothDevicesList.qml");
-  const deviceDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.model[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+BluetoothDevice\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?BluetoothService\.canConnect\(modelData\)/;
+  const deviceDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.model[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+BluetoothDevice\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+bool\s+devicePairing:\s*modelData\.pairing\s*===\s*true[\s\S]*?readonly\s+property\s+bool\s+deviceBlocked:\s*modelData\.blocked\s*===\s*true[\s\S]*?readonly\s+property\s+bool\s+deviceConnected:\s*modelData\.connected\s*===\s*true[\s\S]*?readonly\s+property\s+bool\s+deviceConnecting:\s*modelData\.state\s*===\s*BluetoothDeviceState\.Connecting[\s\S]*?readonly\s+property\s+string\s+deviceDisplayName:\s*modelData\.name\s*\|\|\s*modelData\.deviceName\s*\|\|\s*""[\s\S]*?readonly\s+property\s+bool\s+hasSignalStrength:\s*modelData\.signalStrength\s*!==\s*undefined[\s\S]*?readonly\s+property\s+int\s+deviceSignalStrength:\s*modelData\.signalStrength\s*\|\|\s*0[\s\S]*?readonly\s+property\s+bool\s+showSignalStrength:\s*deviceSignalStrength\s*>\s*0\s*&&\s*!devicePairing\s*&&\s*!deviceBlocked[\s\S]*?readonly\s+property\s+bool\s+hasBattery:\s*modelData\.batteryAvailable\s*===\s*true[\s\S]*?BluetoothService\.canConnect\(modelData\)[\s\S]*?devicePairing\s*\|\|\s*deviceConnecting[\s\S]*?text:\s*deviceDisplayName[\s\S]*?font\.weight:\s*deviceConnected\s*\?[\s\S]*?visible:\s*hasSignalStrength[\s\S]*?visible:\s*showSignalStrength[\s\S]*?text:\s*showSignalStrength\s*\?\s*deviceSignalStrength\s*\+\s*"%"[\s\S]*?visible:\s*hasBattery[\s\S]*?visible:\s*!deviceConnecting[\s\S]*?if\s*\(devicePairing\)[\s\S]*?if\s*\(deviceBlocked\)[\s\S]*?if\s*\(deviceConnected\)/;
 
-  assert.match(source, deviceDelegate, "BluetoothDevicesList device delegate must type modelData as BluetoothDevice and declare index");
+  assert.match(source, deviceDelegate, "BluetoothDevicesList device delegate must type modelData and expose stable status aliases");
 }
 
 function testAudioNodeHandlesAreTyped() {

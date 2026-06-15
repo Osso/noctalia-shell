@@ -47,14 +47,23 @@ NBox {
         required property BluetoothDevice modelData
         required property int index
 
+        readonly property bool devicePairing: modelData.pairing === true
+        readonly property bool deviceBlocked: modelData.blocked === true
+        readonly property bool deviceConnected: modelData.connected === true
+        readonly property bool deviceConnecting: modelData.state === BluetoothDeviceState.Connecting
+        readonly property string deviceDisplayName: modelData.name || modelData.deviceName || ""
+        readonly property bool hasSignalStrength: modelData.signalStrength !== undefined
+        readonly property int deviceSignalStrength: modelData.signalStrength || 0
+        readonly property bool showSignalStrength: deviceSignalStrength > 0 && !devicePairing && !deviceBlocked
+        readonly property bool hasBattery: modelData.batteryAvailable === true
         readonly property bool canConnect: BluetoothService.canConnect(modelData)
         readonly property bool canDisconnect: BluetoothService.canDisconnect(modelData)
         readonly property bool isBusy: BluetoothService.isDeviceBusy(modelData)
 
         function getContentColor(defaultColor = Color.mOnSurface) {
-          if (modelData.pairing || modelData.state === BluetoothDeviceState.Connecting)
+          if (devicePairing || deviceConnecting)
             return Color.mPrimary;
-          if (modelData.blocked)
+          if (deviceBlocked)
             return Color.mError;
           return defaultColor;
         }
@@ -87,9 +96,9 @@ NBox {
 
             // Device name
             NText {
-              text: modelData.name || modelData.deviceName
+              text: deviceDisplayName
               pointSize: Style.fontSizeM
-              font.weight: modelData.connected ? Style.fontWeightBold : Style.fontWeightMedium
+              font.weight: deviceConnected ? Style.fontWeightBold : Style.fontWeightMedium
               elide: Text.ElideRight
               color: getContentColor(Color.mOnSurface)
               Layout.fillWidth: true
@@ -105,7 +114,7 @@ NBox {
 
             // Signal Strength
             RowLayout {
-              visible: modelData.signalStrength !== undefined
+              visible: hasSignalStrength
               Layout.fillWidth: true
               spacing: Style.marginXS
 
@@ -117,15 +126,15 @@ NBox {
               }
 
               NIcon {
-                visible: modelData.signalStrength > 0 && !modelData.pairing && !modelData.blocked
+                visible: showSignalStrength
                 icon: BluetoothService.getSignalIcon(modelData)
                 pointSize: Style.fontSizeXS
                 color: getContentColor(Color.mOnSurface)
               }
 
               NText {
-                visible: modelData.signalStrength > 0 && !modelData.pairing && !modelData.blocked
-                text: (modelData.signalStrength !== undefined && modelData.signalStrength > 0) ? modelData.signalStrength + "%" : ""
+                visible: showSignalStrength
+                text: showSignalStrength ? deviceSignalStrength + "%" : ""
                 pointSize: Style.fontSizeXS
                 color: getContentColor(Color.mOnSurface)
               }
@@ -133,7 +142,7 @@ NBox {
 
             // Battery
             NText {
-              visible: modelData.batteryAvailable
+              visible: hasBattery
               text: BluetoothService.getBattery(modelData)
               pointSize: Style.fontSizeXS
               color: getContentColor(Color.mOnSurfaceVariant)
@@ -148,7 +157,7 @@ NBox {
           // Call to action
           NButton {
             id: button
-            visible: (modelData.state !== BluetoothDeviceState.Connecting)
+            visible: !deviceConnecting
             enabled: (canConnect || canDisconnect) && !isBusy
             outlined: !button.hovered
             fontSize: Style.fontSizeXS
@@ -161,20 +170,20 @@ NBox {
             }
             tooltipText: root.tooltipText
             text: {
-              if (modelData.pairing) {
+              if (devicePairing) {
                 return I18n.tr("bluetooth.panel.pairing");
               }
-              if (modelData.blocked) {
+              if (deviceBlocked) {
                 return I18n.tr("bluetooth.panel.blocked");
               }
-              if (modelData.connected) {
+              if (deviceConnected) {
                 return I18n.tr("bluetooth.panel.disconnect");
               }
               return I18n.tr("bluetooth.panel.connect");
             }
             icon: (isBusy ? "busy" : null)
             onClicked: {
-              if (modelData.connected) {
+              if (deviceConnected) {
                 BluetoothService.disconnectDevice(modelData);
               } else {
                 BluetoothService.connectDeviceWithTrust(modelData);

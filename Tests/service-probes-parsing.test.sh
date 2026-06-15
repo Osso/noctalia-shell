@@ -111,6 +111,9 @@ fi
 has_supported_clipboard_mime $'application/x-special\ntext/html'
 has_supported_clipboard_mime $'image/png\napplication/octet-stream'
 has_clipboard_mime_types $'application/octet-stream'
+[[ "$(clipboard_probe_status "")" == "unavailable" ]]
+[[ "$(clipboard_probe_status $'application/x-special\napplication/octet-stream')" == "unsupported" ]]
+[[ "$(clipboard_probe_status $'image/png\napplication/octet-stream')" == "supported" ]]
 
 if has_supported_clipboard_mime $'application/x-special\napplication/octet-stream'; then
     echo "unsupported clipboard MIME list was accepted" >&2
