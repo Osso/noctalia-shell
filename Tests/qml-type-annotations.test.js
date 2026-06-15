@@ -157,6 +157,15 @@ function testTraySettingsBlacklistDelegateRolesAreTyped() {
   assert.doesNotMatch(source, /model\.rule/, "TraySettings blacklist delegate must use typed rule role instead of model.rule");
 }
 
+function testColorSchemeTabSchemeModelDataIsTyped() {
+  const source = readQml("Modules/Panels/Settings/Tabs/ColorScheme/ColorSchemeTab.qml");
+  const fileLoaderDelegate = /Repeater\s*\{[\s\S]*?model:\s*ColorSchemeService\.schemes[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?path:\s*modelData/;
+  const schemeGridDelegate = /Repeater\s*\{[\s\S]*?model:\s*ColorSchemeService\.schemes[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?property\s+string\s+schemePath:\s*modelData[\s\S]*?property\s+string\s+schemeName:\s*root\.extractSchemeName\(modelData\)/;
+
+  assert.match(source, fileLoaderDelegate, "ColorSchemeTab file loader delegate must type string modelData");
+  assert.match(source, schemeGridDelegate, "ColorSchemeTab scheme grid delegate must type string modelData");
+}
+
 function testPanelServiceOpenedPanelIsTyped() {
   assertPropertyType("Services/UI/PanelService.qml", "openedPanel", "SmartPanel");
 }
@@ -441,6 +450,7 @@ const tests = [
   testComboBoxDelegateParentIsTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,
+  testColorSchemeTabSchemeModelDataIsTyped,
   testPanelServiceOpenedPanelIsTyped,
   testContextMenuDelegatePopupIsTyped,
   testGeometryReferencesAreTypedItems,

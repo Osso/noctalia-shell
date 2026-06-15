@@ -139,6 +139,8 @@ ColumnLayout {
     Repeater {
       model: ColorSchemeService.schemes
       delegate: Item {
+        required property string modelData
+
         FileView {
           path: modelData
           blockLoading: false
@@ -386,6 +388,8 @@ ColumnLayout {
 
         Rectangle {
           id: schemeItem
+
+          required property string modelData
 
           property string schemePath: modelData
           property string schemeName: root.extractSchemeName(modelData)
