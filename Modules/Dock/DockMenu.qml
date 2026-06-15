@@ -343,6 +343,9 @@ PopupWindow {
         model: root.items
 
         Rectangle {
+          required property var modelData
+          required property int index
+
           Layout.fillWidth: true
           height: 32
           color: root.hoveredItem === index ? Color.mHover : Color.transparent

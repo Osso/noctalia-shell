@@ -458,6 +458,13 @@ function testDockCurrentContextMenuIsTyped() {
   assertNoPropertyType(dockFile, "currentContextMenu", "var");
 }
 
+function testDockMenuItemDelegateInputsAreTyped() {
+  const source = readQml("Modules/Dock/DockMenu.qml");
+  const itemDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.items[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?icon:\s*modelData\.icon[\s\S]*?text:\s*modelData\.text/;
+
+  assert.match(source, itemDelegate, "DockMenu item delegate must declare modelData and index inputs");
+}
+
 function testLauncherPluginBackReferencesAreTyped() {
   const pluginFiles = [
     "Modules/Panels/Launcher/Plugins/ApplicationsPlugin.qml",
@@ -699,6 +706,7 @@ const tests = [
   testPopupMenuWindowContentItemIsTyped,
   testLauncherActivePluginIsTyped,
   testDockCurrentContextMenuIsTyped,
+  testDockMenuItemDelegateInputsAreTyped,
   testLauncherPluginBackReferencesAreTyped,
   testCompositorBackendIsTyped,
   testPowerProfilesReferenceIsTyped,
