@@ -269,6 +269,9 @@ SmartPanel {
                 }
               ]
               delegate: RowLayout {
+                required property var modelData
+                required property int index
+
                 spacing: Style.marginS
 
                 Rectangle {

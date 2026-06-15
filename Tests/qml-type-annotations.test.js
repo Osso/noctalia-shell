@@ -376,6 +376,13 @@ function testSetupDockStepMonitorModelIsTyped() {
   assert.match(source, monitorModelDelegate, "SetupDockStep monitor delegate must type screen modelData as ShellScreen");
 }
 
+function testSetupWizardProgressDelegateModelIsTyped() {
+  const source = readQml("Modules/Panels/SetupWizard/SetupWizard.qml");
+  const progressDelegate = /Repeater\s*\{[\s\S]*?"label":\s*"Dock"[\s\S]*?delegate:\s*RowLayout\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?icon:\s*modelData\.icon[\s\S]*?text:\s*modelData\.label/;
+
+  assert.match(source, progressDelegate, "SetupWizard progress delegate must declare modelData and index roles");
+}
+
 function testBrightnessPanelScreenModelIsTyped() {
   const source = readQml("Modules/Panels/Brightness/BrightnessPanel.qml");
   const screenModelDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?required\s+property\s+ShellScreen\s+modelData/;
@@ -426,6 +433,7 @@ const tests = [
   testSettingsMonitorModelsAreTyped,
   testWallpaperServiceScannerModelIsTyped,
   testSetupDockStepMonitorModelIsTyped,
+  testSetupWizardProgressDelegateModelIsTyped,
   testBrightnessPanelScreenModelIsTyped,
 ];
 
