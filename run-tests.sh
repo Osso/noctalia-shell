@@ -41,6 +41,7 @@ run_unit_tests() {
     node "$repo_root/Tests/dock-menu-guards.test.js"
     node "$repo_root/Tests/emoji-plugin-guards.test.js"
     node "$repo_root/Tests/i18n-service-guards.test.js"
+    node "$repo_root/Tests/icons-guards.test.js"
     node "$repo_root/Tests/location-service-guards.test.js"
     node "$repo_root/Tests/logger-guards.test.js"
     node "$repo_root/Tests/panel-service-guards.test.js"
