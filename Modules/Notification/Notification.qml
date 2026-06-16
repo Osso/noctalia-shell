@@ -200,7 +200,7 @@ Variants {
             required property string body
             required property string originalImage
             required property string actionsJson
-            required property var timestamp
+            required property date timestamp
 
             property string notificationId: model.id
             property var notificationData: model
