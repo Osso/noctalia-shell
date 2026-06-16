@@ -3,6 +3,18 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const serviceSource = readQml("Services/Networking/NetworkService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(serviceSource, functionName);
+  const args = argNames.join(", ");
+  return new Function(
+    "ctx",
+    ...argNames,
+    `with (ctx) { return (function(${args}) ${body}).call(ctx, ${args}); }`,
+  );
+}
+
 function testNetworkServiceCacheAndWifiStateGuards() {
   const source = readQml("Services/Networking/NetworkService.qml");
   const saveBody = extractFunctionBody(source, "saveCache");
@@ -63,11 +75,116 @@ function testNetworkServiceIconAndSecurityHelpers() {
   assert.match(securedBody, /return security && security !== "--" && security\.trim\(\) !== ""/, "isSecured must reject missing, placeholder, and blank security values");
 }
 
+function testNetworkServiceStateCommandsExecute() {
+  const saveCache = qmlFunction("saveCache");
+  const syncWifiState = qmlFunction("syncWifiState");
+  const setWifiEnabled = qmlFunction("setWifiEnabled", "enabled");
+  const scan = qmlFunction("scan");
+  const restarts = [];
+  const debugLogs = [];
+  const ctx = {
+    Settings: { data: { network: { wifiEnabled: true } } },
+    saveDebounce: { restart() { restarts.push("save"); } },
+    wifiStateProcess: { running: false },
+    wifiStateEnableProcess: { running: false },
+    profileCheckProcess: { running: false },
+    scanning: false,
+    ignoreScanResults: false,
+    scanPending: false,
+    lastError: "stale",
+    Logger: { d(...args) { debugLogs.push(args); } },
+  };
+
+  saveCache(ctx);
+  syncWifiState(ctx);
+  setWifiEnabled(ctx, false);
+  scan(ctx);
+  assert.deepEqual(restarts, ["save"], "saveCache must debounce cache writes");
+  assert.equal(ctx.wifiStateProcess.running, true, "syncWifiState must query Wi-Fi state");
+  assert.equal(ctx.Settings.data.network.wifiEnabled, false, "setWifiEnabled must update the setting");
+  assert.equal(ctx.wifiStateEnableProcess.running, true, "setWifiEnabled must start the nmcli radio process");
+  assert.equal(ctx.profileCheckProcess.running, false, "scan must no-op while Wi-Fi disabled");
+
+  ctx.Settings.data.network.wifiEnabled = true;
+  scan(ctx);
+  assert.equal(ctx.scanning, true, "scan must enter scanning state");
+  assert.equal(ctx.lastError, "", "scan must clear stale errors");
+  assert.equal(ctx.ignoreScanResults, false, "scan must accept fresh results for a new scan");
+  assert.equal(ctx.profileCheckProcess.running, true, "scan must refresh known profiles before scanning");
+
+  scan(ctx);
+  assert.equal(ctx.ignoreScanResults, true, "scan must ignore in-flight results when rescanning");
+  assert.equal(ctx.scanPending, true, "scan must queue a pending rescan");
+  assert.equal(debugLogs.length > 0, true, "scan must log queued rescans");
+}
+
+function testNetworkServiceConnectionStatusAndIconsExecute() {
+  const connect = qmlFunction("connect", "ssid", "password");
+  const disconnect = qmlFunction("disconnect", "ssid");
+  const updateNetworkStatus = qmlFunction("updateNetworkStatus", "ssid", "connected");
+  const signalIcon = qmlFunction("signalIcon", "signal", "isConnected");
+  const isSecured = qmlFunction("isSecured", "security");
+  const ctx = {
+    root: null,
+    networks: {
+      Home: { existing: true, connected: true },
+      Cafe: { existing: false, connected: false },
+    },
+    cachedNetworks: { Office: true },
+    connecting: false,
+    connectingTo: "",
+    disconnectingFrom: "",
+    lastError: "old",
+    internetConnectivity: false,
+    connectProcess: {},
+    disconnectProcess: {},
+  };
+  ctx.root = ctx;
+
+  connect(ctx, "Office", "secret");
+  assert.equal(ctx.connecting, true, "connect must set busy state");
+  assert.equal(ctx.connectingTo, "Office", "connect must track target SSID");
+  assert.equal(ctx.lastError, "", "connect must clear stale errors");
+  assert.equal(ctx.connectProcess.mode, "saved", "connect must reuse cached profiles");
+  assert.equal(ctx.connectProcess.password, "", "saved profiles must not retain typed passwords");
+  assert.equal(ctx.connectProcess.running, true, "connect must start the connect process");
+
+  ctx.connecting = false;
+  connect(ctx, "Cafe", "guest");
+  assert.equal(ctx.connectProcess.mode, "new", "connect must create new profiles when no cache exists");
+  assert.equal(ctx.connectProcess.password, "guest", "new profiles must keep supplied passwords");
+
+  disconnect(ctx, "Home");
+  assert.equal(ctx.disconnectingFrom, "Home", "disconnect must track target SSID");
+  assert.equal(ctx.disconnectProcess.ssid, "Home", "disconnect must pass SSID to process");
+  assert.equal(ctx.disconnectProcess.running, true, "disconnect must start the disconnect process");
+
+  updateNetworkStatus(ctx, "Cafe", true);
+  assert.equal(ctx.networks.Home.connected, false, "updateNetworkStatus must clear other connected networks");
+  assert.equal(ctx.networks.Cafe.connected, true, "updateNetworkStatus must mark target connected");
+  assert.equal(ctx.networks.Cafe.existing, true, "connected targets must become known profiles");
+  assert.equal(ctx.networks.Cafe.cached, true, "connected targets must become cached");
+
+  updateNetworkStatus(ctx, "NewNet", true);
+  assert.equal(ctx.networks.NewNet.signal, 100, "missing connected networks must be synthesized");
+  assert.equal(signalIcon(ctx, 90, true), "world-off", "connected offline networks must show world-off");
+  ctx.internetConnectivity = true;
+  assert.equal(signalIcon(ctx, 90, false), "wifi", "strong signal must use wifi icon");
+  assert.equal(signalIcon(ctx, 55, false), "wifi-2", "medium signal must use wifi-2 icon");
+  assert.equal(signalIcon(ctx, 25, false), "wifi-1", "weak signal must use wifi-1 icon");
+  assert.equal(signalIcon(ctx, 5, false), "wifi-0", "very weak signal must use wifi-0 icon");
+  assert.equal(isSecured(ctx, "WPA2"), true, "non-placeholder security must be secured");
+  assert.equal(isSecured(ctx, "--"), false, "placeholder security must be unsecured");
+  assert.equal(isSecured(ctx, "  "), false, "blank security must be unsecured");
+}
+
 const tests = [
   testNetworkServiceCacheAndWifiStateGuards,
   testNetworkServiceScanAndConnectionGuards,
   testNetworkServiceForgetAndStatusGuards,
   testNetworkServiceIconAndSecurityHelpers,
+  testNetworkServiceStateCommandsExecute,
+  testNetworkServiceConnectionStatusAndIconsExecute,
 ];
 
 for (const test of tests) {
