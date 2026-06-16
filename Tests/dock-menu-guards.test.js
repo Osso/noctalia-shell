@@ -3,8 +3,14 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const source = readQml("Modules/Dock/DockMenu.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
 function testDockMenuWidthAndItems() {
-  const source = readQml("Modules/Dock/DockMenu.qml");
   const widthBody = extractFunctionBody(source, "calculateMenuWidth");
   const initBody = extractFunctionBody(source, "initItems");
 
@@ -25,7 +31,6 @@ function testDockMenuWidthAndItems() {
 }
 
 function testDockMenuPinHelpers() {
-  const source = readQml("Modules/Dock/DockMenu.qml");
   const normalizeBody = extractFunctionBody(source, "normalizeAppId");
   const desktopBody = extractFunctionBody(source, "getDesktopEntryId");
   const pinnedBody = extractFunctionBody(source, "isAppPinned");
@@ -50,7 +55,6 @@ function testDockMenuPinHelpers() {
 }
 
 function testDockMenuActionsAndHovering() {
-  const source = readQml("Modules/Dock/DockMenu.qml");
   const hideBody = extractFunctionBody(source, "hide");
   const hoverBody = extractFunctionBody(source, "getHoveredItem");
   const focusBody = extractFunctionBody(source, "handleFocus");
@@ -72,10 +76,26 @@ function testDockMenuActionsAndHovering() {
   assert.match(closeBody, /root\.hide\(\)[\s\S]*root\.requestClose\(\)/, "handleClose must hide and request close");
 }
 
+function testDockMenuHoveredItemComputesBounds() {
+  const getHoveredItem = qmlFunction("getHoveredItem", "mouseY");
+  const ctx = {
+    Style: { marginM: 8 },
+    root: { items: [{}, {}, {}] },
+  };
+
+  assert.equal(getHoveredItem(ctx, 7), -1, "mouse above menu margin must not hover an item");
+  assert.equal(getHoveredItem(ctx, 8), 0, "first item starts at top menu margin");
+  assert.equal(getHoveredItem(ctx, 39), 0, "last pixel of first item must still hover first item");
+  assert.equal(getHoveredItem(ctx, 40), 1, "second item starts after one item height");
+  assert.equal(getHoveredItem(ctx, 103), 2, "last pixel of last item must hover last item");
+  assert.equal(getHoveredItem(ctx, 104), -1, "mouse below last item must not hover an item");
+}
+
 const tests = [
   testDockMenuWidthAndItems,
   testDockMenuPinHelpers,
   testDockMenuActionsAndHovering,
+  testDockMenuHoveredItemComputesBounds,
 ];
 
 for (const test of tests) {
