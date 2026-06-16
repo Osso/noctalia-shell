@@ -91,6 +91,58 @@ function testEmojiServiceUsagePersistenceAndClipboard() {
   assert.match(copyBody, /echo -n "\$\{emojiChar\}" \| wl-copy/, "copy must write the emoji to wl-copy");
 }
 
+function testEmojiServiceUsagePersistenceAndClipboardExecute() {
+  const loadUsageData = qmlFunction("_loadUsageData");
+  const saveUsageData = qmlFunction("_saveUsageData");
+  const doSaveUsageData = qmlFunction("_doSaveUsageData");
+  const copy = qmlFunction("copy", "emojiChar");
+  const detachedCommands = [];
+  const usageRecords = [];
+  let reloads = 0;
+  let restarts = 0;
+  const ctx = {
+    Logger: {
+      e() {},
+    },
+    Quickshell: {
+      execDetached(command) {
+        detachedCommands.push(command);
+      },
+    },
+    recordUsage(emojiChar) {
+      usageRecords.push(emojiChar);
+    },
+    root: null,
+    saveTimer: {
+      restart() {
+        restarts++;
+      },
+    },
+    usageCounts: { "🚀": 2 },
+    usageFile: {
+      reload() {
+        reloads++;
+      },
+    },
+    usageFilePath: "/tmp/noctalia/emoji_usage.json",
+  };
+  ctx.root = ctx;
+
+  loadUsageData(ctx);
+  saveUsageData(ctx);
+  doSaveUsageData(ctx);
+  copy(ctx, "🚀");
+  copy(ctx, "");
+
+  assert.equal(reloads, 1, "_loadUsageData must reload the usage file");
+  assert.equal(restarts, 1, "_saveUsageData must restart the debounce timer");
+  assert.match(detachedCommands[0][2], /mkdir -p "\$\(dirname "\/tmp\/noctalia\/emoji_usage\.json"\)"/, "_doSaveUsageData must create the usage directory");
+  assert.match(detachedCommands[0][2], /echo '\{"🚀":2\}' > "\/tmp\/noctalia\/emoji_usage\.json"/, "_doSaveUsageData must write serialized usage counts");
+  assert.deepEqual(usageRecords, ["🚀"], "copy must record only nonempty emoji usage");
+  assert.deepEqual(detachedCommands[1], ["sh", "-c", "echo -n \"🚀\" | wl-copy"], "copy must send the emoji to wl-copy");
+  assert.equal(detachedCommands.length, 2, "blank copy must not run a clipboard command");
+}
+
 function testEmojiServiceSearchExecutesMatchingAndPopularFallback() {
   const search = qmlFunction("search", "query");
   const getPopularEmojis = qmlFunction("_getPopularEmojis", "limit");
@@ -175,6 +227,7 @@ const tests = [
   testEmojiServiceCategoriesAndUsage,
   testEmojiServiceFileLoadingAndFinalization,
   testEmojiServiceUsagePersistenceAndClipboard,
+  testEmojiServiceUsagePersistenceAndClipboardExecute,
   testEmojiServiceSearchExecutesMatchingAndPopularFallback,
   testEmojiServiceCategoryAndUsageHelpersExecute,
 ];
