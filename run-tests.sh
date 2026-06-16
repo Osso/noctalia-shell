@@ -82,6 +82,7 @@ run_unit_tests() {
     node "$repo_root/Tests/settings-panel-guards.test.js"
     node "$repo_root/Tests/setup-wizard-guards.test.js"
     node "$repo_root/Tests/setup-wallpaper-step-guards.test.js"
+    node "$repo_root/Tests/smart-panel-guards.test.js"
     node "$repo_root/Tests/sound-service-guards.test.js"
     node "$repo_root/Tests/spin-box-guards.test.js"
     node "$repo_root/Tests/sway-service-guards.test.js"
