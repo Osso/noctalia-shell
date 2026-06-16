@@ -752,6 +752,13 @@ function testBackgroundShapeContainersAreTyped() {
   }
 }
 
+function testPanelBackgroundPanelReferenceIsTyped() {
+  const panelBackgroundFile = "Modules/MainScreen/Backgrounds/PanelBackground.qml";
+
+  assertPropertyType(panelBackgroundFile, "panel", "Item");
+  assertNoPropertyType(panelBackgroundFile, "panel", "var");
+}
+
 function testBackgroundScreenAliasesAreTyped() {
   const source = readQml("Modules/Background/Background.qml");
   const screenDelegate = /Variants\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?delegate:\s*Loader\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s*modelData\s*\?\s*modelData\.name\s*:\s*""[\s\S]*?readonly\s+property\s+int\s+monitorWidth:\s*modelData\s*\?\s*modelData\.width\s*:\s*0[\s\S]*?readonly\s+property\s+int\s+monitorHeight:\s*modelData\s*\?\s*modelData\.height\s*:\s*0[\s\S]*?screenName\s*===\s*monitorName[\s\S]*?CompositorService\.getDisplayScale\(monitorName\)[\s\S]*?monitorWidth\s*\*\s*compositorScale[\s\S]*?monitorHeight\s*\*\s*compositorScale[\s\S]*?WallpaperService\.getWallpaper\(monitorName\)/;
@@ -1102,6 +1109,7 @@ const tests = [
   testBrightnessPanelBrightnessMonitorIsTyped,
   testBrightnessServiceMonitorScreenModelAliasIsTyped,
   testBackgroundShapeContainersAreTyped,
+  testPanelBackgroundPanelReferenceIsTyped,
   testBackgroundScreenAliasesAreTyped,
   testOverviewScreenAliasIsTyped,
   testWallpaperPanelScreenReferencesAreTyped,

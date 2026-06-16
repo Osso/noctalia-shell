@@ -22,7 +22,7 @@ ShapePath {
   id: root
 
   // Required reference to PanelPlaceholder (e.g., windowRoot.audioPanelPlaceholder)
-  required property var panel
+  required property Item panel
 
   // Required reference to AllBackgrounds shapeContainer
   required property Shape shapeContainer
