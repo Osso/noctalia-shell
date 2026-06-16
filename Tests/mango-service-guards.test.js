@@ -3,8 +3,15 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const source = readQml("Services/Compositor/MangoService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  const args = argNames.join(", ");
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${args}) ${body}).call(ctx, ${args}); }`);
+}
+
 function testMangoServiceTagParsingGuards() {
-  const source = readQml("Services/Compositor/MangoService.qml");
   const tagBody = extractFunctionBody(source, "processTagData");
 
   assert.match(tagBody, /const lines = output\.trim\(\)\.split\('\\n'\)/, "processTagData must parse newline-separated mmsg output");
@@ -23,7 +30,6 @@ function testMangoServiceTagParsingGuards() {
 }
 
 function testMangoServiceWorkspaceAndWindowGuards() {
-  const source = readQml("Services/Compositor/MangoService.qml");
   const workspaceBody = extractFunctionBody(source, "rebuildWorkspaces");
   const windowsBody = extractFunctionBody(source, "updateWindows");
 
@@ -47,7 +53,6 @@ function testMangoServiceWorkspaceAndWindowGuards() {
 }
 
 function testMangoServiceScaleAndLifecycleGuards() {
-  const source = readQml("Services/Compositor/MangoService.qml");
   const scaleBody = extractFunctionBody(source, "processScales");
   const initBody = extractFunctionBody(source, "initialize");
   const queryBody = extractFunctionBody(source, "queryDisplayScales");
@@ -65,7 +70,6 @@ function testMangoServiceScaleAndLifecycleGuards() {
 }
 
 function testMangoServiceCommandGuards() {
-  const source = readQml("Services/Compositor/MangoService.qml");
   const switchBody = extractFunctionBody(source, "switchToWorkspace");
   const focusBody = extractFunctionBody(source, "focusWindow");
   const closeBody = extractFunctionBody(source, "closeWindow");
@@ -83,11 +87,99 @@ function testMangoServiceCommandGuards() {
   assert.match(logoutBody, /Quickshell\.execDetached\(\["mmsg", "-s", "-q"\]\)/, "logout must call mmsg quit");
 }
 
+function testMangoServiceSwitchToWorkspaceExecutesCommands() {
+  const switchToWorkspace = qmlFunction("switchToWorkspace", "workspace");
+  const commands = [];
+  const ctx = {
+    root: { selectedMonitor: "HDMI-A-1" },
+    internal: { monitorScales: { "eDP-1": 1, "HDMI-A-1": 1.25 } },
+    Quickshell: {
+      execDetached(command) {
+        commands.push(command);
+      },
+    },
+  };
+
+  switchToWorkspace(ctx, { idx: 4, id: 9, output: "DP-1" });
+  switchToWorkspace(ctx, { id: 3 });
+
+  assert.deepEqual(
+    commands[0],
+    ["mmsg", "-s", "-t", "4", "-o", "DP-1"],
+    "switchToWorkspace must prefer original tag idx and explicit output",
+  );
+  assert.deepEqual(
+    commands[1],
+    ["mmsg", "-s", "-t", "3", "-o", "HDMI-A-1"],
+    "switchToWorkspace must fall back to selected monitor",
+  );
+
+  ctx.internal.monitorScales = { "eDP-1": 1 };
+  switchToWorkspace(ctx, {});
+  assert.deepEqual(
+    commands[2],
+    ["mmsg", "-s", "-t", "1"],
+    "single-monitor workspace switches must omit output",
+  );
+}
+
+function testMangoServiceWindowCommandsExecuteFallbacks() {
+  const focusWindow = qmlFunction("focusWindow", "window");
+  const closeWindow = qmlFunction("closeWindow", "window");
+  const logout = qmlFunction("logout");
+  const commands = [];
+  const handleCalls = [];
+  const switchCalls = [];
+  const ctx = {
+    Quickshell: {
+      execDetached(command) {
+        commands.push(command);
+      },
+    },
+    switchToWorkspace(workspace) {
+      switchCalls.push(workspace);
+    },
+  };
+
+  focusWindow(ctx, {
+    handle: {
+      activate() {
+        handleCalls.push("activate");
+      },
+    },
+  });
+  focusWindow(ctx, { workspaceId: 8, output: "DP-2" });
+  closeWindow(ctx, {
+    handle: {
+      close() {
+        handleCalls.push("close");
+      },
+    },
+  });
+  closeWindow(ctx, {});
+  logout(ctx);
+
+  assert.deepEqual(handleCalls, ["activate", "close"], "focusWindow and closeWindow must prefer direct handles");
+  assert.deepEqual(
+    switchCalls,
+    [{ id: 8, output: "DP-2" }],
+    "focusWindow must fall back to workspace switching",
+  );
+  assert.deepEqual(
+    commands[0],
+    ["mmsg", "-s", "-d", "killclient"],
+    "closeWindow without a handle must kill focused client",
+  );
+  assert.deepEqual(commands[1], ["mmsg", "-s", "-q"], "logout must request compositor quit");
+}
+
 const tests = [
   testMangoServiceTagParsingGuards,
   testMangoServiceWorkspaceAndWindowGuards,
   testMangoServiceScaleAndLifecycleGuards,
   testMangoServiceCommandGuards,
+  testMangoServiceSwitchToWorkspaceExecutesCommands,
+  testMangoServiceWindowCommandsExecuteFallbacks,
 ];
 
 for (const test of tests) {
