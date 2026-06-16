@@ -59,6 +59,7 @@ run_unit_tests() {
     node "$repo_root/Tests/color-scheme-service-guards.test.js"
     node "$repo_root/Tests/compositor-service-guards.test.js"
     node "$repo_root/Tests/custom-button-settings-guards.test.js"
+    node "$repo_root/Tests/custom-button-widget-guards.test.js"
     node "$repo_root/Tests/dark-mode-service-guards.test.js"
     node "$repo_root/Tests/hyprland-service-guards.test.js"
     node "$repo_root/Tests/niri-service-guards.test.js"
