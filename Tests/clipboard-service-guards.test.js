@@ -3,8 +3,15 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const source = readQml("Services/Keyboard/ClipboardService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  const args = argNames.join(", ");
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${args}) ${body}).call(ctx, ${args}); }`);
+}
+
 function testClipboardServiceDependencyAndWatcherGuards() {
-  const source = readQml("Services/Keyboard/ClipboardService.qml");
   const checkBody = extractFunctionBody(source, "checkCliphistAvailability");
   const startBody = extractFunctionBody(source, "startWatchers");
   const stopBody = extractFunctionBody(source, "stopWatchers");
@@ -21,7 +28,6 @@ function testClipboardServiceDependencyAndWatcherGuards() {
 }
 
 function testClipboardServiceListAndDecodeGuards() {
-  const source = readQml("Services/Keyboard/ClipboardService.qml");
   const listBody = extractFunctionBody(source, "list");
   const decodeBody = extractFunctionBody(source, "decode");
   const dataUrlBody = extractFunctionBody(source, "decodeToDataUrl");
@@ -49,7 +55,6 @@ function testClipboardServiceListAndDecodeGuards() {
 }
 
 function testClipboardServiceMutationCommands() {
-  const source = readQml("Services/Keyboard/ClipboardService.qml");
   const copyBody = extractFunctionBody(source, "copyToClipboard");
   const deleteBody = extractFunctionBody(source, "deleteById");
   const wipeBody = extractFunctionBody(source, "wipeAll");
@@ -65,10 +70,141 @@ function testClipboardServiceMutationCommands() {
   assert.match(wipeBody, /revision\+\+[\s\S]*Qt\.callLater\(\(\) => list\(\)\)/, "wipeAll must invalidate bindings and refresh list");
 }
 
+function testClipboardServiceWatcherAndListCommandsExecute() {
+  const startWatchers = qmlFunction("startWatchers");
+  const stopWatchers = qmlFunction("stopWatchers");
+  const list = qmlFunction("list", "maxPreviewWidth");
+  const ctx = {
+    root: null,
+    active: true,
+    autoWatch: true,
+    watchersStarted: false,
+    cliphistAvailable: true,
+    loading: false,
+    watchText: {},
+    watchImage: {},
+    listProc: { running: false },
+  };
+  ctx.root = ctx;
+
+  startWatchers(ctx);
+  assert.equal(ctx.watchersStarted, true, "startWatchers must mark watchers active");
+  assert.deepEqual(ctx.watchText.command, ["wl-paste", "--type", "text", "--watch", "cliphist", "store"]);
+  assert.deepEqual(ctx.watchImage.command, ["wl-paste", "--type", "image", "--watch", "cliphist", "store"]);
+  assert.equal(ctx.watchText.running, true, "startWatchers must start text watcher");
+  assert.equal(ctx.watchImage.running, true, "startWatchers must start image watcher");
+
+  stopWatchers(ctx);
+  assert.equal(ctx.watchersStarted, false, "stopWatchers must clear watcher state");
+  assert.equal(ctx.watchText.running, false, "stopWatchers must stop text watcher");
+  assert.equal(ctx.watchImage.running, false, "stopWatchers must stop image watcher");
+
+  list(ctx, 240);
+  assert.equal(ctx.loading, true, "list must mark clipboard history loading");
+  assert.deepEqual(ctx.listProc.command, ["cliphist", "list", "-preview-width", "240"]);
+  assert.equal(ctx.listProc.running, true, "list must start the list process");
+
+  const blockedCtx = { ...ctx, active: false, loading: false, listProc: { running: false } };
+  blockedCtx.root = blockedCtx;
+  list(blockedCtx, 120);
+  assert.equal(blockedCtx.loading, false, "list must not run when clipboard history is inactive");
+  assert.equal(blockedCtx.listProc.command, undefined, "list must leave process command untouched when inactive");
+}
+
+function testClipboardServiceDecodeQueuesExecute() {
+  const decode = qmlFunction("decode", "id", "cb");
+  const decodeToDataUrl = qmlFunction("decodeToDataUrl", "id", "mime", "cb");
+  const getImageData = qmlFunction("getImageData", "id");
+  const startNextB64 = qmlFunction("_startNextB64");
+  const unavailableCallbacks = [];
+  const ctx = {
+    root: null,
+    cliphistAvailable: true,
+    imageDataById: { "cached-id": "data:image/png;base64,cached" },
+    _decodeCallback: null,
+    _b64Queue: [],
+    _b64CurrentCb: null,
+    _b64CurrentMime: "",
+    _b64CurrentId: "",
+    decodeProc: {},
+    decodeB64Proc: { running: false },
+    _startNextB64() {
+      startNextB64(ctx);
+    },
+  };
+  ctx.root = ctx;
+
+  decode({ ...ctx, root: { cliphistAvailable: false } }, "missing", value => unavailableCallbacks.push(value));
+  assert.deepEqual(unavailableCallbacks, [""], "decode must call back with empty content when cliphist is unavailable");
+
+  decode(ctx, "17", value => value);
+  assert.equal(typeof ctx._decodeCallback, "function", "decode must store the callback");
+  assert.deepEqual(ctx.decodeProc.command, ["cliphist", "decode", "17"]);
+  assert.equal(ctx.decodeProc.running, true, "decode must start the decode process");
+
+  assert.equal(getImageData(ctx, undefined), null, "getImageData must return null for undefined ids");
+  assert.equal(getImageData(ctx, "cached-id"), "data:image/png;base64,cached", "getImageData must return cached image data");
+
+  const cachedCallbacks = [];
+  decodeToDataUrl(ctx, "cached-id", "image/png", value => cachedCallbacks.push(value));
+  assert.deepEqual(cachedCallbacks, ["data:image/png;base64,cached"], "decodeToDataUrl must return cached data immediately");
+
+  decodeToDataUrl(ctx, "new-id", "", value => value);
+  assert.equal(ctx._b64CurrentId, "new-id", "decodeToDataUrl must start queued base64 work immediately when idle");
+  assert.equal(ctx._b64CurrentMime, "image/*", "decodeToDataUrl must default missing mime types");
+  assert.deepEqual(ctx.decodeB64Proc.command, ["sh", "-lc", "cliphist decode new-id | base64 -w 0"]);
+  assert.equal(ctx.decodeB64Proc.running, true, "decodeToDataUrl must start the base64 process");
+}
+
+function testClipboardServiceMutationCommandsExecute() {
+  const copyToClipboard = qmlFunction("copyToClipboard", "id");
+  const deleteById = qmlFunction("deleteById", "id");
+  const wipeAll = qmlFunction("wipeAll");
+  const detachedCommands = [];
+  const listCalls = [];
+  const ctx = {
+    root: null,
+    cliphistAvailable: true,
+    revision: 0,
+    copyProc: {},
+    list() {
+      listCalls.push("list");
+    },
+    Quickshell: {
+      execDetached(command) {
+        detachedCommands.push(command);
+      },
+    },
+    Qt: {
+      callLater(callback) {
+        callback();
+      },
+    },
+  };
+  ctx.root = ctx;
+
+  copyToClipboard(ctx, "copy-id");
+  assert.deepEqual(ctx.copyProc.command, ["sh", "-lc", "cliphist decode copy-id | wl-copy"]);
+  assert.equal(ctx.copyProc.running, true, "copyToClipboard must start the copy process");
+
+  deleteById(ctx, "delete-id");
+  assert.deepEqual(detachedCommands[0], ["cliphist", "delete", "delete-id"]);
+  assert.equal(ctx.revision, 1, "deleteById must bump revision");
+  assert.deepEqual(listCalls, ["list"], "deleteById must refresh the list later");
+
+  wipeAll(ctx);
+  assert.deepEqual(detachedCommands[1], ["cliphist", "wipe"]);
+  assert.equal(ctx.revision, 2, "wipeAll must bump revision");
+  assert.deepEqual(listCalls, ["list", "list"], "wipeAll must refresh the list later");
+}
+
 const tests = [
   testClipboardServiceDependencyAndWatcherGuards,
   testClipboardServiceListAndDecodeGuards,
   testClipboardServiceMutationCommands,
+  testClipboardServiceWatcherAndListCommandsExecute,
+  testClipboardServiceDecodeQueuesExecute,
+  testClipboardServiceMutationCommandsExecute,
 ];
 
 for (const test of tests) {
