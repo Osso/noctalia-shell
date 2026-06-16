@@ -145,7 +145,7 @@ Singleton {
   }
 
   // -------------------------------------------------
-  function getWallpaperUrl(wallpaper) {
+  function getWallpaperUrl(wallpaper): string {
     // Use the 'path' field which contains the full resolution image URL
     if (wallpaper.path) {
       return wallpaper.path;
@@ -159,7 +159,7 @@ Singleton {
   }
 
   // -------------------------------------------------
-  function getThumbnailUrl(wallpaper, size) {
+  function getThumbnailUrl(wallpaper, size): string {
     // size: "small", "large", "original"
     if (wallpaper.thumbs && wallpaper.thumbs[size]) {
       return wallpaper.thumbs[size];
