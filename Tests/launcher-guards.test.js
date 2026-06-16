@@ -3,8 +3,14 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const source = readQml("Modules/Panels/Launcher/Launcher.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
 function testLauncherSearchTextPluginRegistrationAndResultAggregation() {
-  const source = readQml("Modules/Panels/Launcher/Launcher.qml");
   const setBody = extractFunctionBody(source, "setSearchText");
   const registerBody = extractFunctionBody(source, "registerPlugin");
   const updateBody = extractFunctionBody(source, "updateResults");
@@ -27,7 +33,6 @@ function testLauncherSearchTextPluginRegistrationAndResultAggregation() {
 }
 
 function testLauncherLinearNavigationHelpersClampAndWrap() {
-  const source = readQml("Modules/Panels/Launcher/Launcher.qml");
   const nextBody = extractFunctionBody(source, "selectNextWrapped");
   const previousBody = extractFunctionBody(source, "selectPreviousWrapped");
   const firstBody = extractFunctionBody(source, "selectFirst");
@@ -46,7 +51,6 @@ function testLauncherLinearNavigationHelpersClampAndWrap() {
 }
 
 function testLauncherGridRowNavigationPreservesColumnsWhenPossible() {
-  const source = readQml("Modules/Panels/Launcher/Launcher.qml");
   const previousRowBody = extractFunctionBody(source, "selectPreviousRow");
   const nextRowBody = extractFunctionBody(source, "selectNextRow");
 
@@ -65,7 +69,6 @@ function testLauncherGridRowNavigationPreservesColumnsWhenPossible() {
 }
 
 function testLauncherGridColumnNavigationWrapsRows() {
-  const source = readQml("Modules/Panels/Launcher/Launcher.qml");
   const previousColumnBody = extractFunctionBody(source, "selectPreviousColumn");
   const nextColumnBody = extractFunctionBody(source, "selectNextColumn");
 
@@ -82,12 +85,64 @@ function testLauncherGridColumnNavigationWrapsRows() {
 }
 
 function testLauncherActivateInvokesSelectedResult() {
-  const source = readQml("Modules/Panels/Launcher/Launcher.qml");
   const body = extractFunctionBody(source, "activate");
 
   assert.match(body, /if \(results\.length > 0 && results\[selectedIndex\]\)/, "activate must require a selected result");
   assert.match(body, /const item = results\[selectedIndex\]/, "activate must read the selected result");
   assert.match(body, /if \(item\.onActivate\)[\s\S]*item\.onActivate\(\)/, "activate must invoke selectable result actions");
+}
+
+function testLauncherLinearNavigationExecutesWrapAndPageClamp() {
+  const selectNextWrapped = qmlFunction("selectNextWrapped");
+  const selectPreviousWrapped = qmlFunction("selectPreviousWrapped");
+  const selectNextPage = qmlFunction("selectNextPage");
+  const selectPreviousPage = qmlFunction("selectPreviousPage");
+  const ctx = {
+    results: [{}, {}, {}, {}, {}],
+    selectedIndex: 4,
+    entryHeight: 200,
+  };
+
+  selectNextWrapped(ctx);
+  assert.equal(ctx.selectedIndex, 0, "next selection must wrap from last to first");
+
+  selectPreviousWrapped(ctx);
+  assert.equal(ctx.selectedIndex, 4, "previous selection must wrap from first to last");
+
+  ctx.selectedIndex = 3;
+  selectNextPage(ctx);
+  assert.equal(ctx.selectedIndex, 4, "page down must clamp to the last result");
+
+  selectPreviousPage(ctx);
+  assert.equal(ctx.selectedIndex, 1, "page up must subtract one page when possible");
+
+  selectPreviousPage(ctx);
+  assert.equal(ctx.selectedIndex, 0, "page up must clamp at the first result");
+}
+
+function testLauncherGridNavigationExecutesShortRowEdges() {
+  const selectNextRow = qmlFunction("selectNextRow");
+  const selectPreviousRow = qmlFunction("selectPreviousRow");
+  const selectNextColumn = qmlFunction("selectNextColumn");
+  const selectPreviousColumn = qmlFunction("selectPreviousColumn");
+  const ctx = {
+    results: Array.from({ length: 5 }, () => ({})),
+    selectedIndex: 2,
+    isGridView: true,
+    gridColumns: 3,
+  };
+
+  selectNextRow(ctx);
+  assert.equal(ctx.selectedIndex, 4, "next row must land on last item when the same column is missing");
+
+  selectNextColumn(ctx);
+  assert.equal(ctx.selectedIndex, 0, "next column must wrap from final short row to first item");
+
+  selectPreviousRow(ctx);
+  assert.equal(ctx.selectedIndex, 3, "previous row from first row must wrap to same column in last row when present");
+
+  selectPreviousColumn(ctx);
+  assert.equal(ctx.selectedIndex, 2, "previous column from first column must wrap to previous row last column");
 }
 
 const tests = [
@@ -96,6 +151,8 @@ const tests = [
   testLauncherGridRowNavigationPreservesColumnsWhenPossible,
   testLauncherGridColumnNavigationWrapsRows,
   testLauncherActivateInvokesSelectedResult,
+  testLauncherLinearNavigationExecutesWrapAndPageClamp,
+  testLauncherGridNavigationExecutesShortRowEdges,
 ];
 
 for (const test of tests) {
