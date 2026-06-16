@@ -3,6 +3,13 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const idleInhibitorSource = readQml("Services/Power/IdleInhibitorService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(idleInhibitorSource, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
 function testIdleInhibitorInitializationAndStrategyDetection() {
   const source = readQml("Services/Power/IdleInhibitorService.qml");
   const initBody = extractFunctionBody(source, "init");
@@ -85,11 +92,47 @@ function testIdleInhibitorTimeoutAndManualHelpers() {
   assert.match(addManualBody, /else if \(timeoutSec === null && timeout !== null\)[\s\S]*timeout = null[\s\S]*inhibitorTimeout\.stop\(\)/, "addManualInhibitor must clear an existing timeout");
 }
 
+function testChangeTimeoutExecutesStateTransitions() {
+  const changeTimeout = qmlFunction("changeTimeout", "delta");
+  const ctx = {
+    timeout: null,
+    addedTimeouts: [],
+    removed: 0,
+    addManualInhibitor(timeoutSec) {
+      this.addedTimeouts.push(timeoutSec);
+      this.timeout = timeoutSec;
+    },
+    removeManualInhibitor() {
+      this.removed++;
+      this.timeout = null;
+    },
+  };
+
+  changeTimeout(ctx, -5);
+  assert.deepEqual(ctx.addedTimeouts, []);
+  assert.equal(ctx.removed, 0);
+  assert.equal(ctx.timeout, null);
+
+  changeTimeout(ctx, 30);
+  assert.deepEqual(ctx.addedTimeouts, [30]);
+  assert.equal(ctx.timeout, 30);
+
+  changeTimeout(ctx, -40);
+  assert.equal(ctx.removed, 1);
+  assert.equal(ctx.timeout, null);
+
+  ctx.timeout = 15;
+  changeTimeout(ctx, 10);
+  assert.deepEqual(ctx.addedTimeouts, [30, 25]);
+  assert.equal(ctx.timeout, 25);
+}
+
 const tests = [
   testIdleInhibitorInitializationAndStrategyDetection,
   testIdleInhibitorRegistryAndStateTransitions,
   testIdleInhibitorBackendLaunchersAndManualToggle,
   testIdleInhibitorTimeoutAndManualHelpers,
+  testChangeTimeoutExecutesStateTransitions,
 ];
 
 for (const test of tests) {
