@@ -3,6 +3,18 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const pluginSource = readQml("Modules/Panels/Launcher/Plugins/ApplicationsPlugin.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(pluginSource, functionName);
+  const args = argNames.join(", ");
+  return new Function(
+    "ctx",
+    ...argNames,
+    `with (ctx) { return (function(${args}) ${body}).call(ctx, ${args}); }`,
+  );
+}
+
 function testApplicationsPluginCategoryNamesAndLifecycleHooks() {
   const source = readQml("Modules/Panels/Launcher/Plugins/ApplicationsPlugin.qml");
   const categoryNameBody = extractFunctionBody(source, "getCategoryName");
@@ -127,12 +139,77 @@ function testApplicationsPluginUsageTrackingHelpers() {
   assert.match(recordBody, /saveTimer\.restart\(\)/, "recordUsage must debounce persistence");
 }
 
+function testApplicationsPluginCategoryHelpersExecute() {
+  const getAppCategories = qmlFunction("getAppCategories", "app");
+  const getAppCategory = qmlFunction("getAppCategory", "app");
+  const appMatchesCategory = qmlFunction("appMatchesCategory", "app", "category");
+  const ctx = {
+    root: {
+      categories: ["all", "AudioVideo", "Chat", "Education", "System", "Development"],
+    },
+    getAppCategories(app) {
+      return getAppCategories(ctx, app);
+    },
+    getAppCategory(app) {
+      return getAppCategory(ctx, app);
+    },
+  };
+  const audioApp = { categories: " Audio ;Video;Audio;" };
+  const scienceApp = { Categories: "Science;Education;" };
+  const utilityApp = { categories: ["Utility", "Settings"] };
+  const developmentApp = { categories: ["Development", "Utility"] };
+
+  assert.deepEqual(getAppCategories(ctx, null), [], "missing apps must have no categories");
+  assert.deepEqual(getAppCategories(ctx, audioApp), ["Audio", "Video"], "category parsing must trim and dedupe entries");
+  assert.equal(getAppCategory(ctx, audioApp), "AudioVideo", "audio/video apps must normalize to AudioVideo");
+  assert.equal(getAppCategory(ctx, scienceApp), "Education", "science apps must normalize to Education");
+  assert.equal(getAppCategory(ctx, utilityApp), "System", "utility/settings apps must normalize to System");
+  assert.equal(getAppCategory(ctx, developmentApp), "System", "utility categories must normalize to System before generic priority matching");
+  assert.equal(appMatchesCategory(ctx, audioApp, "all"), true, "all category must match every app");
+  assert.equal(appMatchesCategory(ctx, scienceApp, "Education"), true, "Education must include Science apps");
+  assert.equal(appMatchesCategory(ctx, utilityApp, "System"), true, "System must include Utility apps");
+  assert.equal(appMatchesCategory(ctx, developmentApp, "System"), true, "System category must include Utility apps even when another category is present");
+}
+
+function testApplicationsPluginUsageHelpersExecute() {
+  const getAppKey = qmlFunction("getAppKey", "app");
+  const getUsageCount = qmlFunction("getUsageCount", "app");
+  const recordUsage = qmlFunction("recordUsage", "app");
+  const restarts = [];
+  const ctx = {
+    usageAdapter: { counts: { "org.test.App": 3, "bad": Number.POSITIVE_INFINITY } },
+    saveTimer: { restart() { restarts.push("save"); } },
+    getAppKey(app) {
+      return getAppKey(ctx, app);
+    },
+    getUsageCount(app) {
+      return getUsageCount(ctx, app);
+    },
+  };
+
+  assert.equal(getAppKey(ctx, { id: "org.test.App", name: "Ignored" }), "org.test.App");
+  assert.equal(getAppKey(ctx, { command: ["app", "--flag"] }), "app --flag");
+  assert.equal(getAppKey(ctx, { name: "Named App" }), "Named App");
+  assert.equal(getAppKey(ctx, null), "unknown");
+  assert.equal(getUsageCount(ctx, { id: "org.test.App" }), 3, "usage count must read finite values");
+  assert.equal(getUsageCount(ctx, { id: "bad" }), 0, "usage count must reject non-finite values");
+  assert.equal(getUsageCount({ ...ctx, usageAdapter: null }, { id: "org.test.App" }), 0, "missing usage maps must default to zero");
+
+  recordUsage(ctx, { id: "org.test.App" });
+  recordUsage(ctx, { command: ["app", "--flag"] });
+  assert.equal(ctx.usageAdapter.counts["org.test.App"], 4, "recordUsage must increment existing counts");
+  assert.equal(ctx.usageAdapter.counts["app --flag"], 1, "recordUsage must initialize new counts");
+  assert.deepEqual(restarts, ["save", "save"], "recordUsage must debounce persistence");
+}
+
 const tests = [
   testApplicationsPluginCategoryNamesAndLifecycleHooks,
   testApplicationsPluginCategoryNormalizationAndMatching,
   testApplicationsPluginLoadingAndExecutableSearchFields,
   testApplicationsPluginResultsAndActivationPaths,
   testApplicationsPluginUsageTrackingHelpers,
+  testApplicationsPluginCategoryHelpersExecute,
+  testApplicationsPluginUsageHelpersExecute,
 ];
 
 for (const test of tests) {
