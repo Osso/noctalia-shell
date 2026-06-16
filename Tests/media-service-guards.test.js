@@ -3,6 +3,41 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(readQml("Services/Media/MediaService.qml"), functionName);
+  const args = argNames.join(", ");
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${args}) ${body}).call(ctx, ${args}); }`);
+}
+
+function makePlayer(overrides = {}) {
+  const calls = [];
+  return {
+    canControl: true,
+    canGoNext: true,
+    canGoPrevious: true,
+    canPause: true,
+    canPlay: true,
+    canSeek: true,
+    desktopEntry: "",
+    identity: "player",
+    isPlaying: false,
+    length: 300,
+    next: () => calls.push("next"),
+    pause: () => calls.push("pause"),
+    play: () => calls.push("play"),
+    playbackState: 0,
+    position: 10,
+    previous: () => calls.push("previous"),
+    stop: () => calls.push("stop"),
+    trackAlbum: "",
+    trackArtist: "",
+    trackArtUrl: "",
+    trackTitle: "Track",
+    calls,
+    ...overrides,
+  };
+}
+
 function testMediaServicePlayerFilteringAndVirtualPlayers() {
   const source = readQml("Services/Media/MediaService.qml");
   const body = extractFunctionBody(source, "getAvailablePlayers");
@@ -19,6 +54,42 @@ function testMediaServicePlayerFilteringAndVirtualPlayers() {
   assert.match(body, /matchedGenericIndices\[j\] = true/, "getAvailablePlayers must avoid duplicating matched generic players");
   assert.match(body, /if \(!matchedGenericIndices\[i\]\)[\s\S]*finalPlayers\.push\(genericPlayers\[i\]\)/, "getAvailablePlayers must keep unmatched generic players");
   assert.match(body, /if \(player && player\.canControl\)[\s\S]*controllablePlayers\.push\(player\)/, "getAvailablePlayers must return only controllable players");
+}
+
+function testMediaServicePlayerFilteringExecutesVirtualPlayers() {
+  const getAvailablePlayers = qmlFunction("getAvailablePlayers");
+  const generic = makePlayer({
+    canPause: true,
+    identity: "firefox",
+    playbackState: 1,
+    position: 42,
+    trackArtist: "Browser Artist",
+    trackArtUrl: "cover.png",
+    trackTitle: "Example Song",
+  });
+  const specific = makePlayer({
+    canPause: false,
+    identity: "spotify",
+    playbackState: 0,
+    trackTitle: "Example Song - Spotify",
+  });
+  const unmatchedGeneric = makePlayer({ identity: "chrome", trackTitle: "Other Song" });
+  const blocked = makePlayer({ identity: "Blocked Player", trackTitle: "Blocked" });
+  const inert = makePlayer({ canControl: false, identity: "vlc", trackTitle: "No Control" });
+  const ctx = {
+    Mpris: { players: { values: [generic, specific, unmatchedGeneric, blocked, inert] } },
+    Settings: { data: { audio: { mprisBlacklist: ["blocked"] } } },
+  };
+
+  const players = getAvailablePlayers(ctx);
+
+  assert.equal(players.length, 2, "only controllable non-blacklisted players are returned");
+  assert.equal(players[0].identity, "spotify", "virtual player keeps the specific player identity");
+  assert.equal(players[0].trackArtUrl, "cover.png", "virtual player uses richer generic metadata");
+  assert.equal(players[0].canPause, true, "virtual player exposes state-source capabilities");
+  assert.equal(players[0]._stateSource, generic, "virtual player keeps state source");
+  assert.equal(players[0]._controlTarget, specific, "virtual player controls the specific target");
+  assert.equal(players[1], unmatchedGeneric, "unmatched generic players remain available");
 }
 
 function testMediaServiceActivePlayerSelection() {
@@ -39,6 +110,50 @@ function testMediaServiceActivePlayerSelection() {
   assert.match(switchBody, /currentPosition = currentPlayer \? currentPlayer\.position : 0/, "switchToPlayer must sync current position from the selected player");
   assert.match(updateBody, /let newPlayer = findActivePlayer\(\)/, "updateCurrentPlayer must find the best active player");
   assert.match(updateBody, /if \(newPlayer !== currentPlayer\)[\s\S]*currentPlayer = newPlayer[\s\S]*currentPosition = currentPlayer \? currentPlayer\.position : 0/, "updateCurrentPlayer must update player and position together");
+}
+
+function testMediaServiceActivePlayerSelectionExecutesPriorities() {
+  const findActivePlayer = qmlFunction("findActivePlayer");
+  const switchToPlayer = qmlFunction("switchToPlayer", "index");
+  const updateCurrentPlayer = qmlFunction("updateCurrentPlayer");
+  const stopped = makePlayer({ identity: "mpv", position: 10 });
+  const preferred = makePlayer({ identity: "spotify", position: 20 });
+  const playing = makePlayer({ identity: "vlc", playbackState: 1, position: 30 });
+  const ctx = {
+    Logger: { d: () => {} },
+    MprisPlaybackState: { Playing: 1 },
+    Settings: { data: { audio: { preferredPlayer: "spotify" } } },
+    currentPlayer: stopped,
+    currentPosition: 0,
+    getAvailablePlayers: () => [stopped, preferred, playing],
+    selectedPlayerIndex: 0,
+  };
+  ctx.findActivePlayer = () => findActivePlayer(ctx);
+
+  assert.equal(findActivePlayer(ctx), playing, "playing player wins over preferred player");
+  assert.equal(ctx.selectedPlayerIndex, 2, "playing player updates selected index");
+
+  playing.playbackState = 0;
+  assert.equal(findActivePlayer(ctx), preferred, "preferred player wins when none are playing");
+  assert.equal(ctx.selectedPlayerIndex, 1, "preferred player updates selected index");
+
+  ctx.Settings.data.audio.preferredPlayer = "";
+  ctx.selectedPlayerIndex = 0;
+  assert.equal(findActivePlayer(ctx), stopped, "valid manual selection is preserved");
+
+  ctx.selectedPlayerIndex = 99;
+  assert.equal(findActivePlayer(ctx), stopped, "invalid selection resets to first player");
+  assert.equal(ctx.selectedPlayerIndex, 0, "invalid selected index resets");
+
+  switchToPlayer(ctx, 1);
+  assert.equal(ctx.currentPlayer, preferred, "switchToPlayer applies selected player");
+  assert.equal(ctx.currentPosition, 20, "switchToPlayer syncs position");
+
+  ctx.getAvailablePlayers = () => [stopped, playing];
+  playing.playbackState = 1;
+  updateCurrentPlayer(ctx);
+  assert.equal(ctx.currentPlayer, playing, "updateCurrentPlayer applies active player");
+  assert.equal(ctx.currentPosition, 30, "updateCurrentPlayer syncs position");
 }
 
 function testMediaServicePlaybackControlsDelegateSafely() {
@@ -62,6 +177,45 @@ function testMediaServicePlaybackControlsDelegateSafely() {
   assert.match(previousBody, /if \(target && target\.canGoPrevious\)[\s\S]*target\.previous\(\)/, "previous must require canGoPrevious");
 }
 
+function testMediaServicePlaybackControlsExecuteTargets() {
+  const playPause = qmlFunction("playPause");
+  const play = qmlFunction("play");
+  const stop = qmlFunction("stop");
+  const pause = qmlFunction("pause");
+  const next = qmlFunction("next");
+  const previous = qmlFunction("previous");
+  const state = makePlayer({ playbackState: 1 });
+  const control = makePlayer();
+  const ctx = {
+    MprisPlaybackState: { Playing: 1 },
+    currentPlayer: { _controlTarget: control, _stateSource: state },
+  };
+
+  playPause(ctx);
+  assert.deepEqual(control.calls, ["pause"], "playPause pauses the control target when state source is playing");
+
+  state.playbackState = 0;
+  playPause(ctx);
+  assert.deepEqual(control.calls, ["pause", "play"], "playPause plays the control target when state source is not playing");
+
+  play(ctx);
+  pause(ctx);
+  next(ctx);
+  previous(ctx);
+  stop(ctx);
+  assert.deepEqual(control.calls.slice(2), ["play", "pause", "next", "previous", "stop"], "transport helpers target the control target");
+
+  control.canPlay = false;
+  control.canPause = false;
+  control.canGoNext = false;
+  control.canGoPrevious = false;
+  play(ctx);
+  pause(ctx);
+  next(ctx);
+  previous(ctx);
+  assert.deepEqual(control.calls.slice(7), [], "guarded transport helpers skip unavailable capabilities");
+}
+
 function testMediaServiceSeekHelpers() {
   const source = readQml("Services/Media/MediaService.qml");
   const seekBody = extractFunctionBody(source, "seek");
@@ -78,11 +232,44 @@ function testMediaServiceSeekHelpers() {
   assert.match(seekByRatioBody, /target\.position = seekPosition[\s\S]*currentPosition = seekPosition/, "seekByRatio must update backend and local position");
 }
 
+function testMediaServiceSeekHelpersExecuteTargets() {
+  const seek = qmlFunction("seek", "position");
+  const seekRelative = qmlFunction("seekRelative", "offset");
+  const seekByRatio = qmlFunction("seekByRatio", "ratio");
+  const control = makePlayer({ length: 200, position: 50 });
+  const ctx = {
+    currentPlayer: { _controlTarget: control },
+    currentPosition: 0,
+  };
+
+  seek(ctx, 25);
+  assert.equal(control.position, 25, "seek applies absolute target position");
+  assert.equal(ctx.currentPosition, 25, "seek mirrors current position");
+
+  seekRelative(ctx, 10);
+  assert.equal(control.position, 35, "seekRelative adds offset to backend position");
+  assert.equal(ctx.currentPosition, 35, "seekRelative mirrors current position");
+
+  seekByRatio(ctx, 0.5);
+  assert.equal(control.position, 100, "seekByRatio converts ratio to absolute position");
+  assert.equal(ctx.currentPosition, 100, "seekByRatio mirrors current position");
+
+  control.canSeek = false;
+  seek(ctx, 150);
+  seekRelative(ctx, 10);
+  seekByRatio(ctx, 0.75);
+  assert.equal(control.position, 100, "seek helpers skip non-seekable targets");
+}
+
 const tests = [
   testMediaServicePlayerFilteringAndVirtualPlayers,
+  testMediaServicePlayerFilteringExecutesVirtualPlayers,
   testMediaServiceActivePlayerSelection,
+  testMediaServiceActivePlayerSelectionExecutesPriorities,
   testMediaServicePlaybackControlsDelegateSafely,
+  testMediaServicePlaybackControlsExecuteTargets,
   testMediaServiceSeekHelpers,
+  testMediaServiceSeekHelpersExecuteTargets,
 ];
 
 for (const test of tests) {
