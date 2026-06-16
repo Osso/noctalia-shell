@@ -47,6 +47,7 @@ run_unit_tests() {
     node "$repo_root/Tests/mango-service-guards.test.js"
     node "$repo_root/Tests/active-window-widget-guards.test.js"
     node "$repo_root/Tests/audio-service-guards.test.js"
+    node "$repo_root/Tests/app-theme-service-guards.test.js"
     node "$repo_root/Tests/applications-plugin-guards.test.js"
     node "$repo_root/Tests/bar-tab-guards.test.js"
     node "$repo_root/Tests/bar-service-guards.test.js"
