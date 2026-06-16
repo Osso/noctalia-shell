@@ -55,6 +55,7 @@ run_unit_tests() {
     node "$repo_root/Tests/bar-widget-registry-guards.test.js"
     node "$repo_root/Tests/bar-pill-vertical-guards.test.js"
     node "$repo_root/Tests/battery-panel-guards.test.js"
+    node "$repo_root/Tests/battery-tab-guards.test.js"
     node "$repo_root/Tests/battery-widget-guards.test.js"
     node "$repo_root/Tests/brightness-service-guards.test.js"
     node "$repo_root/Tests/brightness-widget-guards.test.js"
