@@ -37,6 +37,20 @@ function testBrightnessServiceAvailableMethodsReflectsConfiguredDisplays() {
   assert.deepEqual(getAvailableMethods(ctx), []);
 }
 
+function testBrightnessServiceScreenLookupFindsMatchingMonitor() {
+  const getMonitorForScreen = qmlFunction("getMonitorForScreen", "screen");
+  const leftScreen = { name: "left" };
+  const rightScreen = { name: "right" };
+  const leftMonitor = { modelData: leftScreen, name: "left-monitor" };
+  const rightMonitor = { modelData: rightScreen, name: "right-monitor" };
+  const ctx = {
+    monitors: [leftMonitor, rightMonitor],
+  };
+
+  assert.equal(getMonitorForScreen(ctx, rightScreen), rightMonitor, "getMonitorForScreen must return the monitor for the exact screen object");
+  assert.equal(getMonitorForScreen(ctx, { name: "right" }), undefined, "getMonitorForScreen must not match a different screen object with the same shape");
+}
+
 function testBrightnessServiceIncreaseBrightnessDelegatesToEveryMonitor() {
   const increaseBrightness = qmlFunction("increaseBrightness");
   const calls = [];
@@ -96,6 +110,7 @@ function testBrightnessServiceDetectedDisplaysPassThrough() {
 
 const tests = [
   testBrightnessServiceAvailableMethodsReflectsConfiguredDisplays,
+  testBrightnessServiceScreenLookupFindsMatchingMonitor,
   testBrightnessServiceIncreaseBrightnessDelegatesToEveryMonitor,
   testBrightnessServiceDecreaseBrightnessDelegatesToEveryMonitor,
   testBrightnessServiceDetectedDisplaysPassThrough,
