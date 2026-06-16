@@ -107,6 +107,7 @@ run_unit_tests() {
     node "$repo_root/Tests/tray-widget-guards.test.js"
     node "$repo_root/Tests/vpn-service-guards.test.js"
     node "$repo_root/Tests/wallhaven-service-guards.test.js"
+    node "$repo_root/Tests/wallpaper-tab-guards.test.js"
     node "$repo_root/Tests/workspace-guards.test.js"
     node "$repo_root/Tests/color-schemes.test.js"
     node "$repo_root/Tests/template-registry.test.js"
