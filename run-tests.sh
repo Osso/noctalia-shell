@@ -49,6 +49,7 @@ run_unit_tests() {
     node "$repo_root/Tests/bar-tab-guards.test.js"
     node "$repo_root/Tests/bar-service-guards.test.js"
     node "$repo_root/Tests/bluetooth-service-guards.test.js"
+    node "$repo_root/Tests/calendar-service-guards.test.js"
     node "$repo_root/Tests/clipboard-plugin-guards.test.js"
     node "$repo_root/Tests/control-center-tab-guards.test.js"
     node "$repo_root/Tests/color-scheme-service-guards.test.js"
