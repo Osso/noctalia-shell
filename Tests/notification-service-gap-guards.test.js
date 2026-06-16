@@ -3,8 +3,15 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const source = readQml("Services/System/NotificationService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  const args = argNames.join(", ");
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${args}) ${body}).call(ctx, ${args}); }`);
+}
+
 function testNotificationServerAndImageQueueLifecycle() {
-  const source = readQml("Services/System/NotificationService.qml");
   const serverBody = extractFunctionBody(source, "updateNotificationServer");
   const processBody = extractFunctionBody(source, "processNextImage");
   const queueBody = extractFunctionBody(source, "queueImage");
@@ -23,7 +30,6 @@ function testNotificationServerAndImageQueueLifecycle() {
 }
 
 function testNotificationReplacementAndObjectUpdatePreserveStableFields() {
-  const source = readQml("Services/System/NotificationService.qml");
   const refreshBody = extractFunctionBody(source, "refreshDuplicateNotification");
   const existingBody = extractFunctionBody(source, "updateExistingNotification");
   const objectBody = extractFunctionBody(source, "updateNotificationFromObject");
@@ -52,7 +58,6 @@ function testNotificationReplacementAndObjectUpdatePreserveStableFields() {
 }
 
 function testNotificationCleanupAndProgressGuards() {
-  const source = readQml("Services/System/NotificationService.qml");
   const cleanupBody = extractFunctionBody(source, "cleanupNotification");
   const progressBody = extractFunctionBody(source, "updateAllProgress");
 
@@ -71,7 +76,6 @@ function testNotificationCleanupAndProgressGuards() {
 }
 
 function testNotificationHistoryAndStatePersistence() {
-  const source = readQml("Services/System/NotificationService.qml");
   const performSaveBody = extractFunctionBody(source, "performSaveHistory");
   const loadHistoryBody = extractFunctionBody(source, "loadHistory");
   const loadStateBody = extractFunctionBody(source, "loadState");
@@ -100,11 +104,97 @@ function testNotificationHistoryAndStatePersistence() {
   assert.match(seenBody, /saveState\(\)/, "updateLastSeenTs must persist the new timestamp");
 }
 
+function testNotificationEmptySuppressionExecutesPlaceholderMatching() {
+  const isPlaceholderNotificationText = qmlFunction("isPlaceholderNotificationText", "value", "placeholders");
+  const shouldSuppressEmptyNotification = qmlFunction("shouldSuppressEmptyNotification", "data");
+  const ctx = {};
+  ctx.isPlaceholderNotificationText = (value, placeholders) => isPlaceholderNotificationText(ctx, value, placeholders);
+
+  assert.equal(isPlaceholderNotificationText(ctx, "", ["unknown"]), true, "blank placeholder text matches");
+  assert.equal(isPlaceholderNotificationText(ctx, " Unknown App ", ["unknown app"]), true, "placeholder matching trims and lowercases");
+  assert.equal(isPlaceholderNotificationText(ctx, "Firefox", ["unknown"]), false, "real text does not match placeholders");
+  assert.equal(shouldSuppressEmptyNotification(ctx, {
+    appName: "Unknown App",
+    body: "",
+    summary: "No summary",
+  }), true, "unknown app/no summary/blank body is suppressed");
+  assert.equal(shouldSuppressEmptyNotification(ctx, {
+    appName: "Unknown App",
+    body: "real body",
+    summary: "No summary",
+  }), false, "non-empty body is not suppressed");
+  assert.equal(shouldSuppressEmptyNotification(ctx, {
+    appName: "Firefox",
+    body: "",
+    summary: "No summary",
+  }), false, "known app is not suppressed");
+}
+
+function testNotificationTerminalBellCooldownExecutes() {
+  const isTerminalBellNotification = qmlFunction("isTerminalBellNotification", "data");
+  const shouldSuppressTerminalBellNotification = qmlFunction("shouldSuppressTerminalBellNotification", "data");
+  const clock = { now: 10000 };
+  const ctx = {
+    Date: { now: () => clock.now },
+    lastTerminalBellNotificationMs: 0,
+    terminalBellCooldownMs: 5000,
+  };
+  ctx.isTerminalBellNotification = data => isTerminalBellNotification(ctx, data);
+
+  assert.equal(isTerminalBellNotification(ctx, {
+    appName: "Ghostty",
+    body: "",
+    summary: "Bell",
+  }), true, "terminal app plus bell content is a terminal bell");
+  assert.equal(isTerminalBellNotification(ctx, {
+    appName: "Unknown App",
+    body: "terminal bell",
+    summary: "",
+  }), true, "content mentioning terminal bell is a terminal bell");
+  assert.equal(isTerminalBellNotification(ctx, {
+    appName: "Ghostty",
+    body: "",
+    summary: "Build finished",
+  }), false, "terminal notification without bell content is not a terminal bell");
+  assert.equal(shouldSuppressTerminalBellNotification(ctx, {
+    appName: "Ghostty",
+    body: "",
+    summary: "Bell",
+  }), false, "first terminal bell is allowed");
+  assert.equal(ctx.lastTerminalBellNotificationMs, 10000, "first terminal bell updates cooldown timestamp");
+
+  clock.now = 12000;
+  assert.equal(shouldSuppressTerminalBellNotification(ctx, {
+    appName: "Ghostty",
+    body: "",
+    summary: "Bell",
+  }), true, "terminal bell inside cooldown is suppressed");
+  assert.equal(ctx.lastTerminalBellNotificationMs, 10000, "suppressed terminal bell does not extend cooldown");
+
+  clock.now = 16000;
+  assert.equal(shouldSuppressTerminalBellNotification(ctx, {
+    appName: "Ghostty",
+    body: "",
+    summary: "Bell",
+  }), false, "terminal bell after cooldown is allowed");
+  assert.equal(ctx.lastTerminalBellNotificationMs, 16000, "allowed terminal bell refreshes cooldown timestamp");
+
+  clock.now = 17000;
+  assert.equal(shouldSuppressTerminalBellNotification(ctx, {
+    appName: "Firefox",
+    body: "",
+    summary: "Download finished",
+  }), false, "non-terminal-bell notifications are not suppressed");
+  assert.equal(ctx.lastTerminalBellNotificationMs, 16000, "non-terminal-bell notifications do not affect cooldown");
+}
+
 const tests = [
   testNotificationServerAndImageQueueLifecycle,
   testNotificationReplacementAndObjectUpdatePreserveStableFields,
   testNotificationCleanupAndProgressGuards,
   testNotificationHistoryAndStatePersistence,
+  testNotificationEmptySuppressionExecutesPlaceholderMatching,
+  testNotificationTerminalBellCooldownExecutes,
 ];
 
 for (const test of tests) {
