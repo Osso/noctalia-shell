@@ -102,6 +102,7 @@ run_unit_tests() {
     node "$repo_root/Tests/update-service-guards.test.js"
     node "$repo_root/Tests/timer-card-guards.test.js"
     node "$repo_root/Tests/time-service-guards.test.js"
+    node "$repo_root/Tests/toast-screen-guards.test.js"
     node "$repo_root/Tests/toast-service-guards.test.js"
     node "$repo_root/Tests/searchable-combo-box-guards.test.js"
     node "$repo_root/Tests/tray-menu-guards.test.js"
