@@ -137,6 +137,9 @@ function testClipboardServiceDecodeQueuesExecute() {
   decode({ ...ctx, root: { cliphistAvailable: false } }, "missing", value => unavailableCallbacks.push(value));
   assert.deepEqual(unavailableCallbacks, [""], "decode must call back with empty content when cliphist is unavailable");
 
+  decodeToDataUrl({ ...ctx, root: { cliphistAvailable: false } }, "missing-image", "image/png", value => unavailableCallbacks.push(value));
+  assert.deepEqual(unavailableCallbacks, ["", ""], "decodeToDataUrl must call back with empty content when cliphist is unavailable");
+
   decode(ctx, "17", value => value);
   assert.equal(typeof ctx._decodeCallback, "function", "decode must store the callback");
   assert.deepEqual(ctx.decodeProc.command, ["cliphist", "decode", "17"]);
@@ -154,6 +157,17 @@ function testClipboardServiceDecodeQueuesExecute() {
   assert.equal(ctx._b64CurrentMime, "image/*", "decodeToDataUrl must default missing mime types");
   assert.deepEqual(ctx.decodeB64Proc.command, ["sh", "-lc", "cliphist decode new-id | base64 -w 0"]);
   assert.equal(ctx.decodeB64Proc.running, true, "decodeToDataUrl must start the base64 process");
+
+  const pausedCtx = {
+    ...ctx,
+    _b64CurrentCb: null,
+    _b64Queue: [{ id: "queued-id", mime: "image/png", cb: value => value }],
+    cliphistAvailable: false,
+    decodeB64Proc: { running: false },
+  };
+  pausedCtx.root = pausedCtx;
+  startNextB64(pausedCtx);
+  assert.equal(pausedCtx.decodeB64Proc.command, undefined, "_startNextB64 must not start work when cliphist is unavailable");
 }
 
 function testClipboardServiceMutationCommandsExecute() {
@@ -196,6 +210,21 @@ function testClipboardServiceMutationCommandsExecute() {
   assert.deepEqual(detachedCommands[1], ["cliphist", "wipe"]);
   assert.equal(ctx.revision, 2, "wipeAll must bump revision");
   assert.deepEqual(listCalls, ["list", "list"], "wipeAll must refresh the list later");
+
+  const blockedCtx = {
+    ...ctx,
+    cliphistAvailable: false,
+    copyProc: {},
+    revision: 9,
+  };
+  blockedCtx.root = blockedCtx;
+  copyToClipboard(blockedCtx, "copy-id");
+  deleteById(blockedCtx, "delete-id");
+  wipeAll(blockedCtx);
+
+  assert.equal(blockedCtx.copyProc.command, undefined, "copyToClipboard must not run without cliphist");
+  assert.equal(blockedCtx.revision, 9, "mutations must not bump revision without cliphist");
+  assert.equal(detachedCommands.length, 2, "mutations must not run detached commands without cliphist");
 }
 
 const tests = [
