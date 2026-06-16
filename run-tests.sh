@@ -78,6 +78,7 @@ run_unit_tests() {
     node "$repo_root/Tests/session-menu-guards.test.js"
     node "$repo_root/Tests/settings-service-guards.test.js"
     node "$repo_root/Tests/settings-panel-guards.test.js"
+    node "$repo_root/Tests/setup-wallpaper-step-guards.test.js"
     node "$repo_root/Tests/sway-service-guards.test.js"
     node "$repo_root/Tests/system-stat-service-guards.test.js"
     node "$repo_root/Tests/template-processor-guards.test.js"
