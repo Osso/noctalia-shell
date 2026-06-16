@@ -3,8 +3,14 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const source = readQml("Services/UI/WallpaperService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
 function testWallpaperServiceInitializationAndModels() {
-  const source = readQml("Services/UI/WallpaperService.qml");
   const initBody = extractFunctionBody(source, "init");
   const translateBody = extractFunctionBody(source, "translateModels");
   const fillModeBody = extractFunctionBody(source, "getFillModeUniform");
@@ -25,7 +31,6 @@ function testWallpaperServiceInitializationAndModels() {
 }
 
 function testWallpaperServiceMonitorAndWallpaperSelection() {
-  const source = readQml("Services/UI/WallpaperService.qml");
   const configBody = extractFunctionBody(source, "getMonitorConfig");
   const changeBody = extractFunctionBody(source, "changeWallpaper");
   const setBody = extractFunctionBody(source, "_setWallpaper");
@@ -45,7 +50,6 @@ function testWallpaperServiceMonitorAndWallpaperSelection() {
 }
 
 function testWallpaperServiceRandomWallpaperFlow() {
-  const source = readQml("Services/UI/WallpaperService.qml");
   const randomBody = extractFunctionBody(source, "setRandomWallpaper");
   const toggleBody = extractFunctionBody(source, "toggleRandomWallpaper");
   const restartBody = extractFunctionBody(source, "restartRandomWallpaperTimer");
@@ -62,7 +66,6 @@ function testWallpaperServiceRandomWallpaperFlow() {
 }
 
 function testWallpaperServiceRefreshAndRecursiveScan() {
-  const source = readQml("Services/UI/WallpaperService.qml");
   const refreshBody = extractFunctionBody(source, "refreshWallpapersList");
   const scanBody = extractFunctionBody(source, "scanDirectoryRecursive");
 
@@ -82,11 +85,92 @@ function testWallpaperServiceRefreshAndRecursiveScan() {
   assert.match(scanBody, /processObject\.exited\.connect\(handler\)[\s\S]*processObject\.running = true/, "scanDirectoryRecursive must connect and start the process");
 }
 
+function testWallpaperServiceLookupHelpersExecute() {
+  const getFillModeUniform = qmlFunction("getFillModeUniform");
+  const getMonitorConfig = qmlFunction("getMonitorConfig", "screenName");
+  const getWallpapersList = qmlFunction("getWallpapersList", "screenName");
+  const fillModes = [
+    { key: "center", uniform: 0 },
+    { key: "crop", uniform: 1 },
+    { key: "fit", uniform: 2 },
+  ];
+  const ctx = {
+    fillModeModel: {
+      count: fillModes.length,
+      get(index) {
+        return fillModes[index];
+      },
+    },
+    Settings: {
+      data: {
+        wallpaper: {
+          fillMode: "fit",
+          monitorDirectories: [
+            { name: "eDP-1", path: "/wallpapers/laptop" },
+            { name: "HDMI-A-1", path: "/wallpapers/external" },
+          ],
+        },
+      },
+    },
+    wallpaperLists: {
+      "HDMI-A-1": ["/a.jpg", "/b.jpg"],
+    },
+  };
+
+  assert.equal(getFillModeUniform(ctx), 2, "getFillModeUniform must return the configured mode uniform");
+  ctx.Settings.data.wallpaper.fillMode = "missing";
+  assert.equal(getFillModeUniform(ctx), 1, "getFillModeUniform must fall back to crop uniform");
+  assert.deepEqual(getMonitorConfig(ctx, "HDMI-A-1"), { name: "HDMI-A-1", path: "/wallpapers/external" }, "getMonitorConfig must return named monitor config");
+  assert.equal(getMonitorConfig(ctx, "DP-1"), undefined, "getMonitorConfig must return undefined for unknown screens");
+  assert.deepEqual(getWallpapersList(ctx, "HDMI-A-1"), ["/a.jpg", "/b.jpg"], "getWallpapersList must return cached screen lists");
+  assert.deepEqual(getWallpapersList(ctx, "DP-1"), [], "getWallpapersList must fail closed for unknown screens");
+}
+
+function testWallpaperServiceRandomWallpaperExecutesScreenSelection() {
+  const setRandomWallpaper = qmlFunction("setRandomWallpaper");
+  const changes = [];
+  const ctx = {
+    Logger: { d() {} },
+    Math: Object.assign(Object.create(Math), {
+      random() {
+        return 0.75;
+      },
+    }),
+    Settings: {
+      data: {
+        wallpaper: {
+          enableMultiMonitorDirectories: true,
+        },
+      },
+    },
+    Quickshell: {
+      screens: [{ name: "eDP-1" }, { name: "HDMI-A-1" }],
+    },
+    getWallpapersList(screenName) {
+      return screenName === "eDP-1" ? ["/laptop-a.jpg", "/laptop-b.jpg"] : [];
+    },
+    changeWallpaper(path, screenName) {
+      changes.push({ path, screenName });
+    },
+  };
+
+  setRandomWallpaper(ctx);
+  assert.deepEqual(changes, [{ path: "/laptop-b.jpg", screenName: "eDP-1" }], "setRandomWallpaper must randomize screens that have cached wallpapers");
+
+  ctx.Settings.data.wallpaper.enableMultiMonitorDirectories = false;
+  ctx.Screen = { name: "primary" };
+  ctx.getWallpapersList = screenName => screenName === "primary" ? ["/shared-a.jpg", "/shared-b.jpg"] : [];
+  setRandomWallpaper(ctx);
+  assert.deepEqual(changes[1], { path: "/shared-b.jpg", screenName: undefined }, "single-directory random mode must update all screens through undefined screenName");
+}
+
 const tests = [
   testWallpaperServiceInitializationAndModels,
   testWallpaperServiceMonitorAndWallpaperSelection,
   testWallpaperServiceRandomWallpaperFlow,
   testWallpaperServiceRefreshAndRecursiveScan,
+  testWallpaperServiceLookupHelpersExecute,
+  testWallpaperServiceRandomWallpaperExecutesScreenSelection,
 ];
 
 for (const test of tests) {
