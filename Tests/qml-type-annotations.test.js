@@ -132,6 +132,15 @@ function testNotificationServerInstanceIsTyped() {
   assertPropertyType("Services/System/NotificationService.qml", "notificationServerLoader", "NotificationServer");
 }
 
+function testNotificationWatcherTargetsAreTyped() {
+  const notificationServiceFile = "Services/System/NotificationService.qml";
+
+  assertPropertyType(notificationServiceFile, "targetNotification", "Notification");
+  assertPropertyType(notificationServiceFile, "targetDataId", "string");
+  assertNoPropertyType(notificationServiceFile, "targetNotification", "var");
+  assertNoPropertyType(notificationServiceFile, "targetDataId", "var");
+}
+
 function testSettingsPanelActiveScrollViewIsTyped() {
   assertPropertyType("Modules/Panels/Settings/SettingsPanel.qml", "activeScrollView", "NScrollView");
 }
@@ -1040,6 +1049,7 @@ const tests = [
   testPanelContentItemsAreTyped,
   testPanelServiceLockScreenIsTyped,
   testNotificationServerInstanceIsTyped,
+  testNotificationWatcherTargetsAreTyped,
   testSettingsPanelActiveScrollViewIsTyped,
   testSettingsPanelTabsDelegatesAreTyped,
   testComboBoxDelegateParentIsTyped,

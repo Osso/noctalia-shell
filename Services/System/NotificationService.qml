@@ -96,8 +96,8 @@ Singleton {
   Component {
     id: notificationWatcherComponent
     Connections {
-      property var targetNotification
-      property var targetDataId
+      property Notification targetNotification
+      property string targetDataId: ""
       target: targetNotification
 
       function onSummaryChanged() {
