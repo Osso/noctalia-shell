@@ -3,8 +3,14 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const source = readQml("Services/System/ProcessService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
 function testProcessServiceLifecycleAndCommands() {
-  const source = readQml("Services/System/ProcessService.qml");
   const addRefBody = extractFunctionBody(source, "addRef");
   const removeRefBody = extractFunctionBody(source, "removeRef");
   const setSortBody = extractFunctionBody(source, "setSortBy");
@@ -26,7 +32,6 @@ function testProcessServiceLifecycleAndCommands() {
 }
 
 function testProcessServiceFormattingAndIcons() {
-  const source = readQml("Services/System/ProcessService.qml");
   const cpuBody = extractFunctionBody(source, "formatCpu");
   const memoryBody = extractFunctionBody(source, "formatMemory");
   const iconBody = extractFunctionBody(source, "getProcessIcon");
@@ -48,7 +53,6 @@ function testProcessServiceFormattingAndIcons() {
 }
 
 function testProcessServiceParsing() {
-  const source = readQml("Services/System/ProcessService.qml");
   const body = extractFunctionBody(source, "parseProcessOutput");
 
   assert.match(body, /if \(!text\) return;/, "parseProcessOutput must ignore empty output");
@@ -70,7 +74,6 @@ function testProcessServiceParsing() {
 }
 
 function testProcessServiceSorting() {
-  const source = readQml("Services/System/ProcessService.qml");
   const body = extractFunctionBody(source, "applySorting");
 
   assert.match(body, /if \(!allProcesses \|\| allProcesses\.length === 0\) return;/, "applySorting must ignore empty process lists");
@@ -84,11 +87,65 @@ function testProcessServiceSorting() {
   assert.match(body, /processes = sorted\.slice\(0, processLimit\)/, "applySorting must publish only the configured process limit");
 }
 
+function testProcessServiceParsesPsRowsAndAggregatesTotals() {
+  const parseProcessOutput = qmlFunction("parseProcessOutput", "text");
+  const applySorting = qmlFunction("applySorting");
+  const ctx = {
+    allProcesses: [],
+    processes: [],
+    processCount: 0,
+    processLimit: 10,
+    sortBy: "pid",
+    sortDescending: false,
+    totalCpuUsage: 0,
+    totalMemoryUsage: 0,
+  };
+  ctx.applySorting = () => applySorting(ctx);
+
+  parseProcessOutput(ctx, [
+    "101 12.5 5.5 2048 /usr/bin/firefox --profile default",
+    " 42 91.0 97.0 512 [kworker/0:1-events]",
+    "invalid row",
+  ].join("\n"));
+
+  assert.equal(ctx.processCount, 2, "parseProcessOutput must ignore malformed rows");
+  assert.equal(ctx.allProcesses[0].command, "firefox", "path command names must be reduced to basenames");
+  assert.equal(ctx.allProcesses[1].command, "kworker", "kernel thread display name must be normalized");
+  assert.equal(ctx.totalCpuUsage, 100, "aggregate CPU usage must be capped at 100");
+  assert.equal(ctx.totalMemoryUsage, 100, "aggregate memory usage must be capped at 100");
+  assert.deepEqual(ctx.processes.map(process => process.pid), [42, 101], "parseProcessOutput must publish sorted processes");
+}
+
+function testProcessServiceSortingExecutesLimitAndDirections() {
+  const applySorting = qmlFunction("applySorting");
+  const ctx = {
+    allProcesses: [
+      { pid: 30, cpu: 1, memoryKB: 900, command: "zeta" },
+      { pid: 10, cpu: 8, memoryKB: 100, command: "alpha" },
+      { pid: 20, cpu: 3, memoryKB: 500, command: "beta" },
+    ],
+    processes: [],
+    processLimit: 2,
+    sortBy: "cpu",
+    sortDescending: true,
+  };
+
+  applySorting(ctx);
+  assert.deepEqual(ctx.processes.map(process => process.pid), [10, 20], "CPU descending sort must honor processLimit");
+
+  ctx.sortBy = "name";
+  ctx.sortDescending = false;
+  applySorting(ctx);
+  assert.deepEqual(ctx.processes.map(process => process.command), ["alpha", "beta"], "name sort must use ascending locale order");
+}
+
 const tests = [
   testProcessServiceLifecycleAndCommands,
   testProcessServiceFormattingAndIcons,
   testProcessServiceParsing,
   testProcessServiceSorting,
+  testProcessServiceParsesPsRowsAndAggregatesTotals,
+  testProcessServiceSortingExecutesLimitAndDirections,
 ];
 
 for (const test of tests) {
