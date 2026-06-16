@@ -28,6 +28,7 @@ run_unit_tests() {
     node "$repo_root/Tests/launcher-guards.test.js"
     node "$repo_root/Tests/emoji-service-guards.test.js"
     node "$repo_root/Tests/media-service-guards.test.js"
+    node "$repo_root/Tests/migration26-guards.test.js"
     node "$repo_root/Tests/network-service-guards.test.js"
     node "$repo_root/Tests/night-light-service-guards.test.js"
     node "$repo_root/Tests/idle-inhibitor-service-guards.test.js"
