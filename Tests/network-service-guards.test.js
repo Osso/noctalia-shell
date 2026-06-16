@@ -121,9 +121,11 @@ function testNetworkServiceStateCommandsExecute() {
 function testNetworkServiceConnectionStatusAndIconsExecute() {
   const connect = qmlFunction("connect", "ssid", "password");
   const disconnect = qmlFunction("disconnect", "ssid");
+  const forget = qmlFunction("forget", "ssid");
   const updateNetworkStatus = qmlFunction("updateNetworkStatus", "ssid", "connected");
   const signalIcon = qmlFunction("signalIcon", "signal", "isConnected");
   const isSecured = qmlFunction("isSecured", "security");
+  const saveCalls = [];
   const ctx = {
     root: null,
     networks: {
@@ -134,10 +136,19 @@ function testNetworkServiceConnectionStatusAndIconsExecute() {
     connecting: false,
     connectingTo: "",
     disconnectingFrom: "",
+    forgettingNetwork: "",
     lastError: "old",
     internetConnectivity: false,
+    cacheAdapter: {
+      knownNetworks: { Home: true, Office: true },
+      lastConnected: "Home",
+    },
     connectProcess: {},
     disconnectProcess: {},
+    forgetProcess: {},
+    saveCache() {
+      saveCalls.push({ ...this.cacheAdapter.knownNetworks, lastConnected: this.cacheAdapter.lastConnected });
+    },
   };
   ctx.root = ctx;
 
@@ -149,6 +160,10 @@ function testNetworkServiceConnectionStatusAndIconsExecute() {
   assert.equal(ctx.connectProcess.password, "", "saved profiles must not retain typed passwords");
   assert.equal(ctx.connectProcess.running, true, "connect must start the connect process");
 
+  const savedCommand = { ...ctx.connectProcess };
+  connect(ctx, "Cafe", "guest");
+  assert.deepEqual(ctx.connectProcess, savedCommand, "connect must ignore duplicate connection requests while busy");
+
   ctx.connecting = false;
   connect(ctx, "Cafe", "guest");
   assert.equal(ctx.connectProcess.mode, "new", "connect must create new profiles when no cache exists");
@@ -159,6 +174,15 @@ function testNetworkServiceConnectionStatusAndIconsExecute() {
   assert.equal(ctx.disconnectProcess.ssid, "Home", "disconnect must pass SSID to process");
   assert.equal(ctx.disconnectProcess.running, true, "disconnect must start the disconnect process");
 
+  forget(ctx, "Home");
+  assert.equal(ctx.forgettingNetwork, "Home", "forget must track target SSID");
+  assert.equal(ctx.cacheAdapter.knownNetworks.Home, undefined, "forget must remove target from known network cache");
+  assert.equal(ctx.cacheAdapter.knownNetworks.Office, true, "forget must preserve other cached networks");
+  assert.equal(ctx.cacheAdapter.lastConnected, "", "forget must clear lastConnected when forgetting the last connected SSID");
+  assert.deepEqual(saveCalls, [{ Office: true, lastConnected: "" }], "forget must persist cache changes");
+  assert.equal(ctx.forgetProcess.ssid, "Home", "forget must pass SSID to the forget process");
+  assert.equal(ctx.forgetProcess.running, true, "forget must start the forget process");
+
   updateNetworkStatus(ctx, "Cafe", true);
   assert.equal(ctx.networks.Home.connected, false, "updateNetworkStatus must clear other connected networks");
   assert.equal(ctx.networks.Cafe.connected, true, "updateNetworkStatus must mark target connected");
@@ -167,6 +191,8 @@ function testNetworkServiceConnectionStatusAndIconsExecute() {
 
   updateNetworkStatus(ctx, "NewNet", true);
   assert.equal(ctx.networks.NewNet.signal, 100, "missing connected networks must be synthesized");
+  updateNetworkStatus(ctx, "MissingDisconnected", false);
+  assert.equal(ctx.networks.MissingDisconnected, undefined, "disconnected missing networks must not be synthesized");
   assert.equal(signalIcon(ctx, 90, true), "world-off", "connected offline networks must show world-off");
   ctx.internetConnectivity = true;
   assert.equal(signalIcon(ctx, 90, false), "wifi", "strong signal must use wifi icon");
