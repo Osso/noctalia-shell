@@ -3,8 +3,14 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const source = readQml("Services/Compositor/CompositorService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
 function testCompositorDetectionSelectsOneBackend() {
-  const source = readQml("Services/Compositor/CompositorService.qml");
   const body = extractFunctionBody(source, "detectCompositor");
 
   assert.match(body, /Quickshell\.env\("HYPRLAND_INSTANCE_SIGNATURE"\)/, "detectCompositor must inspect Hyprland signature");
@@ -19,7 +25,6 @@ function testCompositorDetectionSelectsOneBackend() {
 }
 
 function testCompositorDisplayScaleCacheGuardsShellState() {
-  const source = readQml("Services/Compositor/CompositorService.qml");
   const loadBody = extractFunctionBody(source, "loadDisplayScalesFromState");
   const updateBody = extractFunctionBody(source, "updateDisplayScales");
   const saveBody = extractFunctionBody(source, "saveDisplayScalesToCache");
@@ -39,7 +44,6 @@ function testCompositorDisplayScaleCacheGuardsShellState() {
 }
 
 function testCompositorSyncAndWindowQueriesMirrorBackendModels() {
-  const source = readQml("Services/Compositor/CompositorService.qml");
   const setupBody = extractFunctionBody(source, "setupBackendConnections");
   const syncWorkspacesBody = extractFunctionBody(source, "syncWorkspaces");
   const syncWindowsBody = extractFunctionBody(source, "syncWindows");
@@ -67,7 +71,6 @@ function testCompositorSyncAndWindowQueriesMirrorBackendModels() {
 }
 
 function testCompositorBackendDelegatesFailClosed() {
-  const source = readQml("Services/Compositor/CompositorService.qml");
   const switchBody = extractFunctionBody(source, "switchToWorkspace");
   const focusBody = extractFunctionBody(source, "focusWindow");
   const closeBody = extractFunctionBody(source, "closeWindow");
@@ -84,7 +87,6 @@ function testCompositorBackendDelegatesFailClosed() {
 }
 
 function testCompositorSessionCommandsAndLockSuspendFallbacks() {
-  const source = readQml("Services/Compositor/CompositorService.qml");
   const shutdownBody = extractFunctionBody(source, "shutdown");
   const rebootBody = extractFunctionBody(source, "reboot");
   const suspendBody = extractFunctionBody(source, "suspend");
@@ -103,12 +105,72 @@ function testCompositorSessionCommandsAndLockSuspendFallbacks() {
   assert.match(lockBody, /catch \(e\)[\s\S]*Logger\.w\("Compositor",\s*"Failed to activate lock screen before suspend: " \+ e\)[\s\S]*suspend\(\)/, "lockAndSuspend must suspend on lock activation failure");
 }
 
+function listModel(items) {
+  return {
+    count: items.length,
+    get(index) {
+      return items[index];
+    },
+  };
+}
+
+function testCompositorWindowHelpersExecuteFallbacks() {
+  const getDisplayInfo = qmlFunction("getDisplayInfo", "displayName");
+  const getFocusedWindow = qmlFunction("getFocusedWindow");
+  const getFocusedWindowTitle = qmlFunction("getFocusedWindowTitle");
+  const getCleanAppName = qmlFunction("getCleanAppName", "appId", "fallbackTitle");
+  const getWindowsForWorkspace = qmlFunction("getWindowsForWorkspace", "workspaceId");
+  const windows = [
+    { title: "Terminal\n", workspaceId: 1 },
+    { title: "Browser", workspaceId: 2 },
+    { title: undefined, workspaceId: 1 },
+  ];
+  const ctx = {
+    displayScales: {
+      "HDMI-A-1": { scale: 1.25, x: 0, y: 0 },
+    },
+    focusedWindowIndex: 0,
+    windows: listModel(windows),
+  };
+
+  assert.deepEqual(getDisplayInfo(ctx, "HDMI-A-1"), { scale: 1.25, x: 0, y: 0 }, "getDisplayInfo must return known display data");
+  assert.equal(getDisplayInfo(ctx, "DP-1"), null, "getDisplayInfo must return null for missing displays");
+  assert.deepEqual(getFocusedWindow(ctx), windows[0], "getFocusedWindow must return the focused window model item");
+  assert.equal(getFocusedWindowTitle(ctx), "Terminal", "getFocusedWindowTitle must strip line breaks");
+  ctx.focusedWindowIndex = 99;
+  assert.equal(getFocusedWindow(ctx), null, "getFocusedWindow must return null for invalid indexes");
+  assert.equal(getFocusedWindowTitle(ctx), "", "getFocusedWindowTitle must fail closed for invalid indexes");
+  assert.equal(getCleanAppName(ctx, "org.kde.dolphin", "Files"), "Dolphin", "getCleanAppName must use the final reverse-domain segment");
+  assert.equal(getCleanAppName(ctx, "", "fallback"), "Fallback", "getCleanAppName must capitalize fallback titles");
+  assert.deepEqual(getWindowsForWorkspace(ctx, 1), [windows[0], windows[2]], "getWindowsForWorkspace must filter by workspace id");
+}
+
+function testCompositorWorkspaceHelpersExecuteModelLookups() {
+  const getCurrentWorkspace = qmlFunction("getCurrentWorkspace");
+  const getActiveWorkspaces = qmlFunction("getActiveWorkspaces");
+  const workspaces = [
+    { id: 1, isFocused: false, isActive: true },
+    { id: 2, isFocused: true, isActive: true },
+    { id: 3, isFocused: false, isActive: false },
+  ];
+  const ctx = {
+    workspaces: listModel(workspaces),
+  };
+
+  assert.deepEqual(getCurrentWorkspace(ctx), workspaces[1], "getCurrentWorkspace must return the focused workspace");
+  assert.deepEqual(getActiveWorkspaces(ctx), [workspaces[0], workspaces[1]], "getActiveWorkspaces must return every active workspace");
+  ctx.workspaces = listModel(workspaces.map(workspace => ({ ...workspace, isFocused: false })));
+  assert.equal(getCurrentWorkspace(ctx), null, "getCurrentWorkspace must return null when no workspace is focused");
+}
+
 const tests = [
   testCompositorDetectionSelectsOneBackend,
   testCompositorDisplayScaleCacheGuardsShellState,
   testCompositorSyncAndWindowQueriesMirrorBackendModels,
   testCompositorBackendDelegatesFailClosed,
   testCompositorSessionCommandsAndLockSuspendFallbacks,
+  testCompositorWindowHelpersExecuteFallbacks,
+  testCompositorWorkspaceHelpersExecuteModelLookups,
 ];
 
 for (const test of tests) {
