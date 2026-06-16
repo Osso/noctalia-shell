@@ -127,6 +127,7 @@ run_unit_tests() {
     node "$repo_root/Tests/color-schemes.test.js"
     node "$repo_root/Tests/template-registry.test.js"
     node "$repo_root/Tests/shell-state-contract.test.js"
+    python3 "$repo_root/Tests/calendar-events-safe-get-time.test.py"
     bash "$repo_root/Tests/i18n-json.test.sh"
     bash "$repo_root/Tests/calendar-scripts.test.sh"
     bash "$repo_root/Tests/service-probes-parsing.test.sh"

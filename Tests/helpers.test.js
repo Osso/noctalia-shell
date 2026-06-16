@@ -113,6 +113,12 @@ function testAdvancedMath() {
   assert.equal(advancedMath.formatResult(42), "42");
   assert.equal(advancedMath.formatResult(1 / 3), "0.3333333333");
   assert.equal(advancedMath.formatResult(1e-7), "1.000000e-7");
+  const functions = advancedMath.getAvailableFunctions();
+  assert.ok(Array.isArray(functions), "function help must be returned as a list");
+  assert.ok(functions.length >= 10, "function help must include the supported calculator groups");
+  assert.ok(functions.some(entry => entry.includes("sind(x), cosd(x), tand(x)")), "function help must document degree trig helpers");
+  assert.ok(functions.some(entry => entry.includes("sqrt(x)")), "function help must document root helpers");
+  assert.ok(functions.some(entry => entry.includes("pi, e")), "function help must document constants");
   assert.throws(() => advancedMath.evaluate("process.exit()"), /Evaluation failed/);
 }
 
