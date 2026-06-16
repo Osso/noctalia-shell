@@ -1,0 +1,65 @@
+#!/usr/bin/env node
+
+const assert = require("assert/strict");
+const { extractFunctionBody, readQml } = require("./qml-test-utils");
+
+function testSessionMenuActionSignaturesAreTyped() {
+  const source = readQml("Modules/Panels/SessionMenu/SessionMenu.qml");
+
+  assert.match(source, /function startTimer\(action: string\)/, "startTimer must type action input");
+  assert.match(source, /function executeAction\(action: string\)/, "executeAction must type action input");
+}
+
+function testSessionMenuTimerGuards() {
+  const source = readQml("Modules/Panels/SessionMenu/SessionMenu.qml");
+  const startBody = extractFunctionBody(source, "startTimer");
+  const cancelBody = extractFunctionBody(source, "cancelTimer");
+
+  assert.match(startBody, /if \(!Settings\.data\.sessionMenu\.enableCountdown\)[\s\S]*executeAction\(action\)[\s\S]*return/, "startTimer must execute immediately when global countdown is disabled");
+  assert.match(startBody, /for \(var i = 0; i < powerOptions\.length; i\+\+\)[\s\S]*if \(powerOptions\[i\]\.action === action\)[\s\S]*option = powerOptions\[i\]/, "startTimer must find the selected power option");
+  assert.match(startBody, /if \(option && option\.countdownEnabled === false\)[\s\S]*executeAction\(action\)[\s\S]*return/, "startTimer must execute immediately when item countdown is disabled");
+  assert.match(startBody, /if \(timerActive && pendingAction === action\)[\s\S]*executeAction\(action\)[\s\S]*return/, "startTimer must treat second click as immediate confirmation");
+  assert.match(startBody, /pendingAction = action[\s\S]*timeRemaining = timerDuration[\s\S]*timerActive = true[\s\S]*countdownTimer\.start\(\)/, "startTimer must arm countdown state");
+  assert.match(cancelBody, /timerActive = false[\s\S]*pendingAction = ""[\s\S]*timeRemaining = 0[\s\S]*countdownTimer\.stop\(\)/, "cancelTimer must clear countdown state and stop timer");
+}
+
+function testSessionMenuExecuteActionDispatch() {
+  const source = readQml("Modules/Panels/SessionMenu/SessionMenu.qml");
+  const body = extractFunctionBody(source, "executeAction");
+
+  assert.match(body, /countdownTimer\.stop\(\)/, "executeAction must stop countdown before dispatching");
+  assert.match(body, /case "lock":[\s\S]*PanelService\.lockScreen && !PanelService\.lockScreen\.active[\s\S]*PanelService\.lockScreen\.active = true/, "executeAction must activate lock screen when available");
+  assert.match(body, /case "suspend":[\s\S]*if \(Settings\.data\.general\.lockOnSuspend\)[\s\S]*CompositorService\.lockAndSuspend\(\)[\s\S]*CompositorService\.suspend\(\)/, "executeAction must honor lock-on-suspend setting");
+  assert.match(body, /case "hibernate":[\s\S]*CompositorService\.hibernate\(\)/, "executeAction must dispatch hibernate");
+  assert.match(body, /case "reboot":[\s\S]*CompositorService\.reboot\(\)/, "executeAction must dispatch reboot");
+  assert.match(body, /case "logout":[\s\S]*CompositorService\.logout\(\)/, "executeAction must dispatch logout");
+  assert.match(body, /case "shutdown":[\s\S]*CompositorService\.shutdown\(\)/, "executeAction must dispatch shutdown");
+  assert.match(body, /cancelTimer\(\)[\s\S]*root\.close\(\)/, "executeAction must clear timer state and close panel after dispatch");
+}
+
+function testSessionMenuNavigationGuards() {
+  const source = readQml("Modules/Panels/SessionMenu/SessionMenu.qml");
+  const nextBody = extractFunctionBody(source, "selectNextWrapped");
+  const previousBody = extractFunctionBody(source, "selectPreviousWrapped");
+  const firstBody = extractFunctionBody(source, "selectFirst");
+  const lastBody = extractFunctionBody(source, "selectLast");
+  const activateBody = extractFunctionBody(source, "activate");
+
+  assert.match(nextBody, /if \(powerOptions\.length > 0\)[\s\S]*selectedIndex = \(selectedIndex \+ 1\) % powerOptions\.length/, "selectNextWrapped must wrap forward inside options");
+  assert.match(previousBody, /if \(powerOptions\.length > 0\)[\s\S]*selectedIndex = \(\(\(selectedIndex - 1\) % powerOptions\.length\) \+ powerOptions\.length\) % powerOptions\.length/, "selectPreviousWrapped must wrap backward inside options");
+  assert.match(firstBody, /selectedIndex = 0/, "selectFirst must select first option");
+  assert.match(lastBody, /if \(powerOptions\.length > 0\)[\s\S]*selectedIndex = powerOptions\.length - 1[\s\S]*else[\s\S]*selectedIndex = 0/, "selectLast must clamp empty options to zero");
+  assert.match(activateBody, /if \(powerOptions\.length > 0 && powerOptions\[selectedIndex\]\)[\s\S]*const option = powerOptions\[selectedIndex\][\s\S]*startTimer\(option\.action\)/, "activate must start timer for the selected option");
+}
+
+const tests = [
+  testSessionMenuActionSignaturesAreTyped,
+  testSessionMenuTimerGuards,
+  testSessionMenuExecuteActionDispatch,
+  testSessionMenuNavigationGuards,
+];
+
+for (const test of tests) {
+  test();
+  console.log(`ok ${test.name}`);
+}

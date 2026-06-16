@@ -145,7 +145,7 @@ SmartPanel {
   }
 
   // Timer management
-  function startTimer(action) {
+  function startTimer(action: string) {
     // Check if global countdown is disabled
     if (!Settings.data.sessionMenu.enableCountdown) {
       executeAction(action);
@@ -186,7 +186,7 @@ SmartPanel {
     countdownTimer.stop();
   }
 
-  function executeAction(action) {
+  function executeAction(action: string) {
     // Stop timer but don't reset other properties yet
     countdownTimer.stop();
 
