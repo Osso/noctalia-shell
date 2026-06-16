@@ -69,6 +69,7 @@ run_unit_tests() {
     node "$repo_root/Tests/screen-recorder-service-guards.test.js"
     node "$repo_root/Tests/shape-corner-helper-guards.test.js"
     node "$repo_root/Tests/session-menu-guards.test.js"
+    node "$repo_root/Tests/settings-service-guards.test.js"
     node "$repo_root/Tests/settings-panel-guards.test.js"
     node "$repo_root/Tests/sway-service-guards.test.js"
     node "$repo_root/Tests/system-stat-service-guards.test.js"
