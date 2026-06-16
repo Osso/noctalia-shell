@@ -23,7 +23,7 @@ Singleton {
   * Get X-axis multiplier for a corner state
   * State 1 (horizontal invert) returns -1, others return 1
   */
-  function getMultX(cornerState) {
+  function getMultX(cornerState: int): int {
     return cornerState === 1 ? -1 : 1;
   }
 
@@ -31,7 +31,7 @@ Singleton {
   * Get Y-axis multiplier for a corner state
   * State 2 (vertical invert) returns -1, others return 1
   */
-  function getMultY(cornerState) {
+  function getMultY(cornerState: int): int {
     return cornerState === 2 ? -1 : 1;
   }
 
@@ -40,14 +40,14 @@ Singleton {
   * Uses XOR logic: if X inverted differs from Y inverted, use Counterclockwise
   * This creates the outer curve effect for inverted corners
   */
-  function getArcDirection(multX, multY) {
+  function getArcDirection(multX: int, multY: int): int {
     return ((multX < 0) !== (multY < 0)) ? PathArc.Counterclockwise : PathArc.Clockwise;
   }
 
   /**
   * Convenience function to get arc direction directly from corner state
   */
-  function getArcDirectionFromState(cornerState) {
+  function getArcDirectionFromState(cornerState: int): int {
     const multX = getMultX(cornerState);
     const multY = getMultY(cornerState);
     return getArcDirection(multX, multY);
@@ -57,7 +57,7 @@ Singleton {
   * Get the "flattening" radius when shape dimensions are too small
   * Prevents visual artifacts when radius exceeds dimensions
   */
-  function getFlattenedRadius(dimension, requestedRadius) {
+  function getFlattenedRadius(dimension: real, requestedRadius: real): real {
     if (dimension < requestedRadius * 2) {
       return dimension / 2;
     }
@@ -68,7 +68,7 @@ Singleton {
   * Check if a shape should use flattened corners
   * Returns true if width or height is too small for the requested radius
   */
-  function shouldFlatten(width, height, radius) {
+  function shouldFlatten(width: real, height: real, radius: real): bool {
     return width < radius * 2 || height < radius * 2;
   }
 }
