@@ -25,6 +25,41 @@ function settings(overrides = {}) {
   };
 }
 
+function launchRecorderContext(overrides = {}) {
+  const execs = [];
+  const ctx = {
+    settings: settings(overrides.settings),
+    Time: {
+      getFormattedTimestamp() {
+        return "2026-06-16_120000";
+      },
+    },
+    Settings: {
+      preprocessPath(value) {
+        assert.equal(value, overrides.expectedDirectory || ctx.settings.directory);
+        return overrides.videoDir === undefined ? "/home/alessio/Videos" : overrides.videoDir;
+      },
+    },
+    primaryMonitorResolution: overrides.primaryMonitorResolution === undefined ? "3440x1440" : overrides.primaryMonitorResolution,
+    outputPath: "",
+    recorderProcess: {
+      exec(payload) {
+        execs.push(payload);
+      },
+    },
+    pendingTimer: { running: false },
+  };
+
+  return { ctx, execs };
+}
+
+function launchRecorderCommand(overrides = {}) {
+  const launchRecorder = qmlFunction("launchRecorder");
+  const { ctx, execs } = launchRecorderContext(overrides);
+  launchRecorder(ctx);
+  return { command: execs[0].command[2], ctx, execs };
+}
+
 function testScreenRecorderRefreshCaptureSourcesStartsBothQueries() {
   const refreshCaptureSources = qmlFunction("refreshCaptureSources");
   const ctx = {
@@ -138,40 +173,41 @@ function testScreenRecorderStartRecordingDirectLaunchPath() {
 }
 
 function testScreenRecorderLaunchRecorderBuildsCommandAndStartsPendingTimer() {
-  const launchRecorder = qmlFunction("launchRecorder");
-  const execs = [];
-  const ctx = {
-    settings: settings(),
-    Time: {
-      getFormattedTimestamp() {
-        return "2026-06-16_120000";
-      },
-    },
-    Settings: {
-      preprocessPath(value) {
-        assert.equal(value, "~/Videos");
-        return "/home/alessio/Videos";
-      },
-    },
-    primaryMonitorResolution: "3440x1440",
-    outputPath: "",
-    recorderProcess: {
-      exec(payload) {
-        execs.push(payload);
-      },
-    },
-    pendingTimer: { running: false },
-  };
-
-  launchRecorder(ctx);
+  const { command, ctx, execs } = launchRecorderCommand();
 
   assert.equal(ctx.outputPath, "/home/alessio/Videos/2026-06-16_120000.mp4");
   assert.equal(ctx.pendingTimer.running, true);
   assert.deepEqual(execs[0].command.slice(0, 2), ["sh", "-c"]);
-  assert.match(execs[0].command[2], /gpu-screen-recorder/);
-  assert.match(execs[0].command[2], /-w focused -s 3440x1440 -f 60/);
-  assert.match(execs[0].command[2], /-a "default_output\|default_input"/);
-  assert.match(execs[0].command[2], /-o "\/home\/alessio\/Videos\/2026-06-16_120000\.mp4"/);
+  assert.match(command, /gpu-screen-recorder/);
+  assert.match(command, /-w focused -s 3440x1440 -f 60/);
+  assert.match(command, /-a "default_output\|default_input"/);
+  assert.match(command, /-o "\/home\/alessio\/Videos\/2026-06-16_120000\.mp4"/);
+}
+
+function testScreenRecorderLaunchRecorderBuildsAudioSourceVariants() {
+  assert.match(launchRecorderCommand({
+    settings: { audioSource: "default_output" },
+  }).command, /-a default_output/, "system output audio source must be passed directly");
+
+  assert.match(launchRecorderCommand({
+    settings: { audioSource: "default_input" },
+  }).command, /-a default_input/, "microphone audio source must be passed directly");
+}
+
+function testScreenRecorderLaunchRecorderHandlesDirectoryAndFocusSizeVariants() {
+  const emptyDirectory = launchRecorderCommand({
+    expectedDirectory: "",
+    primaryMonitorResolution: "",
+    settings: {
+      directory: "",
+      videoSource: "screen",
+    },
+    videoDir: "",
+  });
+
+  assert.equal(emptyDirectory.ctx.outputPath, "2026-06-16_120000.mp4", "empty output directory keeps filename relative");
+  assert.match(emptyDirectory.command, /-w screen  -f 60/, "non-focused capture does not add focused size flag");
+  assert.doesNotMatch(emptyDirectory.command, /-s 3440x1440/, "non-focused capture omits primary monitor size");
 }
 
 function testScreenRecorderStopRecordingGuardsAndStopsState() {
@@ -227,6 +263,8 @@ const tests = [
   testScreenRecorderStartRecordingGuardsAndPortalPath,
   testScreenRecorderStartRecordingDirectLaunchPath,
   testScreenRecorderLaunchRecorderBuildsCommandAndStartsPendingTimer,
+  testScreenRecorderLaunchRecorderBuildsAudioSourceVariants,
+  testScreenRecorderLaunchRecorderHandlesDirectoryAndFocusSizeVariants,
   testScreenRecorderStopRecordingGuardsAndStopsState,
 ];
 
