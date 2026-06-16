@@ -3,8 +3,14 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const source = readQml("Services/System/SystemStatService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
 function testSystemStatServiceIntervalAndMemoryGuards() {
-  const source = readQml("Services/System/SystemStatService.qml");
   const normalizeBody = extractFunctionBody(source, "normalizeInterval");
   const memoryBody = extractFunctionBody(source, "parseMemoryInfo");
 
@@ -19,7 +25,6 @@ function testSystemStatServiceIntervalAndMemoryGuards() {
 }
 
 function testSystemStatServiceCpuAndNetworkGuards() {
-  const source = readQml("Services/System/SystemStatService.qml");
   const cpuBody = extractFunctionBody(source, "calculateCpuUsage");
   const networkBody = extractFunctionBody(source, "calculateNetworkSpeed");
 
@@ -43,7 +48,6 @@ function testSystemStatServiceCpuAndNetworkGuards() {
 }
 
 function testSystemStatServiceSpeedFormattingGuards() {
-  const source = readQml("Services/System/SystemStatService.qml");
   const speedBody = extractFunctionBody(source, "formatSpeed");
   const compactBody = extractFunctionBody(source, "formatCompactSpeed");
 
@@ -59,7 +63,6 @@ function testSystemStatServiceSpeedFormattingGuards() {
 }
 
 function testSystemStatServiceTemperatureGuards() {
-  const source = readQml("Services/System/SystemStatService.qml");
   const checkNameBody = extractFunctionBody(source, "checkNext");
   const updateBody = extractFunctionBody(source, "updateCpuTemperature");
   const intelBody = extractFunctionBody(source, "checkNextIntelTemp");
@@ -76,11 +79,50 @@ function testSystemStatServiceTemperatureGuards() {
   assert.match(intelBody, /root\.intelTempFilesChecked\+\+[\s\S]*cpuTempReader\.path = `\$\{root\.cpuTempHwmonPath\}\/temp\$\{root\.intelTempFilesChecked\}_input`[\s\S]*cpuTempReader\.reload\(\)/, "checkNextIntelTemp must probe the next Intel temp input");
 }
 
+function testSystemStatServiceMemoryParsingExecutesUsageMath() {
+  const parseMemoryInfo = qmlFunction("parseMemoryInfo", "text");
+  const ctx = {
+    root: {
+      memGb: 0,
+      memPercent: 0,
+    },
+  };
+
+  parseMemoryInfo(ctx, [
+    "MemTotal:        8388608 kB",
+    "MemFree:         1024000 kB",
+    "MemAvailable:   4194304 kB",
+  ].join("\n"));
+
+  assert.equal(ctx.root.memGb, "4.0", "parseMemoryInfo must publish used memory in GiB");
+  assert.equal(ctx.root.memPercent, 50, "parseMemoryInfo must publish rounded used memory percent");
+
+  parseMemoryInfo(ctx, "");
+  assert.equal(ctx.root.memGb, "4.0", "empty memory input must leave previous memory values unchanged");
+  assert.equal(ctx.root.memPercent, 50, "empty memory input must leave previous memory percentage unchanged");
+}
+
+function testSystemStatServiceSpeedFormattersExecuteBoundaries() {
+  const formatSpeed = qmlFunction("formatSpeed", "bytesPerSecond");
+  const formatCompactSpeed = qmlFunction("formatCompactSpeed", "bytesPerSecond");
+  const ctx = {};
+
+  assert.equal(formatSpeed(ctx, 512), "0.5KB", "formatSpeed must keep one decimal below 10KB");
+  assert.equal(formatSpeed(ctx, 12 * 1024), "12KB", "formatSpeed must round larger KB values");
+  assert.equal(formatSpeed(ctx, 3 * 1024 * 1024), "3.0MB", "formatSpeed must render MB values");
+  assert.equal(formatSpeed(ctx, 2 * 1024 * 1024 * 1024), "2.0GB", "formatSpeed must render GB values");
+  assert.equal(formatCompactSpeed(ctx, 0), "0", "compact formatter must collapse zero values");
+  assert.equal(formatCompactSpeed(ctx, 100 * 1024), "0M", "compact formatter must promote values around 100K");
+  assert.equal(formatCompactSpeed(ctx, 5 * 1024 * 1024), "5M", "compact formatter must use compact MB units");
+}
+
 const tests = [
   testSystemStatServiceIntervalAndMemoryGuards,
   testSystemStatServiceCpuAndNetworkGuards,
   testSystemStatServiceSpeedFormattingGuards,
   testSystemStatServiceTemperatureGuards,
+  testSystemStatServiceMemoryParsingExecutesUsageMath,
+  testSystemStatServiceSpeedFormattersExecuteBoundaries,
 ];
 
 for (const test of tests) {
