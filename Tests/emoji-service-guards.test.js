@@ -3,6 +3,18 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const serviceSource = readQml("Services/Keyboard/EmojiService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(serviceSource, functionName);
+  const args = argNames.join(", ");
+  return new Function(
+    "ctx",
+    ...argNames,
+    `with (ctx) { return (function(${args}) ${body}).call(ctx, ${args}); }`,
+  );
+}
+
 function testEmojiServiceSearchAndPopularResults() {
   const source = readQml("Services/Keyboard/EmojiService.qml");
   const searchBody = extractFunctionBody(source, "search");
@@ -79,11 +91,92 @@ function testEmojiServiceUsagePersistenceAndClipboard() {
   assert.match(copyBody, /echo -n "\$\{emojiChar\}" \| wl-copy/, "copy must write the emoji to wl-copy");
 }
 
+function testEmojiServiceSearchExecutesMatchingAndPopularFallback() {
+  const search = qmlFunction("search", "query");
+  const getPopularEmojis = qmlFunction("_getPopularEmojis", "limit");
+  const ctx = {
+    loaded: true,
+    usageCounts: { "fire": 4, "grin": 2 },
+    emojis: [
+      { emoji: "grin", name: "grinning face", keywords: ["happy", "smile"], category: "people" },
+      { emoji: "fire", name: "fire", keywords: ["hot", "lit"], category: "symbols" },
+      { emoji: "seed", name: "seedling", keywords: ["plant", "garden"], category: "nature" },
+    ],
+    _getPopularEmojis(limit) {
+      return getPopularEmojis(ctx, limit);
+    },
+  };
+
+  assert.deepEqual(search({ ...ctx, loaded: false }, "fire"), [], "search must fail closed while unloaded");
+  assert.deepEqual(
+    search(ctx, ""),
+    [ctx.emojis[1], ctx.emojis[0]],
+    "blank search must return popular emojis by usage",
+  );
+  assert.deepEqual(
+    search(ctx, "hot symbols"),
+    [ctx.emojis[1]],
+    "search must require every term to match a field",
+  );
+  assert.deepEqual(search(ctx, "garden"), [ctx.emojis[2]], "search must match keywords");
+  assert.deepEqual(search(ctx, "missing"), [], "search must omit nonmatching emojis");
+}
+
+function testEmojiServiceCategoryAndUsageHelpersExecute() {
+  const getCategoriesWithCounts = qmlFunction("getCategoriesWithCounts");
+  const getEmojisByCategory = qmlFunction("getEmojisByCategory", "category");
+  const recordUsage = qmlFunction("recordUsage", "emojiChar");
+  const saveCalls = [];
+  const ctx = {
+    loaded: true,
+    usageCounts: { grin: 1 },
+    emojis: [
+      { emoji: "grin", name: "grinning face", keywords: [], category: "people" },
+      { emoji: "smile", name: "smiling face", keywords: [], category: "people" },
+      { emoji: "question", name: "question", keywords: [] },
+    ],
+    _getPopularEmojis(limit) {
+      return this.emojis.slice(0, limit);
+    },
+    _saveUsageData() {
+      saveCalls.push({ ...this.usageCounts });
+    },
+  };
+
+  assert.deepEqual(
+    getCategoriesWithCounts({ ...ctx, loaded: false }),
+    [],
+    "categories must fail closed while unloaded",
+  );
+  assert.deepEqual(getCategoriesWithCounts(ctx), [
+    { name: "people", count: 2 },
+    { name: "other", count: 1 },
+  ]);
+  assert.deepEqual(getEmojisByCategory(ctx, "people"), [ctx.emojis[0], ctx.emojis[1]]);
+  assert.deepEqual(
+    getEmojisByCategory(ctx, "recent"),
+    ctx.emojis,
+    "recent category must use popular emoji fallback",
+  );
+
+  recordUsage(ctx, "grin");
+  recordUsage(ctx, "fire");
+  recordUsage(ctx, "");
+  assert.deepEqual(
+    ctx.usageCounts,
+    { grin: 2, fire: 1 },
+    "recordUsage must increment existing and new emoji counts",
+  );
+  assert.equal(saveCalls.length, 2, "recordUsage must save only nonempty emoji usage");
+}
+
 const tests = [
   testEmojiServiceSearchAndPopularResults,
   testEmojiServiceCategoriesAndUsage,
   testEmojiServiceFileLoadingAndFinalization,
   testEmojiServiceUsagePersistenceAndClipboard,
+  testEmojiServiceSearchExecutesMatchingAndPopularFallback,
+  testEmojiServiceCategoryAndUsageHelpersExecute,
 ];
 
 for (const test of tests) {
