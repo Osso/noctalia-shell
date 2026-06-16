@@ -79,6 +79,7 @@ run_unit_tests() {
     node "$repo_root/Tests/program-checker-service-guards.test.js"
     node "$repo_root/Tests/popup-context-menu-guards.test.js"
     node "$repo_root/Tests/scheme-downloader-guards.test.js"
+    node "$repo_root/Tests/reorder-checkboxes-guards.test.js"
     node "$repo_root/Tests/screen-recorder-service-guards.test.js"
     node "$repo_root/Tests/shape-corner-helper-guards.test.js"
     node "$repo_root/Tests/shell-state-guards.test.js"
