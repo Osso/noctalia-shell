@@ -1,0 +1,150 @@
+#!/usr/bin/env node
+
+const assert = require("assert/strict");
+const { extractFunctionBody, readQml } = require("./qml-test-utils");
+
+const source = readQml("Services/Location/NightLightService.qml");
+
+function qmlFunction(functionName) {
+  const body = extractFunctionBody(source, functionName);
+  return new Function("ctx", `with (ctx) { return (function() ${body}).call(ctx); }`);
+}
+
+function createContext(params = {}) {
+  return {
+    params: {
+      enabled: true,
+      forced: false,
+      autoSchedule: false,
+      nightTemp: 3800,
+      dayTemp: 6500,
+      manualSunrise: "07:30",
+      manualSunset: "19:45",
+      ...params,
+    },
+    lastCommand: [],
+    runner: {
+      command: [],
+      running: true,
+    },
+    LocationService: {
+      coordinatesReady: true,
+      stableLatitude: 32.78,
+      stableLongitude: -96.8,
+    },
+  };
+}
+
+function testBuildCommandUsesManualSchedule() {
+  const buildCommand = qmlFunction("buildCommand");
+  const ctx = createContext();
+
+  assert.deepEqual(buildCommand(ctx), [
+    "wlsunset",
+    "-t",
+    "3800",
+    "-T",
+    "6500",
+    "-S",
+    "07:30",
+    "-s",
+    "19:45",
+    "-d",
+    900,
+  ]);
+}
+
+function testBuildCommandUsesCoordinatesForAutoSchedule() {
+  const buildCommand = qmlFunction("buildCommand");
+  const ctx = createContext({ autoSchedule: true });
+
+  assert.deepEqual(buildCommand(ctx), [
+    "wlsunset",
+    "-t",
+    "3800",
+    "-T",
+    "6500",
+    "-l",
+    "32.78",
+    "-L",
+    "-96.8",
+    "-d",
+    900,
+  ]);
+}
+
+function testBuildCommandUsesForcedAllDayNightSettings() {
+  const buildCommand = qmlFunction("buildCommand");
+  const ctx = createContext({ forced: true, nightTemp: 3400, dayTemp: 6000 });
+
+  assert.deepEqual(buildCommand(ctx), [
+    "wlsunset",
+    "-t",
+    "3400",
+    "-T",
+    "6000",
+    "-S",
+    "23:59",
+    "-s",
+    "00:00",
+    "-d",
+    1,
+  ]);
+}
+
+function testApplyWaitsForCoordinatesWhenAutoScheduleNeedsLocation() {
+  const apply = qmlFunction("apply");
+  const ctx = createContext({ autoSchedule: true });
+  ctx.LocationService.coordinatesReady = false;
+  ctx.buildCommand = () => {
+    throw new Error("buildCommand should not run before coordinates are ready");
+  };
+
+  apply(ctx);
+
+  assert.deepEqual(ctx.runner.command, []);
+  assert.equal(ctx.runner.running, true);
+}
+
+function testApplyRestartsRunnerOnlyWhenCommandChanges() {
+  const apply = qmlFunction("apply");
+  const ctx = createContext();
+  ctx.lastCommand = ["old"];
+  ctx.buildCommand = () => ["new"];
+
+  apply(ctx);
+
+  assert.deepEqual(ctx.lastCommand, ["new"]);
+  assert.deepEqual(ctx.runner.command, ["new"]);
+  assert.equal(ctx.runner.running, true);
+
+  ctx.runner.running = true;
+  apply(ctx);
+
+  assert.deepEqual(ctx.runner.command, ["new"]);
+  assert.equal(ctx.runner.running, true);
+}
+
+function testApplyUsesEnabledFlagForRunnerState() {
+  const apply = qmlFunction("apply");
+  const ctx = createContext({ enabled: false });
+  ctx.buildCommand = () => ["wlsunset"];
+
+  apply(ctx);
+
+  assert.equal(ctx.runner.running, false);
+}
+
+const tests = [
+  testBuildCommandUsesManualSchedule,
+  testBuildCommandUsesCoordinatesForAutoSchedule,
+  testBuildCommandUsesForcedAllDayNightSettings,
+  testApplyWaitsForCoordinatesWhenAutoScheduleNeedsLocation,
+  testApplyRestartsRunnerOnlyWhenCommandChanges,
+  testApplyUsesEnabledFlagForRunnerState,
+];
+
+for (const test of tests) {
+  test();
+  console.log(`ok ${test.name}`);
+}
