@@ -3,8 +3,14 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const source = readQml("Services/UI/BarService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
 function testBarServiceRegistrationAndLookupHelpers() {
-  const source = readQml("Services/UI/BarService.qml");
   const registerBarBody = extractFunctionBody(source, "registerBar");
   const isReadyBody = extractFunctionBody(source, "isBarReady");
   const registerWidgetBody = extractFunctionBody(source, "registerWidget");
@@ -30,7 +36,6 @@ function testBarServiceRegistrationAndLookupHelpers() {
 }
 
 function testBarServiceWidgetEnumerationHelpers() {
-  const source = readQml("Services/UI/BarService.qml");
   const allInstancesBody = extractFunctionBody(source, "getAllWidgetInstances");
   const metadataBody = extractFunctionBody(source, "getWidgetWithMetadata");
   const sectionBody = extractFunctionBody(source, "getWidgetsBySection");
@@ -56,7 +61,6 @@ function testBarServiceWidgetEnumerationHelpers() {
 }
 
 function testBarServiceDirectionAndContextMenuHelpers() {
-  const source = readQml("Services/UI/BarService.qml");
   const pillBody = extractFunctionBody(source, "getPillDirection");
   const tooltipBody = extractFunctionBody(source, "getTooltipDirection");
   const menuBody = extractFunctionBody(source, "getContextMenuPosition");
@@ -81,7 +85,6 @@ function testBarServiceDirectionAndContextMenuHelpers() {
 }
 
 function testBarServiceWidgetSettingsDialogWiring() {
-  const source = readQml("Services/UI/BarService.qml");
   const body = extractFunctionBody(source, "openWidgetSettings");
 
   assert.match(body, /PanelService\.getPopupMenuWindow\(screen\)/, "openWidgetSettings must use the popup menu window for the target screen");
@@ -99,11 +102,63 @@ function testBarServiceWidgetSettingsDialogWiring() {
   assert.match(body, /component\.statusChanged\.connect\(function \(\)[\s\S]*if \(component\.status === Component\.Ready\)[\s\S]*instantiateAndOpen\(\)/, "openWidgetSettings must wait for async component readiness");
 }
 
+function testBarServiceEnumerationHelpersExecuteFiltersAndOrdering() {
+  const getAllWidgetInstances = qmlFunction("getAllWidgetInstances", "widgetId", "screenName", "section");
+  const getWidgetWithMetadata = qmlFunction("getWidgetWithMetadata", "widgetId", "screenName", "section");
+  const getWidgetsBySection = qmlFunction("getWidgetsBySection", "section", "screenName");
+  const getAllRegisteredWidgets = qmlFunction("getAllRegisteredWidgets");
+  const hasWidget = qmlFunction("hasWidget", "widgetId", "section", "screenName");
+  const leftClock = { widgetId: "Clock", section: "left", screen: { name: "eDP-1" } };
+  const leftVolume = { widgetId: "Volume", section: "left", screen: { name: "eDP-1" } };
+  const rightClock = { widgetId: "Clock", section: "right", screen: { name: "HDMI-A-1" } };
+  const ctx = {
+    widgetInstances: {
+      "eDP-1|left|Clock|1": { screenName: "eDP-1", section: "left", widgetId: "Clock", index: 1, instance: leftClock },
+      "eDP-1|left|Volume|0": { screenName: "eDP-1", section: "left", widgetId: "Volume", index: 0, instance: leftVolume },
+      "HDMI-A-1|right|Clock|0": { screenName: "HDMI-A-1", section: "right", widgetId: "Clock", index: 0, instance: rightClock },
+    },
+  };
+  ctx.getWidgetWithMetadata = (...args) => getWidgetWithMetadata(ctx, ...args);
+
+  assert.deepEqual(getAllWidgetInstances(ctx, "Clock", null, null), [leftClock, rightClock], "getAllWidgetInstances must filter by widget id");
+  assert.deepEqual(getWidgetWithMetadata(ctx, "Clock", "eDP-1", "left").instance, leftClock, "getWidgetWithMetadata must return matching metadata");
+  assert.deepEqual(getWidgetsBySection(ctx, "left", "eDP-1"), [leftVolume, leftClock], "getWidgetsBySection must sort instances by registered index");
+  assert.equal(hasWidget(ctx, "Clock", "right", "HDMI-A-1"), true, "hasWidget must find matching widgets");
+  assert.equal(hasWidget(ctx, "Clock", "left", "HDMI-A-1"), false, "hasWidget must honor section filters");
+  assert.deepEqual(getAllRegisteredWidgets(ctx).map(widget => widget.key).sort(), Object.keys(ctx.widgetInstances).sort(), "getAllRegisteredWidgets must expose registry keys");
+}
+
+function testBarServiceDirectionHelpersExecutePositions() {
+  const getPillDirection = qmlFunction("getPillDirection", "widgetInstance");
+  const getTooltipDirection = qmlFunction("getTooltipDirection");
+  const getContextMenuPosition = qmlFunction("getContextMenuPosition", "anchorItem", "menuWidth", "menuHeight");
+  const ctx = {
+    Logger: { e() {}, w() {} },
+    Settings: { data: { bar: { position: "left" } } },
+    Style: { marginM: 8, barHeight: 32 },
+  };
+  const anchor = { width: 40, height: 20 };
+
+  assert.equal(getPillDirection(ctx, { section: "left" }), true, "left section pills must point inward");
+  assert.equal(getPillDirection(ctx, { section: "right" }), false, "right section pills must point inward");
+  assert.equal(getPillDirection(ctx, { section: "center", sectionWidgetIndex: 0, sectionWidgetsCount: 4 }), false, "first half center pills must point left");
+  assert.equal(getPillDirection(ctx, { section: "center", sectionWidgetIndex: 3, sectionWidgetsCount: 4 }), true, "second half center pills must point right");
+  assert.equal(getTooltipDirection(ctx), "right", "left bars must show tooltips to the right");
+  assert.deepEqual(getContextMenuPosition(ctx, anchor, 100, 50), { x: 48, y: -15 }, "left bars must place menus to the right of anchors");
+
+  ctx.Settings.data.bar.position = "bottom";
+  assert.equal(getTooltipDirection(ctx), "top", "bottom bars must show tooltips above");
+  assert.deepEqual(getContextMenuPosition(ctx, anchor, 100, 50), { x: -30, y: -58 }, "bottom bars must place menus above anchors");
+  assert.deepEqual(getContextMenuPosition(ctx, null, 100, 50), { x: 0, y: 0 }, "missing anchors must fail closed");
+}
+
 const tests = [
   testBarServiceRegistrationAndLookupHelpers,
   testBarServiceWidgetEnumerationHelpers,
   testBarServiceDirectionAndContextMenuHelpers,
   testBarServiceWidgetSettingsDialogWiring,
+  testBarServiceEnumerationHelpersExecuteFiltersAndOrdering,
+  testBarServiceDirectionHelpersExecutePositions,
 ];
 
 for (const test of tests) {
