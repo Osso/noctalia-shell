@@ -74,6 +74,63 @@ function createSmartPanelContext(overrides = {}) {
   return ctx;
 }
 
+function createPositionContext(overrides = {}) {
+  const ctx = createSmartPanelContext({
+    width: 1000,
+    height: 800,
+    preferredWidth: 300,
+    preferredHeight: 200,
+    preferredWidthRatio: undefined,
+    preferredHeightRatio: undefined,
+    useButtonPosition: false,
+    buttonPosition: { x: 0, y: 0 },
+    buttonWidth: 0,
+    buttonHeight: 0,
+    barPosition: "top",
+    barIsVertical: false,
+    barFloating: false,
+    barMarginH: 10,
+    barMarginV: 10,
+    panelAnchorHorizontalCenter: false,
+    panelAnchorVerticalCenter: false,
+    effectivePanelAnchorTop: false,
+    effectivePanelAnchorBottom: false,
+    effectivePanelAnchorLeft: false,
+    effectivePanelAnchorRight: false,
+    hasExplicitHorizontalAnchor: false,
+    hasExplicitVerticalAnchor: false,
+    edgeSnapDistance: 8,
+    contentLoader: {
+      item: null,
+    },
+    panelContent: {
+      allowAttach: false,
+    },
+    panelBackground: {
+      targetWidth: 0,
+      targetHeight: 0,
+      targetX: 0,
+      targetY: 0,
+      dimensionsInitialized: true,
+    },
+    Style: {
+      marginL: 16,
+      marginM: 12,
+      barHeight: 48,
+      radiusL: 20,
+    },
+    Qt: {
+      callLater(callback) {
+        this.calledLater = callback;
+      },
+    },
+    setPosition() {},
+    ...overrides,
+  });
+  ctx.root = ctx;
+  return ctx;
+}
+
 function testSmartPanelCloseStartsCloseSequenceAndWatchdog() {
   const close = qmlFunction("close");
   const ctx = createSmartPanelContext();
@@ -146,11 +203,60 @@ function testSmartPanelFinalizeCloseResetsStateAndNotifiesPanelService() {
   assert.deepEqual(ctx.Logger.debug.at(-1), ["SmartPanel", "Panel close finalized", "panel-under-test"]);
 }
 
+function testSmartPanelSetPositionRetriesWhenDimensionsAreMissing() {
+  const setPosition = qmlFunction("setPosition");
+  const ctx = createPositionContext({
+    width: 0,
+    height: 800,
+  });
+
+  setPosition(ctx);
+
+  assert.equal(ctx.Qt.calledLater, ctx.setPosition);
+  assert.equal(ctx.panelBackground.targetWidth, 0);
+  assert.deepEqual(ctx.Logger.debug[0], ["SmartPanel", "Skipping setPosition - dimensions not ready:", 0, "x", 800]);
+}
+
+function testSmartPanelSetPositionUsesButtonAttachedTopBarPlacement() {
+  const setPosition = qmlFunction("setPosition");
+  const ctx = createPositionContext({
+    useButtonPosition: true,
+    buttonPosition: { x: 450, y: 0 },
+    buttonWidth: 100,
+    buttonHeight: 48,
+    panelContent: {
+      allowAttach: true,
+    },
+  });
+
+  setPosition(ctx);
+
+  assert.equal(ctx.panelBackground.targetWidth, 300);
+  assert.equal(ctx.panelBackground.targetHeight, 200);
+  assert.equal(ctx.panelBackground.targetX, 350);
+  assert.equal(ctx.panelBackground.targetY, 58);
+}
+
+function testSmartPanelSetPositionUsesDetachedStandardPlacement() {
+  const setPosition = qmlFunction("setPosition");
+  const ctx = createPositionContext();
+
+  setPosition(ctx);
+
+  assert.equal(ctx.panelBackground.targetWidth, 300);
+  assert.equal(ctx.panelBackground.targetHeight, 200);
+  assert.equal(ctx.panelBackground.targetX, 350);
+  assert.equal(ctx.panelBackground.targetY, 86);
+}
+
 const tests = [
   testSmartPanelCloseStartsCloseSequenceAndWatchdog,
   testSmartPanelCloseMarksOpacityCompleteWhenAlreadyHidden,
   testSmartPanelFinalizeCloseIgnoresDuplicateFinalization,
   testSmartPanelFinalizeCloseResetsStateAndNotifiesPanelService,
+  testSmartPanelSetPositionRetriesWhenDimensionsAreMissing,
+  testSmartPanelSetPositionUsesButtonAttachedTopBarPlacement,
+  testSmartPanelSetPositionUsesDetachedStandardPlacement,
 ];
 
 for (const test of tests) {
