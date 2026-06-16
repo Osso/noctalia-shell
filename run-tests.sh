@@ -80,6 +80,7 @@ run_unit_tests() {
     node "$repo_root/Tests/bar-helpers-guards.test.js"
     node "$repo_root/Tests/widget-helper-guards.test.js"
     node "$repo_root/Tests/settings-ui-helper-guards.test.js"
+    node "$repo_root/Tests/panel-lock-palette-helper-guards.test.js"
     node "$repo_root/Tests/hyprland-service-guards.test.js"
     node "$repo_root/Tests/niri-service-guards.test.js"
     node "$repo_root/Tests/notification-history-panel-guards.test.js"
