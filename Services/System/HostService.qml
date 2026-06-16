@@ -46,7 +46,8 @@ Singleton {
   // Internal helpers
   function buildCandidates(name) {
     const n = (name || "").trim();
-    if (!n)
+    const isValidLogoName = /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(n);
+    if (!n || !isValidLogoName)
       return [];
 
     const sizes = ["512x512", "256x256", "128x128", "64x64", "48x48", "32x32", "24x24", "22x22", "16x16"];

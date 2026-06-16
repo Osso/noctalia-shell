@@ -1,0 +1,88 @@
+#!/usr/bin/env node
+
+const assert = require("assert/strict");
+const { extractFunctionBody, readQml } = require("./qml-test-utils");
+
+const source = readQml("Services/System/HostService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
+function testBuildCandidatesRejectsBlankAndPathLikeNames() {
+  const buildCandidates = qmlFunction("buildCandidates", "name");
+  const ctx = {};
+
+  assert.deepEqual(buildCandidates(ctx, ""), []);
+  assert.deepEqual(buildCandidates(ctx, "   "), []);
+  assert.deepEqual(buildCandidates(ctx, "../escape"), []);
+  assert.deepEqual(buildCandidates(ctx, ".hidden"), []);
+}
+
+function testBuildCandidatesIncludesKnownLogoSearchRoots() {
+  const buildCandidates = qmlFunction("buildCandidates", "name");
+  const ctx = {};
+
+  const candidates = buildCandidates(ctx, "nixos-logo");
+
+  assert.equal(candidates[0], "/usr/share/pixmaps/nixos-logo.svg");
+  assert.equal(candidates[1], "/usr/share/pixmaps/nixos-logo.png");
+  assert.ok(candidates.includes("/usr/share/icons/hicolor/scalable/apps/nixos-logo.svg"));
+  assert.ok(candidates.includes("/usr/share/icons/hicolor/48x48/apps/nixos-logo.png"));
+  assert.ok(candidates.includes("/run/current-system/sw/share/icons/hicolor/scalable/apps/nixos-logo.svg"));
+  assert.ok(candidates.includes("/run/current-system/sw/share/icons/hicolor/48x48/apps/nixos-logo.png"));
+  assert.ok(candidates.includes("/usr/share/icons/nixos-logo.svg"));
+  assert.ok(candidates.includes("/usr/share/icons/nixos-logo/nixos-logo.png"));
+  assert.ok(candidates.includes("/usr/share/icons/nixos-logo/apps/nixos-logo.svg"));
+}
+
+function testResolveLogoSkipsInvalidNames() {
+  const resolveLogo = qmlFunction("resolveLogo", "name");
+  const ctx = {
+    buildCandidates: qmlFunction("buildCandidates", "name"),
+    probe: {
+      command: [],
+      running: false,
+    },
+  };
+
+  resolveLogo(ctx, "../escape");
+
+  assert.deepEqual(ctx.probe.command, []);
+  assert.equal(ctx.probe.running, false);
+}
+
+function testResolveLogoBuildsShellProbeForCandidates() {
+  const resolveLogo = qmlFunction("resolveLogo", "name");
+  const ctx = {
+    buildCandidates() {
+      return ["/usr/share/pixmaps/os.svg", "/usr/share/pixmaps/os.png"];
+    },
+    probe: {
+      command: [],
+      running: false,
+    },
+  };
+
+  resolveLogo(ctx, "os");
+
+  assert.deepEqual(ctx.probe.command, [
+    "sh",
+    "-c",
+    'if [ -f "/usr/share/pixmaps/os.svg" ]; then echo "/usr/share/pixmaps/os.svg"; exit 0; fi; if [ -f "/usr/share/pixmaps/os.png" ]; then echo "/usr/share/pixmaps/os.png"; exit 0; fi; exit 1',
+  ]);
+  assert.equal(ctx.probe.running, true);
+}
+
+const tests = [
+  testBuildCandidatesRejectsBlankAndPathLikeNames,
+  testBuildCandidatesIncludesKnownLogoSearchRoots,
+  testResolveLogoSkipsInvalidNames,
+  testResolveLogoBuildsShellProbeForCandidates,
+];
+
+for (const test of tests) {
+  test();
+  console.log(`ok ${test.name}`);
+}

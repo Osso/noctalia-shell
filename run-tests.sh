@@ -35,6 +35,7 @@ run_unit_tests() {
     node "$repo_root/Tests/process-service-guards.test.js"
     node "$repo_root/Tests/github-service-guards.test.js"
     node "$repo_root/Tests/hooks-service-guards.test.js"
+    node "$repo_root/Tests/host-service-guards.test.js"
     node "$repo_root/Tests/wallpaper-service-guards.test.js"
     node "$repo_root/Tests/clipboard-service-guards.test.js"
     node "$repo_root/Tests/font-service-guards.test.js"
