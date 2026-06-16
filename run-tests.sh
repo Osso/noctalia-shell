@@ -24,6 +24,7 @@ run_unit_tests() {
     node "$repo_root/Tests/settings-references.test.js"
     node "$repo_root/Tests/i18n-references.test.js"
     node "$repo_root/Tests/qml-type-annotations.test.js"
+    node "$repo_root/Tests/qml-function-inventory.test.js"
     node "$repo_root/Tests/qml-runtime-guards.test.js"
     node "$repo_root/Tests/source-coverage.test.js"
     node "$repo_root/Tests/launcher-guards.test.js"
