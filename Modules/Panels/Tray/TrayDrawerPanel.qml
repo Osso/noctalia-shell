@@ -109,7 +109,7 @@ SmartPanel {
   property int popupMenuUpdateTrigger: 0
 
   // Get the trayMenu window and loader from PanelService (reactive to trigger changes)
-  readonly property var popupMenuWindow: {
+  readonly property QtObject popupMenuWindow: {
     // Reference trigger to force re-evaluation
     var _ = popupMenuUpdateTrigger;
     return PanelService.getPopupMenuWindow(screen);

@@ -19,7 +19,7 @@ Rectangle {
   property int popupMenuUpdateTrigger: 0
 
   // Get shared popup menu window from PanelService (reactive to trigger changes)
-  readonly property var popupMenuWindow: {
+  readonly property QtObject popupMenuWindow: {
     // Reference trigger to force re-evaluation
     var _ = popupMenuUpdateTrigger;
     return PanelService.getPopupMenuWindow(screen);

@@ -686,6 +686,18 @@ function testTrayMenuLoaderReferencesAreTyped() {
   }
 }
 
+function testTrayPopupMenuWindowReferencesAreTyped() {
+  const trayMenuFiles = [
+    "Modules/Bar/Widgets/Tray.qml",
+    "Modules/Panels/Tray/TrayDrawerPanel.qml",
+  ];
+
+  for (const trayMenuFile of trayMenuFiles) {
+    assertPropertyType(trayMenuFile, "popupMenuWindow", "QtObject");
+    assertNoPropertyType(trayMenuFile, "popupMenuWindow", "var");
+  }
+}
+
 function testSectionEditorRegistryIsTyped() {
   const sectionEditorFile = "Widgets/NSectionEditor.qml";
 
@@ -1076,6 +1088,7 @@ const tests = [
   testTrayMenuItemIsTyped,
   testTrayMenuSubMenuIsTyped,
   testTrayMenuLoaderReferencesAreTyped,
+  testTrayPopupMenuWindowReferencesAreTyped,
   testSectionEditorRegistryIsTyped,
   testDisplayTabBrightnessMonitorIsTyped,
   testBrightnessPanelBrightnessMonitorIsTyped,
