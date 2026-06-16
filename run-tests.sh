@@ -73,6 +73,7 @@ run_unit_tests() {
     node "$repo_root/Tests/sway-service-guards.test.js"
     node "$repo_root/Tests/system-stat-service-guards.test.js"
     node "$repo_root/Tests/template-processor-guards.test.js"
+    node "$repo_root/Tests/tooltip-guards.test.js"
     node "$repo_root/Tests/update-service-guards.test.js"
     node "$repo_root/Tests/timer-card-guards.test.js"
     node "$repo_root/Tests/time-service-guards.test.js"
