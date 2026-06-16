@@ -18,7 +18,7 @@ Singleton {
   readonly property bool enabled: adapter ? adapter.enabled : false
   readonly property bool blocked: adapter ? adapter.state === BluetoothAdapterState.Blocked : false
   readonly property bool discovering: adapter ? adapter.discovering : false
-  readonly property var devices: adapter ? adapter.devices : null
+  readonly property ObjectModel devices: adapter ? adapter.devices : null
   readonly property var pairedDevices: {
     if (!adapter || !adapter.devices) {
       return [];

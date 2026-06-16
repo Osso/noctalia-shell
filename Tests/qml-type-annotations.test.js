@@ -611,6 +611,13 @@ function testBluetoothDeviceDelegateInputsAreTyped() {
   assert.match(source, deviceDelegate, "BluetoothDevicesList device delegate must type modelData and expose stable status aliases");
 }
 
+function testBluetoothServiceDeviceModelIsTyped() {
+  const bluetoothServiceFile = "Services/Networking/BluetoothService.qml";
+
+  assertPropertyType(bluetoothServiceFile, "devices", "ObjectModel");
+  assertNoPropertyType(bluetoothServiceFile, "devices", "var");
+}
+
 function testAudioNodeHandlesAreTyped() {
   const audioServiceFile = "Services/Media/AudioService.qml";
 
@@ -1081,6 +1088,7 @@ const tests = [
   testPowerProfilesReferenceIsTyped,
   testUPowerBatteryReferencesAreTyped,
   testBluetoothDeviceDelegateInputsAreTyped,
+  testBluetoothServiceDeviceModelIsTyped,
   testAudioNodeHandlesAreTyped,
   testAudioPanelDeviceDelegatesAreTyped,
   testAudioTabDeviceDelegatesAreTyped,
