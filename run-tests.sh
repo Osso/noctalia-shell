@@ -73,6 +73,7 @@ run_unit_tests() {
     node "$repo_root/Tests/niri-service-guards.test.js"
     node "$repo_root/Tests/notification-history-panel-guards.test.js"
     node "$repo_root/Tests/notification-service-gap-guards.test.js"
+    node "$repo_root/Tests/osd-tab-guards.test.js"
     node "$repo_root/Tests/power-profile-service-guards.test.js"
     node "$repo_root/Tests/program-checker-service-guards.test.js"
     node "$repo_root/Tests/popup-context-menu-guards.test.js"
