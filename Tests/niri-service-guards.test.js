@@ -3,8 +3,15 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const source = readQml("Services/Compositor/NiriService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  const args = argNames.join(", ");
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${args}) ${body}).call(ctx, ${args}); }`);
+}
+
 function testNiriStartupCommandsInitializeSocketsAndQueries() {
-  const source = readQml("Services/Compositor/NiriService.qml");
   const initializeBody = extractFunctionBody(source, "initialize");
   const sendBody = extractFunctionBody(source, "sendSocketCommand");
   const streamBody = extractFunctionBody(source, "startEventStream");
@@ -27,7 +34,6 @@ function testNiriStartupCommandsInitializeSocketsAndQueries() {
 }
 
 function testNiriOutputAndWorkspaceRecollectionNormalizeData() {
-  const source = readQml("Services/Compositor/NiriService.qml");
   const outputsBody = extractFunctionBody(source, "recollectOutputs");
   const workspacesBody = extractFunctionBody(source, "recollectWorkspaces");
 
@@ -49,7 +55,6 @@ function testNiriOutputAndWorkspaceRecollectionNormalizeData() {
 }
 
 function testNiriWindowDataHelpersNormalizeAndSortWindows() {
-  const source = readQml("Services/Compositor/NiriService.qml");
   const positionBody = extractFunctionBody(source, "getWindowPosition");
   const outputBody = extractFunctionBody(source, "getWindowOutput");
   const dataBody = extractFunctionBody(source, "getWindowData");
@@ -78,7 +83,6 @@ function testNiriWindowDataHelpersNormalizeAndSortWindows() {
 }
 
 function testNiriWindowEventHandlersMaintainWindowState() {
-  const source = readQml("Services/Compositor/NiriService.qml");
   const openedBody = extractFunctionBody(source, "handleWindowOpenedOrChanged");
   const closedBody = extractFunctionBody(source, "handleWindowClosed");
   const changedBody = extractFunctionBody(source, "handleWindowsChanged");
@@ -108,7 +112,6 @@ function testNiriWindowEventHandlersMaintainWindowState() {
 }
 
 function testNiriOverviewKeyboardAndActionHandlersDelegateSafely() {
-  const source = readQml("Services/Compositor/NiriService.qml");
   const overviewBody = extractFunctionBody(source, "handleOverviewOpenedOrClosed");
   const layoutsChangedBody = extractFunctionBody(source, "handleKeyboardLayoutsChanged");
   const layoutSwitchedBody = extractFunctionBody(source, "handleKeyboardLayoutSwitched");
@@ -128,12 +131,117 @@ function testNiriOverviewKeyboardAndActionHandlersDelegateSafely() {
   assert.match(logoutBody, /Quickshell\.execDetached\(\["niri",\s*"msg",\s*"action",\s*"quit",\s*"--skip-confirmation"\]\)/, "logout must call niri quit without confirmation");
 }
 
+function testNiriSocketCommandsExecute() {
+  const sendSocketCommand = qmlFunction("sendSocketCommand", "sock", "command");
+  const startEventStream = qmlFunction("startEventStream");
+  const updateWorkspaces = qmlFunction("updateWorkspaces");
+  const updateWindows = qmlFunction("updateWindows");
+  const queryDisplayScales = qmlFunction("queryDisplayScales");
+  const writes = [];
+  const sock = {
+    write(data) {
+      writes.push(data);
+    },
+    flush() {
+      writes.push("flush");
+    },
+  };
+  const ctx = {
+    niriEventStream: sock,
+    niriCommandSocket: sock,
+    sendSocketCommand(targetSock, command) {
+      sendSocketCommand(ctx, targetSock, command);
+    },
+  };
+
+  sendSocketCommand(ctx, sock, { Action: "Test" });
+  startEventStream(ctx);
+  updateWorkspaces(ctx);
+  updateWindows(ctx);
+  queryDisplayScales(ctx);
+
+  assert.deepEqual(writes, [
+    "{\"Action\":\"Test\"}\n",
+    "flush",
+    "\"EventStream\"\n",
+    "flush",
+    "\"Workspaces\"\n",
+    "flush",
+    "\"Windows\"\n",
+    "flush",
+    "\"Outputs\"\n",
+    "flush",
+  ]);
+}
+
+function testNiriKeyboardAndActionHandlersExecute() {
+  const handleOverviewOpenedOrClosed = qmlFunction("handleOverviewOpenedOrClosed", "eventData");
+  const handleKeyboardLayoutsChanged = qmlFunction("handleKeyboardLayoutsChanged", "eventData");
+  const handleKeyboardLayoutSwitched = qmlFunction("handleKeyboardLayoutSwitched", "eventData");
+  const switchToWorkspace = qmlFunction("switchToWorkspace", "workspace");
+  const focusWindow = qmlFunction("focusWindow", "window");
+  const closeWindow = qmlFunction("closeWindow", "window");
+  const logout = qmlFunction("logout");
+  const commands = [];
+  const layouts = [];
+  const errors = [];
+  const ctx = {
+    overviewActive: false,
+    keyboardLayouts: [],
+    KeyboardLayoutService: {
+      setCurrentLayout(layoutName) {
+        layouts.push(layoutName);
+      },
+    },
+    Quickshell: {
+      execDetached(command) {
+        commands.push(command);
+      },
+    },
+    Logger: {
+      d() {},
+      e(...args) {
+        errors.push(args);
+      },
+    },
+  };
+
+  handleOverviewOpenedOrClosed(ctx, { is_open: true });
+  handleKeyboardLayoutsChanged(ctx, {
+    keyboard_layouts: { names: ["us", "fr"], current_idx: 1 },
+  });
+  handleKeyboardLayoutSwitched(ctx, { idx: 0 });
+  switchToWorkspace(ctx, { idx: 7 });
+  focusWindow(ctx, { id: 42 });
+  closeWindow(ctx, { id: 43 });
+  logout(ctx);
+
+  assert.equal(ctx.overviewActive, true, "overview handler must mirror Niri overview state");
+  assert.deepEqual(
+    ctx.keyboardLayouts,
+    ["us", "fr"],
+    "keyboard layout handler must store layout names",
+  );
+  assert.deepEqual(
+    layouts,
+    ["fr", "us"],
+    "keyboard layout handlers must publish active layout names",
+  );
+  assert.deepEqual(commands[0], ["niri", "msg", "action", "focus-workspace", "7"]);
+  assert.deepEqual(commands[1], ["niri", "msg", "action", "focus-window", "--id", "42"]);
+  assert.deepEqual(commands[2], ["niri", "msg", "action", "close-window", "--id", "43"]);
+  assert.deepEqual(commands[3], ["niri", "msg", "action", "quit", "--skip-confirmation"]);
+  assert.deepEqual(errors, [], "valid Niri command handlers must not log errors");
+}
+
 const tests = [
   testNiriStartupCommandsInitializeSocketsAndQueries,
   testNiriOutputAndWorkspaceRecollectionNormalizeData,
   testNiriWindowDataHelpersNormalizeAndSortWindows,
   testNiriWindowEventHandlersMaintainWindowState,
   testNiriOverviewKeyboardAndActionHandlersDelegateSafely,
+  testNiriSocketCommandsExecute,
+  testNiriKeyboardAndActionHandlersExecute,
 ];
 
 for (const test of tests) {
