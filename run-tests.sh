@@ -39,6 +39,7 @@ run_unit_tests() {
     node "$repo_root/Tests/dock-menu-guards.test.js"
     node "$repo_root/Tests/i18n-service-guards.test.js"
     node "$repo_root/Tests/location-service-guards.test.js"
+    node "$repo_root/Tests/mango-service-guards.test.js"
     node "$repo_root/Tests/audio-service-guards.test.js"
     node "$repo_root/Tests/applications-plugin-guards.test.js"
     node "$repo_root/Tests/bar-service-guards.test.js"
