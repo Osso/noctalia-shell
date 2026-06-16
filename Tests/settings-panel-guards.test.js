@@ -3,8 +3,14 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const source = readQml("Modules/Panels/Settings/SettingsPanel.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
 function testSettingsPanelTabModelGuards() {
-  const source = readQml("Modules/Panels/Settings/SettingsPanel.qml");
   const body = extractFunctionBody(source, "updateTabsModel");
 
   assert.match(body, /let newTabs = \[/, "updateTabsModel must build an ordered tab list");
@@ -19,7 +25,6 @@ function testSettingsPanelTabModelGuards() {
 }
 
 function testSettingsPanelScrollGuards() {
-  const source = readQml("Modules/Panels/Settings/SettingsPanel.qml");
   const downBody = extractFunctionBody(source, "scrollDown");
   const upBody = extractFunctionBody(source, "scrollUp");
   const pageDownBody = extractFunctionBody(source, "scrollPageDown");
@@ -33,7 +38,6 @@ function testSettingsPanelScrollGuards() {
 }
 
 function testSettingsPanelTabNavigationGuards() {
-  const source = readQml("Modules/Panels/Settings/SettingsPanel.qml");
   const nextBody = extractFunctionBody(source, "selectNextTab");
   const previousBody = extractFunctionBody(source, "selectPreviousTab");
 
@@ -45,10 +49,64 @@ function testSettingsPanelTabNavigationGuards() {
   assert.match(source, /function onPageUpPressed\(\) \{[\s\S]*scrollPageUp\(\)/, "PageUp handler must use scrollPageUp");
 }
 
+function testSettingsPanelTabNavigationExecutesWrap() {
+  const selectNextTab = qmlFunction("selectNextTab");
+  const selectPreviousTab = qmlFunction("selectPreviousTab");
+  const ctx = {
+    tabsModel: [{}, {}, {}],
+    currentTabIndex: 2,
+  };
+
+  selectNextTab(ctx);
+  assert.equal(ctx.currentTabIndex, 0, "selectNextTab must wrap from last tab to first");
+
+  selectPreviousTab(ctx);
+  assert.equal(ctx.currentTabIndex, 2, "selectPreviousTab must wrap from first tab to last");
+
+  ctx.tabsModel = [];
+  selectNextTab(ctx);
+  assert.equal(ctx.currentTabIndex, 2, "selectNextTab must ignore empty tab models");
+}
+
+function testSettingsPanelScrollExecutesClampBoundaries() {
+  const scrollDown = qmlFunction("scrollDown");
+  const scrollUp = qmlFunction("scrollUp");
+  const scrollPageDown = qmlFunction("scrollPageDown");
+  const scrollPageUp = qmlFunction("scrollPageUp");
+  const scrollBar = {
+    position: 0.92,
+    size: 0.1,
+  };
+  const ctx = {
+    activeScrollView: {
+      height: 100,
+      contentHeight: 1000,
+      ScrollBar: { vertical: scrollBar },
+    },
+  };
+
+  scrollDown(ctx);
+  assert.equal(scrollBar.position, 0.9, "scrollDown must clamp to bottom");
+
+  scrollBar.position = 0.05;
+  scrollUp(ctx);
+  assert.equal(scrollBar.position, 0.04, "scrollUp must move one small step upward");
+
+  scrollBar.position = 0.2;
+  scrollPageDown(ctx);
+  assert.equal(scrollBar.position, 0.29000000000000004, "scrollPageDown must move one page downward");
+
+  scrollBar.position = 0.04;
+  scrollPageUp(ctx);
+  assert.equal(scrollBar.position, 0, "scrollPageUp must clamp to top");
+}
+
 const tests = [
   testSettingsPanelTabModelGuards,
   testSettingsPanelScrollGuards,
   testSettingsPanelTabNavigationGuards,
+  testSettingsPanelTabNavigationExecutesWrap,
+  testSettingsPanelScrollExecutesClampBoundaries,
 ];
 
 for (const test of tests) {
