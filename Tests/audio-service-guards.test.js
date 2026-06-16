@@ -3,6 +3,12 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(readQml("Services/Media/AudioService.qml"), functionName);
+  const args = argNames.join(", ");
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${args}) ${body}).call(ctx, ${args}); }`);
+}
+
 function testAudioServiceOsdSuppressionUsesTimedWindows() {
   const source = readQml("Services/Media/AudioService.qml");
   const suppressOutputBody = extractFunctionBody(source, "suppressOutputOSD");
@@ -16,6 +22,38 @@ function testAudioServiceOsdSuppressionUsesTimedWindows() {
   assert.match(suppressInputBody, /inputOSDSuppressedUntilMs = Math\.max\(inputOSDSuppressedUntilMs,\s*target\)/, "suppressInputOSD must not shorten an existing suppression window");
   assert.match(consumeOutputBody, /return Date\.now\(\) < outputOSDSuppressedUntilMs/, "consumeOutputOSDSuppression must report whether the output window is still active");
   assert.match(consumeInputBody, /return Date\.now\(\) < inputOSDSuppressedUntilMs/, "consumeInputOSDSuppression must report whether the input window is still active");
+}
+
+function testAudioServiceOsdSuppressionExecutesTimedWindows() {
+  const suppressOutputOSD = qmlFunction("suppressOutputOSD", "durationMs");
+  const suppressInputOSD = qmlFunction("suppressInputOSD", "durationMs");
+  const consumeOutputOSDSuppression = qmlFunction("consumeOutputOSDSuppression");
+  const consumeInputOSDSuppression = qmlFunction("consumeInputOSDSuppression");
+  const clock = { now: 1000 };
+  const ctx = {
+    Date: { now: () => clock.now },
+    inputOSDSuppressedUntilMs: 0,
+    outputOSDSuppressedUntilMs: 0,
+  };
+
+  suppressOutputOSD(ctx, 400);
+  suppressInputOSD(ctx, 250);
+
+  assert.equal(ctx.outputOSDSuppressedUntilMs, 1400, "output suppression stores an absolute deadline");
+  assert.equal(ctx.inputOSDSuppressedUntilMs, 1250, "input suppression stores an absolute deadline");
+  assert.equal(consumeOutputOSDSuppression(ctx), true, "output suppression is active before its deadline");
+  assert.equal(consumeInputOSDSuppression(ctx), true, "input suppression is active before its deadline");
+
+  clock.now = 1100;
+  suppressOutputOSD(ctx, 100);
+  assert.equal(ctx.outputOSDSuppressedUntilMs, 1400, "shorter output suppression does not shrink the window");
+
+  clock.now = 1300;
+  assert.equal(consumeInputOSDSuppression(ctx), false, "input suppression expires after its deadline");
+  assert.equal(consumeOutputOSDSuppression(ctx), true, "output suppression remains active until its own deadline");
+
+  clock.now = 1400;
+  assert.equal(consumeOutputOSDSuppression(ctx), false, "output suppression expires at the deadline");
 }
 
 function testAudioServiceOutputVolumeControlsClampAndFailClosed() {
@@ -74,6 +112,43 @@ function testAudioServiceInputVolumeControlsClampAndFailClosed() {
   assert.match(iconBody, /return "microphone"/, "getInputIcon must show microphone icon for active input");
 }
 
+function testAudioServiceIconHelpersExecuteThresholds() {
+  const getOutputIcon = qmlFunction("getOutputIcon");
+  const getInputIcon = qmlFunction("getInputIcon");
+  const Settings = { data: { audio: { volumeOverdrive: false } } };
+  const ctx = {
+    Settings,
+    inputMuted: false,
+    inputVolume: 1,
+    muted: false,
+    root: { epsilon: 0.005 },
+    volume: 1,
+  };
+
+  ctx.muted = true;
+  assert.equal(getOutputIcon(ctx), "volume-mute", "muted output uses mute icon");
+
+  ctx.muted = false;
+  ctx.volume = 0.001;
+  assert.equal(getOutputIcon(ctx), "volume-x", "near-zero output uses silent icon");
+
+  ctx.volume = 0.5;
+  assert.equal(getOutputIcon(ctx), "volume-low", "half-volume output uses low icon");
+
+  ctx.volume = 0.75;
+  assert.equal(getOutputIcon(ctx), "volume-high", "loud output uses high icon");
+
+  ctx.inputMuted = true;
+  assert.equal(getInputIcon(ctx), "microphone-mute", "muted input uses mute icon");
+
+  ctx.inputMuted = false;
+  ctx.inputVolume = 0;
+  assert.equal(getInputIcon(ctx), "microphone-mute", "silent input uses mute icon");
+
+  ctx.inputVolume = 0.25;
+  assert.equal(getInputIcon(ctx), "microphone", "active input uses microphone icon");
+}
+
 function testAudioServiceDeviceSelectionRequiresPipewireReadiness() {
   const source = readQml("Services/Media/AudioService.qml");
   const sinkBody = extractFunctionBody(source, "setAudioSink");
@@ -87,8 +162,10 @@ function testAudioServiceDeviceSelectionRequiresPipewireReadiness() {
 
 const tests = [
   testAudioServiceOsdSuppressionUsesTimedWindows,
+  testAudioServiceOsdSuppressionExecutesTimedWindows,
   testAudioServiceOutputVolumeControlsClampAndFailClosed,
   testAudioServiceInputVolumeControlsClampAndFailClosed,
+  testAudioServiceIconHelpersExecuteThresholds,
   testAudioServiceDeviceSelectionRequiresPipewireReadiness,
 ];
 
