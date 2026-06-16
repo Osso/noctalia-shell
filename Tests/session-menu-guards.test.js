@@ -3,15 +3,19 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
-function testSessionMenuActionSignaturesAreTyped() {
-  const source = readQml("Modules/Panels/SessionMenu/SessionMenu.qml");
+const source = readQml("Modules/Panels/SessionMenu/SessionMenu.qml");
 
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
+function testSessionMenuActionSignaturesAreTyped() {
   assert.match(source, /function startTimer\(action: string\)/, "startTimer must type action input");
   assert.match(source, /function executeAction\(action: string\)/, "executeAction must type action input");
 }
 
 function testSessionMenuTimerGuards() {
-  const source = readQml("Modules/Panels/SessionMenu/SessionMenu.qml");
   const startBody = extractFunctionBody(source, "startTimer");
   const cancelBody = extractFunctionBody(source, "cancelTimer");
 
@@ -24,7 +28,6 @@ function testSessionMenuTimerGuards() {
 }
 
 function testSessionMenuExecuteActionDispatch() {
-  const source = readQml("Modules/Panels/SessionMenu/SessionMenu.qml");
   const body = extractFunctionBody(source, "executeAction");
 
   assert.match(body, /countdownTimer\.stop\(\)/, "executeAction must stop countdown before dispatching");
@@ -38,7 +41,6 @@ function testSessionMenuExecuteActionDispatch() {
 }
 
 function testSessionMenuNavigationGuards() {
-  const source = readQml("Modules/Panels/SessionMenu/SessionMenu.qml");
   const nextBody = extractFunctionBody(source, "selectNextWrapped");
   const previousBody = extractFunctionBody(source, "selectPreviousWrapped");
   const firstBody = extractFunctionBody(source, "selectFirst");
@@ -52,11 +54,63 @@ function testSessionMenuNavigationGuards() {
   assert.match(activateBody, /if \(powerOptions\.length > 0 && powerOptions\[selectedIndex\]\)[\s\S]*const option = powerOptions\[selectedIndex\][\s\S]*startTimer\(option\.action\)/, "activate must start timer for the selected option");
 }
 
+function testSessionMenuNavigationExecutesWrapAndClamp() {
+  const selectNextWrapped = qmlFunction("selectNextWrapped");
+  const selectPreviousWrapped = qmlFunction("selectPreviousWrapped");
+  const selectFirst = qmlFunction("selectFirst");
+  const selectLast = qmlFunction("selectLast");
+  const ctx = {
+    powerOptions: [{}, {}, {}],
+    selectedIndex: 2,
+  };
+
+  selectNextWrapped(ctx);
+  assert.equal(ctx.selectedIndex, 0, "next selection must wrap from last to first");
+
+  selectPreviousWrapped(ctx);
+  assert.equal(ctx.selectedIndex, 2, "previous selection must wrap from first to last");
+
+  selectFirst(ctx);
+  assert.equal(ctx.selectedIndex, 0, "selectFirst must select index zero");
+
+  selectLast(ctx);
+  assert.equal(ctx.selectedIndex, 2, "selectLast must select the final option");
+
+  ctx.powerOptions = [];
+  ctx.selectedIndex = 5;
+  selectLast(ctx);
+  assert.equal(ctx.selectedIndex, 0, "selectLast must clamp empty menus to zero");
+}
+
+function testSessionMenuActivateExecutesSelectedActionOnly() {
+  const activate = qmlFunction("activate");
+  const actions = [];
+  const ctx = {
+    powerOptions: [
+      { action: "lock" },
+      { action: "logout" },
+    ],
+    selectedIndex: 1,
+    startTimer(action) {
+      actions.push(action);
+    },
+  };
+
+  activate(ctx);
+  assert.deepEqual(actions, ["logout"], "activate must start the selected option action");
+
+  ctx.selectedIndex = 5;
+  activate(ctx);
+  assert.deepEqual(actions, ["logout"], "activate must ignore missing selected options");
+}
+
 const tests = [
   testSessionMenuActionSignaturesAreTyped,
   testSessionMenuTimerGuards,
   testSessionMenuExecuteActionDispatch,
   testSessionMenuNavigationGuards,
+  testSessionMenuNavigationExecutesWrapAndClamp,
+  testSessionMenuActivateExecutesSelectedActionOnly,
 ];
 
 for (const test of tests) {
