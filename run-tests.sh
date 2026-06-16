@@ -76,6 +76,7 @@ run_unit_tests() {
     node "$repo_root/Tests/custom-button-settings-guards.test.js"
     node "$repo_root/Tests/custom-button-widget-guards.test.js"
     node "$repo_root/Tests/dark-mode-service-guards.test.js"
+    node "$repo_root/Tests/bar-action-helper-guards.test.js"
     node "$repo_root/Tests/bar-helpers-guards.test.js"
     node "$repo_root/Tests/widget-helper-guards.test.js"
     node "$repo_root/Tests/hyprland-service-guards.test.js"
