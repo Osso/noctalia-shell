@@ -3,8 +3,14 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const source = readQml("Services/Networking/BluetoothService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
 function testBluetoothServiceInitializationAndDeviceOrdering() {
-  const source = readQml("Services/Networking/BluetoothService.qml");
   const initBody = extractFunctionBody(source, "init");
   const sortBody = extractFunctionBody(source, "sortDevices");
 
@@ -18,7 +24,6 @@ function testBluetoothServiceInitializationAndDeviceOrdering() {
 }
 
 function testBluetoothServiceDeviceIconAndActionEligibility() {
-  const source = readQml("Services/Networking/BluetoothService.qml");
   const iconBody = extractFunctionBody(source, "getDeviceIcon");
   const canConnectBody = extractFunctionBody(source, "canConnect");
   const canDisconnectBody = extractFunctionBody(source, "canDisconnect");
@@ -43,7 +48,6 @@ function testBluetoothServiceDeviceIconAndActionEligibility() {
 }
 
 function testBluetoothServiceStatusSignalAndBatteryHelpers() {
-  const source = readQml("Services/Networking/BluetoothService.qml");
   const statusBody = extractFunctionBody(source, "getStatusString");
   const strengthBody = extractFunctionBody(source, "getSignalStrength");
   const batteryBody = extractFunctionBody(source, "getBattery");
@@ -69,7 +73,6 @@ function testBluetoothServiceStatusSignalAndBatteryHelpers() {
 }
 
 function testBluetoothServiceDeviceActionsAndAdapterToggleFailClosed() {
-  const source = readQml("Services/Networking/BluetoothService.qml");
   const connectBody = extractFunctionBody(source, "connectDeviceWithTrust");
   const disconnectBody = extractFunctionBody(source, "disconnectDevice");
   const forgetBody = extractFunctionBody(source, "forgetDevice");
@@ -86,11 +89,75 @@ function testBluetoothServiceDeviceActionsAndAdapterToggleFailClosed() {
   assert.match(enabledBody, /adapter\.enabled = state/, "setBluetoothEnabled must update adapter enabled state");
 }
 
+function testBluetoothServiceSortDevicesPrefersNamedThenSignal() {
+  const sortDevices = qmlFunction("sortDevices", "devices");
+  const ctx = {};
+  const devices = [
+    { name: "z", signalStrength: 90 },
+    { name: "Desk Speaker", signalStrength: 10 },
+    { deviceName: "Office Mouse", signalStrength: 30 },
+    { name: "a", signalStrength: 40 },
+  ];
+
+  const sorted = sortDevices(ctx, devices);
+
+  assert.deepEqual(sorted.map(device => device.name || device.deviceName), ["Office Mouse", "Desk Speaker", "z", "a"], "sortDevices must prefer human-readable names, then order each group by signal strength");
+}
+
+function testBluetoothServiceIconAndActionHelpersExecute() {
+  const getDeviceIcon = qmlFunction("getDeviceIcon", "device");
+  const canConnect = qmlFunction("canConnect", "device");
+  const canDisconnect = qmlFunction("canDisconnect", "device");
+  const ctx = {};
+
+  assert.equal(getDeviceIcon(ctx, null), "bt-device-generic", "missing devices must use generic icon");
+  assert.equal(getDeviceIcon(ctx, { name: "Arctis Nova" }), "bt-device-headphones", "headset names must map to headphones");
+  assert.equal(getDeviceIcon(ctx, { icon: "input-mouse" }), "bt-device-mouse", "mouse icon metadata must map to mouse");
+  assert.equal(getDeviceIcon(ctx, { name: "Living Room TV" }), "bt-device-tv", "TV names must map to display icon");
+  assert.equal(canConnect(ctx, { connected: false, pairing: false, blocked: false }), true, "idle disconnected devices must be connectable");
+  assert.equal(canConnect(ctx, { connected: false, pairing: true, blocked: false }), false, "pairing devices must not be connectable");
+  assert.equal(canDisconnect(ctx, { connected: true, pairing: false, blocked: false }), true, "connected idle devices must be disconnectable");
+  assert.equal(canDisconnect(ctx, { connected: true, pairing: false, blocked: true }), false, "blocked devices must not be disconnectable");
+}
+
+function testBluetoothServiceStatusSignalBatteryAndBusyHelpersExecute() {
+  const getStatusString = qmlFunction("getStatusString", "device");
+  const getSignalStrength = qmlFunction("getSignalStrength", "device");
+  const getSignalIcon = qmlFunction("getSignalIcon", "device");
+  const getBattery = qmlFunction("getBattery", "device");
+  const isDeviceBusy = qmlFunction("isDeviceBusy", "device");
+  const ctx = {
+    BluetoothDeviceState: {
+      Connecting: 1,
+      Disconnecting: 2,
+    },
+    I18n: {
+      tr(key) {
+        return key;
+      },
+    },
+  };
+
+  assert.equal(getStatusString(ctx, { state: 1 }), "bluetooth.panel.connecting", "connecting state must return connecting translation key");
+  assert.equal(getStatusString(ctx, { state: 0, pairing: true }), "bluetooth.panel.pairing", "pairing state must return pairing translation key");
+  assert.equal(getStatusString(ctx, { state: 0, blocked: true }), "bluetooth.panel.blocked", "blocked state must return blocked translation key");
+  assert.equal(getSignalStrength(ctx, null), "Signal: Unknown", "missing signal must be unknown");
+  assert.equal(getSignalStrength(ctx, { signalStrength: 60 }), "Signal: Good", "60 signal must be good");
+  assert.equal(getSignalIcon(ctx, { signalStrength: 19 }), "antenna-bars-1", "very poor signal must use one bar");
+  assert.equal(getSignalIcon(ctx, { signalStrength: 80 }), "antenna-bars-5", "excellent signal must use five bars");
+  assert.equal(getBattery(ctx, { battery: 0.876 }), "Battery: 88%", "battery helper must round percentages");
+  assert.equal(isDeviceBusy(ctx, { pairing: false, state: 2 }), true, "disconnecting devices must be busy");
+  assert.equal(isDeviceBusy(ctx, { pairing: false, state: 0 }), false, "idle devices must not be busy");
+}
+
 const tests = [
   testBluetoothServiceInitializationAndDeviceOrdering,
   testBluetoothServiceDeviceIconAndActionEligibility,
   testBluetoothServiceStatusSignalAndBatteryHelpers,
   testBluetoothServiceDeviceActionsAndAdapterToggleFailClosed,
+  testBluetoothServiceSortDevicesPrefersNamedThenSignal,
+  testBluetoothServiceIconAndActionHelpersExecute,
+  testBluetoothServiceStatusSignalBatteryAndBusyHelpersExecute,
 ];
 
 for (const test of tests) {
