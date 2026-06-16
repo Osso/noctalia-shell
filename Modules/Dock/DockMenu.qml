@@ -10,7 +10,7 @@ import qs.Widgets
 PopupWindow {
   id: root
 
-  property var toplevel: null
+  property Toplevel toplevel: null
   property Item anchorItem: null
 
   property bool hovered: menuMouseArea.containsMouse

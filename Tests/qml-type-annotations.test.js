@@ -563,6 +563,13 @@ function testDockCurrentContextMenuIsTyped() {
   assertNoPropertyType(dockFile, "currentContextMenu", "var");
 }
 
+function testDockMenuToplevelIsTyped() {
+  const dockMenuFile = "Modules/Dock/DockMenu.qml";
+
+  assertPropertyType(dockMenuFile, "toplevel", "Toplevel");
+  assertNoPropertyType(dockMenuFile, "toplevel", "var");
+}
+
 function testDockMenuItemDelegateInputsAreTyped() {
   const source = readQml("Modules/Dock/DockMenu.qml");
   const itemDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.items[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+menuIcon:\s*modelData\s*\?\s*\(modelData\.icon\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+menuText:\s*modelData\s*\?\s*\(modelData\.text\s*\|\|\s*""\)\s*:\s*""[\s\S]*?icon:\s*menuIcon[\s\S]*?text:\s*menuText/;
@@ -1145,6 +1152,7 @@ const tests = [
   testPopupMenuWindowContentItemIsTyped,
   testLauncherActivePluginIsTyped,
   testDockCurrentContextMenuIsTyped,
+  testDockMenuToplevelIsTyped,
   testDockMenuItemDelegateInputsAreTyped,
   testLauncherPluginBackReferencesAreTyped,
   testCompositorBackendIsTyped,
