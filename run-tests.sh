@@ -48,6 +48,7 @@ run_unit_tests() {
     node "$repo_root/Tests/hyprland-service-guards.test.js"
     node "$repo_root/Tests/niri-service-guards.test.js"
     node "$repo_root/Tests/notification-service-gap-guards.test.js"
+    node "$repo_root/Tests/power-profile-service-guards.test.js"
     node "$repo_root/Tests/scheme-downloader-guards.test.js"
     node "$repo_root/Tests/sway-service-guards.test.js"
     node "$repo_root/Tests/system-stat-service-guards.test.js"
