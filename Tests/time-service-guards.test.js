@@ -1,0 +1,62 @@
+#!/usr/bin/env node
+
+const assert = require("assert/strict");
+const { extractFunctionBody, readQml } = require("./qml-test-utils");
+
+function testTimeFormattingSignaturesAreTyped() {
+  const source = readQml("Commons/Time.qml");
+
+  assert.match(source, /function getFormattedTimestamp\(date\): string/, "getFormattedTimestamp must declare string output");
+  assert.match(source, /function formatVagueHumanReadableDuration\(totalSeconds\): string/, "formatVagueHumanReadableDuration must declare string output");
+}
+
+function testTimestampFormattingGuards() {
+  const source = readQml("Commons/Time.qml");
+  const timestampBody = extractFunctionBody(source, "getFormattedTimestamp");
+  const vagueBody = extractFunctionBody(source, "formatVagueHumanReadableDuration");
+
+  assert.match(timestampBody, /if \(!date\)[\s\S]*date = new Date\(\)/, "getFormattedTimestamp must default missing date to now");
+  assert.match(timestampBody, /String\(date\.getMonth\(\) \+ 1\)\.padStart\(2, '0'\)/, "getFormattedTimestamp must pad one-based month");
+  assert.match(timestampBody, /return `\$\{year\}\$\{month\}\$\{day\}-\$\{hours\}\$\{minutes\}\$\{seconds\}`/, "getFormattedTimestamp must use compact timestamp format");
+  assert.match(vagueBody, /typeof totalSeconds !== 'number' \|\| totalSeconds < 0[\s\S]*return '0s'/, "formatVagueHumanReadableDuration must fail closed for invalid durations");
+  assert.match(vagueBody, /totalSeconds = Math\.floor\(totalSeconds\)/, "formatVagueHumanReadableDuration must floor decimal seconds");
+  assert.match(vagueBody, /const days = Math\.floor\(totalSeconds \/ 86400\)[\s\S]*const seconds = totalSeconds % 60/, "formatVagueHumanReadableDuration must split days hours minutes seconds");
+  assert.match(vagueBody, /if \(!hours && !minutes\)[\s\S]*parts\.push\(`\$\{seconds\}s`\)/, "formatVagueHumanReadableDuration must show seconds only for short durations");
+  assert.match(vagueBody, /return parts\.join\(' '\)/, "formatVagueHumanReadableDuration must join readable duration parts");
+}
+
+function testTimerStartGuards() {
+  const source = readQml("Commons/Time.qml");
+  const body = extractFunctionBody(source, "timerStart");
+
+  assert.match(body, /if \(root\.timerStopwatchMode\)[\s\S]*root\.timerRunning = true[\s\S]*root\.timerStartTimestamp = root\.timestamp[\s\S]*root\.timerPausedAt = root\.timerElapsedSeconds/, "timerStart must resume stopwatch from elapsed seconds");
+  assert.match(body, /if \(root\.timerRemainingSeconds <= 0\)[\s\S]*return/, "timerStart must ignore empty countdowns");
+  assert.match(body, /root\.timerTotalSeconds = root\.timerRemainingSeconds[\s\S]*root\.timerPausedAt = 0/, "timerStart must snapshot countdown total and reset pause state");
+}
+
+function testTimerPauseResetAndFinishedGuards() {
+  const source = readQml("Commons/Time.qml");
+  const pauseBody = extractFunctionBody(source, "timerPause");
+  const resetBody = extractFunctionBody(source, "timerReset");
+  const finishedBody = extractFunctionBody(source, "timerOnFinished");
+
+  assert.match(pauseBody, /if \(root\.timerRunning\)[\s\S]*if \(root\.timerStopwatchMode\)[\s\S]*root\.timerPausedAt = root\.timerElapsedSeconds[\s\S]*root\.timerPausedAt = root\.timerRemainingSeconds/, "timerPause must preserve stopwatch or countdown pause state");
+  assert.match(pauseBody, /root\.timerRunning = false[\s\S]*root\.timerStartTimestamp = 0[\s\S]*SoundService\.stopSound\("alarm-beep\.wav"\)[\s\S]*root\.timerSoundPlaying = false/, "timerPause must stop timer state and alarm sound");
+  assert.match(resetBody, /root\.timerRunning = false[\s\S]*root\.timerStartTimestamp = 0/, "timerReset must stop timer and clear start timestamp");
+  assert.match(resetBody, /if \(root\.timerStopwatchMode\)[\s\S]*root\.timerElapsedSeconds = 0[\s\S]*root\.timerPausedAt = 0[\s\S]*root\.timerRemainingSeconds = 0[\s\S]*root\.timerTotalSeconds = 0/, "timerReset must clear stopwatch and countdown state");
+  assert.match(resetBody, /SoundService\.stopSound\("alarm-beep\.wav"\)[\s\S]*root\.timerSoundPlaying = false/, "timerReset must stop alarm sound");
+  assert.match(finishedBody, /root\.timerRunning = false[\s\S]*root\.timerRemainingSeconds = 0[\s\S]*root\.timerSoundPlaying = true/, "timerOnFinished must stop countdown and mark alarm playing");
+  assert.match(finishedBody, /SoundService\.playSound\("alarm-beep\.wav", \{[\s\S]*repeat: true[\s\S]*volume: 0\.3/, "timerOnFinished must play repeating low-volume alarm");
+}
+
+const tests = [
+  testTimeFormattingSignaturesAreTyped,
+  testTimestampFormattingGuards,
+  testTimerStartGuards,
+  testTimerPauseResetAndFinishedGuards,
+];
+
+for (const test of tests) {
+  test();
+  console.log(`ok ${test.name}`);
+}
