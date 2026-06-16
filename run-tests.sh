@@ -58,6 +58,7 @@ run_unit_tests() {
     node "$repo_root/Tests/system-stat-service-guards.test.js"
     node "$repo_root/Tests/template-processor-guards.test.js"
     node "$repo_root/Tests/update-service-guards.test.js"
+    node "$repo_root/Tests/timer-card-guards.test.js"
     node "$repo_root/Tests/color-schemes.test.js"
     node "$repo_root/Tests/template-registry.test.js"
     node "$repo_root/Tests/shell-state-contract.test.js"

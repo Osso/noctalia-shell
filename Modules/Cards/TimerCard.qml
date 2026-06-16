@@ -365,15 +365,15 @@ NBox {
   readonly property int elapsedSeconds: Time.timerElapsedSeconds
   readonly property bool soundPlaying: Time.timerSoundPlaying
 
-  function formatTime(seconds, hideHoursWhenZero) {
+  function formatTime(seconds: int, hideHoursWhenZero: bool): string {
     return TimerDigits.formatDuration(seconds, hideHoursWhenZero);
   }
 
-  function formatTimeFromDigits(digits) {
+  function formatTimeFromDigits(digits: string): string {
     return TimerDigits.formatFromDigits(digits);
   }
 
-  function parseDigitsToTime(digits) {
+  function parseDigitsToTime(digits: string) {
     Time.timerRemainingSeconds = TimerDigits.totalSecondsFromDigits(digits);
   }
 
