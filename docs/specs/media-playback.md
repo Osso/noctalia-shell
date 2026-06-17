@@ -39,6 +39,12 @@ Media playback covers MPRIS player discovery, virtual player pairing, active-pla
 - [x] Ratio seek requires a seekable target with a positive length and converts ratio to absolute position.
 - [x] Seek helpers skip non-seekable targets.
 
+### Media mini widget
+
+- [x] Media mini title formatting supports artist-first display with `Artist - Title`.
+- [x] Media mini title formatting supports title-first display with `Title - Artist`.
+- [x] Media mini title formatting omits the separator when artist metadata is empty.
+
 ## How it works
 
 - [docs/wiki/systems/media-playback.md](../wiki/systems/media-playback.md)
@@ -47,11 +53,13 @@ Media playback covers MPRIS player discovery, virtual player pairing, active-pla
 
 - `Services/Media/MediaService.qml` - MPRIS player discovery, active-player selection, transport controls, and seek state.
 - `Modules/Cards/MediaCard.qml` - media card UI consuming current player metadata and controls.
+- `Modules/Bar/Widgets/MediaMini.qml` - compact bar widget consuming media title/artist metadata.
 - `Services/Control/IPCService.qml` - IPC routes for media actions.
 
 ## Tests asserting this spec
 
 - `Tests/media-service-guards.test.js`
+- `Tests/widget-helper-guards.test.js`
 - `Tests/qml-runtime-guards.test.js`
 
 ## Known gaps (current cycle)
