@@ -38,6 +38,25 @@ function qmlSourceFiles() {
   }).trim().split("\n").filter(Boolean);
 }
 
+function testFiles() {
+  return fs.readdirSync(path.join(repoRoot, "Tests"))
+    .filter(fileName => /\.test\.(js|sh|py)$/.test(fileName))
+    .map(fileName => `Tests/${fileName}`)
+    .sort();
+}
+
+function specFiles() {
+  return fs.readdirSync(path.join(repoRoot, "docs", "specs"))
+    .filter(fileName => fileName.endsWith(".md"))
+    .map(fileName => path.join(repoRoot, "docs", "specs", fileName));
+}
+
+function specCorpus() {
+  return specFiles()
+    .map(filePath => fs.readFileSync(filePath, "utf8"))
+    .join("\n");
+}
+
 function qmlFunctionDeclarations() {
   const declarations = [];
 
@@ -88,10 +107,18 @@ function testNonTestSourceFunctionsStayCovered() {
   assert.deepEqual(uncoveredSourceFunctions, [], "non-test source functions must have code-index coverage");
 }
 
+function testAllTestFilesAreNamedBySpecs() {
+  const specs = specCorpus();
+  const unmappedTestFiles = testFiles().filter(testFile => !specs.includes(testFile));
+
+  assert.deepEqual(unmappedTestFiles, [], "every executable test file must be named by a docs/specs contract");
+}
+
 const tests = [
   testQmlFunctionCoverageStaysComplete,
   testQmlFunctionInventoryIncludesDeclarations,
   testNonTestSourceFunctionsStayCovered,
+  testAllTestFilesAreNamedBySpecs,
 ];
 
 for (const test of tests) {

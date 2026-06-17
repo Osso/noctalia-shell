@@ -9,6 +9,7 @@ Testing covers local regression gates, function-coverage guardrails, and log fil
 - [x] `code-index` must inventory every QML `function` declaration outside `Tests/`.
 - [x] Non-test source functions must have code-index coverage.
 - [x] QML function inventory anchors must keep required high-risk QML functions discoverable.
+- [x] Every executable test file must be named by at least one `docs/specs` contract.
 
 ### Quickshell regression log gate
 
@@ -50,7 +51,7 @@ Testing covers local regression gates, function-coverage guardrails, and log fil
 
 - [ ] Add executable fixture coverage for every high-signal `quickshell-regression.sh` fatal-pattern family.
 - [ ] Add executable coverage for the no-active-shell diagnostic path.
-- [ ] Add an automated check that every non-meta test file is named by at least one feature spec.
+- [ ] Add an automated check that every non-meta test file is named by a feature spec rather than only a meta/tooling spec.
 
 ## Out of scope
 
