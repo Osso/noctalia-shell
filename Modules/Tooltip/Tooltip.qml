@@ -105,7 +105,7 @@ PopupWindow {
   }
 
   // Function to show tooltip
-  function show(target, tipText, customDirection, showDelay, fontFamily) {
+  function show(target: Item, tipText: string, customDirection, showDelay, fontFamily) {
     if (!target || !tipText || tipText === "")
       return;
 
