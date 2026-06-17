@@ -36,6 +36,8 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 
 ### Types and probes
 
+- [x] Battery service icon selection uses typed percentage, charging, and ready-state inputs.
+- [x] Battery service icon selection returns exclamation when not ready, charging while charging, and threshold icons for 90/50/25/0 percent.
 - [x] Battery references in bar widget, lock screen, battery panel, and battery tab are typed as `UPowerDevice`, not `var`.
 - [x] UPower percentage probe parsing accepts valid percentage rows and rejects invalid, prefixed, malformed, and out-of-range rows.
 - [x] UPower battery-state probe parsing accepts valid battery states and rejects invalid, prefixed, and malformed rows.
@@ -52,7 +54,7 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 - `Modules/Panels/Settings/Tabs/BatteryTab.qml` - battery settings and charge-threshold write helpers.
 - `Modules/Panels/Settings/Bar/WidgetSettings/BatterySettings.qml` - per-widget battery settings UI.
 - `Modules/LockScreen/LockScreen.qml` - lock-screen battery display.
-- `Services/Hardware/BatteryService.qml` - battery charging mode service used by IPC.
+- `Services/Hardware/BatteryService.qml` - battery icon helper and charging mode service used by IPC.
 - `Services/Control/IPCService.qml` - battery manager IPC command mapping.
 - `Bin/dev/service-probes.sh` - read-only UPower probe parsing.
 
@@ -60,6 +62,7 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 
 - `Tests/battery-widget-guards.test.js`
 - `Tests/battery-panel-guards.test.js`
+- `Tests/battery-service-guards.test.js`
 - `Tests/battery-tab-guards.test.js`
 - `Tests/qml-runtime-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
