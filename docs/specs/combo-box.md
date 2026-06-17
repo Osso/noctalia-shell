@@ -14,6 +14,12 @@ Typed delegate contract:
 - [x] Combo box item delegates must type the parent combo box reference as `ComboBox`.
 - [x] Combo box item delegates must declare an integer `index` role before deriving `itemIndex`.
 
+Activation and popup behavior:
+- [x] Combo box activation emits the selected key for the current item and ignores missing-key or out-of-range items.
+- [x] Delegate clicks select the item, update the parent combo-box index, and close the popup.
+- [x] Delegate clicks defer selection while the list is flicking or moving, cancel the flick, and start a retry timer.
+- [x] Pending click retries restart while the list is still moving, then select once and clear the pending flag when the list settles.
+
 ## How it works
 
 - [ ] See [docs/wiki/systems/combo-box.md](/syncthing/Sync/Projects/apps/noctalia-shell/docs/wiki/systems/combo-box.md).
@@ -29,7 +35,7 @@ Typed delegate contract:
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for activation, delayed click retry, and popup close behavior.
+- [x] Add executable coverage for activation, delayed click retry, and popup close behavior.
 
 ## Out of scope
 

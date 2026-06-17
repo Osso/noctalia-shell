@@ -132,6 +132,116 @@ function testComboBoxFindIndexByKeyFindsFirstMatchAndMissingSentinel() {
   assert.equal(findIndexByKey(ctx, "missing"), -1);
 }
 
+function createComboBoxSelectionContext(items) {
+  const selectedKeys = [];
+  const ctx = createComboBoxContext(items);
+  ctx.root = ctx;
+  ctx.model = items;
+  ctx.getItem = index => qmlFunction(comboBoxSource, "getItem", "index")(ctx, index);
+  ctx.selectItem = (itemIndex, parentComboBox) => qmlFunction(comboBoxSource, "selectItem", "itemIndex", "parentComboBox")(ctx, itemIndex, parentComboBox);
+  ctx.shouldDelayDelegateClick = listView => qmlFunction(comboBoxSource, "shouldDelayDelegateClick", "listView")(ctx, listView);
+  ctx.selected = key => selectedKeys.push(key);
+  return { ctx, selectedKeys };
+}
+
+function createParentComboBox() {
+  const closeCalls = [];
+  return {
+    currentIndex: -1,
+    popup: {
+      close() {
+        closeCalls.push("close");
+      },
+    },
+    closeCalls,
+  };
+}
+
+function testComboBoxActivationEmitsCurrentItemKey() {
+  const activateCurrentIndex = qmlFunction(comboBoxSource, "activateCurrentIndex", "index");
+  const { ctx, selectedKeys } = createComboBoxSelectionContext([
+    { key: "alpha" },
+    { name: "missing-key" },
+    { key: "gamma" },
+  ]);
+
+  activateCurrentIndex(ctx, 2);
+  activateCurrentIndex(ctx, 1);
+  activateCurrentIndex(ctx, 99);
+
+  assert.deepEqual(selectedKeys, ["gamma"]);
+}
+
+function testComboBoxDelegateClickSelectsAndClosesPopup() {
+  const handleDelegateClick = qmlFunction(comboBoxSource, "handleDelegateClick", "itemIndex", "parentComboBox", "listView", "clickRetryTimer", "delegate");
+  const { ctx, selectedKeys } = createComboBoxSelectionContext([
+    { key: "alpha" },
+    { key: "beta" },
+  ]);
+  const parentComboBox = createParentComboBox();
+
+  handleDelegateClick(ctx, 1, parentComboBox, { flicking: false, moving: false }, null, { pendingClick: false });
+
+  assert.deepEqual(selectedKeys, ["beta"]);
+  assert.equal(parentComboBox.currentIndex, 1);
+  assert.deepEqual(parentComboBox.closeCalls, ["close"]);
+}
+
+function testComboBoxDelegateClickDefersWhileListIsMoving() {
+  const handleDelegateClick = qmlFunction(comboBoxSource, "handleDelegateClick", "itemIndex", "parentComboBox", "listView", "clickRetryTimer", "delegate");
+  const { ctx, selectedKeys } = createComboBoxSelectionContext([{ key: "alpha" }]);
+  const cancelCalls = [];
+  const timerCalls = [];
+  const delegate = { pendingClick: false };
+
+  handleDelegateClick(ctx, 0, createParentComboBox(), {
+    flicking: true,
+    moving: false,
+    cancelFlick() {
+      cancelCalls.push("cancel");
+    },
+  }, {
+    start() {
+      timerCalls.push("start");
+    },
+  }, delegate);
+
+  assert.deepEqual(selectedKeys, []);
+  assert.equal(delegate.pendingClick, true);
+  assert.deepEqual(cancelCalls, ["cancel"]);
+  assert.deepEqual(timerCalls, ["start"]);
+}
+
+function testComboBoxPendingClickRetrySelectsAndClearsPendingFlag() {
+  const retryPendingClick = qmlFunction(comboBoxSource, "retryPendingClick", "itemIndex", "parentComboBox", "listView", "clickRetryTimer", "delegate");
+  const { ctx, selectedKeys } = createComboBoxSelectionContext([{ key: "alpha" }]);
+  const parentComboBox = createParentComboBox();
+  const delegate = { pendingClick: true };
+  const timerCalls = [];
+
+  retryPendingClick(ctx, 0, parentComboBox, { flicking: true, moving: false }, {
+    restart() {
+      timerCalls.push("restart");
+    },
+  }, delegate);
+  retryPendingClick(ctx, 0, parentComboBox, { flicking: false, moving: false }, {
+    restart() {
+      timerCalls.push("unexpected");
+    },
+  }, delegate);
+  retryPendingClick(ctx, 0, parentComboBox, { flicking: false, moving: false }, {
+    restart() {
+      timerCalls.push("unexpected");
+    },
+  }, delegate);
+
+  assert.deepEqual(selectedKeys, ["alpha"]);
+  assert.equal(parentComboBox.currentIndex, 0);
+  assert.deepEqual(parentComboBox.closeCalls, ["close"]);
+  assert.deepEqual(timerCalls, ["restart"]);
+  assert.equal(delegate.pendingClick, false);
+}
+
 function testBluetoothDeviceContentColorReflectsTransientAndBlockedState() {
   const getContentColor = qmlFunction(bluetoothDevicesSource, "getContentColor", "defaultColor");
   const Color = {
@@ -173,6 +283,10 @@ const tests = [
   testComboBoxItemCountSupportsCountedModelsArraysAndMissingModels,
   testComboBoxGetItemSupportsModelGetArraysAndMissingModels,
   testComboBoxFindIndexByKeyFindsFirstMatchAndMissingSentinel,
+  testComboBoxActivationEmitsCurrentItemKey,
+  testComboBoxDelegateClickSelectsAndClosesPopup,
+  testComboBoxDelegateClickDefersWhileListIsMoving,
+  testComboBoxPendingClickRetrySelectsAndClearsPendingFlag,
   testBluetoothDeviceContentColorReflectsTransientAndBlockedState,
 ];
 

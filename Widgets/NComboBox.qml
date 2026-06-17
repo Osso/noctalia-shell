@@ -52,6 +52,51 @@ RowLayout {
     return -1;
   }
 
+  function activateCurrentIndex(index: int) {
+    var item = getItem(index);
+    if (item && item.key !== undefined)
+      root.selected(item.key);
+  }
+
+  function selectItem(itemIndex: int, parentComboBox) {
+    var item = root.getItem(itemIndex);
+    if (!(item && item.key !== undefined && parentComboBox))
+      return false;
+
+    root.selected(item.key);
+    parentComboBox.currentIndex = itemIndex;
+    parentComboBox.popup.close();
+    return true;
+  }
+
+  function shouldDelayDelegateClick(listView) {
+    return !!(listView && (listView.flicking || listView.moving));
+  }
+
+  function handleDelegateClick(itemIndex: int, parentComboBox, listView, clickRetryTimer, delegate) {
+    if (shouldDelayDelegateClick(listView)) {
+      listView.cancelFlick();
+      delegate.pendingClick = true;
+      clickRetryTimer.start();
+      return false;
+    }
+
+    return selectItem(itemIndex, parentComboBox);
+  }
+
+  function retryPendingClick(itemIndex: int, parentComboBox, listView, clickRetryTimer, delegate) {
+    if (!delegate.pendingClick)
+      return false;
+
+    if (shouldDelayDelegateClick(listView)) {
+      clickRetryTimer.restart();
+      return false;
+    }
+
+    delegate.pendingClick = false;
+    return selectItem(itemIndex, parentComboBox);
+  }
+
   NLabel {
     label: root.label
     description: root.description
@@ -64,11 +109,7 @@ RowLayout {
     Layout.preferredHeight: root.preferredHeight
     model: model
     currentIndex: findIndexByKey(currentKey)
-    onActivated: {
-      var item = getItem(combo.currentIndex);
-      if (item && item.key !== undefined)
-        root.selected(item.key);
-    }
+    onActivated: root.activateCurrentIndex(combo.currentIndex)
 
     background: Rectangle {
       implicitWidth: Style.baseWidgetSize * 3.75
@@ -128,19 +169,7 @@ RowLayout {
             id: clickRetryTimer
             interval: 50
             repeat: false
-            onTriggered: {
-              if (parent.pendingClick && parent.ListView.view && !parent.ListView.view.flicking && !parent.ListView.view.moving) {
-                parent.pendingClick = false;
-                var item = root.getItem(parent.itemIndex);
-                if (item && item.key !== undefined && parent.parentComboBox) {
-                  root.selected(item.key);
-                  parent.parentComboBox.currentIndex = parent.itemIndex;
-                  parent.parentComboBox.popup.close();
-                }
-              } else if (parent.pendingClick) {
-                restart();
-              }
-            }
+            onTriggered: root.retryPendingClick(parent.itemIndex, parent.parentComboBox, parent.ListView.view, clickRetryTimer, parent)
           }
 
           onHoveredChanged: {
@@ -149,20 +178,7 @@ RowLayout {
             }
           }
 
-          onClicked: {
-            if (ListView.view && (ListView.view.flicking || ListView.view.moving)) {
-              ListView.view.cancelFlick();
-              pendingClick = true;
-              clickRetryTimer.start();
-            } else {
-              var item = root.getItem(itemIndex);
-              if (item && item.key !== undefined && parentComboBox) {
-                root.selected(item.key);
-                parentComboBox.currentIndex = itemIndex;
-                parentComboBox.popup.close();
-              }
-            }
-          }
+          onClicked: root.handleDelegateClick(itemIndex, parentComboBox, ListView.view, clickRetryTimer, this)
 
           background: Rectangle {
             anchors.fill: parent
