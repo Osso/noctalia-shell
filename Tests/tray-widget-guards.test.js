@@ -23,6 +23,7 @@ function testTrayWidgetWildcardMatchHandlesEscapedRulesAndCase() {
   const wildCardMatch = qmlFunction("wildCardMatch", "str", "rule");
   const ctx = { Logger: createLogger() };
 
+  assert.match(source, /function wildCardMatch\(str: string, rule: string\)/, "wildCardMatch must type string inputs");
   assert.equal(wildCardMatch(ctx, "Bluetooth Manager", "bluetooth*"), true);
   assert.equal(wildCardMatch(ctx, "org.kde.StatusNotifierItem-1", "org.kde.*-1"), true);
   assert.equal(wildCardMatch(ctx, "literal.plus", "literal.plus"), true);

@@ -5,6 +5,7 @@ Tray covers the bar tray widget, tray menu popup, tray drawer panel, pinned/blac
 ### Tray widget filtering
 
 - [x] Tray wildcard matching is case-insensitive, supports `*`, escapes literal regex characters, and fails closed for empty input or empty rules.
+- [x] Tray wildcard matching uses typed string inputs.
 - [x] Tray filtering skips null items and blacklisted items.
 - [x] When the drawer is disabled, all non-blacklisted tray items render inline.
 - [x] When the drawer is enabled, pinned items render inline and unpinned items move to the dropdown list.
