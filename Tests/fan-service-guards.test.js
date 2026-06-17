@@ -3,8 +3,14 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const source = readQml("Services/Hardware/FanService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
 function testFanHwmonDetectionGuards() {
-  const source = readQml("Services/Hardware/FanService.qml");
   const checkNextBody = extractFunctionBody(source, "checkNext");
 
   assert.match(checkNextBody, /if \(currentIndex >= 16\)[\s\S]*Logger\.w\("FanService", "No supported fan sensor found"\)[\s\S]*return/, "checkNext must stop after configured hwmon probes");
@@ -13,8 +19,30 @@ function testFanHwmonDetectionGuards() {
   assert.match(source, /fanHwmonDetector\.currentIndex\+\+[\s\S]*Qt\.callLater\(\(\) => fanHwmonDetector\.checkNext\(\)\)/, "fan input failure must continue scanning hwmon paths");
 }
 
+function testFanHwmonDetectionPublishesSuccessfulSensor() {
+  assert.match(source, /function publishFanSensor\(hwmonIndex: int, sensorName: string\)/, "publishFanSensor must type hwmon index and sensor name inputs");
+  const publishFanSensor = qmlFunction("publishFanSensor", "hwmonIndex", "sensorName");
+  const logs = [];
+  const ctx = {
+    root: {
+      fanSensorName: "",
+      fanHwmonPath: "",
+    },
+    Logger: {
+      i(...args) {
+        logs.push(args);
+      },
+    },
+  };
+
+  publishFanSensor(ctx, 4, "thinkpad");
+
+  assert.equal(ctx.root.fanSensorName, "thinkpad");
+  assert.equal(ctx.root.fanHwmonPath, "/sys/class/hwmon/hwmon4");
+  assert.deepEqual(logs, [["FanService", "Found thinkpad fan sensor at /sys/class/hwmon/hwmon4"]]);
+}
+
 function testFanReadPipelineGuards() {
-  const source = readQml("Services/Hardware/FanService.qml");
   const readAllBody = extractFunctionBody(source, "readAllFans");
   const readNextBody = extractFunctionBody(source, "readNextFan");
   const finalizeBody = extractFunctionBody(source, "finalizeFanReading");
@@ -31,8 +59,6 @@ function testFanReadPipelineGuards() {
 }
 
 function testFanReaderAndLabelGuards() {
-  const source = readQml("Services/Hardware/FanService.qml");
-
   assert.match(source, /const rpm = parseInt\(text\(\)\.trim\(\)\) \|\| 0[\s\S]*const fanIndex = root\.pendingFanReads\.shift\(\)/, "fan reader must parse rpm and consume pending index together");
   assert.match(source, /if \(rpm >= 0\)[\s\S]*root\.collectedFans\.push\(\{[\s\S]*index: fanIndex,[\s\S]*rpm: rpm,[\s\S]*label: `Fan \$\{fanIndex\}`/, "fan reader must collect non-negative fan readings with default labels");
   assert.match(source, /root\.pendingFanReads = \[\][\s\S]*root\.finalizeFanReading\(\)/, "fan reader failure must stop pipeline and finalize");
@@ -40,7 +66,6 @@ function testFanReaderAndLabelGuards() {
 }
 
 function testFanSummaryHelpers() {
-  const source = readQml("Services/Hardware/FanService.qml");
   const averageBody = extractFunctionBody(source, "getAverageRpm");
   const maxBody = extractFunctionBody(source, "getMaxRpm");
   const formatBody = extractFunctionBody(source, "formatRpm");
@@ -58,6 +83,7 @@ function testFanSummaryHelpers() {
 
 const tests = [
   testFanHwmonDetectionGuards,
+  testFanHwmonDetectionPublishesSuccessfulSensor,
   testFanReadPipelineGuards,
   testFanReaderAndLabelGuards,
   testFanSummaryHelpers,

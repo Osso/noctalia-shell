@@ -89,9 +89,7 @@ Singleton {
 
     onLoaded: {
       // Found a valid fan input
-      root.fanSensorName = sensorName;
-      root.fanHwmonPath = `/sys/class/hwmon/hwmon${hwmonIndex}`;
-      Logger.i("FanService", `Found ${root.fanSensorName} fan sensor at ${root.fanHwmonPath}`);
+      root.publishFanSensor(hwmonIndex, sensorName);
     }
 
     onLoadFailed: function(error) {
@@ -99,6 +97,12 @@ Singleton {
       fanHwmonDetector.currentIndex++;
       Qt.callLater(() => fanHwmonDetector.checkNext());
     }
+  }
+
+  function publishFanSensor(hwmonIndex: int, sensorName: string) {
+    root.fanSensorName = sensorName;
+    root.fanHwmonPath = `/sys/class/hwmon/hwmon${hwmonIndex}`;
+    Logger.i("FanService", `Found ${root.fanSensorName} fan sensor at ${root.fanHwmonPath}`);
   }
 
   // Fan reader - reads individual fan files

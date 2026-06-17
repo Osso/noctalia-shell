@@ -8,6 +8,7 @@ Fan covers hardware fan sensor discovery, RPM readout, label loading, and fan su
 - [x] Hwmon detection probes `/sys/class/hwmon/hwmonN/name` files.
 - [x] Supported sensor names must also expose `fan1_input` before the service selects a hwmon path.
 - [x] Failed fan-input checks continue scanning later hwmon paths.
+- [x] Successful fan-input verification publishes the sensor name, hwmon path, and detection log.
 
 ### Fan read pipeline
 
@@ -59,7 +60,6 @@ Fan covers hardware fan sensor discovery, RPM readout, label loading, and fan su
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for FanService successful hwmon detection state publication.
 - [ ] Add executable coverage for SystemMonitor fan display visibility and formatted max RPM.
 - [ ] Add executable coverage for fan hover tooltip content.
 - [ ] Add executable coverage for settings UI hiding fan toggles when no fan sensor is available.
