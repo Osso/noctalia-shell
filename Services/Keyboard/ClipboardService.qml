@@ -101,54 +101,60 @@ Singleton {
     id: listProc
     stdout: StdioCollector {}
     onExited: (exitCode, exitStatus) => {
-      const out = String(stdout.text);
-      const lines = out.split('\n').filter(l => l.length > 0);
-      // cliphist list default format: "<id> <preview>" or "<id>\t<preview>"
-      const parsed = lines.map(l => {
-                                 let id = "";
-                                 let preview = "";
-                                 const m = l.match(/^(\d+)\s+(.+)$/);
-                                 if (m) {
-                                   id = m[1];
-                                   preview = m[2];
-                                 } else {
-                                   const tab = l.indexOf('\t');
-                                   id = tab > -1 ? l.slice(0, tab) : l;
-                                   preview = tab > -1 ? l.slice(tab + 1) : "";
-                                 }
-                                 const lower = preview.toLowerCase();
-                                 const isImage = lower.startsWith("[image]") || lower.includes(" binary data ");
-                                 // Best-effort mime guess from preview
-                                 var mime = "text/plain";
-                                 if (isImage) {
-                                   if (lower.includes(" png"))
-                                   mime = "image/png";
-                                   else if (lower.includes(" jpg") || lower.includes(" jpeg"))
-                                   mime = "image/jpeg";
-                                   else if (lower.includes(" webp"))
-                                   mime = "image/webp";
-                                   else if (lower.includes(" gif"))
-                                   mime = "image/gif";
-                                   else
-                                   mime = "image/*";
-                                 }
-                                 // Record first seen time for new ids (approximate copy time)
-                                 if (!root.firstSeenById[id]) {
-                                   root.firstSeenById[id] = Time.timestamp;
-                                 }
-                                 return {
-                                   "id": id,
-                                   "preview": preview,
-                                   "isImage": isImage,
-                                   "mime": mime
-                                 };
-                               });
+      const parsed = root.parseListOutput(stdout.text, Time.timestamp);
       items = parsed;
       loading = false;
 
       // Emit the signal for subscribers
       root.listCompleted();
     }
+  }
+
+  function parseListOutput(output: string, now: int) {
+    const lines = String(output).split("\n").filter(line => line.length > 0);
+    return lines.map(line => {
+                       let id = "";
+                       let preview = "";
+                       const match = line.match(/^(\d+)\s+(.+)$/);
+
+                       if (match) {
+                         id = match[1];
+                         preview = match[2];
+                       } else {
+                         const tabIndex = line.indexOf("\t");
+                         id = tabIndex > -1 ? line.slice(0, tabIndex) : line;
+                         preview = tabIndex > -1 ? line.slice(tabIndex + 1) : "";
+                       }
+
+                       const lowerPreview = preview.toLowerCase();
+                       const isImage = lowerPreview.startsWith("[image]") || lowerPreview.includes(" binary data ");
+                       var mime = "text/plain";
+
+                       if (isImage) {
+                         if (lowerPreview.includes(" png")) {
+                           mime = "image/png";
+                         } else if (lowerPreview.includes(" jpg") || lowerPreview.includes(" jpeg")) {
+                           mime = "image/jpeg";
+                         } else if (lowerPreview.includes(" webp")) {
+                           mime = "image/webp";
+                         } else if (lowerPreview.includes(" gif")) {
+                           mime = "image/gif";
+                         } else {
+                           mime = "image/*";
+                         }
+                       }
+
+                       if (!root.firstSeenById[id]) {
+                         root.firstSeenById[id] = now;
+                       }
+
+                       return {
+                         "id": id,
+                         "preview": preview,
+                         "isImage": isImage,
+                         "mime": mime
+                       };
+                     });
   }
 
   Process {

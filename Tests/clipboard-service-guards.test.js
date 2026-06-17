@@ -111,6 +111,40 @@ function testClipboardServiceWatcherAndListCommandsExecute() {
   assert.equal(blockedCtx.listProc.command, undefined, "list must leave process command untouched when inactive");
 }
 
+function testClipboardServiceParsesListOutput() {
+  assert.match(source, /function parseListOutput\(output: string, now: int\)/, "clipboard list parser must type raw output and timestamp");
+  assert.match(source, /const parsed = root\.parseListOutput\(stdout\.text, Time\.timestamp\)/, "list process must route stdout through parser helper");
+
+  const parseListOutput = qmlFunction("parseListOutput", "output", "now");
+  const ctx = {
+    root: null,
+    firstSeenById: {
+      "1": 111,
+    },
+  };
+  ctx.root = ctx;
+
+  const parsed = parseListOutput(ctx, [
+    "1 existing text",
+    "2\t[image] png 128x128",
+    "3 [image] jpeg 200x200",
+    "4 clip binary data webp",
+    "5",
+    "",
+  ].join("\n"), 222);
+
+  assert.deepEqual(parsed, [
+    { id: "1", preview: "existing text", isImage: false, mime: "text/plain" },
+    { id: "2", preview: "[image] png 128x128", isImage: true, mime: "image/png" },
+    { id: "3", preview: "[image] jpeg 200x200", isImage: true, mime: "image/jpeg" },
+    { id: "4", preview: "clip binary data webp", isImage: true, mime: "image/webp" },
+    { id: "5", preview: "", isImage: false, mime: "text/plain" },
+  ]);
+  assert.equal(ctx.firstSeenById["1"], 111, "existing ids must keep original first-seen timestamp");
+  assert.equal(ctx.firstSeenById["2"], 222, "new ids must store current timestamp");
+  assert.equal(ctx.firstSeenById["5"], 222, "bare ids must still store current timestamp");
+}
+
 function testClipboardServiceDecodeQueuesExecute() {
   const decode = qmlFunction("decode", "id", "cb");
   const decodeToDataUrl = qmlFunction("decodeToDataUrl", "id", "mime", "cb");
@@ -232,6 +266,7 @@ const tests = [
   testClipboardServiceListAndDecodeGuards,
   testClipboardServiceMutationCommands,
   testClipboardServiceWatcherAndListCommandsExecute,
+  testClipboardServiceParsesListOutput,
   testClipboardServiceDecodeQueuesExecute,
   testClipboardServiceMutationCommandsExecute,
 ];

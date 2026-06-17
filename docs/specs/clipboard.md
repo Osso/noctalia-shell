@@ -15,6 +15,7 @@ Clipboard covers cliphist availability, wl-paste watcher lifecycle, history list
 - [x] Listing skips work while the list process is already running.
 - [x] Listing marks the service loading and runs `cliphist list -preview-width <width>`.
 - [x] Listing defaults preview width to `100` when no width is supplied.
+- [x] List output parsing supports space and tab separated ids, preserves previews, detects image entries, guesses image MIME types, and records first-seen timestamps for new ids.
 
 ### Decode and image data
 
@@ -55,7 +56,7 @@ Clipboard covers cliphist availability, wl-paste watcher lifecycle, history list
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable tests for list-process output parsing into clipboard items.
+- [x] Add executable tests for list-process output parsing into clipboard items.
 - [ ] Add executable tests for decode process completion callbacks and base64 cache writes.
 - [ ] Add spec coverage for clipboard launcher result rendering and activation.
 
