@@ -200,7 +200,7 @@ Singleton {
 
   // -------------------------------------------------------------------
   // Set specific monitor directory
-  function setMonitorDirectory(screenName, directory) {
+  function setMonitorDirectory(screenName: string, directory: string) {
     var monitors = Settings.data.wallpaper.monitorDirectories || [];
     var found = false;
 
@@ -237,7 +237,7 @@ Singleton {
   }
 
   // -------------------------------------------------------------------
-  function changeWallpaper(path, screenName) {
+  function changeWallpaper(path: string, screenName) {
     if (screenName !== undefined) {
       _setWallpaper(screenName, path);
     } else {
@@ -374,7 +374,7 @@ Singleton {
   property var recursiveProcesses: ({})
 
   // -------------------------------------------------------------------
-  function scanDirectoryRecursive(screenName, directory) {
+  function scanDirectoryRecursive(screenName: string, directory: string) {
     if (!directory || directory === "") {
       Logger.w("Wallpaper", "Empty directory for", screenName);
       wallpaperLists[screenName] = [];

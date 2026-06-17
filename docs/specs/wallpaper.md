@@ -15,10 +15,13 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 
 - [x] Monitor config lookup returns the matching named monitor config and returns `undefined` for unknown screens.
 - [x] Monitor config lookup uses a typed string screen-name input.
+- [x] Monitor directory updates use typed screen-name and directory inputs.
 - [x] Wallpaper-list lookup returns cached screen lists and fails closed to an empty list for unknown screens.
+- [x] Wallpaper changes type the required path input while keeping the target screen optional for all-screen updates.
 - [x] Random wallpaper selection updates only screens that have cached wallpapers in multi-monitor-directory mode.
 - [x] Random wallpaper selection updates all screens through an undefined screen name in single-directory mode.
 - [x] Recursive scan setup parses successful scan output, sorts cached files, emits list changes, clears lists after failed scans, cleans process references, and starts the scan process.
+- [x] Recursive scan setup uses typed screen-name and directory inputs.
 
 ### Wallpaper panel and settings helpers
 
