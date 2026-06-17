@@ -7,7 +7,7 @@ import "../Helpers/ThemeIconResolver.js" as ThemeIconResolver
 Singleton {
   id: root
 
-  function iconFromName(iconName, fallbackName) {
+  function iconFromName(iconName: string, fallbackName) {
     try {
       return ThemeIconResolver.resolveIconPath(Quickshell, iconName, fallbackName);
     } catch (e2) {

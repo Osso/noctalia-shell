@@ -69,6 +69,7 @@ function testThemeIconsResolveDesktopEntryIconsAndFallbacks() {
 }
 
 function testThemeIconsAppIdInputIsTyped() {
+  assert.match(source, /function iconFromName\(iconName: string, fallbackName\)/, "iconFromName must type the required icon-name input while keeping fallback optional");
   assert.match(source, /function iconForAppId\(appId: string, fallbackName\)/, "iconForAppId must type the required app id input while keeping fallback optional");
 }
 
