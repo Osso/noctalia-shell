@@ -42,18 +42,21 @@ Singleton {
   signal checksCompleted
 
   function parseDetectedClients(rawOutput: string, clients) {
-    const detectedNames = rawOutput.trim().split(/\s+/).filter(function (client) {
+    const detectedLines = rawOutput.split(/\r?\n/).map(function (client) {
+      return client.trim();
+    }).filter(function (client) {
+      return client.length > 0;
+    });
+    const detectedTokens = rawOutput.trim().split(/\s+/).filter(function (client) {
       return client.length > 0;
     });
     const detectedClients = [];
 
-    for (var i = 0; i < detectedNames.length; i++) {
-      const clientName = detectedNames[i];
-      const client = clients.find(function (candidate) {
-        return candidate.name === clientName;
-      });
-
-      if (client && !detectedClients.includes(client)) {
+    for (var i = 0; i < clients.length; i++) {
+      const client = clients[i];
+      const detectedByLine = detectedLines.includes(client.name);
+      const detectedByToken = detectedTokens.includes(client.name);
+      if ((detectedByLine || detectedByToken) && !detectedClients.includes(client)) {
         detectedClients.push(client);
       }
     }
@@ -61,31 +64,35 @@ Singleton {
     return detectedClients;
   }
 
-  // Function to detect Discord client by checking config directories
-  function detectDiscordClient() {
-    // Build shell script to check each client
-    var scriptParts = ["available_clients=\"\";"];
+  function shellQuote(value: string) {
+    return "'" + String(value).replace(/'/g, "'\\''") + "'";
+  }
 
-    for (var i = 0; i < TemplateRegistry.discordClients.length; i++) {
-      var client = TemplateRegistry.discordClients[i];
-      var clientName = client.name;
-      var configPath = client.configPath;
-
-      // Use the actual config path from the client, removing ~ prefix
-      var checkPath = configPath.startsWith("~") ? configPath.substring(2) : configPath.substring(1);
-
-      // Check if this client requires themes folder to exist
-      if (client.requiresThemesFolder) {
-        scriptParts.push("if [ -d \"$HOME/" + checkPath + "/themes\" ]; then available_clients=\"$available_clients " + clientName + "\"; fi;");
-      } else {
-        scriptParts.push("if [ -d \"$HOME/" + checkPath + "\" ]; then available_clients=\"$available_clients " + clientName + "\"; fi;");
-      }
+  function clientConfigPathExpression(configPath: string, suffix: string) {
+    if (configPath.startsWith("~/")) {
+      return "\"$HOME\"/" + root.shellQuote(configPath.substring(2) + suffix);
     }
 
-    scriptParts.push("echo \"$available_clients\"");
+    return root.shellQuote(configPath + suffix);
+  }
 
+  function buildClientDetectionScript(clients, requireThemesFolder: bool) {
+    const scriptParts = [];
+
+    for (var i = 0; i < clients.length; i++) {
+      const client = clients[i];
+      const suffix = requireThemesFolder && client.requiresThemesFolder ? "/themes" : "";
+      const checkPath = root.clientConfigPathExpression(client.configPath, suffix);
+      scriptParts.push("if [ -d " + checkPath + " ]; then printf '%s\\n' " + root.shellQuote(client.name) + "; fi;");
+    }
+
+    return scriptParts.join(" ");
+  }
+
+  // Function to detect Discord client by checking config directories
+  function detectDiscordClient() {
     // Use a Process to check directory existence for all clients
-    discordDetector.command = ["sh", "-c", scriptParts.join(" ")];
+    discordDetector.command = ["sh", "-c", root.buildClientDetectionScript(TemplateRegistry.discordClients, true)];
     discordDetector.running = true;
   }
 
@@ -119,22 +126,8 @@ Singleton {
 
   // Function to detect Code client by checking config directories
   function detectCodeClient() {
-    // Build shell script to check each client
-    var scriptParts = ["available_clients=\"\";"];
-
-    for (var i = 0; i < TemplateRegistry.codeClients.length; i++) {
-      var client = TemplateRegistry.codeClients[i];
-      var clientName = client.name;
-      var configPath = client.configPath;
-
-      // Check if the config directory exists
-      scriptParts.push("if [ -d \"$HOME" + configPath.substring(1) + "\" ]; then available_clients=\"$available_clients " + clientName + "\"; fi;");
-    }
-
-    scriptParts.push("echo \"$available_clients\"");
-
     // Use a Process to check directory existence for all clients
-    codeDetector.command = ["sh", "-c", scriptParts.join(" ")];
+    codeDetector.command = ["sh", "-c", root.buildClientDetectionScript(TemplateRegistry.codeClients, false)];
     codeDetector.running = true;
   }
 

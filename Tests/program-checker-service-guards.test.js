@@ -27,7 +27,11 @@ function logger() {
 
 function testProgramCheckerDetectDiscordClientBuildsDirectoryProbe() {
   const detectDiscordClient = qmlFunction("detectDiscordClient");
+  const shellQuote = qmlFunction("shellQuote", "value");
+  const clientConfigPathExpression = qmlFunction("clientConfigPathExpression", "configPath", "suffix");
+  const buildClientDetectionScript = qmlFunction("buildClientDetectionScript", "clients", "requireThemesFolder");
   const ctx = {
+    root: null,
     TemplateRegistry: {
       discordClients: [
         { name: "vesktop", configPath: "~/.config/vesktop", requiresThemesFolder: true },
@@ -38,21 +42,35 @@ function testProgramCheckerDetectDiscordClientBuildsDirectoryProbe() {
       command: [],
       running: false,
     },
+    shellQuote(value) {
+      return shellQuote(ctx, value);
+    },
+    clientConfigPathExpression(configPath, suffix) {
+      return clientConfigPathExpression(ctx, configPath, suffix);
+    },
+    buildClientDetectionScript(clients, requireThemesFolder) {
+      return buildClientDetectionScript(ctx, clients, requireThemesFolder);
+    },
   };
+  ctx.root = ctx;
 
   detectDiscordClient(ctx);
 
   assert.deepEqual(ctx.discordDetector.command.slice(0, 2), ["sh", "-c"]);
-  assert.match(ctx.discordDetector.command[2], /\$HOME\/\.config\/vesktop\/themes/);
-  assert.match(ctx.discordDetector.command[2], /\$HOME\/\.config\/discord"/);
-  assert.match(ctx.discordDetector.command[2], /available_clients="\$available_clients vesktop"/);
-  assert.match(ctx.discordDetector.command[2], /echo "\$available_clients"/);
+  assert.match(ctx.discordDetector.command[2], /"\$HOME"\/'\.config\/vesktop\/themes'/);
+  assert.match(ctx.discordDetector.command[2], /"\$HOME"\/'\.config\/discord'/);
+  assert.match(ctx.discordDetector.command[2], /printf '%s\\n' 'vesktop'/);
+  assert.match(ctx.discordDetector.command[2], /printf '%s\\n' 'discord'/);
   assert.equal(ctx.discordDetector.running, true);
 }
 
 function testProgramCheckerDetectCodeClientBuildsDirectoryProbe() {
   const detectCodeClient = qmlFunction("detectCodeClient");
+  const shellQuote = qmlFunction("shellQuote", "value");
+  const clientConfigPathExpression = qmlFunction("clientConfigPathExpression", "configPath", "suffix");
+  const buildClientDetectionScript = qmlFunction("buildClientDetectionScript", "clients", "requireThemesFolder");
   const ctx = {
+    root: null,
     TemplateRegistry: {
       codeClients: [
         { name: "code", configPath: "~/.config/Code" },
@@ -63,14 +81,24 @@ function testProgramCheckerDetectCodeClientBuildsDirectoryProbe() {
       command: [],
       running: false,
     },
+    shellQuote(value) {
+      return shellQuote(ctx, value);
+    },
+    clientConfigPathExpression(configPath, suffix) {
+      return clientConfigPathExpression(ctx, configPath, suffix);
+    },
+    buildClientDetectionScript(clients, requireThemesFolder) {
+      return buildClientDetectionScript(ctx, clients, requireThemesFolder);
+    },
   };
+  ctx.root = ctx;
 
   detectCodeClient(ctx);
 
   assert.deepEqual(ctx.codeDetector.command.slice(0, 2), ["sh", "-c"]);
-  assert.match(ctx.codeDetector.command[2], /\$HOME\/\.config\/Code/);
-  assert.match(ctx.codeDetector.command[2], /\$HOME\/\.config\/VSCodium/);
-  assert.match(ctx.codeDetector.command[2], /available_clients="\$available_clients code"/);
+  assert.match(ctx.codeDetector.command[2], /"\$HOME"\/'\.config\/Code'/);
+  assert.match(ctx.codeDetector.command[2], /"\$HOME"\/'\.config\/VSCodium'/);
+  assert.match(ctx.codeDetector.command[2], /printf '%s\\n' 'code'/);
   assert.equal(ctx.codeDetector.running, true);
 }
 
@@ -85,6 +113,76 @@ function testProgramCheckerParsesDetectedClientOutput() {
   assert.match(source, /function parseDetectedClients\(rawOutput: string, clients\)/, "parseDetectedClients must type detector stdout input");
   assert.deepEqual(parseDetectedClients({}, " vesktop\nmissing\tcode vesktop ", clients), [clients[0], clients[2]]);
   assert.deepEqual(parseDetectedClients({}, "   \n\t", clients), []);
+}
+
+function testProgramCheckerHandlesShellSensitiveClientFixtures() {
+  assert.match(source, /function shellQuote\(value: string\)/, "ProgramChecker must shell-quote dynamic detector values");
+  assert.match(source, /function clientConfigPathExpression\(configPath: string, suffix: string\)/, "ProgramChecker must build quoted client config path expressions");
+  assert.match(source, /function buildClientDetectionScript\(clients, requireThemesFolder: bool\)/, "ProgramChecker must build client detector scripts through a shared helper");
+
+  const detectDiscordClient = qmlFunction("detectDiscordClient");
+  const detectCodeClient = qmlFunction("detectCodeClient");
+  const shellQuote = qmlFunction("shellQuote", "value");
+  const clientConfigPathExpression = qmlFunction("clientConfigPathExpression", "configPath", "suffix");
+  const buildClientDetectionScript = qmlFunction("buildClientDetectionScript", "clients", "requireThemesFolder");
+  const parseDetectedClients = qmlFunction("parseDetectedClients", "rawOutput", "clients");
+  const clients = [
+    { name: "weird client", configPath: "~/.config/weird client's app", requiresThemesFolder: true },
+    { name: "semi;client", configPath: "~/.config/semi;path", requiresThemesFolder: false },
+  ];
+  const discordCtx = {
+    root: null,
+    TemplateRegistry: {
+      discordClients: clients,
+    },
+    discordDetector: {
+      command: [],
+      running: false,
+    },
+    shellQuote(value) {
+      return shellQuote(discordCtx, value);
+    },
+    clientConfigPathExpression(configPath, suffix) {
+      return clientConfigPathExpression(discordCtx, configPath, suffix);
+    },
+    buildClientDetectionScript(clientList, requireThemesFolder) {
+      return buildClientDetectionScript(discordCtx, clientList, requireThemesFolder);
+    },
+  };
+  const codeCtx = {
+    root: null,
+    TemplateRegistry: {
+      codeClients: clients,
+    },
+    codeDetector: {
+      command: [],
+      running: false,
+    },
+    shellQuote(value) {
+      return shellQuote(codeCtx, value);
+    },
+    clientConfigPathExpression(configPath, suffix) {
+      return clientConfigPathExpression(codeCtx, configPath, suffix);
+    },
+    buildClientDetectionScript(clientList, requireThemesFolder) {
+      return buildClientDetectionScript(codeCtx, clientList, requireThemesFolder);
+    },
+  };
+  discordCtx.root = discordCtx;
+  codeCtx.root = codeCtx;
+
+  assert.equal(shellQuote({}, "client's; name"), "'client'\\''s; name'");
+  assert.equal(clientConfigPathExpression({ root: { shellQuote: value => shellQuote({}, value) } }, "~/.config/app dir", "/themes"), "\"$HOME\"/'.config/app dir/themes'");
+
+  detectDiscordClient(discordCtx);
+  detectCodeClient(codeCtx);
+
+  assert.doesNotMatch(discordCtx.discordDetector.command[2], /\$HOME\/\.config\/weird client's app/, "raw apostrophes must not be interpolated into shell script");
+  assert.match(discordCtx.discordDetector.command[2], /"\$HOME"\/'\.config\/weird client'\\''s app\/themes'/, "theme paths must quote the path suffix safely while preserving HOME expansion");
+  assert.match(discordCtx.discordDetector.command[2], /printf '%s\\n' 'weird client'/, "detected names with spaces must be emitted as single lines");
+  assert.match(discordCtx.discordDetector.command[2], /"\$HOME"\/'\.config\/semi;path'/, "shell metacharacters in paths must be quoted");
+  assert.match(codeCtx.codeDetector.command[2], /"\$HOME"\/'\.config\/weird client'\\''s app'/, "code client paths must quote the path suffix safely while preserving HOME expansion");
+  assert.deepEqual(parseDetectedClients({}, "weird client\nsemi;client\nunknown\n", clients), clients);
 }
 
 function testProgramCheckerQueueAdvancesOneProgramAtATime() {
@@ -266,6 +364,7 @@ const tests = [
   testProgramCheckerDetectDiscordClientBuildsDirectoryProbe,
   testProgramCheckerDetectCodeClientBuildsDirectoryProbe,
   testProgramCheckerParsesDetectedClientOutput,
+  testProgramCheckerHandlesShellSensitiveClientFixtures,
   testProgramCheckerQueueAdvancesOneProgramAtATime,
   testProgramCheckerCheckAllProgramsResetsQueue,
   testProgramCheckerCheckProgramGuardsUnknownProperties,

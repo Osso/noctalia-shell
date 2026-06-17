@@ -11,6 +11,7 @@ Program Checker covers runtime availability checks for optional tools and themed
 - [x] Code client detection builds a shell directory probe from TemplateRegistry code clients.
 - [x] Code client detection appends available client names and starts the detector process.
 - [x] Detector stdout parsing maps whitespace-separated client names to known client metadata, drops unknown names, deduplicates repeated names, and treats blank output as no clients.
+- [x] Client detector scripts quote shell-sensitive config paths and emit one detected client name per line so names with spaces are preserved.
 
 ### Program queueing
 
@@ -46,7 +47,7 @@ Program Checker covers runtime availability checks for optional tools and themed
 
 ## Known gaps (current cycle)
 
-- [ ] Add fixture coverage for client names and paths containing shell-sensitive characters.
+- [x] Add fixture coverage for client names and paths containing shell-sensitive characters.
 
 ## Out of scope
 
