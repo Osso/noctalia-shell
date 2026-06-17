@@ -236,7 +236,7 @@ Singleton {
 
   // -------------------------------------------
   // Check if a translation exists
-  function hasTranslation(key) {
+  function hasTranslation(key: string) {
     if (!isLoaded)
       return false;
 
@@ -284,7 +284,7 @@ Singleton {
 
   // -------------------------------------------
   // Main translation function
-  function tr(key, interpolations) {
+  function tr(key: string, interpolations) {
     if (typeof interpolations === "undefined")
       interpolations = {};
 
@@ -346,7 +346,7 @@ Singleton {
 
   // -------------------------------------------
   // Plural translation function
-  function trp(key, count, defaultSingular, defaultPlural, interpolations) {
+  function trp(key: string, count: int, defaultSingular, defaultPlural, interpolations) {
     if (typeof defaultSingular === "undefined")
       defaultSingular = "";
     if (typeof defaultPlural === "undefined")

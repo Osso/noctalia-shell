@@ -57,6 +57,9 @@ function testI18nTranslationAndPluralGuards() {
   const trBody = extractFunctionBody(source, "tr");
   const trpBody = extractFunctionBody(source, "trp");
 
+  assert.match(source, /function hasTranslation\(key: string\)/, "hasTranslation must type the required translation key input");
+  assert.match(source, /function tr\(key: string, interpolations\)/, "tr must type the required translation key input while keeping interpolations optional");
+  assert.match(source, /function trp\(key: string, count: int, defaultSingular, defaultPlural, interpolations\)/, "trp must type required key and count inputs while keeping fallback text optional");
   assert.match(trBody, /if \(typeof interpolations === "undefined"\)\s+interpolations = \{\}/, "tr must default interpolations to an object");
   assert.match(trBody, /if \(!isLoaded\)[\s\S]*return key;/, "tr must return the key before translations are loaded");
   assert.match(trBody, /const keys = key\.split\("\."\)/, "tr must support nested translation keys");
