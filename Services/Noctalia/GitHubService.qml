@@ -136,6 +136,54 @@ Singleton {
     fetchFromGitHub();
   }
 
+  function parseVersionResponse(rawResponse: string) {
+    if (!rawResponse || !rawResponse.trim()) {
+      return {
+        "version": "",
+        "warning": "Empty response from GitHub API"
+      };
+    }
+
+    const data = JSON.parse(rawResponse);
+    if (data.tag_name) {
+      return {
+        "version": data.tag_name,
+        "warning": ""
+      };
+    }
+    if (data.message) {
+      return {
+        "version": "",
+        "warning": data.message
+      };
+    }
+    return {
+      "version": "",
+      "warning": "No tag_name in GitHub response"
+    };
+  }
+
+  function parseContributorsResponse(rawResponse: string) {
+    if (!rawResponse || !rawResponse.trim()) {
+      return {
+        "contributors": [],
+        "warning": "Empty response from GitHub API for contributors"
+      };
+    }
+
+    const data = JSON.parse(rawResponse);
+    if (!Array.isArray(data)) {
+      return {
+        "contributors": [],
+        "warning": "Unexpected contributors response shape"
+      };
+    }
+    return {
+      "contributors": data,
+      "warning": ""
+    };
+  }
+
   // --------------------------------
   // Avatar Caching Functions
   // --------------------------------
@@ -424,21 +472,13 @@ Singleton {
     stdout: StdioCollector {
       onStreamFinished: {
         try {
-          const response = text;
-          if (response && response.trim()) {
-            const data = JSON.parse(response);
-            if (data.tag_name) {
-              const version = data.tag_name;
-              root.data.version = version;
-              root.latestVersion = version;
-              Logger.d("GitHub", "Latest version fetched from GitHub:", version);
-            } else if (data.message) {
-              Logger.w("GitHub", "Latest release fetch warning:", data.message);
-            } else {
-              Logger.w("GitHub", "No tag_name in GitHub response");
-            }
+          const parsed = parseVersionResponse(text);
+          if (parsed.version) {
+            root.data.version = parsed.version;
+            root.latestVersion = parsed.version;
+            Logger.d("GitHub", "Latest version fetched from GitHub:", parsed.version);
           } else {
-            Logger.w("GitHub", "Empty response from GitHub API");
+            Logger.w("GitHub", parsed.warning);
           }
         } catch (e) {
           Logger.e("GitHub", "Failed to parse version:", e);
@@ -460,21 +500,14 @@ Singleton {
         try {
           const response = text;
           Logger.d("GitHub", "Raw contributors response length:", response ? response.length : 0);
-          if (response && response.trim()) {
-            const data = JSON.parse(response);
-            if (!Array.isArray(data)) {
-              Logger.w("GitHub", "Unexpected contributors response shape");
-              root.data.contributors = [];
-              root.contributors = [];
-              return;
-            }
-
-            Logger.d("GitHub", "Parsed contributors data type:", typeof data, "length:", data.length);
-            root.data.contributors = data;
+          const parsed = parseContributorsResponse(response);
+          if (!parsed.warning) {
+            Logger.d("GitHub", "Parsed contributors data type:", typeof parsed.contributors, "length:", parsed.contributors.length);
+            root.data.contributors = parsed.contributors;
             root.contributors = root.data.contributors;
             Logger.d("GitHub", "Contributors fetched from GitHub:", root.contributors.length);
           } else {
-            Logger.w("GitHub", "Empty response from GitHub API for contributors");
+            Logger.w("GitHub", parsed.warning);
             root.data.contributors = [];
             root.contributors = [];
           }

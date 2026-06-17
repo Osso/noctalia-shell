@@ -3,6 +3,13 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const serviceSource = readQml("Services/Noctalia/GitHubService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(serviceSource, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
 function testGitHubServiceCacheAndFetchLifecycle() {
   const source = readQml("Services/Noctalia/GitHubService.qml");
   const initBody = extractFunctionBody(source, "init");
@@ -95,11 +102,48 @@ function testGitHubServiceAvatarProcessing() {
   assert.match(renderBody, /convertProcess\.running = true/, "renderCircularAvatar must start the conversion process");
 }
 
+function testGitHubServiceParsesVersionAndContributorResponses() {
+  const parseVersionResponse = qmlFunction("parseVersionResponse", "rawResponse");
+  const parseContributorsResponse = qmlFunction("parseContributorsResponse", "rawResponse");
+  const contributors = [
+    { login: "alessio", contributions: 12 },
+    { login: "osso", contributions: 3 },
+  ];
+
+  assert.match(serviceSource, /function parseVersionResponse\(rawResponse: string\)/, "parseVersionResponse must type raw GitHub response input");
+  assert.match(serviceSource, /function parseContributorsResponse\(rawResponse: string\)/, "parseContributorsResponse must type raw GitHub response input");
+  assert.deepEqual(parseVersionResponse({}, JSON.stringify({ tag_name: "v1.2.3" })), {
+    version: "v1.2.3",
+    warning: "",
+  });
+  assert.deepEqual(parseVersionResponse({}, JSON.stringify({ message: "rate limited" })), {
+    version: "",
+    warning: "rate limited",
+  });
+  assert.deepEqual(parseVersionResponse({}, ""), {
+    version: "",
+    warning: "Empty response from GitHub API",
+  });
+  assert.deepEqual(parseContributorsResponse({}, JSON.stringify(contributors)), {
+    contributors,
+    warning: "",
+  });
+  assert.deepEqual(parseContributorsResponse({}, JSON.stringify({ message: "bad shape" })), {
+    contributors: [],
+    warning: "Unexpected contributors response shape",
+  });
+  assert.deepEqual(parseContributorsResponse({}, ""), {
+    contributors: [],
+    warning: "Empty response from GitHub API for contributors",
+  });
+}
+
 const tests = [
   testGitHubServiceCacheAndFetchLifecycle,
   testGitHubServiceMetadataPersistence,
   testGitHubServiceAvatarQueueing,
   testGitHubServiceAvatarProcessing,
+  testGitHubServiceParsesVersionAndContributorResponses,
 ];
 
 for (const test of tests) {

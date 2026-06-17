@@ -11,6 +11,8 @@ GitHub covers cached Noctalia GitHub metadata, contributor lists, contributor av
 - [x] Cache loading refreshes stale cache data.
 - [x] Fetching avoids concurrent GitHub requests.
 - [x] Fetching starts both version and contributors requests.
+- [x] Version response parsing extracts `tag_name`, reports GitHub message warnings, and warns on empty responses.
+- [x] Contributor response parsing accepts arrays and returns empty contributors with warnings for empty or non-array responses.
 - [x] Saving stamps cached data with the current time.
 - [x] Saving ensures the cache directory exists.
 - [x] Saving defers FileView writes.
@@ -84,7 +86,6 @@ GitHub covers cached Noctalia GitHub metadata, contributor lists, contributor av
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for parsing version/contributor process output.
 - [ ] Add executable coverage for About tab contributor rendering and click actions.
 - [ ] Add executable coverage for avatar cache metadata loaded from real fixture JSON.
 - [ ] Add executable coverage for failure to run curl/wget or ImageMagick.
