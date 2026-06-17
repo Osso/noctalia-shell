@@ -75,4 +75,46 @@ if ! printf '%s\n' "$no_shell_output" | rg -q "quickshell -p $repo_root"; then
     exit 1
 fi
 
+cat >"$fake_bin/pgrep" <<FAKE_PGREP
+#!/usr/bin/env bash
+printf '4242 quickshell -p %s\n' '$repo_root'
+FAKE_PGREP
+cat >"$fake_bin/quickshell" <<'FAKE_QUICKSHELL'
+#!/usr/bin/env bash
+if [ "${1:-}" = "log" ]; then
+    cat <<'LOG'
+WARN scene: @Old.qml[1:-1]: TypeError: stale failure
+INFO: Reloading configuration...
+INFO qml: [20260615-124025] Brightness Detected DDC Monitor
+WARN qml: ReferenceError: PanelService is not defined
+LOG
+fi
+FAKE_QUICKSHELL
+chmod +x "$fake_bin/quickshell" "$fake_bin/pgrep"
+
+set +e
+fatal_output="$(PATH="$fake_bin:$PATH" main 2>&1)"
+fatal_status="$?"
+set -e
+
+if [ "$fatal_status" -ne 1 ]; then
+    echo "main returned $fatal_status for fatal log, expected 1" >&2
+    exit 1
+fi
+
+if ! printf '%s\n' "$fatal_output" | rg -q "Quickshell regression gate failed for PID 4242"; then
+    echo "main did not report failed regression gate" >&2
+    exit 1
+fi
+
+if ! printf '%s\n' "$fatal_output" | rg -q "PanelService is not defined"; then
+    echo "main did not report current fatal log line" >&2
+    exit 1
+fi
+
+if printf '%s\n' "$fatal_output" | rg -q "stale failure"; then
+    echo "main reported stale pre-reload failure" >&2
+    exit 1
+fi
+
 echo "ok quickshellRegressionLogFiltering"
