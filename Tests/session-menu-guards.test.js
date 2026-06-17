@@ -104,6 +104,33 @@ function testSessionMenuActivateExecutesSelectedActionOnly() {
   assert.deepEqual(actions, ["logout"], "activate must ignore missing selected options");
 }
 
+function testSessionMenuCountdownTicksAndExpires() {
+  const tickCountdownTimer = qmlFunction("tickCountdownTimer");
+  const executed = [];
+  const ctx = {
+    timeRemaining: 250,
+    pendingAction: "shutdown",
+    countdownTimer: {
+      interval: 100,
+    },
+    executeAction(action) {
+      executed.push(action);
+    },
+  };
+
+  tickCountdownTimer(ctx);
+  assert.equal(ctx.timeRemaining, 150, "countdown tick must subtract timer interval");
+  assert.deepEqual(executed, [], "countdown must not execute before expiry");
+
+  tickCountdownTimer(ctx);
+  assert.equal(ctx.timeRemaining, 50, "countdown must keep ticking toward expiry");
+  assert.deepEqual(executed, [], "countdown must still wait while positive");
+
+  tickCountdownTimer(ctx);
+  assert.equal(ctx.timeRemaining, -50, "countdown must subtract the final interval before dispatch");
+  assert.deepEqual(executed, ["shutdown"], "countdown expiry must execute pending action");
+}
+
 const tests = [
   testSessionMenuActionSignaturesAreTyped,
   testSessionMenuTimerGuards,
@@ -111,6 +138,7 @@ const tests = [
   testSessionMenuNavigationGuards,
   testSessionMenuNavigationExecutesWrapAndClamp,
   testSessionMenuActivateExecutesSelectedActionOnly,
+  testSessionMenuCountdownTicksAndExpires,
 ];
 
 for (const test of tests) {

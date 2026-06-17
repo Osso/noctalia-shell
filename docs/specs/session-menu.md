@@ -10,6 +10,7 @@ Session Menu covers the power/session action panel, countdown confirmation behav
 - [x] Starting an action executes immediately when that option disables countdown.
 - [x] A second click on the pending action confirms immediately.
 - [x] Starting a countdown sets pending action, remaining time, active state, and starts the countdown timer.
+- [x] Countdown timer ticks subtract the timer interval and execute the pending action when time expires.
 - [x] Canceling countdown clears active state, pending action, remaining time, and stops the timer.
 
 ### Action dispatch
@@ -63,7 +64,6 @@ Session Menu covers the power/session action panel, countdown confirmation behav
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for countdown timer ticks and expiry.
 - [ ] Add executable coverage for rendered pending/selected button state.
 - [ ] Add executable coverage for per-action compositor failure feedback.
 - [ ] Add executable coverage for Session Menu IPC open/toggle behavior.

@@ -301,16 +301,20 @@ SmartPanel {
     selectPreviousWrapped();
   }
 
+  function tickCountdownTimer() {
+    timeRemaining -= countdownTimer.interval;
+    if (timeRemaining <= 0) {
+      executeAction(pendingAction);
+    }
+  }
+
   // Countdown timer
   Timer {
     id: countdownTimer
     interval: 100
     repeat: true
     onTriggered: {
-      timeRemaining -= interval;
-      if (timeRemaining <= 0) {
-        executeAction(pendingAction);
-      }
+      tickCountdownTimer();
     }
   }
 
