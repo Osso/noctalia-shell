@@ -5,6 +5,7 @@ Reorder Checkboxes covers the shared checklist widget that toggles required/opti
 ### Toggle behavior
 
 - [x] Toggle requests ignore negative and out-of-range indexes.
+- [x] Toggle requests use a typed integer index input.
 - [x] Toggle requests ignore required items.
 - [x] Valid toggle requests copy the model array before mutating it.
 - [x] Valid toggle requests copy the toggled item object before changing its enabled state.
@@ -14,6 +15,7 @@ Reorder Checkboxes covers the shared checklist widget that toggles required/opti
 ### Reorder behavior
 
 - [x] Reorder requests ignore no-op moves where source and target indexes match.
+- [x] Reorder requests use typed integer source and target index inputs.
 - [x] Reorder requests ignore negative and out-of-range source indexes.
 - [x] Reorder requests ignore negative and out-of-range target indexes.
 - [x] Valid reorder requests copy the model array before moving entries.

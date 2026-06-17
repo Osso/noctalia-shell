@@ -94,12 +94,18 @@ function testMoveItemCopiesAndReordersModel() {
   assert.deepEqual(ctx.root.reordered, [{ fromIndex: 0, toIndex: 2 }]);
 }
 
+function testReorderCheckboxIndexInputsAreTyped() {
+  assert.match(source, /function toggleItem\(index: int\)/, "toggleItem must type the index input");
+  assert.match(source, /function moveItem\(fromIndex: int, toIndex: int\)/, "moveItem must type source and target index inputs");
+}
+
 const tests = [
   testToggleItemIgnoresOutOfRangeIndexes,
   testToggleItemIgnoresRequiredItems,
   testToggleItemCopiesModelAndEmitsState,
   testMoveItemIgnoresNoopAndOutOfRangeIndexes,
   testMoveItemCopiesAndReordersModel,
+  testReorderCheckboxIndexInputsAreTyped,
 ];
 
 for (const test of tests) {
