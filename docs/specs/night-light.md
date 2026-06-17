@@ -14,6 +14,8 @@ Night Light covers wlsunset command generation, manual and automatic scheduling,
 - [x] Applying changed commands stores the new command, updates the runner command, and starts the runner.
 - [x] Applying the same command leaves the running runner unchanged.
 - [x] Applying disabled settings stops the runner.
+- [x] Settings signal handlers reapply night light state and emit enabled/disabled or forced/normal notices where applicable.
+- [x] Location coordinate readiness applies night light state only after coordinates become ready.
 
 ## How it works
 
@@ -34,7 +36,6 @@ Night Light covers wlsunset command generation, manual and automatic scheduling,
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for Settings signal handlers that call `apply`.
 - [ ] Add fake Process coverage for runner start and exit logging.
 - [ ] Add settings-level coverage for LocationTab night light controls.
 - [ ] Add widget coverage for bar and Control Center night light toggles.

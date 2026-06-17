@@ -135,6 +135,90 @@ function testApplyUsesEnabledFlagForRunnerState() {
   assert.equal(ctx.runner.running, false);
 }
 
+function testSettingsSignalHandlersApplyAndToast() {
+  const onEnabledChanged = qmlFunction("onEnabledChanged");
+  const onForcedChanged = qmlFunction("onForcedChanged");
+  const onNightTempChanged = qmlFunction("onNightTempChanged");
+  const onDayTempChanged = qmlFunction("onDayTempChanged");
+  const calls = [];
+  const ctx = {
+    Settings: {
+      data: {
+        nightLight: {
+          enabled: true,
+          forced: false,
+        },
+      },
+    },
+    I18n: {
+      tr(key) {
+        return key;
+      },
+    },
+    ToastService: {
+      showNotice(...args) {
+        calls.push(["toast", ...args]);
+      },
+    },
+    apply() {
+      calls.push(["apply"]);
+    },
+  };
+
+  onEnabledChanged(ctx);
+  assert.deepEqual(calls, [
+    ["apply"],
+    ["toast", "settings.display.night-light.section.label", "toast.night-light.enabled", "nightlight-on"],
+  ]);
+
+  calls.length = 0;
+  ctx.Settings.data.nightLight.enabled = false;
+  onEnabledChanged(ctx);
+  assert.deepEqual(calls, [
+    ["apply"],
+    ["toast", "settings.display.night-light.section.label", "toast.night-light.disabled", "nightlight-off"],
+  ]);
+
+  calls.length = 0;
+  ctx.Settings.data.nightLight.enabled = true;
+  ctx.Settings.data.nightLight.forced = true;
+  onForcedChanged(ctx);
+  assert.deepEqual(calls, [
+    ["apply"],
+    ["toast", "settings.display.night-light.section.label", "toast.night-light.forced", "nightlight-forced"],
+  ]);
+
+  calls.length = 0;
+  ctx.Settings.data.nightLight.enabled = false;
+  onForcedChanged(ctx);
+  assert.deepEqual(calls, [["apply"]]);
+
+  calls.length = 0;
+  onNightTempChanged(ctx);
+  onDayTempChanged(ctx);
+  assert.deepEqual(calls, [["apply"], ["apply"]]);
+}
+
+function testCoordinatesReadyHandlerAppliesWhenReady() {
+  const onCoordinatesReadyChanged = qmlFunction("onCoordinatesReadyChanged");
+  const calls = [];
+  const ctx = {
+    LocationService: {
+      coordinatesReady: false,
+    },
+    apply() {
+      calls.push("apply");
+    },
+  };
+
+  onCoordinatesReadyChanged(ctx);
+  assert.deepEqual(calls, []);
+
+  ctx.LocationService.coordinatesReady = true;
+  onCoordinatesReadyChanged(ctx);
+  assert.deepEqual(calls, ["apply"]);
+}
+
 const tests = [
   testBuildCommandUsesManualSchedule,
   testBuildCommandUsesCoordinatesForAutoSchedule,
@@ -142,6 +226,8 @@ const tests = [
   testApplyWaitsForCoordinatesWhenAutoScheduleNeedsLocation,
   testApplyRestartsRunnerOnlyWhenCommandChanges,
   testApplyUsesEnabledFlagForRunnerState,
+  testSettingsSignalHandlersApplyAndToast,
+  testCoordinatesReadyHandlerAppliesWhenReady,
 ];
 
 for (const test of tests) {
