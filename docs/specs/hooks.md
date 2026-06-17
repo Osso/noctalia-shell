@@ -5,6 +5,7 @@ Hooks covers user-configured shell commands that run after wallpaper and dark-mo
 ### Wallpaper hooks
 
 - [x] Wallpaper hooks do not run when hook settings are missing.
+- [x] Wallpaper hook execution uses a typed wallpaper path input while keeping screen name optional.
 - [x] Wallpaper hooks do not run when hooks are disabled.
 - [x] Wallpaper hooks do not run when the configured wallpaper script is blank.
 - [x] Wallpaper hook commands replace `$1` with the wallpaper path everywhere it appears.
@@ -17,6 +18,7 @@ Hooks covers user-configured shell commands that run after wallpaper and dark-mo
 ### Dark-mode hooks
 
 - [x] Dark-mode hooks do not run when hook settings are missing.
+- [x] Dark-mode hook execution uses a typed boolean dark-mode state input.
 - [x] Dark-mode hooks do not run when hooks are disabled.
 - [x] Dark-mode hooks do not run when the configured dark-mode script is blank.
 - [x] Dark-mode hook commands replace `$1` with `true` when dark mode is enabled.

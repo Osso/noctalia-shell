@@ -24,7 +24,7 @@ Singleton {
   }
 
   // Execute wallpaper change hook
-  function executeWallpaperHook(wallpaperPath, screenName) {
+  function executeWallpaperHook(wallpaperPath: string, screenName) {
     const hooks = Settings.data.hooks;
     if (!hooks || !hooks.enabled) {
       return;
@@ -46,7 +46,7 @@ Singleton {
   }
 
   // Execute dark mode change hook
-  function executeDarkModeHook(isDarkMode) {
+  function executeDarkModeHook(isDarkMode: bool) {
     const hooks = Settings.data.hooks;
     if (!hooks || !hooks.enabled) {
       return;

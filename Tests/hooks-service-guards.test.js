@@ -46,6 +46,11 @@ function testWallpaperHookSkipsMissingDisabledAndBlankScripts() {
   }
 }
 
+function testHookInputsAreTyped() {
+  assert.match(source, /function executeWallpaperHook\(wallpaperPath: string, screenName\)/, "executeWallpaperHook must type required wallpaper path while keeping screen optional");
+  assert.match(source, /function executeDarkModeHook\(isDarkMode: bool\)/, "executeDarkModeHook must type dark-mode state input");
+}
+
 function testWallpaperHookSubstitutesPathAndScreen() {
   const executeWallpaperHook = qmlFunction("executeWallpaperHook", "wallpaperPath", "screenName");
   const ctx = createContext({
@@ -107,6 +112,7 @@ function testDarkModeHookSubstitutesBooleanState() {
 
 const tests = [
   testWallpaperHookSkipsMissingDisabledAndBlankScripts,
+  testHookInputsAreTyped,
   testWallpaperHookSubstitutesPathAndScreen,
   testWallpaperHookUsesEmptyScreenFallbackAndLogsErrors,
   testDarkModeHookSkipsMissingDisabledAndBlankScripts,
