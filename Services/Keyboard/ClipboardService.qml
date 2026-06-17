@@ -160,16 +160,7 @@ Singleton {
   Process {
     id: decodeProc
     stdout: StdioCollector {}
-    onExited: (exitCode, exitStatus) => {
-      const out = String(stdout.text);
-      if (root._decodeCallback) {
-        try {
-          root._decodeCallback(out);
-        } finally {
-          root._decodeCallback = null;
-        }
-      }
-    }
+    onExited: (exitCode, exitStatus) => root.handleDecodeFinished(stdout.text)
   }
 
   Process {
@@ -181,18 +172,35 @@ Singleton {
   Process {
     id: decodeB64Proc
     stdout: StdioCollector {}
-    onExited: (exitCode, exitStatus) => {
-      const b64 = String(stdout.text).trim();
+    onExited: (exitCode, exitStatus) => root.handleBase64DecodeFinished(stdout.text)
+  }
+
+  function handleDecodeFinished(output: string) {
+    if (!root._decodeCallback) {
+      return;
+    }
+
+    try {
+      root._decodeCallback(String(output));
+    } finally {
+      root._decodeCallback = null;
+    }
+  }
+
+  function handleBase64DecodeFinished(output: string) {
+    const b64 = String(output).trim();
+    const url = `data:${root._b64CurrentMime};base64,${b64}`;
+
+    try {
       if (root._b64CurrentCb) {
-        const url = `data:${root._b64CurrentMime};base64,${b64}`;
-        try {
-          root._b64CurrentCb(url);
-        } catch (e) {}
+        root._b64CurrentCb(url);
       }
+    } finally {
       if (root._b64CurrentId !== "") {
-        root.imageDataById[root._b64CurrentId] = `data:${root._b64CurrentMime};base64,${b64}`;
+        root.imageDataById[root._b64CurrentId] = url;
         root.revision += 1;
       }
+
       root._b64CurrentCb = null;
       root._b64CurrentMime = "";
       root._b64CurrentId = "";

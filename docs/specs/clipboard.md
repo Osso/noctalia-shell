@@ -21,11 +21,13 @@ Clipboard covers cliphist availability, wl-paste watcher lifecycle, history list
 
 - [x] Text decode calls back with empty content when cliphist is unavailable.
 - [x] Text decode stores the callback and starts `cliphist decode <id>`.
+- [x] Text decode completion calls the stored callback with decoded output and clears the callback.
 - [x] Data-url decode calls back with empty content when cliphist is unavailable.
 - [x] Data-url decode returns cached image data immediately.
 - [x] Data-url decode queues uncached work, defaults missing mime types to `image/*`, and starts base64 decode work when idle.
 - [x] Base64 decode work runs through `cliphist decode <id> | base64 -w 0`.
 - [x] Base64 decode work does not start while cliphist is unavailable.
+- [x] Base64 decode completion calls the current callback with a data URL, writes the cache by id, bumps revision, clears current decode state, and continues queued work.
 - [x] Image lookup returns `null` for undefined ids and cached data for known ids.
 
 ### Mutations
@@ -57,7 +59,7 @@ Clipboard covers cliphist availability, wl-paste watcher lifecycle, history list
 ## Known gaps (current cycle)
 
 - [x] Add executable tests for list-process output parsing into clipboard items.
-- [ ] Add executable tests for decode process completion callbacks and base64 cache writes.
+- [x] Add executable tests for decode process completion callbacks and base64 cache writes.
 - [ ] Add spec coverage for clipboard launcher result rendering and activation.
 
 ## Out of scope

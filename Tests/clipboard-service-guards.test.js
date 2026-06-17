@@ -204,6 +204,55 @@ function testClipboardServiceDecodeQueuesExecute() {
   assert.equal(pausedCtx.decodeB64Proc.command, undefined, "_startNextB64 must not start work when cliphist is unavailable");
 }
 
+function testClipboardServiceDecodeCompletionCallbacksAndCacheWrites() {
+  assert.match(source, /function handleDecodeFinished\(output: string\)/, "decode completion helper must type decoded output");
+  assert.match(source, /function handleBase64DecodeFinished\(output: string\)/, "base64 completion helper must type decoded output");
+  assert.match(source, /onExited:\s*\(exitCode, exitStatus\) => root\.handleDecodeFinished\(stdout\.text\)/, "decode process must route completion through helper");
+  assert.match(source, /onExited:\s*\(exitCode, exitStatus\) => root\.handleBase64DecodeFinished\(stdout\.text\)/, "base64 process must route completion through helper");
+
+  const handleDecodeFinished = qmlFunction("handleDecodeFinished", "output");
+  const handleBase64DecodeFinished = qmlFunction("handleBase64DecodeFinished", "output");
+  const decodedValues = [];
+  const queuedStarts = [];
+  const ctx = {
+    root: null,
+    revision: 4,
+    imageDataById: {},
+    _decodeCallback(value) {
+      decodedValues.push(value);
+    },
+    _b64CurrentCb(value) {
+      decodedValues.push(value);
+    },
+    _b64CurrentMime: "image/png",
+    _b64CurrentId: "img-1",
+    _startNextB64() {
+      queuedStarts.push("next");
+    },
+    Qt: {
+      callLater(callback) {
+        callback();
+      },
+    },
+  };
+  ctx.root = ctx;
+
+  handleDecodeFinished(ctx, "decoded text");
+
+  assert.deepEqual(decodedValues, ["decoded text"]);
+  assert.equal(ctx._decodeCallback, null, "text decode callback must be cleared after completion");
+
+  handleBase64DecodeFinished(ctx, "YmFzZTY0Cg==\n");
+
+  assert.deepEqual(decodedValues, ["decoded text", "data:image/png;base64,YmFzZTY0Cg=="]);
+  assert.equal(ctx.imageDataById["img-1"], "data:image/png;base64,YmFzZTY0Cg==", "base64 decode must cache data URL by id");
+  assert.equal(ctx.revision, 5, "base64 decode must bump revision after cache write");
+  assert.equal(ctx._b64CurrentCb, null, "base64 callback must be cleared");
+  assert.equal(ctx._b64CurrentMime, "", "base64 mime must be cleared");
+  assert.equal(ctx._b64CurrentId, "", "base64 id must be cleared");
+  assert.deepEqual(queuedStarts, ["next"], "base64 decode completion must continue queued work");
+}
+
 function testClipboardServiceMutationCommandsExecute() {
   const copyToClipboard = qmlFunction("copyToClipboard", "id");
   const deleteById = qmlFunction("deleteById", "id");
@@ -268,6 +317,7 @@ const tests = [
   testClipboardServiceWatcherAndListCommandsExecute,
   testClipboardServiceParsesListOutput,
   testClipboardServiceDecodeQueuesExecute,
+  testClipboardServiceDecodeCompletionCallbacksAndCacheWrites,
   testClipboardServiceMutationCommandsExecute,
 ];
 
