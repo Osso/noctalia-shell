@@ -31,6 +31,7 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 - [x] Resetting clears stopwatch and countdown state.
 - [x] Resetting stops the alarm sound and marks sound inactive.
 - [x] Finishing a countdown stops the countdown, clears remaining seconds, marks alarm sound active, and plays the repeating low-volume alarm.
+- [x] Timer pause, reset, and finish behavior execute the expected fake SoundService stop/play calls.
 
 ### Timer card
 
@@ -61,7 +62,6 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 
 ## Known gaps (current cycle)
 
-- [ ] Add fake SoundService coverage for timer alarm start and stop calls.
 - [ ] Add executable TimerCard coverage for focus, mode switching, and button enabled states.
 
 ## Out of scope

@@ -96,6 +96,65 @@ function testTimerPauseResetAndFinishedGuards() {
   assert.match(finishedBody, /SoundService\.playSound\("alarm-beep\.wav", \{[\s\S]*repeat: true[\s\S]*volume: 0\.3/, "timerOnFinished must play repeating low-volume alarm");
 }
 
+function testTimerSoundServiceCallsExecuteAgainstFakeService() {
+  const source = readQml("Commons/Time.qml");
+  const timerPause = new Function("ctx", `with (ctx) { return (function() ${extractFunctionBody(source, "timerPause")}).call(ctx); }`);
+  const timerReset = new Function("ctx", `with (ctx) { return (function() ${extractFunctionBody(source, "timerReset")}).call(ctx); }`);
+  const timerOnFinished = new Function("ctx", `with (ctx) { return (function() ${extractFunctionBody(source, "timerOnFinished")}).call(ctx); }`);
+  const soundCalls = [];
+  const ctx = {
+    root: null,
+    timerRunning: true,
+    timerStopwatchMode: false,
+    timerRemainingSeconds: 42,
+    timerTotalSeconds: 120,
+    timerElapsedSeconds: 9,
+    timerStartTimestamp: 1000,
+    timerPausedAt: 0,
+    timerSoundPlaying: true,
+    SoundService: {
+      stopSound(name) {
+        soundCalls.push(["stop", name]);
+      },
+      playSound(name, options) {
+        soundCalls.push(["play", name, options]);
+      },
+    },
+  };
+  ctx.root = ctx;
+
+  timerPause(ctx);
+  assert.equal(ctx.timerRunning, false);
+  assert.equal(ctx.timerStartTimestamp, 0);
+  assert.equal(ctx.timerPausedAt, 42);
+  assert.equal(ctx.timerSoundPlaying, false);
+  assert.deepEqual(soundCalls, [["stop", "alarm-beep.wav"]]);
+
+  ctx.timerStopwatchMode = true;
+  ctx.timerElapsedSeconds = 17;
+  ctx.timerPausedAt = 99;
+  ctx.timerSoundPlaying = true;
+  timerReset(ctx);
+  assert.equal(ctx.timerElapsedSeconds, 0);
+  assert.equal(ctx.timerPausedAt, 0);
+  assert.equal(ctx.timerSoundPlaying, false);
+  assert.deepEqual(soundCalls, [
+    ["stop", "alarm-beep.wav"],
+    ["stop", "alarm-beep.wav"],
+  ]);
+
+  ctx.timerRunning = true;
+  ctx.timerRemainingSeconds = 4;
+  timerOnFinished(ctx);
+  assert.equal(ctx.timerRunning, false);
+  assert.equal(ctx.timerRemainingSeconds, 0);
+  assert.equal(ctx.timerSoundPlaying, true);
+  assert.deepEqual(soundCalls[2], ["play", "alarm-beep.wav", {
+    repeat: true,
+    volume: 0.3,
+  }]);
+}
+
 const tests = [
   testTimeFormattingSignaturesAreTyped,
   testRelativeTimeFormattingOutputsTranslatedBuckets,
@@ -103,6 +162,7 @@ const tests = [
   testTimestampFormattingGuards,
   testTimerStartGuards,
   testTimerPauseResetAndFinishedGuards,
+  testTimerSoundServiceCallsExecuteAgainstFakeService,
 ];
 
 for (const test of tests) {
