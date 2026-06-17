@@ -188,6 +188,12 @@ function testWeatherCardForecastDelegateIndexIsTyped() {
   assert.match(source, forecastDelegate, "WeatherCard forecast delegate must declare index role before reading forecast arrays");
 }
 
+function testMediaCardWallpaperChangeInputsAreTyped() {
+  const source = readQml("Modules/Cards/MediaCard.qml");
+
+  assert.match(source, /function onWallpaperChanged\(screenName: string, path: string\)/, "MediaCard wallpaper change handler must type signal string payloads");
+}
+
 function testLockScreenForecastDelegateIndexIsTyped() {
   const source = readQml("Modules/LockScreen/LockScreen.qml");
   const forecastDelegate = /Repeater\s*\{[\s\S]*?model:\s*MediaService\.currentPlayer\s*&&\s*MediaService\.canPlay\s*\?\s*3\s*:\s*4[\s\S]*?delegate:\s*ColumnLayout\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?daily\.time\[index\]/;
@@ -1117,6 +1123,7 @@ const tests = [
   testComboBoxDelegateParentIsTyped,
   testComboBoxDelegateIndexIsTyped,
   testWeatherCardForecastDelegateIndexIsTyped,
+  testMediaCardWallpaperChangeInputsAreTyped,
   testLockScreenForecastDelegateIndexIsTyped,
   testChangelogPanelHighlightDelegatesAreTyped,
   testNotificationDelegateIndexIsTyped,

@@ -45,6 +45,10 @@ Media playback covers MPRIS player discovery, virtual player pairing, active-pla
 - [x] Media mini title formatting supports title-first display with `Title - Artist`.
 - [x] Media mini title formatting omits the separator when artist metadata is empty.
 
+### Media card
+
+- [x] Media card wallpaper change handling uses typed wallpaper signal payloads.
+
 ## How it works
 
 - [docs/wiki/systems/media-playback.md](../wiki/systems/media-playback.md)
@@ -61,6 +65,7 @@ Media playback covers MPRIS player discovery, virtual player pairing, active-pla
 - `Tests/media-service-guards.test.js`
 - `Tests/widget-helper-guards.test.js`
 - `Tests/qml-runtime-guards.test.js`
+- `Tests/qml-type-annotations.test.js`
 
 ## Known gaps (current cycle)
 
