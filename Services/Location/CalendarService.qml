@@ -170,28 +170,7 @@ Singleton {
     command: ["python3", root.listCalendarsScript]
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        try {
-          const result = JSON.parse(text.trim());
-          root.calendars = result;
-          cacheAdapter.cachedCalendars = result;
-          saveCache();
-
-          Logger.d("Calendar", `Found ${result.length} calendar(s)`);
-
-          // Auto-load events after discovering calendars
-          // Only load if we have calendars and no cached events
-          if (result.length > 0 && root.events.length === 0) {
-            loadEvents();
-          } else if (result.length > 0) {
-            // If we already have cached events, load in background
-            loadEvents();
-          }
-        } catch (e) {
-          Logger.d("Calendar", "Failed to parse calendars: " + e);
-          root.lastError = "Failed to parse calendar list";
-        }
-      }
+      onStreamFinished: root.handleCalendarsOutput(text)
     }
 
     stderr: StdioCollector {
@@ -214,45 +193,67 @@ Singleton {
     command: ["python3", root.calendarEventsScript, startTime.toString(), endTime.toString()]
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        root.loading = false;
-
-        try {
-          const result = JSON.parse(text.trim());
-          root.events = result;
-          cacheAdapter.cachedEvents = result;
-          cacheAdapter.lastUpdate = new Date().toISOString();
-          saveCache();
-
-          Logger.d("Calendar", `Loaded ${result.length} event(s)`);
-        } catch (e) {
-          Logger.d("Calendar", "Failed to parse events: " + e);
-          root.lastError = "Failed to parse events";
-
-          // Fall back to cached events if available
-          if (cacheAdapter.cachedEvents.length > 0) {
-            root.events = cacheAdapter.cachedEvents;
-            Logger.d("Calendar", "Using cached events");
-          }
-        }
-      }
+      onStreamFinished: root.handleEventsOutput(text)
     }
 
     stderr: StdioCollector {
-      onStreamFinished: {
-        root.loading = false;
+      onStreamFinished: root.handleEventsError(text)
+    }
+  }
 
-        if (text.trim()) {
-          Logger.d("Calendar", "Load events error: " + text);
-          root.lastError = text.trim();
+  function handleCalendarsOutput(output: string) {
+    try {
+      const result = JSON.parse(output.trim());
+      root.calendars = result;
+      cacheAdapter.cachedCalendars = result;
+      saveCache();
 
-          // Fall back to cached events if available
-          if (cacheAdapter.cachedEvents.length > 0) {
-            root.events = cacheAdapter.cachedEvents;
-            Logger.d("Calendar", "Using cached events due to error");
-          }
-        }
+      Logger.d("Calendar", `Found ${result.length} calendar(s)`);
+
+      if (result.length > 0) {
+        loadEvents();
       }
+    } catch (e) {
+      Logger.d("Calendar", "Failed to parse calendars: " + e);
+      root.lastError = "Failed to parse calendar list";
+    }
+  }
+
+  function handleEventsOutput(output: string) {
+    root.loading = false;
+
+    try {
+      const result = JSON.parse(output.trim());
+      root.events = result;
+      cacheAdapter.cachedEvents = result;
+      cacheAdapter.lastUpdate = new Date().toISOString();
+      saveCache();
+
+      Logger.d("Calendar", `Loaded ${result.length} event(s)`);
+    } catch (e) {
+      Logger.d("Calendar", "Failed to parse events: " + e);
+      root.lastError = "Failed to parse events";
+
+      if (cacheAdapter.cachedEvents.length > 0) {
+        root.events = cacheAdapter.cachedEvents;
+        Logger.d("Calendar", "Using cached events");
+      }
+    }
+  }
+
+  function handleEventsError(output: string) {
+    root.loading = false;
+
+    if (!output.trim()) {
+      return;
+    }
+
+    Logger.d("Calendar", "Load events error: " + output);
+    root.lastError = output.trim();
+
+    if (cacheAdapter.cachedEvents.length > 0) {
+      root.events = cacheAdapter.cachedEvents;
+      Logger.d("Calendar", "Using cached events due to error");
     }
   }
 }

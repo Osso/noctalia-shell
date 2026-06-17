@@ -183,6 +183,78 @@ function testCalendarFormatDateTimeDelegatesToQt() {
   assert.deepEqual(seen, [[42000, "yyyy-MM-dd hh:mm"]]);
 }
 
+function testCalendarProcessParsingAndFallbacks() {
+  assert.match(source, /function handleCalendarsOutput\(output: string\)/, "calendar list stdout helper must type raw output");
+  assert.match(source, /function handleEventsOutput\(output: string\)/, "event stdout helper must type raw output");
+  assert.match(source, /function handleEventsError\(output: string\)/, "event stderr helper must type raw output");
+  assert.match(source, /root\.handleCalendarsOutput\(text\)/, "calendar list process must route stdout through helper");
+  assert.match(source, /root\.handleEventsOutput\(text\)/, "event process must route stdout through helper");
+  assert.match(source, /root\.handleEventsError\(text\)/, "event process must route stderr through helper");
+
+  const handleCalendarsOutput = qmlFunction("handleCalendarsOutput", "output");
+  const handleEventsOutput = qmlFunction("handleEventsOutput", "output");
+  const handleEventsError = qmlFunction("handleEventsError", "output");
+  const log = logger();
+  const saveCalls = [];
+  const loadCalls = [];
+  const ctx = {
+    root: null,
+    calendars: [],
+    events: [],
+    loading: true,
+    lastError: "",
+    cacheAdapter: {
+      cachedCalendars: [],
+      cachedEvents: [{ title: "cached" }],
+      lastUpdate: "",
+    },
+    Logger: log,
+    saveCache() {
+      saveCalls.push("save");
+    },
+    loadEvents() {
+      loadCalls.push("load");
+    },
+  };
+  ctx.root = ctx;
+
+  handleCalendarsOutput(ctx, JSON.stringify([{ name: "Work" }]));
+
+  assert.deepEqual(ctx.calendars, [{ name: "Work" }]);
+  assert.deepEqual(ctx.cacheAdapter.cachedCalendars, [{ name: "Work" }]);
+  assert.deepEqual(saveCalls, ["save"]);
+  assert.deepEqual(loadCalls, ["load"]);
+
+  handleEventsOutput(ctx, JSON.stringify([{ title: "Meeting" }]));
+
+  assert.equal(ctx.loading, false);
+  assert.deepEqual(ctx.events, [{ title: "Meeting" }]);
+  assert.deepEqual(ctx.cacheAdapter.cachedEvents, [{ title: "Meeting" }]);
+  assert.match(ctx.cacheAdapter.lastUpdate, /^\d{4}-\d{2}-\d{2}T/);
+  assert.deepEqual(saveCalls, ["save", "save"]);
+
+  ctx.loading = true;
+  ctx.cacheAdapter.cachedEvents = [{ title: "fallback" }];
+  handleEventsOutput(ctx, "{not json");
+
+  assert.equal(ctx.loading, false);
+  assert.equal(ctx.lastError, "Failed to parse events");
+  assert.deepEqual(ctx.events, [{ title: "fallback" }], "parse failure must restore cached events");
+
+  ctx.loading = true;
+  handleEventsError(ctx, "backend failed\n");
+
+  assert.equal(ctx.loading, false);
+  assert.equal(ctx.lastError, "backend failed");
+  assert.deepEqual(ctx.events, [{ title: "fallback" }], "stderr failure must preserve cached events");
+
+  const logs = log.messages.map(message => message.slice(1).join(" "));
+  assert.ok(logs.some(message => message.includes("Found 1 calendar(s)")), "calendar parse must log count");
+  assert.ok(logs.some(message => message.includes("Loaded 1 event(s)")), "event parse must log count");
+  assert.ok(logs.some(message => message.includes("Using cached events")), "parse fallback must log cached events");
+  assert.ok(logs.some(message => message.includes("Using cached events due to error")), "stderr fallback must log cached events");
+}
+
 const tests = [
   testCalendarSaveCacheDebouncesWrites,
   testCalendarLoadFromCacheCopiesAvailableData,
@@ -190,6 +262,7 @@ const tests = [
   testCalendarLoadEventsDisabledAndConcurrentGuards,
   testCalendarLoadEventsStartsProcessWithWindow,
   testCalendarFormatDateTimeDelegatesToQt,
+  testCalendarProcessParsingAndFallbacks,
 ];
 
 for (const test of tests) {

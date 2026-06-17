@@ -17,6 +17,9 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 - [x] Event loading ignores duplicate requests while already loading.
 - [x] Event loading clears stale errors, marks the service loading, computes the requested start/end window, starts the process, and logs the requested window.
 - [x] Date-time formatting delegates to Qt using the `yyyy-MM-dd hh:mm` format.
+- [x] Calendar-list stdout parsing updates calendars, caches the parsed list, saves cache, logs the count, and starts event loading when calendars exist.
+- [x] Event stdout parsing clears loading, updates events, writes cached events and timestamp, saves cache, and logs the count.
+- [x] Invalid event stdout and event stderr failures clear loading, record an error, and restore cached events when available.
 
 ### Month grid helpers
 
@@ -63,7 +66,7 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable tests for calendar process stdout/stderr parsing and cache fallback paths.
+- [x] Add executable tests for calendar process stdout/stderr parsing and cache fallback paths.
 - [ ] Add executable tests for calendar header card rendering and settings-card ordering.
 - [ ] Add executable tests for clock-widget calendar action routing.
 - [x] Add typed-QML coverage for calendar month week-number delegates.
