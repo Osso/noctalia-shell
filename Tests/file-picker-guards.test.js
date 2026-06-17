@@ -32,6 +32,7 @@ function createFilteredModel() {
 }
 
 function testFilePickerIconMappingUsesKnownExtensionsAndFallback() {
+  assert.match(source, /function getFileIcon\(fileName: string\)/, "getFileIcon must type file-name input");
   const getFileIcon = qmlFunction("getFileIcon", "fileName");
 
   assert.equal(getFileIcon({}, "README.MD"), "filepicker-file-text");
@@ -46,6 +47,7 @@ function testFilePickerIconMappingUsesKnownExtensionsAndFallback() {
 }
 
 function testFilePickerFormatsFileSizes() {
+  assert.match(source, /function formatFileSize\(bytes: real\)/, "formatFileSize must type byte-size input");
   const formatFileSize = qmlFunction("formatFileSize", "bytes");
 
   assert.equal(formatFileSize({}, 0), "0 B");

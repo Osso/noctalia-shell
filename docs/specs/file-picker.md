@@ -5,8 +5,10 @@ File Picker covers reusable file/folder picking, file icon mapping, size formatt
 ### File icons and sizes
 
 - [x] File icon mapping recognizes common text, image, video, music, archive, PDF/text, spreadsheet, and presentation extensions.
+- [x] File icon mapping uses a typed file-name input.
 - [x] Unknown extensions fall back to the generic file icon.
 - [x] File size formatting renders bytes, KB, MB, and GB with the expected precision.
+- [x] File size formatting uses a typed byte-size input.
 
 ### Opening and selection
 

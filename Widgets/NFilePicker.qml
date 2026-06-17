@@ -34,7 +34,7 @@ Popup {
     open();
   }
 
-  function getFileIcon(fileName) {
+  function getFileIcon(fileName: string) {
     const ext = fileName.split('.').pop().toLowerCase();
     const iconMap = {
       "txt": 'filepicker-file-text',
@@ -80,7 +80,7 @@ Popup {
     return iconMap[ext] || 'filepicker-file';
   }
 
-  function formatFileSize(bytes) {
+  function formatFileSize(bytes: real) {
     if (bytes === 0)
       return "0 B";
     const k = 1024, sizes = ["B", "KB", "MB", "GB", "TB"];
