@@ -4,8 +4,9 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 
 ### Formatting
 
-- [x] `getFormattedTimestamp` declares string output.
-- [x] `formatVagueHumanReadableDuration` declares string output.
+- [x] `getFormattedTimestamp` types date input and declares string output.
+- [x] `formatVagueHumanReadableDuration` types seconds input and declares string output.
+- [x] `formatRelativeTime` types date input and declares string output.
 - [x] Timestamp formatting defaults missing dates to the current time.
 - [x] Timestamp formatting pads one-based month values.
 - [x] Timestamp formatting returns the compact `yyyyMMdd-hhmmss` shape.
@@ -14,6 +15,8 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 - [x] Vague duration formatting splits durations into days, hours, minutes, and seconds.
 - [x] Vague duration formatting shows seconds only for short durations.
 - [x] Vague duration formatting joins readable duration parts with spaces.
+- [x] Relative time formatting returns empty text for missing dates.
+- [x] Relative time formatting returns translated now, one-minute, many-minutes, one-hour, many-hours, one-day, and many-days buckets.
 
 ### Timer lifecycle
 
@@ -59,7 +62,6 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 - [ ] Add executable value tests for timestamp and duration formatting outputs.
 - [ ] Add fake SoundService coverage for timer alarm start and stop calls.
 - [ ] Add executable TimerCard coverage for focus, mode switching, and button enabled states.
-- [ ] Add coverage for `formatRelativeTime`.
 
 ## Out of scope
 

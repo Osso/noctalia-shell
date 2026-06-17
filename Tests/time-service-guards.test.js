@@ -6,8 +6,36 @@ const { extractFunctionBody, readQml } = require("./qml-test-utils");
 function testTimeFormattingSignaturesAreTyped() {
   const source = readQml("Commons/Time.qml");
 
-  assert.match(source, /function getFormattedTimestamp\(date\): string/, "getFormattedTimestamp must declare string output");
-  assert.match(source, /function formatVagueHumanReadableDuration\(totalSeconds\): string/, "formatVagueHumanReadableDuration must declare string output");
+  assert.match(source, /function getFormattedTimestamp\(date: date\): string/, "getFormattedTimestamp must type date input and string output");
+  assert.match(source, /function formatVagueHumanReadableDuration\(totalSeconds: real\): string/, "formatVagueHumanReadableDuration must type seconds input and string output");
+  assert.match(source, /function formatRelativeTime\(date: date\): string/, "formatRelativeTime must type date input and string output");
+}
+
+function testRelativeTimeFormattingOutputsTranslatedBuckets() {
+  const source = readQml("Commons/Time.qml");
+  const relativeTimeBody = extractFunctionBody(source, "formatRelativeTime");
+  const formatRelativeTime = new Function("ctx", "date", `with (ctx) { return (function(date) ${relativeTimeBody}).call(ctx, date); }`);
+  const baseNow = Date.UTC(2026, 0, 1, 12, 0, 0);
+  const ctx = {
+    Date: {
+      now: () => baseNow,
+    },
+    I18n: {
+      tr(key, args = {}) {
+        return args.diff === undefined ? key : `${key}:${args.diff}`;
+      },
+    },
+  };
+  const secondsAgo = seconds => new global.Date(baseNow - seconds * 1000);
+
+  assert.equal(formatRelativeTime(ctx, null), "");
+  assert.equal(formatRelativeTime(ctx, secondsAgo(30)), "notifications.time.now");
+  assert.equal(formatRelativeTime(ctx, secondsAgo(90)), "notifications.time.diffM");
+  assert.equal(formatRelativeTime(ctx, secondsAgo(5 * 60)), "notifications.time.diffMM:5");
+  assert.equal(formatRelativeTime(ctx, secondsAgo(90 * 60)), "notifications.time.diffH");
+  assert.equal(formatRelativeTime(ctx, secondsAgo(5 * 3600)), "notifications.time.diffHH:5");
+  assert.equal(formatRelativeTime(ctx, secondsAgo(25 * 3600)), "notifications.time.diffD");
+  assert.equal(formatRelativeTime(ctx, secondsAgo(3 * 86400)), "notifications.time.diffDD:3");
 }
 
 function testTimestampFormattingGuards() {
@@ -51,6 +79,7 @@ function testTimerPauseResetAndFinishedGuards() {
 
 const tests = [
   testTimeFormattingSignaturesAreTyped,
+  testRelativeTimeFormattingOutputsTranslatedBuckets,
   testTimestampFormattingGuards,
   testTimerStartGuards,
   testTimerPauseResetAndFinishedGuards,
