@@ -70,6 +70,7 @@ function testSessionMenuTabUpdateEntryCopiesModelAndPersistsChanges() {
   };
   const ctx = createContext([originalEntry, untouchedEntry]);
 
+  assert.match(source, /function updateEntry\(idx: int, properties\)/, "updateEntry must type the entry index while keeping the patch object flexible");
   updateEntry(ctx, 0, {
     enabled: false,
   });
@@ -118,6 +119,7 @@ function testSessionMenuTabReorderEntriesMovesItemAndPersistsOrder() {
     },
   ]);
 
+  assert.match(source, /function reorderEntries\(fromIndex: int, toIndex: int\)/, "reorderEntries must type both move indexes");
   reorderEntries(ctx, 0, 2);
 
   assert.deepEqual(ctx.entriesModel.map(entry => entry.id), ["reboot", "shutdown", "lock"]);

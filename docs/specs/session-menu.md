@@ -34,8 +34,10 @@ Session Menu covers the power/session action panel, countdown confirmation behav
 - [x] Saving entries persists action id, enabled state, and countdown-enabled state.
 - [x] Missing countdown settings default to enabled.
 - [x] Updating an entry copies the changed model item before persisting.
+- [x] Updating an entry types the entry index while keeping the patch object input flexible.
 - [x] Updating an entry preserves untouched model entries.
 - [x] Reordering entries moves the item and persists the new order.
+- [x] Reordering entries types both source and destination indexes.
 - [x] Session Menu tab entry delegates type scalar roles, expose a strict readonly enabled alias, and avoid `Item.enabled` role collisions.
 
 ## How it works
