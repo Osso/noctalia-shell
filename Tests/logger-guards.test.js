@@ -3,6 +3,11 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+function loggerFunction(source, functionName) {
+  const body = extractFunctionBody(source, functionName);
+  return new Function("ctx", "...args", `with (ctx) { return (function(...args) ${body}).apply(ctx, args); }`);
+}
+
 function testLoggerFormattingAndStackGuards() {
   const source = readQml("Commons/Logger.qml");
   const formatBody = extractFunctionBody(source, "_formatMessage");
@@ -30,6 +35,78 @@ function testLoggerLevelGuards() {
   assert.match(errorBody, /var msg = _formatMessage\(\.\.\.args\)[\s\S]*console\.error\(msg\)/, "e must format and write error logs");
 }
 
+function testLoggerOutputsConcreteConsoleValues() {
+  const source = readQml("Commons/Logger.qml");
+  const formatMessage = loggerFunction(source, "_formatMessage");
+  const info = loggerFunction(source, "i");
+  const warn = loggerFunction(source, "w");
+  const error = loggerFunction(source, "e");
+  const debug = loggerFunction(source, "d");
+  const calls = [];
+  const ctx = {
+    Settings: { isDebug: true },
+    Time: {
+      getFormattedTimestamp() {
+        return "20260102-030405";
+      },
+    },
+    console: {
+      debug(message) {
+        calls.push(["debug", message]);
+      },
+      info(message) {
+        calls.push(["info", message]);
+      },
+      warn(message) {
+        calls.push(["warn", message]);
+      },
+      error(message) {
+        calls.push(["error", message]);
+      },
+    },
+  };
+  ctx._formatMessage = (...args) => formatMessage(ctx, ...args);
+
+  assert.equal(formatMessage(ctx, "plain", "message"), "\x1b[36m[20260102-030405]\x1b[0m \x1b[35m         plain\x1b[0m message");
+  assert.equal(formatMessage(ctx, "single"), "[\x1b[36m[20260102-030405]\x1b[0m single");
+  info(ctx, "InfoModuleNameLongerThanLimit", "hello", "world");
+  warn(ctx, "Warn", "careful");
+  error(ctx, "Err", "broken");
+  debug(ctx, "Debug", "visible");
+
+  assert.deepEqual(calls, [
+    ["info", "\x1b[36m[20260102-030405]\x1b[0m \x1b[35mInfoModuleName\x1b[0m hello world"],
+    ["warn", "\x1b[36m[20260102-030405]\x1b[0m \x1b[35m          Warn\x1b[0m careful"],
+    ["error", "\x1b[36m[20260102-030405]\x1b[0m \x1b[35m           Err\x1b[0m broken"],
+    ["debug", "\x1b[36m[20260102-030405]\x1b[0m \x1b[35m         Debug\x1b[0m visible"],
+  ]);
+}
+
+function testLoggerDebugDisabledSuppressesConsoleOutput() {
+  const source = readQml("Commons/Logger.qml");
+  const formatMessage = loggerFunction(source, "_formatMessage");
+  const debug = loggerFunction(source, "d");
+  const calls = [];
+  const ctx = {
+    Settings: { isDebug: false },
+    Time: {
+      getFormattedTimestamp() {
+        return "20260102-030405";
+      },
+    },
+    console: {
+      debug(message) {
+        calls.push(message);
+      },
+    },
+  };
+  ctx._formatMessage = (...args) => formatMessage(ctx, ...args);
+
+  debug(ctx, "Debug", "hidden");
+
+  assert.deepEqual(calls, []);
+}
+
 function testLoggerCallStackGuards() {
   const source = readQml("Commons/Logger.qml");
   const callStackBody = extractFunctionBody(source, "callStack");
@@ -46,6 +123,8 @@ function testLoggerCallStackGuards() {
 const tests = [
   testLoggerFormattingAndStackGuards,
   testLoggerLevelGuards,
+  testLoggerOutputsConcreteConsoleValues,
+  testLoggerDebugDisabledSuppressesConsoleOutput,
   testLoggerCallStackGuards,
 ];
 

@@ -10,10 +10,12 @@ Logger covers shared QML log formatting, level routing, debug gating, stack capt
 - [x] Formatted messages colorize timestamps and module labels.
 - [x] Message arguments are joined with spaces.
 - [x] Module-less messages are formatted without a module label.
+- [x] Log formatting produces concrete console strings with fake timestamps and fake console sinks.
 
 ### Level routing
 
 - [x] Debug logging formats and writes to `console.debug` only when debug mode is enabled.
+- [x] Debug logging writes nothing when debug mode is disabled.
 - [x] Info logging formats and writes to `console.info`.
 - [x] Warning logging formats and writes to `console.warn`.
 - [x] Error logging formats and writes to `console.error`.
@@ -41,8 +43,6 @@ Logger covers shared QML log formatting, level routing, debug gating, stack capt
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for actual console output values with fake console sinks.
-- [ ] Add executable coverage for debug logging disabled mode.
 - [ ] Add fixture coverage for stack output line filtering.
 
 ## Out of scope
