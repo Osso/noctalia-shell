@@ -175,6 +175,53 @@ function testSearchableComboBoxDefaultDelegateRolesAreTyped() {
   assert.match(source, typedBadgeText, "default delegate must type badge modelData");
 }
 
+function testSearchableComboBoxCurrentSelectionHelpersExecute() {
+  assert.match(source, /function filteredKeyAt\(index: int\)/, "filteredKeyAt must type index input");
+  const filteredKeyAt = qmlFunction("filteredKeyAt", "index");
+  const activateCurrentSelection = qmlFunction("activateCurrentSelection");
+  const selectedKeys = [];
+  const ctx = createContext({
+    filteredItems: [
+      { key: "wifi", name: "Wi-Fi" },
+      { key: "display", name: "Display" },
+    ],
+  });
+  ctx.combo = { currentIndex: 1 };
+  ctx.filteredKeyAt = index => filteredKeyAt(ctx, index);
+  ctx.selected = key => selectedKeys.push(key);
+
+  assert.equal(filteredKeyAt(ctx, -1), "");
+  assert.equal(filteredKeyAt(ctx, 2), "");
+  assert.equal(filteredKeyAt(ctx, 1), "display");
+
+  activateCurrentSelection(ctx);
+  assert.deepEqual(selectedKeys, ["display"]);
+
+  ctx.combo.currentIndex = -1;
+  activateCurrentSelection(ctx);
+  assert.deepEqual(selectedKeys, ["display"]);
+}
+
+function testSearchableComboBoxCurrentKeySyncExecutes() {
+  const syncCurrentIndexToCurrentKey = qmlFunction("syncCurrentIndexToCurrentKey");
+  const ctx = createContext({
+    filteredItems: [
+      { key: "audio", name: "Audio" },
+      { key: "network", name: "Network" },
+    ],
+  });
+  ctx.currentKey = "network";
+  ctx.combo = { currentIndex: -1 };
+  ctx.findIndexByKeyInFiltered = key => qmlFunction("findIndexByKeyInFiltered", "key")(ctx, key);
+
+  syncCurrentIndexToCurrentKey(ctx);
+  assert.equal(ctx.combo.currentIndex, 1);
+
+  ctx.currentKey = "missing";
+  syncCurrentIndexToCurrentKey(ctx);
+  assert.equal(ctx.combo.currentIndex, -1);
+}
+
 const tests = [
   testSearchableComboBoxFindIndexByKeyReturnsFirstMatchAndMissingSentinel,
   testSearchableComboBoxFindIndexByKeyInFilteredUsesFilteredModelOnly,
@@ -184,6 +231,8 @@ const tests = [
   testSearchableComboBoxFilterModelFallsBackToCaseInsensitiveNameSearch,
   testSearchableComboBoxFilterModelUsesFuzzyResultOrdering,
   testSearchableComboBoxDefaultDelegateRolesAreTyped,
+  testSearchableComboBoxCurrentSelectionHelpersExecute,
+  testSearchableComboBoxCurrentKeySyncExecutes,
 ];
 
 for (const test of tests) {

@@ -48,6 +48,25 @@ RowLayout {
     return -1;
   }
 
+  function filteredKeyAt(index: int) {
+    if (index < 0 || index >= root.filteredModel.count) {
+      return "";
+    }
+    return root.filteredModel.get(index).key;
+  }
+
+  function activateCurrentSelection() {
+    const key = filteredKeyAt(combo.currentIndex);
+    if (key === "") {
+      return;
+    }
+    root.selected(key);
+  }
+
+  function syncCurrentIndexToCurrentKey() {
+    combo.currentIndex = root.findIndexByKeyInFiltered(currentKey);
+  }
+
   function filterModel() {
     filteredModel.clear();
 
@@ -113,9 +132,7 @@ RowLayout {
     model: filteredModel
     currentIndex: findIndexByKeyInFiltered(currentKey)
     onActivated: {
-      if (combo.currentIndex >= 0 && combo.currentIndex < filteredModel.count) {
-        root.selected(filteredModel.get(combo.currentIndex).key);
-      }
+      root.activateCurrentSelection();
     }
 
     background: Rectangle {
@@ -273,7 +290,7 @@ RowLayout {
     Connections {
       target: root
       function onCurrentKeyChanged() {
-        combo.currentIndex = root.findIndexByKeyInFiltered(currentKey);
+        root.syncCurrentIndexToCurrentKey();
       }
     }
 

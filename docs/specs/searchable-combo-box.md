@@ -20,6 +20,12 @@ Searchable Combo Box covers the shared searchable list selector used by settings
 - [x] Fuzzy search uses item `name`, threshold `-1000`, and limit `50`.
 - [x] Fuzzy search appends results in returned relevance order.
 
+### Selection
+
+- [x] Activation emits the selected key for the current filtered item.
+- [x] Activation ignores invalid current indexes.
+- [x] External `currentKey` changes sync the combo index to the matching filtered item or `-1`.
+
 ### Types
 
 - [x] The default popup delegate declares typed `index`, `key`, and `name` roles.
@@ -45,7 +51,6 @@ Searchable Combo Box covers the shared searchable list selector used by settings
 ## Known gaps (current cycle)
 
 - [ ] Add executable coverage for popup focus behavior when opened.
-- [ ] Add executable coverage for activation, selected-signal emission, and current-key updates.
 
 ## Out of scope
 
