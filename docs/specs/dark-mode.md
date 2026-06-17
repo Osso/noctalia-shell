@@ -25,6 +25,7 @@ Dark Mode covers automatic dark-mode scheduling from manual sunrise/sunset times
 - [x] Next-mode scheduling sets the timer interval to the delay until the next change.
 - [x] Next-mode scheduling restarts the timer and logs the scheduled state.
 - [x] Next-mode scheduling leaves the timer untouched when there is no future change.
+- [x] Timer-triggered dark-mode changes apply the pending state and reschedule from weather data when weather exists.
 
 ## How it works
 
@@ -44,7 +45,6 @@ Dark Mode covers automatic dark-mode scheduling from manual sunrise/sunset times
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for timer-triggered dark-mode changes.
 - [ ] Add settings-level coverage for LocationTab dark-mode controls.
 - [ ] Add bar-widget coverage for manual dark-mode toggling.
 

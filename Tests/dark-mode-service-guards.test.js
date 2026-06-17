@@ -228,6 +228,54 @@ function testDarkModeInitSelectsManualAndLocationScheduling() {
   assert.deepEqual(calls, [["log", "DarkModeService", "Service started"]]);
 }
 
+function testDarkModeTimerTriggerAppliesNextStateAndReschedulesWeather() {
+  const handleTimerTriggered = qmlFunction("handleTimerTriggered");
+  const weather = {
+    daily: {
+      sunrise: ["2026-06-16T12:00:00.000Z"],
+      sunset: ["2026-06-17T00:00:00.000Z"],
+    },
+  };
+  const changes = [{ time: 200, darkMode: false }];
+  const calls = [];
+  const ctx = {
+    nextDarkModeState: true,
+    Settings: {
+      data: {
+        colorSchemes: {
+          darkMode: false,
+        },
+      },
+    },
+    LocationService: {
+      data: {
+        weather,
+      },
+    },
+    collectWeatherChanges(value) {
+      calls.push(["weather", value]);
+      return changes;
+    },
+    scheduleNextMode(value) {
+      calls.push(["schedule", value]);
+    },
+  };
+
+  handleTimerTriggered(ctx);
+  assert.equal(ctx.Settings.data.colorSchemes.darkMode, true);
+  assert.deepEqual(calls, [
+    ["weather", weather],
+    ["schedule", changes],
+  ]);
+
+  calls.length = 0;
+  ctx.nextDarkModeState = false;
+  ctx.LocationService.data.weather = null;
+  handleTimerTriggered(ctx);
+  assert.equal(ctx.Settings.data.colorSchemes.darkMode, false);
+  assert.deepEqual(calls, []);
+}
+
 const tests = [
   testDarkModeParseTime,
   testDarkModeCollectManualChanges,
@@ -235,6 +283,7 @@ const tests = [
   testDarkModeApplyCurrentModeUsesLastPastChange,
   testDarkModeScheduleNextModeUsesNextFutureChange,
   testDarkModeInitSelectsManualAndLocationScheduling,
+  testDarkModeTimerTriggerAppliesNextStateAndReschedulesWeather,
 ];
 
 for (const test of tests) {

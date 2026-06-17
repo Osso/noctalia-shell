@@ -50,11 +50,15 @@ Singleton {
   Timer {
     id: timer
     onTriggered: {
-      Settings.data.colorSchemes.darkMode = root.nextDarkModeState;
-      if (LocationService.data.weather !== null) {
-        const changes = root.collectWeatherChanges(LocationService.data.weather);
-        root.scheduleNextMode(changes);
-      }
+      root.handleTimerTriggered();
+    }
+  }
+
+  function handleTimerTriggered() {
+    Settings.data.colorSchemes.darkMode = nextDarkModeState;
+    if (LocationService.data.weather !== null) {
+      const changes = collectWeatherChanges(LocationService.data.weather);
+      scheduleNextMode(changes);
     }
   }
 
