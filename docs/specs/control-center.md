@@ -16,6 +16,7 @@ Control Center covers the panel card loader, shortcut widget registry, shortcut/
 - [x] CustomButton is the only widget metadata entry that allows user settings.
 - [x] Notifications and WallpaperSelector are present in the Control Center widget registry.
 - [x] Every default Control Center shortcut id exists in `ControlCenterWidgetRegistry`.
+- [x] Shortcut widget registry lookup, presence, available-list, and user-settings helpers preserve registry behavior and type widget id inputs as strings.
 
 ### Shortcut settings
 
@@ -57,6 +58,7 @@ Control Center covers the panel card loader, shortcut widget registry, shortcut/
 ## Tests asserting this spec
 
 - `Tests/control-center-tab-guards.test.js`
+- `Tests/control-center-widget-registry-guards.test.js`
 - `Tests/widget-registry.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/qml-runtime-guards.test.js`
