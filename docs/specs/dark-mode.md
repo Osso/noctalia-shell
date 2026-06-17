@@ -9,6 +9,7 @@ Dark Mode covers automatic dark-mode scheduling from manual sunrise/sunset times
 - [x] Manual scheduling marks sunset changes as dark mode enabled and sunrise changes as disabled.
 - [x] Weather scheduling includes a pre-sunrise dark-mode state when current time is before sunrise.
 - [x] Weather scheduling maps sunrise to dark mode disabled and sunset to dark mode enabled.
+- [x] Service init uses manual schedule changes in manual mode, weather schedule changes in location mode when weather exists, and leaves init incomplete when location weather is missing.
 
 ### Applying state
 
@@ -43,7 +44,6 @@ Dark Mode covers automatic dark-mode scheduling from manual sunrise/sunset times
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for `init` selecting manual versus weather scheduling mode.
 - [ ] Add executable coverage for timer-triggered dark-mode changes.
 - [ ] Add settings-level coverage for LocationTab dark-mode controls.
 - [ ] Add bar-widget coverage for manual dark-mode toggling.

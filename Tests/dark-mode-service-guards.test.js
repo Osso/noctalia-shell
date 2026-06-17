@@ -153,12 +153,88 @@ function testDarkModeScheduleNextModeUsesNextFutureChange() {
   assert.equal(restarts, 1);
 }
 
+function testDarkModeInitSelectsManualAndLocationScheduling() {
+  const init = qmlFunction("init");
+  const calls = [];
+  const manualChanges = [{ time: 100, darkMode: false }];
+  const weatherChanges = [{ time: 200, darkMode: true }];
+  const weather = {
+    daily: {
+      sunrise: ["2026-06-16T12:00:00.000Z"],
+      sunset: ["2026-06-17T00:00:00.000Z"],
+    },
+  };
+  const ctx = {
+    initComplete: false,
+    Settings: {
+      data: {
+        colorSchemes: {
+          schedulingMode: "manual",
+        },
+      },
+    },
+    LocationService: {
+      data: {
+        weather,
+      },
+    },
+    Logger: {
+      i(...args) {
+        calls.push(["log", ...args]);
+      },
+    },
+    collectManualChanges() {
+      calls.push(["manual"]);
+      return manualChanges;
+    },
+    collectWeatherChanges(value) {
+      calls.push(["weather", value]);
+      return weatherChanges;
+    },
+    applyCurrentMode(changes) {
+      calls.push(["apply", changes]);
+    },
+    scheduleNextMode(changes) {
+      calls.push(["schedule", changes]);
+    },
+  };
+
+  init(ctx);
+  assert.equal(ctx.initComplete, true);
+  assert.deepEqual(calls, [
+    ["log", "DarkModeService", "Service started"],
+    ["manual"],
+    ["apply", manualChanges],
+    ["schedule", manualChanges],
+  ]);
+
+  calls.length = 0;
+  ctx.initComplete = false;
+  ctx.Settings.data.colorSchemes.schedulingMode = "location";
+  init(ctx);
+  assert.equal(ctx.initComplete, true);
+  assert.deepEqual(calls, [
+    ["log", "DarkModeService", "Service started"],
+    ["weather", weather],
+    ["apply", weatherChanges],
+    ["schedule", weatherChanges],
+  ]);
+
+  calls.length = 0;
+  ctx.initComplete = false;
+  ctx.LocationService.data.weather = null;
+  init(ctx);
+  assert.equal(ctx.initComplete, false);
+  assert.deepEqual(calls, [["log", "DarkModeService", "Service started"]]);
+}
+
 const tests = [
   testDarkModeParseTime,
   testDarkModeCollectManualChanges,
   testDarkModeCollectWeatherChangesIncludesPreSunriseState,
   testDarkModeApplyCurrentModeUsesLastPastChange,
   testDarkModeScheduleNextModeUsesNextFutureChange,
+  testDarkModeInitSelectsManualAndLocationScheduling,
 ];
 
 for (const test of tests) {
