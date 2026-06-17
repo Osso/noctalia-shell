@@ -21,6 +21,12 @@ Flattening:
 - [x] Flattened radius must preserve the requested radius when the dimension can fit the requested diameter.
 - [x] `shouldFlatten` must return true when either width or height is smaller than the requested diameter.
 
+Background consumers:
+- [x] Bar background corner radius must map flat corner state `-1` to `0`.
+- [x] Bar background corner radius must map non-flat corner states to the effective radius.
+- [x] Panel background corner radius must map flat corner state `-1` to `0`.
+- [x] Panel background corner radius must map non-flat corner states to the effective radius.
+
 ## How it works
 
 - [ ] See [docs/wiki/systems/shape-corner-helper.md](/syncthing/Sync/Projects/apps/noctalia-shell/docs/wiki/systems/shape-corner-helper.md).
@@ -34,6 +40,7 @@ Flattening:
 ## Tests asserting this spec
 
 - [Tests/shape-corner-helper-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/shape-corner-helper-guards.test.js)
+- [Tests/widget-helper-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/widget-helper-guards.test.js)
 
 ## Known gaps (current cycle)
 
