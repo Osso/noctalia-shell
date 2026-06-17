@@ -9,6 +9,7 @@ function testI18nLanguageDiscoveryGuards() {
   const parseBody = extractFunctionBody(source, "parseDirectoryListing");
   const detectBody = extractFunctionBody(source, "detectLanguage");
 
+  assert.match(source, /function parseDirectoryListing\(output: string\)/, "parseDirectoryListing must type scanner output as a string");
   assert.match(scanBody, /Logger\.d\("I18n", "Scanning for available translation files\.\.\."\)/, "scanAvailableLanguages must log directory scans");
   assert.match(scanBody, /directoryScanner\.running = true/, "scanAvailableLanguages must start the scanner process");
   assert.match(parseBody, /if \(!output \|\| output\.trim\(\) === ""\)[\s\S]*availableLanguages = \["en"\][\s\S]*detectLanguage\(\)[\s\S]*return;/, "parseDirectoryListing must fallback on empty output");

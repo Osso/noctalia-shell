@@ -100,7 +100,7 @@ Singleton {
   }
 
   // -------------------------------------------
-  function parseDirectoryListing(output) {
+  function parseDirectoryListing(output: string) {
     var languages = [];
 
     try {
