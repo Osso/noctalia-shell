@@ -20,6 +20,7 @@ Location/weather covers configured location lookup, cached coordinate reuse, wea
 ### Network requests and error handling
 
 - [x] Geocoding builds an encoded `assets.noctalia.dev` geocode URL.
+- [x] Geocoding uses a typed string location-name input while keeping callbacks dynamic.
 - [x] Geocoding waits for completed XMLHttpRequest state before processing.
 - [x] Geocoding parses successful responses and calls back with resolved coordinates.
 - [x] Geocoding reports unresolved locations, parse failures, and HTTP failures.
@@ -31,9 +32,11 @@ Location/weather covers configured location lookup, cached coordinate reuse, wea
 - [x] Weather fetches report parse failures and HTTP failures.
 - [x] Weather fetches send a GET request.
 - [x] Shared error handling logs the error and clears the fetch-in-progress state.
+- [x] Shared error handling types module and message inputs.
 
 ### Formatting helpers
 
+- [x] Weather icon, description, and Celsius conversion helpers type their scalar inputs.
 - [x] Weather icon mapping covers clear sky, partly cloudy, overcast, fog, drizzle, rain showers, snow, thunderstorms, and a cloud fallback.
 - [x] Weather description mapping covers clear sky, mainly clear, partly cloudy, overcast, fog, drizzle, snow, rain showers, thunderstorms, and an Unknown fallback.
 - [x] Celsius-to-Fahrenheit conversion returns `32 + celsius * 1.8`.

@@ -159,7 +159,7 @@ Singleton {
   }
 
   // --------------------------------
-  function _geocodeLocation(locationName, callback, errorCallback) {
+  function _geocodeLocation(locationName: string, callback, errorCallback) {
     Logger.d("Location", "Geocoding location name");
     var geoUrl = "https://assets.noctalia.dev/geocode.php?city=" + encodeURIComponent(locationName) + "&language=en&format=json";
     var xhr = new XMLHttpRequest();
@@ -221,13 +221,13 @@ Singleton {
   }
 
   // --------------------------------
-  function errorCallback(module, message) {
+  function errorCallback(module: string, message: string) {
     Logger.e(module, message);
     isFetchingWeather = false;
   }
 
   // --------------------------------
-  function weatherSymbolFromCode(code) {
+  function weatherSymbolFromCode(code: int) {
     if (code === 0)
       return "weather-sun";
     if (code === 1 || code === 2)
@@ -252,7 +252,7 @@ Singleton {
   }
 
   // --------------------------------
-  function weatherDescriptionFromCode(code) {
+  function weatherDescriptionFromCode(code: int) {
     if (code === 0)
       return "Clear sky";
     if (code === 1)
@@ -275,7 +275,7 @@ Singleton {
   }
 
   // --------------------------------
-  function celsiusToFahrenheit(celsius) {
+  function celsiusToFahrenheit(celsius: real) {
     return 32 + celsius * 1.8;
   }
 }
