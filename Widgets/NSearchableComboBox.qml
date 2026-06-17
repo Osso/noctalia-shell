@@ -67,6 +67,15 @@ RowLayout {
     combo.currentIndex = root.findIndexByKeyInFiltered(currentKey);
   }
 
+  function handlePopupOpened() {
+    filterModel();
+    Qt.callLater(() => {
+                   if (searchInput && searchInput.inputItem) {
+                     searchInput.inputItem.forceActiveFocus();
+                   }
+                 });
+  }
+
   function filterModel() {
     filteredModel.clear();
 
@@ -299,14 +308,7 @@ RowLayout {
       target: combo.popup
       function onVisibleChanged() {
         if (combo.popup.visible) {
-          // Ensure the model is filtered when popup opens
-          filterModel();
-          // Small delay to ensure the popup is fully rendered
-          Qt.callLater(() => {
-                         if (searchInput && searchInput.inputItem) {
-                           searchInput.inputItem.forceActiveFocus();
-                         }
-                       });
+          root.handlePopupOpened();
         }
       }
     }

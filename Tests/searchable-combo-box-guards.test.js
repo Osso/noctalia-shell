@@ -222,6 +222,34 @@ function testSearchableComboBoxCurrentKeySyncExecutes() {
   assert.equal(ctx.combo.currentIndex, -1);
 }
 
+function testSearchableComboBoxPopupOpenFiltersAndFocusesSearch() {
+  const handlePopupOpened = qmlFunction("handlePopupOpened");
+  const events = [];
+  const ctx = createContext();
+  ctx.filterModel = () => events.push("filter");
+  ctx.searchInput = {
+    inputItem: {
+      forceActiveFocus() {
+        events.push("focus");
+      },
+    },
+  };
+  ctx.Qt = {
+    callLater(callback) {
+      events.push("scheduled");
+      callback();
+    },
+  };
+
+  handlePopupOpened(ctx);
+  assert.deepEqual(events, ["filter", "scheduled", "focus"]);
+
+  events.length = 0;
+  ctx.searchInput = null;
+  handlePopupOpened(ctx);
+  assert.deepEqual(events, ["filter", "scheduled"]);
+}
+
 const tests = [
   testSearchableComboBoxFindIndexByKeyReturnsFirstMatchAndMissingSentinel,
   testSearchableComboBoxFindIndexByKeyInFilteredUsesFilteredModelOnly,
@@ -233,6 +261,7 @@ const tests = [
   testSearchableComboBoxDefaultDelegateRolesAreTyped,
   testSearchableComboBoxCurrentSelectionHelpersExecute,
   testSearchableComboBoxCurrentKeySyncExecutes,
+  testSearchableComboBoxPopupOpenFiltersAndFocusesSearch,
 ];
 
 for (const test of tests) {

@@ -26,6 +26,11 @@ Searchable Combo Box covers the shared searchable list selector used by settings
 - [x] Activation ignores invalid current indexes.
 - [x] External `currentKey` changes sync the combo index to the matching filtered item or `-1`.
 
+### Popup lifecycle
+
+- [x] Opening the popup refreshes the filtered model immediately.
+- [x] Opening the popup schedules focus for the search input when its input item exists.
+
 ### Types
 
 - [x] The default popup delegate declares typed `index`, `key`, and `name` roles.
@@ -49,8 +54,7 @@ Searchable Combo Box covers the shared searchable list selector used by settings
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
-
-- [ ] Add executable coverage for popup focus behavior when opened.
+None.
 
 ## Out of scope
 
