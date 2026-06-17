@@ -27,6 +27,15 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 - [x] Resetting stops the alarm sound and marks sound inactive.
 - [x] Finishing a countdown stops the countdown, clears remaining seconds, marks alarm sound active, and plays the repeating low-volume alarm.
 
+### Timer card
+
+- [x] Timer card formatting functions use typed QML signatures for duration, digit-buffer, and string output values.
+- [x] Timer card display formatting delegates to `TimerDigits` helpers.
+- [x] Timer card digit parsing stores parsed seconds in shared timer state.
+- [x] Timer card start, pause, and reset actions delegate to shared `Time` timer controls.
+- [x] Timer card buffered input is parsed exactly once and cleared when non-empty.
+- [x] Timer card empty buffered input leaves the existing timer value unchanged.
+
 ## How it works
 
 - [docs/wiki/systems/time.md](../wiki/systems/time.md)
@@ -41,6 +50,7 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 
 ## Tests asserting this spec
 
+- `Tests/timer-card-guards.test.js`
 - `Tests/time-service-guards.test.js`
 - `Tests/source-coverage.test.js`
 
@@ -48,7 +58,7 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 
 - [ ] Add executable value tests for timestamp and duration formatting outputs.
 - [ ] Add fake SoundService coverage for timer alarm start and stop calls.
-- [ ] Add TimerCard behavior coverage for stopwatch/countdown display and controls.
+- [ ] Add executable TimerCard coverage for focus, mode switching, and button enabled states.
 - [ ] Add coverage for `formatRelativeTime`.
 
 ## Out of scope
