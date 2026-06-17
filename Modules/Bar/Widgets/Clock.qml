@@ -43,6 +43,39 @@ Rectangle {
   readonly property string formatHorizontal: widgetSettings.formatHorizontal !== undefined ? widgetSettings.formatHorizontal : widgetMetadata.formatHorizontal
   readonly property string formatVertical: widgetSettings.formatVertical !== undefined ? widgetSettings.formatVertical : widgetMetadata.formatVertical
 
+  function closePopupMenuWindow() {
+    var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+    if (popupMenuWindow) {
+      popupMenuWindow.close();
+    }
+  }
+
+  function toggleCalendarPanel(anchor: Item) {
+    const panel = PanelService.getPanel("clockPanel", screen);
+    if (panel)
+      panel.toggle(anchor);
+  }
+
+  function openContextMenu() {
+    var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+    if (!popupMenuWindow)
+      return;
+
+    popupMenuWindow.showContextMenu(contextMenu);
+    const pos = BarService.getContextMenuPosition(root, contextMenu.implicitWidth, contextMenu.implicitHeight);
+    contextMenu.openAtItem(root, pos.x, pos.y);
+  }
+
+  function handleContextMenuAction(action: string) {
+    closePopupMenuWindow();
+
+    if (action === "open-calendar") {
+      toggleCalendarPanel(root);
+    } else if (action === "widget-settings") {
+      BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
+    }
+  }
+
   implicitWidth: isBarVertical ? Style.capsuleHeight : Math.round((isBarVertical ? verticalLoader.implicitWidth : horizontalLoader.implicitWidth) + Style.marginM * 2)
 
   implicitHeight: isBarVertical ? Math.round(verticalLoader.implicitHeight + Style.marginS * 2) : Style.capsuleHeight
@@ -133,20 +166,7 @@ Rectangle {
       },
     ]
 
-    onTriggered: action => {
-      var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-      if (popupMenuWindow) {
-        popupMenuWindow.close();
-      }
-
-      if (action === "open-calendar") {
-        const panel = PanelService.getPanel("clockPanel", screen);
-        if (panel)
-          panel.toggle(root);
-      } else if (action === "widget-settings") {
-        BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-      }
-    }
+    onTriggered: action => root.handleContextMenuAction(action)
     }
 
   MouseArea {
@@ -167,16 +187,9 @@ Rectangle {
     onClicked: mouse => {
       TooltipService.hide();
       if (mouse.button === Qt.RightButton) {
-        var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-        if (popupMenuWindow) {
-          popupMenuWindow.showContextMenu(contextMenu);
-          const pos = BarService.getContextMenuPosition(root, contextMenu.implicitWidth, contextMenu.implicitHeight);
-          contextMenu.openAtItem(root, pos.x, pos.y);
-    }
+        root.openContextMenu();
       } else {
-        const panel = PanelService.getPanel("clockPanel", screen);
-        if (panel)
-          panel.toggle(this);
+        root.toggleCalendarPanel(this);
       }
     }
     }

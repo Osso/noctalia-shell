@@ -33,6 +33,13 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 - [x] Month-grid date helper inputs are typed as integer year, month, and day values, and event color helpers type the today flag.
 - [x] Month-grid week-number delegates type numeric model data before rendering the week label.
 
+### Clock widget routing
+
+- [x] The Clock widget context-menu calendar action closes the popup menu window before toggling the clock panel from the widget root.
+- [x] The Clock widget context-menu settings action closes the popup menu window before opening widget settings with the current widget identity.
+- [x] Primary clicking the Clock widget toggles the clock panel from the mouse area.
+- [x] Right clicking the Clock widget opens its context menu at the BarService-provided widget position.
+
 ### Helper scripts
 
 - [x] Calendar availability script exits successfully, never prints a Python traceback, and prints either `available` or an `unavailable:` reason.
@@ -60,6 +67,7 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 
 - `Tests/calendar-service-guards.test.js`
 - `Tests/calendar-month-card-guards.test.js`
+- `Tests/clock-widget-guards.test.js`
 - `Tests/calendar-scripts.test.sh`
 - `Tests/calendar-events-safe-get-time.test.py`
 - `Tests/qml-type-annotations.test.js`
@@ -68,7 +76,7 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 
 - [x] Add executable tests for calendar process stdout/stderr parsing and cache fallback paths.
 - [ ] Add executable tests for calendar header card rendering and settings-card ordering.
-- [ ] Add executable tests for clock-widget calendar action routing.
+- [x] Add executable tests for clock-widget calendar action routing.
 - [x] Add typed-QML coverage for calendar month week-number delegates.
 - [ ] Add typed-QML coverage for calendar event indicator delegates if current aliases can be narrowed.
 
