@@ -37,6 +37,49 @@ Item {
   // Use the shared service for keyboard layout
   property string currentLayout: KeyboardLayoutService.currentLayout
 
+  function displayText() {
+    return currentLayout.toUpperCase();
+  }
+
+  function tooltipText() {
+    return I18n.tr("tooltips.keyboard-layout", {
+                     "layout": displayText()
+                   });
+  }
+
+  function shouldForceOpen() {
+    return root.displayMode === "forceOpen";
+  }
+
+  function shouldForceClose() {
+    return root.displayMode === "alwaysHide";
+  }
+
+  function closePopupMenuWindow() {
+    var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+    if (popupMenuWindow) {
+      popupMenuWindow.close();
+    }
+  }
+
+  function openContextMenu() {
+    var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+    if (!popupMenuWindow)
+      return;
+
+    popupMenuWindow.showContextMenu(contextMenu);
+    const pos = BarService.getContextMenuPosition(pill, contextMenu.implicitWidth, contextMenu.implicitHeight);
+    contextMenu.openAtItem(pill, pos.x, pos.y);
+  }
+
+  function handleContextMenuAction(action: string) {
+    closePopupMenuWindow();
+
+    if (action === "widget-settings") {
+      BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
+    }
+  }
+
   implicitWidth: pill.width
   implicitHeight: pill.height
 
@@ -51,16 +94,7 @@ Item {
       },
     ]
 
-    onTriggered: action => {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.close();
-                   }
-
-                   if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                   }
-                 }
+    onTriggered: action => root.handleContextMenuAction(action)
   }
 
   BarPill {
@@ -72,20 +106,11 @@ Item {
     oppositeDirection: BarService.getPillDirection(root)
     icon: "keyboard"
     autoHide: false // Important to be false so we can hover as long as we want
-    text: currentLayout.toUpperCase()
-    tooltipText: I18n.tr("tooltips.keyboard-layout", {
-                           "layout": currentLayout.toUpperCase()
-                         })
-    forceOpen: root.displayMode === "forceOpen"
-    forceClose: root.displayMode === "alwaysHide"
+    text: root.displayText()
+    tooltipText: root.tooltipText()
+    forceOpen: root.shouldForceOpen()
+    forceClose: root.shouldForceClose()
     onClicked: {}
-    onRightClicked: {
-      var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-      if (popupMenuWindow) {
-        popupMenuWindow.showContextMenu(contextMenu);
-        const pos = BarService.getContextMenuPosition(pill, contextMenu.implicitWidth, contextMenu.implicitHeight);
-        contextMenu.openAtItem(pill, pos.x, pos.y);
-      }
-    }
+    onRightClicked: root.openContextMenu()
   }
 }

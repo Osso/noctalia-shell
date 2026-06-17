@@ -16,6 +16,14 @@ Keyboard Layout covers shell display of the current keyboard layout and normaliz
 
 - [x] Setting the current layout stores the extracted display code.
 
+### Bar widget
+
+- [x] The Keyboard Layout widget renders the current layout as uppercase display text.
+- [x] The Keyboard Layout widget tooltip includes the uppercase current layout.
+- [x] Display mode `forceOpen` forces the pill open, `alwaysHide` forces it closed, and `onhover` leaves both force flags disabled.
+- [x] The widget settings context-menu action closes the popup menu window before opening widget settings with the current widget identity.
+- [x] Right clicking the widget opens its context menu at the BarService-provided pill position.
+
 ## How it works
 
 - [docs/wiki/systems/keyboard-layout.md](../wiki/systems/keyboard-layout.md)
@@ -29,12 +37,13 @@ Keyboard Layout covers shell display of the current keyboard layout and normaliz
 ## Tests asserting this spec
 
 - `Tests/keyboard-layout-service-guards.test.js`
+- `Tests/keyboard-layout-widget-guards.test.js`
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for KeyboardLayout widget display modes.
-- [ ] Add executable coverage for KeyboardLayout widget context-menu actions.
+- [x] Add executable coverage for KeyboardLayout widget display modes.
+- [x] Add executable coverage for KeyboardLayout widget context-menu actions.
 - [ ] Add executable coverage for keyboard layout settings persistence.
 - [ ] Add executable coverage for compositor layout events reaching KeyboardLayoutService.
 
