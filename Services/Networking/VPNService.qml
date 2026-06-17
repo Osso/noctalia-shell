@@ -134,6 +134,49 @@ Singleton {
     delayedRefreshTimer.restart();
   }
 
+  function parseRefreshOutput(rawOutput: string) {
+    const lines = rawOutput.split("\n");
+    const map = {};
+    for (let i = 0; i < lines.length; ++i) {
+      const line = lines[i].trim();
+      if (!line) {
+        continue;
+      }
+      const lastColonIdx = line.lastIndexOf(":");
+      if (lastColonIdx === -1) {
+        continue;
+      }
+      const device = line.substring(lastColonIdx + 1);
+      const remaining = line.substring(0, lastColonIdx);
+      const secondLastColonIdx = remaining.lastIndexOf(":");
+      if (secondLastColonIdx === -1) {
+        continue;
+      }
+      const type = remaining.substring(secondLastColonIdx + 1);
+      if (type !== "vpn" && type !== "wireguard") {
+        continue;
+      }
+      const remaining2 = remaining.substring(0, secondLastColonIdx);
+      const thirdLastColonIdx = remaining2.lastIndexOf(":");
+      if (thirdLastColonIdx === -1) {
+        continue;
+      }
+      const uuid = remaining2.substring(thirdLastColonIdx + 1);
+      const name = remaining2.substring(0, thirdLastColonIdx);
+      if (!uuid || !name) {
+        continue;
+      }
+      const active = device && device !== "--";
+      map[uuid] = {
+        "uuid": uuid,
+        "name": name,
+        "device": device,
+        "active": active
+      };
+    }
+    return map;
+  }
+
   Process {
     id: refreshProcess
     running: false
@@ -141,46 +184,7 @@ Singleton {
 
     stdout: StdioCollector {
       onStreamFinished: {
-        const lines = text.split("\n");
-        const map = {};
-        for (let i = 0; i < lines.length; ++i) {
-          const line = lines[i].trim();
-          if (!line) {
-            continue;
-          }
-          const lastColonIdx = line.lastIndexOf(":");
-          if (lastColonIdx === -1) {
-            continue;
-          }
-          const device = line.substring(lastColonIdx + 1);
-          const remaining = line.substring(0, lastColonIdx);
-          const secondLastColonIdx = remaining.lastIndexOf(":");
-          if (secondLastColonIdx === -1) {
-            continue;
-          }
-          const type = remaining.substring(secondLastColonIdx + 1);
-          if (type !== "vpn" && type !== "wireguard") {
-            continue;
-          }
-          const remaining2 = remaining.substring(0, secondLastColonIdx);
-          const thirdLastColonIdx = remaining2.lastIndexOf(":");
-          if (thirdLastColonIdx === -1) {
-            continue;
-          }
-          const uuid = remaining2.substring(thirdLastColonIdx + 1);
-          const name = remaining2.substring(0, thirdLastColonIdx);
-          if (!uuid || !name) {
-            continue;
-          }
-          const active = device && device !== "--";
-          map[uuid] = {
-            "uuid": uuid,
-            "name": name,
-            "device": device,
-            "active": active
-          };
-        }
-        connections = map;
+        connections = parseRefreshOutput(text);
         const pending = refreshPending;
         refreshing = false;
         refreshPending = false;

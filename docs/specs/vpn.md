@@ -7,6 +7,7 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 - [x] Refresh requests during an active refresh are marked pending without clearing the existing error or starting another process.
 - [x] Refresh requests when idle mark the service refreshing, clear the last error, and start the refresh process.
 - [x] Delayed refresh scheduling updates the timer interval and restarts the timer.
+- [x] Refresh-process stdout parsing keeps `vpn` and `wireguard` rows, handles connection names containing colons, marks devices other than `--` as active, and ignores non-VPN or malformed rows.
 
 ### Connect and disconnect
 
@@ -56,7 +57,6 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for refresh-process stdout parsing into active/inactive connection groups.
 - [ ] Add executable coverage for connect/disconnect process exit and toast handling.
 - [ ] Add executable coverage for VPN panel rendered active/available sections.
 - [ ] Add executable coverage for bar and Control Center VPN entry-point interactions.
