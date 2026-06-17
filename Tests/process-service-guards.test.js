@@ -31,6 +31,15 @@ function testProcessServiceLifecycleAndCommands() {
   assert.match(forceKillBody, /if \(pid > 0\)[\s\S]*killProcessCmd\.command = \["kill", "-9", pid\.toString\(\)\][\s\S]*killProcessCmd\.running = true/, "forceKillProcess must run kill -9 for positive pids");
 }
 
+function testProcessServiceScalarInputsAreTyped() {
+  assert.match(source, /function setSortBy\(newSort: string\)/, "setSortBy must type the sort key input");
+  assert.match(source, /function killProcess\(pid: int\)/, "killProcess must type process IDs");
+  assert.match(source, /function forceKillProcess\(pid: int\)/, "forceKillProcess must type process IDs");
+  assert.match(source, /function formatCpu\(cpu: real\)/, "formatCpu must type CPU usage as a real number");
+  assert.match(source, /function formatMemory\(memKB: real\)/, "formatMemory must type memory as a real number of KB");
+  assert.match(source, /function getProcessIcon\(command: string\)/, "getProcessIcon must type the command string");
+}
+
 function testProcessServiceFormattingAndIcons() {
   const cpuBody = extractFunctionBody(source, "formatCpu");
   const memoryBody = extractFunctionBody(source, "formatMemory");
@@ -141,6 +150,7 @@ function testProcessServiceSortingExecutesLimitAndDirections() {
 
 const tests = [
   testProcessServiceLifecycleAndCommands,
+  testProcessServiceScalarInputsAreTyped,
   testProcessServiceFormattingAndIcons,
   testProcessServiceParsing,
   testProcessServiceSorting,

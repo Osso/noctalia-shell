@@ -12,6 +12,7 @@ Process covers process monitoring, process-list parsing/sorting, process actions
 - [x] Toggling sort direction flips direction and resorts.
 - [x] Normal process kill runs `kill` only for positive pids.
 - [x] Force kill runs `kill -9` only for positive pids.
+- [x] Sort-key, process-id, formatter, and process-icon helper inputs are typed.
 
 ### Formatting and icons
 
