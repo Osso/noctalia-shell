@@ -323,6 +323,19 @@ function testShortcutsCardShortcutIdsAreTyped() {
   assert.doesNotMatch(source, /modelData\.id/, "ShortcutsCard shortcut delegates must use typed id role instead of modelData.id");
 }
 
+function testVpnConnectionRowsAreTyped() {
+  const listSource = readQml("Modules/Panels/VPN/VPNConnectionsList.qml");
+  const itemSource = readQml("Modules/Panels/VPN/VPNConnectionItem.qml");
+  const rowDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.model[\s\S]*?VPNConnectionItem\s*\{[\s\S]*?required\s+property\s+string\s+uuid[\s\S]*?required\s+property\s+string\s+name[\s\S]*?required\s+property\s+bool\s+active[\s\S]*?connectionUuid:\s*uuid[\s\S]*?connectionName:\s*name[\s\S]*?connectionActive:\s*active/;
+
+  assert.match(listSource, rowDelegate, "VPNConnectionsList delegate must type connection scalar roles");
+  assert.doesNotMatch(listSource, /connection:\s*modelData/, "VPNConnectionsList must pass typed scalar roles instead of raw modelData");
+  assertPropertyType("Modules/Panels/VPN/VPNConnectionItem.qml", "connectionUuid", "string");
+  assertPropertyType("Modules/Panels/VPN/VPNConnectionItem.qml", "connectionName", "string");
+  assertPropertyType("Modules/Panels/VPN/VPNConnectionItem.qml", "connectionActive", "bool");
+  assert.doesNotMatch(itemSource, /connection\.(?:uuid|name|active)/, "VPNConnectionItem must use typed connection properties instead of connection.* field reads");
+}
+
 function testSectionEditorWidgetIdsAreTyped() {
   const source = readQml("Widgets/NSectionEditor.qml");
   const widgetDelegate = /Repeater\s*\{[\s\S]*?model:\s*widgetModel[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*widgetItem[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+string\s+id[\s\S]*?readonly\s+property\s+string\s+widgetId:\s*id[\s\S]*?widgetHasUserSettings\(widgetId\)[\s\S]*?text:\s*widgetId[\s\S]*?"widgetId":\s*widgetId/;
@@ -1127,6 +1140,7 @@ const tests = [
   testFilePickerDelegatesUseTypedFileRoles,
   testTaskbarWindowDelegateRolesAreTyped,
   testShortcutsCardShortcutIdsAreTyped,
+  testVpnConnectionRowsAreTyped,
   testSectionEditorWidgetIdsAreTyped,
   testSessionMenuPowerOptionRolesAreTyped,
   testCalendarMonthDayDelegateRolesAreTyped,

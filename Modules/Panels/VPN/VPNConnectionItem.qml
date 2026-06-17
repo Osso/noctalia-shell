@@ -9,11 +9,13 @@ import qs.Widgets
 Rectangle {
   id: root
 
-  required property var connection
+  required property string connectionUuid
+  required property string connectionName
+  required property bool connectionActive
 
-  readonly property bool isActive: connection && connection.active
-  readonly property bool isConnecting: connection ? VPNService.connectingUuid === connection.uuid : false
-  readonly property bool isDisconnecting: connection ? VPNService.disconnectingUuid === connection.uuid : false
+  readonly property bool isActive: connectionActive
+  readonly property bool isConnecting: VPNService.connectingUuid === connectionUuid
+  readonly property bool isDisconnecting: VPNService.disconnectingUuid === connectionUuid
   readonly property bool isBusy: isConnecting || isDisconnecting
 
   Layout.fillWidth: true
@@ -41,7 +43,7 @@ Rectangle {
       spacing: Style.marginXXS
 
       NText {
-        text: connection ? connection.name : ""
+        text: connectionName
         pointSize: Style.fontSizeM
         font.weight: isActive ? Style.fontWeightBold : Style.fontWeightMedium
         elide: Text.ElideRight
@@ -80,9 +82,9 @@ Rectangle {
       icon: isBusy ? "busy" : null
       onClicked: {
         if (isActive) {
-          VPNService.disconnect(connection.uuid);
+          VPNService.disconnect(connectionUuid);
         } else {
-          VPNService.connect(connection.uuid);
+          VPNService.connect(connectionUuid);
         }
       }
     }

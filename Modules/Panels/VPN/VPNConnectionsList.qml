@@ -36,8 +36,13 @@ NBox {
       model: root.model
 
       VPNConnectionItem {
-        required property var modelData
-        connection: modelData
+        required property string uuid
+        required property string name
+        required property bool active
+
+        connectionUuid: uuid
+        connectionName: name
+        connectionActive: active
         Layout.fillWidth: true
       }
     }

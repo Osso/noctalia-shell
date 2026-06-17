@@ -35,6 +35,11 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 - [x] Active device validation accepts device names such as `wg0` and rejects inactive placeholders, blank values, and malformed values.
 - [x] Connected-state validation accepts connected and connecting states and rejects disconnected or malformed connected strings.
 
+### Panel row typing
+
+- [x] VPN connection-list delegates type connection UUID, name, and active state roles and pass those scalars into each row item.
+- [x] VPN connection row items use typed connection properties instead of dynamic `connection.*` field reads.
+
 ## How it works
 
 - [docs/wiki/systems/vpn.md](../wiki/systems/vpn.md)
@@ -52,6 +57,7 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 ## Tests asserting this spec
 
 - `Tests/vpn-service-guards.test.js`
+- `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`
 - `Tests/source-coverage.test.js`
 
