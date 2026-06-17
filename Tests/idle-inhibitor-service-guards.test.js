@@ -55,6 +55,16 @@ function testIdleInhibitorRegistryAndStateTransitions() {
   assert.match(stopBody, /isInhibited = false/, "stopInhibition must mark inhibition inactive");
 }
 
+function testIdleInhibitorScalarInputsAreTyped() {
+  const source = readQml("Services/Power/IdleInhibitorService.qml");
+
+  assert.match(source, /function addInhibitor\(id: string, reason: string = "Application request"\)/, "addInhibitor must type id and reason inputs");
+  assert.match(source, /function removeInhibitor\(id: string\)/, "removeInhibitor must type inhibitor ids");
+  assert.match(source, /function updateInhibition\(newReason: string = reason\)/, "updateInhibition must type reason input");
+  assert.match(source, /function startInhibition\(newReason: string\)/, "startInhibition must type reason input");
+  assert.match(source, /function changeTimeout\(delta: int\)/, "changeTimeout must type timeout deltas");
+}
+
 function testIdleInhibitorBackendLaunchersAndManualToggle() {
   const source = readQml("Services/Power/IdleInhibitorService.qml");
   const systemdBody = extractFunctionBody(source, "startSystemdInhibition");
@@ -130,6 +140,7 @@ function testChangeTimeoutExecutesStateTransitions() {
 const tests = [
   testIdleInhibitorInitializationAndStrategyDetection,
   testIdleInhibitorRegistryAndStateTransitions,
+  testIdleInhibitorScalarInputsAreTyped,
   testIdleInhibitorBackendLaunchersAndManualToggle,
   testIdleInhibitorTimeoutAndManualHelpers,
   testChangeTimeoutExecutesStateTransitions,

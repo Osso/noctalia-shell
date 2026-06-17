@@ -17,11 +17,14 @@ Idle Inhibitor covers shell-managed idle inhibition, backend selection, manual k
 ### Inhibitor registry and state
 
 - [x] Adding an inhibitor rejects duplicate ids.
+- [x] Adding an inhibitor uses typed id and reason inputs.
 - [x] Adding an inhibitor records the id, updates system inhibition with the new reason, and reports success.
 - [x] Removing an inhibitor rejects unknown ids.
+- [x] Removing an inhibitor uses a typed id input.
 - [x] Removing an inhibitor removes known ids and refreshes system inhibition.
 - [x] Inhibition state derives from whether any active inhibitors remain.
 - [x] State updates avoid redundant backend changes.
+- [x] State updates and inhibition startup use typed reason inputs.
 - [x] State updates start or stop inhibition based on active ids.
 - [x] Starting inhibition stores the active reason.
 - [x] Starting inhibition delegates to the selected systemd or Wayland backend.
@@ -42,6 +45,7 @@ Idle Inhibitor covers shell-managed idle inhibition, backend selection, manual k
 ### Timeouts and manual helpers
 
 - [x] Timeout changes ignore negative deltas when no timeout is active.
+- [x] Timeout changes use typed integer deltas.
 - [x] Timeout changes create timed manual inhibition when a positive delta arrives without an active timeout.
 - [x] Timeout changes remove manual inhibition when the resulting timeout expires.
 - [x] Timeout changes update existing positive timeouts.

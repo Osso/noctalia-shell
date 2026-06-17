@@ -52,7 +52,7 @@ Singleton {
   }
 
   // Add an inhibitor
-  function addInhibitor(id, reason = "Application request") {
+  function addInhibitor(id: string, reason: string = "Application request") {
     if (activeInhibitors.includes(id)) {
       Logger.w("IdleInhibitor", "Inhibitor already active:", id);
       return false;
@@ -65,7 +65,7 @@ Singleton {
   }
 
   // Remove an inhibitor
-  function removeInhibitor(id) {
+  function removeInhibitor(id: string) {
     const index = activeInhibitors.indexOf(id);
     if (index === -1) {
       Logger.w("IdleInhibitor", "Inhibitor not found:", id);
@@ -79,7 +79,7 @@ Singleton {
   }
 
   // Update the actual system inhibition
-  function updateInhibition(newReason = reason) {
+  function updateInhibition(newReason: string = reason) {
     const shouldInhibit = activeInhibitors.length > 0;
 
     if (shouldInhibit === isInhibited) {
@@ -95,7 +95,7 @@ Singleton {
   }
 
   // Start system inhibition
-  function startInhibition(newReason) {
+  function startInhibition(newReason: string) {
     reason = newReason;
 
     if (strategy === "systemd") {
@@ -183,7 +183,7 @@ Singleton {
     }
   }
 
-  function changeTimeout(delta) {
+  function changeTimeout(delta: int) {
     if (timeout == null && delta < 0) {
       // no inhibitor, ignored
       return;
