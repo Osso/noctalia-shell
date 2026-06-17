@@ -130,6 +130,7 @@ function testWallpaperServiceMonitorConfigUsesTypedScreenName() {
   assert.match(source, /function getMonitorConfig\(screenName: string\)/, "getMonitorConfig must type the screen name input");
   assert.match(source, /function setMonitorDirectory\(screenName: string, directory: string\)/, "setMonitorDirectory must type screen and directory inputs");
   assert.match(source, /function changeWallpaper\(path: string, screenName\)/, "changeWallpaper must type the required path input while keeping screen optional");
+  assert.match(source, /function _setWallpaper\(screenName: string, path: string\)/, "_setWallpaper must type screen and path inputs");
   assert.match(source, /function scanDirectoryRecursive\(screenName: string, directory: string\)/, "scanDirectoryRecursive must type screen and directory inputs");
 }
 

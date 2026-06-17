@@ -249,7 +249,7 @@ Singleton {
   }
 
   // -------------------------------------------------------------------
-  function _setWallpaper(screenName, path) {
+  function _setWallpaper(screenName: string, path: string) {
     if (path === "" || path === undefined) {
       return;
     }
