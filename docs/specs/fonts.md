@@ -27,6 +27,7 @@ Fonts covers system font discovery, fontconfig monospace detection, font classif
 ### Classification and cache
 
 - [x] Monospace classification uses cached classification when present.
+- [x] Monospace and display classification helpers use typed font-name inputs.
 - [x] Monospace classification trusts fontconfig monospace data.
 - [x] Monospace classification falls back to monospace naming patterns.
 - [x] Monospace classification initializes cache entries as needed.
@@ -47,6 +48,7 @@ Fonts covers system font discovery, fontconfig monospace detection, font classif
 - [x] Fallback insertion only adds missing fallback fonts.
 - [x] Fallback insertion appends and sorts when new fallback fonts are added.
 - [x] Blank font searches return the full available-font model.
+- [x] Font search uses a typed query input.
 - [x] Font search normalizes queries.
 - [x] Font search scans available fonts and includes matching names.
 - [x] Font search returns filtered results.

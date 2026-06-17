@@ -135,7 +135,7 @@ Singleton {
     Logger.d("Font", "Loaded", availableFonts.count, "fonts:", monospaceFonts.count, "monospace,", displayFonts.count, "display");
   }
 
-  function isMonospaceFont(fontName) {
+  function isMonospaceFont(fontName: string) {
     // Check cache first
     if (fontCache.hasOwnProperty(fontName)) {
       return fontCache[fontName].isMonospace;
@@ -163,7 +163,7 @@ Singleton {
     return result;
   }
 
-  function isDisplayFont(fontName) {
+  function isDisplayFont(fontName: string) {
     // Check cache first
     if (fontCache.hasOwnProperty(fontName) && fontCache[fontName].hasOwnProperty('isDisplay')) {
       return fontCache[fontName].isDisplay;
@@ -229,7 +229,7 @@ Singleton {
     }
   }
 
-  function searchFonts(query) {
+  function searchFonts(query: string) {
     if (!query || query.trim() === "")
       return availableFonts;
 

@@ -42,6 +42,8 @@ function testFontServiceClassificationAndCaching() {
   const monospaceBody = extractFunctionBody(source, "isMonospaceFont");
   const displayBody = extractFunctionBody(source, "isDisplayFont");
 
+  assert.match(source, /function isMonospaceFont\(fontName: string\)/, "isMonospaceFont must type font names");
+  assert.match(source, /function isDisplayFont\(fontName: string\)/, "isDisplayFont must type font names");
   assert.match(monospaceBody, /if \(fontCache\.hasOwnProperty\(fontName\)\)[\s\S]*return fontCache\[fontName\]\.isMonospace/, "isMonospaceFont must use cached classification");
   assert.match(monospaceBody, /if \(fontconfigMonospaceFonts\.hasOwnProperty\(fontName\)\)[\s\S]*result = true/, "isMonospaceFont must trust fontconfig monospace data");
   assert.match(monospaceBody, /lowerFontName\.includes\("mono"\) \|\| lowerFontName\.includes\("monospace"\)/, "isMonospaceFont must fall back to monospace naming patterns");
@@ -60,6 +62,7 @@ function testFontServiceModelUtilitiesAndSearch() {
   const fallbackBody = extractFunctionBody(source, "addFallbackFonts");
   const searchBody = extractFunctionBody(source, "searchFonts");
 
+  assert.match(source, /function searchFonts\(query: string\)/, "searchFonts must type the query input");
   assert.match(batchBody, /for \(var i = 0; i < items\.length; i\+\+\)[\s\S]*model\.append\(items\[i\]\)/, "batchAppendToModel must append every item");
   assert.match(sortBody, /for \(var i = 0; i < model\.count; i\+\+\)[\s\S]*fontsArray\.push\(\{[\s\S]*"key": model\.get\(i\)\.key[\s\S]*"name": model\.get\(i\)\.name/, "sortModel must snapshot model rows");
   assert.match(sortBody, /fontsArray\.sort\(function \(a, b\)[\s\S]*return a\.name\.localeCompare\(b\.name\)/, "sortModel must sort by display name");
