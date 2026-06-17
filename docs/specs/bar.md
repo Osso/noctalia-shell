@@ -32,6 +32,7 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 - [x] Widget presence reflects registry keys, including keys whose component is currently null.
 - [x] Available-widget listing reflects registry key order.
 - [x] User settings are enabled only when widget metadata explicitly sets `allowUserSettings: true`.
+- [x] Bar widget registry lookup, presence, and user-settings helpers type widget id inputs as strings.
 - [x] Registry metadata has unique widget ids, references declared components, keeps settings-map and metadata keys aligned, and includes expected local widgets.
 
 ### Bar settings

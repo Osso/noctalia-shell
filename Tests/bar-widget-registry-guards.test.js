@@ -14,6 +14,10 @@ function testBarWidgetRegistryLookupAndPresenceHelpers() {
   const getWidget = qmlFunction("getWidget", "id");
   const hasWidget = qmlFunction("hasWidget", "id");
   const clockComponent = { name: "ClockComponent" };
+
+  assert.match(source, /function getWidget\(id: string\)/, "getWidget must type the widget id input");
+  assert.match(source, /function hasWidget\(id: string\)/, "hasWidget must type the widget id input");
+
   const ctx = {
     widgets: {
       Clock: clockComponent,
@@ -44,6 +48,9 @@ function testBarWidgetRegistryAvailableWidgetsReflectsRegistryKeys() {
 
 function testBarWidgetRegistryUserSettingsRequiresExplicitTrue() {
   const widgetHasUserSettings = qmlFunction("widgetHasUserSettings", "id");
+
+  assert.match(source, /function widgetHasUserSettings\(id: string\)/, "widgetHasUserSettings must type the widget id input");
+
   const ctx = {
     widgetMetadata: {
       Clock: { allowUserSettings: false },
