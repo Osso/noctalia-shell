@@ -18,6 +18,10 @@ File Picker covers reusable file/folder picking, file icon mapping, size formatt
 - [x] Confirming with no current selection leaves selected paths unchanged, emits no accepted event, and does not close.
 - [x] Confirming with a selection stores selected paths, emits the accepted event, and closes once.
 
+### Navigation
+
+- [x] Parent-folder navigation updates both the folder model URL and current path.
+
 ### Filtering
 
 - [x] Filtering clears stale filtered rows before rebuilding results.
@@ -56,7 +60,6 @@ File Picker covers reusable file/folder picking, file icon mapping, size formatt
 
 - [ ] Add executable coverage for keyboard shortcuts and search-bar toggling.
 - [ ] Add executable coverage for grid/list view selection behavior.
-- [ ] Add executable coverage for parent-folder navigation.
 - [ ] Add executable coverage for each settings/setup integration path.
 
 ## Out of scope

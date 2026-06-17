@@ -174,6 +174,25 @@ function testFilePickerFilteredModelSupportsFolderModeAndHiddenFiles() {
   ]);
 }
 
+function testFilePickerNavigatesToParentPath() {
+  assert.match(source, /function navigateToPath\(path: string\)/, "navigateToPath must type path input");
+  const navigateToPath = qmlFunction("navigateToPath", "path");
+  const ctx = {
+    folderModel: {
+      folder: "file:///home/osso/Downloads",
+    },
+    root: {
+      currentPath: "/home/osso/Downloads",
+    },
+  };
+
+  navigateToPath(ctx, "/home/osso");
+
+  assert.equal(ctx.folderModel.folder, "file:///home/osso");
+  assert.equal(ctx.root.currentPath, "/home/osso");
+  assert.match(source, /const parentPath = folderModel\.parentFolder\.toString\(\)\.replace\("file:\/\/", ""\)[\s\S]*root\.navigateToPath\(parentPath\)/, "parent button must navigate through the helper");
+}
+
 const tests = [
   testFilePickerIconMappingUsesKnownExtensionsAndFallback,
   testFilePickerFormatsFileSizes,
@@ -181,6 +200,7 @@ const tests = [
   testFilePickerConfirmSelectionGuardsEmptySelection,
   testFilePickerFilteredModelHidesHiddenFilesAndMatchesSearch,
   testFilePickerFilteredModelSupportsFolderModeAndHiddenFiles,
+  testFilePickerNavigatesToParentPath,
 ];
 
 for (const test of tests) {

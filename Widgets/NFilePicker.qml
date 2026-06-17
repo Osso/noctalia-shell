@@ -96,6 +96,11 @@ Popup {
     root.close();
   }
 
+  function navigateToPath(path: string) {
+    folderModel.folder = "file://" + path;
+    root.currentPath = path;
+  }
+
   function updateFilteredModel() {
     filteredModel.clear();
     const searchText = filePickerPanel.filterText.toLowerCase();
@@ -250,8 +255,7 @@ Popup {
             enabled: folderModel.folder.toString() !== "file:///"
             onClicked: {
               const parentPath = folderModel.parentFolder.toString().replace("file://", "");
-              folderModel.folder = "file://" + parentPath;
-              root.currentPath = parentPath;
+              root.navigateToPath(parentPath);
             }
           }
 
