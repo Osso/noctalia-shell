@@ -10,11 +10,13 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 - [x] Timestamp formatting defaults missing dates to the current time.
 - [x] Timestamp formatting pads one-based month values.
 - [x] Timestamp formatting returns the compact `yyyyMMdd-hhmmss` shape.
+- [x] Timestamp formatting returns concrete zero-padded year, month, day, hour, minute, and second values.
 - [x] Vague duration formatting fails closed to `0s` for invalid or negative durations.
 - [x] Vague duration formatting floors decimal seconds.
 - [x] Vague duration formatting splits durations into days, hours, minutes, and seconds.
 - [x] Vague duration formatting shows seconds only for short durations.
 - [x] Vague duration formatting joins readable duration parts with spaces.
+- [x] Vague duration formatting returns concrete second, minute, hour, and day bucket strings.
 - [x] Relative time formatting returns empty text for missing dates.
 - [x] Relative time formatting returns translated now, one-minute, many-minutes, one-hour, many-hours, one-day, and many-days buckets.
 
@@ -59,7 +61,6 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable value tests for timestamp and duration formatting outputs.
 - [ ] Add fake SoundService coverage for timer alarm start and stop calls.
 - [ ] Add executable TimerCard coverage for focus, mode switching, and button enabled states.
 

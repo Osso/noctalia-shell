@@ -38,6 +38,25 @@ function testRelativeTimeFormattingOutputsTranslatedBuckets() {
   assert.equal(formatRelativeTime(ctx, secondsAgo(3 * 86400)), "notifications.time.diffDD:3");
 }
 
+function testTimestampAndDurationFormattingOutputsConcreteValues() {
+  const source = readQml("Commons/Time.qml");
+  const timestampBody = extractFunctionBody(source, "getFormattedTimestamp");
+  const vagueBody = extractFunctionBody(source, "formatVagueHumanReadableDuration");
+  const getFormattedTimestamp = new Function("ctx", "date", `with (ctx) { return (function(date) ${timestampBody}).call(ctx, date); }`);
+  const formatVagueHumanReadableDuration = new Function("ctx", "totalSeconds", `with (ctx) { return (function(totalSeconds) ${vagueBody}).call(ctx, totalSeconds); }`);
+  const ctx = {};
+
+  assert.equal(getFormattedTimestamp(ctx, new Date(2026, 0, 2, 3, 4, 5)), "20260102-030405");
+  assert.equal(formatVagueHumanReadableDuration(ctx, "bad"), "0s");
+  assert.equal(formatVagueHumanReadableDuration(ctx, -1), "0s");
+  assert.equal(formatVagueHumanReadableDuration(ctx, 0), "0s");
+  assert.equal(formatVagueHumanReadableDuration(ctx, 1.9), "1s");
+  assert.equal(formatVagueHumanReadableDuration(ctx, 59), "59s");
+  assert.equal(formatVagueHumanReadableDuration(ctx, 65), "1m");
+  assert.equal(formatVagueHumanReadableDuration(ctx, 3661), "1h 1m");
+  assert.equal(formatVagueHumanReadableDuration(ctx, 90061), "1d 1h 1m");
+}
+
 function testTimestampFormattingGuards() {
   const source = readQml("Commons/Time.qml");
   const timestampBody = extractFunctionBody(source, "getFormattedTimestamp");
@@ -80,6 +99,7 @@ function testTimerPauseResetAndFinishedGuards() {
 const tests = [
   testTimeFormattingSignaturesAreTyped,
   testRelativeTimeFormattingOutputsTranslatedBuckets,
+  testTimestampAndDurationFormattingOutputsConcreteValues,
   testTimestampFormattingGuards,
   testTimerStartGuards,
   testTimerPauseResetAndFinishedGuards,
