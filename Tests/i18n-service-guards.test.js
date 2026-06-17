@@ -35,6 +35,7 @@ function testI18nLoadingAndLookupGuards() {
   const keysBody = extractFunctionBody(source, "getAllKeys");
   const reloadBody = extractFunctionBody(source, "reload");
 
+  assert.match(source, /function setLanguage\(newLangCode: string, fullLocale\)/, "setLanguage must type the required language-code input while keeping full locale optional");
   assert.match(setBody, /if \(typeof fullLocale === "undefined"\)[\s\S]*fullLocale = newLangCode/, "setLanguage must default full locale to language code");
   assert.match(setBody, /newLangCode !== langCode && availableLanguages\.includes\(newLangCode\)/, "setLanguage must only reload changed available languages");
   assert.match(setBody, /langCode = newLangCode[\s\S]*fullLocaleCode = fullLocale[\s\S]*locale = Qt\.locale\(fullLocale\)/, "setLanguage must update language and locale state together");

@@ -202,7 +202,7 @@ Singleton {
   }
 
   // -------------------------------------------
-  function setLanguage(newLangCode, fullLocale) {
+  function setLanguage(newLangCode: string, fullLocale) {
     if (typeof fullLocale === "undefined") {
       fullLocale = newLangCode;
     }
