@@ -2,6 +2,10 @@ Host Service covers host identity and operating-system metadata exposed to shell
 
 ## What it must do
 
+### OS release parsing
+
+- [x] `/etc/os-release` parsing prefers `PRETTY_NAME`, falls back to `NAME`, detects NixOS from `ID` or pretty name, exposes the logo candidate name, and marks host metadata ready.
+
 ### OS logo resolution
 
 - [x] Logo candidate building rejects blank names.
@@ -30,7 +34,6 @@ Host Service covers host identity and operating-system metadata exposed to shell
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for `/etc/os-release` parsing, `isReady`, `isNixOS`, and logo-name handoff.
 - [ ] Add executable coverage for probe process exit handling and `osLogo` URL assignment.
 - [ ] Add executable coverage for `displayName` precedence across explicit real name, getent real name, `$USER`, and fallback.
 

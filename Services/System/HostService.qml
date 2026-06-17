@@ -94,27 +94,38 @@ Singleton {
     probe.running = true;
   }
 
+  function parseOsRelease(rawText: string) {
+    const lines = rawText.split("\n");
+    const val = k => {
+      const l = lines.find(x => x.startsWith(k + "="));
+      return l ? l.split("=")[1].replace(/"/g, "") : "";
+    };
+    const osPretty = val("PRETTY_NAME") || val("NAME");
+    const osId = (val("ID") || "").toLowerCase();
+    const isNixOS = osId === "nixos" || (osPretty || "").toLowerCase().includes("nixos");
+
+    return {
+      "osPretty": osPretty,
+      "isNixOS": isNixOS,
+      "logoName": val("LOGO"),
+      "isReady": true
+    };
+  }
+
   // Read /etc/os-release and trigger resolution
   FileView {
     id: osInfo
     path: "/etc/os-release"
     onLoaded: {
       try {
-        const lines = text().split("\n");
-        const val = k => {
-          const l = lines.find(x => x.startsWith(k + "="));
-          return l ? l.split("=")[1].replace(/"/g, "") : "";
-        };
-        root.osPretty = val("PRETTY_NAME") || val("NAME");
+        const parsed = parseOsRelease(text());
+        root.osPretty = parsed.osPretty;
         Logger.i("HostService", "Detected", root.osPretty);
-
-        const osId = (val("ID") || "").toLowerCase();
-        root.isNixOS = osId === "nixos" || (root.osPretty || "").toLowerCase().includes("nixos");
-        const logoName = val("LOGO");
-        if (logoName) {
-          resolveLogo(logoName);
+        root.isNixOS = parsed.isNixOS;
+        if (parsed.logoName) {
+          resolveLogo(parsed.logoName);
         }
-        root.isReady = true;
+        root.isReady = parsed.isReady;
       } catch (e) {
         Logger.w("HostService", "failed to read os-release", e);
       }

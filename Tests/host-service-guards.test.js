@@ -75,11 +75,38 @@ function testResolveLogoBuildsShellProbeForCandidates() {
   assert.equal(ctx.probe.running, true);
 }
 
+function testParseOsReleaseExtractsReadinessAndLogo() {
+  const parseOsRelease = qmlFunction("parseOsRelease", "rawText");
+
+  assert.match(source, /function parseOsRelease\(rawText: string\)/, "parseOsRelease must type raw os-release input");
+  assert.deepEqual(parseOsRelease({}, [
+    'NAME="NixOS"',
+    'PRETTY_NAME="NixOS 26.05 (Warbler)"',
+    'ID=nixos',
+    'LOGO=nixos-logo',
+  ].join("\n")), {
+    osPretty: "NixOS 26.05 (Warbler)",
+    isNixOS: true,
+    logoName: "nixos-logo",
+    isReady: true,
+  });
+  assert.deepEqual(parseOsRelease({}, [
+    'NAME="Arch Linux"',
+    "ID=arch",
+  ].join("\n")), {
+    osPretty: "Arch Linux",
+    isNixOS: false,
+    logoName: "",
+    isReady: true,
+  });
+}
+
 const tests = [
   testBuildCandidatesRejectsBlankAndPathLikeNames,
   testBuildCandidatesIncludesKnownLogoSearchRoots,
   testResolveLogoSkipsInvalidNames,
   testResolveLogoBuildsShellProbeForCandidates,
+  testParseOsReleaseExtractsReadinessAndLogo,
 ];
 
 for (const test of tests) {
