@@ -22,6 +22,12 @@ File Picker covers reusable file/folder picking, file icon mapping, size formatt
 
 - [x] Parent-folder navigation updates both the folder model URL and current path.
 
+### Search controls
+
+- [x] Search-bar opening schedules focus for the search input.
+- [x] Search-bar closing clears search/filter text and refreshes filtered results.
+- [x] Toolbar, Ctrl+F, and Escape search controls route through the shared search visibility helper.
+
 ### Filtering
 
 - [x] Filtering clears stale filtered rows before rebuilding results.
@@ -58,7 +64,6 @@ File Picker covers reusable file/folder picking, file icon mapping, size formatt
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for keyboard shortcuts and search-bar toggling.
 - [ ] Add executable coverage for grid/list view selection behavior.
 - [ ] Add executable coverage for each settings/setup integration path.
 

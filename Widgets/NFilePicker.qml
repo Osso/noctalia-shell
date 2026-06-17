@@ -101,6 +101,17 @@ Popup {
     root.currentPath = path;
   }
 
+  function setSearchBarVisible(visible: bool) {
+    filePickerPanel.showSearchBar = visible;
+    if (visible) {
+      Qt.callLater(() => searchInput.forceActiveFocus());
+      return;
+    }
+    filePickerPanel.searchText = "";
+    filePickerPanel.filterText = "";
+    root.updateFilteredModel();
+  }
+
   function updateFilteredModel() {
     filteredModel.clear();
     const searchText = filePickerPanel.filterText.toLowerCase();
@@ -160,15 +171,10 @@ Popup {
 
     Keys.onPressed: event => {
                       if (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_F) {
-                        filePickerPanel.showSearchBar = !filePickerPanel.showSearchBar;
-                        if (filePickerPanel.showSearchBar)
-                        Qt.callLater(() => searchInput.forceActiveFocus());
+                        root.setSearchBarVisible(!filePickerPanel.showSearchBar);
                         event.accepted = true;
                       } else if (event.key === Qt.Key_Escape && filePickerPanel.showSearchBar) {
-                        filePickerPanel.showSearchBar = false;
-                        filePickerPanel.searchText = "";
-                        filePickerPanel.filterText = "";
-                        root.updateFilteredModel();
+                        root.setSearchBarVisible(false);
                         event.accepted = true;
                       }
                     }
@@ -275,12 +281,7 @@ Popup {
             tooltipText: filePickerPanel.showSearchBar ? I18n.tr("tooltips.search-close") : I18n.tr("tooltips.search")
             baseSize: Style.baseWidgetSize * 0.8
             onClicked: {
-              filePickerPanel.showSearchBar = !filePickerPanel.showSearchBar;
-              if (!filePickerPanel.showSearchBar) {
-                filePickerPanel.searchText = "";
-                filePickerPanel.filterText = "";
-                root.updateFilteredModel();
-              }
+              root.setSearchBarVisible(!filePickerPanel.showSearchBar);
             }
           }
 
@@ -328,10 +329,7 @@ Popup {
               root.updateFilteredModel();
             }
             Keys.onEscapePressed: {
-              filePickerPanel.showSearchBar = false;
-              filePickerPanel.searchText = "";
-              filePickerPanel.filterText = "";
-              root.updateFilteredModel();
+              root.setSearchBarVisible(false);
             }
           }
 

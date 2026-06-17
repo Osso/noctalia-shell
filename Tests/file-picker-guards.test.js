@@ -193,6 +193,49 @@ function testFilePickerNavigatesToParentPath() {
   assert.match(source, /const parentPath = folderModel\.parentFolder\.toString\(\)\.replace\("file:\/\/", ""\)[\s\S]*root\.navigateToPath\(parentPath\)/, "parent button must navigate through the helper");
 }
 
+function testFilePickerSearchBarToggleClearsAndFocuses() {
+  assert.match(source, /function setSearchBarVisible\(visible: bool\)/, "setSearchBarVisible must type visibility input");
+  const setSearchBarVisible = qmlFunction("setSearchBarVisible", "visible");
+  const events = [];
+  const ctx = {
+    filePickerPanel: {
+      showSearchBar: false,
+      searchText: "needle",
+      filterText: "needle",
+    },
+    Qt: {
+      callLater(callback) {
+        events.push("scheduled");
+        callback();
+      },
+    },
+    searchInput: {
+      forceActiveFocus() {
+        events.push("focus");
+      },
+    },
+    root: {
+      updateFilteredModel() {
+        events.push("filter");
+      },
+    },
+  };
+
+  setSearchBarVisible(ctx, true);
+  assert.equal(ctx.filePickerPanel.showSearchBar, true);
+  assert.deepEqual(events, ["scheduled", "focus"]);
+
+  events.length = 0;
+  setSearchBarVisible(ctx, false);
+  assert.equal(ctx.filePickerPanel.showSearchBar, false);
+  assert.equal(ctx.filePickerPanel.searchText, "");
+  assert.equal(ctx.filePickerPanel.filterText, "");
+  assert.deepEqual(events, ["filter"]);
+
+  assert.match(source, /root\.setSearchBarVisible\(!filePickerPanel\.showSearchBar\)/, "search button must toggle through helper");
+  assert.match(source, /root\.setSearchBarVisible\(false\)/, "escape handling must close search through helper");
+}
+
 const tests = [
   testFilePickerIconMappingUsesKnownExtensionsAndFallback,
   testFilePickerFormatsFileSizes,
@@ -201,6 +244,7 @@ const tests = [
   testFilePickerFilteredModelHidesHiddenFilesAndMatchesSearch,
   testFilePickerFilteredModelSupportsFolderModeAndHiddenFiles,
   testFilePickerNavigatesToParentPath,
+  testFilePickerSearchBarToggleClearsAndFocuses,
 ];
 
 for (const test of tests) {
