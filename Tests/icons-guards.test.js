@@ -68,6 +68,27 @@ function createLoadContext({ currentFontLoader = null, createdLoader = createFon
   return { ctx, logger, created, createdLoader };
 }
 
+function testIconsGetResolvesAliasesCodepointsAndMissingIcons() {
+  const get = qmlFunction("get", "iconName");
+  const ctx = {
+    aliases: {
+      close: "x",
+    },
+    icons: {
+      x: "\\uea76",
+      check: "\\uea67",
+    },
+  };
+
+  assert.equal(get(ctx, "close"), "\\uea76");
+  assert.equal(get(ctx, "check"), "\\uea67");
+  assert.equal(get(ctx, "missing"), undefined);
+}
+
+function testIconsGetUsesTypedIconName() {
+  assert.match(source, /function get\(iconName: string\)/, "get must type the icon name input");
+}
+
 function testIconsLoadFontDestroysOldLoaderAndCreatesCacheBustedLoader() {
   const loadFontWithCacheBusting = qmlFunction("loadFontWithCacheBusting");
   const oldLoader = createFontLoader("Old Icons");
@@ -137,6 +158,8 @@ function testIconsReloadFontIncrementsVersionAndReloads() {
 }
 
 const tests = [
+  testIconsGetResolvesAliasesCodepointsAndMissingIcons,
+  testIconsGetUsesTypedIconName,
   testIconsLoadFontDestroysOldLoaderAndCreatesCacheBustedLoader,
   testIconsLoadFontEmitsReloadedWhenLoaderBecomesReady,
   testIconsLoadFontLogsErrorStatusWithoutReloadSignal,

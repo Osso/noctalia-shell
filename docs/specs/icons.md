@@ -4,6 +4,9 @@ Icons covers bundled icon-font loading plus theme/desktop icon path resolution. 
 
 ### Icon font lifecycle
 
+- [x] Icon codepoint lookup resolves aliases before reading the icon map.
+- [x] Icon codepoint lookup returns mapped codepoints and leaves missing icons unresolved.
+- [x] Icon codepoint lookup uses a typed string icon-name input.
 - [x] Icon font loading destroys any previous dynamic font loader before creating a replacement.
 - [x] Icon font loading creates a cache-busted `FontLoader` under the icon singleton root.
 - [x] Dynamic font-loader object names include the current font version.
@@ -44,7 +47,6 @@ Icons covers bundled icon-font loading plus theme/desktop icon path resolution. 
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for `Icons.get()` alias resolution and missing icon behavior.
 - [ ] Add executable coverage for `NIcon` fallback rendering and warning behavior.
 - [ ] Add fixture coverage for icon-theme resolver path precedence across theme directories.
 
