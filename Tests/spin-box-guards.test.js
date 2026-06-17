@@ -88,6 +88,10 @@ function testSpinBoxChangeValueIgnoresInvalidDirectionAndExistingBounds() {
   assert.equal(ctx.repeatTimer.stopped, 0);
 }
 
+function testSpinBoxChangeValueUsesTypedDirection() {
+  assert.match(source, /function changeValue\(direction: int, step\)/, "changeValue must type the direction input while keeping step optional");
+}
+
 function testSpinBoxStopRepeatClearsDirectionAndRestoresInitialDelay() {
   const stopRepeat = qmlFunction("stopRepeat");
   const ctx = createSpinBoxContext({
@@ -140,6 +144,7 @@ const tests = [
   testSpinBoxChangeValueIncrementsDecrementsAndUsesDefaultStep,
   testSpinBoxChangeValueClampsAtBoundsAndStopsRepeat,
   testSpinBoxChangeValueIgnoresInvalidDirectionAndExistingBounds,
+  testSpinBoxChangeValueUsesTypedDirection,
   testSpinBoxStopRepeatClearsDirectionAndRestoresInitialDelay,
   testSpinBoxApplyValueParsesAndClampsInputText,
   testSpinBoxApplyValueIgnoresNonNumericText,
