@@ -21,6 +21,7 @@ Toast covers lightweight transient messages, toast command helpers, queue manage
 - [x] Queue processing ignores empty queues.
 - [x] Queue processing leaves queued messages untouched when a toast is already visible.
 - [x] Queue processing activates the toast loader with the next toast, marks a toast visible, and removes the activated toast from the queue.
+- [x] Toast hidden handling clears active-toast state, deactivates the window loader, and schedules queue continuation.
 
 ### Visible toast item
 
@@ -49,7 +50,6 @@ Toast covers lightweight transient messages, toast command helpers, queue manage
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for `ToastScreen.onToastHidden` cleanup and queue continuation.
 - [ ] Add UI-level coverage for toast icon, message, description, type color, and click-to-hide rendering.
 - [ ] Add multi-screen coverage for `ToastOverlay` screen delegation.
 

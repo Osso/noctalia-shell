@@ -127,12 +127,33 @@ function testProcessQueueActivatesLoaderWithNextToast() {
   assert.deepEqual(ctx.messageQueue, [second]);
 }
 
+function testOnToastHiddenCleansWindowAndSchedulesQueueContinuation() {
+  const onToastHidden = qmlFunction("onToastHidden");
+  const ctx = {
+    isShowingToast: true,
+    windowLoader: { active: true },
+    restartCalls: 0,
+    hideTimer: {
+      restart() {
+        ctx.restartCalls += 1;
+      },
+    },
+  };
+
+  onToastHidden(ctx);
+
+  assert.equal(ctx.isShowingToast, false);
+  assert.equal(ctx.windowLoader.active, false);
+  assert.equal(ctx.restartCalls, 1);
+}
+
 const tests = [
   testEnqueueToastQueuesAndProcessesNewToast,
   testEnqueueToastDropsOldestWhenQueueIsFull,
   testEnqueueToastReplacesVisibleToastAndRestartsSwitchTimer,
   testProcessQueueIgnoresEmptyOrVisibleToast,
   testProcessQueueActivatesLoaderWithNextToast,
+  testOnToastHiddenCleansWindowAndSchedulesQueueContinuation,
 ];
 
 for (const test of tests) {
