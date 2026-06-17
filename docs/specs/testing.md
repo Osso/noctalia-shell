@@ -18,7 +18,7 @@ Testing covers local regression gates, function-coverage guardrails, and log fil
 - [x] Current-reload log filtering must keep log lines from the current reload window.
 - [x] Fatal-pattern fixture coverage must match high-signal QML load/runtime failures and avoid normal informational log lines.
 - [ ] The live Quickshell log gate must fail when the current reload window contains high-signal QML load/runtime failures.
-- [ ] The live Quickshell log gate must report a clear no-shell diagnostic when no local shell is running.
+- [x] The live Quickshell log gate must report a clear no-shell diagnostic when no local shell is running.
 
 ### Runner contract
 
@@ -50,7 +50,6 @@ Testing covers local regression gates, function-coverage guardrails, and log fil
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for the no-active-shell diagnostic path.
 - [ ] Add an automated check that every non-meta test file is named by a feature spec rather than only a meta/tooling spec.
 
 ## Out of scope
