@@ -72,6 +72,11 @@ function testSearchableComboBoxFindIndexByKeyInFilteredUsesFilteredModelOnly() {
   assert.equal(findIndexByKeyInFiltered(ctx, "wifi"), -1);
 }
 
+function testSearchableComboBoxKeyLookupInputsAreTyped() {
+  assert.match(source, /function findIndexByKey\(key: string\)/, "findIndexByKey must type the key input");
+  assert.match(source, /function findIndexByKeyInFiltered\(key: string\)/, "findIndexByKeyInFiltered must type the key input");
+}
+
 function testSearchableComboBoxFilterModelClearsAndReturnsForMissingOrEmptyModel() {
   const filterModel = qmlFunction("filterModel");
   const ctx = createContext({
@@ -161,6 +166,7 @@ function testSearchableComboBoxFilterModelUsesFuzzyResultOrdering() {
 const tests = [
   testSearchableComboBoxFindIndexByKeyReturnsFirstMatchAndMissingSentinel,
   testSearchableComboBoxFindIndexByKeyInFilteredUsesFilteredModelOnly,
+  testSearchableComboBoxKeyLookupInputsAreTyped,
   testSearchableComboBoxFilterModelClearsAndReturnsForMissingOrEmptyModel,
   testSearchableComboBoxFilterModelCopiesAllItemsForBlankSearch,
   testSearchableComboBoxFilterModelFallsBackToCaseInsensitiveNameSearch,

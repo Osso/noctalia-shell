@@ -8,6 +8,7 @@ Searchable Combo Box covers the shared searchable list selector used by settings
 - [x] Base-model key lookup returns `-1` when no item matches.
 - [x] Filtered-model key lookup searches only the filtered model.
 - [x] Filtered-model key lookup returns `-1` for keys present only in the unfiltered source model.
+- [x] Key lookup helpers use typed string key inputs.
 
 ### Filtering
 
