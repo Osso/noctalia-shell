@@ -184,7 +184,7 @@ Singleton {
 
   // -------------------------------------------------------------------
   // Get specific monitor directory
-  function getMonitorDirectory(screenName) {
+  function getMonitorDirectory(screenName: string) {
     if (!Settings.data.wallpaper.enableMultiMonitorDirectories) {
       return root.defaultDirectory;
     }
@@ -232,7 +232,7 @@ Singleton {
 
   // -------------------------------------------------------------------
   // Get specific monitor wallpaper - now from cache
-  function getWallpaper(screenName) {
+  function getWallpaper(screenName: string) {
     return currentWallpapers[screenName] || root.defaultWallpaper;
   }
 
@@ -330,7 +330,7 @@ Singleton {
   }
 
   // -------------------------------------------------------------------
-  function getWallpapersList(screenName) {
+  function getWallpapersList(screenName: string) {
     if (screenName != undefined && wallpaperLists[screenName] != undefined) {
       return wallpaperLists[screenName];
     }
