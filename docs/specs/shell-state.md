@@ -10,6 +10,7 @@ ShellState covers the small persisted state cache shared by services that need l
 - [x] Color scheme list state defaults `schemes` to an empty list and `timestamp` to `0`.
 - [x] Every adapter key is read or written through ShellState.
 - [x] Display, notifications, changelog, and color scheme list state each expose setter and getter functions.
+- [x] Display, notifications, changelog, and color scheme list setters write their adapter key, queue a save, and emit the matching change signal.
 
 ### Debounced persistence
 
@@ -45,7 +46,7 @@ ShellState covers the small persisted state cache shared by services that need l
 ## Known gaps (current cycle)
 
 - [ ] Add executable coverage for ShellState load success and load-failure paths.
-- [ ] Add executable coverage for each setter emitting its matching change signal.
+- [x] Add executable coverage for each setter emitting its matching change signal.
 - [ ] Add executable coverage for cache consumers round-tripping through ShellState.
 
 ## Out of scope

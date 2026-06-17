@@ -196,11 +196,68 @@ function testShellStateBuildSnapshotFailsClosedOnConversionErrors() {
   assert.equal(errors[0][1], "Failed to build state snapshot:");
 }
 
+function testShellStateSettersSaveAndEmitMatchingSignals() {
+  const cases = [
+    {
+      setter: qmlFunction("setDisplay", "displayData"),
+      value: { HDMI: { scale: 1.25 } },
+      adapterKey: "display",
+      signalName: "displayStateChanged",
+    },
+    {
+      setter: qmlFunction("setNotificationsState", "stateData"),
+      value: { lastSeenTs: 123 },
+      adapterKey: "notificationsState",
+      signalName: "notificationsStateChanged",
+    },
+    {
+      setter: qmlFunction("setChangelogState", "stateData"),
+      value: { lastSeenVersion: "1.2.3" },
+      adapterKey: "changelogState",
+      signalName: "changelogStateChanged",
+    },
+    {
+      setter: qmlFunction("setColorSchemesList", "listData"),
+      value: { schemes: ["ayu"], timestamp: 456 },
+      adapterKey: "colorSchemesList",
+      signalName: "colorSchemesListChanged",
+    },
+  ];
+
+  for (const testCase of cases) {
+    const calls = [];
+    const ctx = {
+      adapter: {},
+      save() {
+        calls.push("save");
+      },
+      displayStateChanged() {
+        calls.push("displayStateChanged");
+      },
+      notificationsStateChanged() {
+        calls.push("notificationsStateChanged");
+      },
+      changelogStateChanged() {
+        calls.push("changelogStateChanged");
+      },
+      colorSchemesListChanged() {
+        calls.push("colorSchemesListChanged");
+      },
+    };
+
+    testCase.setter(ctx, testCase.value);
+
+    assert.deepEqual(ctx.adapter[testCase.adapterKey], testCase.value);
+    assert.deepEqual(calls, ["save", testCase.signalName]);
+  }
+}
+
 const tests = [
   testShellStateSaveQueuesDebouncedWrite,
   testShellStatePerformSaveGuardsAndWritesQueuedState,
   testShellStateBuildSnapshotAggregatesSettingsAndCachedState,
   testShellStateBuildSnapshotFailsClosedOnConversionErrors,
+  testShellStateSettersSaveAndEmitMatchingSignals,
 ];
 
 for (const test of tests) {
