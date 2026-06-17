@@ -112,6 +112,17 @@ Singleton {
     };
   }
 
+  function handleLogoProbeExit(exitCode: int) {
+    const p = String(probe.stdout.text || "").trim();
+    if (exitCode === 0 && p) {
+      osLogo = `file://${p}`;
+      Logger.d("HostService", "Found", osLogo);
+    } else {
+      osLogo = "";
+      Logger.w("HostService", "None logo found");
+    }
+  }
+
   // Read /etc/os-release and trigger resolution
   FileView {
     id: osInfo
@@ -135,14 +146,7 @@ Singleton {
   Process {
     id: probe
     onExited: code => {
-      const p = String(stdout.text || "").trim();
-      if (code === 0 && p) {
-        root.osLogo = `file://${p}`;
-        Logger.d("HostService", "Found", root.osLogo);
-      } else {
-        root.osLogo = "";
-        Logger.w("HostService", "None logo found");
-      }
+      root.handleLogoProbeExit(code);
     }
     stdout: StdioCollector {}
     stderr: StdioCollector {}

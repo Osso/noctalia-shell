@@ -101,12 +101,45 @@ function testParseOsReleaseExtractsReadinessAndLogo() {
   });
 }
 
+function testHandleLogoProbeExitAssignsLogoUrl() {
+  const handleLogoProbeExit = qmlFunction("handleLogoProbeExit", "exitCode");
+  const messages = [];
+  const ctx = {
+    osLogo: "old",
+    probe: {
+      stdout: {
+        text: " /usr/share/pixmaps/os.svg \n",
+      },
+    },
+    Logger: {
+      d(...args) {
+        messages.push(["d", ...args]);
+      },
+      w(...args) {
+        messages.push(["w", ...args]);
+      },
+    },
+  };
+
+  assert.match(source, /function handleLogoProbeExit\(exitCode: int\)/, "handleLogoProbeExit must type probe exit code");
+  handleLogoProbeExit(ctx, 0);
+  assert.equal(ctx.osLogo, "file:///usr/share/pixmaps/os.svg");
+  assert.deepEqual(messages, [["d", "HostService", "Found", "file:///usr/share/pixmaps/os.svg"]]);
+
+  messages.length = 0;
+  ctx.probe.stdout.text = "";
+  handleLogoProbeExit(ctx, 1);
+  assert.equal(ctx.osLogo, "");
+  assert.deepEqual(messages, [["w", "HostService", "None logo found"]]);
+}
+
 const tests = [
   testBuildCandidatesRejectsBlankAndPathLikeNames,
   testBuildCandidatesIncludesKnownLogoSearchRoots,
   testResolveLogoSkipsInvalidNames,
   testResolveLogoBuildsShellProbeForCandidates,
   testParseOsReleaseExtractsReadinessAndLogo,
+  testHandleLogoProbeExitAssignsLogoUrl,
 ];
 
 for (const test of tests) {

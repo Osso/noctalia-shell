@@ -16,6 +16,7 @@ Host Service covers host identity and operating-system metadata exposed to shell
 - [x] Logo candidate building includes common generic `/usr/share/icons` fallbacks.
 - [x] Logo resolution skips invalid names without mutating or starting the probe process.
 - [x] Logo resolution builds a shell file-existence probe over the candidate list and starts it for valid names.
+- [x] Logo probe exit handling assigns a `file://` URL on success with stdout, clears the logo on failure or empty stdout, and logs the result.
 
 ## How it works
 
@@ -34,7 +35,6 @@ Host Service covers host identity and operating-system metadata exposed to shell
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for probe process exit handling and `osLogo` URL assignment.
 - [ ] Add executable coverage for `displayName` precedence across explicit real name, getent real name, `$USER`, and fallback.
 
 ## Out of scope
