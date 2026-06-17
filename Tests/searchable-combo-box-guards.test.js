@@ -163,6 +163,18 @@ function testSearchableComboBoxFilterModelUsesFuzzyResultOrdering() {
   ]);
 }
 
+function testSearchableComboBoxDefaultDelegateRolesAreTyped() {
+  const defaultDelegate = /Component\s*\{[\s\S]*?id:\s*defaultDelegate[\s\S]*?ItemDelegate\s*\{/;
+  const typedItemRoles = /required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+key[\s\S]*?required\s+property\s+string\s+name/;
+  const typedRoleUsage = /root\.selected\(key\)[\s\S]*?findIndexByKeyInFiltered\(key\)[\s\S]*?text:\s*delegateRoot\.name/;
+  const typedBadgeText = /Repeater\s*\{[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?text:\s*modelData/;
+
+  assert.match(source, defaultDelegate, "default delegate must be present");
+  assert.match(source, typedItemRoles, "default delegate must type key/name/index roles");
+  assert.match(source, typedRoleUsage, "default delegate must use typed roles for selection and label text");
+  assert.match(source, typedBadgeText, "default delegate must type badge modelData");
+}
+
 const tests = [
   testSearchableComboBoxFindIndexByKeyReturnsFirstMatchAndMissingSentinel,
   testSearchableComboBoxFindIndexByKeyInFilteredUsesFilteredModelOnly,
@@ -171,6 +183,7 @@ const tests = [
   testSearchableComboBoxFilterModelCopiesAllItemsForBlankSearch,
   testSearchableComboBoxFilterModelFallsBackToCaseInsensitiveNameSearch,
   testSearchableComboBoxFilterModelUsesFuzzyResultOrdering,
+  testSearchableComboBoxDefaultDelegateRolesAreTyped,
 ];
 
 for (const test of tests) {

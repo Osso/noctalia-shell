@@ -20,6 +20,11 @@ Searchable Combo Box covers the shared searchable list selector used by settings
 - [x] Fuzzy search uses item `name`, threshold `-1000`, and limit `50`.
 - [x] Fuzzy search appends results in returned relevance order.
 
+### Types
+
+- [x] The default popup delegate declares typed `index`, `key`, and `name` roles.
+- [x] Badge repeaters in the default popup delegate declare typed string badge text.
+
 ## How it works
 
 - [docs/wiki/systems/searchable-combo-box.md](../wiki/systems/searchable-combo-box.md)
@@ -41,7 +46,6 @@ Searchable Combo Box covers the shared searchable list selector used by settings
 
 - [ ] Add executable coverage for popup focus behavior when opened.
 - [ ] Add executable coverage for activation, selected-signal emission, and current-key updates.
-- [ ] Add typed-QML coverage for delegate model data used by the default popup delegate.
 
 ## Out of scope
 

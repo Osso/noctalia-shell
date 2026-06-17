@@ -184,6 +184,10 @@ RowLayout {
             id: defaultDelegate
             ItemDelegate {
               id: delegateRoot
+              required property int index
+              required property string key
+              required property string name
+
               width: listView.width
               hoverEnabled: true
               highlighted: ListView.view.currentIndex === index
@@ -195,8 +199,8 @@ RowLayout {
               }
 
               onClicked: {
-                root.selected(filteredModel.get(index).key);
-                combo.currentIndex = root.findIndexByKeyInFiltered(filteredModel.get(index).key);
+                root.selected(key);
+                combo.currentIndex = root.findIndexByKeyInFiltered(key);
                 combo.popup.close();
               }
 
@@ -205,7 +209,7 @@ RowLayout {
                 spacing: Style.marginM
 
                 NText {
-                  text: name
+                  text: delegateRoot.name
                   pointSize: Style.fontSizeM
                   color: highlighted ? Color.mOnHover : Color.mOnSurface
                   verticalAlignment: Text.AlignVCenter
@@ -226,6 +230,8 @@ RowLayout {
                     model: typeof badgeLocations !== 'undefined' ? badgeLocations : []
 
                     delegate: Item {
+                      required property string modelData
+
                       width: Style.baseWidgetSize * 0.7
                       height: Style.baseWidgetSize * 0.7
 
