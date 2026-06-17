@@ -17,6 +17,10 @@ File Picker covers reusable file/folder picking, file icon mapping, size formatt
 - [x] Opening the picker requests selection reset and opens the popup.
 - [x] Confirming with no current selection leaves selected paths unchanged, emits no accepted event, and does not close.
 - [x] Confirming with a selection stores selected paths, emits the accepted event, and closes once.
+- [x] Single-click file selection works only in file mode.
+- [x] Single-click folder selection works only in folder mode.
+- [x] Double-clicking a folder navigates into it.
+- [x] Double-clicking a file in file mode selects and confirms it.
 
 ### Navigation
 
@@ -64,7 +68,6 @@ File Picker covers reusable file/folder picking, file icon mapping, size formatt
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for grid/list view selection behavior.
 - [ ] Add executable coverage for each settings/setup integration path.
 
 ## Out of scope

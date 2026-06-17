@@ -112,6 +112,26 @@ Popup {
     root.updateFilteredModel();
   }
 
+  function handleFileEntryActivated(filePath: string, fileIsDir: bool, doubleClick: bool) {
+    if (fileIsDir) {
+      if (doubleClick) {
+        root.navigateToPath(filePath);
+      } else if (root.selectionMode === "folders") {
+        filePickerPanel.currentSelection = [filePath];
+      }
+      return;
+    }
+
+    if (root.selectionMode !== "files") {
+      return;
+    }
+
+    filePickerPanel.currentSelection = [filePath];
+    if (doubleClick) {
+      root.confirmSelection();
+    }
+  }
+
   function updateFilteredModel() {
     filteredModel.clear();
     const searchText = filePickerPanel.filterText.toLowerCase();
@@ -627,34 +647,13 @@ Popup {
 
               onClicked: mouse => {
                            if (mouse.button === Qt.LeftButton) {
-                             if (fileIsDir) {
-                               // In folder mode, single click selects the folder
-                               if (root.selectionMode === "folders") {
-                                 filePickerPanel.currentSelection = [filePath];
-                               }
-                               // In file mode, single click on folder does nothing (must double-click to enter)
-                             } else {
-                               // Single click on file selects it (only in file mode)
-                               if (root.selectionMode === "files") {
-                                 filePickerPanel.currentSelection = [filePath];
-                               }
-                             }
+                             root.handleFileEntryActivated(filePath, fileIsDir, false);
                            }
                          }
 
               onDoubleClicked: mouse => {
                                  if (mouse.button === Qt.LeftButton) {
-                                   if (fileIsDir) {
-                                     // Double-click on folder always navigates into it
-                                     folderModel.folder = "file://" + filePath;
-                                     root.currentPath = filePath;
-                                   } else {
-                                     // Double-click on file selects and confirms (only in file mode)
-                                     if (root.selectionMode === "files") {
-                                       filePickerPanel.currentSelection = [filePath];
-                                       root.confirmSelection();
-                                     }
-                                   }
+                                   root.handleFileEntryActivated(filePath, fileIsDir, true);
                                  }
                                }
             }

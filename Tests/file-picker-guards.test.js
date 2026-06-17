@@ -236,6 +236,48 @@ function testFilePickerSearchBarToggleClearsAndFocuses() {
   assert.match(source, /root\.setSearchBarVisible\(false\)/, "escape handling must close search through helper");
 }
 
+function testFilePickerFileEntrySelectionBehavior() {
+  assert.match(source, /function handleFileEntryActivated\(filePath: string, fileIsDir: bool, doubleClick: bool\)/, "file entry activation helper must type path, directory, and double-click inputs");
+  const handleFileEntryActivated = qmlFunction("handleFileEntryActivated", "filePath", "fileIsDir", "doubleClick");
+  const ctx = {
+    filePickerPanel: {
+      currentSelection: [],
+    },
+    root: {
+      selectionMode: "files",
+      navigateToPath(path) {
+        this.currentPath = path;
+      },
+      confirmSelection() {
+        this.confirmed = true;
+      },
+    },
+  };
+
+  handleFileEntryActivated(ctx, "/home/osso/Documents", true, false);
+  assert.deepEqual(ctx.filePickerPanel.currentSelection, [], "single-click folder in file mode must not select");
+
+  handleFileEntryActivated(ctx, "/home/osso/Documents", true, true);
+  assert.equal(ctx.root.currentPath, "/home/osso/Documents", "double-click folder must navigate");
+
+  handleFileEntryActivated(ctx, "/home/osso/file.txt", false, false);
+  assert.deepEqual(ctx.filePickerPanel.currentSelection, ["/home/osso/file.txt"], "single-click file in file mode must select");
+
+  handleFileEntryActivated(ctx, "/home/osso/other.txt", false, true);
+  assert.deepEqual(ctx.filePickerPanel.currentSelection, ["/home/osso/other.txt"], "double-click file must select before confirming");
+  assert.equal(ctx.root.confirmed, true, "double-click file in file mode must confirm");
+
+  ctx.root.selectionMode = "folders";
+  ctx.root.confirmed = false;
+  handleFileEntryActivated(ctx, "/home/osso/Pictures", true, false);
+  assert.deepEqual(ctx.filePickerPanel.currentSelection, ["/home/osso/Pictures"], "single-click folder in folder mode must select");
+
+  handleFileEntryActivated(ctx, "/home/osso/ignored.txt", false, false);
+  assert.deepEqual(ctx.filePickerPanel.currentSelection, ["/home/osso/Pictures"], "single-click file in folder mode must not replace selection");
+  assert.match(source, /root\.handleFileEntryActivated\(filePath,\s*fileIsDir,\s*false\)/, "single-click handler must route through helper");
+  assert.match(source, /root\.handleFileEntryActivated\(filePath,\s*fileIsDir,\s*true\)/, "double-click handler must route through helper");
+}
+
 const tests = [
   testFilePickerIconMappingUsesKnownExtensionsAndFallback,
   testFilePickerFormatsFileSizes,
@@ -245,6 +287,7 @@ const tests = [
   testFilePickerFilteredModelSupportsFolderModeAndHiddenFiles,
   testFilePickerNavigatesToParentPath,
   testFilePickerSearchBarToggleClearsAndFocuses,
+  testFilePickerFileEntrySelectionBehavior,
 ];
 
 for (const test of tests) {
