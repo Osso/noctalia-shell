@@ -41,6 +41,13 @@ function testPowerProfileMutationGuards() {
   assert.match(defaultBody, /return \(profile === PowerProfile\.Balanced\)/, "isDefault must consider balanced the default profile");
 }
 
+function testPowerProfileMutationInputsAreTyped() {
+  const source = readQml("Services/Power/PowerProfileService.qml");
+
+  assert.match(source, /function setProfile\(p: int\)/, "setProfile must type the requested profile value");
+  assert.match(source, /function setNoctaliaPerformance\(value: bool\)/, "setNoctaliaPerformance must type the requested performance mode");
+}
+
 function testNoctaliaPerformanceGuards() {
   const source = readQml("Services/Power/PowerProfileService.qml");
   const toggleBody = extractFunctionBody(source, "toggleNoctaliaPerformance");
@@ -55,6 +62,7 @@ function testNoctaliaPerformanceGuards() {
 const tests = [
   testPowerProfileNameAndIconGuards,
   testPowerProfileMutationGuards,
+  testPowerProfileMutationInputsAreTyped,
   testNoctaliaPerformanceGuards,
 ];
 

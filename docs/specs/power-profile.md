@@ -17,6 +17,7 @@ Power profile covers UPower profile labeling, icon selection, profile mutation, 
 
 - [x] Service startup logs that the power profile service started.
 - [x] Setting a profile no-ops when power profiles are unavailable.
+- [x] Setting a profile uses a typed profile value input.
 - [x] Setting a profile writes the requested value to the UPower profile object when available.
 - [x] Profile assignment failures are logged.
 - [x] Cycling profiles no-ops when power profiles are unavailable.
@@ -33,6 +34,7 @@ Power profile covers UPower profile labeling, icon selection, profile mutation, 
 ### Noctalia performance mode
 
 - [x] Noctalia performance toggle inverts the mode.
+- [x] Noctalia performance setter uses a typed boolean input.
 - [x] Noctalia performance setter assigns the requested mode.
 - [x] Enabling Noctalia performance mode shows the enabled toast with the rocket icon.
 - [x] Disabling Noctalia performance mode shows the disabled toast with the rocket-off icon.
