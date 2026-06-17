@@ -10,6 +10,7 @@ Program Checker covers runtime availability checks for optional tools and themed
 - [x] Discord client detection starts the detector process.
 - [x] Code client detection builds a shell directory probe from TemplateRegistry code clients.
 - [x] Code client detection appends available client names and starts the detector process.
+- [x] Detector stdout parsing maps whitespace-separated client names to known client metadata, drops unknown names, deduplicates repeated names, and treats blank output as no clients.
 
 ### Program queueing
 
@@ -18,6 +19,7 @@ Program Checker covers runtime availability checks for optional tools and themed
 - [x] Program checking stops without changing state when the queue is exhausted.
 - [x] Checking all programs resets completed count, current index, and queue state.
 - [x] Checking all programs starts the first queued program immediately.
+- [x] Checker exit handling writes availability from the process exit code, stops the process, advances incomplete queues, and emits completion after starting client detection at the end.
 
 ### Targeted checks and diagnostics
 
@@ -44,8 +46,6 @@ Program Checker covers runtime availability checks for optional tools and themed
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable fixture coverage for detector process stdout parsing.
-- [ ] Add executable fixture coverage for checker process exit handling and `checksCompleted` emission.
 - [ ] Add fixture coverage for client names and paths containing shell-sensitive characters.
 
 ## Out of scope

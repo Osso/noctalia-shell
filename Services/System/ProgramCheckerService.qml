@@ -41,6 +41,26 @@ Singleton {
   // Signal emitted when all checks are complete
   signal checksCompleted
 
+  function parseDetectedClients(rawOutput: string, clients) {
+    const detectedNames = rawOutput.trim().split(/\s+/).filter(function (client) {
+      return client.length > 0;
+    });
+    const detectedClients = [];
+
+    for (var i = 0; i < detectedNames.length; i++) {
+      const clientName = detectedNames[i];
+      const client = clients.find(function (candidate) {
+        return candidate.name === clientName;
+      });
+
+      if (client && !detectedClients.includes(client)) {
+        detectedClients.push(client);
+      }
+    }
+
+    return detectedClients;
+  }
+
   // Function to detect Discord client by checking config directories
   function detectDiscordClient() {
     // Build shell script to check each client
@@ -78,24 +98,13 @@ Singleton {
       availableDiscordClients = [];
 
       if (exitCode === 0) {
-        var detectedClients = stdout.text.trim().split(/\s+/).filter(function (client) {
-          return client.length > 0;
-        });
+        var detectedClients = parseDetectedClients(stdout.text, TemplateRegistry.discordClients);
 
         if (detectedClients.length > 0) {
-          // Build list of available clients
-          for (var i = 0; i < detectedClients.length; i++) {
-            var clientName = detectedClients[i];
-            for (var j = 0; j < TemplateRegistry.discordClients.length; j++) {
-              var client = TemplateRegistry.discordClients[j];
-              if (client.name === clientName) {
-                availableDiscordClients.push(client);
-                break;
-              }
-            }
-          }
-
-          Logger.d("ProgramChecker", "Detected Discord clients:", detectedClients.join(", "));
+          availableDiscordClients = detectedClients;
+          Logger.d("ProgramChecker", "Detected Discord clients:", detectedClients.map(function (client) {
+            return client.name;
+          }).join(", "));
         }
       }
 
@@ -138,24 +147,13 @@ Singleton {
       availableCodeClients = [];
 
       if (exitCode === 0) {
-        var detectedClients = stdout.text.trim().split(/\s+/).filter(function (client) {
-          return client.length > 0;
-        });
+        var detectedClients = parseDetectedClients(stdout.text, TemplateRegistry.codeClients);
 
         if (detectedClients.length > 0) {
-          // Build list of available clients
-          for (var i = 0; i < detectedClients.length; i++) {
-            var clientName = detectedClients[i];
-            for (var j = 0; j < TemplateRegistry.codeClients.length; j++) {
-              var client = TemplateRegistry.codeClients[j];
-              if (client.name === clientName) {
-                availableCodeClients.push(client);
-                break;
-              }
-            }
-          }
-
-          Logger.d("ProgramChecker", "Detected Code clients:", detectedClients.join(", "));
+          availableCodeClients = detectedClients;
+          Logger.d("ProgramChecker", "Detected Code clients:", detectedClients.map(function (client) {
+            return client.name;
+          }).join(", "));
         }
       }
 
@@ -196,6 +194,21 @@ Singleton {
   property int completedChecks: 0
   property int totalChecks: Object.keys(programsToCheck).length
 
+  function handleCheckerExit(exitCode: int) {
+    root[checker.currentProperty] = (exitCode === 0);
+    checker.running = false;
+    root.completedChecks++;
+
+    if (root.completedChecks >= root.totalChecks) {
+      root.detectDiscordClient();
+      root.detectCodeClient();
+      root.checksCompleted();
+      return;
+    }
+
+    root.checkNextProgram();
+  }
+
   // Single reusable Process object
   Process {
     id: checker
@@ -204,24 +217,7 @@ Singleton {
     property string currentProperty: ""
 
     onExited: function (exitCode) {
-      // Set the availability property
-      root[currentProperty] = (exitCode === 0);
-
-      // Stop the process to free resources
-      running = false;
-
-      // Track completion
-      root.completedChecks++;
-
-      // Check next program or emit completion signal
-      if (root.completedChecks >= root.totalChecks) {
-        // Run Discord and Code client detection after all checks are complete
-        root.detectDiscordClient();
-        root.detectCodeClient();
-        root.checksCompleted();
-      } else {
-        root.checkNextProgram();
-      }
+      root.handleCheckerExit(exitCode);
     }
 
     stdout: StdioCollector {}

@@ -74,6 +74,19 @@ function testProgramCheckerDetectCodeClientBuildsDirectoryProbe() {
   assert.equal(ctx.codeDetector.running, true);
 }
 
+function testProgramCheckerParsesDetectedClientOutput() {
+  const parseDetectedClients = qmlFunction("parseDetectedClients", "rawOutput", "clients");
+  const clients = [
+    { name: "vesktop", configPath: "~/.config/vesktop" },
+    { name: "discord", configPath: "~/.config/discord" },
+    { name: "code", configPath: "~/.config/Code" },
+  ];
+
+  assert.match(source, /function parseDetectedClients\(rawOutput: string, clients\)/, "parseDetectedClients must type detector stdout input");
+  assert.deepEqual(parseDetectedClients({}, " vesktop\nmissing\tcode vesktop ", clients), [clients[0], clients[2]]);
+  assert.deepEqual(parseDetectedClients({}, "   \n\t", clients), []);
+}
+
 function testProgramCheckerQueueAdvancesOneProgramAtATime() {
   const checkNextProgram = qmlFunction("checkNextProgram");
   const ctx = {
@@ -157,6 +170,47 @@ function testProgramCheckerCheckProgramGuardsUnknownProperties() {
   assert.equal(ctx.checker.running, true);
 }
 
+function testProgramCheckerHandlesCheckerExit() {
+  const handleCheckerExit = qmlFunction("handleCheckerExit", "exitCode");
+  const calls = [];
+  const ctx = {
+    kittyAvailable: false,
+    ghosttyAvailable: true,
+    completedChecks: 0,
+    totalChecks: 2,
+    checker: {
+      currentProperty: "kittyAvailable",
+      running: true,
+    },
+    checkNextProgram() {
+      calls.push("next");
+    },
+    detectDiscordClient() {
+      calls.push("discord");
+    },
+    detectCodeClient() {
+      calls.push("code");
+    },
+    checksCompleted() {
+      calls.push("completed");
+    },
+  };
+  ctx.root = ctx;
+
+  assert.match(source, /function handleCheckerExit\(exitCode: int\)/, "handleCheckerExit must type the process exit code");
+  handleCheckerExit(ctx, 0);
+  assert.equal(ctx.kittyAvailable, true);
+  assert.equal(ctx.checker.running, false);
+  assert.equal(ctx.completedChecks, 1);
+  assert.deepEqual(calls, ["next"]);
+
+  ctx.checker.currentProperty = "ghosttyAvailable";
+  handleCheckerExit(ctx, 1);
+  assert.equal(ctx.ghosttyAvailable, false);
+  assert.equal(ctx.completedChecks, 2);
+  assert.deepEqual(calls, ["next", "discord", "code", "completed"]);
+}
+
 function testProgramCheckerDiscordDetectionDebugLogs() {
   const testDiscordDetection = qmlFunction("testDiscordDetection");
   const log = logger();
@@ -211,9 +265,11 @@ function testProgramCheckerProbeProgramListStaysAligned() {
 const tests = [
   testProgramCheckerDetectDiscordClientBuildsDirectoryProbe,
   testProgramCheckerDetectCodeClientBuildsDirectoryProbe,
+  testProgramCheckerParsesDetectedClientOutput,
   testProgramCheckerQueueAdvancesOneProgramAtATime,
   testProgramCheckerCheckAllProgramsResetsQueue,
   testProgramCheckerCheckProgramGuardsUnknownProperties,
+  testProgramCheckerHandlesCheckerExit,
   testProgramCheckerDiscordDetectionDebugLogs,
   testProgramCheckerProbeProgramListStaysAligned,
 ];
