@@ -17,6 +17,7 @@ Icons covers bundled icon-font loading plus theme/desktop icon path resolution. 
 - [x] Named icon lookup delegates to the theme icon resolver with the current Quickshell icon theme and fallback name.
 - [x] Named icon lookup fails closed to an empty path when resolver lookup throws.
 - [x] Desktop-entry icon lookup prefers `DesktopEntries.heuristicLookup` when available.
+- [x] Desktop-entry icon lookup uses a typed string app-id input while keeping fallback icon optional.
 - [x] Desktop-entry icon lookup falls back to `DesktopEntries.byId` when heuristic lookup is unavailable.
 - [x] Desktop-entry icon lookup uses `application-x-executable` as the default fallback icon.
 - [x] Empty, unknown, or failed desktop-entry lookups resolve through the fallback icon name.

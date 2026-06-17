@@ -68,6 +68,10 @@ function testThemeIconsResolveDesktopEntryIconsAndFallbacks() {
   ]);
 }
 
+function testThemeIconsAppIdInputIsTyped() {
+  assert.match(source, /function iconForAppId\(appId: string, fallbackName\)/, "iconForAppId must type the required app id input while keeping fallback optional");
+}
+
 function testThemeIconsFallbackWhenDesktopEntriesLookupFails() {
   const iconForAppId = qmlFunction("iconForAppId", "appId", "fallbackName");
   const calls = [];
@@ -111,6 +115,7 @@ function testThemeIconsDistroLogoPathFailsClosed() {
 const tests = [
   testThemeIconsResolveNamedIconsAndFailClosed,
   testThemeIconsResolveDesktopEntryIconsAndFallbacks,
+  testThemeIconsAppIdInputIsTyped,
   testThemeIconsFallbackWhenDesktopEntriesLookupFails,
   testThemeIconsDistroLogoPathFailsClosed,
 ];

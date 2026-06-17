@@ -16,7 +16,7 @@ Singleton {
   }
 
   // Resolve icon path for a DesktopEntries appId - safe on missing entries
-  function iconForAppId(appId, fallbackName) {
+  function iconForAppId(appId: string, fallbackName) {
     const fallback = fallbackName || "application-x-executable";
     if (!appId)
       return iconFromName(fallback, fallback);
