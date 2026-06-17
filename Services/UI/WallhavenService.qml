@@ -38,7 +38,7 @@ Singleton {
   readonly property string apiBaseUrl: "https://wallhaven.cc/api/v1"
 
   // -------------------------------------------------
-  function search(query, page) {
+  function search(query: string, page: int) {
     if (fetching) {
       return;
     }
