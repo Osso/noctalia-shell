@@ -44,6 +44,12 @@ Notifications cover notification server lifecycle, suppression rules, replacemen
 - [x] Notification state load restores persisted `lastSeenTs` and logs load failures.
 - [x] Notification state save persists `lastSeenTs` and logs save failures.
 - [x] Updating last-seen state converts the current timestamp to milliseconds and persists it.
+- [x] Notification history date bucketing clears time fields before range comparison.
+- [x] Notification history range selection distinguishes today, yesterday, and older notifications.
+- [x] Notification history current-range checks include today and all ranges, while excluding yesterday from today's range.
+- [x] Notification history range counts fail closed for missing history lists, include total/all count, and tolerate invalid rows.
+- [x] Notification history range count lookup returns zero for out-of-range indexes.
+- [x] Notification history widget unread counts handle Date and numeric timestamps and count only notifications newer than `lastSeenTs`.
 
 ## How it works
 
@@ -55,18 +61,19 @@ Notifications cover notification server lifecycle, suppression rules, replacemen
 - `Modules/Toast/ToastOverlay.qml` - visible toast overlay.
 - `Modules/Toast/ToastScreen.qml` - per-screen toast placement.
 - `Modules/Panels/NotificationHistory/NotificationHistoryPanel.qml` - history panel UI.
+- `Modules/Bar/Widgets/NotificationHistory.qml` - notification history bar widget and unread badge count.
 - `Modules/Panels/Settings/Tabs/NotificationsTab.qml` - notification settings UI.
 
 ## Tests asserting this spec
 
 - `Tests/notification-service-gap-guards.test.js`
 - `Tests/notification-history-panel-guards.test.js`
+- `Tests/widget-helper-guards.test.js`
 - `Tests/qml-runtime-guards.test.js`
 
 ## Known gaps (current cycle)
 
 - [ ] Add executable tests for active-list replacement and progress expiry with a fake `ListModel`.
-- [ ] Add behavior tests for notification history panel filtering/actions.
 - [ ] Add spec coverage for notification settings UI contracts.
 
 ## Out of scope
