@@ -14,6 +14,16 @@ Settings covers persisted shell configuration, default settings generation, vers
 - [x] Settings-data upgrade defers with a warning until the BarWidgetRegistry is ready.
 - [x] Settings-data upgrade removes invalid bar widgets, upgrades valid widgets, guarantees a Control Center widget exists, and logs the mutations.
 
+### Versioned calendar migration
+
+- [x] Migration 26 replaces legacy `banner-card` and `calendar-card` entries with `calendar-header-card` and `calendar-month-card`.
+- [x] Migration 26 preserves non-calendar cards and their enabled state.
+- [x] Migration 26 enables both split calendar cards when any legacy calendar card was enabled.
+- [x] Migration 26 disables both split calendar cards when all legacy calendar cards were disabled.
+- [x] Migration 26 leaves adapters without calendar card settings otherwise untouched.
+- [x] Migration 26 logs the migration start and legacy-card replacement.
+- [x] Default calendar card ids must either be loadable by the current calendar panel or handled by Migration 26.
+
 ### Settings references and defaults
 
 - [x] QML `Settings.data.*` references outside `Commons/Settings.qml` must exist in `Assets/settings-default.json`.
@@ -52,6 +62,8 @@ Settings covers persisted shell configuration, default settings generation, vers
 ## Implementation inventory
 
 - `Commons/Settings.qml` - persisted settings singleton, file adapters, default generation, migrations, and settings upgrades.
+- `Commons/Migrations/MigrationRegistry.qml` - version-to-migration component registry.
+- `Commons/Migrations/Migration26.qml` - legacy calendar card migration.
 - `Assets/settings-default.json` - canonical default settings shape used by reference validation.
 - `Modules/Panels/Settings/SettingsPanel.qml` - Settings panel shell, tab model, keyboard navigation, and scrolling helpers.
 - `Modules/Panels/Settings/Tabs/*.qml` - settings tab UIs backed by `Settings.data`.
@@ -63,6 +75,8 @@ Settings covers persisted shell configuration, default settings generation, vers
 ## Tests asserting this spec
 
 - `Tests/settings-service-guards.test.js`
+- `Tests/migration26-guards.test.js`
+- `Tests/widget-registry.test.js`
 - `Tests/settings-panel-guards.test.js`
 - `Tests/settings-references.test.js`
 - `Tests/settings-ui-helper-guards.test.js`
