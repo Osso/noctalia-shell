@@ -15,7 +15,7 @@ Singleton {
     Tooltip {}
   }
 
-  function show(target, text, direction, delay, fontFamily) {
+  function show(target: Item, text: string, direction, delay, fontFamily) {
     if (!Settings.data.ui.tooltipsEnabled) {
       return;
     }

@@ -5,6 +5,7 @@ The tooltip module provides the shared popup tooltip used by sliders, buttons, m
 Lifecycle:
 - [x] Showing a tooltip with a missing target or empty text must leave the existing tooltip text unchanged.
 - [x] Showing a tooltip must type required target and text inputs while keeping optional display inputs flexible.
+- [x] TooltipService show must type required target and text inputs while keeping optional display inputs flexible.
 - [x] Showing a valid tooltip must stop pending hide/show timers and hide animation, clear the outgoing state, process multiline text as rich text line breaks, set the target item, pick the target screen dimensions when available, initialize the hidden animation state, start the show timer, set direction, and apply the requested or default font family.
 - [x] Positioning must fail closed when the target item or its parent is missing.
 - [x] Hide must stop the show and hide timers, then either start the hide timer when a hide delay is active or start the hide animation immediately.
@@ -30,6 +31,7 @@ Placement:
 ## Tests asserting this spec
 
 - [Tests/tooltip-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/tooltip-guards.test.js)
+- [Tests/qml-type-annotations.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/qml-type-annotations.test.js)
 
 ## Known gaps (current cycle)
 

@@ -65,9 +65,11 @@ function testTooltipServiceCallsUseTargetItemFirst() {
 
 function testTooltipServiceTracksTypedTooltipInstances() {
   const tooltipServiceFile = "Services/UI/TooltipService.qml";
+  const source = readQml(tooltipServiceFile);
 
   assertPropertyType(tooltipServiceFile, "activeTooltip", "Tooltip");
   assertPropertyType(tooltipServiceFile, "pendingTooltip", "Tooltip");
+  assert.match(source, /function show\(target: Item, text: string, direction, delay, fontFamily\)/, "TooltipService.show must type required target and text inputs while keeping optional display inputs flexible");
 }
 
 function testSmartPanelButtonItemIsTyped() {
