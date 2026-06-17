@@ -23,6 +23,14 @@ Setup Wizard covers first-run onboarding launch, completion, and selected setup 
 - [x] Wallpaper settings apply selected wallpapers only when a non-empty wallpaper is selected.
 - [x] UI settings persist selected scale ratio and bar position.
 
+### Wallpaper step
+
+- [x] Setup wallpaper filtering mirrors the current wallpaper list.
+- [x] Setup wallpaper refresh clears wallpaper lists when no directory is selected.
+- [x] Setup wallpaper refresh reads the current screen list from the wallpaper service and selects the first wallpaper when none is selected.
+- [x] Setup wallpaper refresh falls back to a directory scanner when the wallpaper service list helper is unavailable.
+- [x] Setup wallpaper directory scanning starts a command for `.jpg`, `.jpeg`, `.png`, `.bmp`, `.webp`, and `.svg` files.
+
 ### Typed delegates
 
 - [x] Setup progress delegates expose typed step icon and label aliases instead of repeatedly reading implicit `modelData`.
@@ -43,6 +51,7 @@ Setup Wizard covers first-run onboarding launch, completion, and selected setup 
 ## Tests asserting this spec
 
 - `Tests/shell-setup-wizard-guards.test.js`
+- `Tests/setup-wallpaper-step-guards.test.js`
 - `Tests/setup-wizard-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
@@ -51,7 +60,8 @@ Setup Wizard covers first-run onboarding launch, completion, and selected setup 
 
 - [ ] Add executable coverage for the close timer timeout and settings-saved close path.
 - [ ] Add executable coverage for setup appearance and customization step value handoff.
-- [ ] Add executable coverage for setup dock and wallpaper step integration beyond typed delegates.
+- [ ] Add executable coverage for setup dock step integration beyond typed delegates.
+- [ ] Add executable coverage for setup wallpaper UI selection signals and directory-picker integration.
 
 ## Out of scope
 
