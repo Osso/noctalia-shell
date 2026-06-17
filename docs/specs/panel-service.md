@@ -24,8 +24,10 @@ PanelService covers shared panel registration, popup-menu window lookup, panel l
 
 - [x] Opening a panel closes a different already-open panel.
 - [x] Opening a panel records it as the current open panel before emitting the open signal.
+- [x] Opening a panel with a fake active panel closes the previous panel before emitting the open signal.
 - [x] Closing a panel clears the current open panel only when it is the active panel.
 - [x] Closing a panel emits the close signal.
+- [x] Closing fake panels preserves a different active panel and clears the active panel before emitting the close signal.
 
 ## How it works
 
@@ -42,8 +44,6 @@ PanelService covers shared panel registration, popup-menu window lookup, panel l
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable fake-panel coverage for closing a different active panel.
-- [ ] Add executable fake-panel coverage for open and close signal ordering.
 - [ ] Add multi-screen fixture coverage for popup-menu windows and screen-specific panel keys.
 - [ ] Add coverage for `lockScreen` consumers that depend on PanelService.
 

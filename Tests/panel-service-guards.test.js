@@ -3,8 +3,14 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const source = readQml("Services/UI/PanelService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
 function testPanelRegistrationGuards() {
-  const source = readQml("Services/UI/PanelService.qml");
   const registerPanelBody = extractFunctionBody(source, "registerPanel");
   const registerPopupBody = extractFunctionBody(source, "registerPopupMenuWindow");
 
@@ -16,7 +22,6 @@ function testPanelRegistrationGuards() {
 }
 
 function testPanelLookupGuards() {
-  const source = readQml("Services/UI/PanelService.qml");
   const getPopupBody = extractFunctionBody(source, "getPopupMenuWindow");
   const getPanelBody = extractFunctionBody(source, "getPanel");
   const hasPanelBody = extractFunctionBody(source, "hasPanel");
@@ -31,7 +36,6 @@ function testPanelLookupGuards() {
 }
 
 function testPanelOpenCloseGuards() {
-  const source = readQml("Services/UI/PanelService.qml");
   const willOpenBody = extractFunctionBody(source, "willOpenPanel");
   const closedBody = extractFunctionBody(source, "closedPanel");
 
@@ -41,10 +45,59 @@ function testPanelOpenCloseGuards() {
   assert.match(closedBody, /didClose\(\)/, "closedPanel must emit didClose");
 }
 
+function testPanelOpenClosesDifferentActivePanelBeforeSignal() {
+  const willOpenPanel = qmlFunction("willOpenPanel", "panel");
+  const events = [];
+  const previousPanel = {
+    close() {
+      events.push("close-previous");
+    },
+  };
+  const nextPanel = {
+    close() {
+      events.push("close-next");
+    },
+  };
+  const ctx = {
+    openedPanel: previousPanel,
+    willOpen() {
+      events.push(`will-open:${this.openedPanel === nextPanel}`);
+    },
+  };
+
+  willOpenPanel(ctx, nextPanel);
+
+  assert.equal(ctx.openedPanel, nextPanel);
+  assert.deepEqual(events, ["close-previous", "will-open:true"]);
+}
+
+function testPanelCloseClearsOnlyActivePanelBeforeSignal() {
+  const closedPanel = qmlFunction("closedPanel", "panel");
+  const activePanel = {};
+  const otherPanel = {};
+  const events = [];
+  const ctx = {
+    openedPanel: activePanel,
+    didClose() {
+      events.push(this.openedPanel === null ? "closed-empty" : "closed-kept");
+    },
+  };
+
+  closedPanel(ctx, otherPanel);
+  assert.equal(ctx.openedPanel, activePanel);
+  assert.deepEqual(events, ["closed-kept"]);
+
+  closedPanel(ctx, activePanel);
+  assert.equal(ctx.openedPanel, null);
+  assert.deepEqual(events, ["closed-kept", "closed-empty"]);
+}
+
 const tests = [
   testPanelRegistrationGuards,
   testPanelLookupGuards,
   testPanelOpenCloseGuards,
+  testPanelOpenClosesDifferentActivePanelBeforeSignal,
+  testPanelCloseClearsOnlyActivePanelBeforeSignal,
 ];
 
 for (const test of tests) {
