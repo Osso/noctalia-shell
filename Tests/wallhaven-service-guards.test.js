@@ -41,6 +41,127 @@ function testWallhavenSearchResponseGuards() {
   assert.match(searchBody, /"API error: " \+ xhr\.status[\s\S]*searchFailed\(errorMsg\)/, "search must report non-200 API errors");
 }
 
+function runSearchFixture({ status, responseText }) {
+  const source = readQml("Services/UI/WallhavenService.qml");
+  const search = new Function("ctx", "query", "page", `with (ctx) { return (function(query, page) ${extractFunctionBody(source, "search")}).call(ctx, query, page); }`);
+  const requests = [];
+  function XMLHttpRequest() {
+    this.readyState = 0;
+    this.status = status;
+    this.responseText = responseText;
+    this.open = (method, url) => {
+      requests.push({ method, url });
+    };
+    this.send = () => {
+      this.readyState = XMLHttpRequest.DONE;
+      this.onreadystatechange();
+    };
+  }
+  XMLHttpRequest.DONE = 4;
+  const completed = [];
+  const failed = [];
+  const ctx = {
+    apiBaseUrl: "https://wallhaven.test/api/v1",
+    fetching: false,
+    initialSearchScheduled: true,
+    currentResults: [],
+    currentMeta: {},
+    currentQuery: "",
+    currentPage: 0,
+    lastPage: 0,
+    lastError: "",
+    categories: "111",
+    purity: "100",
+    sorting: "random",
+    order: "desc",
+    topRange: "1M",
+    seed: "old-seed",
+    minResolution: "1920x1080",
+    resolutions: "1920x1080",
+    ratios: "16x9",
+    colors: "336699",
+    XMLHttpRequest,
+    Logger: {
+      d() {},
+      e() {},
+      w() {},
+    },
+    searchCompleted(results, meta) {
+      completed.push({ results, meta });
+    },
+    searchFailed(error) {
+      failed.push(error);
+    },
+  };
+
+  search(ctx, "space cats", 2);
+
+  return { ctx, completed, failed, requests };
+}
+
+function testWallhavenSearchHandlesConcreteSuccessFixture() {
+  const response = {
+    data: [
+      { id: "abc123", path: "https://wallhaven.test/wallpaper.jpg" },
+    ],
+    meta: {
+      last_page: 3,
+      seed: "new-seed",
+    },
+  };
+  const { ctx, completed, failed, requests } = runSearchFixture({
+    status: 200,
+    responseText: JSON.stringify(response),
+  });
+
+  assert.equal(ctx.fetching, false);
+  assert.equal(ctx.initialSearchScheduled, false);
+  assert.equal(ctx.currentQuery, "space cats");
+  assert.equal(ctx.currentPage, 2);
+  assert.equal(ctx.lastPage, 3);
+  assert.equal(ctx.seed, "new-seed");
+  assert.deepEqual(ctx.currentResults, response.data);
+  assert.deepEqual(ctx.currentMeta, response.meta);
+  assert.deepEqual(completed, [{ results: response.data, meta: response.meta }]);
+  assert.deepEqual(failed, []);
+  assert.equal(requests[0].method, "GET");
+  assert.match(requests[0].url, /^https:\/\/wallhaven\.test\/api\/v1\/search\?/);
+  assert.match(requests[0].url, /q=space%20cats/);
+  assert.match(requests[0].url, /sorting=random/);
+  assert.match(requests[0].url, /seed=old-seed/);
+  assert.match(requests[0].url, /page=2/);
+}
+
+function testWallhavenSearchHandlesConcreteErrorFixtures() {
+  const invalidShape = runSearchFixture({
+    status: 200,
+    responseText: JSON.stringify({ data: { not: "an array" } }),
+  });
+  assert.equal(invalidShape.ctx.lastError, "Invalid API response");
+  assert.deepEqual(invalidShape.failed, ["Invalid API response"]);
+
+  const parseFailure = runSearchFixture({
+    status: 200,
+    responseText: "{",
+  });
+  assert.match(parseFailure.ctx.lastError, /^Failed to parse API response:/);
+  assert.equal(parseFailure.failed[0], parseFailure.ctx.lastError);
+
+  const rateLimit = runSearchFixture({
+    status: 429,
+    responseText: "",
+  });
+  assert.equal(rateLimit.ctx.lastError, "Rate limit exceeded (45 requests/minute)");
+  assert.deepEqual(rateLimit.failed, ["Rate limit exceeded (45 requests/minute)"]);
+
+  const serverError = runSearchFixture({
+    status: 500,
+    responseText: "",
+  });
+  assert.equal(serverError.ctx.lastError, "API error: 500");
+  assert.deepEqual(serverError.failed, ["API error: 500"]);
+}
+
 function testWallhavenUrlHelpers() {
   const source = readQml("Services/UI/WallhavenService.qml");
   const wallpaperBody = extractFunctionBody(source, "getWallpaperUrl");
@@ -75,6 +196,8 @@ const tests = [
   testWallhavenUrlSignaturesAreTyped,
   testWallhavenSearchQueryGuards,
   testWallhavenSearchResponseGuards,
+  testWallhavenSearchHandlesConcreteSuccessFixture,
+  testWallhavenSearchHandlesConcreteErrorFixtures,
   testWallhavenUrlHelpers,
   testWallhavenDownloadAndPagingGuards,
 ];

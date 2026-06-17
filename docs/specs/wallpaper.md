@@ -40,6 +40,7 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 - [x] Wallhaven search ignores duplicate requests while fetching.
 - [x] Wallhaven search clears scheduled initial search state, resets public request state, encodes query text, includes base filters, conditionally includes `topRange` and `seed`, includes the page, and issues a GET request.
 - [x] Wallhaven search clears fetching only after request completion and handles response state through the request completion path.
+- [x] Wallhaven search handles concrete success, invalid-shape, parse-failure, rate-limit, and generic API-error fixtures.
 - [x] Wallhaven URL helpers choose usable source URLs and thumbnail URLs, including thumbnail fallback from wallpaper id.
 - [x] Wallhaven download fails the callback when no wallpaper URL exists, resolves the configured directory with default fallback, normalizes a trailing slash, builds a stable local path, emits success, calls the callback, and cleans up the process.
 - [x] Wallhaven reset clears search state.
@@ -81,7 +82,6 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 
 - [ ] Add executable tests for actual wallpaper file acceptance/rejection and image-extension filtering.
 - [ ] Add executable tests for rendered wallpaper background transition behavior.
-- [ ] Add executable tests for Wallhaven response parsing with concrete success and error JSON fixtures.
 - [ ] Add executable tests for wallpaper panel local/Wallhaven user actions beyond current view helper lookup.
 
 ## Out of scope
