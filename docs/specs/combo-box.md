@@ -7,6 +7,8 @@ Model helpers:
 - [x] `itemCount()` must return `model.count` when the model exposes a numeric `count`.
 - [x] `itemCount()` must return array length for array-backed models.
 - [x] `itemCount()` must reject plain length-shaped objects that are not arrays.
+- [x] `getItem(index)` must type the index input, return items from `model.get(index)` or array-backed models, and return `null` for missing or unsupported models.
+- [x] `findIndexByKey(key)` must type the key input, return the first matching item index, and return `-1` when no item matches.
 
 Typed delegate contract:
 - [x] Combo box item delegates must type the parent combo box reference as `ComboBox`.
@@ -27,7 +29,7 @@ Typed delegate contract:
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for `getItem`, `findIndexByKey`, activation, delayed click retry, and popup close behavior.
+- [ ] Add executable coverage for activation, delayed click retry, and popup close behavior.
 
 ## Out of scope
 

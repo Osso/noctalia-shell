@@ -93,6 +93,45 @@ function testComboBoxItemCountSupportsCountedModelsArraysAndMissingModels() {
   assert.equal(itemCount({ root: { model: { length: 8 } } }), 0);
 }
 
+function createComboBoxContext(model) {
+  const itemCount = qmlFunction(comboBoxSource, "itemCount");
+  const getItem = qmlFunction(comboBoxSource, "getItem", "index");
+  const ctx = { root: { model } };
+  ctx.itemCount = () => itemCount(ctx);
+  ctx.getItem = index => getItem(ctx, index);
+  return ctx;
+}
+
+function testComboBoxGetItemSupportsModelGetArraysAndMissingModels() {
+  const getItem = qmlFunction(comboBoxSource, "getItem", "index");
+  const rows = [{ key: "one" }, { key: "two" }];
+  const listModel = {
+    get(index) {
+      return rows[index];
+    },
+  };
+
+  assert.match(comboBoxSource, /function getItem\(index: int\)/, "getItem must type the model index input");
+  assert.deepEqual(getItem(createComboBoxContext(listModel), 1), { key: "two" });
+  assert.deepEqual(getItem(createComboBoxContext(rows), 0), { key: "one" });
+  assert.equal(getItem(createComboBoxContext(null), 0), null);
+  assert.equal(getItem(createComboBoxContext({ length: 2 }), 0), null);
+}
+
+function testComboBoxFindIndexByKeyFindsFirstMatchAndMissingSentinel() {
+  const findIndexByKey = qmlFunction(comboBoxSource, "findIndexByKey", "key");
+  const ctx = createComboBoxContext([
+    { key: "alpha" },
+    { key: "beta" },
+    { key: "alpha" },
+  ]);
+
+  assert.match(comboBoxSource, /function findIndexByKey\(key: string\)/, "findIndexByKey must type the key input");
+  assert.equal(findIndexByKey(ctx, "alpha"), 0);
+  assert.equal(findIndexByKey(ctx, "beta"), 1);
+  assert.equal(findIndexByKey(ctx, "missing"), -1);
+}
+
 function testBluetoothDeviceContentColorReflectsTransientAndBlockedState() {
   const getContentColor = qmlFunction(bluetoothDevicesSource, "getContentColor", "defaultColor");
   const Color = {
@@ -132,6 +171,8 @@ const tests = [
   testNotificationHistoryUnreadCountHandlesDatesAndNumbers,
   testBackgroundCornerRadiusMapsFlatCornersToZero,
   testComboBoxItemCountSupportsCountedModelsArraysAndMissingModels,
+  testComboBoxGetItemSupportsModelGetArraysAndMissingModels,
+  testComboBoxFindIndexByKeyFindsFirstMatchAndMissingSentinel,
   testBluetoothDeviceContentColorReflectsTransientAndBlockedState,
 ];
 

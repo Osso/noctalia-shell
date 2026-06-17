@@ -33,7 +33,7 @@ RowLayout {
     return 0;
   }
 
-  function getItem(index) {
+  function getItem(index: int) {
     if (!root.model)
       return null;
     if (typeof root.model.get === 'function')
@@ -43,7 +43,7 @@ RowLayout {
     return null;
   }
 
-  function findIndexByKey(key) {
+  function findIndexByKey(key: string) {
     for (var i = 0; i < itemCount(); i++) {
       var item = getItem(i);
       if (item && item.key === key)
