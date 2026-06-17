@@ -51,27 +51,7 @@ Singleton {
     running: false
     stdout: StdioCollector {
       onStreamFinished: {
-        var sources = [];
-        var lines = this.text.trim().split("\n");
-        for (var i = 0; i < lines.length; i++) {
-          var line = lines[i].trim();
-          if (!line) continue;
-          // Lines like "eDP-1|1920x1200" or "region" or "/dev/video0|..."
-          var parts = line.split("|");
-          var key = parts[0];
-          // Skip v4l2 devices
-          if (key.startsWith("/dev/")) continue;
-          if (key === "region") {
-            sources.push({ "key": "region", "name": "Select region", "label": "Select region" });
-          } else {
-            // Monitor: key is name, parts[1] is resolution
-            var displayName = key;
-            if (parts.length > 1) displayName += " (" + parts[1] + ")";
-            sources.push({ "key": key, "name": displayName, "label": displayName, "resolution": parts.length > 1 ? parts[1] : "" });
-          }
-        }
-        sources.push({ "key": "portal", "name": "Portal (window picker)", "label": "Portal (window picker)" });
-        root.captureSources = sources;
+        root.captureSources = root.parseCaptureSources(this.text);
       }
     }
     stderr: StdioCollector {}
@@ -83,33 +63,85 @@ Singleton {
     running: false
     stdout: StdioCollector {
       onStreamFinished: {
-        var lines = this.text.trim().split("\n");
-        var sources = root.captureSources.slice();
-        // Insert monitors before the last entry (portal)
-        var insertIdx = sources.length > 0 ? sources.length - 1 : 0;
-        for (var i = 0; i < lines.length; i++) {
-          var parts = lines[i].trim().split("|");
-          if (parts.length > 1 && !parts[0].startsWith("/dev/")) {
-            var key = parts[0];
-            var res = parts[1];
-            // Skip if already added by --list-capture-options
-            var exists = false;
-            for (var j = 0; j < sources.length; j++) {
-              if (sources[j].key === key) { exists = true; break; }
-            }
-            if (!exists) {
-              var displayName = key + " (" + res + ")";
-              sources.splice(insertIdx, 0, { "key": key, "name": displayName, "label": displayName, "resolution": res });
-              insertIdx++;
-            }
-            if (!root.primaryMonitorResolution)
-              root.primaryMonitorResolution = res;
-          }
+        const monitorResult = root.parseMonitorList(this.text, root.captureSources);
+        root.captureSources = monitorResult.sources;
+        if (!root.primaryMonitorResolution && monitorResult.primaryMonitorResolution) {
+          root.primaryMonitorResolution = monitorResult.primaryMonitorResolution;
         }
-        root.captureSources = sources;
       }
     }
     stderr: StdioCollector {}
+  }
+
+  function parseCaptureSources(output: string) {
+    const sources = [];
+    const lines = output.trim().split("\n");
+
+    for (var i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) {
+        continue;
+      }
+
+      const parts = line.split("|");
+      const key = parts[0];
+      if (key.startsWith("/dev/")) {
+        continue;
+      }
+
+      if (key === "region") {
+        sources.push({ "key": "region", "name": "Select region", "label": "Select region" });
+        continue;
+      }
+
+      const resolution = parts.length > 1 ? parts[1] : "";
+      const displayName = resolution ? key + " (" + resolution + ")" : key;
+      sources.push({ "key": key, "name": displayName, "label": displayName, "resolution": resolution });
+    }
+
+    sources.push({ "key": "portal", "name": "Portal (window picker)", "label": "Portal (window picker)" });
+    return sources;
+  }
+
+  function parseMonitorList(output: string, existingSources) {
+    const sources = existingSources.slice();
+    var insertIndex = sources.length > 0 ? sources.length - 1 : 0;
+    var primaryResolution = "";
+    const lines = output.trim().split("\n");
+
+    for (var i = 0; i < lines.length; i++) {
+      const parts = lines[i].trim().split("|");
+      if (parts.length <= 1 || parts[0].startsWith("/dev/")) {
+        continue;
+      }
+
+      const key = parts[0];
+      const resolution = parts[1];
+      if (!primaryResolution) {
+        primaryResolution = resolution;
+      }
+
+      var exists = false;
+      for (var j = 0; j < sources.length; j++) {
+        if (sources[j].key === key) {
+          exists = true;
+          break;
+        }
+      }
+
+      if (exists) {
+        continue;
+      }
+
+      const displayName = key + " (" + resolution + ")";
+      sources.splice(insertIndex, 0, { "key": key, "name": displayName, "label": displayName, "resolution": resolution });
+      insertIndex++;
+    }
+
+    return {
+      sources: sources,
+      primaryMonitorResolution: primaryResolution
+    };
   }
 
   // Start or Stop recording

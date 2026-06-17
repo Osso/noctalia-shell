@@ -5,6 +5,8 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 ### Source discovery
 
 - [x] Refreshing capture sources starts both `gpu-screen-recorder --list-capture-options` and `gpu-screen-recorder --list-monitors`.
+- [x] Capture-source parsing skips v4l2 devices, keeps monitor resolutions, maps region capture, and appends the portal picker.
+- [x] Monitor-list parsing inserts missing monitors before the portal picker, avoids duplicate monitor keys, and records the first monitor resolution.
 
 ### Toggle and start
 
@@ -51,7 +53,7 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable tests for capture-source and monitor-list parsing.
+- [x] Add executable tests for capture-source and monitor-list parsing.
 - [ ] Add executable tests for recorder process exit handling and pending/monitor timer transitions.
 - [ ] Add spec coverage for settings UI source/codec/quality controls.
 

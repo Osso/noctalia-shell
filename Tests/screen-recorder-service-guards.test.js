@@ -75,6 +75,47 @@ function testScreenRecorderRefreshCaptureSourcesStartsBothQueries() {
   assert.equal(ctx.monitorListProcess.running, true);
 }
 
+function testScreenRecorderParsesCaptureSourcesAndMonitorList() {
+  assert.match(source, /function parseCaptureSources\(output: string\)/, "capture source parser must type raw output");
+  assert.match(source, /function parseMonitorList\(output: string, existingSources\)/, "monitor list parser must type raw output and accept dynamic existing sources");
+  assert.match(source, /root\.captureSources = root\.parseCaptureSources\(this\.text\)/, "capture options collector must use parser helper");
+  assert.match(source, /const monitorResult = root\.parseMonitorList\(this\.text, root\.captureSources\)/, "monitor collector must use parser helper");
+
+  const parseCaptureSources = qmlFunction("parseCaptureSources", "output");
+  const parseMonitorList = qmlFunction("parseMonitorList", "output", "existingSources");
+
+  const parsedSources = parseCaptureSources({}, [
+    "eDP-1|1920x1200",
+    "region",
+    "/dev/video0|Camera",
+    "HDMI-A-1|3440x1440",
+    "",
+  ].join("\n"));
+
+  assert.deepEqual(parsedSources, [
+    { key: "eDP-1", name: "eDP-1 (1920x1200)", label: "eDP-1 (1920x1200)", resolution: "1920x1200" },
+    { key: "region", name: "Select region", label: "Select region" },
+    { key: "HDMI-A-1", name: "HDMI-A-1 (3440x1440)", label: "HDMI-A-1 (3440x1440)", resolution: "3440x1440" },
+    { key: "portal", name: "Portal (window picker)", label: "Portal (window picker)" },
+  ]);
+
+  const monitorResult = parseMonitorList({}, [
+    "eDP-1|1920x1200",
+    "/dev/video0|Camera",
+    "DP-2|2560x1440",
+    "HDMI-A-1|3440x1440",
+  ].join("\n"), parsedSources);
+
+  assert.equal(monitorResult.primaryMonitorResolution, "1920x1200");
+  assert.deepEqual(monitorResult.sources, [
+    { key: "eDP-1", name: "eDP-1 (1920x1200)", label: "eDP-1 (1920x1200)", resolution: "1920x1200" },
+    { key: "region", name: "Select region", label: "Select region" },
+    { key: "HDMI-A-1", name: "HDMI-A-1 (3440x1440)", label: "HDMI-A-1 (3440x1440)", resolution: "3440x1440" },
+    { key: "DP-2", name: "DP-2 (2560x1440)", label: "DP-2 (2560x1440)", resolution: "2560x1440" },
+    { key: "portal", name: "Portal (window picker)", label: "Portal (window picker)" },
+  ]);
+}
+
 function testScreenRecorderToggleDelegatesByState() {
   const toggleRecording = qmlFunction("toggleRecording");
   const calls = [];
@@ -259,6 +300,7 @@ function testScreenRecorderStopRecordingGuardsAndStopsState() {
 
 const tests = [
   testScreenRecorderRefreshCaptureSourcesStartsBothQueries,
+  testScreenRecorderParsesCaptureSourcesAndMonitorList,
   testScreenRecorderToggleDelegatesByState,
   testScreenRecorderStartRecordingGuardsAndPortalPath,
   testScreenRecorderStartRecordingDirectLaunchPath,
