@@ -356,8 +356,10 @@ function testSessionMenuPowerOptionRolesAreTyped() {
 function testCalendarMonthDayDelegateRolesAreTyped() {
   const source = readQml("Modules/Cards/CalendarMonthCard.qml");
   const dayDelegate = /Repeater\s*\{[\s\S]*?model:\s*grid\.daysModel[\s\S]*?Item\s*\{[\s\S]*?id:\s*dayCell[\s\S]*?required\s+property\s+int\s+day[\s\S]*?required\s+property\s+int\s+month[\s\S]*?required\s+property\s+int\s+year[\s\S]*?required\s+property\s+bool\s+today[\s\S]*?required\s+property\s+bool\s+currentMonth[\s\S]*?text:\s*dayCell\.day[\s\S]*?hasEventsOnDate\(dayCell\.year,\s*dayCell\.month,\s*dayCell\.day\)/;
+  const weekNumberDelegate = /model:\s*parent\.weekNumbers[\s\S]*?Item\s*\{[\s\S]*?required\s+property\s+int\s+modelData[\s\S]*?text:\s*modelData/;
 
   assert.match(source, dayDelegate, "CalendarMonthCard day delegate must type scalar date roles");
+  assert.match(source, weekNumberDelegate, "CalendarMonthCard week-number delegate must type numeric modelData");
   assert.doesNotMatch(source, /modelData\.(?:day|month|year|today|currentMonth)/, "CalendarMonthCard day delegate must use typed roles instead of modelData scalar date reads");
 }
 

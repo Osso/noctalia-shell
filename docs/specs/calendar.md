@@ -27,6 +27,7 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 - [x] Events for a calendar date are hidden when the calendar service is unavailable.
 - [x] Event indicator colors distinguish multi-day, all-day, and timed events, with a separate color for today.
 - [x] Month-grid date helper inputs are typed as integer year, month, and day values, and event color helpers type the today flag.
+- [x] Month-grid week-number delegates type numeric model data before rendering the week label.
 
 ### Helper scripts
 
@@ -64,7 +65,8 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 - [ ] Add executable tests for calendar process stdout/stderr parsing and cache fallback paths.
 - [ ] Add executable tests for calendar header card rendering and settings-card ordering.
 - [ ] Add executable tests for clock-widget calendar action routing.
-- [ ] Add typed-QML coverage for calendar month week-number delegates and event indicator delegates if current aliases can be narrowed.
+- [x] Add typed-QML coverage for calendar month week-number delegates.
+- [ ] Add typed-QML coverage for calendar event indicator delegates if current aliases can be narrowed.
 
 ## Out of scope
 

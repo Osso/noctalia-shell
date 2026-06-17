@@ -219,6 +219,8 @@ NBox {
         Repeater {
           model: parent.weekNumbers
           Item {
+            required property int modelData
+
             Layout.preferredWidth: Style.baseWidgetSize * 0.7
             Layout.preferredHeight: Style.baseWidgetSize * 0.9
 
