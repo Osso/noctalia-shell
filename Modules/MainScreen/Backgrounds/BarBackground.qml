@@ -20,7 +20,7 @@ ShapePath {
   id: root
 
   // Required reference to the bar component
-  required property var bar
+  required property Item bar
 
   // Required reference to AllBackgrounds shapeContainer
   required property Shape shapeContainer

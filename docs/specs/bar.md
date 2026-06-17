@@ -10,6 +10,7 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 - [x] Widget loader implicit size rounds visible item sizes.
 - [x] Widget loader implicit size returns zero for missing or hidden items.
 - [x] Bar widget loader screen references and widget-id delegate aliases are typed.
+- [x] Bar background consumers accept the exposed bar item as a typed `Item` while keeping the owning panel window dynamic.
 
 ### Bar service
 
@@ -63,6 +64,8 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 ## Implementation inventory
 
 - `Modules/Bar/Bar.qml` - per-screen bar shell, orientation layout, and Control Center toggle behavior.
+- `Modules/MainScreen/Backgrounds/AllBackgrounds.qml` - unified background container that receives the exposed bar item.
+- `Modules/MainScreen/Backgrounds/BarBackground.qml` - bar shape path consumer of the exposed bar item.
 - `Modules/Bar/Extras/BarWidgetLoader.qml` - widget component loading and implicit-size reporting.
 - `Modules/Bar/Extras/BarPillVertical.qml` - vertical pill animation and offset behavior.
 - `Services/UI/BarService.qml` - bar readiness, widget instance registry, lookup helpers, context menu placement, and widget settings dialog wiring.

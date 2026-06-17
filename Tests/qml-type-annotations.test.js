@@ -798,6 +798,30 @@ function testPanelBackgroundPanelReferenceIsTyped() {
   assertNoPropertyType(panelBackgroundFile, "panel", "var");
 }
 
+function testBarBackgroundBarReferenceIsTyped() {
+  const backgroundFiles = [
+    "Modules/MainScreen/Backgrounds/AllBackgrounds.qml",
+    "Modules/MainScreen/Backgrounds/BarBackground.qml",
+  ];
+
+  for (const backgroundFile of backgroundFiles) {
+    assertPropertyType(backgroundFile, "bar", "Item");
+    assertNoPropertyType(backgroundFile, "bar", "var");
+  }
+}
+
+function testBackgroundWindowRootStaysUntypedForPanelWindow() {
+  const backgroundFiles = [
+    "Modules/MainScreen/Backgrounds/AllBackgrounds.qml",
+    "Modules/MainScreen/Backgrounds/BarBackground.qml",
+  ];
+
+  for (const backgroundFile of backgroundFiles) {
+    assertPropertyType(backgroundFile, "windowRoot", "var");
+    assertNoPropertyType(backgroundFile, "windowRoot", "Item");
+  }
+}
+
 function testBackgroundScreenAliasesAreTyped() {
   const source = readQml("Modules/Background/Background.qml");
   const screenDelegate = /Variants\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?delegate:\s*Loader\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s*modelData\s*\?\s*modelData\.name\s*:\s*""[\s\S]*?readonly\s+property\s+int\s+monitorWidth:\s*modelData\s*\?\s*modelData\.width\s*:\s*0[\s\S]*?readonly\s+property\s+int\s+monitorHeight:\s*modelData\s*\?\s*modelData\.height\s*:\s*0[\s\S]*?screenName\s*===\s*monitorName[\s\S]*?CompositorService\.getDisplayScale\(monitorName\)[\s\S]*?monitorWidth\s*\*\s*compositorScale[\s\S]*?monitorHeight\s*\*\s*compositorScale[\s\S]*?WallpaperService\.getWallpaper\(monitorName\)/;
@@ -1152,6 +1176,8 @@ const tests = [
   testBrightnessServiceMonitorScreenModelAliasIsTyped,
   testBackgroundShapeContainersAreTyped,
   testPanelBackgroundPanelReferenceIsTyped,
+  testBarBackgroundBarReferenceIsTyped,
+  testBackgroundWindowRootStaysUntypedForPanelWindow,
   testBackgroundScreenAliasesAreTyped,
   testOverviewScreenAliasIsTyped,
   testWallpaperPanelScreenReferencesAreTyped,
