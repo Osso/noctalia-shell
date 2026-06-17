@@ -5,6 +5,7 @@ Emoji covers emoji data loading, search, category browsing, usage tracking, clip
 ### Search and popular results
 
 - [x] Search fails closed before emoji data loads.
+- [x] Search, popular-result, category, usage, and copy helpers use typed scalar inputs.
 - [x] Blank search returns popular/recent emoji results.
 - [x] Search normalizes query terms and requires every term to match some emoji field.
 - [x] Search matches emoji glyphs, names, keywords, and categories.

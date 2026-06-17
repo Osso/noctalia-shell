@@ -35,6 +35,14 @@ function testEmojiServiceSearchAndPopularResults() {
   assert.match(popularBody, /return emojisWithUsage\.slice\(0, limit\)\.map\(function \(item\)[\s\S]*return item\.emoji/, "popular results must return limited emoji objects");
 }
 
+function testEmojiServiceScalarInputsAreTyped() {
+  assert.match(serviceSource, /function search\(query: string\)/, "search must type the query input");
+  assert.match(serviceSource, /function _getPopularEmojis\(limit: int\)/, "popular emoji lookup must type the limit input");
+  assert.match(serviceSource, /function getEmojisByCategory\(category: string\)/, "category lookup must type the category input");
+  assert.match(serviceSource, /function recordUsage\(emojiChar: string\)/, "usage recording must type the emoji input");
+  assert.match(serviceSource, /function copy\(emojiChar: string\)/, "clipboard copy must type the emoji input");
+}
+
 function testEmojiServiceCategoriesAndUsage() {
   const source = readQml("Services/Keyboard/EmojiService.qml");
   const categoriesBody = extractFunctionBody(source, "getCategoriesWithCounts");
@@ -224,6 +232,7 @@ function testEmojiServiceCategoryAndUsageHelpersExecute() {
 
 const tests = [
   testEmojiServiceSearchAndPopularResults,
+  testEmojiServiceScalarInputsAreTyped,
   testEmojiServiceCategoriesAndUsage,
   testEmojiServiceFileLoadingAndFinalization,
   testEmojiServiceUsagePersistenceAndClipboard,
