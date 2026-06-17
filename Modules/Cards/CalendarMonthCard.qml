@@ -141,7 +141,7 @@ NBox {
       spacing: 0
 
       // Helper functions
-      function hasEventsOnDate(year, month, day) {
+      function hasEventsOnDate(year: int, month: int, day: int) {
         if (!CalendarService.available || CalendarService.events.length === 0)
           return false;
         const targetDate = new Date(year, month, day);
@@ -152,7 +152,7 @@ NBox {
                                            });
       }
 
-      function getEventsForDate(year, month, day) {
+      function getEventsForDate(year: int, month: int, day: int) {
         if (!CalendarService.available || CalendarService.events.length === 0)
           return [];
         const targetDate = new Date(year, month, day);
@@ -174,7 +174,7 @@ NBox {
         return startDateOnly.getTime() !== endDateOnly.getTime();
       }
 
-      function getEventColor(event, isToday) {
+      function getEventColor(event, isToday: bool) {
         if (isMultiDayEvent(event)) {
           return isToday ? Color.mOnSecondary : Color.mTertiary;
         } else if (root.isAllDayEvent(event)) {

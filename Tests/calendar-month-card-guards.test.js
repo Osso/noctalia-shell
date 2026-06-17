@@ -91,11 +91,18 @@ function testCalendarMonthEventColorByEventKindAndToday() {
   assert.equal(getEventColor(ctx, { kind: "timed" }, false), "primary");
 }
 
+function testCalendarMonthHelperInputsAreTyped() {
+  assert.match(source, /function hasEventsOnDate\(year: int, month: int, day: int\)/, "hasEventsOnDate must type calendar date inputs");
+  assert.match(source, /function getEventsForDate\(year: int, month: int, day: int\)/, "getEventsForDate must type calendar date inputs");
+  assert.match(source, /function getEventColor\(event, isToday: bool\)/, "getEventColor must type the today flag");
+}
+
 const tests = [
   testCalendarMonthIsoWeekNumberHandlesYearBoundaries,
   testCalendarMonthAllDayAndMultiDayClassification,
   testCalendarMonthEventsForDateFiltersOverlaps,
   testCalendarMonthEventColorByEventKindAndToday,
+  testCalendarMonthHelperInputsAreTyped,
 ];
 
 for (const test of tests) {

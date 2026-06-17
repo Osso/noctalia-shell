@@ -26,6 +26,7 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 - [x] Events for a calendar date include events that start inside, end inside, or span the whole target day.
 - [x] Events for a calendar date are hidden when the calendar service is unavailable.
 - [x] Event indicator colors distinguish multi-day, all-day, and timed events, with a separate color for today.
+- [x] Month-grid date helper inputs are typed as integer year, month, and day values, and event color helpers type the today flag.
 
 ### Helper scripts
 
