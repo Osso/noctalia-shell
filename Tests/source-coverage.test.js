@@ -134,12 +134,21 @@ function testNonMetaTestFilesAreNamedByFeatureSpecs() {
   assert.deepEqual(unmappedFeatureTests, [], "non-meta tests must be named by feature specs, not only the testing spec");
 }
 
+function testMetaTestAllowlistStaysIntentional() {
+  const featureSpecs = featureSpecCorpus();
+  const metaOnlyTests = testFiles()
+    .filter(testFile => !featureSpecs.includes(testFile));
+
+  assert.deepEqual(metaOnlyTests, [...metaTestFiles].sort(), "only explicitly allowlisted meta tests may skip feature specs");
+}
+
 const tests = [
   testQmlFunctionCoverageStaysComplete,
   testQmlFunctionInventoryIncludesDeclarations,
   testNonTestSourceFunctionsStayCovered,
   testAllTestFilesAreNamedBySpecs,
   testNonMetaTestFilesAreNamedByFeatureSpecs,
+  testMetaTestAllowlistStaysIntentional,
 ];
 
 for (const test of tests) {
