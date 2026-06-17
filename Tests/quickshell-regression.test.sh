@@ -26,4 +26,27 @@ if ! printf '%s\n' "$filtered" | rg -q "Detected DDC Monitor"; then
     exit 1
 fi
 
+fatal_pattern="$(fatal_log_pattern)"
+
+for sample in \
+    'WARN qml: TypeError: Cannot read property name of null' \
+    'WARN qml: ReferenceError: PanelService is not defined' \
+    'WARN qml: module QtQuick.Controls is not installed' \
+    'ERROR qml: failed to load component' \
+    'CRITICAL: core dumped'; do
+    if ! printf '%s\n' "$sample" | rg -i "$fatal_pattern" >/dev/null; then
+        echo "fatal_log_pattern missed: $sample" >&2
+        exit 1
+    fi
+done
+
+for sample in \
+    'INFO qml: [20260615-124024] Shell Service started' \
+    'INFO qml: [20260615-124025] Brightness Detected DDC Monitor'; do
+    if printf '%s\n' "$sample" | rg -i "$fatal_pattern" >/dev/null; then
+        echo "fatal_log_pattern matched non-fatal line: $sample" >&2
+        exit 1
+    fi
+done
+
 echo "ok quickshellRegressionLogFiltering"

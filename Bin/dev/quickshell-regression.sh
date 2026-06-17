@@ -23,6 +23,10 @@ current_reload_log() {
     ' <<<"$1"
 }
 
+fatal_log_pattern() {
+    printf '%s\n' '(^|\b)(CRITICAL|FATAL|TypeError|ReferenceError|SyntaxError|Error:.*(module|import|component|property)|Cannot assign|Cannot read property|Cannot call method|is not a function|is not defined|module .* is not installed|module .* is not found|failed to load component|segmentation fault|core dumped)(\b|:)'
+}
+
 main() {
     local repo_root expected_command tail_lines pid log current_log fatal_pattern
     repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -47,7 +51,7 @@ main() {
     log="$(quickshell log --pid "$pid" --tail "$tail_lines" --no-color 2>&1 || true)"
     current_log="$(current_reload_log "$log")"
 
-    fatal_pattern='(^|\b)(CRITICAL|FATAL|TypeError|ReferenceError|SyntaxError|Error:.*(module|import|component|property)|Cannot assign|Cannot read property|Cannot call method|is not a function|is not defined|module .* is not installed|module .* is not found|failed to load component|segmentation fault|core dumped)(\b|:)'
+    fatal_pattern="$(fatal_log_pattern)"
 
     if printf '%s\n' "$current_log" | rg -i "$fatal_pattern" >/tmp/noctalia-quickshell-regression-errors.txt; then
         echo "Quickshell regression gate failed for PID $pid." >&2
