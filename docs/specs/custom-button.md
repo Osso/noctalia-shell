@@ -20,6 +20,10 @@ Control Center custom button:
 - [x] Tooltip text must include configured left, right, and middle click command lines after the general tooltip text.
 
 Settings and typed contracts:
+- [x] Bar custom button settings preserve explicit falsey values such as `false`, `0`, and empty strings instead of replacing them with defaults.
+- [x] Bar custom button settings prefer saved widget data over metadata defaults, while falling back to metadata for missing values.
+- [x] Bar custom button settings save icon, click commands, wheel commands, text command, JSON parsing, stream mode, text lengths, and text interval into one settings object.
+- [x] Bar custom button settings save unified wheel mode when separate wheel handling is disabled.
 - [x] Control Center widget settings dialogs must load the custom button settings component and pass widget data plus metadata.
 - [x] Custom button state-check settings delegates must type the `command`, `icon`, and `index` roles and use typed role properties instead of dynamic model fields.
 
@@ -40,6 +44,7 @@ Settings and typed contracts:
 ## Tests asserting this spec
 
 - [Tests/bar-action-helper-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/bar-action-helper-guards.test.js)
+- [Tests/custom-button-settings-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/custom-button-settings-guards.test.js)
 - [Tests/custom-button-widget-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/custom-button-widget-guards.test.js)
 - [Tests/panel-lock-palette-helper-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/panel-lock-palette-helper-guards.test.js)
 - [Tests/qml-type-annotations.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/qml-type-annotations.test.js)
