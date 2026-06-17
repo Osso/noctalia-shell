@@ -171,7 +171,7 @@ Singleton {
 
   // -------------------------------------------------------------------
   // Get specific monitor wallpaper data
-  function getMonitorConfig(screenName) {
+  function getMonitorConfig(screenName: string) {
     var monitors = Settings.data.wallpaper.monitorDirectories;
     if (monitors !== undefined) {
       for (var i = 0; i < monitors.length; i++) {

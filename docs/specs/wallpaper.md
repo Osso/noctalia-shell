@@ -14,6 +14,7 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 ### Monitor lookup, wallpaper selection, and scanning
 
 - [x] Monitor config lookup returns the matching named monitor config and returns `undefined` for unknown screens.
+- [x] Monitor config lookup uses a typed string screen-name input.
 - [x] Wallpaper-list lookup returns cached screen lists and fails closed to an empty list for unknown screens.
 - [x] Random wallpaper selection updates only screens that have cached wallpapers in multi-monitor-directory mode.
 - [x] Random wallpaper selection updates all screens through an undefined screen name in single-directory mode.

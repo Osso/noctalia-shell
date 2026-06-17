@@ -126,6 +126,10 @@ function testWallpaperServiceLookupHelpersExecute() {
   assert.deepEqual(getWallpapersList(ctx, "DP-1"), [], "getWallpapersList must fail closed for unknown screens");
 }
 
+function testWallpaperServiceMonitorConfigUsesTypedScreenName() {
+  assert.match(source, /function getMonitorConfig\(screenName: string\)/, "getMonitorConfig must type the screen name input");
+}
+
 function testWallpaperServiceRandomWallpaperExecutesScreenSelection() {
   const setRandomWallpaper = qmlFunction("setRandomWallpaper");
   const changes = [];
@@ -170,6 +174,7 @@ const tests = [
   testWallpaperServiceRandomWallpaperFlow,
   testWallpaperServiceRefreshAndRecursiveScan,
   testWallpaperServiceLookupHelpersExecute,
+  testWallpaperServiceMonitorConfigUsesTypedScreenName,
   testWallpaperServiceRandomWallpaperExecutesScreenSelection,
 ];
 
