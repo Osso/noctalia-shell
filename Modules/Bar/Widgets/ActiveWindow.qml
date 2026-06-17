@@ -44,15 +44,15 @@ Item {
 
   readonly property bool isVerticalBar: (Settings.data.bar.position === "left" || Settings.data.bar.position === "right")
   readonly property bool hasFocusedWindow: CompositorService.getFocusedWindow() !== null
-  readonly property string windowTitle: CompositorService.getFocusedWindowTitle() || "No active window"
+  readonly property string windowTitle: getWindowTitle()
   readonly property string fallbackIcon: "user-desktop"
 
   implicitHeight: visible ? (isVerticalBar ? (((!hasFocusedWindow) && hideMode === "hidden") ? 0 : calculatedVerticalDimension()) : Style.capsuleHeight) : 0
   implicitWidth: visible ? (isVerticalBar ? (((!hasFocusedWindow) && hideMode === "hidden") ? 0 : calculatedVerticalDimension()) : (((!hasFocusedWindow) && hideMode === "hidden") ? 0 : dynamicWidth)) : 0
 
   // "visible": Always Visible, "hidden": Hide When Empty, "transparent": Transparent When Empty
-  visible: (hideMode !== "hidden" || hasFocusedWindow) || opacity > 0
-  opacity: ((hideMode !== "hidden" || hasFocusedWindow) && (hideMode !== "transparent" || hasFocusedWindow)) ? 1.0 : 0.0
+  visible: shouldShowWidget(opacity)
+  opacity: widgetOpacity()
   Behavior on opacity {
     NumberAnimation {
       duration: Style.animationNormal
@@ -76,6 +76,43 @@ Item {
 
   function calculatedVerticalDimension() {
     return Math.round((Style.baseWidgetSize - 5) * scaling);
+  }
+
+  function getWindowTitle() {
+    return CompositorService.getFocusedWindowTitle() || "No active window";
+  }
+
+  function shouldShowWidget(currentOpacity: real) {
+    return (hideMode !== "hidden" || hasFocusedWindow) || currentOpacity > 0;
+  }
+
+  function widgetOpacity() {
+    return ((hideMode !== "hidden" || hasFocusedWindow) && (hideMode !== "transparent" || hasFocusedWindow)) ? 1.0 : 0.0;
+  }
+
+  function closePopupMenuWindow() {
+    var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+    if (popupMenuWindow) {
+      popupMenuWindow.close();
+    }
+  }
+
+  function openContextMenu() {
+    var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+    if (!popupMenuWindow)
+      return;
+
+    popupMenuWindow.showContextMenu(contextMenu);
+    const pos = BarService.getContextMenuPosition(root, contextMenu.implicitWidth, contextMenu.implicitHeight);
+    contextMenu.openAtItem(root, pos.x, pos.y);
+  }
+
+  function handleContextMenuAction(action: string) {
+    closePopupMenuWindow();
+
+    if (action === "widget-settings") {
+      BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
+    }
   }
 
   function calculateContentWidth() {
@@ -179,16 +216,7 @@ Item {
       },
     ]
 
-    onTriggered: action => {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.close();
-                   }
-
-                   if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                   }
-                 }
+    onTriggered: action => root.handleContextMenuAction(action)
   }
 
   Rectangle {
@@ -445,12 +473,7 @@ Item {
         }
         onClicked: mouse => {
                      if (mouse.button === Qt.RightButton) {
-                       var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                       if (popupMenuWindow) {
-                         popupMenuWindow.showContextMenu(contextMenu);
-                         const pos = BarService.getContextMenuPosition(root, contextMenu.implicitWidth, contextMenu.implicitHeight);
-                         contextMenu.openAtItem(root, pos.x, pos.y);
-                       }
+                       root.openContextMenu();
                      }
                    }
       }

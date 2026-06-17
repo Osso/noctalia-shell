@@ -17,6 +17,15 @@ Active Window covers the bar widget that displays the focused window title and a
 - [x] Icon lookup falls back to the configured fallback icon when app lookup fails.
 - [x] Icon lookup logs ActiveWindow warnings when lookup throws.
 
+### Title, visibility, and actions
+
+- [x] Window title rendering uses the compositor title when present and falls back to `No active window`.
+- [x] Hidden mode hides the widget when there is no focused window, but keeps it visible while fading out.
+- [x] Transparent mode keeps the widget visible but transparent when there is no focused window.
+- [x] Visible mode stays fully opaque even when there is no focused window.
+- [x] The context-menu settings action closes the popup menu window before opening widget settings with the current widget identity.
+- [x] Right clicking the widget opens its context menu at the BarService-provided widget position.
+
 ## How it works
 
 - [docs/wiki/systems/active-window.md](../wiki/systems/active-window.md)
@@ -35,9 +44,9 @@ Active Window covers the bar widget that displays the focused window title and a
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for active window title rendering and hide modes.
+- [x] Add executable coverage for active window title rendering and hide modes.
 - [ ] Add executable coverage for scrolling/fixed-width behavior.
-- [ ] Add executable coverage for context-menu actions.
+- [x] Add executable coverage for context-menu actions.
 - [ ] Add executable coverage for ActiveWindow settings persistence.
 
 ## Out of scope

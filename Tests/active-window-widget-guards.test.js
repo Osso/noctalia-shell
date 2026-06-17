@@ -145,12 +145,127 @@ function testActiveWindowAppIconFallsBackWhenLookupsFail() {
   assert.equal(ctx.warnings[0][0], "ActiveWindow");
 }
 
+function testActiveWindowTitleFallsBackWhenCompositorHasNoTitle() {
+  const getWindowTitle = qmlFunction("getWindowTitle");
+
+  assert.equal(getWindowTitle({
+    CompositorService: {
+      getFocusedWindowTitle() {
+        return "Terminal";
+      },
+    },
+  }), "Terminal");
+  assert.equal(getWindowTitle({
+    CompositorService: {
+      getFocusedWindowTitle() {
+        return "";
+      },
+    },
+  }), "No active window");
+}
+
+function testActiveWindowHideModeVisibilityAndOpacity() {
+  const shouldShowWidget = qmlFunction("shouldShowWidget", "currentOpacity");
+  const widgetOpacity = qmlFunction("widgetOpacity");
+
+  assert.equal(shouldShowWidget({ hideMode: "hidden", hasFocusedWindow: false }, 0), false);
+  assert.equal(shouldShowWidget({ hideMode: "hidden", hasFocusedWindow: false }, 0.2), true);
+  assert.equal(shouldShowWidget({ hideMode: "hidden", hasFocusedWindow: true }, 0), true);
+  assert.equal(shouldShowWidget({ hideMode: "transparent", hasFocusedWindow: false }, 0), true);
+
+  assert.equal(widgetOpacity({ hideMode: "transparent", hasFocusedWindow: false }), 0);
+  assert.equal(widgetOpacity({ hideMode: "hidden", hasFocusedWindow: false }), 0);
+  assert.equal(widgetOpacity({ hideMode: "visible", hasFocusedWindow: false }), 1);
+  assert.equal(widgetOpacity({ hideMode: "transparent", hasFocusedWindow: true }), 1);
+}
+
+function createContextMenuContext() {
+  const calls = [];
+  const ctx = {
+    contextMenu: {
+      implicitHeight: 20,
+      implicitWidth: 80,
+      name: "active-window-menu",
+      openAtItem(anchor, x, y) {
+        calls.push(["menu-open", anchor.name, x, y]);
+      },
+    },
+    root: {
+      name: "active-window-root",
+    },
+    screen: {
+      name: "HDMI-A-1",
+    },
+    section: "center",
+    sectionWidgetIndex: 3,
+    widgetId: "ActiveWindow",
+    widgetSettings: {
+      hideMode: "visible",
+    },
+    BarService: {
+      getContextMenuPosition(anchor, width, height) {
+        calls.push(["menu-position", anchor.name, width, height]);
+        return { x: 7, y: 9 };
+      },
+      openWidgetSettings(screen, section, index, widgetId, settings) {
+        calls.push(["settings", screen.name, section, index, widgetId, settings.hideMode]);
+      },
+    },
+    PanelService: {
+      getPopupMenuWindow(screen) {
+        calls.push(["popup", screen.name]);
+        return {
+          close() {
+            calls.push(["popup-close"]);
+          },
+          showContextMenu(menu) {
+            calls.push(["popup-show", menu.name]);
+          },
+        };
+      },
+    },
+  };
+  ctx.closePopupMenuWindow = () => qmlFunction("closePopupMenuWindow")(ctx);
+  return { calls, ctx };
+}
+
+function testActiveWindowContextMenuActionClosesPopupAndOpensSettings() {
+  const handleContextMenuAction = qmlFunction("handleContextMenuAction", "action");
+  const { calls, ctx } = createContextMenuContext();
+
+  handleContextMenuAction(ctx, "widget-settings");
+
+  assert.deepEqual(calls, [
+    ["popup", "HDMI-A-1"],
+    ["popup-close"],
+    ["settings", "HDMI-A-1", "center", 3, "ActiveWindow", "visible"],
+  ]);
+}
+
+function testActiveWindowRightClickOpensContextMenuAtWidgetPosition() {
+  const openContextMenu = qmlFunction("openContextMenu");
+  const { calls, ctx } = createContextMenuContext();
+
+  openContextMenu(ctx);
+
+  assert.deepEqual(calls, [
+    ["popup", "HDMI-A-1"],
+    ["popup-show", "active-window-menu"],
+    ["menu-position", "active-window-root", 80, 20],
+    ["menu-open", "active-window-root", 7, 9],
+  ]);
+}
+
 const tests = [
   testActiveWindowCalculatedVerticalDimensionUsesScaledWidgetSize,
   testActiveWindowContentWidthIncludesVisibleIconTextAndMargins,
   testActiveWindowAppIconPrefersFocusedWindowAppId,
   testActiveWindowAppIconFallsBackToHyprlandToplevel,
   testActiveWindowAppIconFallsBackWhenLookupsFail,
+  testActiveWindowTitleFallsBackWhenCompositorHasNoTitle,
+  testActiveWindowHideModeVisibilityAndOpacity,
+  testActiveWindowContextMenuActionClosesPopupAndOpensSettings,
+  testActiveWindowRightClickOpensContextMenuAtWidgetPosition,
 ];
 
 for (const test of tests) {
