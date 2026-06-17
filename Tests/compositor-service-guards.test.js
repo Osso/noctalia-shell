@@ -64,6 +64,7 @@ function testCompositorSyncAndWindowQueriesMirrorBackendModels() {
   assert.match(syncWindowsBody, /const ws = backend\.windows[\s\S]*windows\.append\(ws\[i\]\)/, "syncWindows must append backend window rows");
   assert.match(focusedBody, /focusedWindowIndex >= 0 && focusedWindowIndex < windows\.count[\s\S]*return windows\.get\(focusedWindowIndex\)/, "getFocusedWindow must bounds-check the focused index");
   assert.match(focusedTitleBody, /title\.replace\(\/\(\\r\\n\|\\n\|\\r\)\/g,\s*""\)/, "getFocusedWindowTitle must strip line breaks from titles");
+  assert.match(source, /function getCleanAppName\(appId: string, fallbackTitle: string\)/, "getCleanAppName must type app id and fallback title inputs");
   assert.match(cleanAppBody, /\(appId \|\| ""\)\.split\("\."\)\.pop\(\) \|\| fallbackTitle \|\| "Unknown"/, "getCleanAppName must fall back from app id to title to Unknown");
   assert.match(windowsForWorkspaceBody, /window\.workspaceId === workspaceId[\s\S]*windowsInWs\.push\(window\)/, "getWindowsForWorkspace must filter by workspace id");
   assert.match(currentWorkspaceBody, /if \(ws\.isFocused\)[\s\S]*return ws/, "getCurrentWorkspace must return the focused workspace");
