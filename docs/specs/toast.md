@@ -7,6 +7,7 @@ Toast covers lightweight transient messages, toast command helpers, queue manage
 - [x] Notice toasts forward message, description, icon, notice type, and a default duration of 3000 ms.
 - [x] Warning toasts forward message, description, an empty icon, warning type, and caller-provided duration.
 - [x] Error toasts forward message, description, an empty icon, error type, and a default duration of 6000 ms.
+- [x] Toast service helper APIs type required message inputs while keeping optional defaults flexible.
 
 ### Queueing
 
