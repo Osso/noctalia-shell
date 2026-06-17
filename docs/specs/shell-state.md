@@ -14,6 +14,9 @@ ShellState covers the small persisted state cache shared by services that need l
 
 ### Debounced persistence
 
+- [x] Load success marks ShellState loaded and logs that the state file loaded.
+- [x] Missing state files mark ShellState loaded and log that the file will be created on first write.
+- [x] Other load failures mark ShellState loaded and log the failing error.
 - [x] Calling `save()` marks a save as queued and restarts the save timer.
 - [x] `performSave()` does nothing when no save is queued.
 - [x] `performSave()` keeps the save queued when the state file path is missing.
@@ -45,7 +48,7 @@ ShellState covers the small persisted state cache shared by services that need l
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for ShellState load success and load-failure paths.
+- [x] Add executable coverage for ShellState load success and load-failure paths.
 - [x] Add executable coverage for each setter emitting its matching change signal.
 - [ ] Add executable coverage for cache consumers round-tripping through ShellState.
 

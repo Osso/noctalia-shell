@@ -28,6 +28,47 @@ function testShellStateSaveQueuesDebouncedWrite() {
   assert.equal(restartCount, 1);
 }
 
+function testShellStateLoadHandlersPublishLoadedState() {
+  assert.match(source, /function handleStateLoaded\(\)/, "ShellState must expose a tested load-success helper");
+  assert.match(source, /function handleStateLoadFailed\(error: int\)/, "ShellState must type load-failure errors");
+  assert.match(source, /onLoaded:\s*root\.handleStateLoaded\(\)/, "FileView load success must route through the helper");
+  assert.match(source, /onLoadFailed:\s*error => root\.handleStateLoadFailed\(error\)/, "FileView load failure must route through the helper");
+
+  const handleStateLoaded = qmlFunction("handleStateLoaded");
+  const handleStateLoadFailed = qmlFunction("handleStateLoadFailed", "error");
+  const logs = [];
+  const ctx = {
+    isLoaded: false,
+    Logger: {
+      d(...args) {
+        logs.push(["debug", args]);
+      },
+      e(...args) {
+        logs.push(["error", args]);
+      },
+    },
+  };
+
+  handleStateLoaded(ctx);
+
+  assert.equal(ctx.isLoaded, true);
+  assert.deepEqual(logs, [["debug", ["ShellState", "Loaded state file"]]]);
+
+  ctx.isLoaded = false;
+  logs.length = 0;
+  handleStateLoadFailed(ctx, 2);
+
+  assert.equal(ctx.isLoaded, true);
+  assert.deepEqual(logs, [["debug", ["ShellState", "State file doesn't exist, will create on first write"]]]);
+
+  ctx.isLoaded = false;
+  logs.length = 0;
+  handleStateLoadFailed(ctx, 13);
+
+  assert.equal(ctx.isLoaded, true);
+  assert.deepEqual(logs, [["error", ["ShellState", "Failed to load state file:", 13]]]);
+}
+
 function testShellStatePerformSaveGuardsAndWritesQueuedState() {
   const performSave = qmlFunction("performSave");
   const calls = [];
@@ -254,6 +295,7 @@ function testShellStateSettersSaveAndEmitMatchingSignals() {
 
 const tests = [
   testShellStateSaveQueuesDebouncedWrite,
+  testShellStateLoadHandlersPublishLoadedState,
   testShellStatePerformSaveGuardsAndWritesQueuedState,
   testShellStateBuildSnapshotAggregatesSettingsAndCachedState,
   testShellStateBuildSnapshotFailsClosedOnConversionErrors,

@@ -63,21 +63,9 @@ Singleton {
                                       })
     }
 
-    onLoaded: {
-      root.isLoaded = true;
-      Logger.d("ShellState", "Loaded state file");
-    }
+    onLoaded: root.handleStateLoaded()
 
-    onLoadFailed: error => {
-      if (error === 2) {
-        // File doesn't exist, will be created on first write
-        root.isLoaded = true;
-        Logger.d("ShellState", "State file doesn't exist, will create on first write");
-      } else {
-        Logger.e("ShellState", "Failed to load state file:", error);
-        root.isLoaded = true;
-      }
-    }
+    onLoadFailed: error => root.handleStateLoadFailed(error)
   }
 
   // Debounced save timer
@@ -88,6 +76,22 @@ Singleton {
   }
 
   property bool saveQueued: false
+
+  function handleStateLoaded() {
+    isLoaded = true;
+    Logger.d("ShellState", "Loaded state file");
+  }
+
+  function handleStateLoadFailed(error: int) {
+    isLoaded = true;
+
+    if (error === 2) {
+      Logger.d("ShellState", "State file doesn't exist, will create on first write");
+      return;
+    }
+
+    Logger.e("ShellState", "Failed to load state file:", error);
+  }
 
   function save() {
     saveQueued = true;
