@@ -7,6 +7,7 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 - [x] Screen lookup returns the monitor whose `modelData` is the exact screen object.
 - [x] Screen lookup does not match a different object just because it has the same shape.
 - [x] Detected display reporting returns the current detected display list.
+- [x] DDC detection output parsing handles blank output, supported monitors, invalid displays, unsupported monitors, and missing model/bus fields.
 
 ### Available methods
 
@@ -41,12 +42,12 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 
 - `Tests/brightness-service-guards.test.js`
 - `Tests/brightness-widget-guards.test.js`
+- `Tests/helpers.test.js`
 - `Tests/qml-runtime-guards.test.js`
 
 ## Known gaps (current cycle)
 
 - [ ] Add executable tests for individual monitor `setBrightness`, debounce, and command routing.
-- [ ] Add executable tests for DDC detection output parsing.
 - [ ] Add spec coverage for brightness panel and display settings UI contracts.
 
 ## Out of scope

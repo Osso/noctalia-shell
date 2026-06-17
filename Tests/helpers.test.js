@@ -332,6 +332,8 @@ function testTimerDigitsParser() {
 
 function testBrightnessParsing() {
   const brightness = loadHelper("Helpers/BrightnessParsing.js");
+  assert.deepEqual(plain(brightness.parseDdcMonitors("")), []);
+
   const ddcOutput = `Invalid display
    I2C bus:  /dev/i2c-3
    EDID synopsis:
@@ -347,6 +349,11 @@ Display 1
   assert.deepEqual(plain(brightness.parseDdcMonitors(ddcOutput)), [
     { model: "Internal Panel", busNum: "3", isDdc: false },
     { model: "DELL 2707WFP", busNum: "4", isDdc: true },
+  ]);
+  assert.deepEqual(plain(brightness.parseDdcMonitors(`Display 2
+   EDID synopsis:
+   This monitor does not support DDC/CI`)), [
+    { model: "Unknown", busNum: "Unknown", isDdc: false },
   ]);
   assert.deepEqual(plain(brightness.parseDdcBrightness("VCP 10 C 56 100")), {
     current: 56,
