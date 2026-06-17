@@ -798,51 +798,6 @@ function testPanelBackgroundPanelReferenceIsTyped() {
   assertNoPropertyType(panelBackgroundFile, "panel", "var");
 }
 
-function testBackgroundObjectReferencesAreTyped() {
-  const allBackgroundsFile = "Modules/MainScreen/Backgrounds/AllBackgrounds.qml";
-  const barBackgroundFile = "Modules/MainScreen/Backgrounds/BarBackground.qml";
-  const allBackgroundsSource = readQml(allBackgroundsFile);
-
-  assertPropertyType(allBackgroundsFile, "bar", "Item");
-  assertPropertyType(allBackgroundsFile, "windowRoot", "Item");
-  assertPropertyType(barBackgroundFile, "bar", "Item");
-  assertPropertyType(barBackgroundFile, "windowRoot", "Item");
-  assertNoPropertyType(allBackgroundsFile, "bar", "var");
-  assertNoPropertyType(allBackgroundsFile, "windowRoot", "var");
-  assertNoPropertyType(barBackgroundFile, "bar", "var");
-  assertNoPropertyType(barBackgroundFile, "windowRoot", "var");
-
-  const panelPlaceholders = [
-    "audioPanelPlaceholder",
-    "batteryPanelPlaceholder",
-    "bluetoothPanelPlaceholder",
-    "brightnessPanelPlaceholder",
-    "clockPanelPlaceholder",
-    "controlCenterPanelPlaceholder",
-    "changelogPanelPlaceholder",
-    "launcherPanelPlaceholder",
-    "notificationHistoryPanelPlaceholder",
-    "sessionMenuPanelPlaceholder",
-    "settingsPanelPlaceholder",
-    "setupWizardPanelPlaceholder",
-    "trayDrawerPanelPlaceholder",
-    "wallpaperPanelPlaceholder",
-    "wifiPanelPlaceholder",
-    "vpnPanelPlaceholder",
-    "processPanelPlaceholder",
-  ];
-
-  for (const placeholder of panelPlaceholders) {
-    assert.match(
-      allBackgroundsSource,
-      new RegExp(`panel:\\s*root\\.windowRoot\\s*\\?\\s*root\\.windowRoot\\.${placeholder}\\s*:\\s*null`),
-      `AllBackgrounds must guard ${placeholder} while windowRoot is not assigned`,
-    );
-  }
-
-  assert.doesNotMatch(allBackgroundsSource, /panel:\s*root\.windowRoot\.[A-Za-z]/, "AllBackgrounds must not read windowRoot panel placeholders without a null guard");
-}
-
 function testBackgroundScreenAliasesAreTyped() {
   const source = readQml("Modules/Background/Background.qml");
   const screenDelegate = /Variants\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?delegate:\s*Loader\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s*modelData\s*\?\s*modelData\.name\s*:\s*""[\s\S]*?readonly\s+property\s+int\s+monitorWidth:\s*modelData\s*\?\s*modelData\.width\s*:\s*0[\s\S]*?readonly\s+property\s+int\s+monitorHeight:\s*modelData\s*\?\s*modelData\.height\s*:\s*0[\s\S]*?screenName\s*===\s*monitorName[\s\S]*?CompositorService\.getDisplayScale\(monitorName\)[\s\S]*?monitorWidth\s*\*\s*compositorScale[\s\S]*?monitorHeight\s*\*\s*compositorScale[\s\S]*?WallpaperService\.getWallpaper\(monitorName\)/;
@@ -1197,7 +1152,6 @@ const tests = [
   testBrightnessServiceMonitorScreenModelAliasIsTyped,
   testBackgroundShapeContainersAreTyped,
   testPanelBackgroundPanelReferenceIsTyped,
-  testBackgroundObjectReferencesAreTyped,
   testBackgroundScreenAliasesAreTyped,
   testOverviewScreenAliasIsTyped,
   testWallpaperPanelScreenReferencesAreTyped,

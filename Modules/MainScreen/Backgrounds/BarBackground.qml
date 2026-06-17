@@ -20,13 +20,13 @@ ShapePath {
   id: root
 
   // Required reference to the bar component
-  required property Item bar
+  required property var bar
 
   // Required reference to AllBackgrounds shapeContainer
   required property Shape shapeContainer
 
   // Required reference to windowRoot for screen access
-  required property Item windowRoot
+  required property var windowRoot
 
   required property color backgroundColor
 

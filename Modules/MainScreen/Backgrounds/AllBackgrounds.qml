@@ -17,10 +17,10 @@ Item {
   id: root
 
   // Reference Bar
-  required property Item bar
+  required property var bar
 
   // Reference to MainScreen (for panel access)
-  required property Item windowRoot
+  required property var windowRoot
 
   readonly property color panelBackgroundColor: Qt.alpha(Color.mSurface, Settings.data.ui.panelBackgroundOpacity)
 
@@ -65,119 +65,119 @@ Item {
 
       // Audio
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.audioPanelPlaceholder : null
+        panel: root.windowRoot.audioPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
 
       // Battery
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.batteryPanelPlaceholder : null
+        panel: root.windowRoot.batteryPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
 
       // Bluetooth
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.bluetoothPanelPlaceholder : null
+        panel: root.windowRoot.bluetoothPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
 
       // Brightness
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.brightnessPanelPlaceholder : null
+        panel: root.windowRoot.brightnessPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
 
       // Clock
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.clockPanelPlaceholder : null
+        panel: root.windowRoot.clockPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
 
       // Control Center
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.controlCenterPanelPlaceholder : null
+        panel: root.windowRoot.controlCenterPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
 
       // Changelog
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.changelogPanelPlaceholder : null
+        panel: root.windowRoot.changelogPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
 
       // Launcher
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.launcherPanelPlaceholder : null
+        panel: root.windowRoot.launcherPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
 
       // Notification History
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.notificationHistoryPanelPlaceholder : null
+        panel: root.windowRoot.notificationHistoryPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
 
       // Session Menu
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.sessionMenuPanelPlaceholder : null
+        panel: root.windowRoot.sessionMenuPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
 
       // Settings
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.settingsPanelPlaceholder : null
+        panel: root.windowRoot.settingsPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
 
       // Setup Wizard
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.setupWizardPanelPlaceholder : null
+        panel: root.windowRoot.setupWizardPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
 
       // TrayDrawer
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.trayDrawerPanelPlaceholder : null
+        panel: root.windowRoot.trayDrawerPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
 
       // Wallpaper
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.wallpaperPanelPlaceholder : null
+        panel: root.windowRoot.wallpaperPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
 
       // WiFi
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.wifiPanelPlaceholder : null
+        panel: root.windowRoot.wifiPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
 
       // VPN
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.vpnPanelPlaceholder : null
+        panel: root.windowRoot.vpnPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
 
       // Process
       PanelBackground {
-        panel: root.windowRoot ? root.windowRoot.processPanelPlaceholder : null
+        panel: root.windowRoot.processPanelPlaceholder
         shapeContainer: backgroundsShape
         backgroundColor: panelBackgroundColor
       }
