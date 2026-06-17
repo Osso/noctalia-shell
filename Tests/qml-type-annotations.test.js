@@ -269,6 +269,7 @@ function testDateTimeTokenDelegateRolesAreTyped() {
   const tokenDelegate = /delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*tokenDelegate[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+category[\s\S]*?required\s+property\s+string\s+token[\s\S]*?required\s+property\s+string\s+description[\s\S]*?root\.tokenClicked\(token\)[\s\S]*?getCategoryColor\(category\)[\s\S]*?text:\s*description[\s\S]*?toString\(root\.sampleDate,\s*token\)/;
 
   assert.match(source, tokenDelegate, "NDateTimeTokens delegate must type scalar token roles");
+  assert.match(source, /function getCategoryColor\(category: string\)/, "NDateTimeTokens category color helper must type category input");
   assert.doesNotMatch(source, /required\s+property\s+var\s+modelData/, "NDateTimeTokens delegate must not keep unused modelData");
   assert.doesNotMatch(source, /modelData\.(?:category|token|description)/, "NDateTimeTokens delegate must use typed roles instead of modelData.*");
 }
