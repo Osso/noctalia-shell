@@ -17,6 +17,7 @@ Popup Context Menu covers the shared popup menu widget used by bar widgets and p
 - [x] Opening at coordinates recalculates width, stores the anchor item, stores x/y offsets, and makes the popup visible.
 - [x] Opening schedules an anchor refresh when the popup anchor object is available.
 - [x] Opening at an item defaults missing mouse coordinates to zero.
+- [x] Opening helpers type anchor items and coordinate inputs.
 - [x] `closeMenu()` delegates to `close()`.
 - [x] Closing the menu hides the popup.
 

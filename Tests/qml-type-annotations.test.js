@@ -47,6 +47,13 @@ function testPopupAnchorItemsAreTyped() {
   }
 }
 
+function testPopupContextMenuOpenHelpersAreTyped() {
+  const source = readQml("Widgets/NPopupContextMenu.qml");
+
+  assert.match(source, /function\s+openAt\(x:\s*real,\s*y:\s*real,\s*item:\s*Item\)/, "NPopupContextMenu.openAt must type coordinates and anchor item");
+  assert.match(source, /function\s+openAtItem\(item:\s*Item,\s*mouseX:\s*real,\s*mouseY:\s*real\)/, "NPopupContextMenu.openAtItem must type anchor item and mouse coordinates");
+}
+
 function testTooltipTargetItemIsTyped() {
   assertPropertyType("Modules/Tooltip/Tooltip.qml", "targetItem", "Item");
 }
@@ -1093,6 +1100,7 @@ function testWiFiNetworkDelegateAliasesAreTyped() {
 const tests = [
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
+  testPopupContextMenuOpenHelpersAreTyped,
   testTooltipTargetItemIsTyped,
   testTooltipServiceCallsUseTargetItemFirst,
   testTooltipServiceTracksTypedTooltipInstances,

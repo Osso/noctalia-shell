@@ -215,7 +215,7 @@ PopupWindow {
   }
 
   // Helper function to open at specific position relative to anchor item
-  function openAt(x, y, item) {
+  function openAt(x: real, y: real, item: Item) {
     if (!item) {
       Logger.w("NPopupContextMenu", "anchorItem is undefined, won't show menu.");
       return;
@@ -235,7 +235,7 @@ PopupWindow {
                  });
   }
 
-  function openAtItem(item, mouseX, mouseY) {
+  function openAtItem(item: Item, mouseX: real, mouseY: real) {
     openAt(mouseX || 0, mouseY || 0, item);
   }
 
