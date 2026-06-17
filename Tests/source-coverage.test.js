@@ -6,6 +6,10 @@ const fs = require("fs");
 const path = require("path");
 
 const repoRoot = path.resolve(__dirname, "..");
+const metaTestFiles = new Set([
+  "Tests/qml-function-inventory.test.js",
+  "Tests/quickshell-regression.test.sh",
+]);
 
 function codeIndexJson(...args) {
   return JSON.parse(execFileSync("code-index", args, {
@@ -53,6 +57,13 @@ function specFiles() {
 
 function specCorpus() {
   return specFiles()
+    .map(filePath => fs.readFileSync(filePath, "utf8"))
+    .join("\n");
+}
+
+function featureSpecCorpus() {
+  return specFiles()
+    .filter(filePath => path.basename(filePath) !== "testing.md")
     .map(filePath => fs.readFileSync(filePath, "utf8"))
     .join("\n");
 }
@@ -114,11 +125,21 @@ function testAllTestFilesAreNamedBySpecs() {
   assert.deepEqual(unmappedTestFiles, [], "every executable test file must be named by a docs/specs contract");
 }
 
+function testNonMetaTestFilesAreNamedByFeatureSpecs() {
+  const featureSpecs = featureSpecCorpus();
+  const unmappedFeatureTests = testFiles()
+    .filter(testFile => !metaTestFiles.has(testFile))
+    .filter(testFile => !featureSpecs.includes(testFile));
+
+  assert.deepEqual(unmappedFeatureTests, [], "non-meta tests must be named by feature specs, not only the testing spec");
+}
+
 const tests = [
   testQmlFunctionCoverageStaysComplete,
   testQmlFunctionInventoryIncludesDeclarations,
   testNonTestSourceFunctionsStayCovered,
   testAllTestFilesAreNamedBySpecs,
+  testNonMetaTestFilesAreNamedByFeatureSpecs,
 ];
 
 for (const test of tests) {
