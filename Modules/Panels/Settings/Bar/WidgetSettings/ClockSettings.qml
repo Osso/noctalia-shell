@@ -38,7 +38,7 @@ ColumnLayout {
   }
 
   // Function to insert token at cursor position in the focused input
-  function insertToken(token) {
+  function insertToken(token: string) {
     if (!focusedInput || !focusedInput.inputItem) {
       // If no input is focused, default to horiz
       if (inputHoriz.inputItem) {

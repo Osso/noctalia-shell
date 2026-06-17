@@ -52,6 +52,7 @@ Settings covers persisted shell configuration, default settings generation, vers
 - [x] Battery widget settings device models filter line-power devices.
 - [x] Changelog release-date formatting handles empty, invalid, and valid dates.
 - [x] Clock widget settings token insertion defaults to the horizontal input.
+- [x] Clock widget settings token insertion uses a typed token input.
 - [x] Date/time token picker category color selection uses a typed category input.
 - [x] Wallhaven settings resolution updates exact/minimum resolution state and optionally triggers search.
 - [x] Scroll view setup updates only flickable children and applies bounds, direction, and content-width binding.
