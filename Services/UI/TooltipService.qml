@@ -110,7 +110,7 @@ Singleton {
     }
   }
 
-  function updateText(newText) {
+  function updateText(newText: string) {
     if (activeTooltip) {
       activeTooltip.updateText(newText);
     }

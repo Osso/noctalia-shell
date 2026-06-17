@@ -17,6 +17,7 @@ Lifecycle:
 Placement:
 - [x] Auto placement must calculate tooltip dimensions, choose the first fitting direction in bottom/top/right/left order, clamp horizontally to the screen, set anchor coordinates, mark the tooltip positioned, show it, and start show animation.
 - [x] Text updates on a visible tooltip must process multiline text as rich text line breaks, recalculate dimensions and anchor coordinates, clamp horizontally, and refresh the popup anchor on the next Qt tick.
+- [x] Tooltip and TooltipService text updates must type replacement text as a string.
 
 ## How it works
 

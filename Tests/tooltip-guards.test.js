@@ -252,6 +252,9 @@ function testTooltipHideImmediatelyStopsEverythingAndCompletes() {
 function testTooltipUpdateTextRepositionsAndRefreshesAnchor() {
   const updateText = qmlFunction("updateText", "newText");
   let anchorUpdates = 0;
+
+  assert.match(source, /function updateText\(newText: string\)/, "updateText must type replacement tooltip text as a string");
+
   const ctx = createTooltipContext({
     visible: true,
     targetItem: createTarget({

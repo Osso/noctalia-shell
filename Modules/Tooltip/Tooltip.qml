@@ -327,7 +327,7 @@ PopupWindow {
   }
 
   // Update text function
-  function updateText(newText) {
+  function updateText(newText: string) {
     if (visible && targetItem) {
       // Convert \n to <br> for RichText format
       const processedText = newText.replace(/\n/g, '<br>');

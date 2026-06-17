@@ -70,6 +70,7 @@ function testTooltipServiceTracksTypedTooltipInstances() {
   assertPropertyType(tooltipServiceFile, "activeTooltip", "Tooltip");
   assertPropertyType(tooltipServiceFile, "pendingTooltip", "Tooltip");
   assert.match(source, /function show\(target: Item, text: string, direction, delay, fontFamily\)/, "TooltipService.show must type required target and text inputs while keeping optional display inputs flexible");
+  assert.match(source, /function updateText\(newText: string\)/, "TooltipService.updateText must type replacement tooltip text as a string");
 }
 
 function testSmartPanelButtonItemIsTyped() {
