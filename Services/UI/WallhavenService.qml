@@ -159,7 +159,7 @@ Singleton {
   }
 
   // -------------------------------------------------
-  function getThumbnailUrl(wallpaper, size): string {
+  function getThumbnailUrl(wallpaper, size: string): string {
     // size: "small", "large", "original"
     if (wallpaper.thumbs && wallpaper.thumbs[size]) {
       return wallpaper.thumbs[size];

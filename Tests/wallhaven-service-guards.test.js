@@ -7,7 +7,7 @@ function testWallhavenUrlSignaturesAreTyped() {
   const source = readQml("Services/UI/WallhavenService.qml");
 
   assert.match(source, /function getWallpaperUrl\(wallpaper\): string/, "getWallpaperUrl must declare string output");
-  assert.match(source, /function getThumbnailUrl\(wallpaper, size\): string/, "getThumbnailUrl must declare string output");
+  assert.match(source, /function getThumbnailUrl\(wallpaper, size: string\): string/, "getThumbnailUrl must type the size input and declare string output");
 }
 
 function testWallhavenSearchQueryGuards() {

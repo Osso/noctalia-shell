@@ -31,6 +31,7 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 ### Wallhaven search and download
 
 - [x] Wallhaven wallpaper and thumbnail URL helpers declare string return types.
+- [x] Wallhaven thumbnail URL helper uses a typed string size input.
 - [x] Wallhaven search ignores duplicate requests while fetching.
 - [x] Wallhaven search clears scheduled initial search state, resets public request state, encodes query text, includes base filters, conditionally includes `topRange` and `seed`, includes the page, and issues a GET request.
 - [x] Wallhaven search clears fetching only after request completion and handles response state through the request completion path.
