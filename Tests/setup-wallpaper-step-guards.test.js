@@ -125,12 +125,17 @@ function testSetupWallpaperStepReadDirectoryImagesStartsScannerCommand() {
   assert.equal(ctx.directoryScanner.running, true);
 }
 
+function testSetupWallpaperStepReadDirectoryImagesUsesTypedDirectoryPath() {
+  assert.match(source, /function readDirectoryImages\(directoryPath: string\)/, "readDirectoryImages must type the directory path input");
+}
+
 const tests = [
   testSetupWallpaperStepCopiesWallpaperListToFilteredList,
   testSetupWallpaperStepRefreshClearsEmptyDirectory,
   testSetupWallpaperStepRefreshUsesWallpaperServiceAndSelectsFirstWallpaper,
   testSetupWallpaperStepRefreshFallsBackToDirectoryScanner,
   testSetupWallpaperStepReadDirectoryImagesStartsScannerCommand,
+  testSetupWallpaperStepReadDirectoryImagesUsesTypedDirectoryPath,
 ];
 
 for (const test of tests) {

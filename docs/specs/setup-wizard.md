@@ -30,6 +30,7 @@ Setup Wizard covers first-run onboarding launch, completion, and selected setup 
 - [x] Setup wallpaper refresh reads the current screen list from the wallpaper service and selects the first wallpaper when none is selected.
 - [x] Setup wallpaper refresh falls back to a directory scanner when the wallpaper service list helper is unavailable.
 - [x] Setup wallpaper directory scanning starts a command for `.jpg`, `.jpeg`, `.png`, `.bmp`, `.webp`, and `.svg` files.
+- [x] Setup wallpaper directory scanning uses a typed string directory-path input.
 
 ### Typed delegates
 

@@ -355,7 +355,7 @@ ColumnLayout {
     }
   }
 
-  function readDirectoryImages(directoryPath) {
+  function readDirectoryImages(directoryPath: string) {
     directoryScanner.command = ["find", directoryPath, "-type", "f", "\\(-iname", "*.jpg", "-o", "-iname", "*.jpeg", "-o", "-iname", "*.png", "-o", "-iname", "*.bmp", "-o", "-iname", "*.webp", "-o", "-iname", "*.svg", "\\)"];
     directoryScanner.running = true;
     return [];
