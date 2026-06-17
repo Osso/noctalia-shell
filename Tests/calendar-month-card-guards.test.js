@@ -92,6 +92,7 @@ function testCalendarMonthEventColorByEventKindAndToday() {
 }
 
 function testCalendarMonthHelperInputsAreTyped() {
+  assert.match(source, /function getISOWeekNumber\(date: date\)/, "getISOWeekNumber must type the date input");
   assert.match(source, /function hasEventsOnDate\(year: int, month: int, day: int\)/, "hasEventsOnDate must type calendar date inputs");
   assert.match(source, /function getEventsForDate\(year: int, month: int, day: int\)/, "getEventsForDate must type calendar date inputs");
   assert.match(source, /function getEventColor\(event, isToday: bool\)/, "getEventColor must type the today flag");

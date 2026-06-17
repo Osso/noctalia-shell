@@ -21,7 +21,7 @@ NBox {
   readonly property int firstDayOfWeek: Settings.data.location.firstDayOfWeek === -1 ? I18n.locale.firstDayOfWeek : Settings.data.location.firstDayOfWeek
 
   // Helper function to calculate ISO week number
-  function getISOWeekNumber(date) {
+  function getISOWeekNumber(date: date) {
     const target = new Date(date.valueOf());
     const dayNr = (date.getDay() + 6) % 7;
     target.setDate(target.getDate() - dayNr + 3);

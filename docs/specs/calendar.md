@@ -21,6 +21,7 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 ### Month grid helpers
 
 - [x] ISO week number calculation handles year-boundary dates.
+- [x] ISO week number calculation uses a typed `date` input.
 - [x] All-day event detection requires a 24-hour duration starting at local midnight.
 - [x] Multi-day event detection excludes all-day events and detects non-all-day events crossing local day boundaries.
 - [x] Events for a calendar date include events that start inside, end inside, or span the whole target day.
