@@ -88,8 +88,8 @@ function testSpinBoxChangeValueIgnoresInvalidDirectionAndExistingBounds() {
   assert.equal(ctx.repeatTimer.stopped, 0);
 }
 
-function testSpinBoxChangeValueUsesTypedDirection() {
-  assert.match(source, /function changeValue\(direction: int, step\)/, "changeValue must type the direction input while keeping step optional");
+function testSpinBoxChangeValueUsesTypedInputs() {
+  assert.match(source, /function changeValue\(direction: int, step: int\)/, "changeValue must type numeric step inputs while keeping omission behavior");
 }
 
 function testSpinBoxStopRepeatClearsDirectionAndRestoresInitialDelay() {
@@ -144,7 +144,7 @@ const tests = [
   testSpinBoxChangeValueIncrementsDecrementsAndUsesDefaultStep,
   testSpinBoxChangeValueClampsAtBoundsAndStopsRepeat,
   testSpinBoxChangeValueIgnoresInvalidDirectionAndExistingBounds,
-  testSpinBoxChangeValueUsesTypedDirection,
+  testSpinBoxChangeValueUsesTypedInputs,
   testSpinBoxStopRepeatClearsDirectionAndRestoresInitialDelay,
   testSpinBoxApplyValueParsesAndClampsInputText,
   testSpinBoxApplyValueIgnoresNonNumericText,

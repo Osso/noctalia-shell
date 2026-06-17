@@ -7,7 +7,7 @@ Spin Box covers the shared numeric input widget used by settings and color-editi
 - [x] Increment actions increase the value by the configured step.
 - [x] Decrement actions decrease the value by the provided step when supplied.
 - [x] Value changes use the widget `stepSize` when no explicit step is supplied.
-- [x] Value change direction input is typed while the optional step remains optional.
+- [x] Value change direction and explicit step inputs are typed while step omission still uses the widget default.
 - [x] Increment actions clamp at the configured upper bound.
 - [x] Decrement actions clamp at the configured lower bound.
 - [x] Reaching either bound stops the repeat timer and restores the initial repeat delay.
