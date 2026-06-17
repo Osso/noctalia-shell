@@ -101,8 +101,8 @@ Item {
   function onCtrlKPressed() {
   }
 
-  // Expose panel region for click-through mask
-  readonly property Item panelRegion: panelContent.maskRegion
+  // Expose actual background geometry for AllBackgrounds and click-through masks.
+  readonly property Item panelRegion: panelBackground
 
   readonly property string barPosition: Settings.data.bar.position
   readonly property bool barIsVertical: barPosition === "left" || barPosition === "right"

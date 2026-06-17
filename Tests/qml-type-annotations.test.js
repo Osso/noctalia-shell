@@ -78,8 +78,12 @@ function testSmartPanelButtonItemIsTyped() {
 }
 
 function testSmartPanelPanelRegionIsTyped() {
+  const source = readQml("Modules/MainScreen/SmartPanel.qml");
+
   assertPropertyType("Modules/MainScreen/SmartPanel.qml", "panelRegion", "Item");
   assertNoPropertyType("Modules/MainScreen/SmartPanel.qml", "panelRegion", "var");
+  assert.match(source, /readonly\s+property\s+Item\s+panelRegion:\s*panelBackground/, "SmartPanel panelRegion must expose panelBackground geometry for AllBackgrounds");
+  assert.doesNotMatch(source, /readonly\s+property\s+Item\s+panelRegion:\s*panelContent\.maskRegion/, "SmartPanel panelRegion must not resolve through panelContent component state");
 }
 
 function testMainScreenPanelPlaceholdersAreTyped() {

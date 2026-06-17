@@ -26,6 +26,7 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 
 - [x] SmartPanel `buttonItem` is typed as `Item`.
 - [x] SmartPanel `panelRegion` is typed as `Item`.
+- [x] SmartPanel `panelRegion` exposes the live `panelBackground` geometry consumed by `AllBackgrounds`.
 - [x] Panel background exposes its `panelItem` as an `Item`.
 
 ## How it works
