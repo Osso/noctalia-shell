@@ -165,7 +165,7 @@ Item {
     cursorShape: Qt.PointingHandCursor
   }
 
-  function show(msg, desc, msgIcon, msgType, msgDuration) {
+  function show(msg: string, desc, msgIcon, msgType, msgDuration) {
     // Stop all timers first
     hideTimer.stop();
     hideAnimation.stop();

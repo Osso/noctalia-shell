@@ -22,6 +22,13 @@ Toast covers lightweight transient messages, toast command helpers, queue manage
 - [x] Queue processing leaves queued messages untouched when a toast is already visible.
 - [x] Queue processing activates the toast loader with the next toast, marks a toast visible, and removes the activated toast from the queue.
 
+### Visible toast item
+
+- [x] Showing a visible toast stops pending hide timers, stores message/description/icon/type/duration, applies default optional fields, shows the toast, restores opacity/scale, and restarts the hide timer.
+- [x] Showing a visible toast types the required message input while keeping optional display inputs flexible.
+- [x] Hiding a visible toast stops the hide timer, fades/scales out, and restarts the hide animation.
+- [x] Immediate hide stops timers, fades/scales out, clears visibility, and emits the hidden signal.
+
 ## How it works
 
 - [docs/wiki/systems/toast.md](../wiki/systems/toast.md)
@@ -37,11 +44,11 @@ Toast covers lightweight transient messages, toast command helpers, queue manage
 
 - `Tests/toast-service-guards.test.js`
 - `Tests/toast-screen-guards.test.js`
+- `Tests/simple-toast-guards.test.js`
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for `SimpleToast.show`, `hide`, and `hideImmediately` animation/timer behavior.
 - [ ] Add executable coverage for `ToastScreen.onToastHidden` cleanup and queue continuation.
 - [ ] Add UI-level coverage for toast icon, message, description, type color, and click-to-hide rendering.
 - [ ] Add multi-screen coverage for `ToastOverlay` screen delegation.
