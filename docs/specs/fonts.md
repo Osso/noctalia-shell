@@ -8,6 +8,7 @@ Fonts covers system font discovery, fontconfig monospace detection, font classif
 - [x] Initialization starts fontconfig monospace loading.
 - [x] Fontconfig monospace loading runs `fc-list :mono family`.
 - [x] Fontconfig monospace loading starts its process.
+- [x] Fontconfig process output parsing trims blank rows and splits comma-separated family aliases into the monospace lookup.
 - [x] System font loading avoids concurrent loads.
 - [x] System font loading exposes loading state.
 - [x] System font loading reads Qt font families.
@@ -67,7 +68,6 @@ Fonts covers system font discovery, fontconfig monospace detection, font classif
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for fontconfig process output parsing.
 - [ ] Add executable coverage for fallback font lists applied during finalization.
 - [ ] Add executable coverage for General settings font selectors.
 - [ ] Add executable coverage for Clock settings font selector.

@@ -3,8 +3,14 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const source = readQml("Services/System/FontService.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(source, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
 function testFontServiceLoadingPipeline() {
-  const source = readQml("Services/System/FontService.qml");
   const initBody = extractFunctionBody(source, "init");
   const loadMonoBody = extractFunctionBody(source, "loadFontconfigMonospaceFonts");
   const loadSystemBody = extractFunctionBody(source, "loadSystemFonts");
@@ -33,7 +39,6 @@ function testFontServiceLoadingPipeline() {
 }
 
 function testFontServiceClassificationAndCaching() {
-  const source = readQml("Services/System/FontService.qml");
   const monospaceBody = extractFunctionBody(source, "isMonospaceFont");
   const displayBody = extractFunctionBody(source, "isDisplayFont");
 
@@ -50,7 +55,6 @@ function testFontServiceClassificationAndCaching() {
 }
 
 function testFontServiceModelUtilitiesAndSearch() {
-  const source = readQml("Services/System/FontService.qml");
   const batchBody = extractFunctionBody(source, "batchAppendToModel");
   const sortBody = extractFunctionBody(source, "sortModel");
   const fallbackBody = extractFunctionBody(source, "addFallbackFonts");
@@ -70,10 +74,30 @@ function testFontServiceModelUtilitiesAndSearch() {
   assert.match(searchBody, /return results/, "searchFonts must return filtered results");
 }
 
+function testFontServiceParsesFontconfigMonospaceOutput() {
+  const parseFontconfigMonospaceOutput = qmlFunction("parseFontconfigMonospaceOutput", "rawOutput");
+
+  assert.match(source, /function parseFontconfigMonospaceOutput\(rawOutput: string\)/, "parseFontconfigMonospaceOutput must type raw fontconfig output");
+  assert.deepEqual(parseFontconfigMonospaceOutput({}, [
+    "DejaVu Sans Mono,DejaVu Sans Mono Book",
+    "  Fira Code  ",
+    "",
+    "Monaspace Neon, Monaspace Neon Var",
+  ].join("\n")), {
+    "DejaVu Sans Mono": true,
+    "DejaVu Sans Mono Book": true,
+    "Fira Code": true,
+    "Monaspace Neon": true,
+    "Monaspace Neon Var": true,
+  });
+  assert.deepEqual(parseFontconfigMonospaceOutput({}, ""), {});
+}
+
 const tests = [
   testFontServiceLoadingPipeline,
   testFontServiceClassificationAndCaching,
   testFontServiceModelUtilitiesAndSearch,
+  testFontServiceParsesFontconfigMonospaceOutput,
 ];
 
 for (const test of tests) {

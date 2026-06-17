@@ -58,6 +58,23 @@ Singleton {
     processFontsAsync(fontFamilies, 0);
   }
 
+  function parseFontconfigMonospaceOutput(rawOutput: string) {
+    var monospaceLookup = {};
+    var lines = rawOutput.split('\n');
+
+    for (var i = 0; i < lines.length; i++) {
+      var families = lines[i].split(',');
+      for (var j = 0; j < families.length; j++) {
+        var family = families[j].trim();
+        if (family) {
+          monospaceLookup[family] = true;
+        }
+      }
+    }
+
+    return monospaceLookup;
+  }
+
   function processFontsAsync(fontFamilies, startIndex) {
     var endIndex = Math.min(startIndex + chunkSize, fontFamilies.length);
     var hasMore = endIndex < fontFamilies.length;
@@ -237,18 +254,7 @@ Singleton {
     stdout: StdioCollector {
       onStreamFinished: {
         if (this.text !== "") {
-          var lines = this.text.split('\n');
-          // Use object for O(1) lookup instead of array
-          var monospaceLookup = {};
-
-          for (var i = 0; i < lines.length; i++) {
-            var line = lines[i].trim();
-            if (line && line !== "") {
-              monospaceLookup[line] = true;
-            }
-          }
-
-          fontconfigMonospaceFonts = monospaceLookup;
+          fontconfigMonospaceFonts = parseFontconfigMonospaceOutput(this.text);
         }
         loadSystemFonts();
       }
