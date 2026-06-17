@@ -123,6 +123,18 @@ Rectangle {
 
   readonly property int fanTextWidth: Math.ceil(fanMetrics.boundingRect.width + 3)
 
+  function shouldShowFanSpeedMetric(enabled: bool, fanAvailable: bool): bool {
+    return enabled && fanAvailable;
+  }
+
+  function formatFanSpeedText(maxRpm: int): string {
+    return FanService.formatRpm(maxRpm);
+  }
+
+  function fanTooltipText(fans): string {
+    return fans.map(f => f.label + ": " + f.rpm + " RPM").join("\n");
+  }
+
   anchors.centerIn: parent
   implicitWidth: isVertical ? Style.capsuleHeight : Math.round(mainGrid.implicitWidth + Style.marginM * 2)
   implicitHeight: isVertical ? Math.round(mainGrid.implicitHeight + Style.marginM * 2) : Style.capsuleHeight
@@ -632,7 +644,7 @@ Rectangle {
       Layout.preferredWidth: isVertical ? root.width : iconSize + fanTextWidth + (Style.marginXXS)
       Layout.preferredHeight: Style.capsuleHeight
       Layout.alignment: isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
-      visible: showFanSpeed && FanService.available
+      visible: root.shouldShowFanSpeedMetric(showFanSpeed, FanService.available)
 
       GridLayout {
         id: fanContent
@@ -661,7 +673,7 @@ Rectangle {
         }
 
         NText {
-          text: FanService.formatRpm(FanService.getMaxRpm())
+          text: root.formatFanSpeedText(FanService.getMaxRpm())
           family: Settings.data.ui.fontFixed
           pointSize: textSize
           applyUiScale: false
@@ -684,7 +696,7 @@ Rectangle {
         acceptedButtons: Qt.NoButton
         cursorShape: Qt.PointingHandCursor
         onEntered: {
-          var tooltipText = FanService.fans.map(f => f.label + ": " + f.rpm + " RPM").join("\n");
+          var tooltipText = root.fanTooltipText(FanService.fans);
           TooltipService.show(fanContent, tooltipText, BarService.getTooltipDirection());
         }
         onExited: {

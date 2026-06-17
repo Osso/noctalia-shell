@@ -41,6 +41,13 @@ Fan covers hardware fan sensor discovery, RPM readout, label loading, and fan su
 - [x] RPM formatting keeps sub-1000 RPM values literal.
 - [x] RPM formatting shortens thousands with one decimal and `k` suffix.
 
+### System Monitor widget
+
+- [x] The bar widget shows fan speed only when the widget setting is enabled and FanService is available.
+- [x] The bar widget displays the formatted max fan RPM.
+- [x] The bar widget tooltip lists each fan label and RPM on separate lines.
+- [x] System Monitor settings hide fan-speed controls when FanService is unavailable.
+
 ## How it works
 
 - [docs/wiki/systems/fan.md](../wiki/systems/fan.md)
@@ -56,13 +63,12 @@ Fan covers hardware fan sensor discovery, RPM readout, label loading, and fan su
 ## Tests asserting this spec
 
 - `Tests/fan-service-guards.test.js`
+- `Tests/fan-widget-guards.test.js`
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for SystemMonitor fan display visibility and formatted max RPM.
-- [ ] Add executable coverage for fan hover tooltip content.
-- [ ] Add executable coverage for settings UI hiding fan toggles when no fan sensor is available.
+None.
 
 ## Out of scope
 
