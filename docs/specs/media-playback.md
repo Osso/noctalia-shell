@@ -34,6 +34,7 @@ Media playback covers MPRIS player discovery, virtual player pairing, active-pla
 ### Seeking
 
 - [x] Seek helpers resolve a virtual player's control target.
+- [x] Seek helpers type absolute position, relative offset, and ratio inputs.
 - [x] Absolute seek updates backend position and local `currentPosition`.
 - [x] Relative seek requires a seekable target with a positive length and adds the requested offset.
 - [x] Ratio seek requires a seekable target with a positive length and converts ratio to absolute position.
