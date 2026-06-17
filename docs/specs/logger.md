@@ -27,6 +27,7 @@ Logger covers shared QML log formatting, level routing, debug gating, stack capt
 - [x] Call-stack logging splits stack text into lines and iterates every line.
 - [x] Call-stack logging trims stack lines and logs only non-empty lines.
 - [x] Call-stack logging prints a closing separator.
+- [x] Call-stack logging filters blank stack lines and formats non-empty lines with a `- ` prefix.
 
 ## How it works
 
@@ -43,7 +44,6 @@ Logger covers shared QML log formatting, level routing, debug gating, stack capt
 
 ## Known gaps (current cycle)
 
-- [ ] Add fixture coverage for stack output line filtering.
 
 ## Out of scope
 

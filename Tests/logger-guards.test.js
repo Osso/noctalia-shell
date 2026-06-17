@@ -120,12 +120,39 @@ function testLoggerCallStackGuards() {
   assert.match(callStackBody, /Logger\.i\("Debug", "--------------------------"\);?\s*\}/, "callStack must print a closing separator");
 }
 
+function testLoggerCallStackFiltersAndFormatsStackLines() {
+  const source = readQml("Commons/Logger.qml");
+  const callStack = loggerFunction(source, "callStack");
+  const calls = [];
+  const ctx = {
+    _getStackTrace() {
+      return " first line \n\n   second line   \n";
+    },
+    Logger: {
+      i(module, message) {
+        calls.push([module, message]);
+      },
+    },
+  };
+
+  callStack(ctx);
+
+  assert.deepEqual(calls, [
+    ["Debug", "--------------------------"],
+    ["Debug", "Current call stack"],
+    ["Debug", "- first line"],
+    ["Debug", "- second line"],
+    ["Debug", "--------------------------"],
+  ]);
+}
+
 const tests = [
   testLoggerFormattingAndStackGuards,
   testLoggerLevelGuards,
   testLoggerOutputsConcreteConsoleValues,
   testLoggerDebugDisabledSuppressesConsoleOutput,
   testLoggerCallStackGuards,
+  testLoggerCallStackFiltersAndFormatsStackLines,
 ];
 
 for (const test of tests) {
