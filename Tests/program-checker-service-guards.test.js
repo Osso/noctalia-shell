@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 const assert = require("assert/strict");
+const fs = require("fs");
+const path = require("path");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
 const source = readQml("Services/System/ProgramCheckerService.qml");
@@ -189,6 +191,23 @@ function testProgramCheckerDiscordDetectionDebugLogs() {
   assert.equal(detections, 1);
 }
 
+function testProgramCheckerProbeProgramListStaysAligned() {
+  const propertyNames = [...source.matchAll(/"([^"]+)Available": \[/g)].map(match => match[1]);
+  const servicePrograms = propertyNames.map(name => name
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .toLowerCase());
+  const probesSource = fs.readFileSync(path.join(__dirname, "..", "Bin/dev/service-probes.sh"), "utf8");
+  const expectedBlock = probesSource.match(/local expected_programs=\(\n([\s\S]*?)\n    \)/);
+  assert.notEqual(expectedBlock, null, "service-probes.sh must keep an expected_programs block");
+  const probePrograms = expectedBlock[1]
+    .split("\n")
+    .map(line => line.trim())
+    .filter(Boolean)
+    .sort();
+
+  assert.deepEqual(probePrograms, servicePrograms.filter(program => !["emacs", "telegram", "vicinae"].includes(program)).sort(), "service probe expected programs must match ProgramCheckerService programs except intentionally optional desktop/client checks");
+}
+
 const tests = [
   testProgramCheckerDetectDiscordClientBuildsDirectoryProbe,
   testProgramCheckerDetectCodeClientBuildsDirectoryProbe,
@@ -196,6 +215,7 @@ const tests = [
   testProgramCheckerCheckAllProgramsResetsQueue,
   testProgramCheckerCheckProgramGuardsUnknownProperties,
   testProgramCheckerDiscordDetectionDebugLogs,
+  testProgramCheckerProbeProgramListStaysAligned,
 ];
 
 for (const test of tests) {

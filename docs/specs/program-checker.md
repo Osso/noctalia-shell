@@ -25,6 +25,7 @@ Program Checker covers runtime availability checks for optional tools and themed
 - [x] Targeted program checks start the checker process for known properties.
 - [x] Discord detection diagnostics log the test start, HOME value, and every configured Discord client path.
 - [x] Discord detection diagnostics trigger Discord client detection.
+- [x] QML program checks and `Bin/dev/service-probes.sh` expected-program checks stay aligned except intentionally optional desktop/client checks.
 
 ## How it works
 
@@ -34,7 +35,7 @@ Program Checker covers runtime availability checks for optional tools and themed
 
 - `Services/System/ProgramCheckerService.qml` - optional program availability state, client detectors, check queue, targeted checks, and diagnostic logging.
 - `Services/Theming/TemplateRegistry.qml` - Discord and code client metadata consumed by client detection.
-- `Bin/service-probes.sh` - runtime probe layer that checks required programs outside QML.
+- `Bin/dev/service-probes.sh` - runtime probe layer that checks required programs outside QML.
 
 ## Tests asserting this spec
 
@@ -45,7 +46,6 @@ Program Checker covers runtime availability checks for optional tools and themed
 
 - [ ] Add executable fixture coverage for detector process stdout parsing.
 - [ ] Add executable fixture coverage for checker process exit handling and `checksCompleted` emission.
-- [ ] Add coverage that QML program list and `Bin/service-probes.sh` required-program list stay intentionally aligned.
 - [ ] Add fixture coverage for client names and paths containing shell-sensitive characters.
 
 ## Out of scope
