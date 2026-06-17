@@ -112,6 +112,7 @@ function testNotificationHistoryRecalcRangeCountsHandlesEmptyAndInvalidItems() {
 }
 
 function testNotificationHistoryCountForRangeFailsClosed() {
+  assert.match(source, /function countForRange\(range: int\)/, "countForRange must type range indexes");
   const countForRange = qmlFunction("countForRange", "range");
   const ctx = {
     rangeCounts: [3, 2, 1, 0],

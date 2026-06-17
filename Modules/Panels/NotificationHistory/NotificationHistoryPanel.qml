@@ -65,7 +65,7 @@ SmartPanel {
     rangeCounts = counts;
   }
 
-  function countForRange(range) {
+  function countForRange(range: int) {
     return rangeCounts[range] || 0;
   }
 

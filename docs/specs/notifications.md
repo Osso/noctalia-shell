@@ -48,6 +48,7 @@ Notifications cover notification server lifecycle, suppression rules, replacemen
 - [x] Notification history range selection distinguishes today, yesterday, and older notifications.
 - [x] Notification history current-range checks include today and all ranges, while excluding yesterday from today's range.
 - [x] Notification history range counts fail closed for missing history lists, include total/all count, and tolerate invalid rows.
+- [x] Notification history range count lookup uses a typed range index.
 - [x] Notification history range count lookup returns zero for out-of-range indexes.
 - [x] Notification history widget unread counts handle Date and numeric timestamps and count only notifications newer than `lastSeenTs`.
 
