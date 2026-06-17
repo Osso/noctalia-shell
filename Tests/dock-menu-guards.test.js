@@ -61,6 +61,7 @@ function testDockMenuActionsAndHovering() {
   const pinBody = extractFunctionBody(source, "handlePin");
   const closeBody = extractFunctionBody(source, "handleClose");
 
+  assert.match(source, /function getHoveredItem\(mouseY: real\)/, "getHoveredItem must type mouseY as a real coordinate");
   assert.match(hideBody, /visible = false[\s\S]*root\.items\.length = 0/, "hide must close the menu and clear items");
   assert.match(hoverBody, /const itemHeight = 32[\s\S]*const startY = Style\.marginM[\s\S]*const relativeY = mouseY - startY/, "getHoveredItem must account for menu margin and item height");
   assert.match(hoverBody, /if \(relativeY < 0\)\s+return -1/, "getHoveredItem must reject positions above the menu");

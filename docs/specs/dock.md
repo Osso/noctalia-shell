@@ -21,6 +21,7 @@ Dock covers the shell dock and dock context menu for running and pinned app acti
 ### Actions and hover
 
 - [x] Hover lookup computes item index from menu-relative Y position and clamps outside-menu positions to `-1`.
+- [x] Hover lookup types the mouse Y coordinate as a real number.
 - [x] Focus action activates focusable toplevels and requests menu close.
 - [x] Close action validates the toplevel against ToplevelManager before closing.
 - [x] Close action closes valid toplevels, schedules dock refresh callback, hides the menu, and requests close.
