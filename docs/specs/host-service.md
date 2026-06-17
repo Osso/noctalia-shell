@@ -18,6 +18,10 @@ Host Service covers host identity and operating-system metadata exposed to shell
 - [x] Logo resolution builds a shell file-existence probe over the candidate list and starts it for valid names.
 - [x] Logo probe exit handling assigns a `file://` URL on success with stdout, clears the logo on failure or empty stdout, and logs the result.
 
+### Display name
+
+- [x] Display-name resolution prefers the explicit real-name environment override, then the resolved getent real name, then capitalized `$USER`, then `User`.
+
 ## How it works
 
 - [docs/wiki/systems/host-service.md](../wiki/systems/host-service.md)
@@ -35,7 +39,7 @@ Host Service covers host identity and operating-system metadata exposed to shell
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for `displayName` precedence across explicit real name, getent real name, `$USER`, and fallback.
+- [x] Add executable coverage for `displayName` precedence across explicit real name, getent real name, `$USER`, and fallback.
 
 ## Out of scope
 

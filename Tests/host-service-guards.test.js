@@ -133,6 +133,16 @@ function testHandleLogoProbeExitAssignsLogoUrl() {
   assert.deepEqual(messages, [["w", "HostService", "None logo found"]]);
 }
 
+function testResolveDisplayNamePrecedence() {
+  const resolveDisplayName = qmlFunction("resolveDisplayName", "explicitRealName", "resolvedRealName", "userName");
+
+  assert.match(source, /function resolveDisplayName\(explicitRealName: string, resolvedRealName: string, userName: string\)/, "resolveDisplayName must type all display-name inputs");
+  assert.equal(resolveDisplayName({}, "Alessio", "Ignored", "osso"), "Alessio");
+  assert.equal(resolveDisplayName({}, "", "Resolved Name", "osso"), "Resolved Name");
+  assert.equal(resolveDisplayName({}, "", "", "osso"), "Osso");
+  assert.equal(resolveDisplayName({}, "", "", ""), "User");
+}
+
 const tests = [
   testBuildCandidatesRejectsBlankAndPathLikeNames,
   testBuildCandidatesIncludesKnownLogoSearchRoots,
@@ -140,6 +150,7 @@ const tests = [
   testResolveLogoBuildsShellProbeForCandidates,
   testParseOsReleaseExtractsReadinessAndLogo,
   testHandleLogoProbeExitAssignsLogoUrl,
+  testResolveDisplayNamePrecedence,
 ];
 
 for (const test of tests) {

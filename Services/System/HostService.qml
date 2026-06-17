@@ -19,23 +19,21 @@ Singleton {
   readonly property string envRealName: (Quickshell.env("NOCTALIA_REALNAME") || "")
   property string realName: ""
 
-  readonly property string displayName: {
-    // Explicit override
-    if (envRealName && envRealName.length > 0) {
-      return envRealName;
+  readonly property string displayName: resolveDisplayName(envRealName, realName, username)
+
+  function resolveDisplayName(explicitRealName: string, resolvedRealName: string, userName: string) {
+    if (explicitRealName && explicitRealName.length > 0) {
+      return explicitRealName;
     }
 
-    // Name from getent
-    if (realName && realName.length > 0) {
-      return realName;
+    if (resolvedRealName && resolvedRealName.length > 0) {
+      return resolvedRealName;
     }
 
-    // Fallback: capitalized $USER
-    if (username && username.length > 0) {
-      return username.charAt(0).toUpperCase() + username.slice(1);
+    if (userName && userName.length > 0) {
+      return userName.charAt(0).toUpperCase() + userName.slice(1);
     }
 
-    // Last resort: placeholder
     return "User";
   }
 
