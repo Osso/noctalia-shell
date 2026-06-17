@@ -29,6 +29,14 @@ function assertViewMethodForwarders(source, targetId, label) {
   assert.match(itemAtIndexBody, new RegExp(`return ${targetId}\\.itemAtIndex\\(index\\)`), `${label} must return itemAtIndex results`);
 }
 
+function assertViewMethodSignaturesAreTyped(source, label) {
+  assert.match(source, /function positionViewAtIndex\(index: int, mode: int\)/, `${label} must type position index and mode inputs`);
+  assert.match(source, /function flick\(xVelocity: real, yVelocity: real\)/, `${label} must type flick velocity inputs`);
+  assert.match(source, /function indexAt\(x: real, y: real\)/, `${label} must type indexAt coordinates`);
+  assert.match(source, /function itemAt\(x: real, y: real\)/, `${label} must type itemAt coordinates`);
+  assert.match(source, /function itemAtIndex\(index: int\)/, `${label} must type itemAtIndex input`);
+}
+
 function testNGridViewForwardsGridViewMethods() {
   const source = readQml("Widgets/NGridView.qml");
 
@@ -37,6 +45,7 @@ function testNGridViewForwardsGridViewMethods() {
   assert.match(source, /property alias currentIndex: gridView\.currentIndex/, "NGridView must expose currentIndex alias");
   assert.match(source, /readonly property bool verticalScrollBarActive:[\s\S]*return gridView\.contentHeight > gridView\.height/, "NGridView must compute scrollbar activity from GridView content");
   assertViewMethodForwarders(source, "gridView", "NGridView");
+  assertViewMethodSignaturesAreTyped(source, "NGridView");
 }
 
 function testNListViewForwardsListViewMethods() {
@@ -47,6 +56,7 @@ function testNListViewForwardsListViewMethods() {
   assert.match(source, /property alias currentIndex: listView\.currentIndex/, "NListView must expose currentIndex alias");
   assert.match(source, /readonly property bool verticalScrollBarActive:[\s\S]*return listView\.contentHeight > listView\.height/, "NListView must compute scrollbar activity from ListView content");
   assertViewMethodForwarders(source, "listView", "NListView");
+  assertViewMethodSignaturesAreTyped(source, "NListView");
 }
 
 const tests = [

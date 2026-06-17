@@ -71,7 +71,7 @@ Item {
   property alias verticalVelocity: gridView.verticalVelocity
 
   // Forward GridView methods
-  function positionViewAtIndex(index, mode) {
+  function positionViewAtIndex(index: int, mode: int) {
     gridView.positionViewAtIndex(index, mode);
   }
 
@@ -91,7 +91,7 @@ Item {
     gridView.cancelFlick();
   }
 
-  function flick(xVelocity, yVelocity) {
+  function flick(xVelocity: real, yVelocity: real) {
     gridView.flick(xVelocity, yVelocity);
   }
 
@@ -103,15 +103,15 @@ Item {
     gridView.decrementCurrentIndex();
   }
 
-  function indexAt(x, y) {
+  function indexAt(x: real, y: real) {
     return gridView.indexAt(x, y);
   }
 
-  function itemAt(x, y) {
+  function itemAt(x: real, y: real) {
     return gridView.itemAt(x, y);
   }
 
-  function itemAtIndex(index) {
+  function itemAtIndex(index: int) {
     return gridView.itemAtIndex(index);
   }
 

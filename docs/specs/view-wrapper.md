@@ -6,11 +6,14 @@ Shared forwarding:
 - [x] `NGridView` and `NListView` must expose the wrapped view `model`, `delegate`, and `currentIndex` through property aliases.
 - [x] `NGridView` and `NListView` must report vertical scrollbar activity from wrapped content height relative to wrapped view height.
 - [x] `positionViewAtIndex(index, mode)` must forward to the wrapped view with the same arguments.
+- [x] `positionViewAtIndex(index, mode)` must type index and mode as integers.
 - [x] `positionViewAtBeginning()` and `positionViewAtEnd()` must forward to the wrapped view.
 - [x] `forceLayout()` and `cancelFlick()` must forward to the wrapped view.
 - [x] `flick(xVelocity, yVelocity)` must forward both velocity arguments to the wrapped view.
+- [x] `flick(xVelocity, yVelocity)` must type both velocity inputs as real numbers.
 - [x] `incrementCurrentIndex()` and `decrementCurrentIndex()` must forward to the wrapped view.
 - [x] `indexAt(x, y)`, `itemAt(x, y)`, and `itemAtIndex(index)` must return the wrapped view results.
+- [x] `indexAt(x, y)`, `itemAt(x, y)`, and `itemAtIndex(index)` must type coordinate and index inputs.
 
 Grid wrapper:
 - [x] `NGridView` must forward methods to its internal `gridView`.
