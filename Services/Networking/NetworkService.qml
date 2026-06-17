@@ -236,6 +236,87 @@ Singleton {
     return security && security !== "--" && security.trim() !== "";
   }
 
+  function parseNetworkScanOutput(text: string, existingProfiles, knownNetworks, lastConnected: string) {
+    const lines = text.split("\n");
+    const networksMap = {};
+    var nextLastConnected = lastConnected;
+    var shouldSaveCache = false;
+
+    for (var i = 0; i < lines.length; ++i) {
+      const line = lines[i].trim();
+      if (!line)
+        continue;
+
+      // Parse from the end to handle SSIDs with colons.
+      // Format is SSID:SECURITY:SIGNAL:IN-USE.
+      const lastColonIdx = line.lastIndexOf(":");
+      if (lastColonIdx === -1) {
+        Logger.w("Network", "Malformed nmcli output line:", line);
+        continue;
+      }
+
+      const inUse = line.substring(lastColonIdx + 1);
+      const remainingLine = line.substring(0, lastColonIdx);
+
+      const secondLastColonIdx = remainingLine.lastIndexOf(":");
+      if (secondLastColonIdx === -1) {
+        Logger.w("Network", "Malformed nmcli output line:", line);
+        continue;
+      }
+
+      const signal = remainingLine.substring(secondLastColonIdx + 1);
+      const remainingLine2 = remainingLine.substring(0, secondLastColonIdx);
+
+      const thirdLastColonIdx = remainingLine2.lastIndexOf(":");
+      if (thirdLastColonIdx === -1) {
+        Logger.w("Network", "Malformed nmcli output line:", line);
+        continue;
+      }
+
+      const security = remainingLine2.substring(thirdLastColonIdx + 1);
+      const ssid = remainingLine2.substring(0, thirdLastColonIdx);
+
+      if (!ssid)
+        continue;
+
+      const signalInt = parseInt(signal) || 0;
+      const connected = inUse === "*";
+      const normalizedSecurity = security || "--";
+
+      if (connected && nextLastConnected !== ssid) {
+        nextLastConnected = ssid;
+        shouldSaveCache = true;
+      }
+
+      if (!networksMap[ssid]) {
+        networksMap[ssid] = {
+          "ssid": ssid,
+          "security": normalizedSecurity,
+          "signal": signalInt,
+          "connected": connected,
+          "existing": ssid in existingProfiles,
+          "cached": ssid in knownNetworks
+        };
+        continue;
+      }
+
+      const existingNet = networksMap[ssid];
+      if (connected) {
+        existingNet.connected = true;
+      }
+      if (signalInt > existingNet.signal) {
+        existingNet.signal = signalInt;
+        existingNet.security = normalizedSecurity;
+      }
+    }
+
+    return {
+      "networks": networksMap,
+      "lastConnected": nextLastConnected,
+      "shouldSaveCache": shouldSaveCache
+    };
+  }
+
   // Processes
   Process {
     id: ethernetStateProcess
@@ -420,76 +501,11 @@ Singleton {
           return;
         }
 
-        // Process the scan results as before...
-        const lines = text.split("\n");
-        const networksMap = {};
-
-        for (var i = 0; i < lines.length; ++i) {
-          const line = lines[i].trim();
-          if (!line)
-          continue;
-
-          // Parse from the end to handle SSIDs with colons
-          // Format is SSID:SECURITY:SIGNAL:IN-USE
-          // We know the last 3 fields, so everything else is SSID
-          const lastColonIdx = line.lastIndexOf(":");
-          if (lastColonIdx === -1) {
-            Logger.w("Network", "Malformed nmcli output line:", line);
-            continue;
-          }
-
-          const inUse = line.substring(lastColonIdx + 1);
-          const remainingLine = line.substring(0, lastColonIdx);
-
-          const secondLastColonIdx = remainingLine.lastIndexOf(":");
-          if (secondLastColonIdx === -1) {
-            Logger.w("Network", "Malformed nmcli output line:", line);
-            continue;
-          }
-
-          const signal = remainingLine.substring(secondLastColonIdx + 1);
-          const remainingLine2 = remainingLine.substring(0, secondLastColonIdx);
-
-          const thirdLastColonIdx = remainingLine2.lastIndexOf(":");
-          if (thirdLastColonIdx === -1) {
-            Logger.w("Network", "Malformed nmcli output line:", line);
-            continue;
-          }
-
-          const security = remainingLine2.substring(thirdLastColonIdx + 1);
-          const ssid = remainingLine2.substring(0, thirdLastColonIdx);
-
-          if (ssid) {
-            const signalInt = parseInt(signal) || 0;
-            const connected = inUse === "*";
-
-            // Track connected network in cache
-            if (connected && cacheAdapter.lastConnected !== ssid) {
-              cacheAdapter.lastConnected = ssid;
-              saveCache();
-            }
-
-            if (!networksMap[ssid]) {
-              networksMap[ssid] = {
-                "ssid": ssid,
-                "security": security || "--",
-                "signal": signalInt,
-                "connected": connected,
-                "existing": ssid in scanProcess.existingProfiles,
-                "cached": ssid in cacheAdapter.knownNetworks
-              };
-            } else {
-              // Keep the best signal for duplicate SSIDs
-              const existingNet = networksMap[ssid];
-              if (connected) {
-                existingNet.connected = true;
-              }
-              if (signalInt > existingNet.signal) {
-                existingNet.signal = signalInt;
-                existingNet.security = security || "--";
-              }
-            }
-          }
+        const parsed = parseNetworkScanOutput(text, scanProcess.existingProfiles, cacheAdapter.knownNetworks, cacheAdapter.lastConnected);
+        const networksMap = parsed.networks;
+        if (parsed.shouldSaveCache) {
+          cacheAdapter.lastConnected = parsed.lastConnected;
+          saveCache();
         }
 
         // Logging

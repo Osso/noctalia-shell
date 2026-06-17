@@ -14,6 +14,7 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 - [x] Scan queues a pending rescan and ignores in-flight results instead of racing an active scan.
 - [x] Scan resets stale errors and scan state before launching.
 - [x] Scan refreshes known profiles before scanning networks.
+- [x] nmcli scan output parsing handles SSIDs with colons, duplicate SSIDs, open networks, malformed rows, known-profile flags, cached-network flags, and last-connected cache updates.
 
 ### Connect, disconnect, and forget
 
@@ -54,7 +55,6 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable tests for nmcli scan output parsing.
 - [ ] Add executable tests for connectivity check and ping fallback transitions.
 - [ ] Add spec coverage for Wi-Fi panel connect/password/forget UI behavior.
 

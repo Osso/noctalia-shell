@@ -75,6 +75,60 @@ function testNetworkServiceIconAndSecurityHelpers() {
   assert.match(securedBody, /return security && security !== "--" && security\.trim\(\) !== ""/, "isSecured must reject missing, placeholder, and blank security values");
 }
 
+function testNetworkServiceParsesNmcliScanOutput() {
+  const parseNetworkScanOutput = qmlFunction("parseNetworkScanOutput", "text", "existingProfiles", "knownNetworks", "lastConnected");
+  const warnings = [];
+  const ctx = {
+    Logger: {
+      w(...args) {
+        warnings.push(args);
+      },
+    },
+  };
+  const parsed = parseNetworkScanOutput(ctx, [
+    "Cafe:Guest:WPA2:55:",
+    "Home:Network:WPA2:70:*",
+    "Home:Network:WPA2:85:",
+    "OpenNet::10:",
+    "malformed",
+  ].join("\n"), {
+    "Home:Network": true,
+  }, {
+    "Cafe:Guest": true,
+  }, "OldNet");
+
+  assert.match(serviceSource, /function parseNetworkScanOutput\(text: string, existingProfiles, knownNetworks, lastConnected: string\)/, "parseNetworkScanOutput must type raw text and last-connected inputs");
+  assert.deepEqual(parsed.networks, {
+    "Cafe:Guest": {
+      ssid: "Cafe:Guest",
+      security: "WPA2",
+      signal: 55,
+      connected: false,
+      existing: false,
+      cached: true,
+    },
+    "Home:Network": {
+      ssid: "Home:Network",
+      security: "WPA2",
+      signal: 85,
+      connected: true,
+      existing: true,
+      cached: false,
+    },
+    OpenNet: {
+      ssid: "OpenNet",
+      security: "--",
+      signal: 10,
+      connected: false,
+      existing: false,
+      cached: false,
+    },
+  });
+  assert.equal(parsed.lastConnected, "Home:Network");
+  assert.equal(parsed.shouldSaveCache, true);
+  assert.equal(warnings.length, 1);
+}
+
 function testNetworkServiceStateCommandsExecute() {
   const saveCache = qmlFunction("saveCache");
   const syncWifiState = qmlFunction("syncWifiState");
@@ -209,6 +263,7 @@ const tests = [
   testNetworkServiceScanAndConnectionGuards,
   testNetworkServiceForgetAndStatusGuards,
   testNetworkServiceIconAndSecurityHelpers,
+  testNetworkServiceParsesNmcliScanOutput,
   testNetworkServiceStateCommandsExecute,
   testNetworkServiceConnectionStatusAndIconsExecute,
 ];
