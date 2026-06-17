@@ -19,6 +19,7 @@ PanelService covers shared panel registration, popup-menu window lookup, panel l
 - [x] Screen-specific panel lookup returns an already registered screen panel.
 - [x] Missing panel lookup logs a warning and returns null.
 - [x] Panel existence checks query registered panel keys.
+- [x] Multi-screen fake fixtures register and retrieve popup-menu windows and screen-specific panels by screen name.
 
 ### Open and close coordination
 
@@ -44,7 +45,6 @@ PanelService covers shared panel registration, popup-menu window lookup, panel l
 
 ## Known gaps (current cycle)
 
-- [ ] Add multi-screen fixture coverage for popup-menu windows and screen-specific panel keys.
 - [ ] Add coverage for `lockScreen` consumers that depend on PanelService.
 
 ## Out of scope

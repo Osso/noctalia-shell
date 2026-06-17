@@ -35,6 +35,51 @@ function testPanelLookupGuards() {
   assert.match(hasPanelBody, /return name in registeredPanels/, "hasPanel must query registered panel keys");
 }
 
+function testPanelMultiScreenPopupAndPanelLookupsExecute() {
+  const registerPanel = qmlFunction("registerPanel", "panel");
+  const registerPopupMenuWindow = qmlFunction("registerPopupMenuWindow", "screen", "window");
+  const getPopupMenuWindow = qmlFunction("getPopupMenuWindow", "screen");
+  const getPanel = qmlFunction("getPanel", "name", "screen");
+  const hasPanel = qmlFunction("hasPanel", "name");
+  const popupSignals = [];
+  const leftScreen = { name: "eDP-1" };
+  const rightScreen = { name: "HDMI-A-1" };
+  const leftPanel = { objectName: "launcher-eDP-1" };
+  const rightPanel = { objectName: "launcher-HDMI-A-1" };
+  const leftWindow = { id: "left-window" };
+  const rightWindow = { id: "right-window" };
+  const ctx = {
+    registeredPanels: {},
+    popupMenuWindows: {},
+    Logger: {
+      d() {},
+      w() {},
+    },
+    popupMenuWindowRegistered(screen) {
+      popupSignals.push(screen.name);
+    },
+  };
+
+  registerPanel(ctx, leftPanel);
+  registerPanel(ctx, rightPanel);
+  registerPopupMenuWindow(ctx, leftScreen, leftWindow);
+  registerPopupMenuWindow(ctx, rightScreen, rightWindow);
+  registerPopupMenuWindow(ctx, null, { id: "missing-screen" });
+  registerPopupMenuWindow(ctx, { name: "DP-1" }, null);
+
+  assert.equal(getPanel(ctx, "launcher", leftScreen), leftPanel);
+  assert.equal(getPanel(ctx, "launcher", rightScreen), rightPanel);
+  assert.equal(getPanel(ctx, "launcher", null), leftPanel);
+  assert.equal(getPanel(ctx, "launcher", { name: "DP-1" }), null);
+  assert.equal(hasPanel(ctx, "launcher-eDP-1"), true);
+  assert.equal(hasPanel(ctx, "launcher-DP-1"), false);
+  assert.equal(getPopupMenuWindow(ctx, leftScreen), leftWindow);
+  assert.equal(getPopupMenuWindow(ctx, rightScreen), rightWindow);
+  assert.equal(getPopupMenuWindow(ctx, { name: "DP-1" }), null);
+  assert.equal(getPopupMenuWindow(ctx, null), null);
+  assert.deepEqual(popupSignals, ["eDP-1", "HDMI-A-1"]);
+}
+
 function testPanelOpenCloseGuards() {
   const willOpenBody = extractFunctionBody(source, "willOpenPanel");
   const closedBody = extractFunctionBody(source, "closedPanel");
@@ -95,6 +140,7 @@ function testPanelCloseClearsOnlyActivePanelBeforeSignal() {
 const tests = [
   testPanelRegistrationGuards,
   testPanelLookupGuards,
+  testPanelMultiScreenPopupAndPanelLookupsExecute,
   testPanelOpenCloseGuards,
   testPanelOpenClosesDifferentActivePanelBeforeSignal,
   testPanelCloseClearsOnlyActivePanelBeforeSignal,
