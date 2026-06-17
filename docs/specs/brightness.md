@@ -21,6 +21,14 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 - [x] Increasing brightness delegates to every monitor instance.
 - [x] Decreasing brightness delegates to every monitor instance.
 
+### Per-monitor adjustment
+
+- [x] Individual monitor brightness clamps to the configured minimum and 100% maximum before publishing.
+- [x] Internal displays route brightness changes through `brightnessctl`.
+- [x] DDC displays route brightness changes through `ddcutil` with the monitor bus number and restart the DDC debounce timer.
+- [x] Apple displays route brightness changes through `asdbctl`.
+- [x] Brightness changes queue without publishing or executing commands while the monitor debounce timer is running.
+
 ### Widget helpers
 
 - [x] Brightness widget display text uses the current monitor brightness percentage.
@@ -47,7 +55,7 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable tests for individual monitor `setBrightness`, debounce, and command routing.
+- [x] Add executable tests for individual monitor `setBrightness`, debounce, and command routing.
 - [ ] Add spec coverage for brightness panel and display settings UI contracts.
 
 ## Out of scope

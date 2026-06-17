@@ -10,6 +10,17 @@ function qmlFunction(functionName, ...argNames) {
   return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
 }
 
+function extractFunctionBodyAfter(anchor, functionName) {
+  const anchorIndex = source.indexOf(anchor);
+  assert.notEqual(anchorIndex, -1, `missing anchor: ${anchor}`);
+  return extractFunctionBody(source.slice(anchorIndex), functionName);
+}
+
+function qmlMonitorFunction(functionName, ...argNames) {
+  const body = extractFunctionBodyAfter("component Monitor:", functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
 function testBrightnessServiceAvailableMethodsReflectsConfiguredDisplays() {
   const getAvailableMethods = qmlFunction("getAvailableMethods");
   const ctx = {
@@ -108,12 +119,120 @@ function testBrightnessServiceDetectedDisplaysPassThrough() {
   assert.equal(getDetectedDisplays(ctx), detectedDisplays);
 }
 
+function createMonitorContext(overrides = {}) {
+  const commands = [];
+  const timerRestarts = [];
+  const ctx = {
+    brightness: 0.4,
+    busNum: "4",
+    ignoreNextChange: false,
+    isAppleDisplay: false,
+    isDdc: false,
+    minBrightnessValue: 0.01,
+    published: [],
+    queuedBrightness: Number.NaN,
+    publishBrightnessUpdate() {
+      this.published.push(this.brightness);
+    },
+    timer: {
+      running: false,
+      restart() {
+        timerRestarts.push("restart");
+      },
+    },
+    Quickshell: {
+      execDetached(command) {
+        commands.push(command);
+      },
+    },
+  };
+  Object.assign(ctx, overrides);
+  ctx.monitor = ctx;
+  return { ctx, commands, timerRestarts };
+}
+
+function testMonitorSetBrightnessRoutesInternalBacklightCommand() {
+  const setBrightness = qmlMonitorFunction("setBrightness", "value");
+  const { ctx, commands, timerRestarts } = createMonitorContext();
+
+  setBrightness(ctx, 0.456);
+
+  assert.equal(ctx.brightness, 0.456);
+  assert.equal(ctx.ignoreNextChange, true);
+  assert.deepEqual(ctx.published, [0.456]);
+  assert.deepEqual(commands, [["brightnessctl", "s", "46%"]]);
+  assert.deepEqual(timerRestarts, [], "internal backlight updates must not start the DDC debounce timer");
+}
+
+function testMonitorSetBrightnessRoutesDdcCommandAndRestartsTimer() {
+  const setBrightness = qmlMonitorFunction("setBrightness", "value");
+  const { ctx, commands, timerRestarts } = createMonitorContext({ isDdc: true });
+
+  setBrightness(ctx, 0.456);
+
+  assert.equal(ctx.brightness, 0.456);
+  assert.equal(ctx.ignoreNextChange, true);
+  assert.deepEqual(ctx.published, [0.456]);
+  assert.deepEqual(commands, [["ddcutil", "-b", "4", "setvcp", "10", 46]]);
+  assert.deepEqual(timerRestarts, ["restart"]);
+}
+
+function testMonitorSetBrightnessRoutesAppleDisplayCommand() {
+  const setBrightness = qmlMonitorFunction("setBrightness", "value");
+  const { ctx, commands, timerRestarts } = createMonitorContext({ isAppleDisplay: true });
+
+  setBrightness(ctx, 0.456);
+
+  assert.equal(ctx.brightness, 0.456);
+  assert.equal(ctx.ignoreNextChange, true);
+  assert.deepEqual(ctx.published, [0.456]);
+  assert.deepEqual(commands, [["asdbctl", "set", 46]]);
+  assert.deepEqual(timerRestarts, [], "Apple display updates must not start the DDC debounce timer");
+}
+
+function testMonitorSetBrightnessClampsToConfiguredBounds() {
+  const setBrightness = qmlMonitorFunction("setBrightness", "value");
+  const low = createMonitorContext();
+  const high = createMonitorContext();
+
+  setBrightness(low.ctx, -1);
+  setBrightness(high.ctx, 2);
+
+  assert.equal(low.ctx.brightness, 0.01);
+  assert.deepEqual(low.commands, [["brightnessctl", "s", "1%"]]);
+  assert.equal(high.ctx.brightness, 1);
+  assert.deepEqual(high.commands, [["brightnessctl", "s", "100%"]]);
+}
+
+function testMonitorSetBrightnessQueuesWhileDebouncing() {
+  const setBrightness = qmlMonitorFunction("setBrightness", "value");
+  const { ctx, commands, timerRestarts } = createMonitorContext({
+    brightness: 0.4,
+    isDdc: true,
+  });
+  ctx.timer.running = true;
+
+  setBrightness(ctx, 0.7);
+
+  assert.equal(ctx.brightness, 0.4);
+  assert.equal(ctx.queuedBrightness, 0.7);
+  assert.equal(ctx.ignoreNextChange, false);
+  assert.deepEqual(ctx.published, []);
+  assert.deepEqual(commands, []);
+  assert.deepEqual(timerRestarts, []);
+}
+
 const tests = [
   testBrightnessServiceAvailableMethodsReflectsConfiguredDisplays,
   testBrightnessServiceScreenLookupFindsMatchingMonitor,
   testBrightnessServiceIncreaseBrightnessDelegatesToEveryMonitor,
   testBrightnessServiceDecreaseBrightnessDelegatesToEveryMonitor,
   testBrightnessServiceDetectedDisplaysPassThrough,
+  testMonitorSetBrightnessRoutesInternalBacklightCommand,
+  testMonitorSetBrightnessRoutesDdcCommandAndRestartsTimer,
+  testMonitorSetBrightnessRoutesAppleDisplayCommand,
+  testMonitorSetBrightnessClampsToConfiguredBounds,
+  testMonitorSetBrightnessQueuesWhileDebouncing,
 ];
 
 for (const test of tests) {
