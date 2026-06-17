@@ -474,6 +474,8 @@ function testContextMenuDelegateRolesAreTyped() {
   const source = readQml("Widgets/NContextMenu.qml");
   const delegateRoles = /delegate:\s*ItemDelegate\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+bool\s+itemVisible:\s+modelData\s*\?\s*modelData\.visible\s*!==\s*false\s*:\s*false[\s\S]*?readonly\s+property\s+bool\s+itemEnabled:\s+modelData\s*\?\s*modelData\.enabled\s*!==\s*false\s*:\s*false[\s\S]*?readonly\s+property\s+string\s+itemIcon:\s+modelData\s*\?\s*\(modelData\.icon\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+bool\s+hasIcon:\s*itemIcon\s*!==\s*""[\s\S]*?readonly\s+property\s+string\s+itemText:\s+modelData\s*\?\s*\(modelData\.label\s*\|\|\s*modelData\.text\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+itemAction:\s+modelData\s*\?\s*\(modelData\.action\s*\|\|\s*modelData\.key\s*\|\|\s*index\.toString\(\)\)\s*:\s*index\.toString\(\)/;
 
+  assert.match(source, /function openAt\(x: real, y: real\)/, "NContextMenu openAt must type coordinate inputs");
+  assert.match(source, /function openAtItem\(item: Item, mouseX: real, mouseY: real\)/, "NContextMenu openAtItem must type anchor and coordinate inputs");
   assert.match(source, delegateRoles, "NContextMenu delegate must declare null-safe typed aliases for menu entry fields");
   assert.match(source, /height:\s*itemVisible\s*\?\s*root\.itemHeight\s*:\s*0/, "NContextMenu delegate height must use itemVisible");
   assert.match(source, /visible:\s*itemVisible/, "NContextMenu delegate visible binding must use itemVisible");

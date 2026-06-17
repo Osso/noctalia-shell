@@ -107,14 +107,14 @@ Popup {
   }
 
   // Helper function to open at mouse position
-  function openAt(x, y) {
+  function openAt(x: real, y: real) {
     root.x = x;
     root.y = y;
     root.open();
   }
 
   // Helper function to open at item
-  function openAtItem(item, mouseX, mouseY) {
+  function openAtItem(item: Item, mouseX: real, mouseY: real) {
     var pos = item.mapToItem(root.parent, mouseX || 0, mouseY || 0);
     openAt(pos.x, pos.y);
   }

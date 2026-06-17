@@ -1,4 +1,4 @@
-Popup Context Menu covers the shared popup menu widget used by bar widgets and panel actions. Runtime source lives in `Widgets/NPopupContextMenu.qml`; implementation notes belong in [docs/wiki/systems/popup-context-menu.md](../wiki/systems/popup-context-menu.md).
+Popup Context Menu covers the shared popup menu widgets used by bar widgets and panel actions. Runtime source lives in `Widgets/NPopupContextMenu.qml` and `Widgets/NContextMenu.qml`; implementation notes belong in [docs/wiki/systems/popup-context-menu.md](../wiki/systems/popup-context-menu.md).
 
 ## What it must do
 
@@ -18,6 +18,7 @@ Popup Context Menu covers the shared popup menu widget used by bar widgets and p
 - [x] Opening schedules an anchor refresh when the popup anchor object is available.
 - [x] Opening at an item defaults missing mouse coordinates to zero.
 - [x] Opening helpers type anchor items and coordinate inputs.
+- [x] Legacy context-menu opening helpers type coordinate and anchor inputs.
 - [x] `closeMenu()` delegates to `close()`.
 - [x] Closing the menu hides the popup.
 
@@ -35,6 +36,7 @@ Popup Context Menu covers the shared popup menu widget used by bar widgets and p
 ## Implementation inventory
 
 - `Widgets/NPopupContextMenu.qml` - popup menu model, width calculation, anchor positioning, close helpers, and typed delegate roles.
+- `Widgets/NContextMenu.qml` - legacy Popup-based context menu with typed delegate roles and open helpers.
 - `Modules/Bar/Widgets/*.qml` - bar widget context-menu consumers.
 - `Modules/Panels/Wallpaper/WallpaperPanel.qml` - panel action menu consumer.
 
