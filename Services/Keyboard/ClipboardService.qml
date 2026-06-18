@@ -110,7 +110,7 @@ Singleton {
     }
   }
 
-  function parseListOutput(output: string, now: int) {
+  function parseListOutput(output, now) {
     const lines = String(output).split("\n").filter(line => line.length > 0);
     return lines.map(line => {
                        let id = "";
@@ -175,7 +175,7 @@ Singleton {
     onExited: (exitCode, exitStatus) => root.handleBase64DecodeFinished(stdout.text)
   }
 
-  function handleDecodeFinished(output: string) {
+  function handleDecodeFinished(output) {
     if (!root._decodeCallback) {
       return;
     }
@@ -187,7 +187,7 @@ Singleton {
     }
   }
 
-  function handleBase64DecodeFinished(output: string) {
+  function handleBase64DecodeFinished(output) {
     const b64 = String(output).trim();
     const url = `data:${root._b64CurrentMime};base64,${b64}`;
 

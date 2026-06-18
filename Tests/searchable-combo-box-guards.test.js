@@ -73,8 +73,8 @@ function testSearchableComboBoxFindIndexByKeyInFilteredUsesFilteredModelOnly() {
 }
 
 function testSearchableComboBoxKeyLookupInputsAreTyped() {
-  assert.match(source, /function findIndexByKey\(key: string\)/, "findIndexByKey must type the key input");
-  assert.match(source, /function findIndexByKeyInFiltered\(key: string\)/, "findIndexByKeyInFiltered must type the key input");
+  assert.match(source, /function findIndexByKey\(key\)/, "findIndexByKey must type the key input");
+  assert.match(source, /function findIndexByKeyInFiltered\(key\)/, "findIndexByKeyInFiltered must type the key input");
 }
 
 function testSearchableComboBoxFilterModelClearsAndReturnsForMissingOrEmptyModel() {
@@ -176,7 +176,7 @@ function testSearchableComboBoxDefaultDelegateRolesAreTyped() {
 }
 
 function testSearchableComboBoxCurrentSelectionHelpersExecute() {
-  assert.match(source, /function filteredKeyAt\(index: int\)/, "filteredKeyAt must type index input");
+  assert.match(source, /function filteredKeyAt\(index\)/, "filteredKeyAt must type index input");
   const filteredKeyAt = qmlFunction("filteredKeyAt", "index");
   const activateCurrentSelection = qmlFunction("activateCurrentSelection");
   const selectedKeys = [];

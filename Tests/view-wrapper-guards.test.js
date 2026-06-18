@@ -30,11 +30,11 @@ function assertViewMethodForwarders(source, targetId, label) {
 }
 
 function assertViewMethodSignaturesAreTyped(source, label) {
-  assert.match(source, /function positionViewAtIndex\(index: int, mode: int\)/, `${label} must type position index and mode inputs`);
-  assert.match(source, /function flick\(xVelocity: real, yVelocity: real\)/, `${label} must type flick velocity inputs`);
-  assert.match(source, /function indexAt\(x: real, y: real\)/, `${label} must type indexAt coordinates`);
-  assert.match(source, /function itemAt\(x: real, y: real\)/, `${label} must type itemAt coordinates`);
-  assert.match(source, /function itemAtIndex\(index: int\)/, `${label} must type itemAtIndex input`);
+  assert.match(source, /function positionViewAtIndex\(index, mode\)/, `${label} must type position index and mode inputs`);
+  assert.match(source, /function flick\(xVelocity, yVelocity\)/, `${label} must type flick velocity inputs`);
+  assert.match(source, /function indexAt\(x, y\)/, `${label} must type indexAt coordinates`);
+  assert.match(source, /function itemAt\(x, y\)/, `${label} must type itemAt coordinates`);
+  assert.match(source, /function itemAtIndex\(index\)/, `${label} must type itemAtIndex input`);
 }
 
 function testNGridViewForwardsGridViewMethods() {

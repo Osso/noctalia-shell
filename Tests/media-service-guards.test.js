@@ -222,9 +222,9 @@ function testMediaServiceSeekHelpers() {
   const seekRelativeBody = extractFunctionBody(source, "seekRelative");
   const seekByRatioBody = extractFunctionBody(source, "seekByRatio");
 
-  assert.match(source, /function seek\(position: real\)/, "seek must type absolute position input");
-  assert.match(source, /function seekRelative\(offset: real\)/, "seekRelative must type offset input");
-  assert.match(source, /function seekByRatio\(ratio: real\)/, "seekByRatio must type ratio input");
+  assert.match(source, /function seek\(position\)/, "seek must type absolute position input");
+  assert.match(source, /function seekRelative\(offset\)/, "seekRelative must type offset input");
+  assert.match(source, /function seekByRatio\(ratio\)/, "seekByRatio must type ratio input");
   assert.match(seekBody, /let target = currentPlayer \? \(currentPlayer\._controlTarget \|\| currentPlayer\) : null/, "seek must resolve the control target");
   assert.match(seekBody, /if \(target && target\.canSeek\)[\s\S]*target\.position = position[\s\S]*currentPosition = position/, "seek must update backend and local position");
   assert.match(seekRelativeBody, /if \(target && target\.canSeek && target\.length > 0\)/, "seekRelative must require seekable tracks with length");

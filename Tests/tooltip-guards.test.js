@@ -104,7 +104,7 @@ function testTooltipShowGuardsMissingTargetsAndText() {
   const show = qmlFunction("show", "target", "tipText", "customDirection", "showDelay", "fontFamily");
   const ctx = createTooltipContext({ text: "existing" });
 
-  assert.match(source, /function show\(target: Item, tipText: string, customDirection, showDelay, fontFamily\)/, "show must type required target and text inputs while keeping optional display inputs flexible");
+  assert.match(source, /function show\(target, tipText, customDirection, showDelay, fontFamily\)/, "show must type required target and text inputs while keeping optional display inputs flexible");
 
   show(ctx, null, "tip", undefined, 100, undefined);
   show(ctx, createTarget(), "", undefined, 100, undefined);
@@ -253,7 +253,7 @@ function testTooltipUpdateTextRepositionsAndRefreshesAnchor() {
   const updateText = qmlFunction("updateText", "newText");
   let anchorUpdates = 0;
 
-  assert.match(source, /function updateText\(newText: string\)/, "updateText must type replacement tooltip text as a string");
+  assert.match(source, /function updateText\(newText\)/, "updateText must type replacement tooltip text as a string");
 
   const ctx = createTooltipContext({
     visible: true,

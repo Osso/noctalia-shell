@@ -242,7 +242,7 @@ Singleton {
     }
   }
 
-  function seek(position: real) {
+  function seek(position) {
     let target = currentPlayer ? (currentPlayer._controlTarget || currentPlayer) : null;
     if (target && target.canSeek) {
       target.position = position;
@@ -250,7 +250,7 @@ Singleton {
     }
   }
 
-  function seekRelative(offset: real) {
+  function seekRelative(offset) {
     let target = currentPlayer ? (currentPlayer._controlTarget || currentPlayer) : null;
     if (target && target.canSeek && target.length > 0) {
       let seekPosition = target.position + offset;
@@ -260,7 +260,7 @@ Singleton {
   }
 
   // Seek to position based on ratio (0.0 to 1.0)
-  function seekByRatio(ratio: real) {
+  function seekByRatio(ratio) {
     let target = currentPlayer ? (currentPlayer._controlTarget || currentPlayer) : null;
     if (target && target.canSeek && target.length > 0) {
       let seekPosition = ratio * target.length;

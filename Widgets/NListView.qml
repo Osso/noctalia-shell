@@ -61,7 +61,7 @@ Item {
   property alias verticalVelocity: listView.verticalVelocity
 
   // Forward ListView methods
-  function positionViewAtIndex(index: int, mode: int) {
+  function positionViewAtIndex(index, mode) {
     listView.positionViewAtIndex(index, mode);
   }
 
@@ -81,7 +81,7 @@ Item {
     listView.cancelFlick();
   }
 
-  function flick(xVelocity: real, yVelocity: real) {
+  function flick(xVelocity, yVelocity) {
     listView.flick(xVelocity, yVelocity);
   }
 
@@ -93,15 +93,15 @@ Item {
     listView.decrementCurrentIndex();
   }
 
-  function indexAt(x: real, y: real) {
+  function indexAt(x, y) {
     return listView.indexAt(x, y);
   }
 
-  function itemAt(x: real, y: real) {
+  function itemAt(x, y) {
     return listView.itemAt(x, y);
   }
 
-  function itemAtIndex(index: int) {
+  function itemAtIndex(index) {
     return listView.itemAtIndex(index);
   }
 

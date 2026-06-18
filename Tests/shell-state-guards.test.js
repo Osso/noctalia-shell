@@ -30,7 +30,7 @@ function testShellStateSaveQueuesDebouncedWrite() {
 
 function testShellStateLoadHandlersPublishLoadedState() {
   assert.match(source, /function handleStateLoaded\(\)/, "ShellState must expose a tested load-success helper");
-  assert.match(source, /function handleStateLoadFailed\(error: int\)/, "ShellState must type load-failure errors");
+  assert.match(source, /function handleStateLoadFailed\(error\)/, "ShellState must type load-failure errors");
   assert.match(source, /onLoaded:\s*root\.handleStateLoaded\(\)/, "FileView load success must route through the helper");
   assert.match(source, /onLoadFailed:\s*error => root\.handleStateLoadFailed\(error\)/, "FileView load failure must route through the helper");
 

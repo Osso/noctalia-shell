@@ -38,7 +38,7 @@ Singleton {
   readonly property string apiBaseUrl: "https://wallhaven.cc/api/v1"
 
   // -------------------------------------------------
-  function search(query: string, page: int) {
+  function search(query, page) {
     if (fetching) {
       return;
     }
@@ -145,7 +145,7 @@ Singleton {
   }
 
   // -------------------------------------------------
-  function getWallpaperUrl(wallpaper): string {
+  function getWallpaperUrl(wallpaper) {
     // Use the 'path' field which contains the full resolution image URL
     if (wallpaper.path) {
       return wallpaper.path;
@@ -159,7 +159,7 @@ Singleton {
   }
 
   // -------------------------------------------------
-  function getThumbnailUrl(wallpaper, size: string): string {
+  function getThumbnailUrl(wallpaper, size) {
     // size: "small", "large", "original"
     if (wallpaper.thumbs && wallpaper.thumbs[size]) {
       return wallpaper.thumbs[size];

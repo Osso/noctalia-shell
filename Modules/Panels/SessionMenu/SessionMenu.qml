@@ -145,7 +145,7 @@ SmartPanel {
   }
 
   // Timer management
-  function startTimer(action: string) {
+  function startTimer(action) {
     // Check if global countdown is disabled
     if (!Settings.data.sessionMenu.enableCountdown) {
       executeAction(action);
@@ -186,7 +186,7 @@ SmartPanel {
     countdownTimer.stop();
   }
 
-  function executeAction(action: string) {
+  function executeAction(action) {
     // Stop timer but don't reset other properties yet
     countdownTimer.stop();
 
@@ -405,12 +405,15 @@ SmartPanel {
           Repeater {
             model: powerOptions
             delegate: PowerButton {
-              required property string icon
-              required property string title
-              required property string action
-              required property bool isShutdown
+              required property int index
+              required property var modelData
+              readonly property string action: modelData ? (modelData.action || "") : ""
+              readonly property bool optionIsShutdown: modelData ? modelData.isShutdown === true : false
 
               Layout.fillWidth: true
+              icon: modelData ? (modelData.icon || "") : ""
+              title: modelData ? (modelData.title || "") : ""
+              isShutdown: optionIsShutdown
               isSelected: index === selectedIndex
               onClicked: {
                 selectedIndex = index;

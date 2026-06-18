@@ -123,15 +123,15 @@ Rectangle {
 
   readonly property int fanTextWidth: Math.ceil(fanMetrics.boundingRect.width + 3)
 
-  function shouldShowFanSpeedMetric(enabled: bool, fanAvailable: bool): bool {
+  function shouldShowFanSpeedMetric(enabled, fanAvailable) {
     return enabled && fanAvailable;
   }
 
-  function formatFanSpeedText(maxRpm: int): string {
+  function formatFanSpeedText(maxRpm) {
     return FanService.formatRpm(maxRpm);
   }
 
-  function fanTooltipText(fans): string {
+  function fanTooltipText(fans) {
     return fans.map(f => f.label + ": " + f.rpm + " RPM").join("\n");
   }
 

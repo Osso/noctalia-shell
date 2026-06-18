@@ -34,7 +34,7 @@ Popup {
     open();
   }
 
-  function getFileIcon(fileName: string) {
+  function getFileIcon(fileName) {
     const ext = fileName.split('.').pop().toLowerCase();
     const iconMap = {
       "txt": 'filepicker-file-text',
@@ -80,7 +80,7 @@ Popup {
     return iconMap[ext] || 'filepicker-file';
   }
 
-  function formatFileSize(bytes: real) {
+  function formatFileSize(bytes) {
     if (bytes === 0)
       return "0 B";
     const k = 1024, sizes = ["B", "KB", "MB", "GB", "TB"];
@@ -96,12 +96,12 @@ Popup {
     root.close();
   }
 
-  function navigateToPath(path: string) {
+  function navigateToPath(path) {
     folderModel.folder = "file://" + path;
     root.currentPath = path;
   }
 
-  function setSearchBarVisible(visible: bool) {
+  function setSearchBarVisible(visible) {
     filePickerPanel.showSearchBar = visible;
     if (visible) {
       Qt.callLater(() => searchInput.forceActiveFocus());
@@ -112,7 +112,7 @@ Popup {
     root.updateFilteredModel();
   }
 
-  function handleFileEntryActivated(filePath: string, fileIsDir: bool, doubleClick: bool) {
+  function handleFileEntryActivated(filePath, fileIsDir, doubleClick) {
     if (fileIsDir) {
       if (doubleClick) {
         root.navigateToPath(filePath);

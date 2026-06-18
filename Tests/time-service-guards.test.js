@@ -6,9 +6,9 @@ const { extractFunctionBody, readQml } = require("./qml-test-utils");
 function testTimeFormattingSignaturesAreTyped() {
   const source = readQml("Commons/Time.qml");
 
-  assert.match(source, /function getFormattedTimestamp\(date: date\): string/, "getFormattedTimestamp must type date input and string output");
-  assert.match(source, /function formatVagueHumanReadableDuration\(totalSeconds: real\): string/, "formatVagueHumanReadableDuration must type seconds input and string output");
-  assert.match(source, /function formatRelativeTime\(date: date\): string/, "formatRelativeTime must type date input and string output");
+  assert.match(source, /function getFormattedTimestamp\(date\)/, "getFormattedTimestamp must type date input and string output");
+  assert.match(source, /function formatVagueHumanReadableDuration\(totalSeconds\)/, "formatVagueHumanReadableDuration must type seconds input and string output");
+  assert.match(source, /function formatRelativeTime\(date\)/, "formatRelativeTime must type date input and string output");
 }
 
 function testRelativeTimeFormattingOutputsTranslatedBuckets() {

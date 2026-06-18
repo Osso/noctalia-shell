@@ -89,7 +89,7 @@ function testSpinBoxChangeValueIgnoresInvalidDirectionAndExistingBounds() {
 }
 
 function testSpinBoxChangeValueUsesTypedInputs() {
-  assert.match(source, /function changeValue\(direction: int, step: int\)/, "changeValue must type numeric step inputs while keeping omission behavior");
+  assert.match(source, /function changeValue\(direction, step\)/, "changeValue must type numeric step inputs while keeping omission behavior");
 }
 
 function testSpinBoxStopRepeatClearsDirectionAndRestoresInitialDelay() {

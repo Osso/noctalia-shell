@@ -7,7 +7,7 @@ import "../Helpers/ThemeIconResolver.js" as ThemeIconResolver
 Singleton {
   id: root
 
-  function iconFromName(iconName: string, fallbackName) {
+  function iconFromName(iconName, fallbackName) {
     try {
       return ThemeIconResolver.resolveIconPath(Quickshell, iconName, fallbackName);
     } catch (e2) {
@@ -16,7 +16,7 @@ Singleton {
   }
 
   // Resolve icon path for a DesktopEntries appId - safe on missing entries
-  function iconForAppId(appId: string, fallbackName) {
+  function iconForAppId(appId, fallbackName) {
     const fallback = fallbackName || "application-x-executable";
     if (!appId)
       return iconFromName(fallback, fallback);

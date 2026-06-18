@@ -56,7 +56,7 @@ Singleton {
     Logger.d("PowerProfileService", "Service started");
   }
 
-  function setProfile(p: int) {
+  function setProfile(p) {
     if (!available)
       return;
     try {
@@ -106,7 +106,7 @@ Singleton {
     noctaliaPerformanceMode = !noctaliaPerformanceMode;
   }
 
-  function setNoctaliaPerformance(value: bool) {
+  function setNoctaliaPerformance(value) {
     noctaliaPerformanceMode = value;
   }
 

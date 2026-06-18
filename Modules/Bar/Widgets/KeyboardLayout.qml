@@ -72,7 +72,7 @@ Item {
     contextMenu.openAtItem(pill, pos.x, pos.y);
   }
 
-  function handleContextMenuAction(action: string) {
+  function handleContextMenuAction(action) {
     closePopupMenuWindow();
 
     if (action === "widget-settings") {

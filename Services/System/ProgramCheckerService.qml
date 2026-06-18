@@ -41,7 +41,7 @@ Singleton {
   // Signal emitted when all checks are complete
   signal checksCompleted
 
-  function parseDetectedClients(rawOutput: string, clients) {
+  function parseDetectedClients(rawOutput, clients) {
     const detectedLines = rawOutput.split(/\r?\n/).map(function (client) {
       return client.trim();
     }).filter(function (client) {
@@ -64,11 +64,11 @@ Singleton {
     return detectedClients;
   }
 
-  function shellQuote(value: string) {
+  function shellQuote(value) {
     return "'" + String(value).replace(/'/g, "'\\''") + "'";
   }
 
-  function clientConfigPathExpression(configPath: string, suffix: string) {
+  function clientConfigPathExpression(configPath, suffix) {
     if (configPath.startsWith("~/")) {
       return "\"$HOME\"/" + root.shellQuote(configPath.substring(2) + suffix);
     }
@@ -76,7 +76,7 @@ Singleton {
     return root.shellQuote(configPath + suffix);
   }
 
-  function buildClientDetectionScript(clients, requireThemesFolder: bool) {
+  function buildClientDetectionScript(clients, requireThemesFolder) {
     const scriptParts = [];
 
     for (var i = 0; i < clients.length; i++) {
@@ -187,7 +187,7 @@ Singleton {
   property int completedChecks: 0
   property int totalChecks: Object.keys(programsToCheck).length
 
-  function handleCheckerExit(exitCode: int) {
+  function handleCheckerExit(exitCode) {
     root[checker.currentProperty] = (exitCode === 0);
     checker.running = false;
     root.completedChecks++;

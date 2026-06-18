@@ -19,7 +19,7 @@ Singleton {
   readonly property string usageFilePath: Settings.cacheDir + "emoji_usage.json"
 
   // Searches emojis based on query
-  function search(query: string) {
+  function search(query) {
     if (!loaded) {
       return [];
     }
@@ -47,7 +47,7 @@ Singleton {
     return results;
   }
 
-  function _getPopularEmojis(limit: int) {
+  function _getPopularEmojis(limit) {
     var emojisWithUsage = emojis.map(function (emoji) {
       return {
         emoji: emoji,
@@ -98,7 +98,7 @@ Singleton {
     return categories;
   }
 
-  function getEmojisByCategory(category: string) {
+  function getEmojisByCategory(category) {
     if (!loaded) {
       return [];
     }
@@ -113,7 +113,7 @@ Singleton {
   }
 
   // Record emoji usage
-  function recordUsage(emojiChar: string) {
+  function recordUsage(emojiChar) {
     if (emojiChar) {
       const currentCount = usageCounts[emojiChar] || 0;
       usageCounts[emojiChar] = currentCount + 1;
@@ -293,7 +293,7 @@ Singleton {
   }
 
   // Copies emoji to clipboard
-  function copy(emojiChar: string) {
+  function copy(emojiChar) {
     if (emojiChar) {
       recordUsage(emojiChar);  // Record usage before copying
       Quickshell.execDetached(["sh", "-c", `echo -n "${emojiChar}" | wl-copy`]);

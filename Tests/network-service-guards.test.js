@@ -97,7 +97,7 @@ function testNetworkServiceParsesNmcliScanOutput() {
     "Cafe:Guest": true,
   }, "OldNet");
 
-  assert.match(serviceSource, /function parseNetworkScanOutput\(text: string, existingProfiles, knownNetworks, lastConnected: string\)/, "parseNetworkScanOutput must type raw text and last-connected inputs");
+  assert.match(serviceSource, /function parseNetworkScanOutput\(text, existingProfiles, knownNetworks, lastConnected\)/, "parseNetworkScanOutput must type raw text and last-connected inputs");
   assert.deepEqual(parsed.networks, {
     "Cafe:Guest": {
       ssid: "Cafe:Guest",

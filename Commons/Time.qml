@@ -71,7 +71,7 @@ Singleton {
   }
 
   // Formats a Date object into a YYYYMMDD-HHMMSS string.
-  function getFormattedTimestamp(date: date): string {
+  function getFormattedTimestamp(date) {
     if (!date) {
       date = new Date();
     }
@@ -90,7 +90,7 @@ Singleton {
 
   // Format an easy to read approximate duration ex: 4h 32m
   // Used to display the time remaining on the Battery widget, computer uptime, etc..
-  function formatVagueHumanReadableDuration(totalSeconds: real): string {
+  function formatVagueHumanReadableDuration(totalSeconds) {
     if (typeof totalSeconds !== 'number' || totalSeconds < 0) {
       return '0s';
     }
@@ -120,7 +120,7 @@ Singleton {
   }
 
   // Format a date into
-  function formatRelativeTime(date: date): string {
+  function formatRelativeTime(date) {
     if (!date)
       return "";
     const diff = Date.now() - date.getTime();

@@ -9,7 +9,7 @@ function testI18nLanguageDiscoveryGuards() {
   const parseBody = extractFunctionBody(source, "parseDirectoryListing");
   const detectBody = extractFunctionBody(source, "detectLanguage");
 
-  assert.match(source, /function parseDirectoryListing\(output: string\)/, "parseDirectoryListing must type scanner output as a string");
+  assert.match(source, /function parseDirectoryListing\(output\)/, "parseDirectoryListing must type scanner output as a string");
   assert.match(scanBody, /Logger\.d\("I18n", "Scanning for available translation files\.\.\."\)/, "scanAvailableLanguages must log directory scans");
   assert.match(scanBody, /directoryScanner\.running = true/, "scanAvailableLanguages must start the scanner process");
   assert.match(parseBody, /if \(!output \|\| output\.trim\(\) === ""\)[\s\S]*availableLanguages = \["en"\][\s\S]*detectLanguage\(\)[\s\S]*return;/, "parseDirectoryListing must fallback on empty output");
@@ -35,7 +35,7 @@ function testI18nLoadingAndLookupGuards() {
   const keysBody = extractFunctionBody(source, "getAllKeys");
   const reloadBody = extractFunctionBody(source, "reload");
 
-  assert.match(source, /function setLanguage\(newLangCode: string, fullLocale\)/, "setLanguage must type the required language-code input while keeping full locale optional");
+  assert.match(source, /function setLanguage\(newLangCode, fullLocale\)/, "setLanguage must type the required language-code input while keeping full locale optional");
   assert.match(setBody, /if \(typeof fullLocale === "undefined"\)[\s\S]*fullLocale = newLangCode/, "setLanguage must default full locale to language code");
   assert.match(setBody, /newLangCode !== langCode && availableLanguages\.includes\(newLangCode\)/, "setLanguage must only reload changed available languages");
   assert.match(setBody, /langCode = newLangCode[\s\S]*fullLocaleCode = fullLocale[\s\S]*locale = Qt\.locale\(fullLocale\)/, "setLanguage must update language and locale state together");
@@ -59,9 +59,9 @@ function testI18nTranslationAndPluralGuards() {
   const trBody = extractFunctionBody(source, "tr");
   const trpBody = extractFunctionBody(source, "trp");
 
-  assert.match(source, /function hasTranslation\(key: string\)/, "hasTranslation must type the required translation key input");
-  assert.match(source, /function tr\(key: string, interpolations\)/, "tr must type the required translation key input while keeping interpolations optional");
-  assert.match(source, /function trp\(key: string, count: int, defaultSingular, defaultPlural, interpolations\)/, "trp must type required key and count inputs while keeping fallback text optional");
+  assert.match(source, /function hasTranslation\(key\)/, "hasTranslation must type the required translation key input");
+  assert.match(source, /function tr\(key, interpolations\)/, "tr must type the required translation key input while keeping interpolations optional");
+  assert.match(source, /function trp\(key, count, defaultSingular, defaultPlural, interpolations\)/, "trp must type required key and count inputs while keeping fallback text optional");
   assert.match(trBody, /if \(typeof interpolations === "undefined"\)\s+interpolations = \{\}/, "tr must default interpolations to an object");
   assert.match(trBody, /if \(!isLoaded\)[\s\S]*return key;/, "tr must return the key before translations are loaded");
   assert.match(trBody, /const keys = key\.split\("\."\)/, "tr must support nested translation keys");

@@ -108,7 +108,7 @@ function testChangelogFormatReleaseDateHandlesEmptyInvalidAndValidDates() {
 }
 
 function testClockSettingsInsertTokenDefaultsToHorizontalInput() {
-  assert.match(clockSettingsSource, /function insertToken\(token: string\)/, "ClockSettings insertToken must type token input");
+  assert.match(clockSettingsSource, /function insertToken\(token\)/, "ClockSettings insertToken must type token input");
   const insertToken = qmlFunction(clockSettingsSource, "insertToken", "token");
   const inputItem = {
     cursorPosition: 5,

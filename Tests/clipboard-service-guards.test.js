@@ -112,7 +112,7 @@ function testClipboardServiceWatcherAndListCommandsExecute() {
 }
 
 function testClipboardServiceParsesListOutput() {
-  assert.match(source, /function parseListOutput\(output: string, now: int\)/, "clipboard list parser must type raw output and timestamp");
+  assert.match(source, /function parseListOutput\(output, now\)/, "clipboard list parser must type raw output and timestamp");
   assert.match(source, /const parsed = root\.parseListOutput\(stdout\.text, Time\.timestamp\)/, "list process must route stdout through parser helper");
 
   const parseListOutput = qmlFunction("parseListOutput", "output", "now");
@@ -205,8 +205,8 @@ function testClipboardServiceDecodeQueuesExecute() {
 }
 
 function testClipboardServiceDecodeCompletionCallbacksAndCacheWrites() {
-  assert.match(source, /function handleDecodeFinished\(output: string\)/, "decode completion helper must type decoded output");
-  assert.match(source, /function handleBase64DecodeFinished\(output: string\)/, "base64 completion helper must type decoded output");
+  assert.match(source, /function handleDecodeFinished\(output\)/, "decode completion helper must type decoded output");
+  assert.match(source, /function handleBase64DecodeFinished\(output\)/, "base64 completion helper must type decoded output");
   assert.match(source, /onExited:\s*\(exitCode, exitStatus\) => root\.handleDecodeFinished\(stdout\.text\)/, "decode process must route completion through helper");
   assert.match(source, /onExited:\s*\(exitCode, exitStatus\) => root\.handleBase64DecodeFinished\(stdout\.text\)/, "base64 process must route completion through helper");
 

@@ -78,7 +78,7 @@ function testResolveLogoBuildsShellProbeForCandidates() {
 function testParseOsReleaseExtractsReadinessAndLogo() {
   const parseOsRelease = qmlFunction("parseOsRelease", "rawText");
 
-  assert.match(source, /function parseOsRelease\(rawText: string\)/, "parseOsRelease must type raw os-release input");
+  assert.match(source, /function parseOsRelease\(rawText\)/, "parseOsRelease must type raw os-release input");
   assert.deepEqual(parseOsRelease({}, [
     'NAME="NixOS"',
     'PRETTY_NAME="NixOS 26.05 (Warbler)"',
@@ -121,7 +121,7 @@ function testHandleLogoProbeExitAssignsLogoUrl() {
     },
   };
 
-  assert.match(source, /function handleLogoProbeExit\(exitCode: int\)/, "handleLogoProbeExit must type probe exit code");
+  assert.match(source, /function handleLogoProbeExit\(exitCode\)/, "handleLogoProbeExit must type probe exit code");
   handleLogoProbeExit(ctx, 0);
   assert.equal(ctx.osLogo, "file:///usr/share/pixmaps/os.svg");
   assert.deepEqual(messages, [["d", "HostService", "Found", "file:///usr/share/pixmaps/os.svg"]]);
@@ -136,7 +136,7 @@ function testHandleLogoProbeExitAssignsLogoUrl() {
 function testResolveDisplayNamePrecedence() {
   const resolveDisplayName = qmlFunction("resolveDisplayName", "explicitRealName", "resolvedRealName", "userName");
 
-  assert.match(source, /function resolveDisplayName\(explicitRealName: string, resolvedRealName: string, userName: string\)/, "resolveDisplayName must type all display-name inputs");
+  assert.match(source, /function resolveDisplayName\(explicitRealName, resolvedRealName, userName\)/, "resolveDisplayName must type all display-name inputs");
   assert.equal(resolveDisplayName({}, "Alessio", "Ignored", "osso"), "Alessio");
   assert.equal(resolveDisplayName({}, "", "Resolved Name", "osso"), "Resolved Name");
   assert.equal(resolveDisplayName({}, "", "", "osso"), "Osso");

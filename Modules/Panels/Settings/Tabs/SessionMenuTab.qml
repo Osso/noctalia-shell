@@ -63,14 +63,14 @@ ColumnLayout {
     Settings.data.sessionMenu.powerOptions = toSave;
   }
 
-  function updateEntry(idx: int, properties) {
+  function updateEntry(idx, properties) {
     var newModel = entriesModel.slice();
     newModel[idx] = Object.assign({}, newModel[idx], properties);
     entriesModel = newModel;
     saveEntries();
   }
 
-  function reorderEntries(fromIndex: int, toIndex: int) {
+  function reorderEntries(fromIndex, toIndex) {
     var newModel = entriesModel.slice();
     var item = newModel.splice(fromIndex, 1)[0];
     newModel.splice(toIndex, 0, item);

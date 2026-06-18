@@ -30,7 +30,7 @@ RowLayout {
   property ListModel filteredModel: ListModel {}
   property string searchText: ""
 
-  function findIndexByKey(key: string) {
+  function findIndexByKey(key) {
     for (var i = 0; i < root.model.count; i++) {
       if (root.model.get(i).key === key) {
         return i;
@@ -39,7 +39,7 @@ RowLayout {
     return -1;
   }
 
-  function findIndexByKeyInFiltered(key: string) {
+  function findIndexByKeyInFiltered(key) {
     for (var i = 0; i < root.filteredModel.count; i++) {
       if (root.filteredModel.get(i).key === key) {
         return i;
@@ -48,7 +48,7 @@ RowLayout {
     return -1;
   }
 
-  function filteredKeyAt(index: int) {
+  function filteredKeyAt(index) {
     if (index < 0 || index >= root.filteredModel.count) {
       return "";
     }

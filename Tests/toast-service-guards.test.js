@@ -24,7 +24,7 @@ function testToastServiceShowNoticeForwardsMessageIconTypeAndDefaultDuration() {
   const showNotice = qmlFunction("showNotice", "message", "description = \"\"", "icon = \"\"", "duration = 3000");
   const ctx = createContext();
 
-  assert.match(source, /function showNotice\(message: string, description = "", icon = "", duration = 3000\)/, "showNotice must type the required message input while keeping optional defaults flexible");
+  assert.match(source, /function showNotice\(message, description = "", icon = "", duration = 3000\)/, "showNotice must type the required message input while keeping optional defaults flexible");
 
   showNotice(ctx, "Title", "Body", "info-icon");
 
@@ -35,7 +35,7 @@ function testToastServiceShowWarningUsesWarningTypeAndEmptyIcon() {
   const showWarning = qmlFunction("showWarning", "message", "description = \"\"", "duration = 4000");
   const ctx = createContext();
 
-  assert.match(source, /function showWarning\(message: string, description = "", duration = 4000\)/, "showWarning must type the required message input while keeping optional defaults flexible");
+  assert.match(source, /function showWarning\(message, description = "", duration = 4000\)/, "showWarning must type the required message input while keeping optional defaults flexible");
 
   showWarning(ctx, "Careful", "Something happened", 12000);
 
@@ -46,7 +46,7 @@ function testToastServiceShowErrorUsesErrorTypeAndDefaultDuration() {
   const showError = qmlFunction("showError", "message", "description = \"\"", "duration = 6000");
   const ctx = createContext();
 
-  assert.match(source, /function showError\(message: string, description = "", duration = 6000\)/, "showError must type the required message input while keeping optional defaults flexible");
+  assert.match(source, /function showError\(message, description = "", duration = 6000\)/, "showError must type the required message input while keeping optional defaults flexible");
 
   showError(ctx, "Failed", "Something broke");
 

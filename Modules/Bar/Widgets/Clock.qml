@@ -50,7 +50,7 @@ Rectangle {
     }
   }
 
-  function toggleCalendarPanel(anchor: Item) {
+  function toggleCalendarPanel(anchor) {
     const panel = PanelService.getPanel("clockPanel", screen);
     if (panel)
       panel.toggle(anchor);
@@ -66,7 +66,7 @@ Rectangle {
     contextMenu.openAtItem(root, pos.x, pos.y);
   }
 
-  function handleContextMenuAction(action: string) {
+  function handleContextMenuAction(action) {
     closePopupMenuWindow();
 
     if (action === "open-calendar") {

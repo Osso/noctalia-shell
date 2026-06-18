@@ -11,8 +11,8 @@ function qmlFunction(functionName, ...argNames) {
 }
 
 function testSessionMenuActionSignaturesAreTyped() {
-  assert.match(source, /function startTimer\(action: string\)/, "startTimer must type action input");
-  assert.match(source, /function executeAction\(action: string\)/, "executeAction must type action input");
+  assert.match(source, /function startTimer\(action\)/, "startTimer must accept action input");
+  assert.match(source, /function executeAction\(action\)/, "executeAction must accept action input");
 }
 
 function testSessionMenuTimerGuards() {

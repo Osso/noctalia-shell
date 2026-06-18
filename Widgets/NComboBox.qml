@@ -33,7 +33,7 @@ RowLayout {
     return 0;
   }
 
-  function getItem(index: int) {
+  function getItem(index) {
     if (!root.model)
       return null;
     if (typeof root.model.get === 'function')
@@ -43,7 +43,7 @@ RowLayout {
     return null;
   }
 
-  function findIndexByKey(key: string) {
+  function findIndexByKey(key) {
     for (var i = 0; i < itemCount(); i++) {
       var item = getItem(i);
       if (item && item.key === key)
@@ -52,13 +52,13 @@ RowLayout {
     return -1;
   }
 
-  function activateCurrentIndex(index: int) {
+  function activateCurrentIndex(index) {
     var item = getItem(index);
     if (item && item.key !== undefined)
       root.selected(item.key);
   }
 
-  function selectItem(itemIndex: int, parentComboBox) {
+  function selectItem(itemIndex, parentComboBox) {
     var item = root.getItem(itemIndex);
     if (!(item && item.key !== undefined && parentComboBox))
       return false;
@@ -73,7 +73,7 @@ RowLayout {
     return !!(listView && (listView.flicking || listView.moving));
   }
 
-  function handleDelegateClick(itemIndex: int, parentComboBox, listView, clickRetryTimer, delegate) {
+  function handleDelegateClick(itemIndex, parentComboBox, listView, clickRetryTimer, delegate) {
     if (shouldDelayDelegateClick(listView)) {
       listView.cancelFlick();
       delegate.pendingClick = true;
@@ -84,7 +84,7 @@ RowLayout {
     return selectItem(itemIndex, parentComboBox);
   }
 
-  function retryPendingClick(itemIndex: int, parentComboBox, listView, clickRetryTimer, delegate) {
+  function retryPendingClick(itemIndex, parentComboBox, listView, clickRetryTimer, delegate) {
     if (!delegate.pendingClick)
       return false;
 

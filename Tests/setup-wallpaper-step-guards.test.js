@@ -126,7 +126,7 @@ function testSetupWallpaperStepReadDirectoryImagesStartsScannerCommand() {
 }
 
 function testSetupWallpaperStepReadDirectoryImagesUsesTypedDirectoryPath() {
-  assert.match(source, /function readDirectoryImages\(directoryPath: string\)/, "readDirectoryImages must type the directory path input");
+  assert.match(source, /function readDirectoryImages\(directoryPath\)/, "readDirectoryImages must type the directory path input");
 }
 
 const tests = [

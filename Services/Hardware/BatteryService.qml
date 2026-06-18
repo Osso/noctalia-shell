@@ -10,7 +10,7 @@ Singleton {
   id: root
 
   // Choose icon based on charge and charging state
-  function getIcon(percent: int, charging: bool, isReady: bool) {
+  function getIcon(percent, charging, isReady) {
     if (!isReady) {
       return "battery-exclamation";
     }

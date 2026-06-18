@@ -105,7 +105,7 @@ PopupWindow {
   }
 
   // Function to show tooltip
-  function show(target: Item, tipText: string, customDirection, showDelay, fontFamily) {
+  function show(target, tipText, customDirection, showDelay, fontFamily) {
     if (!target || !tipText || tipText === "")
       return;
 
@@ -327,7 +327,7 @@ PopupWindow {
   }
 
   // Update text function
-  function updateText(newText: string) {
+  function updateText(newText) {
     if (visible && targetItem) {
       // Convert \n to <br> for RichText format
       const processedText = newText.replace(/\n/g, '<br>');

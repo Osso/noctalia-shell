@@ -60,11 +60,11 @@ Singleton {
     inputOSDSuppressedUntilMs = Math.max(inputOSDSuppressedUntilMs, target);
   }
 
-  function consumeOutputOSDSuppression(): bool {
+  function consumeOutputOSDSuppression() {
     return Date.now() < outputOSDSuppressedUntilMs;
   }
 
-  function consumeInputOSDSuppression(): bool {
+  function consumeInputOSDSuppression() {
     return Date.now() < inputOSDSuppressedUntilMs;
   }
 
@@ -214,7 +214,7 @@ Singleton {
     setVolume(Math.max(0, volume - stepVolume));
   }
 
-  function setVolume(newVolume: real) {
+  function setVolume(newVolume) {
     if (!Pipewire.ready || !sink || !sink.ready || !sinkAudio) {
       Logger.w("AudioService", "No sink available or not ready");
       return;
@@ -238,7 +238,7 @@ Singleton {
                  });
   }
 
-  function setOutputMuted(muted: bool) {
+  function setOutputMuted(muted) {
     if (!Pipewire.ready || !sinkAudio) {
       Logger.w("AudioService", "No sink available or Pipewire not ready");
       return;
@@ -283,7 +283,7 @@ Singleton {
     setInputVolume(Math.max(0, inputVolume - stepVolume));
   }
 
-  function setInputVolume(newVolume: real) {
+  function setInputVolume(newVolume) {
     if (!Pipewire.ready || !source || !source.ready || !sourceAudio) {
       Logger.w("AudioService", "No source available or not ready");
       return;
@@ -307,7 +307,7 @@ Singleton {
                  });
   }
 
-  function setInputMuted(muted: bool) {
+  function setInputMuted(muted) {
     if (!Pipewire.ready || !sourceAudio) {
       Logger.w("AudioService", "No source available or Pipewire not ready");
       return;
@@ -324,7 +324,7 @@ Singleton {
   }
 
   // Device Selection
-  function setAudioSink(newSink: PwNode) {
+  function setAudioSink(newSink) {
     if (!Pipewire.ready) {
       Logger.w("AudioService", "Pipewire not ready");
       return;
@@ -332,7 +332,7 @@ Singleton {
     Pipewire.preferredDefaultAudioSink = newSink;
   }
 
-  function setAudioSource(newSource: PwNode) {
+  function setAudioSource(newSource) {
     if (!Pipewire.ready) {
       Logger.w("AudioService", "Pipewire not ready");
       return;

@@ -36,11 +36,11 @@ function testEmojiServiceSearchAndPopularResults() {
 }
 
 function testEmojiServiceScalarInputsAreTyped() {
-  assert.match(serviceSource, /function search\(query: string\)/, "search must type the query input");
-  assert.match(serviceSource, /function _getPopularEmojis\(limit: int\)/, "popular emoji lookup must type the limit input");
-  assert.match(serviceSource, /function getEmojisByCategory\(category: string\)/, "category lookup must type the category input");
-  assert.match(serviceSource, /function recordUsage\(emojiChar: string\)/, "usage recording must type the emoji input");
-  assert.match(serviceSource, /function copy\(emojiChar: string\)/, "clipboard copy must type the emoji input");
+  assert.match(serviceSource, /function search\(query\)/, "search must type the query input");
+  assert.match(serviceSource, /function _getPopularEmojis\(limit\)/, "popular emoji lookup must type the limit input");
+  assert.match(serviceSource, /function getEmojisByCategory\(category\)/, "category lookup must type the category input");
+  assert.match(serviceSource, /function recordUsage\(emojiChar\)/, "usage recording must type the emoji input");
+  assert.match(serviceSource, /function copy\(emojiChar\)/, "clipboard copy must type the emoji input");
 }
 
 function testEmojiServiceCategoriesAndUsage() {

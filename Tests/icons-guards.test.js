@@ -86,7 +86,7 @@ function testIconsGetResolvesAliasesCodepointsAndMissingIcons() {
 }
 
 function testIconsGetUsesTypedIconName() {
-  assert.match(source, /function get\(iconName: string\)/, "get must type the icon name input");
+  assert.match(source, /function get\(iconName\)/, "get must type the icon name input");
 }
 
 function testIconsLoadFontDestroysOldLoaderAndCreatesCacheBustedLoader() {

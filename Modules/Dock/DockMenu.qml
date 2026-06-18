@@ -230,7 +230,7 @@ PopupWindow {
   }
 
   // Helper function to determine which menu item is under the mouse
-  function getHoveredItem(mouseY: real) {
+  function getHoveredItem(mouseY) {
     const itemHeight = 32;
     const startY = Style.marginM;
     const relativeY = mouseY - startY;

@@ -155,7 +155,7 @@ Rectangle {
     updateDebounceTimer.restart();
   }
 
-  function wildCardMatch(str: string, rule: string) {
+  function wildCardMatch(str, rule) {
     if (!str || !rule) {
       return false;
     }

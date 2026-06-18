@@ -44,8 +44,8 @@ function testPowerProfileMutationGuards() {
 function testPowerProfileMutationInputsAreTyped() {
   const source = readQml("Services/Power/PowerProfileService.qml");
 
-  assert.match(source, /function setProfile\(p: int\)/, "setProfile must type the requested profile value");
-  assert.match(source, /function setNoctaliaPerformance\(value: bool\)/, "setNoctaliaPerformance must type the requested performance mode");
+  assert.match(source, /function setProfile\(p\)/, "setProfile must type the requested profile value");
+  assert.match(source, /function setNoctaliaPerformance\(value\)/, "setNoctaliaPerformance must type the requested performance mode");
 }
 
 function testNoctaliaPerformanceGuards() {

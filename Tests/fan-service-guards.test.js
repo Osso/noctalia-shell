@@ -20,7 +20,7 @@ function testFanHwmonDetectionGuards() {
 }
 
 function testFanHwmonDetectionPublishesSuccessfulSensor() {
-  assert.match(source, /function publishFanSensor\(hwmonIndex: int, sensorName: string\)/, "publishFanSensor must type hwmon index and sensor name inputs");
+  assert.match(source, /function publishFanSensor\(hwmonIndex, sensorName\)/, "publishFanSensor must type hwmon index and sensor name inputs");
   const publishFanSensor = qmlFunction("publishFanSensor", "hwmonIndex", "sensorName");
   const logs = [];
   const ctx = {
@@ -70,9 +70,9 @@ function testFanSummaryHelpers() {
   const maxBody = extractFunctionBody(source, "getMaxRpm");
   const formatBody = extractFunctionBody(source, "formatRpm");
 
-  assert.match(source, /function getAverageRpm\(\): int/, "getAverageRpm must declare int output");
-  assert.match(source, /function getMaxRpm\(\): int/, "getMaxRpm must declare int output");
-  assert.match(source, /function formatRpm\(rpm: int\): string/, "formatRpm must type rpm input and string output");
+  assert.match(source, /function getAverageRpm\(\)/, "getAverageRpm must declare int output");
+  assert.match(source, /function getMaxRpm\(\)/, "getMaxRpm must declare int output");
+  assert.match(source, /function formatRpm\(rpm\)/, "formatRpm must type rpm input and string output");
   assert.match(averageBody, /if \(fans\.length === 0\) return 0/, "getAverageRpm must return zero without fans");
   assert.match(averageBody, /fans\.forEach\(f => sum \+= f\.rpm\)[\s\S]*return Math\.round\(sum \/ fans\.length\)/, "getAverageRpm must average fan rpm values");
   assert.match(maxBody, /if \(fans\.length === 0\) return 0/, "getMaxRpm must return zero without fans");

@@ -32,7 +32,7 @@ function createFilteredModel() {
 }
 
 function testFilePickerIconMappingUsesKnownExtensionsAndFallback() {
-  assert.match(source, /function getFileIcon\(fileName: string\)/, "getFileIcon must type file-name input");
+  assert.match(source, /function getFileIcon\(fileName\)/, "getFileIcon must type file-name input");
   const getFileIcon = qmlFunction("getFileIcon", "fileName");
 
   assert.equal(getFileIcon({}, "README.MD"), "filepicker-file-text");
@@ -47,7 +47,7 @@ function testFilePickerIconMappingUsesKnownExtensionsAndFallback() {
 }
 
 function testFilePickerFormatsFileSizes() {
-  assert.match(source, /function formatFileSize\(bytes: real\)/, "formatFileSize must type byte-size input");
+  assert.match(source, /function formatFileSize\(bytes\)/, "formatFileSize must type byte-size input");
   const formatFileSize = qmlFunction("formatFileSize", "bytes");
 
   assert.equal(formatFileSize({}, 0), "0 B");
@@ -175,7 +175,7 @@ function testFilePickerFilteredModelSupportsFolderModeAndHiddenFiles() {
 }
 
 function testFilePickerNavigatesToParentPath() {
-  assert.match(source, /function navigateToPath\(path: string\)/, "navigateToPath must type path input");
+  assert.match(source, /function navigateToPath\(path\)/, "navigateToPath must type path input");
   const navigateToPath = qmlFunction("navigateToPath", "path");
   const ctx = {
     folderModel: {
@@ -194,7 +194,7 @@ function testFilePickerNavigatesToParentPath() {
 }
 
 function testFilePickerSearchBarToggleClearsAndFocuses() {
-  assert.match(source, /function setSearchBarVisible\(visible: bool\)/, "setSearchBarVisible must type visibility input");
+  assert.match(source, /function setSearchBarVisible\(visible\)/, "setSearchBarVisible must type visibility input");
   const setSearchBarVisible = qmlFunction("setSearchBarVisible", "visible");
   const events = [];
   const ctx = {
@@ -237,7 +237,7 @@ function testFilePickerSearchBarToggleClearsAndFocuses() {
 }
 
 function testFilePickerFileEntrySelectionBehavior() {
-  assert.match(source, /function handleFileEntryActivated\(filePath: string, fileIsDir: bool, doubleClick: bool\)/, "file entry activation helper must type path, directory, and double-click inputs");
+  assert.match(source, /function handleFileEntryActivated\(filePath, fileIsDir, doubleClick\)/, "file entry activation helper must type path, directory, and double-click inputs");
   const handleFileEntryActivated = qmlFunction("handleFileEntryActivated", "filePath", "fileIsDir", "doubleClick");
   const ctx = {
     filePickerPanel: {

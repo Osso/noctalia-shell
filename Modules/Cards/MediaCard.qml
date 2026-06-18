@@ -20,7 +20,7 @@ NBox {
   // External state management
   Connections {
     target: WallpaperService
-    function onWallpaperChanged(screenName: string, path: string) {
+    function onWallpaperChanged(screenName, path) {
       if (screenName === screen.name) {
         wallpaper = path;
       }

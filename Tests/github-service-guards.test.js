@@ -110,8 +110,8 @@ function testGitHubServiceParsesVersionAndContributorResponses() {
     { login: "osso", contributions: 3 },
   ];
 
-  assert.match(serviceSource, /function parseVersionResponse\(rawResponse: string\)/, "parseVersionResponse must type raw GitHub response input");
-  assert.match(serviceSource, /function parseContributorsResponse\(rawResponse: string\)/, "parseContributorsResponse must type raw GitHub response input");
+  assert.match(serviceSource, /function parseVersionResponse\(rawResponse\)/, "parseVersionResponse must type raw GitHub response input");
+  assert.match(serviceSource, /function parseContributorsResponse\(rawResponse\)/, "parseContributorsResponse must type raw GitHub response input");
   assert.deepEqual(parseVersionResponse({}, JSON.stringify({ tag_name: "v1.2.3" })), {
     version: "v1.2.3",
     warning: "",

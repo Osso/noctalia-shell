@@ -73,7 +73,7 @@ Singleton {
     stderr: StdioCollector {}
   }
 
-  function parseCaptureSources(output: string) {
+  function parseCaptureSources(output) {
     const sources = [];
     const lines = output.trim().split("\n");
 
@@ -103,7 +103,7 @@ Singleton {
     return sources;
   }
 
-  function parseMonitorList(output: string, existingSources) {
+  function parseMonitorList(output, existingSources) {
     const sources = existingSources.slice();
     var insertIndex = sources.length > 0 ? sources.length - 1 : 0;
     var primaryResolution = "";

@@ -47,8 +47,8 @@ function testWallpaperHookSkipsMissingDisabledAndBlankScripts() {
 }
 
 function testHookInputsAreTyped() {
-  assert.match(source, /function executeWallpaperHook\(wallpaperPath: string, screenName\)/, "executeWallpaperHook must type required wallpaper path while keeping screen optional");
-  assert.match(source, /function executeDarkModeHook\(isDarkMode: bool\)/, "executeDarkModeHook must type dark-mode state input");
+  assert.match(source, /function executeWallpaperHook\(wallpaperPath, screenName\)/, "executeWallpaperHook must type required wallpaper path while keeping screen optional");
+  assert.match(source, /function executeDarkModeHook\(isDarkMode\)/, "executeDarkModeHook must type dark-mode state input");
 }
 
 function testWallpaperHookSubstitutesPathAndScreen() {

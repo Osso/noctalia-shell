@@ -6,9 +6,9 @@ const { extractFunctionBody, readQml } = require("./qml-test-utils");
 function testWallhavenUrlSignaturesAreTyped() {
   const source = readQml("Services/UI/WallhavenService.qml");
 
-  assert.match(source, /function getWallpaperUrl\(wallpaper\): string/, "getWallpaperUrl must declare string output");
-  assert.match(source, /function search\(query: string, page: int\)/, "search must type query and page inputs");
-  assert.match(source, /function getThumbnailUrl\(wallpaper, size: string\): string/, "getThumbnailUrl must type the size input and declare string output");
+  assert.match(source, /function getWallpaperUrl\(wallpaper\)/, "getWallpaperUrl must declare string output");
+  assert.match(source, /function search\(query, page\)/, "search must type query and page inputs");
+  assert.match(source, /function getThumbnailUrl\(wallpaper, size\)/, "getThumbnailUrl must type the size input and declare string output");
 }
 
 function testWallhavenSearchQueryGuards() {

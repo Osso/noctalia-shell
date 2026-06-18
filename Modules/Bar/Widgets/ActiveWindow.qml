@@ -82,7 +82,7 @@ Item {
     return CompositorService.getFocusedWindowTitle() || "No active window";
   }
 
-  function shouldShowWidget(currentOpacity: real) {
+  function shouldShowWidget(currentOpacity) {
     return (hideMode !== "hidden" || hasFocusedWindow) || currentOpacity > 0;
   }
 
@@ -107,7 +107,7 @@ Item {
     contextMenu.openAtItem(root, pos.x, pos.y);
   }
 
-  function handleContextMenuAction(action: string) {
+  function handleContextMenuAction(action) {
     closePopupMenuWindow();
 
     if (action === "widget-settings") {

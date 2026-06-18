@@ -171,7 +171,7 @@ Singleton {
 
   // -------------------------------------------------------------------
   // Get specific monitor wallpaper data
-  function getMonitorConfig(screenName: string) {
+  function getMonitorConfig(screenName) {
     var monitors = Settings.data.wallpaper.monitorDirectories;
     if (monitors !== undefined) {
       for (var i = 0; i < monitors.length; i++) {
@@ -184,7 +184,7 @@ Singleton {
 
   // -------------------------------------------------------------------
   // Get specific monitor directory
-  function getMonitorDirectory(screenName: string) {
+  function getMonitorDirectory(screenName) {
     if (!Settings.data.wallpaper.enableMultiMonitorDirectories) {
       return root.defaultDirectory;
     }
@@ -200,7 +200,7 @@ Singleton {
 
   // -------------------------------------------------------------------
   // Set specific monitor directory
-  function setMonitorDirectory(screenName: string, directory: string) {
+  function setMonitorDirectory(screenName, directory) {
     var monitors = Settings.data.wallpaper.monitorDirectories || [];
     var found = false;
 
@@ -232,12 +232,12 @@ Singleton {
 
   // -------------------------------------------------------------------
   // Get specific monitor wallpaper - now from cache
-  function getWallpaper(screenName: string) {
+  function getWallpaper(screenName) {
     return currentWallpapers[screenName] || root.defaultWallpaper;
   }
 
   // -------------------------------------------------------------------
-  function changeWallpaper(path: string, screenName) {
+  function changeWallpaper(path, screenName) {
     if (screenName !== undefined) {
       _setWallpaper(screenName, path);
     } else {
@@ -249,7 +249,7 @@ Singleton {
   }
 
   // -------------------------------------------------------------------
-  function _setWallpaper(screenName: string, path: string) {
+  function _setWallpaper(screenName, path) {
     if (path === "" || path === undefined) {
       return;
     }
@@ -330,7 +330,7 @@ Singleton {
   }
 
   // -------------------------------------------------------------------
-  function getWallpapersList(screenName: string) {
+  function getWallpapersList(screenName) {
     if (screenName != undefined && wallpaperLists[screenName] != undefined) {
       return wallpaperLists[screenName];
     }
@@ -374,7 +374,7 @@ Singleton {
   property var recursiveProcesses: ({})
 
   // -------------------------------------------------------------------
-  function scanDirectoryRecursive(screenName: string, directory: string) {
+  function scanDirectoryRecursive(screenName, directory) {
     if (!directory || directory === "") {
       Logger.w("Wallpaper", "Empty directory for", screenName);
       wallpaperLists[screenName] = [];

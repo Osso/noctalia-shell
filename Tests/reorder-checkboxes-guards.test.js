@@ -95,8 +95,8 @@ function testMoveItemCopiesAndReordersModel() {
 }
 
 function testReorderCheckboxIndexInputsAreTyped() {
-  assert.match(source, /function toggleItem\(index: int\)/, "toggleItem must type the index input");
-  assert.match(source, /function moveItem\(fromIndex: int, toIndex: int\)/, "moveItem must type source and target index inputs");
+  assert.match(source, /function toggleItem\(index\)/, "toggleItem must type the index input");
+  assert.match(source, /function moveItem\(fromIndex, toIndex\)/, "moveItem must type source and target index inputs");
 }
 
 const tests = [

@@ -46,7 +46,7 @@ Singleton {
     }
   }
 
-  function setSortBy(newSort: string) {
+  function setSortBy(newSort) {
     if (sortBy !== newSort) {
       sortBy = newSort;
       applySorting();
@@ -63,7 +63,7 @@ Singleton {
     psProcess.running = true;
   }
 
-  function killProcess(pid: int) {
+  function killProcess(pid) {
     if (pid > 0) {
       Logger.i("ProcessService", "Killing process:", pid);
       killProcessCmd.command = ["kill", pid.toString()];
@@ -71,7 +71,7 @@ Singleton {
     }
   }
 
-  function forceKillProcess(pid: int) {
+  function forceKillProcess(pid) {
     if (pid > 0) {
       Logger.i("ProcessService", "Force killing process:", pid);
       killProcessCmd.command = ["kill", "-9", pid.toString()];
@@ -80,12 +80,12 @@ Singleton {
   }
 
   // Format CPU usage for display
-  function formatCpu(cpu: real) {
+  function formatCpu(cpu) {
     return cpu.toFixed(1) + "%";
   }
 
   // Format memory for display
-  function formatMemory(memKB: real) {
+  function formatMemory(memKB) {
     if (memKB < 1024) {
       return memKB.toFixed(0) + " KB";
     } else if (memKB < 1024 * 1024) {
@@ -96,7 +96,7 @@ Singleton {
   }
 
   // Get icon name based on process command
-  function getProcessIcon(command: string) {
+  function getProcessIcon(command) {
     const cmd = command.toLowerCase();
     if (cmd.includes("firefox") || cmd.includes("chrome") || cmd.includes("chromium") || cmd.includes("brave")) {
       return "web";

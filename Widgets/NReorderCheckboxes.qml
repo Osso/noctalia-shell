@@ -22,7 +22,7 @@ Item {
 
   implicitHeight: listView.contentHeight
 
-  function toggleItem(index: int) {
+  function toggleItem(index) {
     if (index < 0 || index >= root.model.length)
       return;
     var item = root.model[index];
@@ -39,7 +39,7 @@ Item {
     root.itemToggled(index, newModel[index].enabled);
   }
 
-  function moveItem(fromIndex: int, toIndex: int) {
+  function moveItem(fromIndex, toIndex) {
     if (fromIndex === toIndex)
       return;
     if (fromIndex < 0 || fromIndex >= root.model.length)

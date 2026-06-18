@@ -236,7 +236,7 @@ Singleton {
     return security && security !== "--" && security.trim() !== "";
   }
 
-  function parseNetworkScanOutput(text: string, existingProfiles, knownNetworks, lastConnected: string) {
+  function parseNetworkScanOutput(text, existingProfiles, knownNetworks, lastConnected) {
     const lines = text.split("\n");
     const networksMap = {};
     var nextLastConnected = lastConnected;

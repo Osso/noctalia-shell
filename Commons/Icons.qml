@@ -39,7 +39,7 @@ Singleton {
   }
 
   // ---------------------------------------
-  function get(iconName: string) {
+  function get(iconName) {
     // Check in aliases first
     if (aliases[iconName] !== undefined) {
       iconName = aliases[iconName];

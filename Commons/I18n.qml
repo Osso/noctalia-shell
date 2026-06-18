@@ -100,7 +100,7 @@ Singleton {
   }
 
   // -------------------------------------------
-  function parseDirectoryListing(output: string) {
+  function parseDirectoryListing(output) {
     var languages = [];
 
     try {
@@ -202,7 +202,7 @@ Singleton {
   }
 
   // -------------------------------------------
-  function setLanguage(newLangCode: string, fullLocale) {
+  function setLanguage(newLangCode, fullLocale) {
     if (typeof fullLocale === "undefined") {
       fullLocale = newLangCode;
     }
@@ -236,7 +236,7 @@ Singleton {
 
   // -------------------------------------------
   // Check if a translation exists
-  function hasTranslation(key: string) {
+  function hasTranslation(key) {
     if (!isLoaded)
       return false;
 
@@ -284,7 +284,7 @@ Singleton {
 
   // -------------------------------------------
   // Main translation function
-  function tr(key: string, interpolations) {
+  function tr(key, interpolations) {
     if (typeof interpolations === "undefined")
       interpolations = {};
 
@@ -346,7 +346,7 @@ Singleton {
 
   // -------------------------------------------
   // Plural translation function
-  function trp(key: string, count: int, defaultSingular, defaultPlural, interpolations) {
+  function trp(key, count, defaultSingular, defaultPlural, interpolations) {
     if (typeof defaultSingular === "undefined")
       defaultSingular = "";
     if (typeof defaultPlural === "undefined")

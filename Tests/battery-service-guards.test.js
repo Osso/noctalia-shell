@@ -11,7 +11,7 @@ function qmlFunction(functionName, ...argNames) {
 }
 
 function testBatteryServiceIconSignatureIsTyped() {
-  assert.match(source, /function getIcon\(percent: int, charging: bool, isReady: bool\)/, "getIcon must type percent, charging, and ready-state inputs");
+  assert.match(source, /function getIcon\(percent, charging, isReady\)/, "getIcon must type percent, charging, and ready-state inputs");
 }
 
 function testBatteryServiceIconThresholdsAndReadiness() {

@@ -21,7 +21,7 @@ Singleton {
 
   readonly property string displayName: resolveDisplayName(envRealName, realName, username)
 
-  function resolveDisplayName(explicitRealName: string, resolvedRealName: string, userName: string) {
+  function resolveDisplayName(explicitRealName, resolvedRealName, userName) {
     if (explicitRealName && explicitRealName.length > 0) {
       return explicitRealName;
     }
@@ -92,7 +92,7 @@ Singleton {
     probe.running = true;
   }
 
-  function parseOsRelease(rawText: string) {
+  function parseOsRelease(rawText) {
     const lines = rawText.split("\n");
     const val = k => {
       const l = lines.find(x => x.startsWith(k + "="));
@@ -110,7 +110,7 @@ Singleton {
     };
   }
 
-  function handleLogoProbeExit(exitCode: int) {
+  function handleLogoProbeExit(exitCode) {
     const p = String(probe.stdout.text || "").trim();
     if (exitCode === 0 && p) {
       osLogo = `file://${p}`;

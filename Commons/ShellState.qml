@@ -82,7 +82,7 @@ Singleton {
     Logger.d("ShellState", "Loaded state file");
   }
 
-  function handleStateLoadFailed(error: int) {
+  function handleStateLoadFailed(error) {
     isLoaded = true;
 
     if (error === 2) {

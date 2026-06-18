@@ -127,14 +127,14 @@ function testWallpaperServiceLookupHelpersExecute() {
 }
 
 function testWallpaperServiceMonitorConfigUsesTypedScreenName() {
-  assert.match(source, /function getMonitorConfig\(screenName: string\)/, "getMonitorConfig must type the screen name input");
-  assert.match(source, /function getMonitorDirectory\(screenName: string\)/, "getMonitorDirectory must type the screen name input");
-  assert.match(source, /function setMonitorDirectory\(screenName: string, directory: string\)/, "setMonitorDirectory must type screen and directory inputs");
-  assert.match(source, /function getWallpaper\(screenName: string\)/, "getWallpaper must type the screen name input");
-  assert.match(source, /function changeWallpaper\(path: string, screenName\)/, "changeWallpaper must type the required path input while keeping screen optional");
-  assert.match(source, /function _setWallpaper\(screenName: string, path: string\)/, "_setWallpaper must type screen and path inputs");
-  assert.match(source, /function getWallpapersList\(screenName: string\)/, "getWallpapersList must type the screen name input");
-  assert.match(source, /function scanDirectoryRecursive\(screenName: string, directory: string\)/, "scanDirectoryRecursive must type screen and directory inputs");
+  assert.match(source, /function getMonitorConfig\(screenName\)/, "getMonitorConfig must type the screen name input");
+  assert.match(source, /function getMonitorDirectory\(screenName\)/, "getMonitorDirectory must type the screen name input");
+  assert.match(source, /function setMonitorDirectory\(screenName, directory\)/, "setMonitorDirectory must type screen and directory inputs");
+  assert.match(source, /function getWallpaper\(screenName\)/, "getWallpaper must type the screen name input");
+  assert.match(source, /function changeWallpaper\(path, screenName\)/, "changeWallpaper must type the required path input while keeping screen optional");
+  assert.match(source, /function _setWallpaper\(screenName, path\)/, "_setWallpaper must type screen and path inputs");
+  assert.match(source, /function getWallpapersList\(screenName\)/, "getWallpapersList must type the screen name input");
+  assert.match(source, /function scanDirectoryRecursive\(screenName, directory\)/, "scanDirectoryRecursive must type screen and directory inputs");
 }
 
 function testWallpaperServiceRandomWallpaperExecutesScreenSelection() {

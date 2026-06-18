@@ -10,6 +10,71 @@ function readQml(relativePath) {
   return fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 }
 
+function qmlFiles() {
+  const files = [];
+  const pending = [repoRoot];
+
+  while (pending.length > 0) {
+    const current = pending.pop();
+
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      if (entry.name === ".git" || entry.name === "node_modules")
+        continue;
+
+      const fullPath = path.join(current, entry.name);
+
+      if (entry.isDirectory()) {
+        pending.push(fullPath);
+      } else if (entry.isFile() && entry.name.endsWith(".qml")) {
+        files.push(path.relative(repoRoot, fullPath));
+      }
+    }
+  }
+
+  return files.sort();
+}
+
+function testQmlFunctionSignaturesAvoidUnsupportedTypeAnnotations() {
+  const annotatedFunctions = [];
+  const annotatedReturns = [];
+
+  for (const qmlFile of qmlFiles()) {
+    const lines = readQml(qmlFile).split("\n");
+    let inIpcHandler = false;
+    let ipcDepth = 0;
+
+    lines.forEach((line, index) => {
+      const opens = (line.match(/\{/g) || []).length;
+      const closes = (line.match(/\}/g) || []).length;
+
+      if (/\bIpcHandler\s*\{/.test(line)) {
+        inIpcHandler = true;
+        ipcDepth = opens - closes;
+        return;
+      }
+
+      if (inIpcHandler) {
+        ipcDepth += opens - closes;
+        if (ipcDepth <= 0)
+          inIpcHandler = false;
+        return;
+      }
+
+      if (/\bfunction\s+[A-Za-z_$][\w$]*\s*\([^)]*:\s*[A-Za-z_]/.test(line)
+        || /\bfunction\s*\([^)]*:\s*[A-Za-z_]/.test(line)) {
+        annotatedFunctions.push(`${qmlFile}:${index + 1}: ${line.trim()}`);
+      }
+
+      if (/\)\s*:\s*[A-Za-z_][A-Za-z0-9_<>]*\s*\{/.test(line)) {
+        annotatedReturns.push(`${qmlFile}:${index + 1}: ${line.trim()}`);
+      }
+    });
+  }
+
+  assert.deepEqual(annotatedFunctions, [], "Quickshell 0.3.0 does not support JavaScript function parameter type annotations");
+  assert.deepEqual(annotatedReturns, [], "Quickshell 0.3.0 does not support JavaScript function return type annotations");
+}
+
 function assertPropertyType(relativePath, propertyName, expectedType) {
   const source = readQml(relativePath);
   const declaration = new RegExp(`\\bproperty\\s+${expectedType}\\s+${propertyName}\\b`);
@@ -50,8 +115,8 @@ function testPopupAnchorItemsAreTyped() {
 function testPopupContextMenuOpenHelpersAreTyped() {
   const source = readQml("Widgets/NPopupContextMenu.qml");
 
-  assert.match(source, /function\s+openAt\(x:\s*real,\s*y:\s*real,\s*item:\s*Item\)/, "NPopupContextMenu.openAt must type coordinates and anchor item");
-  assert.match(source, /function\s+openAtItem\(item:\s*Item,\s*mouseX:\s*real,\s*mouseY:\s*real\)/, "NPopupContextMenu.openAtItem must type anchor item and mouse coordinates");
+  assert.match(source, /function\s+openAt\(x,\s*y,\s*item\)/, "NPopupContextMenu.openAt must accept coordinates and anchor item");
+  assert.match(source, /function\s+openAtItem\(item,\s*mouseX,\s*mouseY\)/, "NPopupContextMenu.openAtItem must accept anchor item and mouse coordinates");
 }
 
 function testTooltipTargetItemIsTyped() {
@@ -76,8 +141,8 @@ function testTooltipServiceTracksTypedTooltipInstances() {
 
   assertPropertyType(tooltipServiceFile, "activeTooltip", "Tooltip");
   assertPropertyType(tooltipServiceFile, "pendingTooltip", "Tooltip");
-  assert.match(source, /function show\(target: Item, text: string, direction, delay, fontFamily\)/, "TooltipService.show must type required target and text inputs while keeping optional display inputs flexible");
-  assert.match(source, /function updateText\(newText: string\)/, "TooltipService.updateText must type replacement tooltip text as a string");
+  assert.match(source, /function show\(target, text, direction, delay, fontFamily\)/, "TooltipService.show must accept target and text inputs while keeping optional display inputs flexible");
+  assert.match(source, /function updateText\(newText\)/, "TooltipService.updateText must accept replacement tooltip text");
 }
 
 function testSmartPanelButtonItemIsTyped() {
@@ -191,7 +256,7 @@ function testWeatherCardForecastDelegateIndexIsTyped() {
 function testMediaCardWallpaperChangeInputsAreTyped() {
   const source = readQml("Modules/Cards/MediaCard.qml");
 
-  assert.match(source, /function onWallpaperChanged\(screenName: string, path: string\)/, "MediaCard wallpaper change handler must type signal string payloads");
+  assert.match(source, /function onWallpaperChanged\(screenName, path\)/, "MediaCard wallpaper change handler must accept signal payloads");
 }
 
 function testLockScreenForecastDelegateIndexIsTyped() {
@@ -269,7 +334,7 @@ function testDateTimeTokenDelegateRolesAreTyped() {
   const tokenDelegate = /delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*tokenDelegate[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+category[\s\S]*?required\s+property\s+string\s+token[\s\S]*?required\s+property\s+string\s+description[\s\S]*?root\.tokenClicked\(token\)[\s\S]*?getCategoryColor\(category\)[\s\S]*?text:\s*description[\s\S]*?toString\(root\.sampleDate,\s*token\)/;
 
   assert.match(source, tokenDelegate, "NDateTimeTokens delegate must type scalar token roles");
-  assert.match(source, /function getCategoryColor\(category: string\)/, "NDateTimeTokens category color helper must type category input");
+  assert.match(source, /function getCategoryColor\(category\)/, "NDateTimeTokens category color helper must accept category input");
   assert.doesNotMatch(source, /required\s+property\s+var\s+modelData/, "NDateTimeTokens delegate must not keep unused modelData");
   assert.doesNotMatch(source, /modelData\.(?:category|token|description)/, "NDateTimeTokens delegate must use typed roles instead of modelData.*");
 }
@@ -365,10 +430,9 @@ function testSectionEditorWidgetIdsAreTyped() {
 
 function testSessionMenuPowerOptionRolesAreTyped() {
   const source = readQml("Modules/Panels/SessionMenu/SessionMenu.qml");
-  const powerOptionDelegate = /Repeater\s*\{[\s\S]*?model:\s*powerOptions[\s\S]*?delegate:\s*PowerButton\s*\{[\s\S]*?required\s+property\s+string\s+icon[\s\S]*?required\s+property\s+string\s+title[\s\S]*?required\s+property\s+string\s+action[\s\S]*?required\s+property\s+bool\s+isShutdown[\s\S]*?startTimer\(action\)[\s\S]*?pending:\s*timerActive\s*&&\s*pendingAction\s*===\s*action/;
+  const powerOptionDelegate = /Repeater\s*\{[\s\S]*?model:\s*powerOptions[\s\S]*?delegate:\s*PowerButton\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?readonly\s+property\s+string\s+action:\s*modelData\s*\?\s*\(modelData\.action\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+bool\s+optionIsShutdown:\s*modelData\s*\?\s*modelData\.isShutdown\s*===\s*true\s*:\s*false[\s\S]*?icon:\s*modelData\s*\?\s*\(modelData\.icon\s*\|\|\s*""\)\s*:\s*""[\s\S]*?title:\s*modelData\s*\?\s*\(modelData\.title\s*\|\|\s*""\)\s*:\s*""[\s\S]*?isShutdown:\s*optionIsShutdown[\s\S]*?isSelected:\s*index\s*===\s*selectedIndex[\s\S]*?startTimer\(action\)[\s\S]*?pending:\s*timerActive\s*&&\s*pendingAction\s*===\s*action/;
 
-  assert.match(source, powerOptionDelegate, "SessionMenu power option delegate must type scalar roles");
-  assert.doesNotMatch(source, /modelData\.(?:icon|title|action|isShutdown)/, "SessionMenu power option delegate must use typed roles instead of modelData.*");
+  assert.match(source, powerOptionDelegate, "SessionMenu power option delegate must expose null-safe aliases from the JS object model");
 }
 
 function testCalendarMonthDayDelegateRolesAreTyped() {
@@ -474,8 +538,8 @@ function testContextMenuDelegateRolesAreTyped() {
   const source = readQml("Widgets/NContextMenu.qml");
   const delegateRoles = /delegate:\s*ItemDelegate\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+bool\s+itemVisible:\s+modelData\s*\?\s*modelData\.visible\s*!==\s*false\s*:\s*false[\s\S]*?readonly\s+property\s+bool\s+itemEnabled:\s+modelData\s*\?\s*modelData\.enabled\s*!==\s*false\s*:\s*false[\s\S]*?readonly\s+property\s+string\s+itemIcon:\s+modelData\s*\?\s*\(modelData\.icon\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+bool\s+hasIcon:\s*itemIcon\s*!==\s*""[\s\S]*?readonly\s+property\s+string\s+itemText:\s+modelData\s*\?\s*\(modelData\.label\s*\|\|\s*modelData\.text\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+itemAction:\s+modelData\s*\?\s*\(modelData\.action\s*\|\|\s*modelData\.key\s*\|\|\s*index\.toString\(\)\)\s*:\s*index\.toString\(\)/;
 
-  assert.match(source, /function openAt\(x: real, y: real\)/, "NContextMenu openAt must type coordinate inputs");
-  assert.match(source, /function openAtItem\(item: Item, mouseX: real, mouseY: real\)/, "NContextMenu openAtItem must type anchor and coordinate inputs");
+  assert.match(source, /function openAt\(x, y\)/, "NContextMenu openAt must accept coordinate inputs");
+  assert.match(source, /function openAtItem\(item, mouseX, mouseY\)/, "NContextMenu openAtItem must accept anchor and coordinate inputs");
   assert.match(source, delegateRoles, "NContextMenu delegate must declare null-safe typed aliases for menu entry fields");
   assert.match(source, /height:\s*itemVisible\s*\?\s*root\.itemHeight\s*:\s*0/, "NContextMenu delegate height must use itemVisible");
   assert.match(source, /visible:\s*itemVisible/, "NContextMenu delegate visible binding must use itemVisible");
@@ -1107,6 +1171,7 @@ function testWiFiNetworkDelegateAliasesAreTyped() {
 }
 
 const tests = [
+  testQmlFunctionSignaturesAvoidUnsupportedTypeAnnotations,
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
   testPopupContextMenuOpenHelpersAreTyped,

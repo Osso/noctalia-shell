@@ -134,7 +134,7 @@ Singleton {
     delayedRefreshTimer.restart();
   }
 
-  function parseRefreshOutput(rawOutput: string) {
+  function parseRefreshOutput(rawOutput) {
     const lines = rawOutput.split("\n");
     const map = {};
     for (let i = 0; i < lines.length; ++i) {

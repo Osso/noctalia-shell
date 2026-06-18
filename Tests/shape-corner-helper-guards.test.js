@@ -6,12 +6,12 @@ const { extractFunctionBody, readQml } = require("./qml-test-utils");
 function testShapeCornerHelperSignaturesAreTyped() {
   const source = readQml("Modules/MainScreen/Backgrounds/ShapeCornerHelper.qml");
 
-  assert.match(source, /function getMultX\(cornerState: int\): int/, "getMultX must type corner state input and multiplier output");
-  assert.match(source, /function getMultY\(cornerState: int\): int/, "getMultY must type corner state input and multiplier output");
-  assert.match(source, /function getArcDirection\(multX: int, multY: int\): int/, "getArcDirection must type multiplier inputs and arc direction output");
-  assert.match(source, /function getArcDirectionFromState\(cornerState: int\): int/, "getArcDirectionFromState must type corner state input and arc direction output");
-  assert.match(source, /function getFlattenedRadius\(dimension: real, requestedRadius: real\): real/, "getFlattenedRadius must type dimensions and radius output");
-  assert.match(source, /function shouldFlatten\(width: real, height: real, radius: real\): bool/, "shouldFlatten must type dimensions and boolean output");
+  assert.match(source, /function getMultX\(cornerState\)/, "getMultX must type corner state input and multiplier output");
+  assert.match(source, /function getMultY\(cornerState\)/, "getMultY must type corner state input and multiplier output");
+  assert.match(source, /function getArcDirection\(multX, multY\)/, "getArcDirection must type multiplier inputs and arc direction output");
+  assert.match(source, /function getArcDirectionFromState\(cornerState\)/, "getArcDirectionFromState must type corner state input and arc direction output");
+  assert.match(source, /function getFlattenedRadius\(dimension, requestedRadius\)/, "getFlattenedRadius must type dimensions and radius output");
+  assert.match(source, /function shouldFlatten\(width, height, radius\)/, "shouldFlatten must type dimensions and boolean output");
 }
 
 function testShapeCornerHelperMultiplierGuards() {

@@ -362,7 +362,7 @@ Rectangle {
     }
   }
 
-  function getCategoryColor(category: string) {
+  function getCategoryColor(category) {
     switch (category) {
     case "Year":
       return [Color.mPrimary, Color.mOnPrimary];

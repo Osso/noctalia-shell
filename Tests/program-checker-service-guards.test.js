@@ -110,15 +110,15 @@ function testProgramCheckerParsesDetectedClientOutput() {
     { name: "code", configPath: "~/.config/Code" },
   ];
 
-  assert.match(source, /function parseDetectedClients\(rawOutput: string, clients\)/, "parseDetectedClients must type detector stdout input");
+  assert.match(source, /function parseDetectedClients\(rawOutput, clients\)/, "parseDetectedClients must type detector stdout input");
   assert.deepEqual(parseDetectedClients({}, " vesktop\nmissing\tcode vesktop ", clients), [clients[0], clients[2]]);
   assert.deepEqual(parseDetectedClients({}, "   \n\t", clients), []);
 }
 
 function testProgramCheckerHandlesShellSensitiveClientFixtures() {
-  assert.match(source, /function shellQuote\(value: string\)/, "ProgramChecker must shell-quote dynamic detector values");
-  assert.match(source, /function clientConfigPathExpression\(configPath: string, suffix: string\)/, "ProgramChecker must build quoted client config path expressions");
-  assert.match(source, /function buildClientDetectionScript\(clients, requireThemesFolder: bool\)/, "ProgramChecker must build client detector scripts through a shared helper");
+  assert.match(source, /function shellQuote\(value\)/, "ProgramChecker must shell-quote dynamic detector values");
+  assert.match(source, /function clientConfigPathExpression\(configPath, suffix\)/, "ProgramChecker must build quoted client config path expressions");
+  assert.match(source, /function buildClientDetectionScript\(clients, requireThemesFolder\)/, "ProgramChecker must build client detector scripts through a shared helper");
 
   const detectDiscordClient = qmlFunction("detectDiscordClient");
   const detectCodeClient = qmlFunction("detectCodeClient");
@@ -295,7 +295,7 @@ function testProgramCheckerHandlesCheckerExit() {
   };
   ctx.root = ctx;
 
-  assert.match(source, /function handleCheckerExit\(exitCode: int\)/, "handleCheckerExit must type the process exit code");
+  assert.match(source, /function handleCheckerExit\(exitCode\)/, "handleCheckerExit must type the process exit code");
   handleCheckerExit(ctx, 0);
   assert.equal(ctx.kittyAvailable, true);
   assert.equal(ctx.checker.running, false);

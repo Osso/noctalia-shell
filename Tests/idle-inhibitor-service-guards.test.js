@@ -58,11 +58,11 @@ function testIdleInhibitorRegistryAndStateTransitions() {
 function testIdleInhibitorScalarInputsAreTyped() {
   const source = readQml("Services/Power/IdleInhibitorService.qml");
 
-  assert.match(source, /function addInhibitor\(id: string, reason: string = "Application request"\)/, "addInhibitor must type id and reason inputs");
-  assert.match(source, /function removeInhibitor\(id: string\)/, "removeInhibitor must type inhibitor ids");
-  assert.match(source, /function updateInhibition\(newReason: string = reason\)/, "updateInhibition must type reason input");
-  assert.match(source, /function startInhibition\(newReason: string\)/, "startInhibition must type reason input");
-  assert.match(source, /function changeTimeout\(delta: int\)/, "changeTimeout must type timeout deltas");
+  assert.match(source, /function addInhibitor\(id, reason = "Application request"\)/, "addInhibitor must accept id and reason inputs");
+  assert.match(source, /function removeInhibitor\(id\)/, "removeInhibitor must type inhibitor ids");
+  assert.match(source, /function updateInhibition\(newReason = reason\)/, "updateInhibition must accept reason input");
+  assert.match(source, /function startInhibition\(newReason\)/, "startInhibition must type reason input");
+  assert.match(source, /function changeTimeout\(delta\)/, "changeTimeout must type timeout deltas");
 }
 
 function testIdleInhibitorBackendLaunchersAndManualToggle() {

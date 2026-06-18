@@ -11,9 +11,9 @@ function qmlFunction(functionName, ...argNames) {
 }
 
 function testTimerCardFunctionSignaturesAreTyped() {
-  assert.match(source, /function formatTime\(seconds: int, hideHoursWhenZero: bool\): string/, "formatTime must type duration input and string output");
-  assert.match(source, /function formatTimeFromDigits\(digits: string\): string/, "formatTimeFromDigits must type digit input and string output");
-  assert.match(source, /function parseDigitsToTime\(digits: string\)/, "parseDigitsToTime must type digit input");
+  assert.match(source, /function formatTime\(seconds, hideHoursWhenZero\)/, "formatTime must type duration input and string output");
+  assert.match(source, /function formatTimeFromDigits\(digits\)/, "formatTimeFromDigits must type digit input and string output");
+  assert.match(source, /function parseDigitsToTime\(digits\)/, "parseDigitsToTime must type digit input");
   assert.match(source, /function applyTimeFromBuffer\(\)/, "applyTimeFromBuffer must remain an explicit callable");
   assert.match(source, /function startTimer\(\)/, "startTimer must remain an explicit callable");
   assert.match(source, /function pauseTimer\(\)/, "pauseTimer must remain an explicit callable");

@@ -336,12 +336,12 @@ Singleton {
 
   // ------------------------------
   // Helper function to get widget component by name
-  function getWidget(id: string) {
+  function getWidget(id) {
     return widgets[id] || null;
   }
 
   // Helper function to check if widget exists
-  function hasWidget(id: string) {
+  function hasWidget(id) {
     return id in widgets;
   }
 
@@ -351,7 +351,7 @@ Singleton {
   }
 
   // Helper function to check if widget has user settings
-  function widgetHasUserSettings(id: string) {
+  function widgetHasUserSettings(id) {
     return (widgetMetadata[id] !== undefined) && (widgetMetadata[id].allowUserSettings === true);
   }
 }

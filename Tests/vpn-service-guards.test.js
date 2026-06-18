@@ -155,7 +155,7 @@ function testVpnScheduleRefreshRestartsTimer() {
 function testVpnParsesRefreshOutput() {
   const parseRefreshOutput = qmlFunction("parseRefreshOutput", "rawOutput");
 
-  assert.match(source, /function parseRefreshOutput\(rawOutput: string\)/, "parseRefreshOutput must type raw nmcli output");
+  assert.match(source, /function parseRefreshOutput\(rawOutput\)/, "parseRefreshOutput must type raw nmcli output");
   assert.deepEqual(parseRefreshOutput({}, [
     "Work:VPN:11111111-1111-1111-1111-111111111111:vpn:tun0",
     "Wire:Guard:22222222-2222-2222-2222-222222222222:wireguard:--",

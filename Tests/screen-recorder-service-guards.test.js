@@ -76,8 +76,8 @@ function testScreenRecorderRefreshCaptureSourcesStartsBothQueries() {
 }
 
 function testScreenRecorderParsesCaptureSourcesAndMonitorList() {
-  assert.match(source, /function parseCaptureSources\(output: string\)/, "capture source parser must type raw output");
-  assert.match(source, /function parseMonitorList\(output: string, existingSources\)/, "monitor list parser must type raw output and accept dynamic existing sources");
+  assert.match(source, /function parseCaptureSources\(output\)/, "capture source parser must type raw output");
+  assert.match(source, /function parseMonitorList\(output, existingSources\)/, "monitor list parser must type raw output and accept dynamic existing sources");
   assert.match(source, /root\.captureSources = root\.parseCaptureSources\(this\.text\)/, "capture options collector must use parser helper");
   assert.match(source, /const monitorResult = root\.parseMonitorList\(this\.text, root\.captureSources\)/, "monitor collector must use parser helper");
 

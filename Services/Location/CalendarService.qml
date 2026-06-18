@@ -201,7 +201,7 @@ Singleton {
     }
   }
 
-  function handleCalendarsOutput(output: string) {
+  function handleCalendarsOutput(output) {
     try {
       const result = JSON.parse(output.trim());
       root.calendars = result;
@@ -219,7 +219,7 @@ Singleton {
     }
   }
 
-  function handleEventsOutput(output: string) {
+  function handleEventsOutput(output) {
     root.loading = false;
 
     try {
@@ -241,7 +241,7 @@ Singleton {
     }
   }
 
-  function handleEventsError(output: string) {
+  function handleEventsError(output) {
     root.loading = false;
 
     if (!output.trim()) {

@@ -32,12 +32,12 @@ function testProcessServiceLifecycleAndCommands() {
 }
 
 function testProcessServiceScalarInputsAreTyped() {
-  assert.match(source, /function setSortBy\(newSort: string\)/, "setSortBy must type the sort key input");
-  assert.match(source, /function killProcess\(pid: int\)/, "killProcess must type process IDs");
-  assert.match(source, /function forceKillProcess\(pid: int\)/, "forceKillProcess must type process IDs");
-  assert.match(source, /function formatCpu\(cpu: real\)/, "formatCpu must type CPU usage as a real number");
-  assert.match(source, /function formatMemory\(memKB: real\)/, "formatMemory must type memory as a real number of KB");
-  assert.match(source, /function getProcessIcon\(command: string\)/, "getProcessIcon must type the command string");
+  assert.match(source, /function setSortBy\(newSort\)/, "setSortBy must type the sort key input");
+  assert.match(source, /function killProcess\(pid\)/, "killProcess must type process IDs");
+  assert.match(source, /function forceKillProcess\(pid\)/, "forceKillProcess must type process IDs");
+  assert.match(source, /function formatCpu\(cpu\)/, "formatCpu must type CPU usage as a real number");
+  assert.match(source, /function formatMemory\(memKB\)/, "formatMemory must type memory as a real number of KB");
+  assert.match(source, /function getProcessIcon\(command\)/, "getProcessIcon must type the command string");
 }
 
 function testProcessServiceFormattingAndIcons() {

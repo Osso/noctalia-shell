@@ -99,7 +99,7 @@ Singleton {
     }
   }
 
-  function publishFanSensor(hwmonIndex: int, sensorName: string) {
+  function publishFanSensor(hwmonIndex, sensorName) {
     root.fanSensorName = sensorName;
     root.fanHwmonPath = `/sys/class/hwmon/hwmon${hwmonIndex}`;
     Logger.i("FanService", `Found ${root.fanSensorName} fan sensor at ${root.fanHwmonPath}`);
@@ -187,7 +187,7 @@ Singleton {
   }
 
   // Helper function to get average RPM
-  function getAverageRpm(): int {
+  function getAverageRpm() {
     if (fans.length === 0) return 0;
     let sum = 0;
     fans.forEach(f => sum += f.rpm);
@@ -195,7 +195,7 @@ Singleton {
   }
 
   // Helper function to get max RPM
-  function getMaxRpm(): int {
+  function getMaxRpm() {
     if (fans.length === 0) return 0;
     let max = 0;
     fans.forEach(f => { if (f.rpm > max) max = f.rpm; });
@@ -203,7 +203,7 @@ Singleton {
   }
 
   // Helper to format RPM for display
-  function formatRpm(rpm: int): string {
+  function formatRpm(rpm) {
     if (rpm < 1000) return rpm + "";
     return (rpm / 1000).toFixed(1) + "k";
   }

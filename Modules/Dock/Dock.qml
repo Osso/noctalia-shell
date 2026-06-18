@@ -390,7 +390,7 @@ Loader {
                 height: parent.height - (Style.marginM * 2)
                 anchors.centerIn: parent
 
-                function getAppIcon(appData): string {
+                function getAppIcon(appData) {
                   if (!appData || !appData.appId)
                     return "";
                   return ThemeIcons.iconForAppId(appData.appId.toLowerCase());

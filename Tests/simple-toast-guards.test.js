@@ -50,7 +50,7 @@ function testSimpleToastShowStoresFieldsAndStartsTimer() {
   const show = qmlFunction("show", "msg", "desc", "msgIcon", "msgType", "msgDuration");
   const ctx = createContext();
 
-  assert.match(source, /function show\(msg: string, desc, msgIcon, msgType, msgDuration\)/, "show must type the required message input while keeping optional display inputs flexible");
+  assert.match(source, /function show\(msg, desc, msgIcon, msgType, msgDuration\)/, "show must type the required message input while keeping optional display inputs flexible");
 
   show(ctx, "Saved", "Done", "check", "notice", 2500);
 

@@ -184,9 +184,9 @@ function testCalendarFormatDateTimeDelegatesToQt() {
 }
 
 function testCalendarProcessParsingAndFallbacks() {
-  assert.match(source, /function handleCalendarsOutput\(output: string\)/, "calendar list stdout helper must type raw output");
-  assert.match(source, /function handleEventsOutput\(output: string\)/, "event stdout helper must type raw output");
-  assert.match(source, /function handleEventsError\(output: string\)/, "event stderr helper must type raw output");
+  assert.match(source, /function handleCalendarsOutput\(output\)/, "calendar list stdout helper must type raw output");
+  assert.match(source, /function handleEventsOutput\(output\)/, "event stdout helper must type raw output");
+  assert.match(source, /function handleEventsError\(output\)/, "event stderr helper must type raw output");
   assert.match(source, /root\.handleCalendarsOutput\(text\)/, "calendar list process must route stdout through helper");
   assert.match(source, /root\.handleEventsOutput\(text\)/, "event process must route stdout through helper");
   assert.match(source, /root\.handleEventsError\(text\)/, "event process must route stderr through helper");

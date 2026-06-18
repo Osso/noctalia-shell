@@ -21,7 +21,7 @@ NBox {
   readonly property int firstDayOfWeek: Settings.data.location.firstDayOfWeek === -1 ? I18n.locale.firstDayOfWeek : Settings.data.location.firstDayOfWeek
 
   // Helper function to calculate ISO week number
-  function getISOWeekNumber(date: date) {
+  function getISOWeekNumber(date) {
     const target = new Date(date.valueOf());
     const dayNr = (date.getDay() + 6) % 7;
     target.setDate(target.getDate() - dayNr + 3);
@@ -141,7 +141,7 @@ NBox {
       spacing: 0
 
       // Helper functions
-      function hasEventsOnDate(year: int, month: int, day: int) {
+      function hasEventsOnDate(year, month, day) {
         if (!CalendarService.available || CalendarService.events.length === 0)
           return false;
         const targetDate = new Date(year, month, day);
@@ -152,7 +152,7 @@ NBox {
                                            });
       }
 
-      function getEventsForDate(year: int, month: int, day: int) {
+      function getEventsForDate(year, month, day) {
         if (!CalendarService.available || CalendarService.events.length === 0)
           return [];
         const targetDate = new Date(year, month, day);
@@ -174,7 +174,7 @@ NBox {
         return startDateOnly.getTime() !== endDateOnly.getTime();
       }
 
-      function getEventColor(event, isToday: bool) {
+      function getEventColor(event, isToday) {
         if (isMultiDayEvent(event)) {
           return isToday ? Color.mOnSecondary : Color.mTertiary;
         } else if (root.isAllDayEvent(event)) {

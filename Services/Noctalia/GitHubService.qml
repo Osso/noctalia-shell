@@ -136,7 +136,7 @@ Singleton {
     fetchFromGitHub();
   }
 
-  function parseVersionResponse(rawResponse: string) {
+  function parseVersionResponse(rawResponse) {
     if (!rawResponse || !rawResponse.trim()) {
       return {
         "version": "",
@@ -163,7 +163,7 @@ Singleton {
     };
   }
 
-  function parseContributorsResponse(rawResponse: string) {
+  function parseContributorsResponse(rawResponse) {
     if (!rawResponse || !rawResponse.trim()) {
       return {
         "contributors": [],

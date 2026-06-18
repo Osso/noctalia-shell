@@ -15,7 +15,7 @@ Singleton {
     Tooltip {}
   }
 
-  function show(target: Item, text: string, direction, delay, fontFamily) {
+  function show(target, text, direction, delay, fontFamily) {
     if (!Settings.data.ui.tooltipsEnabled) {
       return;
     }
@@ -110,7 +110,7 @@ Singleton {
     }
   }
 
-  function updateText(newText: string) {
+  function updateText(newText) {
     if (activeTooltip) {
       activeTooltip.updateText(newText);
     }

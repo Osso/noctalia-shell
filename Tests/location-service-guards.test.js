@@ -37,8 +37,8 @@ function testLocationServiceNetworkRequestGuards() {
   const fetchBody = extractFunctionBody(source, "_fetchWeather");
   const errorBody = extractFunctionBody(source, "errorCallback");
 
-  assert.match(source, /function _geocodeLocation\(locationName: string, callback, errorCallback\)/, "_geocodeLocation must type the required location name input while keeping callbacks dynamic");
-  assert.match(source, /function errorCallback\(module: string, message: string\)/, "errorCallback must type module and message inputs");
+  assert.match(source, /function _geocodeLocation\(locationName, callback, errorCallback\)/, "_geocodeLocation must type the required location name input while keeping callbacks dynamic");
+  assert.match(source, /function errorCallback\(module, message\)/, "errorCallback must type module and message inputs");
   assert.match(geocodeBody, /var geoUrl = "https:\/\/assets\.noctalia\.dev\/geocode\.php\?city=" \+ encodeURIComponent\(locationName\) \+ "&language=en&format=json"/, "_geocodeLocation must build encoded geocode URLs");
   assert.match(geocodeBody, /if \(xhr\.readyState === XMLHttpRequest\.DONE\)/, "_geocodeLocation must wait for request completion");
   assert.match(geocodeBody, /if \(xhr\.status === 200\)[\s\S]*var geoData = JSON\.parse\(xhr\.responseText\)/, "_geocodeLocation must parse successful responses");
@@ -65,9 +65,9 @@ function testLocationServiceWeatherFormattingHelpers() {
   const descriptionBody = extractFunctionBody(source, "weatherDescriptionFromCode");
   const fahrenheitBody = extractFunctionBody(source, "celsiusToFahrenheit");
 
-  assert.match(source, /function weatherSymbolFromCode\(code: int\)/, "weatherSymbolFromCode must type weather-code input");
-  assert.match(source, /function weatherDescriptionFromCode\(code: int\)/, "weatherDescriptionFromCode must type weather-code input");
-  assert.match(source, /function celsiusToFahrenheit\(celsius: real\)/, "celsiusToFahrenheit must type Celsius input");
+  assert.match(source, /function weatherSymbolFromCode\(code\)/, "weatherSymbolFromCode must type weather-code input");
+  assert.match(source, /function weatherDescriptionFromCode\(code\)/, "weatherDescriptionFromCode must type weather-code input");
+  assert.match(source, /function celsiusToFahrenheit\(celsius\)/, "celsiusToFahrenheit must type Celsius input");
   assert.match(symbolBody, /if \(code === 0\)\s+return "weather-sun"/, "weatherSymbolFromCode must map clear sky");
   assert.match(symbolBody, /if \(code === 1 \|\| code === 2\)\s+return "weather-cloud-sun"/, "weatherSymbolFromCode must map partly cloudy");
   assert.match(symbolBody, /if \(code === 3\)\s+return "weather-cloud"/, "weatherSymbolFromCode must map overcast");

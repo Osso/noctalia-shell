@@ -11,8 +11,8 @@ function qmlFunction(functionName, ...argNames) {
 }
 
 function testFanWidgetVisibilityAndSpeedTextHelpers() {
-  assert.match(source, /function shouldShowFanSpeedMetric\(enabled: bool, fanAvailable: bool\): bool/, "fan visibility helper must type boolean inputs and output");
-  assert.match(source, /function formatFanSpeedText\(maxRpm: int\): string/, "fan speed text helper must type max rpm input and output");
+  assert.match(source, /function shouldShowFanSpeedMetric\(enabled, fanAvailable\)/, "fan visibility helper must type boolean inputs and output");
+  assert.match(source, /function formatFanSpeedText\(maxRpm\)/, "fan speed text helper must type max rpm input and output");
   const shouldShowFanSpeedMetric = qmlFunction("shouldShowFanSpeedMetric", "enabled", "fanAvailable");
   const formatFanSpeedText = qmlFunction("formatFanSpeedText", "maxRpm");
   const ctx = {
@@ -30,7 +30,7 @@ function testFanWidgetVisibilityAndSpeedTextHelpers() {
 }
 
 function testFanWidgetTooltipTextHelper() {
-  assert.match(source, /function fanTooltipText\(fans\): string/, "fan tooltip helper must declare string output while keeping list input dynamic");
+  assert.match(source, /function fanTooltipText\(fans\)/, "fan tooltip helper must declare string output while keeping list input dynamic");
   const fanTooltipText = qmlFunction("fanTooltipText", "fans");
 
   assert.equal(fanTooltipText({}, []), "");

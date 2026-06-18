@@ -111,7 +111,7 @@ function testComboBoxGetItemSupportsModelGetArraysAndMissingModels() {
     },
   };
 
-  assert.match(comboBoxSource, /function getItem\(index: int\)/, "getItem must type the model index input");
+  assert.match(comboBoxSource, /function getItem\(index\)/, "getItem must type the model index input");
   assert.deepEqual(getItem(createComboBoxContext(listModel), 1), { key: "two" });
   assert.deepEqual(getItem(createComboBoxContext(rows), 0), { key: "one" });
   assert.equal(getItem(createComboBoxContext(null), 0), null);
@@ -126,7 +126,7 @@ function testComboBoxFindIndexByKeyFindsFirstMatchAndMissingSentinel() {
     { key: "alpha" },
   ]);
 
-  assert.match(comboBoxSource, /function findIndexByKey\(key: string\)/, "findIndexByKey must type the key input");
+  assert.match(comboBoxSource, /function findIndexByKey\(key\)/, "findIndexByKey must type the key input");
   assert.equal(findIndexByKey(ctx, "alpha"), 0);
   assert.equal(findIndexByKey(ctx, "beta"), 1);
   assert.equal(findIndexByKey(ctx, "missing"), -1);
