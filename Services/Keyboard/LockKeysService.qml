@@ -1,5 +1,6 @@
 pragma Singleton
 
+import Qt.labs.folderlistmodel
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -19,80 +20,171 @@ Singleton {
   // Flag to track if this is the initial check to avoid OSD triggers
   property bool initialCheckDone: false
 
-  Process {
-    id: stateCheckProcess
+  readonly property int pollIntervalMs: 1000
+  readonly property var lockKeyConfigs: [{
+      "key": "caps",
+      "label": "Caps Lock",
+      "suffix": "::capslock"
+    }, {
+      "key": "num",
+      "label": "Num Lock",
+      "suffix": "::numlock"
+    }, {
+      "key": "scroll",
+      "label": "Scroll Lock",
+      "suffix": "::scrolllock"
+    }]
 
-    property string checkCommand: " \
-caps=0; cat /sys/class/leds/input*::capslock/brightness 2>/dev/null | grep -q 1 && caps=1; echo \"caps:${caps}\"; \
-num=0; cat /sys/class/leds/input*::numlock/brightness 2>/dev/null | grep -q 1 && num=1; echo \"num:${num}\"; \
-scroll=0; cat /sys/class/leds/input*::scrolllock/brightness 2>/dev/null | grep -q 1 && scroll=1; echo \"scroll:${scroll}\"; \
-"
-    command: ["sh", "-c", stateCheckProcess.checkCommand]
+  property string capsBrightnessPath: ""
+  property string numBrightnessPath: ""
+  property string scrollBrightnessPath: ""
+  property int pendingInitialReads: 0
 
-    stdout: StdioCollector {
-      onStreamFinished: {
-        var lines = this.text.trim().split('\n');
-        for (var i = 0; i < lines.length; i++) {
-          var parts = lines[i].split(':');
-          if (parts.length === 2) {
-            var key = parts[0];
-            var newState = (parts[1] === '1');
+  function refreshAllStates() {
+    if (!initialCheckDone) {
+      pendingInitialReads = (capsBrightnessPath ? 1 : 0) + (numBrightnessPath ? 1 : 0) + (scrollBrightnessPath ? 1 : 0);
+    }
 
-            if (key === "caps") {
-              if (root.capsLockOn !== newState) {
-                root.capsLockOn = newState;
-                if (root.initialCheckDone) {
-                  root.capsLockChanged(newState);
-                }
-                Logger.i("LockKeysService", "Caps Lock:", capsLockOn);
-              }
-            } else if (key === "num") {
-              if (root.numLockOn !== newState) {
-                root.numLockOn = newState;
-                if (root.initialCheckDone) {
-                  root.numLockChanged(newState);
-                }
-                Logger.i("LockKeysService", "Num Lock:", numLockOn);
-              }
-            } else if (key === "scroll") {
-              if (root.scrollLockOn !== newState) {
-                root.scrollLockOn = newState;
-                if (root.initialCheckDone) {
-                  root.scrollLockChanged(newState);
-                }
-                Logger.i("LockKeysService", "Scroll Lock:", scrollLockOn);
-              }
-            }
-          }
+    if (capsBrightnessPath) {
+      capsBrightnessFile.reload();
+    }
+    if (numBrightnessPath) {
+      numBrightnessFile.reload();
+    }
+    if (scrollBrightnessPath) {
+      scrollBrightnessFile.reload();
+    }
+
+    if (!capsBrightnessPath) {
+      applyState("caps", false);
+    }
+    if (!numBrightnessPath) {
+      applyState("num", false);
+    }
+    if (!scrollBrightnessPath) {
+      applyState("scroll", false);
+    }
+
+    if (!initialCheckDone && pendingInitialReads === 0) {
+      initialCheckDone = true;
+    }
+  }
+
+  function applyState(key, active) {
+    if (key === "caps") {
+      if (capsLockOn !== active) {
+        capsLockOn = active;
+        if (initialCheckDone) {
+          capsLockChanged(active);
         }
-        // Set initialCheckDone to true after the first check is complete
-        if (!root.initialCheckDone) {
-          root.initialCheckDone = true;
+        Logger.i("LockKeysService", "Caps Lock:", active);
+      }
+    } else if (key === "num") {
+      if (numLockOn !== active) {
+        numLockOn = active;
+        if (initialCheckDone) {
+          numLockChanged(active);
+        }
+        Logger.i("LockKeysService", "Num Lock:", active);
+      }
+    } else if (key === "scroll") {
+      if (scrollLockOn !== active) {
+        scrollLockOn = active;
+        if (initialCheckDone) {
+          scrollLockChanged(active);
+        }
+        Logger.i("LockKeysService", "Scroll Lock:", active);
+      }
+    }
+  }
+
+  FolderListModel {
+    id: ledDirectory
+    folder: "file:///sys/class/leds"
+    showDirs: true
+    showFiles: false
+    showDotAndDotDot: false
+
+    onStatusChanged: {
+      if (status !== FolderListModel.Ready) {
+        return;
+      }
+
+      var capsPath = "";
+      var numPath = "";
+      var scrollPath = "";
+      for (var i = 0; i < ledDirectory.count; i++) {
+        var fileName = ledDirectory.get(i, "fileName");
+        if (!capsPath && fileName.endsWith("::capslock")) {
+          capsPath = "/sys/class/leds/" + fileName + "/brightness";
+        } else if (!numPath && fileName.endsWith("::numlock")) {
+          numPath = "/sys/class/leds/" + fileName + "/brightness";
+        } else if (!scrollPath && fileName.endsWith("::scrolllock")) {
+          scrollPath = "/sys/class/leds/" + fileName + "/brightness";
+        }
+      }
+
+      capsBrightnessPath = capsPath;
+      numBrightnessPath = numPath;
+      scrollBrightnessPath = scrollPath;
+      refreshAllStates();
+    }
+  }
+
+  FileView {
+    id: capsBrightnessFile
+    path: capsBrightnessPath
+    printErrors: false
+    onLoaded: {
+      applyState("caps", text().trim() === "1");
+      if (!initialCheckDone) {
+        pendingInitialReads--;
+        if (pendingInitialReads <= 0) {
+          initialCheckDone = true;
         }
       }
     }
-    stderr: StdioCollector {
-      onStreamFinished: {
-        if (this.text.trim().length > 0)
-        Logger.i("LockKeysService", "Error running state check:", this.text.trim());
+  }
+
+  FileView {
+    id: numBrightnessFile
+    path: numBrightnessPath
+    printErrors: false
+    onLoaded: {
+      applyState("num", text().trim() === "1");
+      if (!initialCheckDone) {
+        pendingInitialReads--;
+        if (pendingInitialReads <= 0) {
+          initialCheckDone = true;
+        }
+      }
+    }
+  }
+
+  FileView {
+    id: scrollBrightnessFile
+    path: scrollBrightnessPath
+    printErrors: false
+    onLoaded: {
+      applyState("scroll", text().trim() === "1");
+      if (!initialCheckDone) {
+        pendingInitialReads--;
+        if (pendingInitialReads <= 0) {
+          initialCheckDone = true;
+        }
       }
     }
   }
 
   Timer {
     id: pollTimer
-    interval: 200
+    interval: pollIntervalMs
     running: true
     repeat: true
-    onTriggered: {
-      if (!stateCheckProcess.running) {
-        stateCheckProcess.running = true;
-      }
-    }
+    onTriggered: refreshAllStates()
   }
 
   Component.onCompleted: {
     Logger.i("LockKeysService", "Service started, performing initial state check.");
-    stateCheckProcess.running = true;
   }
 }
