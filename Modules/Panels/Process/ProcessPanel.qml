@@ -17,6 +17,11 @@ SmartPanel {
   property var processList: ProcessService.processes
   property int processCount: ProcessService.processCount
 
+  readonly property int processCpuColumnWidth: 55
+  readonly property int processMemoryColumnWidth: 65
+  readonly property int processPidColumnWidth: 50
+  readonly property real processSortColumnWidth: Style.baseWidgetSize * 0.6
+
   // Activate/deactivate process monitoring when panel opens/closes
   onOpened: {
     ProcessService.addRef();
@@ -250,11 +255,14 @@ SmartPanel {
         RowLayout {
           id: headerLayout
           anchors.fill: parent
-          anchors.leftMargin: Style.marginM
-          anchors.rightMargin: Style.marginM
-          anchors.topMargin: Style.marginS
-          anchors.bottomMargin: Style.marginS
+          anchors.margins: Style.marginS
           spacing: Style.marginS
+
+          NIcon {
+            icon: "process"
+            pointSize: Style.fontSizeM
+            opacity: 0
+          }
 
           // Process name header
           Rectangle {
@@ -288,7 +296,7 @@ SmartPanel {
 
           // CPU header
           Rectangle {
-            Layout.preferredWidth: 60
+            Layout.preferredWidth: root.processCpuColumnWidth
             Layout.preferredHeight: 24
             radius: Style.radiusXS
             color: ProcessService.sortBy === "cpu"
@@ -316,7 +324,7 @@ SmartPanel {
 
           // Memory header
           Rectangle {
-            Layout.preferredWidth: 70
+            Layout.preferredWidth: root.processMemoryColumnWidth
             Layout.preferredHeight: 24
             radius: Style.radiusXS
             color: ProcessService.sortBy === "memory"
@@ -344,7 +352,7 @@ SmartPanel {
 
           // PID header
           Rectangle {
-            Layout.preferredWidth: 50
+            Layout.preferredWidth: root.processPidColumnWidth
             Layout.preferredHeight: 24
             radius: Style.radiusXS
             color: ProcessService.sortBy === "pid"
@@ -373,7 +381,7 @@ SmartPanel {
           // Sort direction toggle
           NIconButton {
             icon: ProcessService.sortDescending ? "arrow-down" : "arrow-up"
-            baseSize: Style.baseWidgetSize * 0.6
+            baseSize: root.processSortColumnWidth
             onClicked: ProcessService.toggleSortDirection()
             tooltipText: ProcessService.sortDescending ? I18n.tr("process.sort-descending") : I18n.tr("process.sort-ascending")
           }
@@ -424,6 +432,7 @@ SmartPanel {
           }
 
           RowLayout {
+            id: processRowLayout
             anchors.fill: parent
             anchors.leftMargin: Style.marginS
             anchors.rightMargin: Style.marginS
@@ -447,7 +456,7 @@ SmartPanel {
 
             // CPU usage
             NText {
-              Layout.preferredWidth: 55
+              Layout.preferredWidth: root.processCpuColumnWidth
               text: ProcessService.formatCpu(processCpu)
               pointSize: Style.fontSizeS
               family: Settings.data.ui.fontFixed
@@ -457,7 +466,7 @@ SmartPanel {
 
             // Memory usage
             NText {
-              Layout.preferredWidth: 65
+              Layout.preferredWidth: root.processMemoryColumnWidth
               text: ProcessService.formatMemory(processMemoryKb)
               pointSize: Style.fontSizeS
               family: Settings.data.ui.fontFixed
@@ -467,12 +476,16 @@ SmartPanel {
 
             // PID
             NText {
-              Layout.preferredWidth: 50
+              Layout.preferredWidth: root.processPidColumnWidth
               text: processPid.toString()
               pointSize: Style.fontSizeXS
               family: Settings.data.ui.fontFixed
               color: Color.mOnSurfaceVariant
               horizontalAlignment: Text.AlignRight
+            }
+
+            Item {
+              Layout.preferredWidth: root.processSortColumnWidth
             }
           }
 

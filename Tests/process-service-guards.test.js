@@ -4,6 +4,7 @@ const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
 const source = readQml("Services/System/ProcessService.qml");
+const processPanelSource = readQml("Modules/Panels/Process/ProcessPanel.qml");
 
 function qmlFunction(functionName, ...argNames) {
   const body = extractFunctionBody(source, functionName);
@@ -96,6 +97,16 @@ function testProcessServiceSorting() {
   assert.match(body, /processes = sorted\.slice\(0, processLimit\)/, "applySorting must publish only the configured process limit");
 }
 
+function testProcessPanelColumnsShareMetrics() {
+  assert.match(processPanelSource, /readonly property int processCpuColumnWidth: 55/, "ProcessPanel must define one CPU column width shared by header and rows");
+  assert.match(processPanelSource, /readonly property int processMemoryColumnWidth: 65/, "ProcessPanel must define one memory column width shared by header and rows");
+  assert.match(processPanelSource, /readonly property int processPidColumnWidth: 50/, "ProcessPanel must define one PID column width shared by header and rows");
+  assert.match(processPanelSource, /readonly property real processSortColumnWidth: Style\.baseWidgetSize \* 0\.6/, "ProcessPanel must define one sort column width shared by header and rows");
+
+  assert.match(processPanelSource, /id: headerLayout[\s\S]*?NIcon \{[\s\S]*?opacity: 0[\s\S]*?Layout\.preferredWidth: root\.processCpuColumnWidth[\s\S]*?Layout\.preferredWidth: root\.processMemoryColumnWidth[\s\S]*?Layout\.preferredWidth: root\.processPidColumnWidth[\s\S]*?baseSize: root\.processSortColumnWidth/, "ProcessPanel header must use the same icon, metric, PID, and sort columns as process rows");
+  assert.match(processPanelSource, /id: processRowLayout[\s\S]*?Layout\.preferredWidth: root\.processCpuColumnWidth[\s\S]*?Layout\.preferredWidth: root\.processMemoryColumnWidth[\s\S]*?Layout\.preferredWidth: root\.processPidColumnWidth[\s\S]*?Layout\.preferredWidth: root\.processSortColumnWidth/, "ProcessPanel rows must reserve the header sort column so metric columns line up");
+}
+
 function testProcessServiceParsesPsRowsAndAggregatesTotals() {
   const parseProcessOutput = qmlFunction("parseProcessOutput", "text");
   const applySorting = qmlFunction("applySorting");
@@ -156,6 +167,7 @@ const tests = [
   testProcessServiceSorting,
   testProcessServiceParsesPsRowsAndAggregatesTotals,
   testProcessServiceSortingExecutesLimitAndDirections,
+  testProcessPanelColumnsShareMetrics,
 ];
 
 for (const test of tests) {
