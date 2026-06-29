@@ -73,13 +73,41 @@ SmartPanel {
 
   // We keep a dynamic weather height due to a more complex layout and font scaling
   property int weatherHeight: Math.round(210 * Style.uiScaleRatio)
+  property bool vpnPollingRegistered: false
+
+  function shortcutSectionHasVpn(section) {
+    const widgets = Settings.data.controlCenter.shortcuts[section] || [];
+    for (let i = 0; i < widgets.length; ++i) {
+      if (widgets[i].id === "VPN") {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function hasVpnShortcut() {
+    return shortcutSectionHasVpn("left") || shortcutSectionHasVpn("right");
+  }
+
+  function updateVpnPanelPolling(shouldPoll) {
+    const shouldRegister = shouldPoll && hasVpnShortcut();
+    if (shouldRegister && !vpnPollingRegistered) {
+      VPNService.beginPolling();
+      vpnPollingRegistered = true;
+    } else if (!shouldRegister && vpnPollingRegistered) {
+      VPNService.endPolling();
+      vpnPollingRegistered = false;
+    }
+  }
 
   onOpened: {
     MediaService.autoSwitchingPaused = true;
+    updateVpnPanelPolling(true);
   }
 
   onClosed: {
     MediaService.autoSwitchingPaused = false;
+    updateVpnPanelPolling(false);
   }
 
   panelContent: Item {

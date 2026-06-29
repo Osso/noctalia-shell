@@ -4,6 +4,12 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 
 ### Refresh lifecycle
 
+- [x] VPN refresh polling is ref-counted by visible consumers.
+- [x] The periodic refresh timer runs only while at least one consumer holds a polling reference.
+- [x] The service does not start `nmcli` refresh polling at startup before a consumer appears.
+- [x] Starting a polling reference immediately refreshes VPN state.
+- [x] Ending a polling reference clamps the reference count at zero.
+- [x] The bar VPN widget, Control Center panel with a VPN shortcut, and VPN panel hold polling references only while visible/open.
 - [x] Refresh requests during an active refresh are marked pending without clearing the existing error or starting another process.
 - [x] Refresh requests when idle mark the service refreshing, clear the last error, and start the refresh process.
 - [x] Delayed refresh scheduling updates the timer interval and restarts the timer.
