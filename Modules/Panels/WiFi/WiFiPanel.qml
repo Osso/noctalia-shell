@@ -50,7 +50,11 @@ SmartPanel {
 
   onOpened: {
     hasHadNetworks = false;
-    NetworkService.scan();
+    NetworkService.beginActivePolling();
+  }
+
+  onClosed: {
+    NetworkService.endActivePolling();
   }
 
   onKnownNetworksChanged: {

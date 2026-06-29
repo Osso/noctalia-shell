@@ -22,6 +22,8 @@ Singleton {
   property bool internetConnectivity: true
   property bool ignoreScanResults: false
   property bool scanPending: false
+  property int activePollingRefs: 0
+  readonly property bool activePolling: activePollingRefs > 0
 
   // Persistent cache
   property string cacheFile: Settings.cacheDir + "network.json"
@@ -53,9 +55,12 @@ Singleton {
         if (!BluetoothService.airplaneModeToggled) {
           ToastService.showNotice(I18n.tr("wifi.panel.title"), I18n.tr("toast.wifi.enabled"), "wifi");
         }
-        // Perform a scan to update the UI
-        delayedScanTimer.interval = 3000;
-        delayedScanTimer.restart();
+        refreshNetworkStatus();
+        // Perform a scan to update the UI only while a network panel is active.
+        if (activePolling) {
+          delayedScanTimer.interval = 3000;
+          delayedScanTimer.restart();
+        }
       } else {
         if (!BluetoothService.airplaneModeToggled) {
           ToastService.showNotice(I18n.tr("wifi.panel.title"), I18n.tr("toast.wifi.disabled"), "wifi-off");
@@ -69,7 +74,7 @@ Singleton {
   Component.onCompleted: {
     Logger.i("Network", "Service started");
     syncWifiState();
-    scan();
+    refreshNetworkStatus();
   }
 
   // Save cache with debounce
@@ -87,30 +92,61 @@ Singleton {
   Timer {
     id: delayedScanTimer
     interval: 7000
-    onTriggered: scan()
+    onTriggered: {
+      if (root.activePolling) {
+        scan();
+      }
+    }
   }
 
   // Ethernet check timer
-  // Always running every 30s
+  // Runs only while network UI is active.
   Timer {
     id: ethernetCheckTimer
     interval: 30000
-    running: true
+    running: root.activePolling
     repeat: true
-    onTriggered: ethernetStateProcess.running = true
+    onTriggered: {
+      if (!ethernetStateProcess.running) {
+        ethernetStateProcess.running = true;
+      }
+    }
   }
 
   // Internet connectivity check timer
-  // Always running every 15s
+  // Runs only while network UI is active.
   Timer {
     id: connectivityCheckTimer
     interval: 15000
-    running: true
+    running: root.activePolling
     repeat: true
-    onTriggered: connectivityCheckProcess.running = true
+    onTriggered: {
+      if (!connectivityCheckProcess.running) {
+        connectivityCheckProcess.running = true;
+      }
+    }
   }
 
   // Core functions
+  function refreshNetworkStatus() {
+    if (!ethernetStateProcess.running) {
+      ethernetStateProcess.running = true;
+    }
+    if (!connectivityCheckProcess.running) {
+      connectivityCheckProcess.running = true;
+    }
+  }
+
+  function beginActivePolling() {
+    activePollingRefs++;
+    refreshNetworkStatus();
+    scan();
+  }
+
+  function endActivePolling() {
+    activePollingRefs = Math.max(0, activePollingRefs - 1);
+  }
+
   function syncWifiState() {
     wifiStateProcess.running = true;
   }
@@ -320,7 +356,7 @@ Singleton {
   // Processes
   Process {
     id: ethernetStateProcess
-    running: true
+    running: false
     command: ["nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "device"]
 
     stdout: StdioCollector {
@@ -396,14 +432,18 @@ Singleton {
         if (result === "none" && root.networkConnectivity !== result) {
           root.networkConnectivity = result;
           connectivityCheckProcess.failedChecks = 0;
-          root.scan();
+          if (root.activePolling) {
+            root.scan();
+          }
         }
 
         if (result === "full" && root.networkConnectivity !== result) {
           root.networkConnectivity = result;
           root.internetConnectivity = true;
           connectivityCheckProcess.failedChecks = 0;
-          root.scan();
+          if (root.activePolling) {
+            root.scan();
+          }
         }
 
         if ((result === "limited" || result === "portal") && root.networkConnectivity !== result) {
@@ -443,7 +483,9 @@ Singleton {
         ToastService.showWarning(root.cachedLastConnected, I18n.tr("toast.internet.limited"));
         connectivityCheckProcess.failedChecks = 0;
       }
-      root.scan();
+      if (root.activePolling) {
+        root.scan();
+      }
     }
   }
 
@@ -605,9 +647,12 @@ Singleton {
                                                                        "ssid": connectProcess.ssid
                                                                      }), "wifi");
 
-        // Still do a scan to get accurate signal and security info
-        delayedScanTimer.interval = 5000;
-        delayedScanTimer.restart();
+        refreshNetworkStatus();
+        // Still do a scan to get accurate signal and security info while Wi-Fi UI is active.
+        if (activePolling) {
+          delayedScanTimer.interval = 5000;
+          delayedScanTimer.restart();
+        }
       }
     }
 
@@ -652,9 +697,12 @@ Singleton {
         root.updateNetworkStatus(disconnectProcess.ssid, false);
         root.disconnectingFrom = "";
 
-        // Do a scan to refresh the list
-        delayedScanTimer.interval = 1000;
-        delayedScanTimer.restart();
+        refreshNetworkStatus();
+        // Do a scan to refresh the list while Wi-Fi UI is active.
+        if (activePolling) {
+          delayedScanTimer.interval = 1000;
+          delayedScanTimer.restart();
+        }
       }
     }
 
@@ -664,9 +712,12 @@ Singleton {
         if (text.trim()) {
           Logger.w("Network", "Disconnect error: " + text);
         }
-        // Still trigger a scan even on error
-        delayedScanTimer.interval = 5000;
-        delayedScanTimer.restart();
+        refreshNetworkStatus();
+        // Still trigger a scan even on error while Wi-Fi UI is active.
+        if (activePolling) {
+          delayedScanTimer.interval = 5000;
+          delayedScanTimer.restart();
+        }
       }
     }
   }
@@ -723,9 +774,11 @@ Singleton {
 
         root.forgettingNetwork = "";
 
-        // Scan to verify the profile is gone
-        delayedScanTimer.interval = 5000;
-        delayedScanTimer.restart();
+        // Scan to verify the profile is gone while Wi-Fi UI is active.
+        if (activePolling) {
+          delayedScanTimer.interval = 5000;
+          delayedScanTimer.restart();
+        }
       }
     }
 
@@ -735,9 +788,11 @@ Singleton {
         if (text.trim() && !text.includes("No profiles found")) {
           Logger.w("Network", "Forget error: " + text);
         }
-        // Still Trigger a scan even on error
-        delayedScanTimer.interval = 5000;
-        delayedScanTimer.restart();
+        // Still trigger a scan even on error while Wi-Fi UI is active.
+        if (activePolling) {
+          delayedScanTimer.interval = 5000;
+          delayedScanTimer.restart();
+        }
       }
     }
   }

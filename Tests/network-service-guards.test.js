@@ -20,11 +20,42 @@ function testNetworkServiceCacheAndWifiStateGuards() {
   const saveBody = extractFunctionBody(source, "saveCache");
   const syncBody = extractFunctionBody(source, "syncWifiState");
   const enabledBody = extractFunctionBody(source, "setWifiEnabled");
+  const statusBody = extractFunctionBody(source, "refreshNetworkStatus");
+  const startBody = extractFunctionBody(source, "beginActivePolling");
+  const stopBody = extractFunctionBody(source, "endActivePolling");
 
   assert.match(saveBody, /saveDebounce\.restart\(\)/, "saveCache must debounce disk writes");
   assert.match(syncBody, /wifiStateProcess\.running = true/, "syncWifiState must query the live Wi-Fi radio state");
+  assert.match(statusBody, /ethernetStateProcess\.running = true/, "refreshNetworkStatus must refresh Ethernet state on demand");
+  assert.match(statusBody, /connectivityCheckProcess\.running = true/, "refreshNetworkStatus must refresh connectivity on demand");
+  assert.match(startBody, /activePollingRefs\+\+/, "beginActivePolling must retain active UI users");
+  assert.match(startBody, /refreshNetworkStatus\(\)/, "beginActivePolling must refresh status immediately");
+  assert.match(startBody, /scan\(\)/, "beginActivePolling must scan when the Wi-Fi UI opens");
+  assert.match(stopBody, /Math\.max\(0, activePollingRefs - 1\)/, "endActivePolling must release active UI users safely");
   assert.match(enabledBody, /Settings\.data\.network\.wifiEnabled = enabled/, "setWifiEnabled must update the setting first");
   assert.match(enabledBody, /wifiStateEnableProcess\.running = true/, "setWifiEnabled must run the nmcli radio command");
+}
+
+function testNetworkServiceIdlePollingGuards() {
+  const source = readQml("Services/Networking/NetworkService.qml");
+  const completedBlock = source.match(/Component\.onCompleted:\s*\{([\s\S]*?)\n  \}/)[1];
+
+  assert.match(source, /property int activePollingRefs: 0/, "NetworkService must track active polling consumers");
+  assert.match(source, /readonly property bool activePolling: activePollingRefs > 0/, "NetworkService must expose active polling state");
+  assert.match(source, /id: ethernetCheckTimer[\s\S]*running: root\.activePolling[\s\S]*if \(!ethernetStateProcess\.running\)/, "Ethernet timer must run only for active consumers and avoid overlapping nmcli runs");
+  assert.match(source, /id: connectivityCheckTimer[\s\S]*running: root\.activePolling[\s\S]*if \(!connectivityCheckProcess\.running\)/, "Connectivity timer must run only for active consumers and avoid overlapping nmcli runs");
+  assert.doesNotMatch(completedBlock, /scan\(\)/, "NetworkService startup must not perform a background Wi-Fi scan");
+  assert.match(completedBlock, /refreshNetworkStatus\(\)/, "NetworkService startup must do a cheap status refresh instead of scanning");
+  assert.match(source, /onTriggered:\s*\{\s*if \(root\.activePolling\) \{\s*scan\(\);\s*\}\s*\}/, "Delayed scan timer must not rescan while idle");
+}
+
+function testWiFiPanelControlsActivePolling() {
+  const panelSource = readQml("Modules/Panels/WiFi/WiFiPanel.qml");
+  const onOpenedBlock = panelSource.match(/onOpened:\s*\{([\s\S]*?)\n  \}/)[1];
+
+  assert.match(onOpenedBlock, /NetworkService\.beginActivePolling\(\)/, "Wi-Fi panel opening must start active polling and scan through NetworkService");
+  assert.match(panelSource, /onClosed:\s*\{[\s\S]*NetworkService\.endActivePolling\(\)/, "Wi-Fi panel closing must release active polling");
+  assert.doesNotMatch(onOpenedBlock, /NetworkService\.scan\(\)/, "Wi-Fi panel must not bypass active polling on open");
 }
 
 function testNetworkServiceScanAndConnectionGuards() {
@@ -260,6 +291,8 @@ function testNetworkServiceConnectionStatusAndIconsExecute() {
 
 const tests = [
   testNetworkServiceCacheAndWifiStateGuards,
+  testNetworkServiceIdlePollingGuards,
+  testWiFiPanelControlsActivePolling,
   testNetworkServiceScanAndConnectionGuards,
   testNetworkServiceForgetAndStatusGuards,
   testNetworkServiceIconAndSecurityHelpers,

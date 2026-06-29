@@ -2,11 +2,17 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 
 ## What it must do
 
-### Cache and Wi-Fi state
+### Cache, Wi-Fi state, and idle polling
 
 - [x] Cache saves are debounced.
 - [x] Wi-Fi state sync queries the live radio state.
+- [x] On-demand network status refresh queries Ethernet and connectivity state.
 - [x] Setting Wi-Fi enabled updates settings first and starts the nmcli radio command.
+- [x] Startup does not perform a background Wi-Fi scan.
+- [x] Idle Ethernet/connectivity timers run only while an active network UI consumer is open.
+- [x] Wi-Fi panel opening starts active polling and Wi-Fi scanning through NetworkService.
+- [x] Wi-Fi panel closing releases active polling.
+- [x] Delayed scan timers do not rescan while idle.
 
 ### Scanning
 
