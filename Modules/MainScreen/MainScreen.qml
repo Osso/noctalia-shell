@@ -338,6 +338,7 @@ PanelWindow {
 
     Loader {
       id: audioPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: AudioPanel {
         objectName: root.panelObjectName("audioPanel")
@@ -349,6 +350,7 @@ PanelWindow {
 
     Loader {
       id: batteryPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: BatteryPanel {
         objectName: root.panelObjectName("batteryPanel")
@@ -360,6 +362,7 @@ PanelWindow {
 
     Loader {
       id: bluetoothPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: BluetoothPanel {
         objectName: root.panelObjectName("bluetoothPanel")
@@ -371,6 +374,7 @@ PanelWindow {
 
     Loader {
       id: brightnessPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: BrightnessPanel {
         objectName: root.panelObjectName("brightnessPanel")
@@ -382,6 +386,7 @@ PanelWindow {
 
     Loader {
       id: controlCenterPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: ControlCenterPanel {
         objectName: root.panelObjectName("controlCenterPanel")
@@ -393,6 +398,7 @@ PanelWindow {
 
     Loader {
       id: changelogPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: ChangelogPanel {
         objectName: root.panelObjectName("changelogPanel")
@@ -404,6 +410,7 @@ PanelWindow {
 
     Loader {
       id: clockPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: ClockPanel {
         objectName: root.panelObjectName("clockPanel")
@@ -415,6 +422,7 @@ PanelWindow {
 
     Loader {
       id: launcherPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: Launcher {
         objectName: root.panelObjectName("launcherPanel")
@@ -426,6 +434,7 @@ PanelWindow {
 
     Loader {
       id: notificationHistoryPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: NotificationHistoryPanel {
         objectName: root.panelObjectName("notificationHistoryPanel")
@@ -437,6 +446,7 @@ PanelWindow {
 
     Loader {
       id: sessionMenuPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: SessionMenu {
         objectName: root.panelObjectName("sessionMenuPanel")
@@ -448,6 +458,7 @@ PanelWindow {
 
     Loader {
       id: settingsPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: SettingsPanel {
         objectName: root.panelObjectName("settingsPanel")
@@ -459,6 +470,7 @@ PanelWindow {
 
     Loader {
       id: setupWizardPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: SetupWizard {
         objectName: root.panelObjectName("setupWizardPanel")
@@ -470,6 +482,7 @@ PanelWindow {
 
     Loader {
       id: trayDrawerPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: TrayDrawerPanel {
         objectName: root.panelObjectName("trayDrawerPanel")
@@ -481,6 +494,7 @@ PanelWindow {
 
     Loader {
       id: wallpaperPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: WallpaperPanel {
         objectName: root.panelObjectName("wallpaperPanel")
@@ -492,6 +506,7 @@ PanelWindow {
 
     Loader {
       id: wifiPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: WiFiPanel {
         objectName: root.panelObjectName("wifiPanel")
@@ -503,6 +518,7 @@ PanelWindow {
 
     Loader {
       id: vpnPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: VPNPanel {
         objectName: root.panelObjectName("vpnPanel")
@@ -514,6 +530,7 @@ PanelWindow {
 
     Loader {
       id: processPanelLoader
+      anchors.fill: parent
       active: false
       sourceComponent: ProcessPanel {
         objectName: root.panelObjectName("processPanel")

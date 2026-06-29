@@ -12,6 +12,33 @@ function testMainScreenRegistersLazyPanelLoaders() {
   assert.match(source, /readonly property Item settingsPanelPlaceholder: settingsPanelLoader\.item \? settingsPanelLoader\.item\.panelRegion : settingsPanelPlaceholderItem/, "settings panel background placeholder must not force panel loading");
 }
 
+function testMainScreenLazyPanelLoadersFillContainer() {
+  const source = readQml("Modules/MainScreen/MainScreen.qml");
+  const loaderIds = [
+    "audioPanelLoader",
+    "batteryPanelLoader",
+    "bluetoothPanelLoader",
+    "brightnessPanelLoader",
+    "controlCenterPanelLoader",
+    "changelogPanelLoader",
+    "clockPanelLoader",
+    "launcherPanelLoader",
+    "notificationHistoryPanelLoader",
+    "sessionMenuPanelLoader",
+    "settingsPanelLoader",
+    "setupWizardPanelLoader",
+    "trayDrawerPanelLoader",
+    "wallpaperPanelLoader",
+    "wifiPanelLoader",
+    "vpnPanelLoader",
+    "processPanelLoader",
+  ];
+
+  for (const loaderId of loaderIds) {
+    assert.match(source, new RegExp(`Loader\\s*\\{[\\s\\S]*id: ${loaderId}[\\s\\S]*anchors\\.fill: parent[\\s\\S]*sourceComponent:`), `${loaderId} must fill the panel container so loaded SmartPanel children have non-zero parent dimensions`);
+  }
+}
+
 function testMainScreenPanelsAreLazyLoaders() {
   const source = readQml("Modules/MainScreen/MainScreen.qml");
   const panelNames = [
@@ -45,6 +72,7 @@ function testMainScreenPanelsAreLazyLoaders() {
 
 const tests = [
   testMainScreenRegistersLazyPanelLoaders,
+  testMainScreenLazyPanelLoadersFillContainer,
   testMainScreenPanelsAreLazyLoaders,
 ];
 
