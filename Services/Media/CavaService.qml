@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.Commons
+import qs.Services.System
 import qs.Services.UI
 
 Singleton {
@@ -15,7 +16,7 @@ Singleton {
   *   - LockScreen is opened
   *   - A control center is open
   */
-  property bool shouldRun: BarService.hasAudioVisualizer || (PanelService.lockScreen && PanelService.lockScreen.active) || (PanelService.openedPanel && PanelService.openedPanel.objectName.startsWith("controlCenterPanel"))
+  property bool shouldRun: canRunCava()
 
   property var values: Array(barsCount).fill(0)
   property int barsCount: 32
@@ -24,6 +25,15 @@ Singleton {
   property bool isIdle: true
   property int idleFrameCount: 0
   readonly property int idleThreshold: 30 // Frames of silence before considered idle (0.5s at 60fps)
+
+  function canRunCava() {
+    if (!ProgramCheckerService.cavaAvailable) {
+      return false;
+    }
+    const lockScreenActive = PanelService.lockScreen && PanelService.lockScreen.active;
+    const controlCenterOpen = PanelService.openedPanel && PanelService.openedPanel.objectName.startsWith("controlCenterPanel");
+    return BarService.hasAudioVisualizer || lockScreenActive || controlCenterOpen;
+  }
 
   // Simple config
   property var config: ({

@@ -36,8 +36,12 @@ function testThemeIconsResolveNamedIconsAndFailClosed() {
 
 function testThemeIconsResolveDesktopEntryIconsAndFallbacks() {
   const iconForAppId = qmlFunction("iconForAppId", "appId", "fallbackName");
+  const sanitizeDesktopEntryIcon = qmlFunction("sanitizeDesktopEntryIcon", "iconName", "fallbackName");
   const calls = [];
   const ctx = {
+    sanitizeDesktopEntryIcon(iconName, fallbackName) {
+      return sanitizeDesktopEntryIcon(ctx, iconName, fallbackName);
+    },
     iconFromName(iconName, fallbackName) {
       calls.push([iconName, fallbackName]);
       return `${iconName}:${fallbackName}`;
@@ -68,6 +72,14 @@ function testThemeIconsResolveDesktopEntryIconsAndFallbacks() {
   ]);
 }
 
+function testThemeIconsRejectAbsoluteDesktopEntryIcons() {
+  const sanitizeDesktopEntryIcon = qmlFunction("sanitizeDesktopEntryIcon", "iconName", "fallbackName");
+
+  assert.equal(sanitizeDesktopEntryIcon({}, "/tmp/missing.svg", "fallback-icon"), "fallback-icon");
+  assert.equal(sanitizeDesktopEntryIcon({}, "file:///tmp/missing.svg", "fallback-icon"), "fallback-icon");
+  assert.equal(sanitizeDesktopEntryIcon({}, "firefox", "fallback-icon"), "firefox");
+}
+
 function testThemeIconsAppIdInputIsTyped() {
   assert.match(source, /function iconFromName\(iconName, fallbackName\)/, "iconFromName must type the required icon-name input while keeping fallback optional");
   assert.match(source, /function iconForAppId\(appId, fallbackName\)/, "iconForAppId must type the required app id input while keeping fallback optional");
@@ -75,8 +87,12 @@ function testThemeIconsAppIdInputIsTyped() {
 
 function testThemeIconsFallbackWhenDesktopEntriesLookupFails() {
   const iconForAppId = qmlFunction("iconForAppId", "appId", "fallbackName");
+  const sanitizeDesktopEntryIcon = qmlFunction("sanitizeDesktopEntryIcon", "iconName", "fallbackName");
   const calls = [];
   const ctx = {
+    sanitizeDesktopEntryIcon(iconName, fallbackName) {
+      return sanitizeDesktopEntryIcon(ctx, iconName, fallbackName);
+    },
     iconFromName(iconName, fallbackName) {
       calls.push([iconName, fallbackName]);
       return `${iconName}:${fallbackName}`;
@@ -116,6 +132,7 @@ function testThemeIconsDistroLogoPathFailsClosed() {
 const tests = [
   testThemeIconsResolveNamedIconsAndFailClosed,
   testThemeIconsResolveDesktopEntryIconsAndFallbacks,
+  testThemeIconsRejectAbsoluteDesktopEntryIcons,
   testThemeIconsAppIdInputIsTyped,
   testThemeIconsFallbackWhenDesktopEntriesLookupFails,
   testThemeIconsDistroLogoPathFailsClosed,

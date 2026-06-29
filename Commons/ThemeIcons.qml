@@ -15,6 +15,17 @@ Singleton {
     }
   }
 
+  function sanitizeDesktopEntryIcon(iconName, fallbackName) {
+    const fallback = fallbackName || "application-x-executable";
+    if (!iconName) {
+      return fallback;
+    }
+    if (iconName.startsWith("/") || iconName.startsWith("file:")) {
+      return fallback;
+    }
+    return iconName;
+  }
+
   // Resolve icon path for a DesktopEntries appId - safe on missing entries
   function iconForAppId(appId, fallbackName) {
     const fallback = fallbackName || "application-x-executable";
@@ -24,8 +35,8 @@ Singleton {
       if (typeof DesktopEntries === 'undefined' || !DesktopEntries.byId)
         return iconFromName(fallback, fallback);
       const entry = (DesktopEntries.heuristicLookup) ? DesktopEntries.heuristicLookup(appId) : DesktopEntries.byId(appId);
-      const name = entry && entry.icon ? entry.icon : "";
-      return iconFromName(name || fallback, fallback);
+      const name = sanitizeDesktopEntryIcon(entry && entry.icon ? entry.icon : "", fallback);
+      return iconFromName(name, fallback);
     } catch (e) {
       return iconFromName(fallback, fallback);
     }

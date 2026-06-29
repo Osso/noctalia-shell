@@ -410,7 +410,7 @@ SmartPanel {
             if (processCpu > 50)
               return Color.mError;
             if (processCpu > 20)
-              return Color.mWarning;
+              return Color.mTertiary;
             return Color.mOnSurfaceVariant;
           }
 
