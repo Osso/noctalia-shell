@@ -8,8 +8,10 @@ Singleton {
   id: root
 
   function iconFromName(iconName, fallbackName) {
+    const fallback = fallbackName || "application-x-executable";
+    const safeIconName = sanitizeDesktopEntryIcon(iconName, fallback);
     try {
-      return ThemeIconResolver.resolveIconPath(Quickshell, iconName, fallbackName);
+      return ThemeIconResolver.resolveIconPath(Quickshell, safeIconName, fallback);
     } catch (e2) {
       return "";
     }

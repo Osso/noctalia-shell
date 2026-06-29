@@ -12,8 +12,12 @@ function qmlFunction(functionName, ...argNames) {
 
 function testThemeIconsResolveNamedIconsAndFailClosed() {
   const iconFromName = qmlFunction("iconFromName", "iconName", "fallbackName");
+  const sanitizeDesktopEntryIcon = qmlFunction("sanitizeDesktopEntryIcon", "iconName", "fallbackName");
   const calls = [];
   const ctx = {
+    sanitizeDesktopEntryIcon(iconName, fallbackName) {
+      return sanitizeDesktopEntryIcon(ctx, iconName, fallbackName);
+    },
     Quickshell: {
       iconTheme: "test-theme",
     },
@@ -26,7 +30,13 @@ function testThemeIconsResolveNamedIconsAndFailClosed() {
   };
 
   assert.equal(iconFromName(ctx, "firefox", "application-x-executable"), "/icons/firefox.svg");
-  assert.deepEqual(calls, [["test-theme", "firefox", "application-x-executable"]]);
+  assert.equal(iconFromName(ctx, "/tmp/missing.svg", "application-x-executable"), "/icons/application-x-executable.svg");
+  assert.equal(iconFromName(ctx, "file:///tmp/missing.svg", "fallback-icon"), "/icons/fallback-icon.svg");
+  assert.deepEqual(calls, [
+    ["test-theme", "firefox", "application-x-executable"],
+    ["test-theme", "application-x-executable", "application-x-executable"],
+    ["test-theme", "fallback-icon", "fallback-icon"],
+  ]);
 
   ctx.ThemeIconResolver.resolveIconPath = () => {
     throw new Error("resolver failed");
