@@ -14,6 +14,7 @@ Singleton {
   property bool available: false
   property string lastError: ""
   property var calendars: ([])
+  property int pollingRefs: 0
 
   // Persistent cache
   property string cacheFile: Settings.cacheDir + "calendar.json"
@@ -85,9 +86,22 @@ Singleton {
   Timer {
     id: refreshTimer
     interval: 300000
-    running: true
+    running: root.isPollingActive()
     repeat: true
     onTriggered: loadEvents()
+  }
+
+  function beginPolling() {
+    pollingRefs = pollingRefs + 1;
+    loadEvents();
+  }
+
+  function endPolling() {
+    pollingRefs = Math.max(0, pollingRefs - 1);
+  }
+
+  function isPollingActive() {
+    return pollingRefs > 0;
   }
 
   // Core functions

@@ -10,6 +10,7 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 - [x] Availability checks no-op the process and mark the service unavailable when calendar events are disabled.
 - [x] Availability checks start the availability process when calendar events are enabled.
 - [x] Calendar loading starts the list-calendars process.
+- [x] Calendar auto-refresh is ref-counted and runs only while a visible calendar consumer, such as the Clock panel, is open.
 
 ### Event loading
 
@@ -57,6 +58,7 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 - `Services/Location/CalendarService.qml` - calendar service state, cache load/save, availability checks, calendar listing, event loading, and date formatting.
 - `Modules/Cards/CalendarMonthCard.qml` - month grid, week-number helper, event overlap filtering, event classification, and event indicator colors.
 - `Modules/Cards/CalendarHeaderCard.qml` - calendar header card.
+- `Modules/Panels/Clock/ClockPanel.qml` - owns live calendar polling while the calendar panel is open.
 - `Modules/Panels/Settings/Tabs/LocationTab.qml` - calendar settings, enabled cards, and calendar display preferences.
 - `Modules/Bar/Widgets/Clock.qml` - clock widget calendar panel action.
 - `Bin/check-calendar.py` - Evolution Data Server availability probe.

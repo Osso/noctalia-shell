@@ -65,6 +65,45 @@ function testCalendarLoadFromCacheCopiesAvailableData() {
   ]);
 }
 
+function testCalendarPollingLifecycleGuards() {
+  const clockPanel = readQml("Modules/Panels/Clock/ClockPanel.qml");
+  const beginBody = extractFunctionBody(source, "beginPolling");
+  const endBody = extractFunctionBody(source, "endPolling");
+  const isActiveBody = extractFunctionBody(source, "isPollingActive");
+
+  assert.match(source, /property int pollingRefs: 0/, "CalendarService must ref-count live calendar refresh consumers");
+  assert.match(source, /running: root\.isPollingActive\(\)/, "Calendar refresh timer must run only while polling is active");
+  assert.match(beginBody, /pollingRefs = pollingRefs \+ 1[\s\S]*loadEvents\(\)/, "beginPolling must increment refs and refresh immediately");
+  assert.match(endBody, /pollingRefs = Math\.max\(0, pollingRefs - 1\)/, "endPolling must clamp refs at zero");
+  assert.match(isActiveBody, /return pollingRefs > 0/, "isPollingActive must report positive refs");
+  assert.match(clockPanel, /onOpened:[\s\S]*CalendarService\.beginPolling\(\)[\s\S]*onClosed:[\s\S]*CalendarService\.endPolling\(\)/, "Clock panel must hold calendar polling only while open");
+}
+
+function testCalendarPollingRefsExecute() {
+  const beginPolling = qmlFunction("beginPolling");
+  const endPolling = qmlFunction("endPolling");
+  const isPollingActive = qmlFunction("isPollingActive");
+  let refreshes = 0;
+  const ctx = {
+    pollingRefs: 0,
+    loadEvents() {
+      refreshes++;
+    },
+  };
+
+  assert.equal(isPollingActive(ctx), false);
+  beginPolling(ctx);
+  beginPolling(ctx);
+  assert.equal(ctx.pollingRefs, 2);
+  assert.equal(refreshes, 2);
+  assert.equal(isPollingActive(ctx), true);
+  endPolling(ctx);
+  endPolling(ctx);
+  endPolling(ctx);
+  assert.equal(ctx.pollingRefs, 0);
+  assert.equal(isPollingActive(ctx), false);
+}
+
 function testCalendarAvailabilityAndCalendarLoadingGuards() {
   const checkAvailability = qmlFunction("checkAvailability");
   const loadCalendars = qmlFunction("loadCalendars");
@@ -258,6 +297,8 @@ function testCalendarProcessParsingAndFallbacks() {
 const tests = [
   testCalendarSaveCacheDebouncesWrites,
   testCalendarLoadFromCacheCopiesAvailableData,
+  testCalendarPollingLifecycleGuards,
+  testCalendarPollingRefsExecute,
   testCalendarAvailabilityAndCalendarLoadingGuards,
   testCalendarLoadEventsDisabledAndConcurrentGuards,
   testCalendarLoadEventsStartsProcessWithWindow,

@@ -16,6 +16,14 @@ SmartPanel {
   // Calculate width based on settings
   preferredWidth: Math.round((Settings.data.location.showWeekNumberInCalendar ? 460 : 440) * Style.uiScaleRatio)
 
+  onOpened: {
+    CalendarService.beginPolling();
+  }
+
+  onClosed: {
+    CalendarService.endPolling();
+  }
+
   panelContent: Item {
     anchors.fill: parent
 
