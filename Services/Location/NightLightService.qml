@@ -29,7 +29,36 @@ Singleton {
       // Set running to false so it may restarts below if still enabled
       runner.running = false;
     }
+
+    if (params.enabled) {
+      cleanupStaleWlsunset();
+    }
+
     runner.running = params.enabled;
+  }
+
+  function cleanupStaleWlsunset() {
+    staleCleanup.command = buildStaleWlsunsetCleanupCommand();
+    staleCleanup.running = false;
+    staleCleanup.running = true;
+  }
+
+  function buildStaleWlsunsetCleanupCommand() {
+    const script = [
+      "current_ppid=\"$PPID\"",
+      "for pid in $(pgrep -x wlsunset 2>/dev/null || true); do",
+      "  ppid=\"$(ps -o ppid= -p \"$pid\" 2>/dev/null | tr -d '[:space:]')\"",
+      "  if [ -n \"$ppid\" ] && [ \"$ppid\" != \"$current_ppid\" ]; then",
+      "    kill \"$pid\" 2>/dev/null || true",
+      "  fi",
+      "done",
+    ].join("\n");
+
+    return ["sh", "-c", script];
+  }
+
+  function stopNightLightRunner() {
+    runner.running = false;
   }
 
   function buildCommand() {
@@ -85,6 +114,19 @@ Singleton {
       if (LocationService.coordinatesReady) {
         apply();
       }
+    }
+  }
+
+  Component.onDestruction: stopNightLightRunner()
+
+  Process {
+    id: staleCleanup
+    running: false
+    onStarted: {
+      Logger.i("NightLight", "Stale wlsunset cleanup started");
+    }
+    onExited: function (code, status) {
+      Logger.i("NightLight", "Stale wlsunset cleanup exited:", code, status);
     }
   }
 
