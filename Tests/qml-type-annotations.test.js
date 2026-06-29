@@ -510,7 +510,7 @@ function testSchemeDownloaderDelegatesAreTyped() {
 
 function testControlCenterPanelCardDelegateIsTyped() {
   const source = readQml("Modules/Panels/ControlCenter/ControlCenterPanel.qml");
-  const cardDelegate = /Repeater\s*\{[\s\S]*?model:\s*Settings\.data\.controlCenter\.cards[\s\S]*?Loader\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?readonly\s+property\s+string\s+cardId:\s*modelData\s*\?\s*\(modelData\.id\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+bool\s+cardEnabled:\s*modelData\s*\?\s*modelData\.enabled\s*===\s*true\s*:\s*false[\s\S]*?active:\s*cardEnabled[\s\S]*?switch\s*\(cardId\)/;
+  const cardDelegate = /Repeater\s*\{[\s\S]*?model:\s*Settings\.data\.controlCenter\.cards[\s\S]*?Loader\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?readonly\s+property\s+string\s+cardId:\s*modelData\s*\?\s*\(modelData\.id\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+bool\s+cardEnabled:\s*modelData\s*\?\s*modelData\.enabled\s*===\s*true\s*:\s*false[\s\S]*?active:\s*root\.shouldLoadCard\(cardEnabled,\s*cardId\)[\s\S]*?switch\s*\(cardId\)/;
 
   assert.match(source, cardDelegate, "ControlCenterPanel card delegate must type card aliases");
   assert.equal((source.match(/modelData\.id/g) ?? []).length, 1, "ControlCenterPanel card delegate must use cardId after declaration");

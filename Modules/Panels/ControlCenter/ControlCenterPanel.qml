@@ -111,6 +111,14 @@ SmartPanel {
     updateVpnPanelPolling(false);
   }
 
+  function shouldLoadCard(cardEnabled, cardId) {
+    if (!root.isPanelOpen || !cardEnabled) {
+      return false;
+    }
+
+    return cardId !== "weather-card" || Settings.data.location.weatherEnabled;
+  }
+
   panelContent: Item {
     id: content
 
@@ -129,7 +137,7 @@ SmartPanel {
           readonly property string cardId: modelData ? (modelData.id || "") : ""
           readonly property bool cardEnabled: modelData ? modelData.enabled === true : false
 
-          active: cardEnabled && (cardId !== "weather-card" || Settings.data.location.weatherEnabled)
+          active: root.shouldLoadCard(cardEnabled, cardId)
           visible: active
           Layout.fillWidth: true
           Layout.preferredHeight: {

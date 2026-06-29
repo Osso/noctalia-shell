@@ -8,6 +8,7 @@ Control Center covers the panel card loader, shortcut widget registry, shortcut/
 - [x] Default Control Center cards must have matching height switch entries.
 - [x] Control Center card delegates expose typed card id and enabled aliases before activation and source selection.
 - [x] Card delegates use typed aliases instead of repeated dynamic `modelData.id` and `modelData.enabled` reads.
+- [x] Card loaders are active only while the Control Center panel is open, so hidden cards do not retain media/system resources after close.
 
 ### Shortcut registry
 
@@ -57,6 +58,7 @@ Control Center covers the panel card loader, shortcut widget registry, shortcut/
 
 ## Tests asserting this spec
 
+- `Tests/control-center-panel-guards.test.js`
 - `Tests/control-center-tab-guards.test.js`
 - `Tests/control-center-widget-registry-guards.test.js`
 - `Tests/widget-registry.test.js`
