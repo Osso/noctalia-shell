@@ -6,7 +6,7 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 
 - [x] Cache saves are debounced.
 - [x] Wi-Fi state sync queries the live radio state.
-- [x] On-demand network status refresh queries Ethernet and connectivity state.
+- [x] On-demand network status refresh queries Ethernet, connected Wi-Fi, and connectivity state.
 - [x] Setting Wi-Fi enabled updates settings first and starts the nmcli radio command.
 - [x] Startup does not perform a background Wi-Fi scan.
 - [x] Idle Ethernet/connectivity timers run only while an active network UI consumer is open.
@@ -38,6 +38,8 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 - [x] Missing connected targets are synthesized with placeholder security and full signal.
 - [x] Missing disconnected targets are not synthesized.
 - [x] Status updates force a `networks` property-change notification.
+- [x] Passive device status synthesizes connected Wi-Fi networks from `nmcli device` output so bar icons do not require a background scan.
+- [x] Passive device status clears stale connected Wi-Fi state when no Wi-Fi device is connected.
 - [x] Unknown or missing connectivity checks default connected Wi-Fi to the normal Wi-Fi icon instead of `world-off`.
 - [x] Connected offline networks show the `world-off` icon only after a known offline/captive connectivity result.
 - [x] Signal strength maps strong, medium, weak, and very weak/missing signal to the expected Wi-Fi icons.

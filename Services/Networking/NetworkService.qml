@@ -255,6 +255,43 @@ Singleton {
     networks = nets;
   }
 
+  function applyDeviceStateOutput(text) {
+    const lines = text.split("\n");
+    var wiredConnected = false;
+    var wifiConnection = "";
+
+    for (var i = 0; i < lines.length; i++) {
+      const parts = lines[i].split(":");
+      if (parts.length < 4) {
+        continue;
+      }
+      if (parts[1] === "ethernet" && parts[2] === "connected") {
+        wiredConnected = true;
+      }
+      if (parts[1] === "wifi" && parts[2] === "connected" && parts[3]) {
+        wifiConnection = parts[3];
+      }
+    }
+
+    if (root.ethernetConnected !== wiredConnected) {
+      root.ethernetConnected = wiredConnected;
+      Logger.d("Network", "Ethernet connected:", root.ethernetConnected);
+    }
+
+    if (wifiConnection) {
+      updateNetworkStatus(wifiConnection, true);
+    } else {
+      let nets = root.networks;
+      for (let key in nets) {
+        if (nets[key].connected) {
+          nets[key].connected = false;
+        }
+      }
+      networks = ({});
+      networks = nets;
+    }
+  }
+
   // Helper functions
   function signalIcon(signal, isConnected = false) {
     if (isConnected && root.networkConnectivity !== "unknown" && !root.internetConnectivity)
@@ -357,19 +394,10 @@ Singleton {
   Process {
     id: ethernetStateProcess
     running: false
-    command: ["nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "device"]
+    command: ["nmcli", "-t", "-f", "DEVICE,TYPE,STATE,CONNECTION", "device"]
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        const connected = text.split("\n").some(line => {
-                                                  const parts = line.split(":");
-                                                  return parts[1] === "ethernet" && parts[2] === "connected";
-                                                });
-        if (root.ethernetConnected !== connected) {
-          root.ethernetConnected = connected;
-          Logger.d("Network", "Ethernet connected:", root.ethernetConnected);
-        }
-      }
+      onStreamFinished: applyDeviceStateOutput(text)
     }
   }
 

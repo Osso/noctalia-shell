@@ -82,6 +82,7 @@ function testNetworkServiceForgetAndStatusGuards() {
   const source = readQml("Services/Networking/NetworkService.qml");
   const forgetBody = extractFunctionBody(source, "forget");
   const statusBody = extractFunctionBody(source, "updateNetworkStatus");
+  const deviceBody = extractFunctionBody(source, "applyDeviceStateOutput");
 
   assert.match(forgetBody, /forgettingNetwork = ssid/, "forget must expose the busy SSID");
   assert.match(forgetBody, /let known = cacheAdapter\.knownNetworks[\s\S]*delete known\[ssid\][\s\S]*cacheAdapter\.knownNetworks = known/, "forget must remove the SSID from cached known networks");
@@ -92,6 +93,10 @@ function testNetworkServiceForgetAndStatusGuards() {
   assert.match(statusBody, /if \(nets\[ssid\]\)[\s\S]*nets\[ssid\]\.connected = connected[\s\S]*nets\[ssid\]\.existing = true[\s\S]*nets\[ssid\]\.cached = true/, "updateNetworkStatus must mark existing targets as known");
   assert.match(statusBody, /else if \(connected\)[\s\S]*"ssid": ssid[\s\S]*"security": "--"[\s\S]*"signal": 100[\s\S]*"connected": true/, "updateNetworkStatus must synthesize connected entries missing from the scan list");
   assert.match(statusBody, /networks = \(\{\}\)[\s\S]*networks = nets/, "updateNetworkStatus must force a property-change notification");
+  assert.match(source, /command: \["nmcli", "-t", "-f", "DEVICE,TYPE,STATE,CONNECTION", "device"\]/, "passive device status must request connection names");
+  assert.match(deviceBody, /parts\[1\] === "wifi" && parts\[2\] === "connected"/, "passive device status must detect connected Wi-Fi devices");
+  assert.match(deviceBody, /updateNetworkStatus\(wifiConnection, true\)/, "passive device status must synthesize connected Wi-Fi networks for bar icons");
+  assert.match(deviceBody, /else \{[\s\S]*nets\[key\]\.connected = false[\s\S]*networks = nets/, "passive device status must clear stale connected Wi-Fi when no Wi-Fi device is connected");
 }
 
 function testNetworkServiceIconAndSecurityHelpers() {
@@ -209,6 +214,7 @@ function testNetworkServiceConnectionStatusAndIconsExecute() {
   const disconnect = qmlFunction("disconnect", "ssid");
   const forget = qmlFunction("forget", "ssid");
   const updateNetworkStatus = qmlFunction("updateNetworkStatus", "ssid", "connected");
+  const applyDeviceStateOutput = qmlFunction("applyDeviceStateOutput", "text");
   const signalIcon = qmlFunction("signalIcon", "signal", "isConnected");
   const isSecured = qmlFunction("isSecured", "security");
   const saveCalls = [];
@@ -226,6 +232,7 @@ function testNetworkServiceConnectionStatusAndIconsExecute() {
     lastError: "old",
     internetConnectivity: false,
     networkConnectivity: "unknown",
+    ethernetConnected: true,
     cacheAdapter: {
       knownNetworks: { Home: true, Office: true },
       lastConnected: "Home",
@@ -236,8 +243,10 @@ function testNetworkServiceConnectionStatusAndIconsExecute() {
     saveCache() {
       saveCalls.push({ ...this.cacheAdapter.knownNetworks, lastConnected: this.cacheAdapter.lastConnected });
     },
+    Logger: { d() {} },
   };
   ctx.root = ctx;
+  ctx.updateNetworkStatus = (ssid, connected) => updateNetworkStatus(ctx, ssid, connected);
 
   connect(ctx, "Office", "secret");
   assert.equal(ctx.connecting, true, "connect must set busy state");
@@ -278,6 +287,13 @@ function testNetworkServiceConnectionStatusAndIconsExecute() {
 
   updateNetworkStatus(ctx, "NewNet", true);
   assert.equal(ctx.networks.NewNet.signal, 100, "missing connected networks must be synthesized");
+
+  applyDeviceStateOutput(ctx, "wlan0:wifi:connected:ossonet\nenp1s0:ethernet:unavailable:\n");
+  assert.equal(ctx.ethernetConnected, false, "passive device state must update Ethernet state");
+  assert.equal(ctx.networks.ossonet.connected, true, "passive device state must synthesize connected Wi-Fi by connection name");
+  assert.equal(ctx.networks.ossonet.signal, 100, "synthesized passive Wi-Fi entries must have usable signal for icons");
+  applyDeviceStateOutput(ctx, "wlan0:wifi:disconnected:\nenp1s0:ethernet:unavailable:\n");
+  assert.equal(ctx.networks.ossonet.connected, false, "passive disconnected Wi-Fi state must clear stale connected networks");
   updateNetworkStatus(ctx, "MissingDisconnected", false);
   assert.equal(ctx.networks.MissingDisconnected, undefined, "disconnected missing networks must not be synthesized");
   assert.equal(signalIcon(ctx, 90, true), "wifi", "unknown connectivity must default to connected Wi-Fi icon");
