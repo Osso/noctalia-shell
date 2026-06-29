@@ -18,7 +18,7 @@ function testSystemStatServiceIntervalAndMemoryGuards() {
   const normalizeBody = extractFunctionBody(source, "normalizeInterval");
   const memoryBody = extractFunctionBody(source, "parseMemoryInfo");
 
-  assert.match(source, /readonly property int defaultIntervalMs: 15000/, "fallback polling interval must be relaxed for idle CPU");
+  assert.match(source, /readonly property int defaultIntervalMs: 10000/, "fallback polling interval must balance freshness with idle CPU");
   assert.match(normalizeBody, /Math\.max\(minimumIntervalMs, value \|\| defaultIntervalMs\)/, "normalizeInterval must clamp falsy and short intervals");
   assert.match(memoryBody, /if \(!text\)\s+return;/, "parseMemoryInfo must ignore empty input");
   assert.match(memoryBody, /const lines = text\.split\('\\n'\)/, "parseMemoryInfo must parse line-oriented /proc/meminfo");
@@ -33,11 +33,11 @@ function testSystemStatDefaultPollingIntervalsPreferIdleCpu() {
   const defaults = JSON.parse(fs.readFileSync(path.join(repoRoot, "Assets/settings-default.json"), "utf8"));
   const monitor = defaults.systemMonitor;
 
-  assert.equal(monitor.cpuPollingInterval, 15000, "default CPU polling should avoid 3s idle wakeups");
-  assert.equal(monitor.memPollingInterval, 15000, "default memory polling should avoid 3s idle wakeups");
-  assert.equal(monitor.networkPollingInterval, 15000, "default network polling should avoid 3s idle wakeups");
-  assert.equal(monitor.tempPollingInterval, 60000, "default temperature polling should be slower than lightweight /proc reads");
-  assert.equal(monitor.diskPollingInterval, 60000, "default disk polling should avoid frequent df subprocesses");
+  assert.equal(monitor.cpuPollingInterval, 10000, "default CPU polling should stay responsive without 3s idle wakeups");
+  assert.equal(monitor.memPollingInterval, 10000, "default memory polling should stay responsive without 3s idle wakeups");
+  assert.equal(monitor.networkPollingInterval, 10000, "default network polling should stay responsive without 3s idle wakeups");
+  assert.equal(monitor.tempPollingInterval, 30000, "default temperature polling should be slower than lightweight /proc reads");
+  assert.equal(monitor.diskPollingInterval, 30000, "default disk polling should avoid frequent df subprocesses");
 }
 
 function testSystemStatServicePollingRefGuards() {
