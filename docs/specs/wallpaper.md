@@ -25,6 +25,13 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 - [x] Recursive scan setup parses successful scan output, sorts cached files, emits list changes, clears lists after failed scans, cleans process references, and starts the scan process.
 - [x] Recursive scan setup uses typed screen-name and directory inputs.
 
+### Rendered background resource use
+
+- [x] Wallpaper backgrounds request a monitor-sized decode before assigning image sources.
+- [x] Wallpaper backgrounds render the settled wallpaper through a plain `Image` instead of an always-loaded transition shader.
+- [x] Wallpaper transition shaders load only while a transition image is pending or animating.
+- [x] Wallpaper background fill-mode settings are mapped to matching `Image` fill modes for idle rendering.
+
 ### Wallpaper panel and settings helpers
 
 - [x] Current wallpaper view lookup returns `null` without panel content.
@@ -71,6 +78,7 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 
 ## Tests asserting this spec
 
+- `Tests/background-resource-guards.test.js`
 - `Tests/wallpaper-service-guards.test.js`
 - `Tests/wallhaven-service-guards.test.js`
 - `Tests/wallpaper-panel-guards.test.js`

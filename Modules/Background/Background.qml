@@ -29,6 +29,8 @@ Variants {
       readonly property real edgeSmoothness: Settings.data.wallpaper.transitionEdgeSmoothness
       readonly property var allTransitions: WallpaperService.allTransitions
       readonly property bool transitioning: transitionAnimation.running
+      readonly property bool shaderActive: transitioning || nextWallpaper.source !== ""
+      readonly property size targetDecodeSize: calculateTargetDecodeSize()
 
       // Wipe direction: 0=left, 1=right, 2=up, 3=down
       property real wipeDirection: 0
@@ -117,13 +119,15 @@ Variants {
 
         property bool dimensionsCalculated: false
 
+        anchors.fill: parent
         source: ""
         smooth: true
         mipmap: false
-        visible: false
+        visible: !root.shaderActive && currentWallpaper.source !== ""
+        fillMode: root.imageFillMode()
         cache: false
         asynchronous: true
-        sourceSize: undefined
+        sourceSize: root.targetDecodeSize
         onStatusChanged: {
           if (status === Image.Error) {
             Logger.w("Current wallpaper failed to load:", source);
@@ -137,7 +141,6 @@ Variants {
         }
         onSourceChanged: {
           dimensionsCalculated = false;
-          sourceSize = undefined;
         }
       }
 
@@ -146,13 +149,15 @@ Variants {
 
         property bool dimensionsCalculated: false
 
+        anchors.fill: parent
         source: ""
         smooth: true
         mipmap: false
         visible: false
+        fillMode: root.imageFillMode()
         cache: false
         asynchronous: true
-        sourceSize: undefined
+        sourceSize: root.targetDecodeSize
         onStatusChanged: {
           if (status === Image.Error) {
             Logger.w("Next wallpaper failed to load:", source);
@@ -166,7 +171,6 @@ Variants {
         }
         onSourceChanged: {
           dimensionsCalculated = false;
-          sourceSize = undefined;
         }
       }
 
@@ -174,7 +178,7 @@ Variants {
       Loader {
         id: shaderLoader
         anchors.fill: parent
-        active: true
+        active: root.shaderActive
 
         sourceComponent: {
           switch (transitionType) {
@@ -318,12 +322,55 @@ Variants {
           // Force complete cleanup to free texture memory (~18-25MB per monitor)
           Qt.callLater(() => {
                          nextWallpaper.source = "";
-                         nextWallpaper.sourceSize = undefined;
+                         nextWallpaper.sourceSize = root.targetDecodeSize;
                          Qt.callLater(() => {
                                         currentWallpaper.asynchronous = true;
                                       });
                        });
         }
+      }
+
+      // ------------------------------------------------------
+      function calculateTargetDecodeSize() {
+        const compositorScale = CompositorService.getDisplayScale(monitorName);
+        const scaledScreenWidth = Math.round(monitorWidth * compositorScale);
+        const scaledScreenHeight = Math.round(monitorHeight * compositorScale);
+        if (scaledScreenWidth <= 0 || scaledScreenHeight <= 0) {
+          return undefined;
+        }
+
+        switch (Settings.data.wallpaper.fillMode) {
+        case "stretch":
+          return Qt.size(scaledScreenWidth, scaledScreenHeight);
+        case "center":
+          return undefined;
+        case "fit":
+        case "crop":
+        default:
+          if (scaledScreenWidth >= scaledScreenHeight) {
+            return Qt.size(scaledScreenWidth, 0);
+          }
+          return Qt.size(0, scaledScreenHeight);
+        }
+      }
+
+      function imageFillMode() {
+        switch (Settings.data.wallpaper.fillMode) {
+        case "center":
+          return Image.Pad;
+        case "fit":
+          return Image.PreserveAspectFit;
+        case "stretch":
+          return Image.Stretch;
+        case "crop":
+        default:
+          return Image.PreserveAspectCrop;
+        }
+      }
+
+      function prepareWallpaperImage(image, source) {
+        image.sourceSize = root.targetDecodeSize;
+        image.source = source;
       }
 
       // ------------------------------------------------------
@@ -393,12 +440,12 @@ Variants {
 
         // Clear nextWallpaper completely to free texture memory
         nextWallpaper.source = "";
-        nextWallpaper.sourceSize = undefined;
+        nextWallpaper.sourceSize = root.targetDecodeSize;
 
         currentWallpaper.source = "";
 
         Qt.callLater(() => {
-                       currentWallpaper.source = source;
+                       prepareWallpaperImage(currentWallpaper, source);
                      });
       }
 
@@ -423,7 +470,7 @@ Variants {
 
                          // Now set the next wallpaper after a brief delay
                          Qt.callLater(() => {
-                                        nextWallpaper.source = source;
+                                        prepareWallpaperImage(nextWallpaper, source);
                                         currentWallpaper.asynchronous = false;
                                         transitionAnimation.start();
                                       });
@@ -431,7 +478,7 @@ Variants {
           return;
         }
 
-        nextWallpaper.source = source;
+        prepareWallpaperImage(nextWallpaper, source);
         currentWallpaper.asynchronous = false;
         transitionAnimation.start();
       }
