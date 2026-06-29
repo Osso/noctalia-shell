@@ -17,33 +17,60 @@ Image {
 
   asynchronous: true
   fillMode: Image.PreserveAspectCrop
-  sourceSize.width: maxCacheDimension
-  sourceSize.height: maxCacheDimension
+  sourceSize.width: root.shouldLoadImage() ? maxCacheDimension : 0
+  sourceSize.height: root.shouldLoadImage() ? maxCacheDimension : 0
   smooth: true
+
+  function shouldLoadImage() {
+    if (!visible) {
+      return false;
+    }
+    return imagePath !== "" && width > 0 && height > 0;
+  }
+
+  function shouldCacheCurrentImage() {
+    if (!visible || !Window.window || !Window.window.visible) {
+      return false;
+    }
+    const originalIsReady = source === imagePath && status === Image.Ready;
+    const cacheTargetExists = imageHash !== "" && cachePath !== "";
+    return originalIsReady && cacheTargetExists;
+  }
+
+  function refreshImageSource() {
+    if (!shouldLoadImage()) {
+      source = "";
+      return;
+    }
+    if (imageHash && cachePath) {
+      source = cachePath;
+    } else {
+      source = imagePath;
+    }
+  }
+
   onImagePathChanged: {
     if (imagePath) {
       imageHash = Checksum.sha256(imagePath);
       // Logger.i("NImageCached", imagePath, imageHash)
     } else {
-      source = "";
       imageHash = "";
     }
+    refreshImageSource();
   }
-  onCachePathChanged: {
-    if (imageHash && cachePath) {
-      // Try to load the cached version, failure will be detected below in onStatusChanged
-      // Failure is expected and warnings are ok in the console. Don't try to improve without consulting.
-      source = cachePath;
-    }
-  }
+  onCachePathChanged: refreshImageSource()
+  onVisibleChanged: refreshImageSource()
+  onWidthChanged: refreshImageSource()
+  onHeightChanged: refreshImageSource()
+  Component.onCompleted: refreshImageSource()
+
   onStatusChanged: {
-    if (source == cachePath && status === Image.Error) {
+    if (source === cachePath && status === Image.Error && shouldLoadImage()) {
       // Cached image was not available, show the original
       source = imagePath;
-    } else if (source == imagePath && status === Image.Ready && imageHash && cachePath) {
+    } else if (shouldCacheCurrentImage()) {
       // Original image is shown and fully loaded, time to cache it
       const grabPath = cachePath;
-      if (visible && width > 0 && height > 0 && Window.window && Window.window.visible)
       grabToImage(res => {
                     return res.saveToFile(grabPath);
                   });
