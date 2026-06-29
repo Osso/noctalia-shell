@@ -193,6 +193,7 @@ Variants {
             id: card
 
             required property int index
+            required property string id
             required property real progress
             required property int urgency
             required property string appName
@@ -202,7 +203,7 @@ Variants {
             required property string actionsJson
             required property date timestamp
 
-            property string notificationId: model.id
+            property string notificationId: id
             property var notificationData: model
             property int hoverCount: 0
             property bool isRemoving: false
@@ -567,7 +568,7 @@ Variants {
               anchors.rightMargin: Style.marginXL
 
               onClicked: {
-                NotificationService.removeFromHistory(model.id);
+                NotificationService.removeFromHistory(notificationId);
                 animateOut();
               }
             }
