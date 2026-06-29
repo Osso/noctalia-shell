@@ -26,6 +26,14 @@ System Monitor covers CPU, memory, network, and CPU-temperature metric collectio
 - [x] Network speed parses RX and TX byte counters.
 - [x] Network speed requires a previous sample and clamps counter resets to zero.
 
+### Polling lifecycle
+
+- [x] CPU, temperature, memory, disk, and network timers remain stopped unless a visible consumer holds a polling reference.
+- [x] Starting a polling reference immediately refreshes the requested metric instead of waiting for the next interval.
+- [x] Polling references are ref-counted and ending a reference clamps at zero.
+- [x] The bar system monitor registers only the metrics that are visible and configured.
+- [x] The process panel registers CPU and memory metrics only while open.
+
 ### Speed formatting
 
 - [x] Full speed formatting keeps sub-megabyte values in KB.

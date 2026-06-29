@@ -78,6 +78,48 @@ Rectangle {
   readonly property int memCriticalThreshold: Settings.data.systemMonitor.memCriticalThreshold
   readonly property int diskWarningThreshold: Settings.data.systemMonitor.diskWarningThreshold
   readonly property int diskCriticalThreshold: Settings.data.systemMonitor.diskCriticalThreshold
+  property var registeredSystemStatMetrics: ({})
+
+  function setSystemStatPolling(metric, shouldPoll) {
+    const isRegistered = registeredSystemStatMetrics[metric] === true;
+    if (shouldPoll && !isRegistered) {
+      SystemStatService.beginPolling(metric);
+      let refs = Object.assign({}, registeredSystemStatMetrics);
+      refs[metric] = true;
+      registeredSystemStatMetrics = refs;
+    } else if (!shouldPoll && isRegistered) {
+      SystemStatService.endPolling(metric);
+      let nextRefs = Object.assign({}, registeredSystemStatMetrics);
+      nextRefs[metric] = false;
+      registeredSystemStatMetrics = nextRefs;
+    }
+  }
+
+  function refreshSystemStatPolling() {
+    const widgetVisible = visible;
+    setSystemStatPolling("cpu", widgetVisible && showCpuUsage);
+    setSystemStatPolling("temp", widgetVisible && showCpuTemp);
+    setSystemStatPolling("memory", widgetVisible && showMemoryUsage);
+    setSystemStatPolling("disk", widgetVisible && showDiskUsage);
+    setSystemStatPolling("network", widgetVisible && showNetworkStats);
+  }
+
+  function clearSystemStatPolling() {
+    setSystemStatPolling("cpu", false);
+    setSystemStatPolling("temp", false);
+    setSystemStatPolling("memory", false);
+    setSystemStatPolling("disk", false);
+    setSystemStatPolling("network", false);
+  }
+
+  Component.onCompleted: refreshSystemStatPolling()
+  Component.onDestruction: clearSystemStatPolling()
+  onVisibleChanged: refreshSystemStatPolling()
+  onShowCpuUsageChanged: refreshSystemStatPolling()
+  onShowCpuTempChanged: refreshSystemStatPolling()
+  onShowMemoryUsageChanged: refreshSystemStatPolling()
+  onShowDiskUsageChanged: refreshSystemStatPolling()
+  onShowNetworkStatsChanged: refreshSystemStatPolling()
 
   // Warning threshold calculation properties
   readonly property bool cpuWarning: showCpuUsage && SystemStatService.cpuUsage > cpuWarningThreshold

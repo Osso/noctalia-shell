@@ -24,6 +24,58 @@ function testSystemStatServiceIntervalAndMemoryGuards() {
   assert.match(memoryBody, /root\.memPercent = Math\.round\(\(usageKb \/ memTotal\) \* 100\)/, "parseMemoryInfo must expose rounded memory percentage");
 }
 
+function testSystemStatServicePollingRefGuards() {
+  const barWidget = readQml("Modules/Bar/Widgets/SystemMonitor.qml");
+  const processPanel = readQml("Modules/Panels/Process/ProcessPanel.qml");
+  const beginBody = extractFunctionBody(source, "beginPolling");
+  const endBody = extractFunctionBody(source, "endPolling");
+  const isActiveBody = extractFunctionBody(source, "isPollingActive");
+  const refreshBody = extractFunctionBody(source, "refreshMetric");
+
+  assert.match(source, /property var pollingRefs: \(\{[\s\S]*"cpu": 0[\s\S]*"network": 0[\s\S]*\}\)/, "SystemStatService must track polling refs by metric");
+  assert.match(source, /running: root\.isPollingActive\("cpu"\)/, "CPU timer must run only when CPU polling has refs");
+  assert.match(source, /running: root\.isPollingActive\("temp"\)/, "temperature timer must run only when temperature polling has refs");
+  assert.match(source, /running: root\.isPollingActive\("memory"\)/, "memory timer must run only when memory polling has refs");
+  assert.match(source, /running: root\.isPollingActive\("disk"\)/, "disk timer must run only when disk polling has refs");
+  assert.match(source, /running: root\.isPollingActive\("network"\)/, "network timer must run only when network polling has refs");
+  assert.match(beginBody, /let refs = Object\.assign\(\{\}, pollingRefs\)[\s\S]*refs\[metric\] = \(refs\[metric\] \|\| 0\) \+ 1[\s\S]*pollingRefs = refs[\s\S]*refreshMetric\(metric\)/, "beginPolling must copy, increment refs, and refresh immediately");
+  assert.match(endBody, /let refs = Object\.assign\(\{\}, pollingRefs\)[\s\S]*refs\[metric\] = Math\.max\(0, \(refs\[metric\] \|\| 0\) - 1\)[\s\S]*pollingRefs = refs/, "endPolling must copy refs and clamp refs at zero");
+  assert.match(isActiveBody, /return \(pollingRefs\[metric\] \|\| 0\) > 0/, "isPollingActive must test metric refs");
+  assert.match(refreshBody, /case "cpu":[\s\S]*cpuStatFile\.reload\(\)/, "refreshMetric must refresh CPU immediately");
+  assert.match(refreshBody, /case "disk":[\s\S]*dfProcess\.running = true/, "refreshMetric must refresh disk immediately");
+  assert.match(barWidget, /function refreshSystemStatPolling\(\)/, "bar system monitor must centralize polling registration refresh");
+  assert.match(barWidget, /function clearSystemStatPolling\(\)/, "bar system monitor must release all polling refs on destruction");
+  assert.match(barWidget, /SystemStatService\.beginPolling\(metric\)[\s\S]*Object\.assign\(\{\}, registeredSystemStatMetrics\)[\s\S]*SystemStatService\.endPolling\(metric\)/, "bar system monitor must ref-count configured polling metrics with copied state");
+  assert.match(barWidget, /setSystemStatPolling\("cpu", widgetVisible && showCpuUsage\)/, "bar system monitor must register CPU polling while visible/configured");
+  assert.match(barWidget, /setSystemStatPolling\("network", widgetVisible && showNetworkStats\)/, "bar system monitor must register network polling while visible/configured");
+  assert.match(processPanel, /SystemStatService\.beginPolling\("cpu"\)[\s\S]*SystemStatService\.beginPolling\("memory"\)/, "process panel must request CPU and memory metrics while open");
+}
+
+function testSystemStatServicePollingRefsExecute() {
+  const beginPolling = qmlFunction("beginPolling", "metric");
+  const endPolling = qmlFunction("endPolling", "metric");
+  const isPollingActive = qmlFunction("isPollingActive", "metric");
+  const refreshed = [];
+  const ctx = {
+    pollingRefs: { cpu: 0, memory: 0 },
+    refreshMetric(metric) {
+      refreshed.push(metric);
+    },
+  };
+
+  beginPolling(ctx, "cpu");
+  beginPolling(ctx, "cpu");
+  assert.equal(ctx.pollingRefs.cpu, 2);
+  assert.equal(isPollingActive(ctx, "cpu"), true);
+  assert.deepEqual(refreshed, ["cpu", "cpu"]);
+
+  endPolling(ctx, "cpu");
+  endPolling(ctx, "cpu");
+  endPolling(ctx, "cpu");
+  assert.equal(ctx.pollingRefs.cpu, 0);
+  assert.equal(isPollingActive(ctx, "cpu"), false);
+}
+
 function testSystemStatServiceCpuAndNetworkGuards() {
   const cpuBody = extractFunctionBody(source, "calculateCpuUsage");
   const networkBody = extractFunctionBody(source, "calculateNetworkSpeed");
@@ -118,6 +170,8 @@ function testSystemStatServiceSpeedFormattersExecuteBoundaries() {
 
 const tests = [
   testSystemStatServiceIntervalAndMemoryGuards,
+  testSystemStatServicePollingRefGuards,
+  testSystemStatServicePollingRefsExecute,
   testSystemStatServiceCpuAndNetworkGuards,
   testSystemStatServiceSpeedFormattingGuards,
   testSystemStatServiceTemperatureGuards,

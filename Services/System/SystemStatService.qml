@@ -17,6 +17,14 @@ Singleton {
     return Math.max(minimumIntervalMs, value || defaultIntervalMs);
   }
 
+  property var pollingRefs: ({
+                               "cpu": 0,
+                               "temp": 0,
+                               "memory": 0,
+                               "disk": 0,
+                               "network": 0
+                             })
+
   // Public values
   property real cpuUsage: 0
   property real cpuTemp: 0
@@ -47,7 +55,7 @@ Singleton {
 
   // --------------------------------------------
   Component.onCompleted: {
-    Logger.i("SystemStat", "Service started with custom polling intervals");
+    Logger.i("SystemStat", "Service started with lazy polling intervals");
 
     // Kickoff the cpu name detection for temperature
     cpuTempNameReader.checkNext();
@@ -59,7 +67,7 @@ Singleton {
     id: cpuUsageTimer
     interval: root.normalizeInterval(Settings.data.systemMonitor.cpuPollingInterval)
     repeat: true
-    running: true
+    running: root.isPollingActive("cpu")
     triggeredOnStart: true
     onIntervalChanged: {
       if (running) {
@@ -74,7 +82,7 @@ Singleton {
     id: cpuTempTimer
     interval: root.normalizeInterval(Settings.data.systemMonitor.tempPollingInterval)
     repeat: true
-    running: true
+    running: root.isPollingActive("temp")
     triggeredOnStart: true
     onIntervalChanged: {
       if (running) {
@@ -89,7 +97,7 @@ Singleton {
     id: memoryTimer
     interval: root.normalizeInterval(Settings.data.systemMonitor.memPollingInterval)
     repeat: true
-    running: true
+    running: root.isPollingActive("memory")
     triggeredOnStart: true
     onIntervalChanged: {
       if (running) {
@@ -104,7 +112,7 @@ Singleton {
     id: diskTimer
     interval: root.normalizeInterval(Settings.data.systemMonitor.diskPollingInterval)
     repeat: true
-    running: true
+    running: root.isPollingActive("disk")
     triggeredOnStart: true
     onIntervalChanged: {
       if (running) {
@@ -119,7 +127,7 @@ Singleton {
     id: networkTimer
     interval: root.normalizeInterval(Settings.data.systemMonitor.networkPollingInterval)
     repeat: true
-    running: true
+    running: root.isPollingActive("network")
     triggeredOnStart: true
     onIntervalChanged: {
       if (running) {
@@ -127,6 +135,43 @@ Singleton {
       }
     }
     onTriggered: netDevFile.reload()
+  }
+
+  function beginPolling(metric) {
+    let refs = Object.assign({}, pollingRefs);
+    refs[metric] = (refs[metric] || 0) + 1;
+    pollingRefs = refs;
+    refreshMetric(metric);
+  }
+
+  function endPolling(metric) {
+    let refs = Object.assign({}, pollingRefs);
+    refs[metric] = Math.max(0, (refs[metric] || 0) - 1);
+    pollingRefs = refs;
+  }
+
+  function isPollingActive(metric) {
+    return (pollingRefs[metric] || 0) > 0;
+  }
+
+  function refreshMetric(metric) {
+    switch (metric) {
+    case "cpu":
+      cpuStatFile.reload();
+      break;
+    case "temp":
+      updateCpuTemperature();
+      break;
+    case "memory":
+      memInfoFile.reload();
+      break;
+    case "disk":
+      dfProcess.running = true;
+      break;
+    case "network":
+      netDevFile.reload();
+      break;
+    }
   }
 
   // --------------------------------------------

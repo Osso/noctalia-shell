@@ -25,10 +25,14 @@ SmartPanel {
   // Activate/deactivate process monitoring when panel opens/closes
   onOpened: {
     ProcessService.addRef();
+    SystemStatService.beginPolling("cpu");
+    SystemStatService.beginPolling("memory");
   }
 
   onClosed: {
     ProcessService.removeRef();
+    SystemStatService.endPolling("cpu");
+    SystemStatService.endPolling("memory");
   }
 
   panelContent: Item {
