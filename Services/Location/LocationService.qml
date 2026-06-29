@@ -11,6 +11,7 @@ Singleton {
 
   property string locationFile: Quickshell.env("NOCTALIA_WEATHER_FILE") || (Settings.cacheDir + "location.json")
   property int weatherUpdateFrequency: 30 * 60 // 30 minutes expressed in seconds
+  property int weatherTimerIntervalMs: 1000
   property bool isFetchingWeather: false
 
   readonly property alias data: adapter // Used to access via LocationService.data.xxx from outside, best to use "adapter" inside the service.
@@ -37,9 +38,11 @@ Singleton {
         Logger.i("Location", "Coordinates ready");
       }
       updateWeather();
+      root.scheduleWeatherUpdate();
     }
     onLoadFailed: function (error) {
       updateWeather();
+      root.scheduleWeatherUpdate();
     }
 
     JsonAdapter {
@@ -64,14 +67,20 @@ Singleton {
     return `${lat}, ${lon}`;
   }
 
-  // Every 20s check if we need to fetch new weather
+  // Wake when the weather cache can actually expire instead of polling every few seconds.
   Timer {
     id: updateTimer
-    interval: 20 * 1000
+    interval: root.weatherTimerIntervalMs
     running: Settings.data.location.weatherEnabled || Settings.data.colorSchemes.schedulingMode == "location"
     repeat: true
+    onRunningChanged: {
+      if (running) {
+        root.scheduleWeatherUpdate();
+      }
+    }
     onTriggered: {
       updateWeather();
+      root.scheduleWeatherUpdate();
     }
   }
 
@@ -122,9 +131,30 @@ Singleton {
       return;
     }
 
-    if ((adapter.weatherLastFetch === "") || (adapter.weather === null) || (adapter.latitude === "") || (adapter.longitude === "") || (adapter.name !== Settings.data.location.name) || (Time.timestamp >= adapter.weatherLastFetch + weatherUpdateFrequency)) {
+    if (root.shouldRefreshWeather()) {
       getFreshWeather();
     }
+  }
+
+  function shouldRefreshWeather() {
+    return (adapter.weatherLastFetch === "") || (adapter.weather === null) || (adapter.latitude === "") || (adapter.longitude === "") || (adapter.name !== Settings.data.location.name) || (Time.timestamp >= adapter.weatherLastFetch + weatherUpdateFrequency);
+  }
+
+  function nextWeatherUpdateIntervalMs() {
+    if (isFetchingWeather) {
+      return 60000;
+    }
+
+    if (root.shouldRefreshWeather()) {
+      return 1000;
+    }
+
+    const nextFetchTimestamp = adapter.weatherLastFetch + weatherUpdateFrequency;
+    return Math.max(1000, (nextFetchTimestamp - Time.timestamp) * 1000);
+  }
+
+  function scheduleWeatherUpdate() {
+    weatherTimerIntervalMs = nextWeatherUpdateIntervalMs();
   }
 
   // --------------------------------
@@ -207,6 +237,7 @@ Singleton {
             root.coordinatesReady = true;
 
             isFetchingWeather = false;
+            root.scheduleWeatherUpdate();
             Logger.d("Location", "Cached weather to disk - stable coordinates updated");
           } catch (e) {
             errorCallback("Location", "Failed to parse weather data");
@@ -224,6 +255,7 @@ Singleton {
   function errorCallback(module, message) {
     Logger.e(module, message);
     isFetchingWeather = false;
+    root.scheduleWeatherUpdate();
   }
 
   // --------------------------------

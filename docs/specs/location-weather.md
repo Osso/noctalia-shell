@@ -9,6 +9,8 @@ Location/weather covers configured location lookup, cached coordinate reuse, wea
 - [x] Weather refreshes stop immediately when weather is disabled in settings.
 - [x] Weather refreshes avoid concurrent fetches and log that weather is still fetching.
 - [x] Weather refreshes run when weather data, coordinates, location name, or fetch freshness requires it.
+- [x] Weather refresh scheduling sleeps until the cache can expire instead of waking every few seconds while data is fresh.
+- [x] Weather refresh scheduling uses a slower retry while a network fetch is already in progress.
 - [x] Weather refreshes delegate actual work to the fresh-weather path.
 - [x] Fresh-weather fetches mark weather as fetching before work starts.
 - [x] Fresh-weather fetches detect configured location-name changes and clear coordinate readiness for changed locations.
@@ -28,10 +30,10 @@ Location/weather covers configured location lookup, cached coordinate reuse, wea
 - [x] Weather fetches build an Open-Meteo forecast URL from latitude and longitude.
 - [x] Weather fetches parse successful responses, cache weather data, and stamp the fetch time.
 - [x] Weather fetches publish stable coordinates and mark coordinates ready after successful weather data.
-- [x] Weather fetches clear the fetch-in-progress state after success.
+- [x] Weather fetches clear the fetch-in-progress state and schedule the next cache refresh after success.
 - [x] Weather fetches report parse failures and HTTP failures.
 - [x] Weather fetches send a GET request.
-- [x] Shared error handling logs the error and clears the fetch-in-progress state.
+- [x] Shared error handling logs the error, clears the fetch-in-progress state, and schedules the next refresh.
 - [x] Shared error handling types module and message inputs.
 
 ### Formatting helpers

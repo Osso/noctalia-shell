@@ -18,8 +18,7 @@ function testLocationServiceLifecycleAndRefreshGuards() {
   assert.match(resetBody, /updateWeather\(\)/, "resetWeather must trigger a weather refresh");
   assert.match(updateBody, /if \(!Settings\.data\.location\.weatherEnabled\)[\s\S]*return;/, "updateWeather must respect disabled weather setting");
   assert.match(updateBody, /if \(isFetchingWeather\)[\s\S]*Logger\.w\("Location", "Weather is still fetching"\)[\s\S]*return;/, "updateWeather must avoid concurrent fetches");
-  assert.match(updateBody, /adapter\.weatherLastFetch === ""[\s\S]*adapter\.weather === null[\s\S]*adapter\.latitude === ""[\s\S]*adapter\.longitude === ""[\s\S]*adapter\.name !== Settings\.data\.location\.name[\s\S]*Time\.timestamp >= adapter\.weatherLastFetch \+ weatherUpdateFrequency/, "updateWeather must refresh missing, changed, or expired weather data");
-  assert.match(updateBody, /getFreshWeather\(\)/, "updateWeather must delegate refreshes");
+  assert.match(updateBody, /if \(root\.shouldRefreshWeather\(\)\)[\s\S]*getFreshWeather\(\)/, "updateWeather must refresh only when weather data is missing, changed, or expired");
   assert.match(freshBody, /isFetchingWeather = true/, "getFreshWeather must mark fetch in progress");
   assert.match(freshBody, /const locationChanged = data\.name !== Settings\.data\.location\.name/, "getFreshWeather must detect location name changes");
   assert.match(freshBody, /if \(locationChanged\)[\s\S]*root\.coordinatesReady = false/, "getFreshWeather must clear coordinate readiness when location changes");
@@ -29,6 +28,61 @@ function testLocationServiceLifecycleAndRefreshGuards() {
   assert.match(freshBody, /root\.stableName = `\$\{name\}, \$\{country\}`/, "getFreshWeather must publish display location name");
   assert.match(freshBody, /_fetchWeather\(latitude, longitude, errorCallback\)/, "getFreshWeather must fetch weather after geocoding");
   assert.match(freshBody, /else[\s\S]*_fetchWeather\(adapter\.latitude, adapter\.longitude, errorCallback\)/, "getFreshWeather must reuse cached coordinates when valid");
+}
+
+function testLocationServiceSchedulingGuards() {
+  const source = readQml("Services/Location/LocationService.qml");
+  const shouldRefreshWeather = new Function("ctx", `with (ctx) { return (function() ${extractFunctionBody(source, "shouldRefreshWeather")}).call(ctx); }`);
+  const nextWeatherUpdateIntervalMs = new Function("ctx", `with (ctx) { return (function() ${extractFunctionBody(source, "nextWeatherUpdateIntervalMs")}).call(ctx); }`);
+  const scheduleWeatherUpdate = new Function("ctx", `with (ctx) { return (function() ${extractFunctionBody(source, "scheduleWeatherUpdate")}).call(ctx); }`);
+
+  assert.match(source, /property int weatherTimerIntervalMs:/, "LocationService must store the next weather timer interval");
+  assert.match(source, /interval: root\.weatherTimerIntervalMs/, "weather update timer must use scheduled intervals instead of a fixed 20s loop");
+  assert.match(source, /onRunningChanged:[\s\S]*root\.scheduleWeatherUpdate\(\)/, "weather timer must reschedule when enabled");
+  assert.match(source, /onTriggered:[\s\S]*updateWeather\(\)[\s\S]*root\.scheduleWeatherUpdate\(\)/, "weather timer must reschedule after each check");
+
+  const ctx = {
+    weatherUpdateFrequency: 1800,
+    weatherTimerIntervalMs: 0,
+    isFetchingWeather: false,
+    adapter: {
+      weatherLastFetch: 1000,
+      weather: { current_weather: {} },
+      latitude: "32.0",
+      longitude: "-96.0",
+      name: "Dallas, TX",
+    },
+    Settings: {
+      data: {
+        location: {
+          name: "Dallas, TX",
+        },
+      },
+    },
+    Time: {
+      timestamp: 1100,
+    },
+  };
+  ctx.root = ctx;
+  ctx.shouldRefreshWeather = () => shouldRefreshWeather(ctx);
+  ctx.nextWeatherUpdateIntervalMs = () => nextWeatherUpdateIntervalMs(ctx);
+
+  assert.equal(shouldRefreshWeather(ctx), false);
+  assert.equal(nextWeatherUpdateIntervalMs(ctx), 1700000);
+  scheduleWeatherUpdate(ctx);
+  assert.equal(ctx.weatherTimerIntervalMs, 1700000);
+
+  ctx.isFetchingWeather = true;
+  assert.equal(nextWeatherUpdateIntervalMs(ctx), 60000);
+  ctx.isFetchingWeather = false;
+
+  ctx.Time.timestamp = 2800;
+  assert.equal(shouldRefreshWeather(ctx), true);
+  assert.equal(nextWeatherUpdateIntervalMs(ctx), 1000);
+
+  ctx.adapter.weather = null;
+  assert.equal(shouldRefreshWeather(ctx), true);
+  assert.equal(nextWeatherUpdateIntervalMs(ctx), 1000);
 }
 
 function testLocationServiceNetworkRequestGuards() {
@@ -51,12 +105,12 @@ function testLocationServiceNetworkRequestGuards() {
   assert.match(fetchBody, /if \(xhr\.status === 200\)[\s\S]*var weatherData = JSON\.parse\(xhr\.responseText\)/, "_fetchWeather must parse successful weather responses");
   assert.match(fetchBody, /data\.weather = weatherData[\s\S]*data\.weatherLastFetch = Time\.timestamp/, "_fetchWeather must cache weather and fetch time");
   assert.match(fetchBody, /root\.stableLatitude = data\.latitude = weatherData\.latitude\.toString\(\)[\s\S]*root\.stableLongitude = data\.longitude = weatherData\.longitude\.toString\(\)[\s\S]*root\.coordinatesReady = true/, "_fetchWeather must publish stable coordinates on success");
-  assert.match(fetchBody, /isFetchingWeather = false/, "_fetchWeather must clear fetch state on success");
+  assert.match(fetchBody, /isFetchingWeather = false[\s\S]*root\.scheduleWeatherUpdate\(\)/, "_fetchWeather must clear fetch state and reschedule on success");
   assert.match(fetchBody, /catch \(e\)[\s\S]*errorCallback\("Location", "Failed to parse weather data"\)/, "_fetchWeather must report parse errors");
   assert.match(fetchBody, /errorCallback\("Location", "Weather fetch error: " \+ xhr\.status\)/, "_fetchWeather must report HTTP errors");
   assert.match(fetchBody, /xhr\.open\("GET", url\)[\s\S]*xhr\.send\(\)/, "_fetchWeather must send GET requests");
   assert.match(errorBody, /Logger\.e\(module, message\)/, "errorCallback must log errors");
-  assert.match(errorBody, /isFetchingWeather = false/, "errorCallback must clear fetch state");
+  assert.match(errorBody, /isFetchingWeather = false[\s\S]*root\.scheduleWeatherUpdate\(\)/, "errorCallback must clear fetch state and reschedule");
 }
 
 function testLocationServiceWeatherFormattingHelpers() {
@@ -92,6 +146,7 @@ function testLocationServiceWeatherFormattingHelpers() {
 
 const tests = [
   testLocationServiceLifecycleAndRefreshGuards,
+  testLocationServiceSchedulingGuards,
   testLocationServiceNetworkRequestGuards,
   testLocationServiceWeatherFormattingHelpers,
 ];
