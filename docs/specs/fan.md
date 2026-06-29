@@ -19,15 +19,16 @@ Fan covers hardware fan sensor discovery, RPM readout, label loading, and fan su
 - [x] Reading the next fan finalizes after pending reads are exhausted.
 - [x] Reading the next fan peeks the next pending index, loads the matching `fanN_input` path, and reloads the reader.
 - [x] Finalizing sorts fans by sensor index.
-- [x] Finalizing attempts to load labels for collected fans.
-- [x] Finalizing publishes collected fans.
+- [x] Finalizing attempts to load missing labels for collected fans.
+- [x] Finalizing reuses cached labels instead of rereading static `fanN_label` files on every RPM refresh.
+- [x] Finalizing publishes collected fans after cached labels are applied.
 
 ### Fan reader and labels
 
 - [x] Fan reader parses RPM and consumes the pending index together.
-- [x] Fan reader collects non-negative readings with default `Fan N` labels.
+- [x] Fan reader collects non-negative readings with cached labels or default `Fan N` labels.
 - [x] Fan reader failure stops the pipeline and finalizes collected data.
-- [x] Label reader updates the most recently collected fan when a label exists.
+- [x] Label reader caches labels by fan index and continues the label pipeline.
 
 ### Summary helpers and types
 

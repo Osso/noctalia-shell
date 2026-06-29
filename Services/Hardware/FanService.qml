@@ -25,7 +25,9 @@ Singleton {
 
   // Internal state for fan reading
   property var pendingFanReads: []
+  property var pendingLabelReads: []
   property var collectedFans: []
+  property var fanLabelCache: ({})
 
   Component.onCompleted: {
     Logger.i("FanService", "Service started with interval:", root.sleepDuration, "ms");
@@ -118,7 +120,7 @@ Singleton {
         root.collectedFans.push({
           index: fanIndex,
           rpm: rpm,
-          label: `Fan ${fanIndex}`
+          label: root.labelForFan(fanIndex)
         });
       }
 
@@ -135,14 +137,17 @@ Singleton {
   // Label reader - reads fan labels if available
   FileView {
     id: labelReader
+    property int fanIndex: 0
     printErrors: false
 
     onLoaded: {
       const label = text().trim();
-      if (label && root.collectedFans.length > 0) {
-        const lastFan = root.collectedFans[root.collectedFans.length - 1];
-        lastFan.label = label;
-      }
+      root.cacheFanLabel(fanIndex, label);
+      root.readNextFanLabel();
+    }
+
+    onLoadFailed: function(error) {
+      root.readNextFanLabel();
     }
   }
 
@@ -172,18 +177,61 @@ Singleton {
   }
 
   function finalizeFanReading() {
-    // Sort by index and update the public property
     root.collectedFans.sort((a, b) => a.index - b.index);
+    root.pendingLabelReads = root.findMissingLabelIndices(root.collectedFans);
 
-    // Try to read labels for each fan
-    root.collectedFans.forEach((fan, idx) => {
-      const labelPath = `${root.fanHwmonPath}/fan${fan.index}_label`;
-      // Attempt to read label (async, will update if found)
-      labelReader.path = labelPath;
-      labelReader.reload();
-    });
+    if (root.pendingLabelReads.length > 0) {
+      root.readNextFanLabel();
+      return;
+    }
 
-    root.fans = root.collectedFans;
+    root.publishFinalFans();
+  }
+
+  function labelForFan(fanIndex) {
+    return root.fanLabelCache[fanIndex] || `Fan ${fanIndex}`;
+  }
+
+  function findMissingLabelIndices(fans) {
+    const missing = [];
+    for (const fan of fans) {
+      if (root.fanLabelCache[fan.index] === undefined) {
+        missing.push(fan.index);
+      }
+    }
+    return missing;
+  }
+
+  function cacheFanLabel(fanIndex, label) {
+    if (!label) {
+      return;
+    }
+
+    const labels = Object.assign({}, root.fanLabelCache);
+    labels[fanIndex] = label;
+    root.fanLabelCache = labels;
+  }
+
+  function applyCachedLabels(fans) {
+    return fans.map(fan => Object.assign({}, fan, {
+      label: root.labelForFan(fan.index)
+    }));
+  }
+
+  function readNextFanLabel() {
+    if (root.pendingLabelReads.length === 0) {
+      root.publishFinalFans();
+      return;
+    }
+
+    const fanIndex = root.pendingLabelReads.shift();
+    labelReader.fanIndex = fanIndex;
+    labelReader.path = `${root.fanHwmonPath}/fan${fanIndex}_label`;
+    labelReader.reload();
+  }
+
+  function publishFinalFans() {
+    root.fans = root.applyCachedLabels(root.collectedFans);
   }
 
   // Helper function to get average RPM

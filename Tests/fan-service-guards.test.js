@@ -54,15 +54,99 @@ function testFanReadPipelineGuards() {
   assert.match(readNextBody, /if \(root\.pendingFanReads\.length === 0\)[\s\S]*finalizeFanReading\(\)[\s\S]*return/, "readNextFan must finalize after pending reads are exhausted");
   assert.match(readNextBody, /const fanIndex = root\.pendingFanReads\[0\][\s\S]*fanReader\.path = `\$\{root\.fanHwmonPath\}\/fan\$\{fanIndex\}_input`[\s\S]*fanReader\.reload\(\)/, "readNextFan must peek next index and load fan input path");
   assert.match(finalizeBody, /root\.collectedFans\.sort\(\(a, b\) => a\.index - b\.index\)/, "finalizeFanReading must sort fans by sensor index");
-  assert.match(finalizeBody, /root\.collectedFans\.forEach\(\(fan, idx\) => \{[\s\S]*labelReader\.path = labelPath[\s\S]*labelReader\.reload\(\)/, "finalizeFanReading must try to load labels for collected fans");
-  assert.match(finalizeBody, /root\.fans = root\.collectedFans/, "finalizeFanReading must publish collected fans");
+  assert.match(finalizeBody, /root\.pendingLabelReads = root\.findMissingLabelIndices\(root\.collectedFans\)[\s\S]*root\.readNextFanLabel\(\)/, "finalizeFanReading must load only missing labels before publishing fans");
+  assert.match(finalizeBody, /root\.publishFinalFans\(\)/, "finalizeFanReading must publish immediately when labels are cached");
 }
 
 function testFanReaderAndLabelGuards() {
   assert.match(source, /const rpm = parseInt\(text\(\)\.trim\(\)\) \|\| 0[\s\S]*const fanIndex = root\.pendingFanReads\.shift\(\)/, "fan reader must parse rpm and consume pending index together");
-  assert.match(source, /if \(rpm >= 0\)[\s\S]*root\.collectedFans\.push\(\{[\s\S]*index: fanIndex,[\s\S]*rpm: rpm,[\s\S]*label: `Fan \$\{fanIndex\}`/, "fan reader must collect non-negative fan readings with default labels");
+  assert.match(source, /if \(rpm >= 0\)[\s\S]*root\.collectedFans\.push\(\{[\s\S]*index: fanIndex,[\s\S]*rpm: rpm,[\s\S]*label: root\.labelForFan\(fanIndex\)/, "fan reader must collect non-negative fan readings with cached labels or default labels");
   assert.match(source, /root\.pendingFanReads = \[\][\s\S]*root\.finalizeFanReading\(\)/, "fan reader failure must stop pipeline and finalize");
-  assert.match(source, /const label = text\(\)\.trim\(\)[\s\S]*if \(label && root\.collectedFans\.length > 0\)[\s\S]*lastFan\.label = label/, "label reader must update the most recent collected fan when a label exists");
+  assert.match(source, /property int fanIndex: 0[\s\S]*root\.cacheFanLabel\(fanIndex, label\)[\s\S]*root\.readNextFanLabel\(\)/, "label reader must cache labels by fan index and continue the label pipeline");
+}
+
+function testFanLabelCacheHelpersExecute() {
+  const labelForFan = qmlFunction("labelForFan", "fanIndex");
+  const findMissingLabelIndices = qmlFunction("findMissingLabelIndices", "fans");
+  const cacheFanLabel = qmlFunction("cacheFanLabel", "fanIndex", "label");
+  const applyCachedLabels = qmlFunction("applyCachedLabels", "fans");
+  const ctx = {
+    fanLabelCache: {
+      1: "CPU Fan",
+    },
+    labelForFan(fanIndex) {
+      return labelForFan(ctx, fanIndex);
+    },
+  };
+  ctx.root = ctx;
+
+  assert.equal(labelForFan(ctx, 1), "CPU Fan");
+  assert.equal(labelForFan(ctx, 2), "Fan 2");
+  assert.deepEqual(findMissingLabelIndices(ctx, [{ index: 1 }, { index: 2 }]), [2]);
+  cacheFanLabel(ctx, 2, "Chassis");
+  cacheFanLabel(ctx, 3, "");
+  assert.deepEqual(ctx.fanLabelCache, { 1: "CPU Fan", 2: "Chassis" });
+  assert.deepEqual(applyCachedLabels(ctx, [
+    { index: 1, rpm: 1200, label: "Fan 1" },
+    { index: 2, rpm: 900, label: "Fan 2" },
+  ]), [
+    { index: 1, rpm: 1200, label: "CPU Fan" },
+    { index: 2, rpm: 900, label: "Chassis" },
+  ]);
+}
+
+function testFanLabelPipelineSkipsCachedLabels() {
+  const finalizeFanReading = qmlFunction("finalizeFanReading");
+  const readNextFanLabel = qmlFunction("readNextFanLabel");
+  const publishFinalFans = qmlFunction("publishFinalFans");
+  const calls = [];
+  const ctx = {
+    collectedFans: [
+      { index: 2, rpm: 900, label: "Fan 2" },
+      { index: 1, rpm: 1200, label: "Fan 1" },
+    ],
+    pendingLabelReads: [],
+    fanHwmonPath: "/sys/class/hwmon/hwmon5",
+    fanLabelCache: {
+      1: "CPU Fan",
+      2: "Chassis",
+    },
+    fans: [],
+    findMissingLabelIndices(fans) {
+      return fans.filter(fan => ctx.fanLabelCache[fan.index] === undefined).map(fan => fan.index);
+    },
+    applyCachedLabels(fans) {
+      return fans.map(fan => Object.assign({}, fan, { label: ctx.fanLabelCache[fan.index] || `Fan ${fan.index}` }));
+    },
+    readNextFanLabel() {
+      calls.push("read-label");
+      return readNextFanLabel(ctx);
+    },
+    publishFinalFans() {
+      calls.push("publish");
+      return publishFinalFans(ctx);
+    },
+    labelReader: {
+      path: "",
+      fanIndex: 0,
+      reload() {
+        calls.push(["reload", this.path]);
+      },
+    },
+  };
+  ctx.root = ctx;
+
+  finalizeFanReading(ctx);
+  assert.deepEqual(calls, ["publish"]);
+  assert.deepEqual(ctx.fans, [
+    { index: 1, rpm: 1200, label: "CPU Fan" },
+    { index: 2, rpm: 900, label: "Chassis" },
+  ]);
+
+  ctx.fanLabelCache = { 1: "CPU Fan" };
+  calls.length = 0;
+  finalizeFanReading(ctx);
+  assert.deepEqual(calls, ["read-label", ["reload", "/sys/class/hwmon/hwmon5/fan2_label"]]);
 }
 
 function testFanSummaryHelpers() {
@@ -86,6 +170,8 @@ const tests = [
   testFanHwmonDetectionPublishesSuccessfulSensor,
   testFanReadPipelineGuards,
   testFanReaderAndLabelGuards,
+  testFanLabelCacheHelpersExecute,
+  testFanLabelPipelineSkipsCachedLabels,
   testFanSummaryHelpers,
 ];
 
