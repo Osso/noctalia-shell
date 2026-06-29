@@ -53,6 +53,7 @@ Item {
   readonly property bool useFixedWidth: (widgetSettings.useFixedWidth !== undefined) ? widgetSettings.useFixedWidth : widgetMetadata.useFixedWidth
 
   readonly property bool hasActivePlayer: MediaService.currentPlayer !== null
+  property bool mediaPositionRegistered: false
   readonly property string placeholderText: I18n.tr("bar.widget-settings.media-mini.no-active-player")
 
   readonly property string tooltipText: {
@@ -97,6 +98,30 @@ Item {
     NumberAnimation {
       duration: Style.animationNormal
       easing.type: Easing.InOutCubic
+    }
+  }
+
+  Component.onCompleted: {
+    if (visible && !mediaPositionRegistered) {
+      MediaService.beginPositionUpdates(false);
+      mediaPositionRegistered = true;
+    }
+  }
+
+  onVisibleChanged: {
+    if (visible && !mediaPositionRegistered) {
+      MediaService.beginPositionUpdates(false);
+      mediaPositionRegistered = true;
+    } else if (!visible && mediaPositionRegistered) {
+      MediaService.endPositionUpdates(false);
+      mediaPositionRegistered = false;
+    }
+  }
+
+  Component.onDestruction: {
+    if (mediaPositionRegistered) {
+      MediaService.endPositionUpdates(false);
+      mediaPositionRegistered = false;
     }
   }
 

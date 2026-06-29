@@ -23,6 +23,7 @@ Media playback covers MPRIS player discovery, virtual player pairing, active-pla
 - [x] Invalid manual selections reset to the first player.
 - [x] Manual switching bounds-checks the requested index, updates the current player/index, and syncs position.
 - [x] Automatic updates apply the selected active player and sync position.
+- [x] MPRIS player add/remove, playback-state, playing-state, and title changes trigger active-player updates without always-on player polling.
 
 ### Transport controls
 
@@ -31,8 +32,12 @@ Media playback covers MPRIS player discovery, virtual player pairing, active-pla
 - [x] `play`, `pause`, `next`, and `previous` require their matching MPRIS capability before sending commands.
 - [x] `stop` sends to the resolved control target when present.
 
-### Seeking
+### Position updates and seeking
 
+- [x] Live position polling is gated behind visible media progress UI.
+- [x] Detailed media cards request 1s position updates; compact bar media widgets request 5s updates.
+- [x] Visible media progress consumers register/deregister with ref-counted guards.
+- [x] Position update deregistration clamps at zero to avoid stale negative refs.
 - [x] Seek helpers resolve a virtual player's control target.
 - [x] Seek helpers type absolute position, relative offset, and ratio inputs.
 - [x] Absolute seek updates backend position and local `currentPosition`.

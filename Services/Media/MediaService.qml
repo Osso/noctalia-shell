@@ -12,6 +12,10 @@ Singleton {
   property real currentPosition: 0
   property bool isSeeking: false
   property int selectedPlayerIndex: 0
+  property int positionUpdateRefs: 0
+  property int fastPositionUpdateRefs: 0
+  readonly property bool positionUpdatesVisible: positionUpdateRefs > 0
+  readonly property int positionUpdateInterval: fastPositionUpdateRefs > 0 ? 1000 : 5000
   property bool isPlaying: currentPlayer ? (currentPlayer.playbackState === MprisPlaybackState.Playing || currentPlayer.isPlaying) : false
   property string trackTitle: currentPlayer ? (currentPlayer.trackTitle !== undefined ? currentPlayer.trackTitle.replace(/(\r\n|\n|\r)/g, "") : "") : ""
   property string trackArtist: currentPlayer ? (currentPlayer.trackArtist || "") : ""
@@ -269,11 +273,25 @@ Singleton {
     }
   }
 
-  // Update progress bar every second while playing
+  function beginPositionUpdates(usesFastInterval) {
+    positionUpdateRefs++;
+    if (usesFastInterval) {
+      fastPositionUpdateRefs++;
+    }
+  }
+
+  function endPositionUpdates(usesFastInterval) {
+    positionUpdateRefs = Math.max(0, positionUpdateRefs - 1);
+    if (usesFastInterval) {
+      fastPositionUpdateRefs = Math.max(0, fastPositionUpdateRefs - 1);
+    }
+  }
+
+  // Update progress while visible and playing
   Timer {
     id: positionTimer
-    interval: 1000
-    running: currentPlayer && !root.isSeeking && currentPlayer.isPlaying && currentPlayer.length > 0 && currentPlayer.playbackState === MprisPlaybackState.Playing
+    interval: root.positionUpdateInterval
+    running: root.positionUpdatesVisible && currentPlayer && !root.isSeeking && currentPlayer.isPlaying && currentPlayer.length > 0 && currentPlayer.playbackState === MprisPlaybackState.Playing
     repeat: true
     onTriggered: {
       if (currentPlayer && !root.isSeeking && currentPlayer.isPlaying && currentPlayer.playbackState === MprisPlaybackState.Playing) {
@@ -306,18 +324,30 @@ Singleton {
     }
   }
 
-  Timer {
-    id: playerStateMonitor
-    interval: 2000 // Check every 2 seconds
-    repeat: true
-    running: true
-    onTriggered: {
-      //Logger.d("MediaService", "playerStateMonitor triggered. autoSwitchingPaused: " + root.autoSwitchingPaused)
-      if (autoSwitchingPaused)
-      return;
-      // Only update if we don't have a playing player or if current player is paused
-      if (!currentPlayer || !currentPlayer.isPlaying || currentPlayer.playbackState !== MprisPlaybackState.Playing) {
-        updateCurrentPlayer();
+  Instantiator {
+    model: Mpris.players && Mpris.players.values ? Mpris.players.values : []
+
+    delegate: Item {
+      required property var modelData
+      visible: false
+
+      Connections {
+        target: modelData
+        function onPlaybackStateChanged() {
+          if (!root.autoSwitchingPaused) {
+            root.updateCurrentPlayer();
+          }
+        }
+        function onIsPlayingChanged() {
+          if (!root.autoSwitchingPaused) {
+            root.updateCurrentPlayer();
+          }
+        }
+        function onTrackTitleChanged() {
+          if (!root.autoSwitchingPaused) {
+            root.updateCurrentPlayer();
+          }
+        }
       }
     }
   }

@@ -14,8 +14,33 @@ NBox {
 
   // Track whether we have an active media player
   readonly property bool hasActivePlayer: MediaService.currentPlayer && MediaService.canPlay
+  property bool mediaPositionRegistered: false
 
   property string wallpaper: WallpaperService.getWallpaper(screen.name)
+
+  Component.onCompleted: {
+    if (visible && !mediaPositionRegistered) {
+      MediaService.beginPositionUpdates(true);
+      mediaPositionRegistered = true;
+    }
+  }
+
+  onVisibleChanged: {
+    if (visible && !mediaPositionRegistered) {
+      MediaService.beginPositionUpdates(true);
+      mediaPositionRegistered = true;
+    } else if (!visible && mediaPositionRegistered) {
+      MediaService.endPositionUpdates(true);
+      mediaPositionRegistered = false;
+    }
+  }
+
+  Component.onDestruction: {
+    if (mediaPositionRegistered) {
+      MediaService.endPositionUpdates(true);
+      mediaPositionRegistered = false;
+    }
+  }
 
   // External state management
   Connections {

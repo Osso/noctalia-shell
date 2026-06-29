@@ -216,6 +216,53 @@ function testMediaServicePlaybackControlsExecuteTargets() {
   assert.deepEqual(control.calls.slice(7), [], "guarded transport helpers skip unavailable capabilities");
 }
 
+function testMediaServicePositionUpdatesAreVisibleGated() {
+  const source = readQml("Services/Media/MediaService.qml");
+  const mediaCard = readQml("Modules/Cards/MediaCard.qml");
+  const mediaMini = readQml("Modules/Bar/Widgets/MediaMini.qml");
+
+  assert.match(source, /property int positionUpdateRefs: 0/, "MediaService must count visible position consumers");
+  assert.match(source, /property int fastPositionUpdateRefs: 0/, "MediaService must count detailed fast position consumers");
+  assert.match(source, /readonly property bool positionUpdatesVisible: positionUpdateRefs > 0/, "MediaService must expose whether position updates are visible");
+  assert.match(source, /readonly property int positionUpdateInterval: fastPositionUpdateRefs > 0 \? 1000 : 5000/, "MediaService must use 1s for detailed UI and 5s for compact UI");
+  assert.match(source, /function beginPositionUpdates\(usesFastInterval\)/, "MediaService must expose position update registration");
+  assert.match(source, /function endPositionUpdates\(usesFastInterval\)/, "MediaService must expose position update deregistration");
+  assert.match(source, /interval: root\.positionUpdateInterval/, "position timer must use visible-consumer interval policy");
+  assert.match(source, /running: root\.positionUpdatesVisible && currentPlayer && !root\.isSeeking/, "position timer must only run while media progress UI is visible");
+  assert.match(mediaCard, /property bool mediaPositionRegistered: false[\s\S]*MediaService\.beginPositionUpdates\(true\)[\s\S]*MediaService\.endPositionUpdates\(true\)/, "MediaCard must register fast visible position updates");
+  assert.match(mediaMini, /property bool mediaPositionRegistered: false[\s\S]*MediaService\.beginPositionUpdates\(false\)[\s\S]*MediaService\.endPositionUpdates\(false\)/, "MediaMini must register compact visible position updates");
+}
+
+function testMediaServicePositionUpdateRefsExecute() {
+  const beginPositionUpdates = qmlFunction("beginPositionUpdates", "usesFastInterval");
+  const endPositionUpdates = qmlFunction("endPositionUpdates", "usesFastInterval");
+  const ctx = { positionUpdateRefs: 0, fastPositionUpdateRefs: 0 };
+
+  beginPositionUpdates(ctx, false);
+  beginPositionUpdates(ctx, true);
+  assert.equal(ctx.positionUpdateRefs, 2, "beginPositionUpdates increments visible consumer refs");
+  assert.equal(ctx.fastPositionUpdateRefs, 1, "beginPositionUpdates tracks fast consumers separately");
+
+  endPositionUpdates(ctx, false);
+  assert.equal(ctx.positionUpdateRefs, 1, "compact deregistration decrements all visible refs");
+  assert.equal(ctx.fastPositionUpdateRefs, 1, "compact deregistration leaves fast refs unchanged");
+
+  endPositionUpdates(ctx, true);
+  endPositionUpdates(ctx, true);
+  assert.equal(ctx.positionUpdateRefs, 0, "endPositionUpdates clamps visible consumer refs at zero");
+  assert.equal(ctx.fastPositionUpdateRefs, 0, "endPositionUpdates clamps fast consumer refs at zero");
+}
+
+function testMediaServiceUsesMprisSignalsForPlayerUpdates() {
+  const source = readQml("Services/Media/MediaService.qml");
+
+  assert.doesNotMatch(source, /id: playerStateMonitor/, "MediaService must not keep an always-on player polling timer");
+  assert.match(source, /Instantiator\s*\{[\s\S]*model: Mpris\.players && Mpris\.players\.values \? Mpris\.players\.values : \[\]/, "MediaService must instantiate signal listeners for current MPRIS players");
+  assert.match(source, /function onPlaybackStateChanged\(\)[\s\S]*root\.updateCurrentPlayer\(\)/, "MPRIS playback-state changes must update active player");
+  assert.match(source, /function onIsPlayingChanged\(\)[\s\S]*root\.updateCurrentPlayer\(\)/, "MPRIS is-playing changes must update active player");
+  assert.match(source, /function onTrackTitleChanged\(\)[\s\S]*root\.updateCurrentPlayer\(\)/, "MPRIS title changes must update virtual player pairing");
+}
+
 function testMediaServiceSeekHelpers() {
   const source = readQml("Services/Media/MediaService.qml");
   const seekBody = extractFunctionBody(source, "seek");
@@ -271,6 +318,9 @@ const tests = [
   testMediaServiceActivePlayerSelectionExecutesPriorities,
   testMediaServicePlaybackControlsDelegateSafely,
   testMediaServicePlaybackControlsExecuteTargets,
+  testMediaServicePositionUpdatesAreVisibleGated,
+  testMediaServicePositionUpdateRefsExecute,
+  testMediaServiceUsesMprisSignalsForPlayerUpdates,
   testMediaServiceSeekHelpers,
   testMediaServiceSeekHelpersExecuteTargets,
 ];
