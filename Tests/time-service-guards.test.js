@@ -57,6 +57,53 @@ function testTimestampAndDurationFormattingOutputsConcreteValues() {
   assert.equal(formatVagueHumanReadableDuration(ctx, 90061), "1d 1h 1m");
 }
 
+function testTimeUpdateCadenceGuards() {
+  const source = readQml("Commons/Time.qml");
+  const clockWidget = readQml("Modules/Bar/Widgets/Clock.qml");
+  const nClock = readQml("Widgets/NClock.qml");
+
+  assert.match(source, /readonly property int timestamp: Math\.floor\(Date\.now\(\) \/ 1000\)/, "timestamp must stay current even when Time.now sleeps until minute boundaries");
+  assert.match(source, /property int secondUpdateRefs: 0/, "Time must ref-count visible second consumers");
+  assert.match(source, /readonly property bool secondUpdatesRequired: root\.timerRunning \|\| root\.secondUpdateRefs > 0/, "timer activity and visible second UIs must require second cadence");
+  assert.match(source, /function beginSecondUpdates\(\)/, "Time must expose second-update registration");
+  assert.match(source, /function endSecondUpdates\(\)/, "Time must expose second-update deregistration");
+  assert.match(source, /function nextUpdateInterval\(date\)/, "Time must compute next update cadence");
+  assert.match(source, /function scheduleNextUpdate\(currentTime\)/, "Time must schedule the next cadence-aware update");
+  assert.match(source, /60000 - date\.getSeconds\(\) \* 1000 - date\.getMilliseconds\(\)/, "minute cadence must sleep until the next minute boundary");
+  assert.match(source, /1000 - date\.getMilliseconds\(\)/, "second cadence must sleep until the next second boundary");
+  assert.match(clockWidget, /function refreshSecondUpdateRegistration\(\)/, "bar clock must centralize second update registration");
+  assert.match(clockWidget, /readonly property bool requiresSecondUpdates: isBarVertical \? Time\.formatRequiresSeconds\(formatVertical\) : Time\.formatRequiresSeconds\(formatHorizontal\)/, "bar clock must request seconds only when visible format includes seconds");
+  assert.match(clockWidget, /Time\.beginSecondUpdates\(\)[\s\S]*Time\.endSecondUpdates\(\)/, "bar clock must register and deregister second updates");
+  assert.match(nClock, /function refreshSecondUpdateRegistration\(\)/, "NClock must centralize second update registration");
+  assert.match(nClock, /Time\.beginSecondUpdates\(\)[\s\S]*Time\.endSecondUpdates\(\)/, "analog/digital NClock must register seconds while visible");
+}
+
+function testTimeUpdateCadenceExecutes() {
+  const source = readQml("Commons/Time.qml");
+  const nextUpdateInterval = new Function("ctx", "date", `with (ctx) { return (function(date) ${extractFunctionBody(source, "nextUpdateInterval")}).call(ctx, date); }`);
+  const formatRequiresSeconds = new Function("ctx", "format", `with (ctx) { return (function(format) ${extractFunctionBody(source, "formatRequiresSeconds")}).call(ctx, format); }`);
+  const beginSecondUpdates = new Function("ctx", `with (ctx) { return (function() ${extractFunctionBody(source, "beginSecondUpdates")}).call(ctx); }`);
+  const endSecondUpdates = new Function("ctx", `with (ctx) { return (function() ${extractFunctionBody(source, "endSecondUpdates")}).call(ctx); }`);
+  const ctx = { root: null, secondUpdateRefs: 0, secondUpdatesRequired: false, timerRunning: false };
+  ctx.root = ctx;
+
+  assert.equal(formatRequiresSeconds(ctx, "HH:mm"), false);
+  assert.equal(formatRequiresSeconds(ctx, "HH:mm:ss"), true);
+  assert.equal(formatRequiresSeconds(ctx, "HH mm ss"), true);
+
+  assert.equal(nextUpdateInterval(ctx, new Date(2026, 0, 1, 12, 34, 20, 250)), 39760);
+  ctx.secondUpdatesRequired = true;
+  assert.equal(nextUpdateInterval(ctx, new Date(2026, 0, 1, 12, 34, 20, 250)), 760);
+
+  beginSecondUpdates(ctx);
+  beginSecondUpdates(ctx);
+  assert.equal(ctx.secondUpdateRefs, 2);
+  endSecondUpdates(ctx);
+  endSecondUpdates(ctx);
+  endSecondUpdates(ctx);
+  assert.equal(ctx.secondUpdateRefs, 0);
+}
+
 function testTimestampFormattingGuards() {
   const source = readQml("Commons/Time.qml");
   const timestampBody = extractFunctionBody(source, "getFormattedTimestamp");
@@ -112,6 +159,7 @@ function testTimerSoundServiceCallsExecuteAgainstFakeService() {
     timerStartTimestamp: 1000,
     timerPausedAt: 0,
     timerSoundPlaying: true,
+    updateTimerState() {},
     SoundService: {
       stopSound(name) {
         soundCalls.push(["stop", name]);
@@ -159,6 +207,8 @@ const tests = [
   testTimeFormattingSignaturesAreTyped,
   testRelativeTimeFormattingOutputsTranslatedBuckets,
   testTimestampAndDurationFormattingOutputsConcreteValues,
+  testTimeUpdateCadenceGuards,
+  testTimeUpdateCadenceExecutes,
   testTimestampFormattingGuards,
   testTimerStartGuards,
   testTimerPauseResetAndFinishedGuards,

@@ -20,6 +20,15 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 - [x] Relative time formatting returns empty text for missing dates.
 - [x] Relative time formatting returns translated now, one-minute, many-minutes, one-hour, many-hours, one-day, and many-days buckets.
 
+### Update cadence
+
+- [x] Shared Unix timestamps read current wall-clock time directly so they do not become stale when `Time.now` sleeps.
+- [x] `Time.now` sleeps until the next minute boundary when no visible UI requires seconds and no timer is running.
+- [x] Visible second-level clock consumers register and deregister second updates with ref-counted guards.
+- [x] Bar clock formats request second updates only when the active format includes second tokens.
+- [x] Analog/digital `NClock` requests second updates while visible for second-hand/progress rendering.
+- [x] Running stopwatch/countdown timers force second-level updates.
+
 ### Timer lifecycle
 
 - [x] Starting in stopwatch mode resumes from elapsed seconds and records the current timestamp.

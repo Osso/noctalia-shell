@@ -42,6 +42,29 @@ Rectangle {
   readonly property string customFont: widgetSettings.customFont !== undefined ? widgetSettings.customFont : widgetMetadata.customFont
   readonly property string formatHorizontal: widgetSettings.formatHorizontal !== undefined ? widgetSettings.formatHorizontal : widgetMetadata.formatHorizontal
   readonly property string formatVertical: widgetSettings.formatVertical !== undefined ? widgetSettings.formatVertical : widgetMetadata.formatVertical
+  readonly property bool requiresSecondUpdates: isBarVertical ? Time.formatRequiresSeconds(formatVertical) : Time.formatRequiresSeconds(formatHorizontal)
+  property bool secondUpdatesRegistered: false
+
+  function refreshSecondUpdateRegistration() {
+    const shouldRegister = visible && requiresSecondUpdates;
+    if (shouldRegister && !secondUpdatesRegistered) {
+      Time.beginSecondUpdates();
+      secondUpdatesRegistered = true;
+    } else if (!shouldRegister && secondUpdatesRegistered) {
+      Time.endSecondUpdates();
+      secondUpdatesRegistered = false;
+    }
+  }
+
+  Component.onCompleted: refreshSecondUpdateRegistration()
+  Component.onDestruction: {
+    if (secondUpdatesRegistered) {
+      Time.endSecondUpdates();
+      secondUpdatesRegistered = false;
+    }
+  }
+  onVisibleChanged: refreshSecondUpdateRegistration()
+  onRequiresSecondUpdatesChanged: refreshSecondUpdateRegistration()
 
   function closePopupMenuWindow() {
     var popupMenuWindow = PanelService.getPopupMenuWindow(screen);

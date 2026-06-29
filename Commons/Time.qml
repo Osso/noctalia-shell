@@ -12,9 +12,7 @@ Singleton {
   property date now: new Date()
 
   // Returns a Unix Timestamp (in seconds)
-  readonly property int timestamp: {
-    return Math.floor(root.now / 1000);
-  }
+  readonly property int timestamp: Math.floor(Date.now() / 1000)
 
   // Timer state (for countdown/stopwatch)
   property bool timerRunning: false
@@ -26,48 +24,76 @@ Singleton {
   property int timerStartTimestamp: 0 // Unix timestamp when timer was started
   property int timerPausedAt: 0 // Value when paused (for resuming)
 
+  // Ref-counted second-level updates for visible clocks/timers that need them.
+  property int secondUpdateRefs: 0
+  readonly property bool secondUpdatesRequired: root.timerRunning || root.secondUpdateRefs > 0
+
+  onSecondUpdatesRequiredChanged: scheduleNextUpdate(new Date())
+
   Timer {
     id: updateTimer
     interval: 1000
-    repeat: true
-    running: true
+    repeat: false
+    running: false
     triggeredOnStart: false
-    onTriggered: {
-      var newTime = new Date();
-      root.now = newTime;
+    onTriggered: updateTime(new Date())
+  }
 
-      // Update timer if running
-      if (root.timerRunning && root.timerStartTimestamp > 0) {
-        const elapsedSinceStart = root.timestamp - root.timerStartTimestamp;
+  Component.onCompleted: updateTime(new Date())
 
-        if (root.timerStopwatchMode) {
-          root.timerElapsedSeconds = root.timerPausedAt + elapsedSinceStart;
-        } else {
-          root.timerRemainingSeconds = root.timerTotalSeconds - elapsedSinceStart;
-          if (root.timerRemainingSeconds <= 0) {
-            root.timerOnFinished();
-          }
-        }
-      }
+  function updateTime(currentTime) {
+    root.now = currentTime;
+    updateTimerState();
+    scheduleNextUpdate(currentTime);
+  }
 
-      // Adjust next interval to sync with the start of the next second
-      var msIntoSecond = newTime.getMilliseconds();
-      if (msIntoSecond > 100) {
-        // If we're more than 100ms into the second, adjust for next time
-        updateTimer.interval = 1000 - msIntoSecond + 10; // +10ms buffer
-        updateTimer.restart();
-      } else {
-        updateTimer.interval = 1000;
-      }
+  function updateTimerState() {
+    if (!root.timerRunning || root.timerStartTimestamp <= 0) {
+      return;
+    }
+
+    const elapsedSinceStart = root.timestamp - root.timerStartTimestamp;
+
+    if (root.timerStopwatchMode) {
+      root.timerElapsedSeconds = root.timerPausedAt + elapsedSinceStart;
+      return;
+    }
+
+    root.timerRemainingSeconds = root.timerTotalSeconds - elapsedSinceStart;
+    if (root.timerRemainingSeconds <= 0) {
+      root.timerOnFinished();
     }
   }
 
-  Component.onCompleted: {
-    // Start by syncing to the next second boundary
-    var now = new Date();
-    var msUntilNextSecond = 1000 - now.getMilliseconds();
-    updateTimer.interval = msUntilNextSecond + 10; // +10ms buffer
+  function scheduleNextUpdate(currentTime) {
+    updateTimer.interval = nextUpdateInterval(currentTime);
     updateTimer.restart();
+  }
+
+  function nextUpdateInterval(date) {
+    const bufferMs = 10;
+    const minimumIntervalMs = 100;
+    if (root.secondUpdatesRequired) {
+      return Math.max(minimumIntervalMs, 1000 - date.getMilliseconds() + bufferMs);
+    }
+
+    const untilNextMinute = 60000 - date.getSeconds() * 1000 - date.getMilliseconds();
+    return Math.max(minimumIntervalMs, untilNextMinute + bufferMs);
+  }
+
+  function beginSecondUpdates() {
+    secondUpdateRefs++;
+  }
+
+  function endSecondUpdates() {
+    secondUpdateRefs = Math.max(0, secondUpdateRefs - 1);
+  }
+
+  function formatRequiresSeconds(format) {
+    if (!format) {
+      return false;
+    }
+    return /(^|[^A-Za-z])s{1,2}([^A-Za-z]|$)/.test(format);
   }
 
   // Formats a Date object into a YYYYMMDD-HHMMSS string.
@@ -147,6 +173,7 @@ Singleton {
 
   // Timer functions
   function timerStart() {
+    root.now = new Date();
     if (root.timerStopwatchMode) {
       root.timerRunning = true;
       root.timerStartTimestamp = root.timestamp;
@@ -160,9 +187,11 @@ Singleton {
       root.timerStartTimestamp = root.timestamp;
       root.timerPausedAt = 0;
     }
+    scheduleNextUpdate(root.now);
   }
 
   function timerPause() {
+    updateTimerState();
     if (root.timerRunning) {
       // Save current state
       if (root.timerStopwatchMode) {

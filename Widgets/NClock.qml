@@ -52,6 +52,26 @@ Item {
   // Font size properties for digital clock
   property real hoursFontSize: Style.fontSizeXS
   property real minutesFontSize: Style.fontSizeXXS
+  property bool secondUpdatesRegistered: false
+
+  function refreshSecondUpdateRegistration() {
+    if (visible && !secondUpdatesRegistered) {
+      Time.beginSecondUpdates();
+      secondUpdatesRegistered = true;
+    } else if (!visible && secondUpdatesRegistered) {
+      Time.endSecondUpdates();
+      secondUpdatesRegistered = false;
+    }
+  }
+
+  Component.onCompleted: refreshSecondUpdateRegistration()
+  Component.onDestruction: {
+    if (secondUpdatesRegistered) {
+      Time.endSecondUpdates();
+      secondUpdatesRegistered = false;
+    }
+  }
+  onVisibleChanged: refreshSecondUpdateRegistration()
 
   height: Math.round((Style.fontSizeXXXL * 1.9) / 2 * Style.uiScaleRatio) * 2
   width: root.height
