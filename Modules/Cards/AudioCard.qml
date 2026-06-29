@@ -67,24 +67,28 @@ NBox {
     }
   }
 
-  // Timer to debounce volume changes
-  // Only sync if the device hasn't changed (check by comparing IDs)
   Timer {
+    id: volumeSyncTimer
     interval: 100
-    running: true
-    repeat: true
-    onTriggered: {
-      // Only sync if sink hasn't changed
-      if (AudioService.sink && AudioService.sink.id === lastSinkId) {
-        if (Math.abs(localOutputVolume - AudioService.volume) >= 0.01) {
-          AudioService.setVolume(localOutputVolume);
-        }
+    running: false
+    repeat: false
+    onTriggered: syncPendingVolumeChanges()
+  }
+
+  function scheduleVolumeSync() {
+    volumeSyncTimer.restart();
+  }
+
+  function syncPendingVolumeChanges() {
+    if (AudioService.sink && AudioService.sink.id === lastSinkId) {
+      if (Math.abs(localOutputVolume - AudioService.volume) >= 0.01) {
+        AudioService.setVolume(localOutputVolume);
       }
-      // Only sync if source hasn't changed
-      if (AudioService.source && AudioService.source.id === lastSourceId) {
-        if (Math.abs(localInputVolume - AudioService.inputVolume) >= 0.01) {
-          AudioService.setInputVolume(localInputVolume);
-        }
+    }
+
+    if (AudioService.source && AudioService.source.id === lastSourceId) {
+      if (Math.abs(localInputVolume - AudioService.inputVolume) >= 0.01) {
+        AudioService.setInputVolume(localInputVolume);
       }
     }
   }
@@ -181,8 +185,16 @@ NBox {
         value: localOutputVolume
         stepSize: 0.01
         heightRatio: 0.5
-        onMoved: localOutputVolume = value
-        onPressedChanged: localOutputVolumeChanging = pressed
+        onMoved: {
+          localOutputVolume = value;
+          scheduleVolumeSync();
+        }
+        onPressedChanged: {
+          localOutputVolumeChanging = pressed;
+          if (!pressed) {
+            scheduleVolumeSync();
+          }
+        }
         tooltipText: `${Math.round(localOutputVolume * 100)}%`
         tooltipDirection: "bottom"
       }
@@ -230,8 +242,16 @@ NBox {
         value: localInputVolume
         stepSize: 0.01
         heightRatio: 0.5
-        onMoved: localInputVolume = value
-        onPressedChanged: localInputVolumeChanging = pressed
+        onMoved: {
+          localInputVolume = value;
+          scheduleVolumeSync();
+        }
+        onPressedChanged: {
+          localInputVolumeChanging = pressed;
+          if (!pressed) {
+            scheduleVolumeSync();
+          }
+        }
         tooltipText: `${Math.round(localInputVolume * 100)}%`
         tooltipDirection: "bottom"
       }

@@ -35,6 +35,13 @@ Audio covers PipeWire-backed output/input volume state, device selection, OSD su
 - [x] Setting the default sink updates PipeWire's preferred default audio sink.
 - [x] Setting the default source updates PipeWire's preferred default audio source.
 
+### UI volume controls
+
+- [x] Audio card and audio panel volume sliders use on-demand debounce timers instead of permanent 100ms polling loops.
+- [x] Slider movement schedules pending output/input volume sync.
+- [x] Slider release flushes pending output/input volume sync.
+- [x] Pending sync preserves device-id guards before writing output/input volume.
+
 ### Typed UI contracts
 
 - [x] Audio panel sink/source delegates expose typed `PwNode` model data and stable device id/description aliases.
@@ -59,6 +66,7 @@ Audio covers PipeWire-backed output/input volume state, device selection, OSD su
 ## Tests asserting this spec
 
 - `Tests/audio-service-guards.test.js`
+- `Tests/audio-ui-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/qml-runtime-guards.test.js`
 

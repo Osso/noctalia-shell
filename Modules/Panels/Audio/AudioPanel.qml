@@ -94,24 +94,28 @@ SmartPanel {
     }
   }
 
-  // Timer to debounce volume changes
-  // Only sync if the device hasn't changed (check by comparing IDs)
   Timer {
+    id: volumeSyncTimer
     interval: 100
-    running: true
-    repeat: true
-    onTriggered: {
-      // Only sync if sink hasn't changed
-      if (AudioService.sink && AudioService.sink.id === lastSinkId) {
-        if (Math.abs(localOutputVolume - AudioService.volume) >= 0.01) {
-          AudioService.setVolume(localOutputVolume);
-        }
+    running: false
+    repeat: false
+    onTriggered: syncPendingVolumeChanges()
+  }
+
+  function scheduleVolumeSync() {
+    volumeSyncTimer.restart();
+  }
+
+  function syncPendingVolumeChanges() {
+    if (AudioService.sink && AudioService.sink.id === lastSinkId) {
+      if (Math.abs(localOutputVolume - AudioService.volume) >= 0.01) {
+        AudioService.setVolume(localOutputVolume);
       }
-      // Only sync if source hasn't changed
-      if (AudioService.source && AudioService.source.id === lastSourceId) {
-        if (Math.abs(localInputVolume - AudioService.inputVolume) >= 0.01) {
-          AudioService.setInputVolume(localInputVolume);
-        }
+    }
+
+    if (AudioService.source && AudioService.source.id === lastSourceId) {
+      if (Math.abs(localInputVolume - AudioService.inputVolume) >= 0.01) {
+        AudioService.setInputVolume(localInputVolume);
       }
     }
   }
@@ -228,8 +232,16 @@ SmartPanel {
                 value: localOutputVolume
                 stepSize: 0.01
                 heightRatio: 0.5
-                onMoved: value => localOutputVolume = value
-                onPressedChanged: (pressed, value) => localOutputVolumeChanging = pressed
+                onMoved: value => {
+                           localOutputVolume = value;
+                           scheduleVolumeSync();
+                         }
+                onPressedChanged: (pressed, value) => {
+                                    localOutputVolumeChanging = pressed;
+                                    if (!pressed) {
+                                      scheduleVolumeSync();
+                                    }
+                                  }
                 text: Math.round(localOutputVolume * 100) + "%"
                 Layout.bottomMargin: Style.marginM
               }
@@ -290,8 +302,16 @@ SmartPanel {
                 value: localInputVolume
                 stepSize: 0.01
                 heightRatio: 0.5
-                onMoved: value => localInputVolume = value
-                onPressedChanged: (pressed, value) => localInputVolumeChanging = pressed
+                onMoved: value => {
+                           localInputVolume = value;
+                           scheduleVolumeSync();
+                         }
+                onPressedChanged: (pressed, value) => {
+                                    localInputVolumeChanging = pressed;
+                                    if (!pressed) {
+                                      scheduleVolumeSync();
+                                    }
+                                  }
                 text: Math.round(localInputVolume * 100) + "%"
                 Layout.bottomMargin: Style.marginM
               }
