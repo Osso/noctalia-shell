@@ -257,7 +257,7 @@ Singleton {
 
   // Helper functions
   function signalIcon(signal, isConnected = false) {
-    if (isConnected && !root.internetConnectivity)
+    if (isConnected && root.networkConnectivity !== "unknown" && !root.internetConnectivity)
       return "world-off";
     if (signal >= 80)
       return "wifi";
@@ -465,6 +465,9 @@ Singleton {
       onStreamFinished: {
         if (text.trim()) {
           Logger.w("Network", "Connectivity check error: " + text);
+          root.networkConnectivity = "unknown";
+          root.internetConnectivity = true;
+          connectivityCheckProcess.failedChecks = 0;
         }
       }
     }

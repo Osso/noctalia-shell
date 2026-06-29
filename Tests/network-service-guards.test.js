@@ -47,6 +47,7 @@ function testNetworkServiceIdlePollingGuards() {
   assert.doesNotMatch(completedBlock, /scan\(\)/, "NetworkService startup must not perform a background Wi-Fi scan");
   assert.match(completedBlock, /refreshNetworkStatus\(\)/, "NetworkService startup must do a cheap status refresh instead of scanning");
   assert.match(source, /onTriggered:\s*\{\s*if \(root\.activePolling\) \{\s*scan\(\);\s*\}\s*\}/, "Delayed scan timer must not rescan while idle");
+  assert.match(source, /Connectivity check error:[\s\S]*root\.networkConnectivity = "unknown"[\s\S]*root\.internetConnectivity = true/, "Connectivity check errors must default to connected instead of preserving stale offline state");
 }
 
 function testWiFiPanelControlsActivePolling() {
@@ -98,7 +99,7 @@ function testNetworkServiceIconAndSecurityHelpers() {
   const iconBody = extractFunctionBody(source, "signalIcon");
   const securedBody = extractFunctionBody(source, "isSecured");
 
-  assert.match(iconBody, /if \(isConnected && !root\.internetConnectivity\)\s+return "world-off"/, "signalIcon must show disconnected-world for captive or offline networks");
+  assert.match(iconBody, /if \(isConnected && root\.networkConnectivity !== "unknown" && !root\.internetConnectivity\)\s+return "world-off"/, "signalIcon must show disconnected-world only for known captive or offline networks");
   assert.match(iconBody, /if \(signal >= 80\)\s+return "wifi"/, "signalIcon must map strong signal");
   assert.match(iconBody, /if \(signal >= 50\)\s+return "wifi-2"/, "signalIcon must map medium signal");
   assert.match(iconBody, /if \(signal >= 20\)\s+return "wifi-1"/, "signalIcon must map weak signal");
@@ -224,6 +225,7 @@ function testNetworkServiceConnectionStatusAndIconsExecute() {
     forgettingNetwork: "",
     lastError: "old",
     internetConnectivity: false,
+    networkConnectivity: "unknown",
     cacheAdapter: {
       knownNetworks: { Home: true, Office: true },
       lastConnected: "Home",
@@ -278,7 +280,9 @@ function testNetworkServiceConnectionStatusAndIconsExecute() {
   assert.equal(ctx.networks.NewNet.signal, 100, "missing connected networks must be synthesized");
   updateNetworkStatus(ctx, "MissingDisconnected", false);
   assert.equal(ctx.networks.MissingDisconnected, undefined, "disconnected missing networks must not be synthesized");
-  assert.equal(signalIcon(ctx, 90, true), "world-off", "connected offline networks must show world-off");
+  assert.equal(signalIcon(ctx, 90, true), "wifi", "unknown connectivity must default to connected Wi-Fi icon");
+  ctx.networkConnectivity = "limited";
+  assert.equal(signalIcon(ctx, 90, true), "world-off", "known offline networks must show world-off");
   ctx.internetConnectivity = true;
   assert.equal(signalIcon(ctx, 90, false), "wifi", "strong signal must use wifi icon");
   assert.equal(signalIcon(ctx, 55, false), "wifi-2", "medium signal must use wifi-2 icon");

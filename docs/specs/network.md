@@ -38,7 +38,8 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 - [x] Missing connected targets are synthesized with placeholder security and full signal.
 - [x] Missing disconnected targets are not synthesized.
 - [x] Status updates force a `networks` property-change notification.
-- [x] Connected offline networks show the `world-off` icon.
+- [x] Unknown or missing connectivity checks default connected Wi-Fi to the normal Wi-Fi icon instead of `world-off`.
+- [x] Connected offline networks show the `world-off` icon only after a known offline/captive connectivity result.
 - [x] Signal strength maps strong, medium, weak, and very weak/missing signal to the expected Wi-Fi icons.
 - [x] Security helper rejects missing, placeholder, and blank security values.
 
