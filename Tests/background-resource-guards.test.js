@@ -33,10 +33,21 @@ function testBackgroundHelperFunctionsExist() {
   assert.match(source, /function prepareWallpaperImage\(image, source\)/, "background must centralize sourceSize-before-source assignment");
 }
 
+function testBackgroundDecodeSizesStayValidQSizeValues() {
+  const source = readQml("Modules/Background/Background.qml");
+  const calculateBody = extractFunctionBody(source, "calculateTargetDecodeSize");
+  const recalculateBody = extractFunctionBody(source, "recalculateImageSizes");
+
+  assert.doesNotMatch(calculateBody, /return undefined/, "targetDecodeSize is a property size and must never return undefined");
+  assert.match(calculateBody, /Qt\.size\(0, 0\)/, "targetDecodeSize must use an empty QSize fallback when decode size is unconstrained");
+  assert.doesNotMatch(recalculateBody, /sourceSize = undefined/, "wallpaper sourceSize assignments must never use undefined QSize values");
+}
+
 const tests = [
   testBackgroundAvoidsIdleTransitionShader,
   testBackgroundSetsDecodeSizeBeforeSource,
   testBackgroundHelperFunctionsExist,
+  testBackgroundDecodeSizesStayValidQSizeValues,
 ];
 
 for (const test of tests) {

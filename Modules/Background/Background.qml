@@ -336,14 +336,14 @@ Variants {
         const scaledScreenWidth = Math.round(monitorWidth * compositorScale);
         const scaledScreenHeight = Math.round(monitorHeight * compositorScale);
         if (scaledScreenWidth <= 0 || scaledScreenHeight <= 0) {
-          return undefined;
+          return Qt.size(0, 0);
         }
 
         switch (Settings.data.wallpaper.fillMode) {
         case "stretch":
           return Qt.size(scaledScreenWidth, scaledScreenHeight);
         case "center":
-          return undefined;
+          return Qt.size(0, 0);
         case "fit":
         case "crop":
         default:
@@ -405,7 +405,7 @@ Variants {
           if (optimal !== undefined && optimal !== false) {
             currentWallpaper.sourceSize = optimal;
           } else {
-            currentWallpaper.sourceSize = undefined;
+            currentWallpaper.sourceSize = root.targetDecodeSize;
           }
         }
 
@@ -414,7 +414,7 @@ Variants {
           if (optimal2 !== undefined && optimal2 !== false) {
             nextWallpaper.sourceSize = optimal2;
           } else {
-            nextWallpaper.sourceSize = undefined;
+            nextWallpaper.sourceSize = root.targetDecodeSize;
           }
         }
       }
