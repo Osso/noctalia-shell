@@ -22,11 +22,13 @@ Fan covers hardware fan sensor discovery, RPM readout, label loading, and fan su
 
 - [x] Reading fans no-ops before a hwmon path is detected.
 - [x] Reading fans resets pending and collected fan state.
-- [x] Reading fans queues the configured fan sensor indices.
+- [x] Reading fans queues the configured fan sensor indices before any fan inputs have been detected.
+- [x] Reading fans reuses cached detected fan input indices after the first successful scan to avoid probing missing `fanN_input` files every refresh.
 - [x] Reading fans starts the read pipeline.
 - [x] Reading the next fan finalizes after pending reads are exhausted.
 - [x] Reading the next fan peeks the next pending index, loads the matching `fanN_input` path, and reloads the reader.
 - [x] Finalizing sorts fans by sensor index.
+- [x] Finalizing caches detected fan input indices before publishing collected fans.
 - [x] Finalizing attempts to load missing labels for collected fans.
 - [x] Finalizing reuses cached labels instead of rereading static `fanN_label` files on every RPM refresh.
 - [x] Finalizing publishes collected fans after cached labels are applied.

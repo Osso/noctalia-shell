@@ -29,6 +29,7 @@ Singleton {
   property var pendingFanReads: []
   property var pendingLabelReads: []
   property var collectedFans: []
+  property var detectedFanIndices: []
   property var fanLabelCache: ({})
 
   Component.onCompleted: {
@@ -169,16 +170,31 @@ Singleton {
     return pollingRefs > 0;
   }
 
+  function fanIndicesToRead() {
+    if (root.detectedFanIndices.length > 0) {
+      return root.detectedFanIndices.slice();
+    }
+
+    const indices = [];
+    for (let i = 1; i <= root.maxFanSensors; i++) {
+      indices.push(i);
+    }
+    return indices;
+  }
+
+  function rememberDetectedFanIndices(fans) {
+    if (fans.length === 0) {
+      return;
+    }
+
+    root.detectedFanIndices = fans.map(fan => fan.index).sort((a, b) => a - b);
+  }
+
   function readAllFans() {
     if (root.fanHwmonPath === "") return;
 
     root.collectedFans = [];
-    root.pendingFanReads = [];
-
-    // Queue fan indices to read
-    for (let i = 1; i <= root.maxFanSensors; i++) {
-      root.pendingFanReads.push(i);
-    }
+    root.pendingFanReads = root.fanIndicesToRead();
 
     readNextFan();
   }
@@ -196,6 +212,7 @@ Singleton {
 
   function finalizeFanReading() {
     root.collectedFans.sort((a, b) => a.index - b.index);
+    root.rememberDetectedFanIndices(root.collectedFans);
     root.pendingLabelReads = root.findMissingLabelIndices(root.collectedFans);
 
     if (root.pendingLabelReads.length > 0) {

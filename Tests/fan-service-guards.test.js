@@ -80,18 +80,38 @@ function testFanPollingLifecycleGuards() {
   assert.equal(ctx.pollingRefs, 0);
 }
 
+function testFanDetectedIndexCacheGuards() {
+  assert.match(source, /property var detectedFanIndices: \[\]/, "FanService must cache detected fan input indices");
+  assert.match(source, /function fanIndicesToRead\(\)/, "FanService must centralize fan index selection");
+  assert.match(source, /function rememberDetectedFanIndices\(fans\)/, "FanService must remember discovered fan input indices");
+
+  const fanIndicesToRead = qmlFunction("fanIndicesToRead");
+  const rememberDetectedFanIndices = qmlFunction("rememberDetectedFanIndices", "fans");
+  const ctx = {
+    detectedFanIndices: [],
+    maxFanSensors: 4,
+  };
+  ctx.root = ctx;
+
+  assert.deepEqual(fanIndicesToRead(ctx), [1, 2, 3, 4]);
+  rememberDetectedFanIndices(ctx, [{ index: 2 }, { index: 1 }]);
+  assert.deepEqual(ctx.detectedFanIndices, [1, 2]);
+  assert.deepEqual(fanIndicesToRead(ctx), [1, 2]);
+}
+
 function testFanReadPipelineGuards() {
   const readAllBody = extractFunctionBody(source, "readAllFans");
   const readNextBody = extractFunctionBody(source, "readNextFan");
   const finalizeBody = extractFunctionBody(source, "finalizeFanReading");
 
   assert.match(readAllBody, /if \(root\.fanHwmonPath === ""\) return/, "readAllFans must no-op before hwmon path detection");
-  assert.match(readAllBody, /root\.collectedFans = \[\][\s\S]*root\.pendingFanReads = \[\]/, "readAllFans must reset pending and collected fan state");
-  assert.match(readAllBody, /for \(let i = 1; i <= root\.maxFanSensors; i\+\+\)[\s\S]*root\.pendingFanReads\.push\(i\)/, "readAllFans must queue configured fan sensor indices");
+  assert.match(readAllBody, /root\.collectedFans = \[\][\s\S]*root\.pendingFanReads = root\.fanIndicesToRead\(\)/, "readAllFans must reset collected state and queue pending fan indices");
+  assert.match(readAllBody, /root\.pendingFanReads = root\.fanIndicesToRead\(\)/, "readAllFans must use cached fan sensor indices when known");
   assert.match(readAllBody, /readNextFan\(\)/, "readAllFans must start the read pipeline");
   assert.match(readNextBody, /if \(root\.pendingFanReads\.length === 0\)[\s\S]*finalizeFanReading\(\)[\s\S]*return/, "readNextFan must finalize after pending reads are exhausted");
   assert.match(readNextBody, /const fanIndex = root\.pendingFanReads\[0\][\s\S]*fanReader\.path = `\$\{root\.fanHwmonPath\}\/fan\$\{fanIndex\}_input`[\s\S]*fanReader\.reload\(\)/, "readNextFan must peek next index and load fan input path");
   assert.match(finalizeBody, /root\.collectedFans\.sort\(\(a, b\) => a\.index - b\.index\)/, "finalizeFanReading must sort fans by sensor index");
+  assert.match(finalizeBody, /root\.rememberDetectedFanIndices\(root\.collectedFans\)/, "finalizeFanReading must cache detected fan input indices before publishing");
   assert.match(finalizeBody, /root\.pendingLabelReads = root\.findMissingLabelIndices\(root\.collectedFans\)[\s\S]*root\.readNextFanLabel\(\)/, "finalizeFanReading must load only missing labels before publishing fans");
   assert.match(finalizeBody, /root\.publishFinalFans\(\)/, "finalizeFanReading must publish immediately when labels are cached");
 }
@@ -150,6 +170,9 @@ function testFanLabelPipelineSkipsCachedLabels() {
       2: "Chassis",
     },
     fans: [],
+    rememberDetectedFanIndices(fans) {
+      ctx.detectedFanIndices = fans.map(fan => fan.index).sort((a, b) => a - b);
+    },
     findMissingLabelIndices(fans) {
       return fans.filter(fan => ctx.fanLabelCache[fan.index] === undefined).map(fan => fan.index);
     },
@@ -207,6 +230,7 @@ const tests = [
   testFanHwmonDetectionGuards,
   testFanHwmonDetectionPublishesSuccessfulSensor,
   testFanPollingLifecycleGuards,
+  testFanDetectedIndexCacheGuards,
   testFanReadPipelineGuards,
   testFanReaderAndLabelGuards,
   testFanLabelCacheHelpersExecute,
