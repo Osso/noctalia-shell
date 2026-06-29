@@ -36,44 +36,44 @@ import qs.Services.UI
 PanelWindow {
   id: root
 
-  // Expose panels as readonly property aliases
-  readonly property alias audioPanel: audioPanel
-  readonly property alias batteryPanel: batteryPanel
-  readonly property alias bluetoothPanel: bluetoothPanel
-  readonly property alias brightnessPanel: brightnessPanel
-  readonly property alias clockPanel: clockPanel
-  readonly property alias changelogPanel: changelogPanel
-  readonly property alias controlCenterPanel: controlCenterPanel
-  readonly property alias launcherPanel: launcherPanel
-  readonly property alias notificationHistoryPanel: notificationHistoryPanel
-  readonly property alias sessionMenuPanel: sessionMenuPanel
-  readonly property alias settingsPanel: settingsPanel
-  readonly property alias setupWizardPanel: setupWizardPanel
-  readonly property alias trayDrawerPanel: trayDrawerPanel
-  readonly property alias wallpaperPanel: wallpaperPanel
-  readonly property alias wifiPanel: wifiPanel
-  readonly property alias vpnPanel: vpnPanel
-  readonly property alias processPanel: processPanel
+  // Expose panels as nullable properties. Lazy loaders populate them on first access.
+  readonly property Item audioPanel: audioPanelLoader.item
+  readonly property Item batteryPanel: batteryPanelLoader.item
+  readonly property Item bluetoothPanel: bluetoothPanelLoader.item
+  readonly property Item brightnessPanel: brightnessPanelLoader.item
+  readonly property Item clockPanel: clockPanelLoader.item
+  readonly property Item changelogPanel: changelogPanelLoader.item
+  readonly property Item controlCenterPanel: controlCenterPanelLoader.item
+  readonly property Item launcherPanel: launcherPanelLoader.item
+  readonly property Item notificationHistoryPanel: notificationHistoryPanelLoader.item
+  readonly property Item sessionMenuPanel: sessionMenuPanelLoader.item
+  readonly property Item settingsPanel: settingsPanelLoader.item
+  readonly property Item setupWizardPanel: setupWizardPanelLoader.item
+  readonly property Item trayDrawerPanel: trayDrawerPanelLoader.item
+  readonly property Item wallpaperPanel: wallpaperPanelLoader.item
+  readonly property Item wifiPanel: wifiPanelLoader.item
+  readonly property Item vpnPanel: vpnPanelLoader.item
+  readonly property Item processPanel: processPanelLoader.item
   readonly property string screenName: screen ? screen.name : "unknown"
 
-  // Expose panel backgrounds for AllBackgrounds
-  readonly property Item audioPanelPlaceholder: audioPanel.panelRegion
-  readonly property Item batteryPanelPlaceholder: batteryPanel.panelRegion
-  readonly property Item bluetoothPanelPlaceholder: bluetoothPanel.panelRegion
-  readonly property Item brightnessPanelPlaceholder: brightnessPanel.panelRegion
-  readonly property Item clockPanelPlaceholder: clockPanel.panelRegion
-  readonly property Item changelogPanelPlaceholder: changelogPanel.panelRegion
-  readonly property Item controlCenterPanelPlaceholder: controlCenterPanel.panelRegion
-  readonly property Item launcherPanelPlaceholder: launcherPanel.panelRegion
-  readonly property Item notificationHistoryPanelPlaceholder: notificationHistoryPanel.panelRegion
-  readonly property Item sessionMenuPanelPlaceholder: sessionMenuPanel.panelRegion
-  readonly property Item settingsPanelPlaceholder: settingsPanel.panelRegion
-  readonly property Item setupWizardPanelPlaceholder: setupWizardPanel.panelRegion
-  readonly property Item trayDrawerPanelPlaceholder: trayDrawerPanel.panelRegion
-  readonly property Item wallpaperPanelPlaceholder: wallpaperPanel.panelRegion
-  readonly property Item wifiPanelPlaceholder: wifiPanel.panelRegion
-  readonly property Item vpnPanelPlaceholder: vpnPanel.panelRegion
-  readonly property Item processPanelPlaceholder: processPanel.panelRegion
+  // Expose panel backgrounds for AllBackgrounds without forcing panel instantiation.
+  readonly property Item audioPanelPlaceholder: audioPanelLoader.item ? audioPanelLoader.item.panelRegion : audioPanelPlaceholderItem
+  readonly property Item batteryPanelPlaceholder: batteryPanelLoader.item ? batteryPanelLoader.item.panelRegion : batteryPanelPlaceholderItem
+  readonly property Item bluetoothPanelPlaceholder: bluetoothPanelLoader.item ? bluetoothPanelLoader.item.panelRegion : bluetoothPanelPlaceholderItem
+  readonly property Item brightnessPanelPlaceholder: brightnessPanelLoader.item ? brightnessPanelLoader.item.panelRegion : brightnessPanelPlaceholderItem
+  readonly property Item clockPanelPlaceholder: clockPanelLoader.item ? clockPanelLoader.item.panelRegion : clockPanelPlaceholderItem
+  readonly property Item changelogPanelPlaceholder: changelogPanelLoader.item ? changelogPanelLoader.item.panelRegion : changelogPanelPlaceholderItem
+  readonly property Item controlCenterPanelPlaceholder: controlCenterPanelLoader.item ? controlCenterPanelLoader.item.panelRegion : controlCenterPanelPlaceholderItem
+  readonly property Item launcherPanelPlaceholder: launcherPanelLoader.item ? launcherPanelLoader.item.panelRegion : launcherPanelPlaceholderItem
+  readonly property Item notificationHistoryPanelPlaceholder: notificationHistoryPanelLoader.item ? notificationHistoryPanelLoader.item.panelRegion : notificationHistoryPanelPlaceholderItem
+  readonly property Item sessionMenuPanelPlaceholder: sessionMenuPanelLoader.item ? sessionMenuPanelLoader.item.panelRegion : sessionMenuPanelPlaceholderItem
+  readonly property Item settingsPanelPlaceholder: settingsPanelLoader.item ? settingsPanelLoader.item.panelRegion : settingsPanelPlaceholderItem
+  readonly property Item setupWizardPanelPlaceholder: setupWizardPanelLoader.item ? setupWizardPanelLoader.item.panelRegion : setupWizardPanelPlaceholderItem
+  readonly property Item trayDrawerPanelPlaceholder: trayDrawerPanelLoader.item ? trayDrawerPanelLoader.item.panelRegion : trayDrawerPanelPlaceholderItem
+  readonly property Item wallpaperPanelPlaceholder: wallpaperPanelLoader.item ? wallpaperPanelLoader.item.panelRegion : wallpaperPanelPlaceholderItem
+  readonly property Item wifiPanelPlaceholder: wifiPanelLoader.item ? wifiPanelLoader.item.panelRegion : wifiPanelPlaceholderItem
+  readonly property Item vpnPanelPlaceholder: vpnPanelLoader.item ? vpnPanelLoader.item.panelRegion : vpnPanelPlaceholderItem
+  readonly property Item processPanelPlaceholder: processPanelLoader.item ? processPanelLoader.item.panelRegion : processPanelPlaceholderItem
 
   Component.onCompleted: {
     const screenWidth = screen ? screen.width : 0;
@@ -81,6 +81,14 @@ PanelWindow {
     const screenX = screen ? screen.x : 0;
     const screenY = screen ? screen.y : 0;
     Logger.d("MainScreen", "Initialized for screen:", screenName, "- Dimensions:", screenWidth, "x", screenHeight, "- Position:", screenX, ",", screenY);
+  }
+
+  function panelObjectName(panelName) {
+    return panelName + "-" + root.screenName;
+  }
+
+  function registerLazyPanel(panelName, loader) {
+    PanelService.registerPanelLoader(panelObjectName(panelName), loader);
   }
 
   // Wayland
@@ -207,124 +215,311 @@ PanelWindow {
     }
 
     // ---------------------------------------
-    // All panels always exist
+    // Lazy panel placeholders and loaders
     // ---------------------------------------
-    AudioPanel {
-      id: audioPanel
-      objectName: "audioPanel-" + root.screenName
-      screen: root.screen
-      z: 50
+    Item {
+      id: audioPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
     }
 
-    BatteryPanel {
-      id: batteryPanel
-      objectName: "batteryPanel-" + root.screenName
-      screen: root.screen
-      z: 50
+    Item {
+      id: batteryPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
     }
 
-    BluetoothPanel {
-      id: bluetoothPanel
-      objectName: "bluetoothPanel-" + root.screenName
-      screen: root.screen
-      z: 50
+    Item {
+      id: bluetoothPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
     }
 
-    BrightnessPanel {
-      id: brightnessPanel
-      objectName: "brightnessPanel-" + root.screenName
-      screen: root.screen
-      z: 50
+    Item {
+      id: brightnessPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
     }
 
-    ControlCenterPanel {
-      id: controlCenterPanel
-      objectName: "controlCenterPanel-" + root.screenName
-      screen: root.screen
-      z: 50
+    Item {
+      id: controlCenterPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
     }
 
-    ChangelogPanel {
-      id: changelogPanel
-      objectName: "changelogPanel-" + root.screenName
-      screen: root.screen
-      z: 50
+    Item {
+      id: changelogPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
     }
 
-    ClockPanel {
-      id: clockPanel
-      objectName: "clockPanel-" + root.screenName
-      screen: root.screen
-      z: 50
+    Item {
+      id: clockPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
     }
 
-    Launcher {
-      id: launcherPanel
-      objectName: "launcherPanel-" + root.screenName
-      screen: root.screen
-      z: 50
+    Item {
+      id: launcherPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
     }
 
-    NotificationHistoryPanel {
-      id: notificationHistoryPanel
-      objectName: "notificationHistoryPanel-" + root.screenName
-      screen: root.screen
-      z: 50
+    Item {
+      id: notificationHistoryPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
     }
 
-    SessionMenu {
-      id: sessionMenuPanel
-      objectName: "sessionMenuPanel-" + root.screenName
-      screen: root.screen
-      z: 50
+    Item {
+      id: sessionMenuPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
     }
 
-    SettingsPanel {
-      id: settingsPanel
-      objectName: "settingsPanel-" + root.screenName
-      screen: root.screen
-      z: 50
+    Item {
+      id: settingsPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
     }
 
-    SetupWizard {
-      id: setupWizardPanel
-      objectName: "setupWizardPanel-" + root.screenName
-      screen: root.screen
-      z: 50
+    Item {
+      id: setupWizardPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
     }
 
-    TrayDrawerPanel {
-      id: trayDrawerPanel
-      objectName: "trayDrawerPanel-" + root.screenName
-      screen: root.screen
-      z: 50
+    Item {
+      id: trayDrawerPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
     }
 
-    WallpaperPanel {
-      id: wallpaperPanel
-      objectName: "wallpaperPanel-" + root.screenName
-      screen: root.screen
-      z: 50
+    Item {
+      id: wallpaperPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
     }
 
-    WiFiPanel {
-      id: wifiPanel
-      objectName: "wifiPanel-" + root.screenName
-      screen: root.screen
-      z: 50
+    Item {
+      id: wifiPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
     }
 
-    VPNPanel {
-      id: vpnPanel
-      objectName: "vpnPanel-" + root.screenName
-      screen: root.screen
-      z: 50
+    Item {
+      id: vpnPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
     }
 
-    ProcessPanel {
-      id: processPanel
-      objectName: "processPanel-" + root.screenName
-      screen: root.screen
+    Item {
+      id: processPanelPlaceholderItem
+      visible: false
+      width: 0
+      height: 0
+    }
+
+    Loader {
+      id: audioPanelLoader
+      active: false
+      sourceComponent: AudioPanel {
+        objectName: root.panelObjectName("audioPanel")
+        screen: root.screen
+        z: 50
+      }
+      Component.onCompleted: root.registerLazyPanel("audioPanel", audioPanelLoader)
+    }
+
+    Loader {
+      id: batteryPanelLoader
+      active: false
+      sourceComponent: BatteryPanel {
+        objectName: root.panelObjectName("batteryPanel")
+        screen: root.screen
+        z: 50
+      }
+      Component.onCompleted: root.registerLazyPanel("batteryPanel", batteryPanelLoader)
+    }
+
+    Loader {
+      id: bluetoothPanelLoader
+      active: false
+      sourceComponent: BluetoothPanel {
+        objectName: root.panelObjectName("bluetoothPanel")
+        screen: root.screen
+        z: 50
+      }
+      Component.onCompleted: root.registerLazyPanel("bluetoothPanel", bluetoothPanelLoader)
+    }
+
+    Loader {
+      id: brightnessPanelLoader
+      active: false
+      sourceComponent: BrightnessPanel {
+        objectName: root.panelObjectName("brightnessPanel")
+        screen: root.screen
+        z: 50
+      }
+      Component.onCompleted: root.registerLazyPanel("brightnessPanel", brightnessPanelLoader)
+    }
+
+    Loader {
+      id: controlCenterPanelLoader
+      active: false
+      sourceComponent: ControlCenterPanel {
+        objectName: root.panelObjectName("controlCenterPanel")
+        screen: root.screen
+        z: 50
+      }
+      Component.onCompleted: root.registerLazyPanel("controlCenterPanel", controlCenterPanelLoader)
+    }
+
+    Loader {
+      id: changelogPanelLoader
+      active: false
+      sourceComponent: ChangelogPanel {
+        objectName: root.panelObjectName("changelogPanel")
+        screen: root.screen
+        z: 50
+      }
+      Component.onCompleted: root.registerLazyPanel("changelogPanel", changelogPanelLoader)
+    }
+
+    Loader {
+      id: clockPanelLoader
+      active: false
+      sourceComponent: ClockPanel {
+        objectName: root.panelObjectName("clockPanel")
+        screen: root.screen
+        z: 50
+      }
+      Component.onCompleted: root.registerLazyPanel("clockPanel", clockPanelLoader)
+    }
+
+    Loader {
+      id: launcherPanelLoader
+      active: false
+      sourceComponent: Launcher {
+        objectName: root.panelObjectName("launcherPanel")
+        screen: root.screen
+        z: 50
+      }
+      Component.onCompleted: root.registerLazyPanel("launcherPanel", launcherPanelLoader)
+    }
+
+    Loader {
+      id: notificationHistoryPanelLoader
+      active: false
+      sourceComponent: NotificationHistoryPanel {
+        objectName: root.panelObjectName("notificationHistoryPanel")
+        screen: root.screen
+        z: 50
+      }
+      Component.onCompleted: root.registerLazyPanel("notificationHistoryPanel", notificationHistoryPanelLoader)
+    }
+
+    Loader {
+      id: sessionMenuPanelLoader
+      active: false
+      sourceComponent: SessionMenu {
+        objectName: root.panelObjectName("sessionMenuPanel")
+        screen: root.screen
+        z: 50
+      }
+      Component.onCompleted: root.registerLazyPanel("sessionMenuPanel", sessionMenuPanelLoader)
+    }
+
+    Loader {
+      id: settingsPanelLoader
+      active: false
+      sourceComponent: SettingsPanel {
+        objectName: root.panelObjectName("settingsPanel")
+        screen: root.screen
+        z: 50
+      }
+      Component.onCompleted: root.registerLazyPanel("settingsPanel", settingsPanelLoader)
+    }
+
+    Loader {
+      id: setupWizardPanelLoader
+      active: false
+      sourceComponent: SetupWizard {
+        objectName: root.panelObjectName("setupWizardPanel")
+        screen: root.screen
+        z: 50
+      }
+      Component.onCompleted: root.registerLazyPanel("setupWizardPanel", setupWizardPanelLoader)
+    }
+
+    Loader {
+      id: trayDrawerPanelLoader
+      active: false
+      sourceComponent: TrayDrawerPanel {
+        objectName: root.panelObjectName("trayDrawerPanel")
+        screen: root.screen
+        z: 50
+      }
+      Component.onCompleted: root.registerLazyPanel("trayDrawerPanel", trayDrawerPanelLoader)
+    }
+
+    Loader {
+      id: wallpaperPanelLoader
+      active: false
+      sourceComponent: WallpaperPanel {
+        objectName: root.panelObjectName("wallpaperPanel")
+        screen: root.screen
+        z: 50
+      }
+      Component.onCompleted: root.registerLazyPanel("wallpaperPanel", wallpaperPanelLoader)
+    }
+
+    Loader {
+      id: wifiPanelLoader
+      active: false
+      sourceComponent: WiFiPanel {
+        objectName: root.panelObjectName("wifiPanel")
+        screen: root.screen
+        z: 50
+      }
+      Component.onCompleted: root.registerLazyPanel("wifiPanel", wifiPanelLoader)
+    }
+
+    Loader {
+      id: vpnPanelLoader
+      active: false
+      sourceComponent: VPNPanel {
+        objectName: root.panelObjectName("vpnPanel")
+        screen: root.screen
+        z: 50
+      }
+      Component.onCompleted: root.registerLazyPanel("vpnPanel", vpnPanelLoader)
+    }
+
+    Loader {
+      id: processPanelLoader
+      active: false
+      sourceComponent: ProcessPanel {
+        objectName: root.panelObjectName("processPanel")
+        screen: root.screen
+      }
+      Component.onCompleted: root.registerLazyPanel("processPanel", processPanelLoader)
     }
 
     // ----------------------------------------------

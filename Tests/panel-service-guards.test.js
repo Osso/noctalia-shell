@@ -12,9 +12,11 @@ function qmlFunction(functionName, ...argNames) {
 
 function testPanelRegistrationGuards() {
   const registerPanelBody = extractFunctionBody(source, "registerPanel");
+  const registerPanelLoaderBody = extractFunctionBody(source, "registerPanelLoader");
   const registerPopupBody = extractFunctionBody(source, "registerPopupMenuWindow");
 
   assert.match(registerPanelBody, /registeredPanels\[panel\.objectName\] = panel/, "registerPanel must store panels by objectName");
+  assert.match(registerPanelLoaderBody, /panelLoaders\[panelKey\] = loader/, "registerPanelLoader must store panel loaders by panel key");
   assert.match(registerPanelBody, /Logger\.d\("PanelService", "Registered panel:", panel\.objectName\)/, "registerPanel must log registered panel names");
   assert.match(registerPopupBody, /if \(!screen \|\| !window\)[\s\S]*return/, "registerPopupMenuWindow must ignore missing screen or window");
   assert.match(registerPopupBody, /var key = screen\.name[\s\S]*popupMenuWindows\[key\] = window/, "registerPopupMenuWindow must store windows by screen name");
@@ -24,6 +26,7 @@ function testPanelRegistrationGuards() {
 function testPanelLookupGuards() {
   const getPopupBody = extractFunctionBody(source, "getPopupMenuWindow");
   const getPanelBody = extractFunctionBody(source, "getPanel");
+  const loadPanelBody = extractFunctionBody(source, "loadPanel");
   const hasPanelBody = extractFunctionBody(source, "hasPanel");
 
   assert.match(getPopupBody, /if \(!screen\)[\s\S]*return null/, "getPopupMenuWindow must return null without a screen");
@@ -31,8 +34,39 @@ function testPanelLookupGuards() {
   assert.match(getPanelBody, /if \(!screen\)[\s\S]*for \(var key in registeredPanels\)[\s\S]*key\.startsWith\(name \+ "-"\)[\s\S]*return registeredPanels\[key\]/, "getPanel must fall back to first matching panel when screen is missing");
   assert.match(getPanelBody, /var panelKey = `\$\{name\}-\$\{screen\.name\}`/, "getPanel must include screen name in panel keys");
   assert.match(getPanelBody, /if \(registeredPanels\[panelKey\]\)[\s\S]*return registeredPanels\[panelKey\]/, "getPanel must return already registered screen panel");
-  assert.match(getPanelBody, /Logger\.w\("PanelService", "Panel not found:", panelKey\)[\s\S]*return null/, "getPanel must log and fail closed for missing panel keys");
+  assert.match(getPanelBody, /return loadPanel\(panelKey\)/, "getPanel must load registered lazy panels on demand");
+  assert.match(loadPanelBody, /const loader = panelLoaders\[panelKey\]/, "loadPanel must look up registered panel loaders");
+  assert.match(loadPanelBody, /loader\.active = true[\s\S]*return loader\.item \|\| registeredPanels\[panelKey\] \|\| null/, "loadPanel must activate loaders and return loaded panel items");
+  assert.match(loadPanelBody, /Logger\.w\("PanelService", "Panel not found:", panelKey\)[\s\S]*return null/, "loadPanel must log and fail closed for missing panel keys");
   assert.match(hasPanelBody, /return name in registeredPanels/, "hasPanel must query registered panel keys");
+}
+
+function testLazyPanelLookupExecutes() {
+  const registerPanelLoader = qmlFunction("registerPanelLoader", "panelKey", "loader");
+  const getPanel = qmlFunction("getPanel", "name", "screen");
+  const hasPanel = qmlFunction("hasPanel", "name");
+  const loadedPanel = { objectName: "clockPanel-eDP-1" };
+  const loader = { active: false, item: loadedPanel };
+  const ctx = {
+    registeredPanels: {},
+    panelLoaders: {},
+    Logger: { d() {}, w() {} },
+    loadPanel(panelKey) {
+      const targetLoader = this.panelLoaders[panelKey];
+      if (!targetLoader) {
+        this.Logger.w("PanelService", "Panel not found:", panelKey);
+        return null;
+      }
+      targetLoader.active = true;
+      return targetLoader.item || this.registeredPanels[panelKey] || null;
+    },
+  };
+
+  registerPanelLoader(ctx, "clockPanel-eDP-1", loader);
+
+  assert.equal(hasPanel(ctx, "clockPanel-eDP-1"), true);
+  assert.equal(getPanel(ctx, "clockPanel", { name: "eDP-1" }), loadedPanel);
+  assert.equal(loader.active, true);
 }
 
 function testPanelMultiScreenPopupAndPanelLookupsExecute() {
@@ -50,10 +84,20 @@ function testPanelMultiScreenPopupAndPanelLookupsExecute() {
   const rightWindow = { id: "right-window" };
   const ctx = {
     registeredPanels: {},
+    panelLoaders: {},
     popupMenuWindows: {},
     Logger: {
       d() {},
       w() {},
+    },
+    loadPanel(panelKey) {
+      const loader = this.panelLoaders[panelKey];
+      if (!loader) {
+        this.Logger.w("PanelService", "Panel not found:", panelKey);
+        return null;
+      }
+      loader.active = true;
+      return loader.item || this.registeredPanels[panelKey] || null;
     },
     popupMenuWindowRegistered(screen) {
       popupSignals.push(screen.name);
@@ -140,6 +184,7 @@ function testPanelCloseClearsOnlyActivePanelBeforeSignal() {
 const tests = [
   testPanelRegistrationGuards,
   testPanelLookupGuards,
+  testLazyPanelLookupExecutes,
   testPanelMultiScreenPopupAndPanelLookupsExecute,
   testPanelOpenCloseGuards,
   testPanelOpenClosesDifferentActivePanelBeforeSignal,

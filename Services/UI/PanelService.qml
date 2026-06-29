@@ -13,6 +13,7 @@ Singleton {
 
   // Panels
   property var registeredPanels: ({})
+  property var panelLoaders: ({})
   property SmartPanel openedPanel: null
   signal willOpen
   signal didClose
@@ -25,6 +26,11 @@ Singleton {
   function registerPanel(panel) {
     registeredPanels[panel.objectName] = panel;
     Logger.d("PanelService", "Registered panel:", panel.objectName);
+  }
+
+  function registerPanelLoader(panelKey, loader) {
+    panelLoaders[panelKey] = loader;
+    Logger.d("PanelService", "Registered panel loader:", panelKey);
   }
 
   // Register popup menu window for a screen
@@ -54,6 +60,11 @@ Singleton {
           return registeredPanels[key];
         }
       }
+      for (var loaderKey in panelLoaders) {
+        if (loaderKey.startsWith(name + "-")) {
+          return loadPanel(loaderKey);
+        }
+      }
       return null;
     }
 
@@ -64,13 +75,23 @@ Singleton {
       return registeredPanels[panelKey];
     }
 
-    Logger.w("PanelService", "Panel not found:", panelKey);
-    return null;
+    return loadPanel(panelKey);
+  }
+
+  function loadPanel(panelKey) {
+    const loader = panelLoaders[panelKey];
+    if (!loader) {
+      Logger.w("PanelService", "Panel not found:", panelKey);
+      return null;
+    }
+
+    loader.active = true;
+    return loader.item || registeredPanels[panelKey] || null;
   }
 
   // Check if a panel exists
   function hasPanel(name) {
-    return name in registeredPanels;
+    return name in registeredPanels || name in panelLoaders;
   }
 
   // Helper to keep only one panel open at any time

@@ -6,6 +6,9 @@ PanelService covers shared panel registration, popup-menu window lookup, panel l
 
 - [x] Panel registration stores panels by `objectName`.
 - [x] Panel registration logs registered panel names.
+- [x] Lazy panel loader registration stores loaders by panel key.
+- [x] MainScreen registers inactive per-screen panel loaders instead of instantiating all panels at startup.
+- [x] MainScreen panel background placeholders fall back to lightweight placeholder items until each panel loads.
 - [x] Popup-menu window registration ignores missing screen or window arguments.
 - [x] Popup-menu window registration stores windows by screen name.
 - [x] Popup-menu window registration emits the popup-window registration signal.
@@ -17,8 +20,9 @@ PanelService covers shared panel registration, popup-menu window lookup, panel l
 - [x] Panel lookup falls back to the first matching panel name when no screen is supplied.
 - [x] Screen-specific panel lookup builds keys from panel name and screen name.
 - [x] Screen-specific panel lookup returns an already registered screen panel.
+- [x] Screen-specific panel lookup activates a registered lazy loader when the panel is not loaded yet.
 - [x] Missing panel lookup logs a warning and returns null.
-- [x] Panel existence checks query registered panel keys.
+- [x] Panel existence checks query registered panel keys and lazy loader keys.
 - [x] Multi-screen fake fixtures register and retrieve popup-menu windows and screen-specific panels by screen name.
 
 ### Open and close coordination
@@ -36,11 +40,13 @@ PanelService covers shared panel registration, popup-menu window lookup, panel l
 
 ## Implementation inventory
 
-- `Services/UI/PanelService.qml` - shared singleton for panel registration, popup menu window registration, panel lookup, and active-panel coordination.
+- `Services/UI/PanelService.qml` - shared singleton for panel registration, lazy panel loader registration, popup menu window registration, panel lookup, and active-panel coordination.
+- `Modules/MainScreen/MainScreen.qml` - per-screen lazy panel loaders and lightweight background placeholders.
 
 ## Tests asserting this spec
 
 - `Tests/panel-service-guards.test.js`
+- `Tests/main-screen-lazy-panels.test.js`
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
