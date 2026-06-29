@@ -19,6 +19,21 @@ Item {
 
   signal statusChanged(int status)
 
+  function shouldLoadImage() {
+    if (!visible || showFallback) {
+      return false;
+    }
+    return imagePath !== "" && width > 0 && height > 0;
+  }
+
+  function targetDecodeSize() {
+    const scale = Screen.devicePixelRatio || 1;
+    return {
+      "width": Math.ceil(width * scale),
+      "height": Math.ceil(height * scale)
+    };
+  }
+
   Rectangle {
     anchors.fill: parent
     radius: root.radius
@@ -31,8 +46,10 @@ Item {
       anchors.fill: parent
       anchors.margins: root.borderWidth
       visible: false
-      source: root.imagePath
-      mipmap: true
+      source: root.shouldLoadImage() ? root.imagePath : ""
+      sourceSize.width: root.shouldLoadImage() ? root.targetDecodeSize().width : 0
+      sourceSize.height: root.shouldLoadImage() ? root.targetDecodeSize().height : 0
+      mipmap: false
       smooth: true
       asynchronous: true
       antialiasing: true
@@ -40,22 +57,31 @@ Item {
       onStatusChanged: root.statusChanged(status)
     }
 
-    ShaderEffect {
+    Loader {
       anchors.fill: parent
       anchors.margins: root.borderWidth
-      visible: !root.showFallback
-      property variant source: imageSource
-      property real itemWidth: width
-      property real itemHeight: height
-      property real sourceWidth: imageSource.sourceSize.width
-      property real sourceHeight: imageSource.sourceSize.height
-      property real cornerRadius: Math.max(0, root.radius - root.borderWidth)
-      property real imageOpacity: 1.0
-      property int fillMode: root.imageFillMode
+      active: root.shouldLoadImage()
+      sourceComponent: roundedShaderComponent
+    }
 
-      fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/rounded_image.frag.qsb")
-      supportsAtlasTextures: false
-      blending: true
+    Component {
+      id: roundedShaderComponent
+
+      ShaderEffect {
+        visible: !root.showFallback
+        property variant source: imageSource
+        property real itemWidth: width
+        property real itemHeight: height
+        property real sourceWidth: imageSource.sourceSize.width
+        property real sourceHeight: imageSource.sourceSize.height
+        property real cornerRadius: Math.max(0, root.radius - root.borderWidth)
+        property real imageOpacity: 1.0
+        property int fillMode: root.imageFillMode
+
+        fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/rounded_image.frag.qsb")
+        supportsAtlasTextures: false
+        blending: true
+      }
     }
 
     NIcon {
