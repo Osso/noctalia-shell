@@ -214,13 +214,11 @@ Singleton {
     root.collectedFans.sort((a, b) => a.index - b.index);
     root.rememberDetectedFanIndices(root.collectedFans);
     root.pendingLabelReads = root.findMissingLabelIndices(root.collectedFans);
+    root.publishFinalFans();
 
     if (root.pendingLabelReads.length > 0) {
       root.readNextFanLabel();
-      return;
     }
-
-    root.publishFinalFans();
   }
 
   function labelForFan(fanIndex) {

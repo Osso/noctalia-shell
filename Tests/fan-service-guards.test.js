@@ -112,8 +112,7 @@ function testFanReadPipelineGuards() {
   assert.match(readNextBody, /const fanIndex = root\.pendingFanReads\[0\][\s\S]*fanReader\.path = `\$\{root\.fanHwmonPath\}\/fan\$\{fanIndex\}_input`[\s\S]*fanReader\.reload\(\)/, "readNextFan must peek next index and load fan input path");
   assert.match(finalizeBody, /root\.collectedFans\.sort\(\(a, b\) => a\.index - b\.index\)/, "finalizeFanReading must sort fans by sensor index");
   assert.match(finalizeBody, /root\.rememberDetectedFanIndices\(root\.collectedFans\)/, "finalizeFanReading must cache detected fan input indices before publishing");
-  assert.match(finalizeBody, /root\.pendingLabelReads = root\.findMissingLabelIndices\(root\.collectedFans\)[\s\S]*root\.readNextFanLabel\(\)/, "finalizeFanReading must load only missing labels before publishing fans");
-  assert.match(finalizeBody, /root\.publishFinalFans\(\)/, "finalizeFanReading must publish immediately when labels are cached");
+  assert.match(finalizeBody, /root\.pendingLabelReads = root\.findMissingLabelIndices\(root\.collectedFans\)[\s\S]*root\.publishFinalFans\(\)[\s\S]*root\.readNextFanLabel\(\)/, "finalizeFanReading must publish RPMs before optional label reads so missing labels cannot stall display");
 }
 
 function testFanReaderAndLabelGuards() {
@@ -207,7 +206,13 @@ function testFanLabelPipelineSkipsCachedLabels() {
   ctx.fanLabelCache = { 1: "CPU Fan" };
   calls.length = 0;
   finalizeFanReading(ctx);
-  assert.deepEqual(calls, ["read-label", ["reload", "/sys/class/hwmon/hwmon5/fan2_label"]]);
+  assert.deepEqual(calls, ["publish", "read-label", ["reload", "/sys/class/hwmon/hwmon5/fan2_label"]]);
+}
+
+function testFanPublishHelpers() {
+  const publishBody = extractFunctionBody(source, "publishFinalFans");
+  assert.match(publishBody, /root\.fans = root\.applyCachedLabels\(root\.collectedFans\)/, "publishFinalFans must publish cached-label fan data");
+  assert.doesNotMatch(publishBody, /Logger\./, "publishFinalFans must not log every fan speed update during idle polling");
 }
 
 function testFanSummaryHelpers() {
@@ -235,6 +240,7 @@ const tests = [
   testFanReaderAndLabelGuards,
   testFanLabelCacheHelpersExecute,
   testFanLabelPipelineSkipsCachedLabels,
+  testFanPublishHelpers,
   testFanSummaryHelpers,
 ];
 
