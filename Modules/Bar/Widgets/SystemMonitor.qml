@@ -82,7 +82,7 @@ Rectangle {
   property bool fanPollingRegistered: false
 
   function setFanPolling(shouldPoll) {
-    if (shouldPoll && !fanPollingRegistered) {
+    if (shouldPoll && (!fanPollingRegistered || !FanService.isPollingActive())) {
       FanService.beginPolling();
       fanPollingRegistered = true;
     } else if (!shouldPoll && fanPollingRegistered) {
@@ -134,6 +134,13 @@ Rectangle {
   onShowDiskUsageChanged: refreshSystemStatPolling()
   onShowNetworkStatsChanged: refreshSystemStatPolling()
   onShowFanSpeedChanged: refreshSystemStatPolling()
+
+  Connections {
+    target: FanService
+    function onSensorDetectedChanged() {
+      refreshSystemStatPolling();
+    }
+  }
 
   // Warning threshold calculation properties
   readonly property bool cpuWarning: showCpuUsage && SystemStatService.cpuUsage > cpuWarningThreshold

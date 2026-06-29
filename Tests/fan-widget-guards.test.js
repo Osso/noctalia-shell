@@ -45,8 +45,10 @@ function testFanWidgetPollingLifecycleGuards() {
   assert.match(source, /property bool fanPollingRegistered: false/, "SystemMonitor must track FanService polling ownership");
   assert.match(source, /function setFanPolling\(shouldPoll\)/, "SystemMonitor must expose a fan polling ref helper");
   assert.match(source, /FanService\.beginPolling\(\)/, "SystemMonitor must begin fan polling when fan speed display is enabled");
+  assert.match(source, /shouldPoll && \(!fanPollingRegistered \|\| !FanService\.isPollingActive\(\)\)/, "SystemMonitor must re-register fan polling if FanService refs reset during hot reload");
   assert.match(source, /FanService\.endPolling\(\)/, "SystemMonitor must end fan polling when fan speed display is disabled or destroyed");
   assert.match(source, /setFanPolling\(widgetVisible && showFanSpeed\)/, "fan polling must depend on widget visibility and configured fan display, not current fan availability");
+  assert.match(source, /Connections\s*\{[\s\S]*target:\s*FanService[\s\S]*function onSensorDetectedChanged\(\)[\s\S]*refreshSystemStatPolling\(\)/, "SystemMonitor must resync fan polling when FanService redetects sensors");
   assert.match(source, /function clearSystemStatPolling\(\)[\s\S]*setFanPolling\(false\)/, "SystemMonitor clear helper must release fan polling");
   assert.match(source, /Component\.onDestruction: clearSystemStatPolling\(\)/, "SystemMonitor must release fan polling on destruction through the clear helper");
 }
