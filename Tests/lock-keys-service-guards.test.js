@@ -7,6 +7,7 @@ function testLockKeysAvoidsShellPolling() {
   assert.doesNotMatch(source, /command:\s*\["sh",\s*"-c"/, "LockKeysService must not spawn a shell for periodic LED reads");
   assert.doesNotMatch(source, /grep\s+-q/, "LockKeysService must not shell out to grep for LED state");
   assert.doesNotMatch(source, /interval:\s*200\b/, "LockKeysService poll interval must not stay at 200ms");
+  assert.match(source, /readonly property int pollIntervalMs: 3000/, "LockKeysService poll interval must be 3s to reduce idle wakeups");
 }
 
 function testLockKeysReadsLedFilesDirectly() {

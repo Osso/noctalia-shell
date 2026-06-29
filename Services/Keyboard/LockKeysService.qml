@@ -20,7 +20,7 @@ Singleton {
   // Flag to track if this is the initial check to avoid OSD triggers
   property bool initialCheckDone: false
 
-  readonly property int pollIntervalMs: 1000
+  readonly property int pollIntervalMs: 3000
   readonly property var lockKeyConfigs: [{
       "key": "caps",
       "label": "Caps Lock",

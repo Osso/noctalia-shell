@@ -7,6 +7,7 @@ Lock keys covers Caps Lock, Num Lock, and Scroll Lock state publication for bar 
 - [x] Lock-key state checks must avoid periodic shell pipelines.
 - [x] Lock-key state checks must read LED brightness files directly.
 - [x] Lock-key polling must not run at the old 200ms interval.
+- [x] Lock-key idle polling runs at 3s to reduce steady-state wakeups while preserving state updates.
 - [x] Startup state synchronization must avoid emitting lock-key changed signals before the initial state is known.
 
 ### Published state
