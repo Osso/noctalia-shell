@@ -120,6 +120,7 @@ function testFanReaderAndLabelGuards() {
   assert.match(source, /if \(rpm >= 0\)[\s\S]*root\.collectedFans\.push\(\{[\s\S]*index: fanIndex,[\s\S]*rpm: rpm,[\s\S]*label: root\.labelForFan\(fanIndex\)/, "fan reader must collect non-negative fan readings with cached labels or default labels");
   assert.match(source, /root\.pendingFanReads = \[\][\s\S]*root\.finalizeFanReading\(\)/, "fan reader failure must stop pipeline and finalize");
   assert.match(source, /property int fanIndex: 0[\s\S]*root\.cacheFanLabel\(fanIndex, label\)[\s\S]*root\.readNextFanLabel\(\)/, "label reader must cache labels by fan index and continue the label pipeline");
+  assert.match(source, /onLoadFailed: function\(error\) \{[\s\S]*root\.cacheFanLabel\(fanIndex, ""\)[\s\S]*root\.readNextFanLabel\(\)/, "label reader failure must cache missing labels before continuing so missing files are not retried every poll");
 }
 
 function testFanLabelCacheHelpersExecute() {
@@ -142,13 +143,17 @@ function testFanLabelCacheHelpersExecute() {
   assert.deepEqual(findMissingLabelIndices(ctx, [{ index: 1 }, { index: 2 }]), [2]);
   cacheFanLabel(ctx, 2, "Chassis");
   cacheFanLabel(ctx, 3, "");
-  assert.deepEqual(ctx.fanLabelCache, { 1: "CPU Fan", 2: "Chassis" });
+  assert.deepEqual(ctx.fanLabelCache, { 1: "CPU Fan", 2: "Chassis", 3: null });
+  assert.equal(labelForFan(ctx, 3), "Fan 3");
+  assert.deepEqual(findMissingLabelIndices(ctx, [{ index: 1 }, { index: 2 }, { index: 3 }]), []);
   assert.deepEqual(applyCachedLabels(ctx, [
     { index: 1, rpm: 1200, label: "Fan 1" },
     { index: 2, rpm: 900, label: "Fan 2" },
+    { index: 3, rpm: 700, label: "Fan 3" },
   ]), [
     { index: 1, rpm: 1200, label: "CPU Fan" },
     { index: 2, rpm: 900, label: "Chassis" },
+    { index: 3, rpm: 700, label: "Fan 3" },
   ]);
 }
 

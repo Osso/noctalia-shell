@@ -153,6 +153,7 @@ Singleton {
     }
 
     onLoadFailed: function(error) {
+      root.cacheFanLabel(fanIndex, "");
       root.readNextFanLabel();
     }
   }
@@ -236,12 +237,8 @@ Singleton {
   }
 
   function cacheFanLabel(fanIndex, label) {
-    if (!label) {
-      return;
-    }
-
     const labels = Object.assign({}, root.fanLabelCache);
-    labels[fanIndex] = label;
+    labels[fanIndex] = label || null;
     root.fanLabelCache = labels;
   }
 
