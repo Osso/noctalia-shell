@@ -16,9 +16,6 @@ SmartPanel {
 
   readonly property bool hasConnections: Object.keys(VPNService.connections).length > 0
 
-  onOpened: VPNService.beginPolling()
-  onClosed: VPNService.endPolling()
-
   panelContent: Rectangle {
     color: Color.transparent
 

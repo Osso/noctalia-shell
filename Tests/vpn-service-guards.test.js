@@ -10,101 +10,6 @@ function qmlFunction(functionName, ...argNames) {
   return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
 }
 
-function testVpnPollingLifecycleGuards() {
-  const barWidget = readQml("Modules/Bar/Widgets/VPN.qml");
-  const controlCenterPanel = readQml("Modules/Panels/ControlCenter/ControlCenterPanel.qml");
-  const panel = readQml("Modules/Panels/VPN/VPNPanel.qml");
-  const beginBody = extractFunctionBody(source, "beginPolling");
-  const endBody = extractFunctionBody(source, "endPolling");
-  const isActiveBody = extractFunctionBody(source, "isPollingActive");
-  const updateBody = extractFunctionBody(barWidget, "updateVpnPolling");
-  const controlUpdateBody = extractFunctionBody(controlCenterPanel, "updateVpnPanelPolling");
-  const shortcutBody = extractFunctionBody(controlCenterPanel, "shortcutSectionHasVpn");
-  const hasShortcutBody = extractFunctionBody(controlCenterPanel, "hasVpnShortcut");
-
-  assert.match(source, /property int pollingRefs: 0/, "VPNService must ref-count polling consumers");
-  assert.match(source, /running: root\.isPollingActive\(\)/, "VPN refresh timer must run only while polling is active");
-  assert.match(source, /Component\.onCompleted: \{\s*Logger\.i\("VPN", "Service started with lazy polling"\);\s*\}/, "VPNService must not start nmcli refresh at startup without consumers");
-  assert.match(beginBody, /pollingRefs = pollingRefs \+ 1[\s\S]*refresh\(\)/, "beginPolling must increment refs and refresh immediately");
-  assert.match(endBody, /pollingRefs = Math\.max\(0, pollingRefs - 1\)/, "endPolling must clamp refs at zero");
-  assert.match(isActiveBody, /return pollingRefs > 0/, "isPollingActive must report positive refs");
-  assert.match(updateBody, /VPNService\.beginPolling\(\)[\s\S]*VPNService\.endPolling\(\)/, "bar VPN widget must hold a polling ref only while visible");
-  assert.match(shortcutBody, /Settings\.data\.controlCenter\.shortcuts\[section\] \|\| \[\][\s\S]*widgets\[i\]\.id === "VPN"/, "Control Center panel must detect configured VPN shortcuts");
-  assert.match(hasShortcutBody, /shortcutSectionHasVpn\("left"\) \|\| shortcutSectionHasVpn\("right"\)/, "Control Center panel must check both shortcut sections");
-  assert.match(controlCenterPanel, /import qs\.Services\.Networking/, "Control Center panel must import VPNService before using it");
-  assert.match(controlUpdateBody, /const shouldRegister = shouldPoll && hasVpnShortcut\(\)[\s\S]*VPNService\.beginPolling\(\)[\s\S]*VPNService\.endPolling\(\)/, "Control Center panel must hold a polling ref only while open and containing a VPN shortcut");
-  assert.match(panel, /onOpened:[\s\S]*VPNService\.beginPolling\(\)[\s\S]*onClosed:[\s\S]*VPNService\.endPolling\(\)/, "VPN panel must hold a polling ref while open");
-}
-
-function testControlCenterVpnPollingExecutes() {
-  const controlCenterPanel = readQml("Modules/Panels/ControlCenter/ControlCenterPanel.qml");
-  const shortcutSectionHasVpn = new Function("ctx", "section", `with (ctx) { return (function(section) ${extractFunctionBody(controlCenterPanel, "shortcutSectionHasVpn")}).call(ctx, section); }`);
-  const hasVpnShortcut = new Function("ctx", `with (ctx) { return (function() ${extractFunctionBody(controlCenterPanel, "hasVpnShortcut")}).call(ctx); }`);
-  const updateVpnPanelPolling = new Function("ctx", "shouldPoll", `with (ctx) { return (function(shouldPoll) ${extractFunctionBody(controlCenterPanel, "updateVpnPanelPolling")}).call(ctx, shouldPoll); }`);
-  const calls = [];
-  const ctx = {
-    Settings: {
-      data: {
-        controlCenter: {
-          shortcuts: {
-            left: [{ id: "WiFi" }],
-            right: [{ id: "VPN" }],
-          },
-        },
-      },
-    },
-    vpnPollingRegistered: false,
-    shortcutSectionHasVpn(section) {
-      return shortcutSectionHasVpn(ctx, section);
-    },
-    hasVpnShortcut() {
-      return hasVpnShortcut(ctx);
-    },
-    VPNService: {
-      beginPolling() {
-        calls.push("begin");
-      },
-      endPolling() {
-        calls.push("end");
-      },
-    },
-  };
-
-  assert.equal(shortcutSectionHasVpn(ctx, "left"), false);
-  assert.equal(shortcutSectionHasVpn(ctx, "right"), true);
-  assert.equal(hasVpnShortcut(ctx), true);
-  updateVpnPanelPolling(ctx, true);
-  updateVpnPanelPolling(ctx, true);
-  updateVpnPanelPolling(ctx, false);
-  updateVpnPanelPolling(ctx, false);
-  assert.deepEqual(calls, ["begin", "end"]);
-}
-
-function testVpnPollingRefsExecute() {
-  const beginPolling = qmlFunction("beginPolling");
-  const endPolling = qmlFunction("endPolling");
-  const isPollingActive = qmlFunction("isPollingActive");
-  let refreshes = 0;
-  const ctx = {
-    pollingRefs: 0,
-    refresh() {
-      refreshes++;
-    },
-  };
-
-  assert.equal(isPollingActive(ctx), false);
-  beginPolling(ctx);
-  beginPolling(ctx);
-  assert.equal(ctx.pollingRefs, 2);
-  assert.equal(refreshes, 2);
-  assert.equal(isPollingActive(ctx), true);
-  endPolling(ctx);
-  endPolling(ctx);
-  endPolling(ctx);
-  assert.equal(ctx.pollingRefs, 0);
-  assert.equal(isPollingActive(ctx), false);
-}
-
 function testVpnRefreshGuardsConcurrentRuns() {
   const refresh = qmlFunction("refresh");
   const ctx = {
@@ -275,9 +180,6 @@ function testVpnParsesRefreshOutput() {
 }
 
 const tests = [
-  testVpnPollingLifecycleGuards,
-  testControlCenterVpnPollingExecutes,
-  testVpnPollingRefsExecute,
   testVpnRefreshGuardsConcurrentRuns,
   testVpnConnectGuardsAndStartsProcess,
   testVpnDisconnectGuardsAndStartsProcess,

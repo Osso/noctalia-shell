@@ -17,7 +17,6 @@ Singleton {
   property string disconnectingUuid: ""
   property string lastError: ""
   property bool refreshPending: false
-  property int pollingRefs: 0
 
   readonly property var activeConnections: {
     const result = [];
@@ -48,7 +47,7 @@ Singleton {
   Timer {
     id: refreshTimer
     interval: 5000
-    running: root.isPollingActive()
+    running: true
     repeat: true
     onTriggered: refresh()
   }
@@ -57,28 +56,12 @@ Singleton {
     id: delayedRefreshTimer
     interval: 1000
     repeat: false
-    onTriggered: {
-      if (root.isPollingActive()) {
-        refresh();
-      }
-    }
+    onTriggered: refresh()
   }
 
   Component.onCompleted: {
-    Logger.i("VPN", "Service started with lazy polling");
-  }
-
-  function beginPolling() {
-    pollingRefs = pollingRefs + 1;
+    Logger.i("VPN", "Service started");
     refresh();
-  }
-
-  function endPolling() {
-    pollingRefs = Math.max(0, pollingRefs - 1);
-  }
-
-  function isPollingActive() {
-    return pollingRefs > 0;
   }
 
   function refresh() {

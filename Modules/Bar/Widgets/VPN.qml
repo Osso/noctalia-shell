@@ -30,27 +30,6 @@ Item {
 
   readonly property bool isBarVertical: Settings.data.bar.position === "left" || Settings.data.bar.position === "right"
   readonly property string displayMode: widgetSettings.displayMode !== undefined ? widgetSettings.displayMode : widgetMetadata.displayMode
-  property bool vpnPollingRegistered: false
-
-  function updateVpnPolling() {
-    const shouldPoll = visible;
-    if (shouldPoll && !vpnPollingRegistered) {
-      VPNService.beginPolling();
-      vpnPollingRegistered = true;
-    } else if (!shouldPoll && vpnPollingRegistered) {
-      VPNService.endPolling();
-      vpnPollingRegistered = false;
-    }
-  }
-
-  Component.onCompleted: updateVpnPolling()
-  Component.onDestruction: {
-    if (vpnPollingRegistered) {
-      VPNService.endPolling();
-      vpnPollingRegistered = false;
-    }
-  }
-  onVisibleChanged: updateVpnPolling()
 
   implicitWidth: pill.width
   implicitHeight: pill.height
