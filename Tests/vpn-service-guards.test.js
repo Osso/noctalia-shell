@@ -31,6 +31,7 @@ function testVpnPollingLifecycleGuards() {
   assert.match(updateBody, /VPNService\.beginPolling\(\)[\s\S]*VPNService\.endPolling\(\)/, "bar VPN widget must hold a polling ref only while visible");
   assert.match(shortcutBody, /Settings\.data\.controlCenter\.shortcuts\[section\] \|\| \[\][\s\S]*widgets\[i\]\.id === "VPN"/, "Control Center panel must detect configured VPN shortcuts");
   assert.match(hasShortcutBody, /shortcutSectionHasVpn\("left"\) \|\| shortcutSectionHasVpn\("right"\)/, "Control Center panel must check both shortcut sections");
+  assert.match(controlCenterPanel, /import qs\.Services\.Networking/, "Control Center panel must import VPNService before using it");
   assert.match(controlUpdateBody, /const shouldRegister = shouldPoll && hasVpnShortcut\(\)[\s\S]*VPNService\.beginPolling\(\)[\s\S]*VPNService\.endPolling\(\)/, "Control Center panel must hold a polling ref only while open and containing a VPN shortcut");
   assert.match(panel, /onOpened:[\s\S]*VPNService\.beginPolling\(\)[\s\S]*onClosed:[\s\S]*VPNService\.endPolling\(\)/, "VPN panel must hold a polling ref while open");
 }

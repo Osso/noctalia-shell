@@ -6,6 +6,7 @@ import qs.Commons
 import qs.Modules.Cards
 import qs.Modules.MainScreen
 import qs.Services.Media
+import qs.Services.Networking
 import qs.Services.UI
 import qs.Widgets
 
