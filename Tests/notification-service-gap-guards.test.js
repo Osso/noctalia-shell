@@ -91,8 +91,7 @@ function testNotificationHistoryAndStatePersistence() {
   assert.match(loadHistoryBody, /historyList\.clear\(\)/, "loadHistory must clear stale history rows");
   assert.match(loadHistoryBody, /for \(const item of adapter\.notifications \|\| \[\]\)/, "loadHistory must tolerate missing adapter notifications");
   assert.match(loadHistoryBody, /const time = new Date\(item\.timestamp\)/, "loadHistory must restore Date timestamps");
-  assert.match(loadHistoryBody, /if \(item\.originalImage && item\.originalImage\.startsWith\("image:\/\/"\) && !cachedImage\)/, "loadHistory must derive cache paths for provider images");
-  assert.match(loadHistoryBody, /cachedImage = Settings\.cacheDirImagesNotifications \+ imageId \+ "\.png"/, "loadHistory must rebuild cached image paths from generated ids");
+  assert.match(loadHistoryBody, /resolveCachedImageForHistory\(item\)/, "loadHistory must normalize cached history images before appending rows");
   assert.match(loadHistoryBody, /"urgency": item\.urgency < 0 \|\| item\.urgency > 2 \? 1 : item\.urgency/, "loadHistory must clamp invalid urgency to normal");
   assert.match(loadHistoryBody, /Logger\.e\("Notifications",\s*"Load failed:",\s*e\)/, "loadHistory must log load failures");
   assert.match(loadStateBody, /const notifState = ShellState\.getNotificationsState\(\)/, "loadState must read persisted notification state");
@@ -102,6 +101,55 @@ function testNotificationHistoryAndStatePersistence() {
   assert.match(saveStateBody, /Logger\.e\("Notifications",\s*"Save state failed:",\s*e\)/, "saveState must log state save failures");
   assert.match(seenBody, /root\.lastSeenTs = Time\.timestamp \* 1000/, "updateLastSeenTs must convert current timestamp to milliseconds");
   assert.match(seenBody, /saveState\(\)/, "updateLastSeenTs must persist the new timestamp");
+}
+
+function testNotificationHistoryCachedImagesResolveIconProviderFallbacks() {
+  const loadHistory = qmlFunction("loadHistory");
+  const resolveCachedImageForHistory = qmlFunction("resolveCachedImageForHistory", "item");
+  const cacheDir = "/tmp/noctalia-cache/images/notifications/";
+  const cachedIconImage = cacheDir + "icon.png";
+  const cachedProviderImage = cacheDir + "provider.png";
+  const historyRows = [];
+  const ctx = {
+    Settings: { cacheDirImagesNotifications: cacheDir },
+    generateImageId: () => "generated",
+    adapter: { notifications: [] },
+    historyList: {
+      clear: () => { historyRows.length = 0; },
+      append: row => historyRows.push(row),
+    },
+    Logger: { e: () => {} },
+  };
+  ctx.resolveCachedImageForHistory = item => resolveCachedImageForHistory(ctx, item);
+
+  assert.equal(resolveCachedImageForHistory(ctx, {
+    originalImage: "image://icon/com.mitchellh.ghostty",
+    cachedImage: cachedIconImage,
+  }), "", "stable icon-provider images should bypass stale generated cache files");
+  assert.equal(resolveCachedImageForHistory(ctx, {
+    originalImage: "image://qsimage/transient-id",
+    cachedImage: cachedProviderImage,
+  }), cachedProviderImage, "transient image-provider rows keep persisted cache paths");
+  assert.equal(resolveCachedImageForHistory(ctx, {
+    originalImage: "image://qsimage/transient-id",
+    cachedImage: "",
+  }), cacheDir + "generated.png", "transient image-provider rows derive cache paths when missing");
+  assert.equal(resolveCachedImageForHistory(ctx, {
+    originalImage: "/tmp/plain.png",
+    cachedImage: "",
+  }), "", "plain images do not derive notification cache paths");
+
+  ctx.adapter.notifications = [{
+    id: "ghostty-1",
+    timestamp: 1710000000000,
+    originalImage: "image://icon/com.mitchellh.ghostty",
+    cachedImage: cachedIconImage,
+  }];
+  loadHistory(ctx);
+
+  assert.equal(historyRows.length, 1, "history load appends persisted notification");
+  assert.equal(historyRows[0].cachedImage, "", "history model lets stable original icon provider win over stale cache path");
+  assert.equal(historyRows[0].originalImage, "image://icon/com.mitchellh.ghostty", "history model keeps original image for delegate fallback");
 }
 
 function testNotificationEmptySuppressionExecutesPlaceholderMatching() {
@@ -193,6 +241,7 @@ const tests = [
   testNotificationReplacementAndObjectUpdatePreserveStableFields,
   testNotificationCleanupAndProgressGuards,
   testNotificationHistoryAndStatePersistence,
+  testNotificationHistoryCachedImagesResolveIconProviderFallbacks,
   testNotificationEmptySuppressionExecutesPlaceholderMatching,
   testNotificationTerminalBellCooldownExecutes,
 ];

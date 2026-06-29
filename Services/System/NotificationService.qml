@@ -650,13 +650,7 @@ Singleton {
       for (const item of adapter.notifications || []) {
         const time = new Date(item.timestamp);
 
-        let cachedImage = item.cachedImage || "";
-        if (item.originalImage && item.originalImage.startsWith("image://") && !cachedImage) {
-          const imageId = generateImageId(item, item.originalImage);
-          if (imageId) {
-            cachedImage = Settings.cacheDirImagesNotifications + imageId + ".png";
-          }
-        }
+        const cachedImage = resolveCachedImageForHistory(item);
 
         historyList.append({
                              "id": item.id || "",
@@ -672,6 +666,22 @@ Singleton {
     } catch (e) {
       Logger.e("Notifications", "Load failed:", e);
     }
+  }
+
+  function resolveCachedImageForHistory(item) {
+    const originalImage = item.originalImage || "";
+    if (originalImage.startsWith("image://icon/"))
+      return "";
+
+    const cachedImage = item.cachedImage || "";
+    if (cachedImage)
+      return cachedImage;
+
+    if (!originalImage.startsWith("image://"))
+      return "";
+
+    const imageId = generateImageId(item, originalImage);
+    return imageId ? Settings.cacheDirImagesNotifications + imageId + ".png" : "";
   }
 
   function loadState() {
