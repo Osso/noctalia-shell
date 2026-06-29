@@ -20,8 +20,10 @@ Singleton {
 
   // Internal state for hwmon detection
   property string fanHwmonPath: ""
+  property bool sensorDetected: fanHwmonPath !== ""
   property string fanSensorName: ""
   property int maxFanSensors: 8
+  property int pollingRefs: 0
 
   // Internal state for fan reading
   property var pendingFanReads: []
@@ -39,7 +41,7 @@ Singleton {
     id: updateTimer
     interval: root.sleepDuration
     repeat: true
-    running: root.fanHwmonPath !== ""
+    running: root.isPollingActive() && root.fanHwmonPath !== ""
     triggeredOnStart: true
     onTriggered: {
       root.readAllFans();
@@ -104,6 +106,9 @@ Singleton {
   function publishFanSensor(hwmonIndex, sensorName) {
     root.fanSensorName = sensorName;
     root.fanHwmonPath = `/sys/class/hwmon/hwmon${hwmonIndex}`;
+    if (root.isPollingActive()) {
+      root.readAllFans();
+    }
     Logger.i("FanService", `Found ${root.fanSensorName} fan sensor at ${root.fanHwmonPath}`);
   }
 
@@ -149,6 +154,19 @@ Singleton {
     onLoadFailed: function(error) {
       root.readNextFanLabel();
     }
+  }
+
+  function beginPolling() {
+    pollingRefs++;
+    root.readAllFans();
+  }
+
+  function endPolling() {
+    pollingRefs = Math.max(0, pollingRefs - 1);
+  }
+
+  function isPollingActive() {
+    return pollingRefs > 0;
   }
 
   function readAllFans() {

@@ -20,6 +20,7 @@ function testFanHwmonDetectionGuards() {
 }
 
 function testFanHwmonDetectionPublishesSuccessfulSensor() {
+  assert.match(source, /property bool sensorDetected: fanHwmonPath !== ""/, "FanService must expose sensor detection separately from available RPM readings");
   assert.match(source, /function publishFanSensor\(hwmonIndex, sensorName\)/, "publishFanSensor must type hwmon index and sensor name inputs");
   const publishFanSensor = qmlFunction("publishFanSensor", "hwmonIndex", "sensorName");
   const logs = [];
@@ -27,6 +28,12 @@ function testFanHwmonDetectionPublishesSuccessfulSensor() {
     root: {
       fanSensorName: "",
       fanHwmonPath: "",
+      isPollingActive() {
+        return true;
+      },
+      readAllFans() {
+        logs.push(["read-all"]);
+      },
     },
     Logger: {
       i(...args) {
@@ -39,7 +46,38 @@ function testFanHwmonDetectionPublishesSuccessfulSensor() {
 
   assert.equal(ctx.root.fanSensorName, "thinkpad");
   assert.equal(ctx.root.fanHwmonPath, "/sys/class/hwmon/hwmon4");
-  assert.deepEqual(logs, [["FanService", "Found thinkpad fan sensor at /sys/class/hwmon/hwmon4"]]);
+  assert.deepEqual(logs, [["read-all"], ["FanService", "Found thinkpad fan sensor at /sys/class/hwmon/hwmon4"]]);
+}
+
+function testFanPollingLifecycleGuards() {
+  assert.match(source, /property int pollingRefs: 0/, "FanService must track polling consumers");
+  assert.match(source, /running: root\.isPollingActive\(\) && root\.fanHwmonPath !== ""/, "fan polling timer must run only while a consumer is active and a sensor exists");
+
+  const beginPolling = qmlFunction("beginPolling");
+  const endPolling = qmlFunction("endPolling");
+  const isPollingActive = qmlFunction("isPollingActive");
+  const calls = [];
+  const ctx = {
+    pollingRefs: 0,
+    readAllFans() {
+      calls.push("read-all");
+    },
+  };
+  ctx.root = ctx;
+
+  assert.equal(isPollingActive(ctx), false);
+  beginPolling(ctx);
+  assert.equal(ctx.pollingRefs, 1);
+  assert.equal(isPollingActive(ctx), true);
+  assert.deepEqual(calls, ["read-all"]);
+  beginPolling(ctx);
+  assert.equal(ctx.pollingRefs, 2);
+  endPolling(ctx);
+  assert.equal(ctx.pollingRefs, 1);
+  endPolling(ctx);
+  assert.equal(ctx.pollingRefs, 0);
+  endPolling(ctx);
+  assert.equal(ctx.pollingRefs, 0);
 }
 
 function testFanReadPipelineGuards() {
@@ -168,6 +206,7 @@ function testFanSummaryHelpers() {
 const tests = [
   testFanHwmonDetectionGuards,
   testFanHwmonDetectionPublishesSuccessfulSensor,
+  testFanPollingLifecycleGuards,
   testFanReadPipelineGuards,
   testFanReaderAndLabelGuards,
   testFanLabelCacheHelpersExecute,

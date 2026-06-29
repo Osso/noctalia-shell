@@ -79,6 +79,17 @@ Rectangle {
   readonly property int diskWarningThreshold: Settings.data.systemMonitor.diskWarningThreshold
   readonly property int diskCriticalThreshold: Settings.data.systemMonitor.diskCriticalThreshold
   property var registeredSystemStatMetrics: ({})
+  property bool fanPollingRegistered: false
+
+  function setFanPolling(shouldPoll) {
+    if (shouldPoll && !fanPollingRegistered) {
+      FanService.beginPolling();
+      fanPollingRegistered = true;
+    } else if (!shouldPoll && fanPollingRegistered) {
+      FanService.endPolling();
+      fanPollingRegistered = false;
+    }
+  }
 
   function setSystemStatPolling(metric, shouldPoll) {
     const isRegistered = registeredSystemStatMetrics[metric] === true;
@@ -97,6 +108,7 @@ Rectangle {
 
   function refreshSystemStatPolling() {
     const widgetVisible = visible;
+    setFanPolling(widgetVisible && showFanSpeed);
     setSystemStatPolling("cpu", widgetVisible && showCpuUsage);
     setSystemStatPolling("temp", widgetVisible && showCpuTemp);
     setSystemStatPolling("memory", widgetVisible && showMemoryUsage);
@@ -105,6 +117,7 @@ Rectangle {
   }
 
   function clearSystemStatPolling() {
+    setFanPolling(false);
     setSystemStatPolling("cpu", false);
     setSystemStatPolling("temp", false);
     setSystemStatPolling("memory", false);
@@ -120,6 +133,7 @@ Rectangle {
   onShowMemoryUsageChanged: refreshSystemStatPolling()
   onShowDiskUsageChanged: refreshSystemStatPolling()
   onShowNetworkStatsChanged: refreshSystemStatPolling()
+  onShowFanSpeedChanged: refreshSystemStatPolling()
 
   // Warning threshold calculation properties
   readonly property bool cpuWarning: showCpuUsage && SystemStatService.cpuUsage > cpuWarningThreshold
@@ -165,8 +179,8 @@ Rectangle {
 
   readonly property int fanTextWidth: Math.ceil(fanMetrics.boundingRect.width + 3)
 
-  function shouldShowFanSpeedMetric(enabled, fanAvailable) {
-    return enabled && fanAvailable;
+  function shouldShowFanSpeedMetric(enabled, fanAvailable, sensorDetected) {
+    return enabled && (fanAvailable || sensorDetected);
   }
 
   function formatFanSpeedText(maxRpm) {
@@ -686,7 +700,7 @@ Rectangle {
       Layout.preferredWidth: isVertical ? root.width : iconSize + fanTextWidth + (Style.marginXXS)
       Layout.preferredHeight: Style.capsuleHeight
       Layout.alignment: isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
-      visible: root.shouldShowFanSpeedMetric(showFanSpeed, FanService.available)
+      visible: root.shouldShowFanSpeedMetric(showFanSpeed, FanService.available, FanService.sensorDetected)
 
       GridLayout {
         id: fanContent

@@ -8,7 +8,15 @@ Fan covers hardware fan sensor discovery, RPM readout, label loading, and fan su
 - [x] Hwmon detection probes `/sys/class/hwmon/hwmonN/name` files.
 - [x] Supported sensor names must also expose `fan1_input` before the service selects a hwmon path.
 - [x] Failed fan-input checks continue scanning later hwmon paths.
-- [x] Successful fan-input verification publishes the sensor name, hwmon path, and detection log.
+- [x] Successful fan-input verification publishes the sensor name, hwmon path, sensor-detected state, and detection log.
+- [x] Successful fan-input verification refreshes fan data immediately when polling consumers are already active.
+
+### Fan polling lifecycle
+
+- [x] FanService tracks active polling consumers with reference counting.
+- [x] FanService periodic RPM polling runs only while a consumer is active and a hwmon path is detected.
+- [x] Beginning fan polling refreshes fan data immediately.
+- [x] Ending fan polling clamps references at zero.
 
 ### Fan read pipeline
 
@@ -44,7 +52,9 @@ Fan covers hardware fan sensor discovery, RPM readout, label loading, and fan su
 
 ### System Monitor widget
 
-- [x] The bar widget shows fan speed only when the widget setting is enabled and FanService is available.
+- [x] The bar widget owns FanService polling only while the widget is visible and fan speed display is enabled.
+- [x] Fan polling ownership does not depend on current fan availability, so discovery can populate initially unavailable fan data.
+- [x] The bar widget shows fan speed when the widget setting is enabled and either FanService has RPM readings or a fan sensor has been detected.
 - [x] The bar widget displays the formatted max fan RPM.
 - [x] The bar widget tooltip lists each fan label and RPM on separate lines.
 - [x] System Monitor settings hide fan-speed controls when FanService is unavailable.
