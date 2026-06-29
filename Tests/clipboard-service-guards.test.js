@@ -207,17 +207,22 @@ function testClipboardServiceDecodeQueuesExecute() {
 function testClipboardServiceDecodeCompletionCallbacksAndCacheWrites() {
   assert.match(source, /function handleDecodeFinished\(output\)/, "decode completion helper must type decoded output");
   assert.match(source, /function handleBase64DecodeFinished\(output\)/, "base64 completion helper must type decoded output");
+  assert.match(source, /function cacheImageDataUrl\(id, url\)/, "clipboard image cache writes must go through bounded cache helper");
+  assert.match(source, /property int maxCachedImageDataUrls: \d+/, "clipboard image cache must have a fixed entry cap");
   assert.match(source, /onExited:\s*\(exitCode, exitStatus\) => root\.handleDecodeFinished\(stdout\.text\)/, "decode process must route completion through helper");
   assert.match(source, /onExited:\s*\(exitCode, exitStatus\) => root\.handleBase64DecodeFinished\(stdout\.text\)/, "base64 process must route completion through helper");
 
   const handleDecodeFinished = qmlFunction("handleDecodeFinished", "output");
   const handleBase64DecodeFinished = qmlFunction("handleBase64DecodeFinished", "output");
+  const cacheImageDataUrl = qmlFunction("cacheImageDataUrl", "id", "url");
   const decodedValues = [];
   const queuedStarts = [];
   const ctx = {
     root: null,
     revision: 4,
+    maxCachedImageDataUrls: 2,
     imageDataById: {},
+    imageCacheOrder: [],
     _decodeCallback(value) {
       decodedValues.push(value);
     },
@@ -226,6 +231,9 @@ function testClipboardServiceDecodeCompletionCallbacksAndCacheWrites() {
     },
     _b64CurrentMime: "image/png",
     _b64CurrentId: "img-1",
+    cacheImageDataUrl(id, url) {
+      cacheImageDataUrl(ctx, id, url);
+    },
     _startNextB64() {
       queuedStarts.push("next");
     },
@@ -251,6 +259,14 @@ function testClipboardServiceDecodeCompletionCallbacksAndCacheWrites() {
   assert.equal(ctx._b64CurrentMime, "", "base64 mime must be cleared");
   assert.equal(ctx._b64CurrentId, "", "base64 id must be cleared");
   assert.deepEqual(queuedStarts, ["next"], "base64 decode completion must continue queued work");
+
+  cacheImageDataUrl(ctx, "img-2", "data:image/png;base64,two");
+  cacheImageDataUrl(ctx, "img-3", "data:image/png;base64,three");
+  cacheImageDataUrl(ctx, "img-2", "data:image/png;base64,two-updated");
+
+  assert.deepEqual(Object.keys(ctx.imageDataById).sort(), ["img-2", "img-3"], "image cache must evict oldest entries beyond cap");
+  assert.equal(ctx.imageDataById["img-2"], "data:image/png;base64,two-updated", "image cache must update existing ids");
+  assert.deepEqual(ctx.imageCacheOrder, ["img-3", "img-2"], "image cache order must track recency");
 }
 
 function testClipboardServiceMutationCommandsExecute() {

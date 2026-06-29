@@ -24,7 +24,9 @@ Singleton {
   property bool watchersStarted: false
 
   // Expose decoded thumbnails by id and a revision to notify bindings
+  property int maxCachedImageDataUrls: 20
   property var imageDataById: ({})
+  property var imageCacheOrder: []
   property int revision: 0
 
   // Approximate first-seen timestamps for entries this session (seconds)
@@ -197,8 +199,7 @@ Singleton {
       }
     } finally {
       if (root._b64CurrentId !== "") {
-        root.imageDataById[root._b64CurrentId] = url;
-        root.revision += 1;
+        root.cacheImageDataUrl(root._b64CurrentId, url);
       }
 
       root._b64CurrentCb = null;
@@ -302,6 +303,23 @@ Singleton {
       return null;
     }
     return root.imageDataById[id];
+  }
+
+  function cacheImageDataUrl(id, url) {
+    const nextCache = Object.assign({}, root.imageDataById);
+    let nextOrder = root.imageCacheOrder.filter(existingId => existingId !== id);
+
+    nextCache[id] = url;
+    nextOrder.push(id);
+
+    while (nextOrder.length > root.maxCachedImageDataUrls) {
+      const evictedId = nextOrder.shift();
+      delete nextCache[evictedId];
+    }
+
+    root.imageDataById = nextCache;
+    root.imageCacheOrder = nextOrder;
+    root.revision += 1;
   }
 
   function _startNextB64() {
