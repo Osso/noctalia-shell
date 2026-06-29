@@ -3,7 +3,11 @@
 const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
+const fs = require("fs");
+const path = require("path");
+
 const source = readQml("Services/System/SystemStatService.qml");
+const repoRoot = path.resolve(__dirname, "..");
 
 function qmlFunction(functionName, ...argNames) {
   const body = extractFunctionBody(source, functionName);
@@ -14,6 +18,7 @@ function testSystemStatServiceIntervalAndMemoryGuards() {
   const normalizeBody = extractFunctionBody(source, "normalizeInterval");
   const memoryBody = extractFunctionBody(source, "parseMemoryInfo");
 
+  assert.match(source, /readonly property int defaultIntervalMs: 15000/, "fallback polling interval must be relaxed for idle CPU");
   assert.match(normalizeBody, /Math\.max\(minimumIntervalMs, value \|\| defaultIntervalMs\)/, "normalizeInterval must clamp falsy and short intervals");
   assert.match(memoryBody, /if \(!text\)\s+return;/, "parseMemoryInfo must ignore empty input");
   assert.match(memoryBody, /const lines = text\.split\('\\n'\)/, "parseMemoryInfo must parse line-oriented /proc/meminfo");
@@ -22,6 +27,17 @@ function testSystemStatServiceIntervalAndMemoryGuards() {
   assert.match(memoryBody, /if \(memTotal > 0\)[\s\S]*const usageKb = memTotal - memAvailable/, "parseMemoryInfo must only compute usage with valid total memory");
   assert.match(memoryBody, /root\.memGb = \(usageKb \/ 1048576\)\.toFixed\(1\)/, "parseMemoryInfo must expose used memory in GiB");
   assert.match(memoryBody, /root\.memPercent = Math\.round\(\(usageKb \/ memTotal\) \* 100\)/, "parseMemoryInfo must expose rounded memory percentage");
+}
+
+function testSystemStatDefaultPollingIntervalsPreferIdleCpu() {
+  const defaults = JSON.parse(fs.readFileSync(path.join(repoRoot, "Assets/settings-default.json"), "utf8"));
+  const monitor = defaults.systemMonitor;
+
+  assert.equal(monitor.cpuPollingInterval, 15000, "default CPU polling should avoid 3s idle wakeups");
+  assert.equal(monitor.memPollingInterval, 15000, "default memory polling should avoid 3s idle wakeups");
+  assert.equal(monitor.networkPollingInterval, 15000, "default network polling should avoid 3s idle wakeups");
+  assert.equal(monitor.tempPollingInterval, 60000, "default temperature polling should be slower than lightweight /proc reads");
+  assert.equal(monitor.diskPollingInterval, 60000, "default disk polling should avoid frequent df subprocesses");
 }
 
 function testSystemStatServicePollingRefGuards() {
@@ -170,6 +186,7 @@ function testSystemStatServiceSpeedFormattersExecuteBoundaries() {
 
 const tests = [
   testSystemStatServiceIntervalAndMemoryGuards,
+  testSystemStatDefaultPollingIntervalsPreferIdleCpu,
   testSystemStatServicePollingRefGuards,
   testSystemStatServicePollingRefsExecute,
   testSystemStatServiceCpuAndNetworkGuards,

@@ -11,7 +11,7 @@ Singleton {
 
   // Configuration
   readonly property int minimumIntervalMs: 250
-  readonly property int defaultIntervalMs: 3000
+  readonly property int defaultIntervalMs: 15000
 
   function normalizeInterval(value) {
     return Math.max(minimumIntervalMs, value || defaultIntervalMs);
