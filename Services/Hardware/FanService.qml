@@ -34,7 +34,7 @@ Singleton {
 
   Component.onCompleted: {
     Logger.i("FanService", "Service started with interval:", root.sleepDuration, "ms");
-    fanHwmonDetector.checkNext();
+    fanDetectorProcess.running = true;
   }
 
   // Timer for periodic updates
@@ -49,67 +49,123 @@ Singleton {
     }
   }
 
-  // Detect hwmon path with fan sensors
-  FileView {
-    id: fanHwmonDetector
-    property int currentIndex: 0
-    printErrors: false
+  function buildFanDetectionScript() {
+    const names = root.supportedFanSensorNames.join(" ");
+    return [
+      "for name_path in /sys/class/hwmon/hwmon*/name; do",
+      "  [ -r \"$name_path\" ] || continue",
+      '  dir="${name_path%/name}"',
+      "  sensor=$(cat \"$name_path\" 2>/dev/null || true)",
+      `  case " ${names} " in`,
+      '    *" $sensor "*)',
+      '      [ -r "$dir/fan1_input" ] || continue',
+      '      printf \'hwmon\\t%s\\t%s\\n\' "${dir##*/hwmon}" "$sensor"',
+      '      for input in "$dir"/fan*_input; do',
+      '        [ -r "$input" ] || continue',
+      '        base="${input##*/fan}"',
+      '        idx="${base%_input}"',
+      '        label=""',
+      '        if [ -r "$dir/fan${idx}_label" ]; then',
+      '          label=$(cat "$dir/fan${idx}_label" 2>/dev/null || true)',
+      '        fi',
+      '        printf \'fan\\t%s\\t%s\\n\' "$idx" "$label"',
+      '      done',
+      '      exit 0',
+      '      ;;',
+      "  esac",
+      "done",
+      "exit 1"
+    ].join("\n");
+  }
 
-    function checkNext() {
-      if (currentIndex >= 16) {
+  function parseFanDetectionOutput(output) {
+    const lines = output.trim().split(/\r?\n/).filter(row => row.trim().length > 0);
+    if (lines.length === 0) {
+      return null;
+    }
+
+    const sensor = root.parseFanDetectionHeader(lines[0]);
+    if (!sensor) {
+      return null;
+    }
+
+    const fans = root.parseDetectedFanLines(lines.slice(1));
+    return {
+      hwmonIndex: sensor.hwmonIndex,
+      sensorName: sensor.sensorName,
+      fanIndices: fans.indices,
+      fanLabels: fans.labels
+    };
+  }
+
+  function parseFanDetectionHeader(line) {
+    const header = line.split("\t");
+    if (header.length < 3 || header[0] !== "hwmon") {
+      return null;
+    }
+
+    const hwmonIndex = parseInt(header[1], 10);
+    const sensorName = header[2].trim();
+    if (isNaN(hwmonIndex) || sensorName === "") {
+      return null;
+    }
+
+    return {
+      hwmonIndex: hwmonIndex,
+      sensorName: sensorName
+    };
+  }
+
+  function parseDetectedFanLines(lines) {
+    const indices = [];
+    const labels = ({});
+    for (const line of lines) {
+      const parts = line.split("\t");
+      if (parts.length < 2 || parts[0] !== "fan") {
+        continue;
+      }
+
+      const fanIndex = parseInt(parts[1], 10);
+      if (isNaN(fanIndex)) {
+        continue;
+      }
+
+      indices.push(fanIndex);
+      labels[fanIndex] = (parts[2] || "").trim() || null;
+    }
+
+    return {
+      indices: indices.sort((a, b) => a - b),
+      labels: labels
+    };
+  }
+
+  // Detect hwmon path with fan sensors in one operation. Repeated FileView path
+  // changes during startup can leave dropped operations behind in Quickshell.
+  Process {
+    id: fanDetectorProcess
+    running: false
+    command: ["sh", "-c", root.buildFanDetectionScript()]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        const detected = root.parseFanDetectionOutput(text);
+        if (detected) {
+          root.publishFanSensor(detected.hwmonIndex, detected.sensorName, detected.fanIndices, detected.fanLabels);
+        }
+      }
+    }
+    onExited: function(exitCode, exitStatus) {
+      if (exitCode !== 0 && root.fanHwmonPath === "") {
         Logger.w("FanService", "No supported fan sensor found");
-        return;
       }
-
-      fanHwmonDetector.path = `/sys/class/hwmon/hwmon${currentIndex}/name`;
-      fanHwmonDetector.reload();
-    }
-
-    onLoaded: {
-      const name = text().trim();
-      if (root.supportedFanSensorNames.includes(name)) {
-        // Check if this hwmon actually has fan inputs
-        fanInputChecker.hwmonIndex = currentIndex;
-        fanInputChecker.sensorName = name;
-        fanInputChecker.path = `/sys/class/hwmon/hwmon${currentIndex}/fan1_input`;
-        fanInputChecker.reload();
-      } else {
-        currentIndex++;
-        Qt.callLater(() => checkNext());
-      }
-    }
-
-    onLoadFailed: function(error) {
-      currentIndex++;
-      Qt.callLater(() => checkNext());
     }
   }
 
-  // Verify the hwmon has fan inputs
-  FileView {
-    id: fanInputChecker
-    property int hwmonIndex: 0
-    property string sensorName: ""
-    printErrors: false
-
-    onLoaded: {
-      // Found a valid fan input
-      root.publishFanSensor(hwmonIndex, sensorName);
-    }
-
-    onLoadFailed: function(error) {
-      // No fan inputs at this hwmon, continue searching
-      fanHwmonDetector.currentIndex++;
-      Qt.callLater(() => fanHwmonDetector.checkNext());
-    }
-  }
-
-  function publishFanSensor(hwmonIndex, sensorName) {
+  function publishFanSensor(hwmonIndex, sensorName, fanIndices, fanLabels) {
     root.fanSensorName = sensorName;
+    root.detectedFanIndices = fanIndices && fanIndices.length > 0 ? fanIndices.slice().sort((a, b) => a - b) : [1];
+    root.fanLabelCache = Object.assign({}, fanLabels || {});
     root.fanHwmonPath = `/sys/class/hwmon/hwmon${hwmonIndex}`;
-    if (root.isPollingActive()) {
-      root.readAllFans();
-    }
     Logger.i("FanService", `Found ${root.fanSensorName} fan sensor at ${root.fanHwmonPath}`);
   }
 
@@ -160,7 +216,6 @@ Singleton {
 
   function beginPolling() {
     pollingRefs++;
-    root.readAllFans();
   }
 
   function endPolling() {
@@ -207,8 +262,17 @@ Singleton {
     }
 
     const fanIndex = root.pendingFanReads[0]; // Peek, don't remove yet
-    fanReader.path = `${root.fanHwmonPath}/fan${fanIndex}_input`;
-    fanReader.reload();
+    root.loadFanInput(fanIndex);
+  }
+
+  function loadFanInput(fanIndex) {
+    const nextPath = `${root.fanHwmonPath}/fan${fanIndex}_input`;
+    if (fanReader.path === nextPath) {
+      fanReader.reload();
+      return;
+    }
+
+    fanReader.path = nextPath;
   }
 
   function finalizeFanReading() {
@@ -255,9 +319,18 @@ Singleton {
     }
 
     const fanIndex = root.pendingLabelReads.shift();
+    root.loadFanLabel(fanIndex);
+  }
+
+  function loadFanLabel(fanIndex) {
+    const nextPath = `${root.fanHwmonPath}/fan${fanIndex}_label`;
     labelReader.fanIndex = fanIndex;
-    labelReader.path = `${root.fanHwmonPath}/fan${fanIndex}_label`;
-    labelReader.reload();
+    if (labelReader.path === nextPath) {
+      labelReader.reload();
+      return;
+    }
+
+    labelReader.path = nextPath;
   }
 
   function publishFinalFans() {

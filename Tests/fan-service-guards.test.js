@@ -11,18 +11,46 @@ function qmlFunction(functionName, ...argNames) {
 }
 
 function testFanHwmonDetectionGuards() {
-  const checkNextBody = extractFunctionBody(source, "checkNext");
+  const buildFanDetectionScript = qmlFunction("buildFanDetectionScript");
+  const parseFanDetectionOutput = qmlFunction("parseFanDetectionOutput", "output");
+  const parseFanDetectionHeader = qmlFunction("parseFanDetectionHeader", "line");
+  const parseDetectedFanLines = qmlFunction("parseDetectedFanLines", "lines");
+  const ctx = {
+    supportedFanSensorNames: ["thinkpad", "dell_smm"],
+    parseFanDetectionHeader(line) {
+      return parseFanDetectionHeader(ctx, line);
+    },
+    parseDetectedFanLines(lines) {
+      return parseDetectedFanLines(ctx, lines);
+    },
+  };
+  ctx.root = ctx;
 
-  assert.match(checkNextBody, /if \(currentIndex >= 16\)[\s\S]*Logger\.w\("FanService", "No supported fan sensor found"\)[\s\S]*return/, "checkNext must stop after configured hwmon probes");
-  assert.match(checkNextBody, /fanHwmonDetector\.path = `\/sys\/class\/hwmon\/hwmon\$\{currentIndex\}\/name`[\s\S]*fanHwmonDetector\.reload\(\)/, "checkNext must probe hwmon name files");
-  assert.match(source, /root\.supportedFanSensorNames\.includes\(name\)[\s\S]*fanInputChecker\.hwmonIndex = currentIndex[\s\S]*fanInputChecker\.sensorName = name[\s\S]*fanInputChecker\.path = `\/sys\/class\/hwmon\/hwmon\$\{currentIndex\}\/fan1_input`[\s\S]*fanInputChecker\.reload\(\)/, "fan hwmon loader must verify supported sensors expose fan input");
-  assert.match(source, /fanHwmonDetector\.currentIndex\+\+[\s\S]*Qt\.callLater\(\(\) => fanHwmonDetector\.checkNext\(\)\)/, "fan input failure must continue scanning hwmon paths");
+  const script = buildFanDetectionScript(ctx);
+  assert.match(script, /for name_path in \/sys\/class\/hwmon\/hwmon\*\/name/, "fan detection must scan hwmon name files in one process");
+  assert.match(script, /fan1_input/, "fan detection must verify that the matched hwmon exposes fan input");
+  assert.match(script, /fan\*_input/, "fan detection must enumerate available fan inputs once");
+  assert.match(script, /fan\$\{idx\}_label/, "fan detection must cache fan labels or missing-label state once");
+  assert.match(script, /thinkpad dell_smm/, "fan detection must include supported sensor names");
+  assert.doesNotMatch(source, /id: fanHwmonDetector|id: fanInputChecker/, "fan startup detection must not use path-churning FileViews");
+  assert.match(source, /fanDetectorProcess\.running = true/, "FanService startup must run the single detector process");
+  assert.match(source, /root\.publishFanSensor\(detected\.hwmonIndex, detected\.sensorName, detected\.fanIndices, detected\.fanLabels\)/, "detector process must publish parsed sensors");
+
+  assert.deepEqual(parseFanDetectionOutput(ctx, "hwmon\t5\tthinkpad\nfan\t1\tCPU Fan\nfan\t2\t\n"), {
+    hwmonIndex: 5,
+    sensorName: "thinkpad",
+    fanIndices: [1, 2],
+    fanLabels: { 1: "CPU Fan", 2: null },
+  });
+  assert.equal(parseFanDetectionOutput(ctx, ""), null);
+  assert.equal(parseFanDetectionOutput(ctx, "bad\tthinkpad\n"), null);
+  assert.equal(parseFanDetectionOutput(ctx, "hwmon\tbad\tthinkpad\n"), null);
 }
 
 function testFanHwmonDetectionPublishesSuccessfulSensor() {
   assert.match(source, /property bool sensorDetected: fanHwmonPath !== ""/, "FanService must expose sensor detection separately from available RPM readings");
-  assert.match(source, /function publishFanSensor\(hwmonIndex, sensorName\)/, "publishFanSensor must type hwmon index and sensor name inputs");
-  const publishFanSensor = qmlFunction("publishFanSensor", "hwmonIndex", "sensorName");
+  assert.match(source, /function publishFanSensor\(hwmonIndex, sensorName, fanIndices, fanLabels\)/, "publishFanSensor must accept detected fan indices and labels");
+  const publishFanSensor = qmlFunction("publishFanSensor", "hwmonIndex", "sensorName", "fanIndices", "fanLabels");
   const logs = [];
   const ctx = {
     root: {
@@ -42,11 +70,13 @@ function testFanHwmonDetectionPublishesSuccessfulSensor() {
     },
   };
 
-  publishFanSensor(ctx, 4, "thinkpad");
+  publishFanSensor(ctx, 4, "thinkpad", [2, 1], { 1: "CPU Fan", 2: null });
 
   assert.equal(ctx.root.fanSensorName, "thinkpad");
   assert.equal(ctx.root.fanHwmonPath, "/sys/class/hwmon/hwmon4");
-  assert.deepEqual(logs, [["read-all"], ["FanService", "Found thinkpad fan sensor at /sys/class/hwmon/hwmon4"]]);
+  assert.deepEqual(ctx.root.detectedFanIndices, [1, 2]);
+  assert.deepEqual(ctx.root.fanLabelCache, { 1: "CPU Fan", 2: null });
+  assert.deepEqual(logs, [["FanService", "Found thinkpad fan sensor at /sys/class/hwmon/hwmon4"]]);
 }
 
 function testFanPollingLifecycleGuards() {
@@ -69,7 +99,7 @@ function testFanPollingLifecycleGuards() {
   beginPolling(ctx);
   assert.equal(ctx.pollingRefs, 1);
   assert.equal(isPollingActive(ctx), true);
-  assert.deepEqual(calls, ["read-all"]);
+  assert.deepEqual(calls, []);
   beginPolling(ctx);
   assert.equal(ctx.pollingRefs, 2);
   endPolling(ctx);
@@ -109,7 +139,7 @@ function testFanReadPipelineGuards() {
   assert.match(readAllBody, /root\.pendingFanReads = root\.fanIndicesToRead\(\)/, "readAllFans must use cached fan sensor indices when known");
   assert.match(readAllBody, /readNextFan\(\)/, "readAllFans must start the read pipeline");
   assert.match(readNextBody, /if \(root\.pendingFanReads\.length === 0\)[\s\S]*finalizeFanReading\(\)[\s\S]*return/, "readNextFan must finalize after pending reads are exhausted");
-  assert.match(readNextBody, /const fanIndex = root\.pendingFanReads\[0\][\s\S]*fanReader\.path = `\$\{root\.fanHwmonPath\}\/fan\$\{fanIndex\}_input`[\s\S]*fanReader\.reload\(\)/, "readNextFan must peek next index and load fan input path");
+  assert.match(readNextBody, /const fanIndex = root\.pendingFanReads\[0\][\s\S]*root\.loadFanInput\(fanIndex\)/, "readNextFan must peek next index and load fan input path");
   assert.match(finalizeBody, /root\.collectedFans\.sort\(\(a, b\) => a\.index - b\.index\)/, "finalizeFanReading must sort fans by sensor index");
   assert.match(finalizeBody, /root\.rememberDetectedFanIndices\(root\.collectedFans\)/, "finalizeFanReading must cache detected fan input indices before publishing");
   assert.match(finalizeBody, /root\.pendingLabelReads = root\.findMissingLabelIndices\(root\.collectedFans\)[\s\S]*root\.publishFinalFans\(\)[\s\S]*root\.readNextFanLabel\(\)/, "finalizeFanReading must publish RPMs before optional label reads so missing labels cannot stall display");
@@ -121,6 +151,10 @@ function testFanReaderAndLabelGuards() {
   assert.match(source, /root\.pendingFanReads = \[\][\s\S]*root\.finalizeFanReading\(\)/, "fan reader failure must stop pipeline and finalize");
   assert.match(source, /property int fanIndex: 0[\s\S]*root\.cacheFanLabel\(fanIndex, label\)[\s\S]*root\.readNextFanLabel\(\)/, "label reader must cache labels by fan index and continue the label pipeline");
   assert.match(source, /onLoadFailed: function\(error\) \{[\s\S]*root\.cacheFanLabel\(fanIndex, ""\)[\s\S]*root\.readNextFanLabel\(\)/, "label reader failure must cache missing labels before continuing so missing files are not retried every poll");
+  assert.match(source, /function loadFanInput\(fanIndex\)[\s\S]*if \(fanReader\.path === nextPath\)[\s\S]*fanReader\.reload\(\)[\s\S]*fanReader\.path = nextPath/, "fan input loader must reload only when re-reading the same path");
+  assert.match(source, /function loadFanLabel\(fanIndex\)[\s\S]*if \(labelReader\.path === nextPath\)[\s\S]*labelReader\.reload\(\)[\s\S]*labelReader\.path = nextPath/, "fan label loader must reload only when re-reading the same path");
+  assert.doesNotMatch(source, /fanReader\.path = `\$\{root\.fanHwmonPath\}\/fan\$\{fanIndex\}_input`;\s*fanReader\.reload\(\)/, "fan input reads must not reload immediately after changing path");
+  assert.doesNotMatch(source, /labelReader\.path = `\$\{root\.fanHwmonPath\}\/fan\$\{fanIndex\}_label`;\s*labelReader\.reload\(\)/, "fan label reads must not reload immediately after changing path");
 }
 
 function testFanLabelCacheHelpersExecute() {
@@ -161,6 +195,7 @@ function testFanLabelPipelineSkipsCachedLabels() {
   const finalizeFanReading = qmlFunction("finalizeFanReading");
   const readNextFanLabel = qmlFunction("readNextFanLabel");
   const publishFinalFans = qmlFunction("publishFinalFans");
+  const loadFanLabel = qmlFunction("loadFanLabel", "fanIndex");
   const calls = [];
   const ctx = {
     collectedFans: [
@@ -187,6 +222,9 @@ function testFanLabelPipelineSkipsCachedLabels() {
       calls.push("read-label");
       return readNextFanLabel(ctx);
     },
+    loadFanLabel(fanIndex) {
+      return loadFanLabel(ctx, fanIndex);
+    },
     publishFinalFans() {
       calls.push("publish");
       return publishFinalFans(ctx);
@@ -211,7 +249,8 @@ function testFanLabelPipelineSkipsCachedLabels() {
   ctx.fanLabelCache = { 1: "CPU Fan" };
   calls.length = 0;
   finalizeFanReading(ctx);
-  assert.deepEqual(calls, ["publish", "read-label", ["reload", "/sys/class/hwmon/hwmon5/fan2_label"]]);
+  assert.deepEqual(calls, ["publish", "read-label"]);
+  assert.equal(ctx.labelReader.path, "/sys/class/hwmon/hwmon5/fan2_label");
 }
 
 function testFanPublishHelpers() {
