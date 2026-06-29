@@ -12,6 +12,8 @@ Singleton {
   property var ddcMonitors: []
   readonly property var monitors: variants.instances
   property bool appleDisplayPresent: false
+  property bool ddcDetectionPending: false
+  property bool ddcDetectionCompletedOnce: false
 
   function getMonitorForScreen(screen) {
     return monitors.find(m => m.modelData === screen);
@@ -44,31 +46,52 @@ Singleton {
     return detectedDisplays;
   }
 
+  function requestDdcDetection(clearExisting) {
+    if (!Settings.data.brightness.enableDdcSupport) {
+      return;
+    }
+
+    if (ddcProc.running) {
+      ddcDetectionPending = ddcDetectionCompletedOnce;
+      return;
+    }
+
+    if (clearExisting) {
+      ddcMonitors = [];
+    }
+
+    ddcDetectionPending = false;
+    ddcProc.running = true;
+  }
+
+  function finishDdcDetection() {
+    ddcDetectionCompletedOnce = true;
+    if (!ddcDetectionPending) {
+      return;
+    }
+
+    ddcDetectionPending = false;
+    requestDdcDetection(false);
+  }
+
   reloadableId: "brightness"
 
   Component.onCompleted: {
     Logger.i("Brightness", "Service started");
-    if (Settings.data.brightness.enableDdcSupport) {
-      ddcProc.running = true;
-    }
+    requestDdcDetection(false);
   }
 
-  onMonitorsChanged: {
-    ddcMonitors = [];
-    if (Settings.data.brightness.enableDdcSupport) {
-      ddcProc.running = true;
-    }
-  }
+  onMonitorsChanged: requestDdcDetection(true)
 
   Connections {
     target: Settings.data.brightness
     function onEnableDdcSupportChanged() {
       if (Settings.data.brightness.enableDdcSupport) {
         // Re-detect DDC monitors when enabled
-        ddcMonitors = [];
-        ddcProc.running = true;
+        requestDdcDetection(true);
       } else {
         // Clear DDC monitors when disabled
+        ddcDetectionPending = false;
         ddcMonitors = [];
       }
     }
@@ -111,6 +134,7 @@ Singleton {
         root.ddcMonitors = ddcProc.ddcMonitors.filter(m => m.isDdc);
       }
     }
+    onExited: finishDdcDetection()
   }
 
   component Monitor: QtObject {

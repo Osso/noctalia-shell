@@ -119,6 +119,95 @@ function testBrightnessServiceDetectedDisplaysPassThrough() {
   assert.equal(getDetectedDisplays(ctx), detectedDisplays);
 }
 
+function createDdcDetectionContext(overrides = {}) {
+  const ctx = {
+    Settings: {
+      data: {
+        brightness: {
+          enableDdcSupport: true,
+        },
+      },
+    },
+    ddcDetectionPending: false,
+    ddcDetectionCompletedOnce: false,
+    ddcMonitors: [{ model: "existing" }],
+    startCount: 0,
+    _ddcRunning: false,
+    ddcProc: {},
+  };
+
+  Object.defineProperty(ctx.ddcProc, "running", {
+    get() {
+      return ctx._ddcRunning;
+    },
+    set(value) {
+      if (value && !ctx._ddcRunning) {
+        ctx.startCount++;
+      }
+      ctx._ddcRunning = value;
+    },
+  });
+
+  Object.assign(ctx, overrides);
+  return ctx;
+}
+
+function testDdcDetectionRequestDoesNotStartWhenSupportDisabled() {
+  const requestDdcDetection = qmlFunction("requestDdcDetection", "clearExisting");
+  const ctx = createDdcDetectionContext();
+  ctx.Settings.data.brightness.enableDdcSupport = false;
+
+  requestDdcDetection(ctx, true);
+
+  assert.equal(ctx.startCount, 0);
+  assert.deepEqual(ctx.ddcMonitors, [{ model: "existing" }]);
+  assert.equal(ctx.ddcDetectionPending, false);
+}
+
+function testDdcDetectionRequestStartsProcessAndClearsWhenRequested() {
+  const requestDdcDetection = qmlFunction("requestDdcDetection", "clearExisting");
+  const ctx = createDdcDetectionContext();
+
+  requestDdcDetection(ctx, true);
+
+  assert.equal(ctx.startCount, 1);
+  assert.deepEqual(ctx.ddcMonitors, []);
+  assert.equal(ctx.ddcDetectionPending, false);
+}
+
+function testDdcDetectionRequestWhileRunningDoesNotStartOrClearAgain() {
+  const requestDdcDetection = qmlFunction("requestDdcDetection", "clearExisting");
+  const ctx = createDdcDetectionContext();
+  ctx.ddcProc.running = true;
+  ctx.ddcMonitors = [{ model: "existing" }];
+
+  requestDdcDetection(ctx, true);
+
+  assert.equal(ctx.startCount, 1);
+  assert.deepEqual(ctx.ddcMonitors, [{ model: "existing" }]);
+  assert.equal(ctx.ddcDetectionPending, false);
+}
+
+function testDdcDetectionFinishConsumesPendingRequestOnce() {
+  const requestDdcDetection = qmlFunction("requestDdcDetection", "clearExisting");
+  const finishDdcDetection = qmlFunction("finishDdcDetection");
+  const ctx = createDdcDetectionContext();
+  ctx.ddcDetectionCompletedOnce = true;
+  ctx.ddcProc.running = true;
+  ctx.requestDdcDetection = clearExisting => requestDdcDetection(ctx, clearExisting);
+
+  requestDdcDetection(ctx, true);
+  ctx.ddcProc.running = false;
+  finishDdcDetection(ctx);
+  ctx.ddcProc.running = false;
+  finishDdcDetection(ctx);
+
+  assert.equal(ctx.startCount, 2);
+  assert.deepEqual(ctx.ddcMonitors, [{ model: "existing" }]);
+  assert.equal(ctx.ddcDetectionPending, false);
+  assert.equal(ctx.ddcDetectionCompletedOnce, true);
+}
+
 function createMonitorContext(overrides = {}) {
   const commands = [];
   const timerRestarts = [];
@@ -228,6 +317,10 @@ const tests = [
   testBrightnessServiceIncreaseBrightnessDelegatesToEveryMonitor,
   testBrightnessServiceDecreaseBrightnessDelegatesToEveryMonitor,
   testBrightnessServiceDetectedDisplaysPassThrough,
+  testDdcDetectionRequestDoesNotStartWhenSupportDisabled,
+  testDdcDetectionRequestStartsProcessAndClearsWhenRequested,
+  testDdcDetectionRequestWhileRunningDoesNotStartOrClearAgain,
+  testDdcDetectionFinishConsumesPendingRequestOnce,
   testMonitorSetBrightnessRoutesInternalBacklightCommand,
   testMonitorSetBrightnessRoutesDdcCommandAndRestartsTimer,
   testMonitorSetBrightnessRoutesAppleDisplayCommand,
