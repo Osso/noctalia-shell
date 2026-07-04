@@ -19,5 +19,11 @@ jobs:
         with:
           node-version: '22'
 
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install code-index
+        run: cargo install --git https://github.com/Osso/code-index --locked
+
       - name: Run unit tests
         run: ./run-tests.sh unit
