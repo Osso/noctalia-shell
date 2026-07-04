@@ -27,7 +27,7 @@ jobs:
           sudo mkdir -p /home/osso/Repos
           sudo chown -R $USER:$USER /home/osso
           git clone --depth 1 https://github.com/Osso/ast-outline /home/osso/Repos/ast-outline
-          cargo install --git https://github.com/Osso/code-index --locked
+          cargo install --git https://github.com/Osso/code-index --locked --bin code-index
 
       - name: Run unit tests
         run: ./run-tests.sh unit
