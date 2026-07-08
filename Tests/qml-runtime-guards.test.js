@@ -139,10 +139,16 @@ function testNotificationDurationsRespectSettingsAndExpireTimeout() {
   assert.match(body, /lowUrgencyDuration \? notificationSettings\.lowUrgencyDuration \* 1000 : 3000/, "calculateDuration must default low urgency to 3 seconds");
   assert.match(body, /normalUrgencyDuration \? notificationSettings\.normalUrgencyDuration \* 1000 : 8000/, "calculateDuration must default normal urgency to 8 seconds");
   assert.match(body, /criticalUrgencyDuration \? notificationSettings\.criticalUrgencyDuration \* 1000 : 15000/, "calculateDuration must default critical urgency to 15 seconds");
-  assert.match(body, /notificationSettings && notificationSettings\.respectExpireTimeout/, "calculateDuration must respect explicit notification timeouts when enabled");
-  assert.match(body, /if \(data\.expireTimeout === 0\)\s+return -1/, "calculateDuration must keep zero expire timeout notifications persistent");
-  assert.match(body, /if \(data\.expireTimeout > 0\)\s+return data\.expireTimeout/, "calculateDuration must use positive expire timeouts directly");
-  assert.match(body, /return durations\[data\.urgency\]/, "calculateDuration must select duration by urgency");
+  assert.doesNotMatch(body, /respectExpireTimeout/, "calculateDuration must not gate sender expire timeouts behind a setting");
+  const persistentTimeout = body.indexOf("if (data.expireTimeout === 0)");
+  const positiveTimeout = body.indexOf("if (data.expireTimeout > 0)");
+  const urgencyFallback = body.indexOf("return durations[data.urgency]");
+
+  assert.notEqual(persistentTimeout, -1, "calculateDuration must keep zero expire timeout notifications persistent");
+  assert.notEqual(positiveTimeout, -1, "calculateDuration must use positive expire timeouts directly");
+  assert.notEqual(urgencyFallback, -1, "calculateDuration must select duration by urgency");
+  assert.ok(persistentTimeout < urgencyFallback, "calculateDuration must respect persistent expire timeout before urgency fallback");
+  assert.ok(positiveTimeout < urgencyFallback, "calculateDuration must respect positive expire timeout before urgency fallback");
 }
 
 function testNotificationImageHelpersKeepOnlyCacheableImageIds() {

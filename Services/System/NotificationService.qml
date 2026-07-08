@@ -413,12 +413,10 @@ Singleton {
       notificationSettings && notificationSettings.criticalUrgencyDuration ? notificationSettings.criticalUrgencyDuration * 1000 : 15000
     ];
 
-    if (notificationSettings && notificationSettings.respectExpireTimeout) {
-      if (data.expireTimeout === 0)
-        return -1; // Never expire
-      if (data.expireTimeout > 0)
-        return data.expireTimeout;
-    }
+    if (data.expireTimeout === 0)
+      return -1; // Never expire
+    if (data.expireTimeout > 0)
+      return data.expireTimeout;
 
     return durations[data.urgency];
   }
