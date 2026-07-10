@@ -4,6 +4,7 @@ Session Menu covers the power/session action panel, countdown confirmation behav
 
 ### Action and countdown flow
 
+- [x] The suspend backend action is labeled “Sleep” in the English session menu.
 - [x] `startTimer` and `executeAction` action parameters are typed as strings.
 - [x] Starting an action executes immediately when global countdown is disabled.
 - [x] Starting an action finds the selected power option by action id.

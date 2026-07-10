@@ -797,7 +797,7 @@
     "logout": "Logout",
     "reboot": "Reboot",
     "shutdown": "Shutdown",
-    "suspend": "Suspend",
+    "suspend": "Sleep",
     "title": "Session Menu"
   },
   "settings": {

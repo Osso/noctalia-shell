@@ -1,13 +1,20 @@
 #!/usr/bin/env node
 
 const assert = require("assert/strict");
+const fs = require("fs");
+const path = require("path");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
 const source = readQml("Modules/Panels/SessionMenu/SessionMenu.qml");
+const translations = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../Assets/Translations/en.json"), "utf8"));
 
 function qmlFunction(functionName, ...argNames) {
   const body = extractFunctionBody(source, functionName);
   return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
+
+function testSessionMenuUsesSleepLabel() {
+  assert.equal(translations["session-menu"].suspend, "Sleep", "suspend backend action must be presented as Sleep");
 }
 
 function testSessionMenuActionSignaturesAreTyped() {
@@ -132,6 +139,7 @@ function testSessionMenuCountdownTicksAndExpires() {
 }
 
 const tests = [
+  testSessionMenuUsesSleepLabel,
   testSessionMenuActionSignaturesAreTyped,
   testSessionMenuTimerGuards,
   testSessionMenuExecuteActionDispatch,
