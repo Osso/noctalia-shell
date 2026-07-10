@@ -27,7 +27,7 @@ Testing covers local regression gates, function-coverage guardrails, and log fil
 
 - [x] `./run-tests.sh unit` runs pure helper, source coverage, QML guard, service guard, parser, and quickshell log-filter tests.
 - [x] `./run-tests.sh qml` runs the focused QML static check.
-- [x] `./run-tests.sh probes` runs read-only service probes.
+- [x] `./run-tests.sh probes` runs read-only service probes and injects the deterministic Bluetooth CLI fixture rather than contacting host Bluetooth hardware.
 - [x] `./run-tests.sh log` runs the active Quickshell log regression gate.
 - [x] `./run-tests.sh notifications` is isolated from the default gates because it visibly sends notifications.
 
@@ -43,13 +43,15 @@ Testing covers local regression gates, function-coverage guardrails, and log fil
 - `Tests/quickshell-regression.test.sh` - current-reload log filtering fixture.
 - `Bin/dev/quickshell-regression.sh` - live Quickshell log regression gate.
 - `Bin/dev/qml-static-check.sh` - focused qmllint gate.
-- `Bin/dev/service-probes.sh` - read-only runtime/service probes.
+- `Bin/dev/service-probes.sh` - read-only runtime/service probes; direct Bluetooth invocation remains a bounded host diagnostic.
+- `Tests/fixtures/bluetoothctl` - deterministic Bluetooth CLI fixture selected by automated probe runs.
 
 ## Tests asserting this spec
 
 - `Tests/source-coverage.test.js`
 - `Tests/qml-function-inventory.test.js`
 - `Tests/quickshell-regression.test.sh`
+- `Tests/service-probes-parsing.test.sh`
 
 ## Known gaps (current cycle)
 

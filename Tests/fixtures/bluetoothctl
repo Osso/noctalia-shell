@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+case "${1:-}" in
+    list)
+        if [[ "$#" -ne 1 ]]; then
+            echo "unexpected bluetoothctl list arguments: $*" >&2
+            exit 2
+        fi
+        echo "Controller AA:BB:CC:DD:EE:FF test-host [default]"
+        ;;
+    show)
+        if [[ "$#" -ne 1 ]]; then
+            echo "unexpected bluetoothctl show arguments: $*" >&2
+            exit 2
+        fi
+        printf '%s\n' \
+            "Controller AA:BB:CC:DD:EE:FF (public)" \
+            "  Powered: no" \
+            "  Discovering: no"
+        ;;
+    devices)
+        if [[ "$#" -ne 2 || "$2" != "Connected" ]]; then
+            echo "unexpected bluetoothctl devices arguments: $*" >&2
+            exit 2
+        fi
+        ;;
+    *)
+        echo "unexpected bluetoothctl fixture arguments: $*" >&2
+        exit 2
+        ;;
+esac

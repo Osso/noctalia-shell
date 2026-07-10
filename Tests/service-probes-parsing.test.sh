@@ -872,14 +872,63 @@ if [[ "$resistant_timeout_output" != *"resistant fixture timed out after 0.05s"*
 fi
 
 bluetooth_probe_definition="$(declare -f probe_bluetooth)"
+if [[ "$bluetooth_probe_definition" != *'local bluetoothctl_command="${NOCTALIA_BLUETOOTHCTL:-bluetoothctl}"'* ]]; then
+    echo "Bluetooth probe does not support explicit CLI injection" >&2
+    exit 1
+fi
 for bounded_query in \
-    'run_bounded_probe "Bluetooth controller listing" bluetoothctl list' \
-    'run_bounded_probe "Bluetooth controller details" bluetoothctl show' \
-    'run_bounded_probe "Bluetooth connected device listing" bluetoothctl devices Connected'; do
+    'run_bounded_probe "Bluetooth controller listing" "$bluetoothctl_command" list' \
+    'run_bounded_probe "Bluetooth controller details" "$bluetoothctl_command" show' \
+    'run_bounded_probe "Bluetooth connected device listing" "$bluetoothctl_command" devices Connected'; do
     if [[ "$bluetooth_probe_definition" != *"$bounded_query"* ]]; then
         echo "Bluetooth probe has unbounded query: $bounded_query" >&2
         exit 1
     fi
 done
+
+cat >"$timeout_fixture" <<'SCRIPT'
+#!/usr/bin/env bash
+case "$*" in
+    list)
+        echo "Controller AA:BB:CC:DD:EE:FF test-host [default]"
+        ;;
+    show)
+        printf '%s\n' \
+            "Controller AA:BB:CC:DD:EE:FF (public)" \
+            "  Powered: no" \
+            "  Discovering: no"
+        ;;
+    "devices Connected")
+        ;;
+    *)
+        echo "unexpected bluetoothctl fixture arguments: $*" >&2
+        exit 2
+        ;;
+esac
+SCRIPT
+chmod +x "$timeout_fixture"
+
+set +e
+injected_bluetooth_output="$(NOCTALIA_BLUETOOTHCTL="$timeout_fixture" NOCTALIA_PROBE_TIMEOUT_SECONDS=0.05 probe_bluetooth 2>&1)"
+injected_bluetooth_status="$?"
+set -e
+
+assert_equal "$injected_bluetooth_status" "0" "injected Bluetooth probe status"
+assert_equal "$injected_bluetooth_output" "ok probeBluetooth" "injected Bluetooth probe output"
+
+suite_bluetooth_fixture="$repo_root/Tests/fixtures/bluetoothctl"
+if [[ ! -x "$suite_bluetooth_fixture" ]]; then
+    echo "automated Bluetooth CLI fixture is missing or not executable" >&2
+    exit 1
+fi
+assert_equal "$("$suite_bluetooth_fixture" list)" "Controller AA:BB:CC:DD:EE:FF test-host [default]" "suite Bluetooth list fixture"
+assert_equal "$("$suite_bluetooth_fixture" show)" $'Controller AA:BB:CC:DD:EE:FF (public)\n  Powered: no\n  Discovering: no' "suite Bluetooth show fixture"
+assert_equal "$("$suite_bluetooth_fixture" devices Connected)" "" "suite Bluetooth connected-device fixture"
+
+run_tests_source="$(<"$repo_root/run-tests.sh")"
+if [[ "$run_tests_source" != *'NOCTALIA_BLUETOOTHCTL="$repo_root/Tests/fixtures/bluetoothctl"'* ]]; then
+    echo "automated service probes do not select the Bluetooth CLI fixture" >&2
+    exit 1
+fi
 
 echo "ok testServiceProbeParsing"

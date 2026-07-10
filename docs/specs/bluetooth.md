@@ -6,6 +6,7 @@ Bluetooth covers adapter state helpers, device ordering, device icons, connectio
 
 - [x] Bluetooth service startup logs that the service started.
 - [x] The read-only Bluetooth probe bounds each `bluetoothctl` query and fails with the query context and configured timeout instead of hanging.
+- [x] The Bluetooth probe accepts an explicit `NOCTALIA_BLUETOOTHCTL` command for deterministic test execution; without it, it uses the host `bluetoothctl` diagnostic.
 - [x] Device sorting sorts the provided device array in place.
 - [x] Device sorting falls back from `name` to `deviceName`.
 - [x] Device sorting prefers human-readable names before short/opaque names.
@@ -61,7 +62,8 @@ Bluetooth covers adapter state helpers, device ordering, device icons, connectio
 - `Modules/Bar/Widgets/Bluetooth.qml` - bar Bluetooth widget.
 - `Modules/Panels/ControlCenter/Widgets/Bluetooth.qml` - control-center Bluetooth shortcut.
 - `Modules/Panels/Settings/Tabs/NetworkTab.qml` - Bluetooth settings toggle.
-- `Bin/dev/service-probes.sh` - read-only Bluetooth controller and connected-device probe.
+- `Bin/dev/service-probes.sh` - bounded Bluetooth controller and connected-device probe, with optional injected `bluetoothctl` command.
+- `Tests/fixtures/bluetoothctl` - deterministic controller-state fixture for automated Bluetooth probes.
 
 ## Tests asserting this spec
 
@@ -75,7 +77,7 @@ Bluetooth covers adapter state helpers, device ordering, device icons, connectio
 - [ ] Add executable tests for rfkill/Wi-Fi blocked detection and airplane-mode toast behavior.
 - [ ] Add executable tests for Bluetooth panel row interactions and action dispatch.
 - [ ] Add executable tests for bar/control-center Bluetooth widget behavior.
-- [ ] Add probe coverage for adapter/device discovery output if a stable read-only probe is available.
+- [ ] Add probe coverage for adapter/device discovery output beyond the deterministic controller fixture if a stable read-only probe is available.
 
 ## Out of scope
 

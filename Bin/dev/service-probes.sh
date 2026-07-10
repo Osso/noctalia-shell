@@ -967,12 +967,14 @@ probe_battery() {
 }
 
 probe_bluetooth() {
-    require_command bluetoothctl
-
+    local bluetoothctl_command="${NOCTALIA_BLUETOOTHCTL:-bluetoothctl}"
     local controllers controller_info connected_devices
-    controllers="$(run_bounded_probe "Bluetooth controller listing" bluetoothctl list)"
-    controller_info="$(run_bounded_probe "Bluetooth controller details" bluetoothctl show)"
-    connected_devices="$(run_bounded_probe "Bluetooth connected device listing" bluetoothctl devices Connected)"
+
+    require_command "$bluetoothctl_command"
+
+    controllers="$(run_bounded_probe "Bluetooth controller listing" "$bluetoothctl_command" list)"
+    controller_info="$(run_bounded_probe "Bluetooth controller details" "$bluetoothctl_command" show)"
+    connected_devices="$(run_bounded_probe "Bluetooth connected device listing" "$bluetoothctl_command" devices Connected)"
 
     if [[ "$controllers" != *"[default]"* ]] || ! is_bluetooth_controller_row "$controllers"; then
         echo "default Bluetooth controller was not found: $controllers" >&2

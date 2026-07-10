@@ -145,7 +145,8 @@ run_qml_static_check() {
 }
 
 run_service_probes() {
-    "$repo_root/Bin/dev/service-probes.sh"
+    NOCTALIA_BLUETOOTHCTL="$repo_root/Tests/fixtures/bluetoothctl" \
+        "$repo_root/Bin/dev/service-probes.sh"
 }
 
 run_notifications() {

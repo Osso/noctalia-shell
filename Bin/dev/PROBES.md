@@ -36,7 +36,7 @@ Bin/dev/service-probes.sh notifications
 Bin/dev/service-probes.sh audio
 Bin/dev/service-probes.sh brightness
 Bin/dev/service-probes.sh battery
-Bin/dev/service-probes.sh bluetooth
+Bin/dev/service-probes.sh bluetooth # bounded real Bluetooth hardware/daemon diagnostic
 Bin/dev/service-probes.sh clipboard
 Bin/dev/service-probes.sh lock-keys
 Bin/dev/service-probes.sh vpn
@@ -59,12 +59,22 @@ display is detected, UPower display/physical battery state, clipboard MIME type
 list, lock-key LED state inputs, and Bluetooth controller/device state. Each
 Bluetooth CLI query has a configurable 10-second default bound
 (`NOCTALIA_PROBE_TIMEOUT_SECONDS`); a timeout fails the probe with the affected
-query and duration rather than leaving the test runner hung. The remaining probes
-verify NetworkManager VPN/WireGuard profile rows, screen-recorder monitor/source
-enumeration, program availability checks, local Niri/start-wrapper launch path
-wiring,
-live Quickshell IPC target/function availability for configured shortcuts,
-system/process-stat inputs, host
+query and duration rather than leaving the test runner hung.
+
+`./run-tests.sh` and `./run-tests.sh probes` inject
+`Tests/fixtures/bluetoothctl` through `NOCTALIA_BLUETOOTHCTL`, so their Bluetooth
+checks are deterministic and do not contact the host Bluetooth daemon or radio.
+When `NOCTALIA_BLUETOOTHCTL` is unset, the standalone
+`Bin/dev/service-probes.sh bluetooth` command is instead a bounded real
+`bluetoothctl` hardware/daemon diagnostic.
+On this host, `bluetooth.service` remains masked as a crash mitigation; do not
+unmask or start it to run a probe. A direct diagnostic may therefore fail, but it
+must do so within the configured bound.
+
+The remaining probes verify NetworkManager VPN/WireGuard profile rows,
+screen-recorder monitor/source enumeration, program availability checks, local
+Niri/start-wrapper launch path wiring, live Quickshell IPC target/function
+availability for configured shortcuts, system/process-stat inputs, host
 identity/logo/fontconfig inputs, and wallpaper/color cache are readable and
 coherent for this machine. The settings probe validates the local settings file
 shape and default/local section parity for the bar, control center, audio,
