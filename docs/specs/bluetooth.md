@@ -2,9 +2,10 @@ Bluetooth covers adapter state helpers, device ordering, device icons, connectio
 
 ## What it must do
 
-### Service lifecycle and device ordering
+### Service lifecycle, probe resilience, and device ordering
 
 - [x] Bluetooth service startup logs that the service started.
+- [x] The read-only Bluetooth probe bounds each `bluetoothctl` query and fails with the query context and configured timeout instead of hanging.
 - [x] Device sorting sorts the provided device array in place.
 - [x] Device sorting falls back from `name` to `deviceName`.
 - [x] Device sorting prefers human-readable names before short/opaque names.
@@ -60,12 +61,14 @@ Bluetooth covers adapter state helpers, device ordering, device icons, connectio
 - `Modules/Bar/Widgets/Bluetooth.qml` - bar Bluetooth widget.
 - `Modules/Panels/ControlCenter/Widgets/Bluetooth.qml` - control-center Bluetooth shortcut.
 - `Modules/Panels/Settings/Tabs/NetworkTab.qml` - Bluetooth settings toggle.
+- `Bin/dev/service-probes.sh` - read-only Bluetooth controller and connected-device probe.
 
 ## Tests asserting this spec
 
 - `Tests/bluetooth-service-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/widget-helper-guards.test.js`
+- `Tests/service-probes-parsing.test.sh`
 
 ## Known gaps (current cycle)
 

@@ -820,4 +820,66 @@ if [[ "$(declare -f probe_programs)" == *"local required_available=(kitty "* ]];
     exit 1
 fi
 
+timeout_fixture="$(mktemp)"
+trap 'rm -f "$timeout_fixture"' EXIT
+cat >"$timeout_fixture" <<'SCRIPT'
+#!/usr/bin/env bash
+sleep 1
+SCRIPT
+chmod +x "$timeout_fixture"
+
+timed_out_started_ns="$(date +%s%N)"
+set +e
+timed_out_output="$(NOCTALIA_PROBE_TIMEOUT_SECONDS=0.05 run_bounded_probe "fixture probe" "$timeout_fixture" 2>&1)"
+timed_out_status="$?"
+set -e
+timed_out_elapsed_ms="$(( ($(date +%s%N) - timed_out_started_ns) / 1000000 ))"
+
+assert_equal "$timed_out_status" "124" "bounded probe timeout status"
+if (( timed_out_elapsed_ms >= 500 )); then
+    echo "bounded probe timeout waited ${timed_out_elapsed_ms}ms" >&2
+    exit 1
+fi
+if [[ "$timed_out_output" != *"fixture probe timed out after 0.05s"* ]]; then
+    echo "bounded probe timeout omitted context: $timed_out_output" >&2
+    exit 1
+fi
+
+cat >"$timeout_fixture" <<'SCRIPT'
+#!/usr/bin/env bash
+trap '' TERM
+while true; do
+    sleep 1
+done
+SCRIPT
+chmod +x "$timeout_fixture"
+
+resistant_timeout_started_ns="$(date +%s%N)"
+set +e
+resistant_timeout_output="$(NOCTALIA_PROBE_TIMEOUT_SECONDS=0.05 run_bounded_probe "resistant fixture" "$timeout_fixture" 2>&1)"
+resistant_timeout_status="$?"
+set -e
+resistant_timeout_elapsed_ms="$(( ($(date +%s%N) - resistant_timeout_started_ns) / 1000000 ))"
+
+assert_equal "$resistant_timeout_status" "137" "TERM-resistant probe timeout status"
+if (( resistant_timeout_elapsed_ms >= 1500 )); then
+    echo "TERM-resistant probe timeout waited ${resistant_timeout_elapsed_ms}ms" >&2
+    exit 1
+fi
+if [[ "$resistant_timeout_output" != *"resistant fixture timed out after 0.05s"* ]]; then
+    echo "TERM-resistant probe timeout omitted context: $resistant_timeout_output" >&2
+    exit 1
+fi
+
+bluetooth_probe_definition="$(declare -f probe_bluetooth)"
+for bounded_query in \
+    'run_bounded_probe "Bluetooth controller listing" bluetoothctl list' \
+    'run_bounded_probe "Bluetooth controller details" bluetoothctl show' \
+    'run_bounded_probe "Bluetooth connected device listing" bluetoothctl devices Connected'; do
+    if [[ "$bluetooth_probe_definition" != *"$bounded_query"* ]]; then
+        echo "Bluetooth probe has unbounded query: $bounded_query" >&2
+        exit 1
+    fi
+done
+
 echo "ok testServiceProbeParsing"

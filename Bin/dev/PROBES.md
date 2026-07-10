@@ -56,9 +56,13 @@ Bin/dev/service-probes.sh power-profile
 These probes do not change shell state. They verify that the notification server,
 PipeWire volume state, internal brightness state, optional LG DDC state when the
 display is detected, UPower display/physical battery state, clipboard MIME type
-list, lock-key LED state inputs, Bluetooth controller state, NetworkManager
-VPN/WireGuard profile rows, screen-recorder monitor/source enumeration, program
-availability checks, local Niri/start-wrapper launch path wiring,
+list, lock-key LED state inputs, and Bluetooth controller/device state. Each
+Bluetooth CLI query has a configurable 10-second default bound
+(`NOCTALIA_PROBE_TIMEOUT_SECONDS`); a timeout fails the probe with the affected
+query and duration rather than leaving the test runner hung. The remaining probes
+verify NetworkManager VPN/WireGuard profile rows, screen-recorder monitor/source
+enumeration, program availability checks, local Niri/start-wrapper launch path
+wiring,
 live Quickshell IPC target/function availability for configured shortcuts,
 system/process-stat inputs, host
 identity/logo/fontconfig inputs, and wallpaper/color cache are readable and

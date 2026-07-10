@@ -12,6 +12,29 @@ require_command() {
     fi
 }
 
+run_bounded_probe() {
+    local description="$1"
+    local timeout_seconds="${NOCTALIA_PROBE_TIMEOUT_SECONDS:-10}"
+    local status
+    shift
+
+    require_command timeout
+
+    if timeout --kill-after=1s "${timeout_seconds}s" "$@"; then
+        return
+    else
+        status="$?"
+    fi
+
+    if [[ "$status" -eq 124 || "$status" -eq 137 ]]; then
+        echo "$description timed out after ${timeout_seconds}s" >&2
+    else
+        echo "$description failed with exit status $status" >&2
+    fi
+
+    return "$status"
+}
+
 find_lg_ultrawide_bus() {
     local ddc_output="$1"
     local current_bus=""
@@ -947,9 +970,9 @@ probe_bluetooth() {
     require_command bluetoothctl
 
     local controllers controller_info connected_devices
-    controllers="$(bluetoothctl list)"
-    controller_info="$(bluetoothctl show)"
-    connected_devices="$(bluetoothctl devices Connected)"
+    controllers="$(run_bounded_probe "Bluetooth controller listing" bluetoothctl list)"
+    controller_info="$(run_bounded_probe "Bluetooth controller details" bluetoothctl show)"
+    connected_devices="$(run_bounded_probe "Bluetooth connected device listing" bluetoothctl devices Connected)"
 
     if [[ "$controllers" != *"[default]"* ]] || ! is_bluetooth_controller_row "$controllers"; then
         echo "default Bluetooth controller was not found: $controllers" >&2
