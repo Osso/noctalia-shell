@@ -75,13 +75,21 @@ if ! printf '%s\n' "$no_shell_output" | rg -q "quickshell -p $repo_root"; then
     exit 1
 fi
 
-cat >"$fake_bin/pgrep" <<FAKE_PGREP
+cat >"$fake_bin/quickshell" <<FAKE_QUICKSHELL
 #!/usr/bin/env bash
-printf '4242 quickshell -p %s\n' '$repo_root'
-FAKE_PGREP
-cat >"$fake_bin/quickshell" <<'FAKE_QUICKSHELL'
-#!/usr/bin/env bash
-if [ "${1:-}" = "log" ]; then
+if [ "\${1:-}" = "list" ]; then
+    cat <<'JSON'
+[
+  {
+    "config_path": "$repo_root/shell.qml",
+    "id": "fixture-instance",
+    "launch_time": "2026-07-10T00:00:00",
+    "pid": 4242,
+    "shell_id": "fixture-shell"
+  }
+]
+JSON
+elif [ "\${1:-}" = "log" ]; then
     cat <<'LOG'
 WARN scene: @Old.qml[1:-1]: TypeError: stale failure
 INFO: Reloading configuration...
