@@ -51,12 +51,6 @@ related runtime packages:
 
 `docs/local/` and `PLAN.md` are intentionally local/ignored workspace notes.
 
-## Packaging Notes
-
-The active install is not Nix-based. The tracked Nix files are legacy/reference
-packaging only unless they are explicitly updated for this local stock-Quickshell
-contract. See [nix/README.md](nix/README.md).
-
 ## License
 
 MIT License - see [LICENSE](LICENSE). Original Noctalia credits remain in
