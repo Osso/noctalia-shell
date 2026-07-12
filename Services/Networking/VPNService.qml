@@ -88,6 +88,7 @@ Singleton {
     }
     refreshing = true;
     lastError = "";
+    refreshProcess.exitObserved = false;
     refreshProcess.running = true;
   }
 
@@ -151,6 +152,32 @@ Singleton {
     delayedRefreshTimer.restart();
   }
 
+  function finishRefresh(exitCode, output, errorOutput) {
+    const pending = root.refreshPending;
+    root.refreshing = false;
+    root.refreshPending = false;
+
+    if (exitCode === 0) {
+      root.connections = root.parseRefreshOutput(output);
+      if (pending) {
+        root.scheduleRefresh(200);
+      }
+      return;
+    }
+
+    root.lastError = errorOutput.trim().split("\n")[0] || `nmcli VPN refresh failed with exit ${exitCode}`;
+    Logger.w("VPN", "Refresh error: " + root.lastError);
+    if (pending) {
+      root.scheduleRefresh(2000);
+    }
+  }
+
+  function handleRefreshStartFailure(exitObserved) {
+    if (!exitObserved && root.refreshing) {
+      finishRefresh(-1, "", "nmcli VPN refresh failed to start");
+    }
+  }
+
   function parseRefreshOutput(rawOutput) {
     const lines = rawOutput.split("\n");
     const map = {};
@@ -198,31 +225,28 @@ Singleton {
     id: refreshProcess
     running: false
     command: ["nmcli", "-t", "-f", "NAME,UUID,TYPE,DEVICE", "connection", "show"]
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        connections = parseRefreshOutput(text);
-        const pending = refreshPending;
-        refreshing = false;
-        refreshPending = false;
-        if (pending) {
-          scheduleRefresh(200);
-        }
-      }
+      onStreamFinished: refreshProcess.output = text
     }
-
     stderr: StdioCollector {
-      onStreamFinished: {
-        const pending = refreshPending;
-        refreshing = false;
-        refreshPending = false;
-        if (text.trim()) {
-          lastError = text.split("\n")[0].trim();
-          Logger.w("VPN", "Refresh error: " + text);
-        }
-        if (pending) {
-          scheduleRefresh(2000);
-        }
+      onStreamFinished: refreshProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      refreshProcess.exitObserved = true;
+      const output = refreshProcess.output;
+      const errorOutput = refreshProcess.errorOutput;
+      refreshProcess.output = "";
+      refreshProcess.errorOutput = "";
+      root.finishRefresh(exitCode, output, errorOutput);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleRefreshStartFailure(exitObserved);
+        exitObserved = false;
       }
     }
   }

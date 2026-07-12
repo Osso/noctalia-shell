@@ -274,6 +274,75 @@ function testVpnParsesRefreshOutput() {
   assert.deepEqual(parseRefreshOutput({}, ""), {});
 }
 
+function testVpnRefreshCompletionExecutesSuccessFailureAndPendingDrain() {
+  const finishRefresh = qmlFunction("finishRefresh", "exitCode", "output", "errorOutput");
+  const createContext = overrides => {
+    const schedules = [];
+    const ctx = {
+      refreshing: true,
+      refreshPending: false,
+      connections: { old: { uuid: "old" } },
+      lastError: "",
+      Logger: { w() {} },
+      parseRefreshOutput(rawOutput) {
+        return rawOutput ? { fresh: { uuid: "fresh", active: true } } : {};
+      },
+      scheduleRefresh(interval) {
+        schedules.push(interval);
+      },
+      ...overrides,
+    };
+    ctx.root = ctx;
+    ctx.schedules = schedules;
+    return ctx;
+  };
+
+  const success = createContext({ refreshPending: true });
+  finishRefresh(success, 0, "vpn output", "");
+  assert.deepEqual(success.connections, { fresh: { uuid: "fresh", active: true } });
+  assert.equal(success.refreshing, false);
+  assert.equal(success.refreshPending, false);
+  assert.deepEqual(success.schedules, [200]);
+
+  const failure = createContext({ refreshPending: true });
+  finishRefresh(failure, 10, "", "nmcli denied\nmore");
+  assert.deepEqual(failure.connections, { old: { uuid: "old" } });
+  assert.equal(failure.lastError, "nmcli denied");
+  assert.equal(failure.refreshing, false);
+  assert.deepEqual(failure.schedules, [2000]);
+}
+
+function testVpnRefreshStartFailureExecutesWithoutExitedSignal() {
+  const handleRefreshStartFailure = qmlFunction("handleRefreshStartFailure", "exitObserved");
+  const finishRefresh = qmlFunction("finishRefresh", "exitCode", "output", "errorOutput");
+  const ctx = {
+    refreshing: true,
+    refreshPending: false,
+    connections: {},
+    lastError: "",
+    Logger: { w() {} },
+    parseRefreshOutput() { return {}; },
+    scheduleRefresh() {},
+  };
+  ctx.root = ctx;
+  ctx.finishRefresh = (exitCode, output, errorOutput) => finishRefresh(ctx, exitCode, output, errorOutput);
+
+  handleRefreshStartFailure(ctx, false);
+  assert.equal(ctx.refreshing, false);
+  assert.match(ctx.lastError, /failed to start/);
+
+  ctx.refreshing = true;
+  ctx.lastError = "";
+  handleRefreshStartFailure(ctx, true);
+  assert.equal(ctx.refreshing, true);
+  assert.equal(ctx.lastError, "");
+}
+
+function testVpnRefreshProcessRoutesExitAndStartFailure() {
+  assert.match(source, /id:\s*refreshProcess[\s\S]*?onExited:\s*function\s*\(exitCode\)[\s\S]*?finishRefresh/);
+  assert.match(source, /id:\s*refreshProcess[\s\S]*?onRunningChanged:[\s\S]*?handleRefreshStartFailure/);
+}
+
 const tests = [
   testVpnPollingLifecycleGuards,
   testControlCenterVpnPollingExecutes,
@@ -285,6 +354,9 @@ const tests = [
   testVpnSetConnectionReplacesKnownConnectionOnly,
   testVpnScheduleRefreshRestartsTimer,
   testVpnParsesRefreshOutput,
+  testVpnRefreshCompletionExecutesSuccessFailureAndPendingDrain,
+  testVpnRefreshStartFailureExecutesWithoutExitedSignal,
+  testVpnRefreshProcessRoutesExitAndStartFailure,
 ];
 
 for (const test of tests) {

@@ -14,6 +14,9 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 - [x] Refresh requests when idle mark the service refreshing, clear the last error, and start the refresh process.
 - [x] Delayed refresh scheduling updates the timer interval and restarts the timer.
 - [x] Refresh-process stdout parsing keeps `vpn` and `wireguard` rows, handles connection names containing colons, marks devices other than `--` as active, and ignores non-VPN or malformed rows.
+- [x] Refresh output and errors are buffered until process exit determines success or failure.
+- [x] Nonzero and failed-to-start `nmcli` refreshes clear busy state, preserve the previous connection map, expose a concrete error, and avoid normal-exit double finalization.
+- [x] A pending refresh drains after completion with a short success delay or longer failure delay.
 
 ### Connect and disconnect
 
