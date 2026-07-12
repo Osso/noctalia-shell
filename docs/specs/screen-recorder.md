@@ -7,6 +7,7 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 - [x] Refreshing capture sources starts both `gpu-screen-recorder --list-capture-options` and `gpu-screen-recorder --list-monitors`.
 - [x] Capture-source parsing skips v4l2 devices, keeps monitor resolutions, maps region capture, and appends the portal picker.
 - [x] Monitor-list parsing inserts missing monitors before the portal picker, avoids duplicate monitor keys, and records the first monitor resolution.
+- [x] The read-only host probe accepts one or more valid `NAME|WIDTHxHEIGHT` monitor rows and rejects empty or partly malformed lists.
 
 ### Toggle and start
 
@@ -49,6 +50,7 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 ## Tests asserting this spec
 
 - `Tests/screen-recorder-service-guards.test.js`
+- `Tests/service-probes-parsing.test.sh`
 - `Tests/qml-runtime-guards.test.js`
 
 ## Known gaps (current cycle)

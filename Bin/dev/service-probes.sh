@@ -154,6 +154,21 @@ is_gpu_screen_recorder_monitor_row() {
     [[ "$monitor_row" =~ ^[^|[:space:]][^|[:space:]]*[|][0-9]+x[0-9]+$ ]]
 }
 
+has_gpu_screen_recorder_monitor_rows() {
+    local monitor_output="$1"
+    local monitor_row
+    local monitor_count=0
+
+    while IFS= read -r monitor_row; do
+        if ! is_gpu_screen_recorder_monitor_row "$monitor_row"; then
+            return 1
+        fi
+        monitor_count=$((monitor_count + 1))
+    done <<<"$monitor_output"
+
+    [ "$monitor_count" -gt 0 ]
+}
+
 has_gpu_screen_recorder_capture_option() {
     local capture_options="$1"
     local capture_option
@@ -1057,7 +1072,7 @@ probe_screen_recorder() {
     monitors="$(gpu-screen-recorder --list-monitors 2>/dev/null)"
     capture_options="$(gpu-screen-recorder --list-capture-options 2>/dev/null)"
 
-    if ! is_gpu_screen_recorder_monitor_row "$monitors"; then
+    if ! has_gpu_screen_recorder_monitor_rows "$monitors"; then
         echo "gpu-screen-recorder monitor list is missing or malformed: $monitors" >&2
         exit 1
     fi
