@@ -9,6 +9,7 @@ Compositor covers backend detection, shared workspace/window state, display-scal
 - [x] Display-scale updates and cache saves mirror backend display data through ShellState.
 - [x] Display info lookup returns known display data and returns null for missing displays.
 - [x] Shared workspace, window, focused-window, active-workspace, clean-app-name, and workspace-window helpers mirror backend models and fail closed for invalid indexes or missing focus.
+- [x] Each backend `windowListChanged` event replaces the facade model and emits one facade `windowListChanged` signal; backend `activeWindowChanged` handling also resyncs the facade model and emits the same signal, so a backend sequence that emits both signals produces one facade window-list signal per backend signal.
 - [x] Clean app-name helper types app-id and fallback-title string inputs.
 - [x] Backend delegate functions fail closed when no backend object is available.
 - [x] Session commands delegate to the active backend while lock/suspend fallback paths use system commands when needed.
