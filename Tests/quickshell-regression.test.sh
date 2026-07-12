@@ -82,10 +82,24 @@ if [ "\${1:-}" = "list" ]; then
 [
   {
     "config_path": "$repo_root/shell.qml",
-    "id": "fixture-instance",
+    "id": "fixture-instance-old",
     "launch_time": "2026-07-10T00:00:00",
     "pid": 4242,
-    "shell_id": "fixture-shell"
+    "shell_id": "fixture-shell-old"
+  },
+  {
+    "config_path": "/tmp/unrelated/shell.qml",
+    "id": "fixture-instance-unrelated",
+    "launch_time": "2026-07-10T00:10:00",
+    "pid": 4444,
+    "shell_id": "fixture-shell-unrelated"
+  },
+  {
+    "config_path": "$repo_root/shell.qml",
+    "id": "fixture-instance-new",
+    "launch_time": "2026-07-10T00:05:00",
+    "pid": 4343,
+    "shell_id": "fixture-shell-new"
   }
 ]
 JSON
@@ -110,7 +124,7 @@ if [ "$fatal_status" -ne 1 ]; then
     exit 1
 fi
 
-if ! printf '%s\n' "$fatal_output" | rg -q "Quickshell regression gate failed for PID 4242"; then
+if ! printf '%s\n' "$fatal_output" | rg -q "Quickshell regression gate failed for PID 4343"; then
     echo "main did not report failed regression gate" >&2
     exit 1
 fi

@@ -63,7 +63,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 ## Known gaps (current cycle)
 
-- [ ] The registry fixture does not yet assert selection of the newest matching `shell.qml` instance when multiple local registrations exist.
+None for the current registry-selection contract.
 
 ## Out of scope
 
