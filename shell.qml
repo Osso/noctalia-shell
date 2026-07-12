@@ -127,6 +127,16 @@ ShellRoot {
   // ---------------------------------------------
   // Setup Wizard
   // ---------------------------------------------
+  Connections {
+    target: HostService
+    function onIsReadyChanged() {
+      shellRoot.checkSetupWizard();
+    }
+    function onOsInfoLoadFailedChanged() {
+      shellRoot.checkSetupWizard();
+    }
+  }
+
   Timer {
     id: setupWizardTimer
     running: false
@@ -142,9 +152,8 @@ ShellRoot {
       return;
     }
 
-    // Wait for HostService to be fully ready
+    // Host state changes call this function again when metadata becomes ready.
     if (!HostService.isReady) {
-      Qt.callLater(checkSetupWizard);
       return;
     }
 
@@ -157,6 +166,10 @@ ShellRoot {
   }
 
   function showSetupWizard() {
+    if (!Settings.shouldOpenSetupWizard || !HostService.isReady || HostService.isNixOS) {
+      return;
+    }
+
     // Open Setup Wizard as a panel in the same windowing system as Settings/ControlCenter
     if (Quickshell.screens.length > 0) {
       var targetScreen = Quickshell.screens[0];

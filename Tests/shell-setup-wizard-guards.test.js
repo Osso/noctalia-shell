@@ -17,6 +17,7 @@ function createSetupContext() {
     },
     HostService: {
       isReady: true,
+      osInfoLoadFailed: false,
       isNixOS: false,
     },
     setupWizardTimer: {
@@ -59,16 +60,32 @@ function testCheckSetupWizardSkipsWhenDisabledOrNixos() {
   assert.equal(nixCtx.setupWizardTimer.starts, 0);
 }
 
-function testCheckSetupWizardWaitsForHostReadiness() {
+function testCheckSetupWizardWaitsWithoutPollingForHostReadiness() {
   const checkSetupWizard = qmlFunction("checkSetupWizard");
   const ctx = createSetupContext();
   ctx.HostService.isReady = false;
-  ctx.checkSetupWizard = () => {};
 
   checkSetupWizard(ctx);
 
-  assert.equal(ctx.Qt.laterCalls, 1);
+  assert.equal(ctx.Qt.laterCalls, 0, "pending host metadata must not spin callLater");
   assert.equal(ctx.setupWizardTimer.starts, 0);
+}
+
+function testCheckSetupWizardSkipsTerminalHostMetadataFailure() {
+  const checkSetupWizard = qmlFunction("checkSetupWizard");
+  const ctx = createSetupContext();
+  ctx.HostService.isReady = false;
+  ctx.HostService.osInfoLoadFailed = true;
+
+  checkSetupWizard(ctx);
+
+  assert.equal(ctx.Qt.laterCalls, 0, "terminal host metadata failure must not spin callLater");
+  assert.equal(ctx.setupWizardTimer.starts, 0, "unknown OS identity must not guess that setup is safe");
+}
+
+function testHostStateChangesRecheckSetupWizard() {
+  assert.match(source, /target:\s*HostService[\s\S]*?function onIsReadyChanged\(\)[\s\S]*?checkSetupWizard\(\)/);
+  assert.match(source, /target:\s*HostService[\s\S]*?function onOsInfoLoadFailedChanged\(\)[\s\S]*?checkSetupWizard\(\)/);
 }
 
 function testCheckSetupWizardStartsTimerWhenReady() {
@@ -80,9 +97,26 @@ function testCheckSetupWizardStartsTimerWhenReady() {
   assert.equal(ctx.setupWizardTimer.starts, 1);
 }
 
+function testShowSetupWizardRechecksRecoveredNixosState() {
+  const showSetupWizard = qmlFunction("showSetupWizard");
+  const ctx = createSetupContext();
+  ctx.Quickshell = { screens: [{}] };
+  ctx.HostService.isNixOS = true;
+  ctx.PanelService = {
+    getPanel() {
+      throw new Error("NixOS recovery must skip panel lookup");
+    },
+  };
+
+  showSetupWizard(ctx);
+  assert.equal(ctx.setupWizardTimer.restarts, 0);
+}
+
 function testShowSetupWizardNoopsWithoutScreens() {
   const showSetupWizard = qmlFunction("showSetupWizard");
   const ctx = {
+    Settings: { shouldOpenSetupWizard: true },
+    HostService: { isReady: true, isNixOS: false },
     Quickshell: {
       screens: [],
     },
@@ -105,6 +139,8 @@ function testShowSetupWizardOpensLoadedPanel() {
   const showSetupWizard = qmlFunction("showSetupWizard");
   const screen = { name: "HDMI-A-1" };
   const ctx = {
+    Settings: { shouldOpenSetupWizard: true },
+    HostService: { isReady: true, isNixOS: false },
     Quickshell: {
       screens: [screen],
     },
@@ -138,6 +174,8 @@ function testShowSetupWizardOpensLoadedPanel() {
 function testShowSetupWizardRestartsTimerWhenPanelIsMissing() {
   const showSetupWizard = qmlFunction("showSetupWizard");
   const ctx = {
+    Settings: { shouldOpenSetupWizard: true },
+    HostService: { isReady: true, isNixOS: false },
     Quickshell: {
       screens: [{}],
     },
@@ -162,8 +200,11 @@ function testShowSetupWizardRestartsTimerWhenPanelIsMissing() {
 const tests = [
   testShellKeepsFullShellAndSettingsErrorMutuallyExclusive,
   testCheckSetupWizardSkipsWhenDisabledOrNixos,
-  testCheckSetupWizardWaitsForHostReadiness,
+  testCheckSetupWizardWaitsWithoutPollingForHostReadiness,
+  testCheckSetupWizardSkipsTerminalHostMetadataFailure,
+  testHostStateChangesRecheckSetupWizard,
   testCheckSetupWizardStartsTimerWhenReady,
+  testShowSetupWizardRechecksRecoveredNixosState,
   testShowSetupWizardNoopsWithoutScreens,
   testShowSetupWizardOpensLoadedPanel,
   testShowSetupWizardRestartsTimerWhenPanelIsMissing,
