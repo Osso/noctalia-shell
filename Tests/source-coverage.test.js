@@ -89,15 +89,15 @@ function qmlFunctionDeclarations() {
   return declarations;
 }
 
-function testQmlFunctionCoverageStaysComplete() {
+function testQmlFunctionsStayStructurallyReferencedByTests() {
   const qmlFunctions = codeIndexJson("list", "--kind", "function").filter(isQmlSourcePath);
   const uncoveredQmlFunctions = codeIndexJson("untested").filter(isQmlSourcePath);
 
   assert.ok(
     qmlFunctions.length >= 1200,
-    "QML source function inventory must stay broad enough to catch coverage regressions",
+    "QML source function inventory must stay broad enough to catch structural-reference regressions",
   );
-  assert.deepEqual(uncoveredQmlFunctions.map(formatSymbol), [], "QML source functions must have code-index coverage");
+  assert.deepEqual(uncoveredQmlFunctions.map(formatSymbol), [], "QML source functions must have structural references from tests according to code-index");
 }
 
 function testQmlFunctionInventoryIncludesDeclarations() {
@@ -110,12 +110,12 @@ function testQmlFunctionInventoryIncludesDeclarations() {
   assert.deepEqual(missingDeclarations, [], "code-index must inventory every QML function declaration");
 }
 
-function testNonTestSourceFunctionsStayCovered() {
+function testNonTestSourceFunctionsStayStructurallyReferenced() {
   const uncoveredSourceFunctions = codeIndexJson("untested")
     .filter(entry => !isTestPath(entry))
     .map(formatSymbol);
 
-  assert.deepEqual(uncoveredSourceFunctions, [], "non-test source functions must have code-index coverage");
+  assert.deepEqual(uncoveredSourceFunctions, [], "non-test source functions must have structural references from tests according to code-index");
 }
 
 function testAllTestFilesAreNamedBySpecs() {
@@ -140,6 +140,15 @@ function testMetaTestAllowlistStaysIntentional() {
     .filter(testFile => !featureSpecs.includes(testFile));
 
   assert.deepEqual(metaOnlyTests, [...metaTestFiles].sort(), "only explicitly allowlisted meta tests may skip feature specs");
+}
+
+function testTestingSpecDistinguishesEvidenceCategories() {
+  const testingSpec = fs.readFileSync(path.join(repoRoot, "docs", "specs", "testing.md"), "utf8");
+
+  for (const category of ["Structural reference coverage", "Executable behavior coverage", "QML lifecycle integration", "Live host probes"]) {
+    assert.ok(testingSpec.includes(category), `testing spec must name evidence category: ${category}`);
+  }
+  assert.match(testingSpec, /does not prove runtime execution, branch coverage, QML lifecycle behavior, or integration behavior/);
 }
 
 function testUnitRunnerDiscoversEveryJavaScriptTest() {
@@ -172,12 +181,13 @@ function testUnitRunnerFailsWhenJavaScriptDiscoveryFails() {
 }
 
 const tests = [
-  testQmlFunctionCoverageStaysComplete,
+  testQmlFunctionsStayStructurallyReferencedByTests,
   testQmlFunctionInventoryIncludesDeclarations,
-  testNonTestSourceFunctionsStayCovered,
+  testNonTestSourceFunctionsStayStructurallyReferenced,
   testAllTestFilesAreNamedBySpecs,
   testNonMetaTestFilesAreNamedByFeatureSpecs,
   testMetaTestAllowlistStaysIntentional,
+  testTestingSpecDistinguishesEvidenceCategories,
   testUnitRunnerDiscoversEveryJavaScriptTest,
   testUnitRunnerFailsWhenJavaScriptDiscoveryFails,
 ];

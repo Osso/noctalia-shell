@@ -1,13 +1,20 @@
-Testing covers local regression gates, function-coverage guardrails, and log filtering used to keep this fork maintainable against current Quickshell. Runtime source lives mainly in `run-tests.sh`, `Tests/source-coverage.test.js`, `Tests/qml-function-inventory.test.js`, and `Bin/dev/quickshell-regression.sh`; implementation notes belong in [docs/wiki/systems/testing.md](../wiki/systems/testing.md).
+Testing covers local regression gates, structural source-reference guardrails, executable behavior checks, QML lifecycle integration, live host probes, and log filtering used to keep this fork maintainable against current Quickshell. Runtime source lives mainly in `run-tests.sh`, `Tests/source-coverage.test.js`, `Tests/qml-function-inventory.test.js`, and `Bin/dev/quickshell-regression.sh`; implementation notes belong in [docs/wiki/systems/testing.md](../wiki/systems/testing.md).
 
 ## What it must do
 
-### Function coverage guardrails
+### Evidence categories
 
-- [x] QML source function coverage must stay complete according to `code-index untested`.
-- [x] QML source function inventory must stay broad enough to catch regressions.
+- [x] **Structural reference coverage** uses `code-index` to prove source functions are inventoried and structurally referenced from tests. It does not prove runtime execution, branch coverage, QML lifecycle behavior, or integration behavior.
+- [x] **Executable behavior coverage** runs JavaScript/Python/shell logic and extracted QML function bodies with deterministic inputs.
+- [x] **QML lifecycle integration** means instantiating real QML/Quickshell objects and exercising signals, bindings, loaders, processes, and destruction ordering; current coverage is feature-specific and incomplete.
+- [x] **Live host probes** inspect the active machine or shell and must be reported separately from deterministic unit/static results.
+
+### Structural reference guardrails
+
+- [x] QML source functions must stay structurally referenced from tests according to `code-index untested`.
+- [x] QML source function inventory must stay broad enough to catch structural-reference regressions.
 - [x] `code-index` must inventory every QML `function` declaration outside `Tests/`.
-- [x] Non-test source functions must have code-index coverage.
+- [x] Non-test source functions must stay structurally referenced from tests according to `code-index untested`.
 - [x] QML function inventory anchors must keep required high-risk QML functions discoverable.
 - [x] Every executable test file must be named by at least one `docs/specs` contract.
 - [x] Every non-meta executable test file must be named by at least one feature spec, not only by the testing spec.
@@ -39,7 +46,7 @@ Testing covers local regression gates, function-coverage guardrails, and log fil
 ## Implementation inventory
 
 - `run-tests.sh` - local test runner, fail-closed JavaScript test discovery, and gate grouping.
-- `Tests/source-coverage.test.js` - source function coverage and QML declaration inventory guard.
+- `Tests/source-coverage.test.js` - structural source-reference, QML declaration inventory, evidence-category, and runner-completeness guard.
 - `Tests/qml-function-inventory.test.js` - explicit QML function anchor inventory for high-risk source files.
 - `Tests/quickshell-regression.test.sh` - current-reload log filtering fixture.
 - `Bin/dev/quickshell-regression.sh` - live Quickshell log regression gate.
