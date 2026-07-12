@@ -17,10 +17,12 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 ### Scanning
 
 - [x] Scan no-ops while Wi-Fi is disabled.
-- [x] Scan queues a pending rescan and ignores in-flight results instead of racing an active scan.
+- [x] Scan queues a pending rescan and ignores superseded successful output instead of racing an active scan.
 - [x] Scan resets stale errors and scan state before launching.
 - [x] Scan refreshes known profiles before scanning networks.
 - [x] nmcli scan output parsing handles SSIDs with colons, duplicate SSIDs, open networks, malformed rows, known-profile flags, cached-network flags, and last-connected cache updates.
+- [x] Profile-query and Wi-Fi scan collectors buffer stdout/stderr and apply normal scan state from process-exit handlers after the exit status is known.
+- [x] Nonzero exits from started profile-query or Wi-Fi scan processes clear busy state and publish a concrete error; queued rescans get a 100 ms follow-up, while delayed retry execution remains gated by an active Wi-Fi UI consumer.
 
 ### Connect, disconnect, and forget
 
@@ -65,6 +67,7 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 ## Known gaps (current cycle)
 
 - [ ] Add executable tests for connectivity check and ping fallback transitions.
+- [ ] Add executable nonzero-exit coverage for connect, disconnect, forget, and passive status commands.
 - [ ] Add spec coverage for Wi-Fi panel connect/password/forget UI behavior.
 
 ## Out of scope

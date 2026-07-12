@@ -309,6 +309,162 @@ function testNetworkServiceConnectionStatusAndIconsExecute() {
   assert.equal(isSecured(ctx, "  "), false, "blank security must be unsecured");
 }
 
+function testNetworkScanFailureClearsStateAndSchedulesCorrectRetry() {
+  const finishScanFailure = qmlFunction("finishScanFailure", "message");
+  const createContext = overrides => {
+    const ctx = {
+      scanning: true,
+      scanPending: false,
+      activePolling: false,
+      lastError: "",
+      delayedScanTimer: {
+        interval: 0,
+        restarts: 0,
+        restart() {
+          this.restarts += 1;
+        },
+      },
+      ...overrides,
+    };
+    ctx.root = ctx;
+    return ctx;
+  };
+
+  const pending = createContext({ scanPending: true });
+  finishScanFailure(pending, "nmcli failed");
+  assert.equal(pending.scanning, false);
+  assert.equal(pending.lastError, "nmcli failed");
+  assert.equal(pending.scanPending, false);
+  assert.equal(pending.delayedScanTimer.interval, 100);
+  assert.equal(pending.delayedScanTimer.restarts, 1);
+
+  const active = createContext({ activePolling: true });
+  finishScanFailure(active, "nmcli missing");
+  assert.equal(active.delayedScanTimer.interval, 5000);
+  assert.equal(active.delayedScanTimer.restarts, 1);
+
+  const idle = createContext({ activePolling: false });
+  finishScanFailure(idle, "nmcli missing");
+  assert.equal(idle.delayedScanTimer.restarts, 0);
+}
+
+function testNetworkProfileAndScanExitFailuresExecute() {
+  const finishScanFailure = qmlFunction("finishScanFailure", "message");
+  const finishProfileCheck = qmlFunction("finishProfileCheck", "exitCode", "output", "errorOutput");
+  const finishNetworkScan = qmlFunction("finishNetworkScan", "exitCode", "output", "errorOutput");
+  const createContext = () => {
+    const ctx = {
+      scanning: true,
+      scanPending: false,
+      activePolling: false,
+      ignoreScanResults: false,
+      lastError: "",
+      delayedScanTimer: { interval: 0, restart() {} },
+      scanProcess: { existingProfiles: {}, running: false },
+    };
+    ctx.root = ctx;
+    ctx.finishScanFailure = message => finishScanFailure(ctx, message);
+    ctx.root.finishScanFailure = ctx.finishScanFailure;
+    return ctx;
+  };
+
+  const profileFailure = createContext();
+  finishProfileCheck(profileFailure, 127, "", "nmcli missing");
+  assert.equal(profileFailure.scanning, false);
+  assert.equal(profileFailure.lastError, "nmcli missing");
+  assert.equal(profileFailure.scanProcess.running, false);
+
+  const scanFailure = createContext();
+  finishNetworkScan(scanFailure, 10, "partial", "scan denied");
+  assert.equal(scanFailure.scanning, false);
+  assert.equal(scanFailure.lastError, "scan denied");
+
+  const superseded = createContext();
+  superseded.ignoreScanResults = true;
+  superseded.scanPending = true;
+  superseded.lastError = "connection failed";
+  superseded.finishSupersededScan = () => qmlFunction("finishSupersededScan")(superseded);
+  superseded.root.finishSupersededScan = superseded.finishSupersededScan;
+  finishNetworkScan(superseded, 10, "", "obsolete error");
+  assert.equal(superseded.lastError, "connection failed");
+  assert.equal(superseded.scanPending, false);
+}
+
+function testNetworkProfileAndScanSuccessParityExecutes() {
+  const finishScanFailure = qmlFunction("finishScanFailure", "message");
+  const finishProfileCheck = qmlFunction("finishProfileCheck", "exitCode", "output", "errorOutput");
+  const finishNetworkScan = qmlFunction("finishNetworkScan", "exitCode", "output", "errorOutput");
+  const ctx = {
+    scanning: true,
+    scanPending: false,
+    activePolling: false,
+    ignoreScanResults: false,
+    networks: {},
+    lastError: "",
+    delayedScanTimer: { restart() {} },
+    scanProcess: { existingProfiles: {}, exitObserved: true, running: false },
+    cacheAdapter: { knownNetworks: {}, lastConnected: "" },
+    Logger: { d() {} },
+    saveCache() {},
+    parseNetworkScanOutput() {
+      return {
+        networks: { Home: { ssid: "Home", signal: 80 } },
+        shouldSaveCache: false,
+        lastConnected: "",
+      };
+    },
+    logNetworkChanges() {},
+  };
+  ctx.root = ctx;
+  ctx.finishScanFailure = message => finishScanFailure(ctx, message);
+  ctx.root.finishScanFailure = ctx.finishScanFailure;
+  ctx.root.finishSupersededScan = () => qmlFunction("finishSupersededScan")(ctx);
+
+  finishProfileCheck(ctx, 0, "Home\nOffice\n", "");
+  assert.deepEqual(ctx.scanProcess.existingProfiles, { Home: true, Office: true });
+  assert.equal(ctx.scanProcess.running, true);
+
+  finishNetworkScan(ctx, 0, "scan output", "");
+  assert.deepEqual(ctx.networks, { Home: { ssid: "Home", signal: 80 } });
+  assert.equal(ctx.scanning, false);
+  assert.equal(ctx.lastError, "");
+}
+
+function testNetworkScanStartFailureExecutesWithoutExitedSignal() {
+  const handleScanStartFailure = qmlFunction("handleScanStartFailure", "processName", "exitObserved");
+  const finishScanFailure = qmlFunction("finishScanFailure", "message");
+  const ctx = {
+    scanning: true,
+    scanPending: false,
+    activePolling: false,
+    lastError: "",
+    delayedScanTimer: { restart() {} },
+  };
+  ctx.root = ctx;
+  ctx.finishScanFailure = message => finishScanFailure(ctx, message);
+
+  handleScanStartFailure(ctx, "profile check", false);
+  assert.equal(ctx.scanning, false);
+  assert.match(ctx.lastError, /profile check failed to start/);
+
+  ctx.scanning = true;
+  ctx.lastError = "";
+  handleScanStartFailure(ctx, "profile check", true);
+  assert.equal(ctx.scanning, true, "normal exited path must not finalize again from runningChanged");
+  assert.equal(ctx.lastError, "");
+}
+
+function testNetworkScanProcessesRouteExitAndStartFailure() {
+  const source = readQml("Services/Networking/NetworkService.qml");
+  assert.match(source, /id:\s*profileCheckProcess[\s\S]*?onExited:\s*function\s*\(exitCode\)[\s\S]*?finishProfileCheck/);
+  assert.match(source, /id:\s*profileCheckProcess[\s\S]*?onRunningChanged:[\s\S]*?handleScanStartFailure/);
+  assert.match(source, /id:\s*scanProcess[\s\S]*?onExited:\s*function\s*\(exitCode\)[\s\S]*?finishNetworkScan/);
+  assert.match(source, /id:\s*scanProcess[\s\S]*?onRunningChanged:[\s\S]*?handleScanStartFailure/);
+  extractFunctionBody(source, "finishProfileCheck");
+  extractFunctionBody(source, "finishNetworkScan");
+  extractFunctionBody(source, "logNetworkChanges");
+}
+
 const tests = [
   testNetworkServiceCacheAndWifiStateGuards,
   testNetworkServiceIdlePollingGuards,
@@ -319,6 +475,11 @@ const tests = [
   testNetworkServiceParsesNmcliScanOutput,
   testNetworkServiceStateCommandsExecute,
   testNetworkServiceConnectionStatusAndIconsExecute,
+  testNetworkScanFailureClearsStateAndSchedulesCorrectRetry,
+  testNetworkProfileAndScanExitFailuresExecute,
+  testNetworkProfileAndScanSuccessParityExecutes,
+  testNetworkScanStartFailureExecutesWithoutExitedSignal,
+  testNetworkScanProcessesRouteExitAndStartFailure,
 ];
 
 for (const test of tests) {

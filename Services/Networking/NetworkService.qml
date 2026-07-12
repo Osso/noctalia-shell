@@ -172,6 +172,7 @@ Singleton {
     ignoreScanResults = false;
 
     // Get existing profiles first, then scan
+    profileCheckProcess.exitObserved = false;
     profileCheckProcess.running = true;
     Logger.d("Network", "Wi-Fi scan in progress...");
   }
@@ -521,33 +522,126 @@ Singleton {
   }
 
   // Helper process to get existing profiles
+  function finishScanFailure(message) {
+    root.scanning = false;
+    root.lastError = message;
+
+    if (root.scanPending) {
+      root.scanPending = false;
+      delayedScanTimer.interval = 100;
+      delayedScanTimer.restart();
+    } else if (root.activePolling) {
+      delayedScanTimer.interval = 5000;
+      delayedScanTimer.restart();
+    }
+  }
+
+  function finishSupersededScan() {
+    root.scanning = false;
+    if (root.scanPending) {
+      root.scanPending = false;
+      delayedScanTimer.interval = 100;
+      delayedScanTimer.restart();
+    }
+  }
+
+  function handleScanStartFailure(processName, exitObserved) {
+    if (!exitObserved && root.scanning) {
+      finishScanFailure(`${processName} failed to start`);
+    }
+  }
+
+  function finishProfileCheck(exitCode, output, errorOutput) {
+    if (root.ignoreScanResults) {
+      root.finishSupersededScan();
+      return;
+    }
+    if (exitCode !== 0) {
+      finishScanFailure(errorOutput.trim() || `nmcli profile check failed with exit ${exitCode}`);
+      return;
+    }
+
+    const profiles = {};
+    const lines = output.split("\n").filter(line => line.trim());
+    for (const line of lines) {
+      profiles[line.trim()] = true;
+    }
+    scanProcess.existingProfiles = profiles;
+    scanProcess.exitObserved = false;
+    scanProcess.running = true;
+  }
+
+  function finishNetworkScan(exitCode, output, errorOutput) {
+    if (root.ignoreScanResults) {
+      root.finishSupersededScan();
+      return;
+    }
+    if (exitCode !== 0) {
+      finishScanFailure(errorOutput.trim() || `nmcli scan failed with exit ${exitCode}`);
+      return;
+    }
+
+    const parsed = parseNetworkScanOutput(output, scanProcess.existingProfiles, cacheAdapter.knownNetworks, cacheAdapter.lastConnected);
+    const networksMap = parsed.networks;
+    if (parsed.shouldSaveCache) {
+      cacheAdapter.lastConnected = parsed.lastConnected;
+      saveCache();
+    }
+
+    root.logNetworkChanges(networksMap);
+    Logger.d("Network", "Wi-Fi scan completed");
+    root.networks = networksMap;
+    root.scanning = false;
+    if (root.scanPending) {
+      root.scanPending = false;
+      delayedScanTimer.interval = 100;
+      delayedScanTimer.restart();
+    }
+  }
+
+  function logNetworkChanges(networksMap) {
+    const oldSSIDs = Object.keys(root.networks);
+    const newSSIDs = Object.keys(networksMap);
+    const newNetworks = newSSIDs.filter(ssid => !oldSSIDs.includes(ssid));
+    const lostNetworks = oldSSIDs.filter(ssid => !newSSIDs.includes(ssid));
+
+    if (newNetworks.length > 0) {
+      Logger.d("Network", "New Wi-Fi SSID discovered:", newNetworks.join(", "));
+    }
+    if (lostNetworks.length > 0) {
+      Logger.d("Network", "Wi-Fi SSID disappeared:", lostNetworks.join(", "));
+    }
+    if (newNetworks.length > 0 || lostNetworks.length > 0) {
+      Logger.d("Network", "Total Wi-Fi SSIDs:", newSSIDs.length);
+    }
+  }
+
   Process {
     id: profileCheckProcess
     running: false
     command: ["nmcli", "-t", "-f", "NAME", "connection", "show"]
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        if (root.ignoreScanResults) {
-          Logger.d("Network", "Ignoring profile check results (new scan requested)");
-          root.scanning = false;
-
-          // Check if we need to start a new scan
-          if (root.scanPending) {
-            root.scanPending = false;
-            delayedScanTimer.interval = 100;
-            delayedScanTimer.restart();
-          }
-          return;
-        }
-
-        const profiles = {};
-        const lines = text.split("\n").filter(l => l.trim());
-        for (const line of lines) {
-          profiles[line.trim()] = true;
-        }
-        scanProcess.existingProfiles = profiles;
-        scanProcess.running = true;
+      onStreamFinished: profileCheckProcess.output = text
+    }
+    stderr: StdioCollector {
+      onStreamFinished: profileCheckProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      profileCheckProcess.exitObserved = true;
+      const output = profileCheckProcess.output;
+      const errorOutput = profileCheckProcess.errorOutput;
+      profileCheckProcess.output = "";
+      profileCheckProcess.errorOutput = "";
+      root.finishProfileCheck(exitCode, output, errorOutput);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleScanStartFailure("nmcli profile check", exitObserved);
+        exitObserved = false;
       }
     }
   }
@@ -556,70 +650,29 @@ Singleton {
     id: scanProcess
     running: false
     command: ["nmcli", "-t", "-f", "SSID,SECURITY,SIGNAL,IN-USE", "device", "wifi", "list", "--rescan", "yes"]
-
     property var existingProfiles: ({})
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        if (root.ignoreScanResults) {
-          Logger.d("Network", "Ignoring scan results (new scan requested)");
-          root.scanning = false;
-
-          // Check if we need to start a new scan
-          if (root.scanPending) {
-            root.scanPending = false;
-            delayedScanTimer.interval = 100;
-            delayedScanTimer.restart();
-          }
-          return;
-        }
-
-        const parsed = parseNetworkScanOutput(text, scanProcess.existingProfiles, cacheAdapter.knownNetworks, cacheAdapter.lastConnected);
-        const networksMap = parsed.networks;
-        if (parsed.shouldSaveCache) {
-          cacheAdapter.lastConnected = parsed.lastConnected;
-          saveCache();
-        }
-
-        // Logging
-        const oldSSIDs = Object.keys(root.networks);
-        const newSSIDs = Object.keys(networksMap);
-        const newNetworks = newSSIDs.filter(ssid => !oldSSIDs.includes(ssid));
-        const lostNetworks = oldSSIDs.filter(ssid => !newSSIDs.includes(ssid));
-
-        if (newNetworks.length > 0 || lostNetworks.length > 0) {
-          if (newNetworks.length > 0) {
-            Logger.d("Network", "New Wi-Fi SSID discovered:", newNetworks.join(", "));
-          }
-          if (lostNetworks.length > 0) {
-            Logger.d("Network", "Wi-Fi SSID disappeared:", lostNetworks.join(", "));
-          }
-          Logger.d("Network", "Total Wi-Fi SSIDs:", Object.keys(networksMap).length);
-        }
-
-        Logger.d("Network", "Wi-Fi scan completed");
-        root.networks = networksMap;
-        root.scanning = false;
-
-        // Check if we need to start a new scan
-        if (root.scanPending) {
-          root.scanPending = false;
-          delayedScanTimer.interval = 100;
-          delayedScanTimer.restart();
-        }
-      }
+      onStreamFinished: scanProcess.output = text
     }
-
     stderr: StdioCollector {
-      onStreamFinished: {
-        root.scanning = false;
-        if (text.trim()) {
-          Logger.w("Network", "Scan error: " + text);
-
-          // If scan fails, retry
-          delayedScanTimer.interval = 5000;
-          delayedScanTimer.restart();
-        }
+      onStreamFinished: scanProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      scanProcess.exitObserved = true;
+      const output = scanProcess.output;
+      const errorOutput = scanProcess.errorOutput;
+      scanProcess.output = "";
+      scanProcess.errorOutput = "";
+      root.finishNetworkScan(exitCode, output, errorOutput);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleScanStartFailure("nmcli Wi-Fi scan", exitObserved);
+        exitObserved = false;
       }
     }
   }
