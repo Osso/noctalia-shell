@@ -26,6 +26,10 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 - [x] Disconnect rejects empty UUIDs and missing connections.
 - [x] Disconnect starts only when no disconnect process is already running.
 - [x] Disconnect records disconnecting state, target UUID, clears the last error, stores the target connection name, and starts the disconnect process.
+- [x] Connect and disconnect buffer stdout/stderr until exit status determines success or failure.
+- [x] Successful actions update connection state, clear busy/error state, show a notice, and schedule refresh without depending on localized stdout text.
+- [x] Nonzero exits and failed process starts preserve connection state, clear busy state, expose stderr/stdout diagnostics or a concrete fallback, show a warning, and avoid normal-exit double finalization.
+- [x] Action completion is UUID-identity-safe and clears the prior UUID before notifying busy-state observers, so stale or reentrant completion cannot clobber a newer action.
 - [x] Toggle ignores missing connections.
 - [x] Toggle disconnects active connections.
 - [x] Toggle connects inactive connections.
@@ -72,7 +76,6 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for connect/disconnect process exit and toast handling.
 - [ ] Add executable coverage for VPN panel rendered active/available sections.
 - [ ] Add executable coverage for bar and Control Center VPN entry-point interactions.
 
