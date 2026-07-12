@@ -8,6 +8,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - [x] **Executable behavior coverage** runs JavaScript/Python/shell logic and extracted QML function bodies with deterministic inputs.
 - [x] **QML lifecycle integration** means instantiating real QML/Quickshell objects and exercising signals, bindings, loaders, processes, and destruction ordering; current coverage is feature-specific and incomplete.
 - [x] **Live host probes** inspect the active machine or shell and must be reported separately from deterministic unit/static results.
+- [x] Runner output labels `deterministic-unit`, `structural-reference`, `qml-static`, `host-probes`, `live-log`, and `visible-notifications` evidence independently.
 
 ### Structural reference guardrails
 
@@ -32,12 +33,14 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 ### Runner contract
 
-- [x] `./run-tests.sh unit` discovers and runs every `Tests/*.test.js` suite, then runs the explicit Python and shell parser/log-filter tests.
-- [x] Adding a JavaScript test suite must require no manual runner-list update; the source-coverage meta-test enforces fail-closed discovery.
+- [x] `./run-tests.sh unit` discovers every `Tests/*.test.js` suite, runs behavior suites under `deterministic-unit`, then runs source inventory/coverage meta-tests under `structural-reference`.
+- [x] Adding a JavaScript test suite requires no manual runner-list update; the deterministic runner-completeness test proves discovery and discovery-failure handling.
 - [x] `./run-tests.sh qml` runs the focused QML static check.
 - [x] `./run-tests.sh probes` runs read-only service probes and injects the deterministic Bluetooth CLI fixture rather than contacting host Bluetooth hardware.
 - [x] `./run-tests.sh log` runs the active Quickshell log regression gate.
 - [x] `./run-tests.sh notifications` is isolated from the default gates because it visibly sends notifications.
+- [x] `all` and `regression` report visible notifications as explicitly excluded before running deterministic unit, structural reference, QML static, host probes, and live logs.
+- [x] Category wrappers preserve fail-closed execution: a failed command cannot continue to a PASS category record.
 
 ## How it works
 
@@ -46,7 +49,9 @@ Testing covers local regression gates, structural source-reference guardrails, e
 ## Implementation inventory
 
 - `run-tests.sh` - local test runner, fail-closed JavaScript test discovery, and gate grouping.
-- `Tests/source-coverage.test.js` - structural source-reference, QML declaration inventory, evidence-category, and runner-completeness guard.
+- `Tests/source-coverage.test.js` - structural source-reference, QML declaration inventory, evidence-category, and test-to-spec mapping guard.
+- `Tests/runner-completeness.test.js` - executable runner discovery and discovery-failure coverage.
+- `Tests/test-runner-categories.test.sh` - evidence-category mapping, ordering, fail-closed execution, and caller-errexit coverage.
 - `Tests/qml-function-inventory.test.js` - explicit QML function anchor inventory for high-risk source files.
 - `Tests/quickshell-regression.test.sh` - current-reload log filtering fixture.
 - `Bin/dev/quickshell-regression.sh` - live Quickshell log regression gate.
@@ -59,7 +64,9 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - `Tests/source-coverage.test.js`
 - `Tests/qml-function-inventory.test.js`
 - `Tests/quickshell-regression.test.sh`
+- `Tests/runner-completeness.test.js`
 - `Tests/service-probes-parsing.test.sh`
+- `Tests/test-runner-categories.test.sh`
 
 ## Known gaps (current cycle)
 
