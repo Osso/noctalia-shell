@@ -21,6 +21,7 @@ import qs.Modules.LockScreen
 import qs.Modules.MainScreen
 import qs.Modules.Notification
 import qs.Modules.OSD
+import qs.Modules.Startup
 import qs.Modules.Toast
 import qs.Services.Control
 import qs.Services.Hardware
@@ -36,7 +37,6 @@ ShellRoot {
   id: shellRoot
 
   property bool i18nLoaded: false
-  property bool settingsLoaded: false
   property bool shellStateLoaded: false
 
   Component.onCompleted: {
@@ -64,13 +64,6 @@ ShellRoot {
   }
 
   Connections {
-    target: Settings ? Settings : null
-    function onSettingsLoaded() {
-      settingsLoaded = true;
-    }
-  }
-
-  Connections {
     target: ShellState ? ShellState : null
     function onIsLoadedChanged() {
       if (ShellState.isLoaded) {
@@ -79,8 +72,20 @@ ShellRoot {
     }
   }
 
+  Variants {
+    model: Settings.bootstrapState === Settings.Error ? Quickshell.screens : []
+
+    delegate: SettingsLoadError {
+      required property ShellScreen modelData
+      targetScreen: modelData
+      message: Settings.errorMessage
+      settingsPath: Settings.settingsFile
+      onRetryRequested: Settings.retryBootstrap()
+    }
+  }
+
   Loader {
-    active: i18nLoaded && settingsLoaded && shellStateLoaded
+    active: i18nLoaded && Settings.ready && shellStateLoaded
 
     sourceComponent: Item {
       Component.onCompleted: {

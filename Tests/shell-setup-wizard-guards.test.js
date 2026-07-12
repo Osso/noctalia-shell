@@ -39,6 +39,12 @@ function createSetupContext() {
   };
 }
 
+function testShellKeepsFullShellAndSettingsErrorMutuallyExclusive() {
+  assert.match(source, /active:\s*i18nLoaded\s*&&\s*Settings\.ready\s*&&\s*shellStateLoaded/);
+  assert.match(source, /model:\s*Settings\.bootstrapState\s*===\s*Settings\.Error\s*\?\s*Quickshell\.screens\s*:\s*\[\]/);
+  assert.match(source, /SettingsLoadError\s*\{/);
+}
+
 function testCheckSetupWizardSkipsWhenDisabledOrNixos() {
   const checkSetupWizard = qmlFunction("checkSetupWizard");
   const disabledCtx = createSetupContext();
@@ -154,6 +160,7 @@ function testShowSetupWizardRestartsTimerWhenPanelIsMissing() {
 }
 
 const tests = [
+  testShellKeepsFullShellAndSettingsErrorMutuallyExclusive,
   testCheckSetupWizardSkipsWhenDisabledOrNixos,
   testCheckSetupWizardWaitsForHostReadiness,
   testCheckSetupWizardStartsTimerWhenReady,

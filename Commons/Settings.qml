@@ -12,9 +12,34 @@ import qs.Services.UI
 Singleton {
   id: root
 
+  enum BootstrapState {
+    PreparingDirectories,
+    Validating,
+    CreatingDefaults,
+    Snapshotting,
+    Hydrating,
+    Ready,
+    Error
+  }
+
   property bool isLoaded: false
   property bool directoriesCreated: false
   property bool shouldOpenSetupWizard: false
+  property bool hasLoadedOnce: false
+  property int bootstrapState: Settings.PreparingDirectories
+  property int loadGeneration: 0
+  property string errorMessage: ""
+  property string lastLoggedError: ""
+  property string validatedSettingsText: ""
+  property var validatedSettingsData: null
+  property string pendingSavedSettingsText: ""
+  property string persistedSettingsText: ""
+  property bool saveInProgress: false
+  property bool saveQueued: false
+  property bool verifyingSave: false
+  property bool verifyingSnapshot: false
+  readonly property bool ready: bootstrapState === Settings.Ready
+  readonly property var settingsFileView: settingsWriterLoader.item
 
   /*
   Shell directories.
@@ -31,6 +56,7 @@ Singleton {
   readonly property string cacheDirImagesWallpapers: cacheDir + "images/wallpapers/"
   readonly property string cacheDirImagesNotifications: cacheDir + "images/notifications/"
   readonly property string settingsFile: Quickshell.env("NOCTALIA_SETTINGS_FILE") || (configDir + "settings.json")
+  readonly property string settingsSnapshotFile: cacheDir + "settings-bootstrap.json"
   readonly property string defaultLocation: "Tokyo"
   readonly property string defaultAvatar: Quickshell.env("HOME") + "/.face"
   readonly property string defaultVideosDirectory: Quickshell.env("HOME") + "/Videos"
@@ -39,551 +65,442 @@ Singleton {
   // Signal emitted when settings are loaded after startupcale changes
   signal settingsLoaded
   signal settingsSaved
+  signal settingsLoadFailed(string message)
 
-  // -----------------------------------------------------
-  // -----------------------------------------------------
-  // Ensure directories exist before FileView tries to read files
   Component.onCompleted: {
-    // ensure settings dir exists
-    Quickshell.execDetached(["mkdir", "-p", configDir]);
-    Quickshell.execDetached(["mkdir", "-p", cacheDir]);
-
-    Quickshell.execDetached(["mkdir", "-p", cacheDirImagesWallpapers]);
-    Quickshell.execDetached(["mkdir", "-p", cacheDirImagesNotifications]);
-
-    // Mark directories as created and trigger file loading
-    directoriesCreated = true;
-
-    // This should only be activated once when the settings structure has changed
-    // Then it should be commented out again, regular users don't need to generate
-    // default settings on every start
     if (isDebug) {
       generateDefaultSettings();
     }
 
-    // Patch-in the local default, resolved to user's home
     adapter.general.avatarImage = defaultAvatar;
     adapter.screenRecorder.directory = defaultVideosDirectory;
     adapter.wallpaper.directory = defaultWallpapersDirectory;
     adapter.ui.fontDefault = Qt.application.font.family;
     adapter.ui.fontFixed = "monospace";
-
-    // Set the adapter to the settingsFileView to trigger the real settings load
-    settingsFileView.adapter = adapter;
+    beginBootstrap();
   }
 
-  // Don't write settings to disk immediately
-  // This avoid excessive IO when a variable changes rapidly (ex: sliders)
+  Process {
+    id: directoryCreationProcess
+    running: false
+    command: ["mkdir", "-p", configDir, cacheDir, cacheDirImagesWallpapers, cacheDirImagesNotifications]
+    onExited: function (exitCode) {
+      root.handleDirectoryCreationExit(exitCode);
+    }
+  }
+
   Timer {
     id: saveTimer
     running: false
     interval: 500
-    onTriggered: {
-      root.saveImmediate();
+    onTriggered: root.saveImmediate()
+  }
+
+  Loader {
+    id: validationFileLoader
+    active: root.bootstrapState === root.Validating
+
+    sourceComponent: FileView {
+      property int generation: 0
+      path: root.settingsFile
+      printErrors: false
+      watchChanges: false
+      Component.onCompleted: generation = root.loadGeneration
+      onLoaded: root.handleValidationLoaded(generation, text(), data())
+      onLoadFailed: function (error) {
+        root.handleValidationLoadFailure(generation, error);
+      }
     }
   }
 
-  FileView {
-    id: settingsFileView
-    path: directoriesCreated ? settingsFile : undefined
-    printErrors: false
-    watchChanges: true
-    onFileChanged: reload()
-    onAdapterUpdated: saveTimer.start()
+  Loader {
+    id: defaultsWriterLoader
+    active: root.bootstrapState === root.CreatingDefaults
 
-    // Trigger initial load when path changes from empty to actual path
-    onPathChanged: {
-      if (path !== undefined) {
-        reload();
-      }
-    }
-    onLoaded: function () {
-      if (!isLoaded) {
-        Logger.i("Settings", "Settings loaded");
-
-        // -----------------
-        // Run versioned migrations from MigrationRegistry
-        runVersionedMigrations();
-
-        upgradeSettingsData();
-
-        root.isLoaded = true;
-
-        // Emit the signal
-        root.settingsLoaded();
-
-        // Finally, update our local settings version
-        adapter.settingsVersion = settingsVersion;
-      }
-    }
-    onLoadFailed: function (error) {
-      if (error.toString().includes("No such file") || error === 2) {
-        // File doesn't exist, create it with default values
+    sourceComponent: FileView {
+      property int generation: 0
+      path: root.settingsFile
+      adapter: adapter
+      preload: false
+      printErrors: false
+      watchChanges: false
+      Component.onCompleted: {
+        generation = root.loadGeneration;
         writeAdapter();
-
-        // Also write to fallback if set
-        if (Quickshell.env("NOCTALIA_SETTINGS_FALLBACK")) {
-          settingsFallbackFileView.writeAdapter();
-        }
-
-        // We started without settings, we should open the setupWizard
-        root.shouldOpenSetupWizard = true;
+      }
+      onSaved: root.handleDefaultsSaved(generation)
+      onSaveFailed: function (error) {
+        root.handleBootstrapFailure(generation, `Failed to create settings: ${error}`);
       }
     }
   }
 
-  // Fallback FileView for writing settings to alternate location
-  FileView {
-    id: settingsFallbackFileView
-    path: Quickshell.env("NOCTALIA_SETTINGS_FALLBACK") || ""
-    adapter: Quickshell.env("NOCTALIA_SETTINGS_FALLBACK") ? adapter : null
-    printErrors: false
-    watchChanges: false
+  Loader {
+    id: snapshotWriterLoader
+    active: root.bootstrapState === root.Snapshotting
+
+    sourceComponent: FileView {
+      property int generation: 0
+      path: root.settingsSnapshotFile
+      preload: false
+      printErrors: false
+      watchChanges: false
+      Component.onCompleted: {
+        generation = root.loadGeneration;
+        setData(root.validatedSettingsData);
+      }
+      onSaved: root.handleSnapshotSaved(generation)
+      onSaveFailed: function (error) {
+        root.handleBootstrapFailure(generation, `Failed to snapshot settings: ${error}`);
+      }
+    }
   }
 
-  JsonAdapter {
+  Loader {
+    id: snapshotVerificationLoader
+    active: root.verifyingSnapshot
+
+    sourceComponent: FileView {
+      property int generation: 0
+      path: root.settingsSnapshotFile
+      printErrors: false
+      watchChanges: false
+      Component.onCompleted: generation = root.loadGeneration
+      onLoaded: root.handleSnapshotVerificationLoaded(generation, data())
+      onLoadFailed: function (error) {
+        root.handleBootstrapFailure(generation, `Failed to verify settings snapshot: ${error}`);
+      }
+    }
+  }
+
+  Loader {
+    id: hydrationFileLoader
+    active: root.bootstrapState === root.Hydrating
+
+    sourceComponent: FileView {
+      property int generation: 0
+      path: root.settingsSnapshotFile
+      adapter: adapter
+      printErrors: false
+      watchChanges: false
+      Component.onCompleted: generation = root.loadGeneration
+      onLoaded: root.handleHydrationLoaded(generation)
+      onLoadFailed: function (error) {
+        root.handleBootstrapFailure(generation, `Failed to hydrate settings: ${error}`);
+      }
+    }
+  }
+
+  Loader {
+    id: settingsWatcherLoader
+    active: root.bootstrapState === root.Ready
+
+    sourceComponent: FileView {
+      property int generation: 0
+      path: root.settingsFile
+      preload: false
+      blockLoading: true
+      blockAllReads: true
+      printErrors: false
+      watchChanges: true
+      Component.onCompleted: generation = root.loadGeneration
+      onFileChanged: {
+        reload();
+        root.handleReadyFileLoaded(generation, text());
+      }
+      onLoadFailed: function (error) {
+        root.handleBootstrapFailure(generation, `Failed to read changed settings: ${error}`);
+      }
+    }
+  }
+
+  Loader {
+    id: saveVerificationLoader
+    active: root.verifyingSave
+
+    sourceComponent: FileView {
+      property int generation: 0
+      path: root.settingsFile
+      printErrors: false
+      watchChanges: false
+      Component.onCompleted: generation = root.loadGeneration
+      onLoaded: root.handleSaveVerificationLoaded(generation, text())
+      onLoadFailed: function (error) {
+        root.handleBootstrapFailure(generation, `Failed to verify settings save: ${error}`);
+      }
+    }
+  }
+
+  Loader {
+    id: settingsWriterLoader
+    active: root.bootstrapState === root.Ready
+
+    sourceComponent: FileView {
+      property int generation: 0
+      path: root.settingsFile
+      adapter: adapter
+      preload: false
+      printErrors: false
+      watchChanges: false
+      Component.onCompleted: generation = root.loadGeneration
+      onAdapterUpdated: saveTimer.start()
+      onSaved: root.handleSettingsSaved(generation)
+      onSaveFailed: function (error) {
+        root.handleBootstrapFailure(generation, `Failed to save settings: ${error}`);
+      }
+    }
+  }
+
+  SettingsData {
     id: adapter
-
-    property int settingsVersion: root.settingsVersion
-
-    // bar
-    property JsonObject bar: JsonObject {
-      property string position: "top" // "top", "bottom", "left", or "right"
-      property real backgroundOpacity: 1.0
-      property var monitors: [] // holds bar visibility per monitor
-      property string density: "default" // "compact", "default", "comfortable"
-      property bool showCapsule: true
-      property real capsuleOpacity: 1.0
-
-      // Floating bar settings
-      property bool floating: false
-      property real marginVertical: 0.25
-      property real marginHorizontal: 0.25
-
-      // Bar outer corners (inverted/concave corners at bar edges when not floating)
-      property bool outerCorners: true
-
-      // Reserves space with compositor
-      property bool exclusive: true
-
-      // Widget configuration for modular bar system
-      property JsonObject widgets
-      widgets: JsonObject {
-        property var left: [
-          {
-            "icon": "rocket",
-            "id": "CustomButton",
-            "leftClickExec": "qs -c noctalia-shell ipc call launcher toggle"
-          },
-          {
-            "id": "Clock",
-            "usePrimaryColor": false
-          },
-          {
-            "id": "SystemMonitor"
-          },
-          {
-            "id": "ActiveWindow"
-          },
-          {
-            "id": "MediaMini"
-          }
-        ]
-        property var center: [
-          {
-            "id": "Workspace"
-          }
-        ]
-        property var right: [
-          {
-            "id": "ScreenRecorder"
-          },
-          {
-            "id": "Tray"
-          },
-          {
-            "id": "NotificationHistory"
-          },
-          {
-            "id": "Battery"
-          },
-          {
-            "id": "Volume"
-          },
-          {
-            "id": "Brightness"
-          },
-          {
-            "id": "ControlCenter"
-          }
-        ]
-      }
-    }
-
-    // general
-    property JsonObject general: JsonObject {
-      property string avatarImage: ""
-      property real dimmerOpacity: 0.6
-      property bool showScreenCorners: false
-      property bool forceBlackScreenCorners: false
-      property real scaleRatio: 1.0
-      property real radiusRatio: 1.0
-      property real screenRadiusRatio: 1.0
-      property real animationSpeed: 1.0
-      property bool animationDisabled: false
-      property bool compactLockScreen: false
-      property bool lockOnSuspend: true
-      property bool showHibernateOnLockScreen: false
-      property bool enableShadows: true
-      property string shadowDirection: "bottom_right"
-      property int shadowOffsetX: 2
-      property int shadowOffsetY: 3
-      property string language: ""
-      property bool allowPanelsOnScreenWithoutBar: true
-    }
-
-    // ui
-    property JsonObject ui: JsonObject {
-      property string fontDefault: ""
-      property string fontFixed: ""
-      property real fontDefaultScale: 1.0
-      property real fontFixedScale: 1.0
-      property bool tooltipsEnabled: true
-      property real panelBackgroundOpacity: 1.0
-      property bool panelsAttachedToBar: true
-      property bool settingsPanelAttachToBar: false
-    }
-
-    // location
-    property JsonObject location: JsonObject {
-      property string name: defaultLocation
-      property bool weatherEnabled: true
-      property bool weatherShowEffects: true
-      property bool useFahrenheit: false
-      property bool use12hourFormat: false
-      property bool showWeekNumberInCalendar: false
-      property bool showCalendarEvents: true
-      property bool showCalendarWeather: true
-      property bool analogClockInCalendar: false
-      property int firstDayOfWeek: -1 // -1 = auto (use locale), 0 = Sunday, 1 = Monday, 6 = Saturday
-    }
-
-    // calendar
-    property JsonObject calendar: JsonObject {
-      property var cards: [
-        {
-          "id": "calendar-header-card",
-          "enabled": true
-        },
-        {
-          "id": "calendar-month-card",
-          "enabled": true
-        },
-        {
-          "id": "timer-card",
-          "enabled": true
-        },
-        {
-          "id": "weather-card",
-          "enabled": true
-        }
-      ]
-    }
-
-    // screen recorder
-    property JsonObject screenRecorder: JsonObject {
-      property string directory: ""
-      property int frameRate: 60
-      property string audioCodec: "opus"
-      property string videoCodec: "h264"
-      property string quality: "very_high"
-      property string colorRange: "limited"
-      property bool showCursor: true
-      property string audioSource: "default_output"
-      property string videoSource: "eDP-1"
-    }
-
-    // wallpaper
-    property JsonObject wallpaper: JsonObject {
-      property bool enabled: true
-      property bool overviewEnabled: false
-      property string directory: ""
-      property var monitorDirectories: []
-      property bool enableMultiMonitorDirectories: false
-      property bool recursiveSearch: false
-      property bool setWallpaperOnAllMonitors: true
-      property string fillMode: "crop"
-      property color fillColor: "#000000"
-      property bool randomEnabled: false
-      property int randomIntervalSec: 300 // 5 min
-      property int transitionDuration: 1500 // 1500 ms
-      property string transitionType: "none"
-      property real transitionEdgeSmoothness: 0.05
-      property string panelPosition: "follow_bar"
-      property bool hideWallpaperFilenames: false
-      // Wallhaven settings
-      property bool useWallhaven: false
-      property string wallhavenQuery: ""
-      property string wallhavenSorting: "relevance"
-      property string wallhavenOrder: "desc"
-      property string wallhavenCategories: "111" // general,anime,people
-      property string wallhavenPurity: "100" // sfw only
-      property string wallhavenResolutionMode: "atleast" // "atleast" or "exact"
-      property string wallhavenResolutionWidth: ""
-      property string wallhavenResolutionHeight: ""
-    }
-
-    // applauncher
-    property JsonObject appLauncher: JsonObject {
-      property bool enableClipboardHistory: false
-      property bool enableClipPreview: true
-      // Position: center, top_left, top_right, bottom_left, bottom_right, bottom_center, top_center
-      property string position: "center"
-      property var pinnedExecs: []
-      property bool useApp2Unit: false
-      property bool sortByMostUsed: true
-      property string terminalCommand: "xterm -e"
-      property bool customLaunchPrefixEnabled: false
-      property string customLaunchPrefix: ""
-      // View mode: "list" or "grid"
-      property string viewMode: "list"
-    }
-
-    // control center
-    property JsonObject controlCenter: JsonObject {
-      // Position: close_to_bar_button, center, top_left, top_right, bottom_left, bottom_right, bottom_center, top_center
-      property string position: "close_to_bar_button"
-      property JsonObject shortcuts
-      shortcuts: JsonObject {
-        property var left: [
-          {
-            "id": "WiFi"
-          },
-          {
-            "id": "Bluetooth"
-          },
-          {
-            "id": "ScreenRecorder"
-          },
-          {
-            "id": "WallpaperSelector"
-          }
-        ]
-        property var right: [
-          {
-            "id": "Notifications"
-          },
-          {
-            "id": "PowerProfile"
-          },
-          {
-            "id": "KeepAwake"
-          },
-          {
-            "id": "NightLight"
-          }
-        ]
-      }
-      property var cards: [
-        {
-          "id": "profile-card",
-          "enabled": true
-        },
-        {
-          "id": "shortcuts-card",
-          "enabled": true
-        },
-        {
-          "id": "audio-card",
-          "enabled": true
-        },
-        {
-          "id": "weather-card",
-          "enabled": true
-        },
-        {
-          "id": "media-sysmon-card",
-          "enabled": true
-        }
-      ]
-    }
-
-    // system monitor
-    property JsonObject systemMonitor: JsonObject {
-      property int cpuWarningThreshold: 80
-      property int cpuCriticalThreshold: 90
-      property int tempWarningThreshold: 80
-      property int tempCriticalThreshold: 90
-      property int memWarningThreshold: 80
-      property int memCriticalThreshold: 90
-      property int diskWarningThreshold: 80
-      property int diskCriticalThreshold: 90
-      property int cpuPollingInterval: 10000
-      property int tempPollingInterval: 30000
-      property int memPollingInterval: 10000
-      property int diskPollingInterval: 30000
-      property int networkPollingInterval: 10000
-      property bool useCustomColors: false
-      property string warningColor: ""
-      property string criticalColor: ""
-    }
-
-    // dock
-    property JsonObject dock: JsonObject {
-      property bool enabled: true
-      property string displayMode: "auto_hide" // "always_visible", "auto_hide", "exclusive"
-      property real backgroundOpacity: 1.0
-      property real floatingRatio: 1.0
-      property real size: 1
-      property bool onlySameOutput: true
-      property var monitors: [] // holds dock visibility per monitor
-      // Desktop entry IDs pinned to the dock (e.g., "org.kde.konsole", "firefox.desktop")
-      property var pinnedApps: []
-      property bool colorizeIcons: false
-    }
-
-    // network
-    property JsonObject network: JsonObject {
-      property bool wifiEnabled: true
-    }
-
-    // session menu
-    property JsonObject sessionMenu: JsonObject {
-      property bool enableCountdown: true
-      property int countdownDuration: 10000
-      property string position: "center"
-      property bool showHeader: true
-      property var powerOptions: [
-        {
-          "action": "lock",
-          "enabled": true
-        },
-        {
-          "action": "suspend",
-          "enabled": true
-        },
-        {
-          "action": "hibernate",
-          "enabled": true
-        },
-        {
-          "action": "reboot",
-          "enabled": true
-        },
-        {
-          "action": "logout",
-          "enabled": true
-        },
-        {
-          "action": "shutdown",
-          "enabled": true
-        }
-      ]
-    }
-
-    // notifications
-    property JsonObject notifications: JsonObject {
-      property bool enabled: true
-      property var monitors: [] // holds notifications visibility per monitor
-      property string location: "top_right"
-      property bool overlayLayer: true
-      property real backgroundOpacity: 1.0
-      property bool respectExpireTimeout: false
-      property int lowUrgencyDuration: 3
-      property int normalUrgencyDuration: 8
-      property int criticalUrgencyDuration: 15
-      property bool enableKeyboardLayoutToast: true
-    }
-
-    // on-screen display
-    property JsonObject osd: JsonObject {
-      property bool enabled: true
-      property string location: "top_right"
-      property int autoHideMs: 2000
-      property bool overlayLayer: true
-      property real backgroundOpacity: 1.0
-      property var enabledTypes: [OSD.Type.Volume, OSD.Type.InputVolume, OSD.Type.Brightness]
-      property var monitors: [] // holds osd visibility per monitor
-    }
-
-    // audio
-    property JsonObject audio: JsonObject {
-      property int volumeStep: 5
-      property bool volumeOverdrive: false
-      property int cavaFrameRate: 30
-      property string visualizerType: "linear"
-      property string visualizerQuality: "high"
-      property var mprisBlacklist: []
-      property string preferredPlayer: ""
-      property string externalMixer: "pwvucontrol || pavucontrol"
-    }
-
-    // brightness
-    property JsonObject brightness: JsonObject {
-      property int brightnessStep: 5
-      property bool enforceMinimum: true
-      property bool enableDdcSupport: false
-    }
-
-    property JsonObject colorSchemes: JsonObject {
-      property bool useWallpaperColors: false
-      property string predefinedScheme: "Noctalia (default)"
-      property bool darkMode: true
-      property string schedulingMode: "off"
-      property string manualSunrise: "06:30"
-      property string manualSunset: "18:30"
-      property string matugenSchemeType: "scheme-fruit-salad"
-      property bool generateTemplatesForPredefined: true
-    }
-
-    // templates toggles
-    property JsonObject templates: JsonObject {
-      property bool gtk: false
-      property bool qt: false
-      property bool kcolorscheme: false
-      property bool alacritty: false
-      property bool kitty: false
-      property bool ghostty: false
-      property bool foot: false
-      property bool wezterm: false
-      property bool fuzzel: false
-      property bool discord: false
-      property bool pywalfox: false
-      property bool vicinae: false
-      property bool walker: false
-      property bool code: false
-      property bool spicetify: false
-      property bool telegram: false
-      property bool cava: false
-      property bool emacs: false
-      property bool niri: false
-      property bool enableUserTemplates: false
-    }
-
-    // night light
-    property JsonObject nightLight: JsonObject {
-      property bool enabled: false
-      property bool forced: false
-      property bool autoSchedule: true
-      property string nightTemp: "4000"
-      property string dayTemp: "6500"
-      property string manualSunrise: "06:30"
-      property string manualSunset: "18:30"
-    }
-
-    property JsonObject changelog: JsonObject {
-      property string lastSeenVersion: ""
-    }
-
-    // hooks
-    property JsonObject hooks: JsonObject {
-      property bool enabled: false
-      property string wallpaperChange: ""
-      property string darkModeChange: ""
-    }
+    settingsVersion: root.settingsVersion
+    defaultLocation: root.defaultLocation
   }
 
   // -----------------------------------------------------
+  // Settings bootstrap state machine
+  function beginBootstrap() {
+    root.bootstrapState = root.PreparingDirectories;
+    root.isLoaded = false;
+    if (!directoryCreationProcess.running) {
+      directoryCreationProcess.running = true;
+    }
+  }
+
+  function handleDirectoryCreationExit(exitCode) {
+    if (exitCode !== 0) {
+      root.failBootstrap(`Failed to create settings directories (mkdir exit ${exitCode})`);
+      return;
+    }
+
+    root.directoriesCreated = true;
+    root.beginValidation();
+  }
+
+  function beginValidation() {
+    saveTimer.stop();
+    root.saveInProgress = false;
+    root.saveQueued = false;
+    root.verifyingSave = false;
+    root.pendingSavedSettingsText = "";
+    root.isLoaded = false;
+    root.errorMessage = "";
+    root.validatedSettingsText = "";
+    root.validatedSettingsData = null;
+    root.loadGeneration += 1;
+    root.bootstrapState = root.Validating;
+  }
+
+  function handleValidationLoaded(generation, rawText, rawData) {
+    if (generation !== root.loadGeneration || root.bootstrapState !== root.Validating) {
+      return;
+    }
+
+    try {
+      const parsedSettings = JSON.parse(rawText);
+      if (!parsedSettings || Array.isArray(parsedSettings) || typeof parsedSettings !== "object") {
+        throw new Error("settings root must be a JSON object");
+      }
+    } catch (error) {
+      root.failBootstrap(`Invalid settings JSON: ${error}`);
+      return;
+    }
+
+    root.errorMessage = "";
+    root.validatedSettingsText = rawText;
+    root.validatedSettingsData = rawData;
+    root.bootstrapState = root.Snapshotting;
+  }
+
+  function handleSnapshotSaved(generation) {
+    if (generation !== root.loadGeneration || root.bootstrapState !== root.Snapshotting) {
+      return;
+    }
+
+    root.verifyingSnapshot = true;
+  }
+
+  function handleSnapshotVerificationLoaded(generation, rawData) {
+    if (generation !== root.loadGeneration || !root.verifyingSnapshot) {
+      return;
+    }
+
+    if (!root.byteArraysEqual(rawData, root.validatedSettingsData)) {
+      root.failBootstrap("Settings snapshot verification failed");
+      return;
+    }
+
+    root.verifyingSnapshot = false;
+    root.bootstrapState = root.Hydrating;
+  }
+
+  function handleValidationLoadFailure(generation, error) {
+    if (generation !== root.loadGeneration || root.bootstrapState !== root.Validating) {
+      return;
+    }
+
+    const errorText = String(error);
+    const missing = error === FileViewError.FileNotFound || errorText.includes("No such file");
+    if (missing && !root.hasLoadedOnce) {
+      root.shouldOpenSetupWizard = true;
+      root.bootstrapState = root.CreatingDefaults;
+      return;
+    }
+
+    root.failBootstrap(`Failed to load settings: ${errorText}`);
+  }
+
+  function handleDefaultsSaved(generation) {
+    if (generation !== root.loadGeneration || root.bootstrapState !== root.CreatingDefaults) {
+      return;
+    }
+
+    root.beginValidation();
+  }
+
+  function handleHydrationLoaded(generation) {
+    if (generation !== root.loadGeneration || root.bootstrapState !== root.Hydrating) {
+      return;
+    }
+
+    Logger.i("Settings", "Settings loaded");
+    try {
+      if (!runVersionedMigrations()) {
+        root.failBootstrap("Settings migration failed");
+        return;
+      }
+      upgradeSettingsData();
+    } catch (error) {
+      root.failBootstrap(`Failed to upgrade settings: ${error}`);
+      return;
+    }
+    root.isLoaded = true;
+    root.hasLoadedOnce = true;
+    root.persistedSettingsText = JSON.stringify(JSON.parse(root.validatedSettingsText));
+    root.bootstrapState = root.Ready;
+    root.settingsLoaded();
+    adapter.settingsVersion = settingsVersion;
+
+    const loadedSettingsText = JSON.stringify(JSON.parse(root.validatedSettingsText));
+    const hydratedSettingsText = JSON.stringify(QtObj2JS.qtObjectToPlainObject(adapter));
+    if (loadedSettingsText !== hydratedSettingsText) {
+      Qt.callLater(root.saveImmediate);
+    }
+  }
+
+  function handleSettingsSaved(generation) {
+    if (generation !== root.loadGeneration || root.bootstrapState !== root.Ready || !root.saveInProgress) {
+      return;
+    }
+
+    root.verifyingSave = true;
+  }
+
+  function handleSaveVerificationLoaded(generation, rawText) {
+    if (generation !== root.loadGeneration || !root.verifyingSave) {
+      return;
+    }
+
+    let savedSettingsText = "";
+    try {
+      savedSettingsText = JSON.stringify(JSON.parse(rawText));
+    } catch (error) {
+      root.failBootstrap(`Saved settings are invalid JSON: ${error}`);
+      return;
+    }
+
+    if (savedSettingsText !== root.pendingSavedSettingsText) {
+      root.failBootstrap("Settings save verification failed");
+      return;
+    }
+
+    const shouldSaveAgain = root.saveQueued;
+    root.persistedSettingsText = savedSettingsText;
+    root.verifyingSave = false;
+    root.saveInProgress = false;
+    root.saveQueued = false;
+    root.pendingSavedSettingsText = "";
+    root.settingsSaved();
+    if (shouldSaveAgain) {
+      Qt.callLater(root.saveImmediate);
+    }
+  }
+
+  function handleReadyFileLoaded(generation, rawText) {
+    if (generation !== root.loadGeneration || root.bootstrapState !== root.Ready) {
+      return;
+    }
+
+    let currentSettingsText = "";
+    try {
+      currentSettingsText = JSON.stringify(JSON.parse(rawText));
+    } catch (error) {
+      root.beginValidation();
+      return;
+    }
+
+    const adapterSettingsText = JSON.stringify(QtObj2JS.qtObjectToPlainObject(adapter));
+    if (currentSettingsText === root.pendingSavedSettingsText || currentSettingsText === adapterSettingsText) {
+      return;
+    }
+    if (currentSettingsText !== adapterSettingsText) {
+      root.beginValidation();
+    }
+  }
+
+  function handleBootstrapFailure(generation, message) {
+    if (generation !== root.loadGeneration) {
+      return;
+    }
+
+    root.failBootstrap(message);
+  }
+
+  function failBootstrap(message) {
+    saveTimer.stop();
+    root.saveInProgress = false;
+    root.saveQueued = false;
+    root.verifyingSave = false;
+    root.verifyingSnapshot = false;
+    root.pendingSavedSettingsText = "";
+    root.isLoaded = false;
+    root.errorMessage = String(message);
+    root.bootstrapState = root.Error;
+    if (root.lastLoggedError !== root.errorMessage) {
+      Logger.e("Settings", root.errorMessage);
+      root.lastLoggedError = root.errorMessage;
+    }
+    root.settingsLoadFailed(root.errorMessage);
+  }
+
+  function byteArraysEqual(left, right) {
+    if (left === right) {
+      return true;
+    }
+    if (!left || !right || left.byteLength !== right.byteLength) {
+      return false;
+    }
+
+    const leftBytes = new Uint8Array(left);
+    const rightBytes = new Uint8Array(right);
+    for (let index = 0; index < leftBytes.length; index++) {
+      if (leftBytes[index] !== rightBytes[index]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function retryBootstrap() {
+    root.errorMessage = "";
+    if (!root.directoriesCreated) {
+      root.beginBootstrap();
+      return;
+    }
+
+    root.beginValidation();
+  }
+
   // Function to preprocess paths by expanding "~" to user's home directory
   function preprocessPath(path) {
     if (typeof path !== "string" || path === "") {
@@ -603,12 +520,23 @@ Singleton {
   // -----------------------------------------------------
   // Public function to trigger immediate settings saving
   function saveImmediate() {
-    settingsFileView.writeAdapter();
-    // Write to fallback location if set
-    if (Quickshell.env("NOCTALIA_SETTINGS_FALLBACK")) {
-      settingsFallbackFileView.writeAdapter();
+    if (!settingsFileView) {
+      return;
     }
-    root.settingsSaved(); // Emit signal after saving
+    if (root.saveInProgress) {
+      root.saveQueued = true;
+      return;
+    }
+
+    const settingsText = JSON.stringify(QtObj2JS.qtObjectToPlainObject(adapter));
+    if (settingsText === root.persistedSettingsText) {
+      root.settingsSaved();
+      return;
+    }
+
+    root.pendingSavedSettingsText = settingsText;
+    root.saveInProgress = true;
+    settingsFileView.writeAdapter();
   }
 
   // -----------------------------------------------------
@@ -633,37 +561,44 @@ Singleton {
 
   // -----------------------------------------------------
   // Run versioned migrations using MigrationRegistry
+  function runMigration(version, migrationComponent) {
+    let migration = null;
+    try {
+      migration = migrationComponent.createObject(root);
+      if (!migration || typeof migration.migrate !== "function") {
+        Logger.e("Settings", "Invalid migration for v" + version);
+        return false;
+      }
+
+      if (!migration.migrate(adapter, Logger)) {
+        Logger.e("Settings", "Migration to v" + version + " failed");
+        return false;
+      }
+      return true;
+    } catch (error) {
+      Logger.e("Settings", `Migration to v${version} threw: ${error}`);
+      return false;
+    } finally {
+      if (migration) {
+        migration.destroy();
+      }
+    }
+  }
+
   function runVersionedMigrations() {
     const currentVersion = adapter.settingsVersion;
     const migrations = MigrationRegistry.migrations;
-
-    // Get all migration versions and sort them
     const versions = Object.keys(migrations).map(v => parseInt(v)).sort((a, b) => a - b);
+    let allSucceeded = true;
 
-    // Run migrations in order for versions newer than current
     for (var i = 0; i < versions.length; i++) {
       const version = versions[i];
-
-      if (currentVersion < version) {
-        // Create migration instance and run it
-        const migrationComponent = migrations[version];
-        const migration = migrationComponent.createObject(root);
-
-        if (migration && typeof migration.migrate === "function") {
-          const success = migration.migrate(adapter, Logger);
-          if (!success) {
-            Logger.e("Settings", "Migration to v" + version + " failed");
-          }
-        } else {
-          Logger.e("Settings", "Invalid migration for v" + version);
-        }
-
-        // Clean up migration instance
-        if (migration) {
-          migration.destroy();
-        }
+      if (currentVersion < version && !runMigration(version, migrations[version])) {
+        allSucceeded = false;
       }
     }
+
+    return allSucceeded;
   }
 
   // -----------------------------------------------------
