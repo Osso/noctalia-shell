@@ -55,6 +55,7 @@ PanelWindow {
   readonly property Item vpnPanel: vpnPanelLoader.item
   readonly property Item processPanel: processPanelLoader.item
   readonly property string screenName: screen ? screen.name : "unknown"
+  property var registeredLazyPanels: []
 
   // Expose panel backgrounds for AllBackgrounds without forcing panel instantiation.
   readonly property Item audioPanelPlaceholder: audioPanelLoader.item ? audioPanelLoader.item.panelRegion : audioPanelPlaceholderItem
@@ -83,12 +84,23 @@ PanelWindow {
     Logger.d("MainScreen", "Initialized for screen:", screenName, "- Dimensions:", screenWidth, "x", screenHeight, "- Position:", screenX, ",", screenY);
   }
 
+  Component.onDestruction: root.unregisterLazyPanels()
+
   function panelObjectName(panelName) {
     return panelName + "-" + root.screenName;
   }
 
   function registerLazyPanel(panelName, loader) {
-    PanelService.registerPanelLoader(panelObjectName(panelName), loader);
+    const panelKey = panelObjectName(panelName);
+    PanelService.registerPanelLoader(panelKey, loader);
+    registeredLazyPanels.push({ "key": panelKey, "loader": loader });
+  }
+
+  function unregisterLazyPanels() {
+    for (const registration of registeredLazyPanels) {
+      PanelService.unregisterPanelLoader(registration.key, registration.loader);
+    }
+    registeredLazyPanels = [];
   }
 
   // Wayland

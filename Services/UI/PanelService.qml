@@ -28,9 +28,34 @@ Singleton {
     Logger.d("PanelService", "Registered panel:", panel.objectName);
   }
 
+  function unregisterPanel(panel) {
+    if (!panel) {
+      return;
+    }
+
+    if (openedPanel === panel) {
+      openedPanel = null;
+    }
+    if (registeredPanels[panel.objectName] !== panel) {
+      return;
+    }
+
+    delete registeredPanels[panel.objectName];
+    Logger.d("PanelService", "Unregistered panel:", panel.objectName);
+  }
+
   function registerPanelLoader(panelKey, loader) {
     panelLoaders[panelKey] = loader;
     Logger.d("PanelService", "Registered panel loader:", panelKey);
+  }
+
+  function unregisterPanelLoader(panelKey, loader) {
+    if (panelLoaders[panelKey] !== loader) {
+      return;
+    }
+
+    delete panelLoaders[panelKey];
+    Logger.d("PanelService", "Unregistered panel loader:", panelKey);
   }
 
   // Register popup menu window for a screen
@@ -41,6 +66,15 @@ Singleton {
     popupMenuWindows[key] = window;
     Logger.d("PanelService", "Registered popup menu window for screen:", key);
     popupMenuWindowRegistered(screen);
+  }
+
+  function unregisterPopupMenuWindow(screenKey, window) {
+    if (!screenKey || popupMenuWindows[screenKey] !== window) {
+      return;
+    }
+
+    delete popupMenuWindows[screenKey];
+    Logger.d("PanelService", "Unregistered popup menu window for screen:", screenKey);
   }
 
   // Get popup menu window for a screen

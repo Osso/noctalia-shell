@@ -14,6 +14,7 @@ PanelWindow {
   required property ShellScreen screen
   property string windowType: "popupmenu"  // Used for namespace and registration
   readonly property string screenName: screen ? screen.name : "unknown"
+  property string registrationKey: ""
 
   // Content item to display (set by the popup that uses this window)
   property QtObject contentItem: null
@@ -39,9 +40,12 @@ PanelWindow {
 
   // Register with PanelService so widgets can find this window
   Component.onCompleted: {
-    objectName = "popupMenuWindow-" + screenName;
+    registrationKey = screenName;
+    objectName = "popupMenuWindow-" + registrationKey;
     PanelService.registerPopupMenuWindow(screen, root);
   }
+
+  Component.onDestruction: PanelService.unregisterPopupMenuWindow(registrationKey, root)
 
   // Load TrayMenu as the default content
   Loader {
