@@ -69,24 +69,39 @@ function testShellStateLoadHandlersPublishLoadedState() {
   assert.deepEqual(logs, [["error", ["ShellState", "Failed to load state file:", 13]]]);
 }
 
-function testShellStatePerformSaveGuardsAndWritesQueuedState() {
-  const performSave = qmlFunction("performSave");
-  const calls = [];
+function testShellStateInitializesFileOnlyAfterSettingsDirectories() {
+  const initializeStateFile = qmlFunction("initializeStateFile");
   const ctx = {
-    saveQueued: false,
-    stateFile: "/tmp/noctalia/shell-state.json",
+    stateFile: "",
     Settings: {
       cacheDir: "/tmp/noctalia/",
+      directoriesCreated: false,
     },
-    Quickshell: {
-      execDetached(args) {
-        calls.push(["execDetached", args]);
-      },
-    },
-    Qt: {
-      callLater(callback) {
-        calls.push(["callLater"]);
-        callback();
+    stateFileView: { path: "" },
+  };
+  ctx.root = ctx;
+
+  initializeStateFile(ctx);
+  assert.equal(ctx.stateFileView.path, "", "state load must wait for synchronized directory creation");
+
+  ctx.Settings.directoriesCreated = true;
+  initializeStateFile(ctx);
+  assert.equal(ctx.stateFile, "/tmp/noctalia/shell-state.json");
+  assert.equal(ctx.stateFileView.path, ctx.stateFile);
+  assert.match(source, /target:\s*Settings[\s\S]*?onDirectoriesCreatedChanged[\s\S]*?initializeStateFile/);
+}
+
+function createSaveContext() {
+  const calls = [];
+  const ctx = {
+    saveQueued: true,
+    saveInProgress: false,
+    stateFile: "/tmp/noctalia/shell-state.json",
+    saveDirectoryProcess: { running: false },
+    saveTimer: {
+      restarts: 0,
+      restart() {
+        this.restarts += 1;
       },
     },
     stateFileView: {
@@ -103,29 +118,117 @@ function testShellStatePerformSaveGuardsAndWritesQueuedState() {
       },
     },
   };
+  ctx.root = ctx;
+  ctx.calls = calls;
+  return ctx;
+}
 
+function testShellStatePerformSaveWaitsForDirectoryProcess() {
+  const performSave = qmlFunction("performSave");
+  const ctx = createSaveContext();
+
+  ctx.saveQueued = false;
   performSave(ctx);
-
-  assert.equal(ctx.saveQueued, false);
-  assert.deepEqual(calls, []);
+  assert.equal(ctx.saveDirectoryProcess.running, false);
 
   ctx.saveQueued = true;
   ctx.stateFile = "";
   performSave(ctx);
-
+  assert.equal(ctx.saveDirectoryProcess.running, false);
   assert.equal(ctx.saveQueued, true);
-  assert.deepEqual(calls, []);
 
   ctx.stateFile = "/tmp/noctalia/shell-state.json";
+  ctx.saveInProgress = true;
+  performSave(ctx);
+  assert.equal(ctx.saveDirectoryProcess.running, false, "in-flight adapter write must block another directory process");
+
+  ctx.saveInProgress = false;
   performSave(ctx);
 
-  assert.equal(ctx.saveQueued, false);
-  assert.deepEqual(calls, [
-    ["execDetached", ["mkdir", "-p", "/tmp/noctalia/"]],
-    ["callLater"],
-    ["writeAdapter"],
-    ["debug", ["ShellState", "Saved state file"]],
-  ]);
+  assert.equal(ctx.saveDirectoryProcess.running, true);
+  assert.equal(ctx.saveQueued, true, "queued state must remain claimed until the process exits");
+  assert.deepEqual(ctx.calls, [], "adapter write must not run before directory process completion");
+
+  ctx.saveDirectoryProcess.running = true;
+  performSave(ctx);
+  assert.deepEqual(ctx.calls, [], "concurrent save must coalesce behind the running process");
+}
+
+function testShellStateDirectoryExitWritesOnlyAfterSuccess() {
+  const handleSaveDirectoryExit = qmlFunction("handleSaveDirectoryExit", "exitCode");
+
+  const failed = createSaveContext();
+  handleSaveDirectoryExit(failed, 1);
+  assert.equal(failed.saveQueued, true, "directory failure must preserve pending state");
+  assert.deepEqual(failed.calls, [["error", ["ShellState", "Failed to create cache directory, exit:", 1]]]);
+
+  const succeeded = createSaveContext();
+  handleSaveDirectoryExit(succeeded, 0);
+  assert.equal(succeeded.saveQueued, false, "starting the write must claim the current queued state");
+  assert.equal(succeeded.saveInProgress, true, "write must remain in flight until FileView reports completion");
+  assert.deepEqual(succeeded.calls, [["writeAdapter"]], "success must not be logged before onSaved");
+}
+
+function testShellStateDirectoryStartFailureKeepsSaveQueued() {
+  const handleSaveDirectoryStartFailure = qmlFunction("handleSaveDirectoryStartFailure", "exitObserved");
+  const ctx = createSaveContext();
+
+  handleSaveDirectoryStartFailure(ctx, false);
+  assert.equal(ctx.saveQueued, true);
+  assert.deepEqual(ctx.calls, [["error", ["ShellState", "Failed to start cache directory creation"]]]);
+
+  ctx.calls.length = 0;
+  handleSaveDirectoryStartFailure(ctx, true);
+  assert.deepEqual(ctx.calls, [], "normal exit must not be reported as failed start");
+  assert.match(source, /id:\s*saveDirectoryProcess[\s\S]*?onExited:\s*function\s*\(exitCode\)[\s\S]*?exitObserved = true[\s\S]*?handleSaveDirectoryExit/);
+  assert.match(source, /id:\s*saveDirectoryProcess[\s\S]*?onRunningChanged:[\s\S]*?handleSaveDirectoryStartFailure/);
+}
+
+function testShellStateSaveCompletionTracksAsyncResult() {
+  assert.match(source, /onSaved:\s*root\.handleStateSaved\(\)/);
+  assert.match(source, /onSaveFailed:\s*error => root\.handleStateSaveFailed\(error\)/);
+  const handleStateSaved = qmlFunction("handleStateSaved");
+  const handleStateSaveFailed = qmlFunction("handleStateSaveFailed", "error");
+
+  const succeeded = createSaveContext();
+  succeeded.saveQueued = false;
+  succeeded.saveInProgress = true;
+  handleStateSaved(succeeded);
+  assert.equal(succeeded.saveInProgress, false);
+  assert.equal(succeeded.saveQueued, false);
+  assert.deepEqual(succeeded.calls, [["debug", ["ShellState", "Saved state file"]]]);
+
+  const coalesced = createSaveContext();
+  coalesced.saveQueued = true;
+  coalesced.saveInProgress = true;
+  handleStateSaved(coalesced);
+  assert.equal(coalesced.saveInProgress, false);
+  assert.equal(coalesced.saveQueued, true, "state changed during write must remain queued");
+  assert.equal(coalesced.saveTimer.restarts, 1, "pending state must schedule the next write");
+
+  const failed = createSaveContext();
+  failed.saveQueued = false;
+  failed.saveInProgress = true;
+  handleStateSaveFailed(failed, "disk full");
+  assert.equal(failed.saveInProgress, false);
+  assert.equal(failed.saveQueued, true, "asynchronous FileView failure must restore dirty state");
+  assert.deepEqual(failed.calls, [["error", ["ShellState", "Failed to write state file:", "disk full"]]]);
+}
+
+function testShellStateSynchronousWriteFailureKeepsSaveQueued() {
+  const handleSaveDirectoryExit = qmlFunction("handleSaveDirectoryExit", "exitCode");
+  const ctx = createSaveContext();
+  ctx.stateFileView.writeAdapter = () => {
+    throw new Error("write failed");
+  };
+
+  handleSaveDirectoryExit(ctx, 0);
+
+  assert.equal(ctx.saveInProgress, false);
+  assert.equal(ctx.saveQueued, true);
+  assert.equal(ctx.calls.length, 1);
+  assert.equal(ctx.calls[0][0], "error");
+  assert.equal(ctx.calls[0][1][1], "Failed to write state file:");
 }
 
 function testShellStateBuildSnapshotAggregatesSettingsAndCachedState() {
@@ -296,7 +399,12 @@ function testShellStateSettersSaveAndEmitMatchingSignals() {
 const tests = [
   testShellStateSaveQueuesDebouncedWrite,
   testShellStateLoadHandlersPublishLoadedState,
-  testShellStatePerformSaveGuardsAndWritesQueuedState,
+  testShellStateInitializesFileOnlyAfterSettingsDirectories,
+  testShellStatePerformSaveWaitsForDirectoryProcess,
+  testShellStateDirectoryExitWritesOnlyAfterSuccess,
+  testShellStateDirectoryStartFailureKeepsSaveQueued,
+  testShellStateSaveCompletionTracksAsyncResult,
+  testShellStateSynchronousWriteFailureKeepsSaveQueued,
   testShellStateBuildSnapshotAggregatesSettingsAndCachedState,
   testShellStateBuildSnapshotFailsClosedOnConversionErrors,
   testShellStateSettersSaveAndEmitMatchingSignals,

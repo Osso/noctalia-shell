@@ -14,13 +14,18 @@ ShellState covers the small persisted state cache shared by services that need l
 
 ### Debounced persistence
 
+- [x] ShellState does not assign or load its state-file path until Settings reports synchronized directory creation complete.
 - [x] Load success marks ShellState loaded and logs that the state file loaded.
 - [x] Missing state files mark ShellState loaded and log that the file will be created on first write.
 - [x] Other load failures mark ShellState loaded and log the failing error.
 - [x] Calling `save()` marks a save as queued and restarts the save timer.
 - [x] `performSave()` does nothing when no save is queued.
 - [x] `performSave()` keeps the save queued when the state file path is missing.
-- [x] `performSave()` creates the cache directory, schedules the adapter write, clears the queued flag, writes the adapter, and logs success.
+- [x] `performSave()` starts a persistent cache-directory process and does not write until that process exits successfully.
+- [x] Directory nonzero exits and failed process starts log a concrete error and preserve the queued save; synchronous adapter-write exceptions do the same.
+- [x] A successful directory exit claims the queued state and starts one adapter write without logging premature success.
+- [x] FileView save success clears the in-flight state, logs success, and schedules another write when state changed during the previous write.
+- [x] FileView save failure clears the in-flight state, restores the queued save, and logs the concrete error.
 
 ### Snapshot export
 

@@ -24,14 +24,20 @@ Singleton {
   signal changelogStateChanged
   signal colorSchemesListChanged
 
-  Component.onCompleted: {
-    // Setup state file path (needs Settings to be available)
-    Qt.callLater(() => {
-                   if (typeof Settings !== 'undefined' && Settings.cacheDir) {
-                     stateFile = Settings.cacheDir + "shell-state.json";
-                     stateFileView.path = stateFile;
-                   }
-                 });
+  Component.onCompleted: initializeStateFile()
+
+  Connections {
+    target: Settings
+    function onDirectoriesCreatedChanged() {
+      root.initializeStateFile();
+    }
+  }
+
+  function initializeStateFile() {
+    if (!Settings.directoriesCreated || !Settings.cacheDir)
+      return;
+    root.stateFile = Settings.cacheDir + "shell-state.json";
+    stateFileView.path = root.stateFile;
   }
 
   // FileView for shell state
@@ -64,8 +70,9 @@ Singleton {
     }
 
     onLoaded: root.handleStateLoaded()
-
     onLoadFailed: error => root.handleStateLoadFailed(error)
+    onSaved: root.handleStateSaved()
+    onSaveFailed: error => root.handleStateSaveFailed(error)
   }
 
   // Debounced save timer
@@ -75,7 +82,24 @@ Singleton {
     onTriggered: performSave()
   }
 
+  Process {
+    id: saveDirectoryProcess
+    command: ["mkdir", "-p", Settings.cacheDir]
+    property bool exitObserved: false
+    onExited: function (exitCode) {
+      saveDirectoryProcess.exitObserved = true;
+      root.handleSaveDirectoryExit(exitCode);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleSaveDirectoryStartFailure(saveDirectoryProcess.exitObserved);
+        saveDirectoryProcess.exitObserved = false;
+      }
+    }
+  }
+
   property bool saveQueued: false
+  property bool saveInProgress: false
 
   function handleStateLoaded() {
     isLoaded = true;
@@ -99,27 +123,45 @@ Singleton {
   }
 
   function performSave() {
-    if (!saveQueued || !stateFile) {
+    if (!saveQueued || !stateFile || saveDirectoryProcess.running || saveInProgress)
+      return;
+    saveDirectoryProcess.exitObserved = false;
+    saveDirectoryProcess.running = true;
+  }
+
+  function handleSaveDirectoryStartFailure(exitObserved) {
+    if (!exitObserved)
+      Logger.e("ShellState", "Failed to start cache directory creation");
+  }
+
+  function handleSaveDirectoryExit(exitCode) {
+    if (exitCode !== 0) {
+      Logger.e("ShellState", "Failed to create cache directory, exit:", exitCode);
       return;
     }
 
     saveQueued = false;
-
+    saveInProgress = true;
     try {
-      // Ensure cache directory exists
-      Quickshell.execDetached(["mkdir", "-p", Settings.cacheDir]);
-
-      Qt.callLater(() => {
-                     try {
-                       stateFileView.writeAdapter();
-                       Logger.d("ShellState", "Saved state file");
-                     } catch (writeError) {
-                       Logger.e("ShellState", "Failed to write state file:", writeError);
-                     }
-                   });
-    } catch (error) {
-      Logger.e("ShellState", "Failed to save state:", error);
+      stateFileView.writeAdapter();
+    } catch (writeError) {
+      saveInProgress = false;
+      saveQueued = true;
+      Logger.e("ShellState", "Failed to write state file:", writeError);
     }
+  }
+
+  function handleStateSaved() {
+    saveInProgress = false;
+    Logger.d("ShellState", "Saved state file");
+    if (saveQueued)
+      saveTimer.restart();
+  }
+
+  function handleStateSaveFailed(error) {
+    saveInProgress = false;
+    saveQueued = true;
+    Logger.e("ShellState", "Failed to write state file:", error);
   }
 
   // Convenience functions for each service
