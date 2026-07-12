@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const assert = require("assert/strict");
-const { execFileSync } = require("child_process");
+const { execFileSync, spawnSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
@@ -43,10 +43,10 @@ function qmlSourceFiles() {
 }
 
 function testFiles() {
-  return fs.readdirSync(path.join(repoRoot, "Tests"))
-    .filter(fileName => /\.test\.(js|sh|py)$/.test(fileName))
-    .map(fileName => `Tests/${fileName}`)
-    .sort();
+  return execFileSync("rg", ["--files", "Tests", "--glob", "*.test.js", "--glob", "*.test.sh", "--glob", "*.test.py"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+  }).trim().split("\n").filter(Boolean).sort();
 }
 
 function specFiles() {
@@ -142,6 +142,35 @@ function testMetaTestAllowlistStaysIntentional() {
   assert.deepEqual(metaOnlyTests, [...metaTestFiles].sort(), "only explicitly allowlisted meta tests may skip feature specs");
 }
 
+function testUnitRunnerDiscoversEveryJavaScriptTest() {
+  const runner = fs.readFileSync(path.join(repoRoot, "run-tests.sh"), "utf8");
+
+  assert.match(runner, /rg --files Tests --glob '\*\.test\.js'/);
+  assert.match(runner, /LC_ALL=C sort/);
+}
+
+function testUnitRunnerFailsWhenJavaScriptDiscoveryFails() {
+  const fakeBin = fs.mkdtempSync(path.join(require("os").tmpdir(), "noctalia-test-runner-"));
+  const fakeSort = path.join(fakeBin, "sort");
+  fs.writeFileSync(fakeSort, "#!/bin/sh\nexit 42\n", { mode: 0o755 });
+
+  try {
+    const result = spawnSync(path.join(repoRoot, "run-tests.sh"), ["unit"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        PATH: `${fakeBin}:${process.env.PATH}`,
+      },
+    });
+
+    assert.notEqual(result.status, 0, "unit runner must fail when JavaScript discovery pipeline fails");
+    assert.match(result.stderr, /Failed to discover JavaScript tests/);
+  } finally {
+    fs.rmSync(fakeBin, { recursive: true, force: true });
+  }
+}
+
 const tests = [
   testQmlFunctionCoverageStaysComplete,
   testQmlFunctionInventoryIncludesDeclarations,
@@ -149,6 +178,8 @@ const tests = [
   testAllTestFilesAreNamedBySpecs,
   testNonMetaTestFilesAreNamedByFeatureSpecs,
   testMetaTestAllowlistStaysIntentional,
+  testUnitRunnerDiscoversEveryJavaScriptTest,
+  testUnitRunnerFailsWhenJavaScriptDiscoveryFails,
 ];
 
 for (const test of tests) {

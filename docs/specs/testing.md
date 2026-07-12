@@ -25,7 +25,8 @@ Testing covers local regression gates, function-coverage guardrails, and log fil
 
 ### Runner contract
 
-- [x] `./run-tests.sh unit` runs pure helper, source coverage, QML guard, service guard, parser, and quickshell log-filter tests.
+- [x] `./run-tests.sh unit` discovers and runs every `Tests/*.test.js` suite, then runs the explicit Python and shell parser/log-filter tests.
+- [x] Adding a JavaScript test suite must require no manual runner-list update; the source-coverage meta-test enforces fail-closed discovery.
 - [x] `./run-tests.sh qml` runs the focused QML static check.
 - [x] `./run-tests.sh probes` runs read-only service probes and injects the deterministic Bluetooth CLI fixture rather than contacting host Bluetooth hardware.
 - [x] `./run-tests.sh log` runs the active Quickshell log regression gate.
@@ -37,7 +38,7 @@ Testing covers local regression gates, function-coverage guardrails, and log fil
 
 ## Implementation inventory
 
-- `run-tests.sh` - local test runner and gate grouping.
+- `run-tests.sh` - local test runner, fail-closed JavaScript test discovery, and gate grouping.
 - `Tests/source-coverage.test.js` - source function coverage and QML declaration inventory guard.
 - `Tests/qml-function-inventory.test.js` - explicit QML function anchor inventory for high-risk source files.
 - `Tests/quickshell-regression.test.sh` - current-reload log filtering fixture.
