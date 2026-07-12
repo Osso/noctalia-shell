@@ -67,6 +67,7 @@ Update Service covers changelog initialization, upgrade-log fetching, release-no
 ## Tests asserting this spec
 
 - `Tests/update-service-guards.test.js`
+- `Tests/shell-state-consumer-roundtrip.test.js`
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
@@ -74,7 +75,7 @@ Update Service covers changelog initialization, upgrade-log fetching, release-no
 - [ ] Add executable fixture coverage for successful and failed upgrade-log HTTP responses.
 - [ ] Add executable fixture coverage for release-note parsing output, not only parser structure.
 - [ ] Add fake PanelService coverage for delayed changelog panel opening.
-- [ ] Add fake ShellState coverage for changelog state load/save success and failure.
+- [ ] Add fake ShellState failure coverage for changelog state load/save; successful load/save round trips are executable.
 
 ## Out of scope
 

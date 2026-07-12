@@ -48,6 +48,7 @@ ShellState covers the small persisted state cache shared by services that need l
 ## Tests asserting this spec
 
 - `Tests/shell-state-contract.test.js`
+- `Tests/shell-state-consumer-roundtrip.test.js`
 - `Tests/shell-state-guards.test.js`
 - `Tests/source-coverage.test.js`
 
@@ -55,7 +56,7 @@ ShellState covers the small persisted state cache shared by services that need l
 
 - [x] Add executable coverage for ShellState load success and load-failure paths.
 - [x] Add executable coverage for each setter emitting its matching change signal.
-- [ ] Add executable coverage for cache consumers round-tripping through ShellState.
+- [x] Add executable coverage for compositor display, notification, changelog, and color-scheme cache consumers round-tripping through ShellState.
 
 ## Out of scope
 

@@ -79,6 +79,7 @@ Theming covers color scheme discovery/application, wallpaper and predefined them
 - `Tests/color-schemes.test.js`
 - `Tests/color-scheme-tab-guards.test.js`
 - `Tests/scheme-downloader-guards.test.js`
+- `Tests/shell-state-consumer-roundtrip.test.js`
 
 ## Known gaps (current cycle)
 

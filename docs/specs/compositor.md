@@ -78,6 +78,7 @@ Compositor covers backend detection, shared workspace/window state, display-scal
 ## Tests asserting this spec
 
 - `Tests/compositor-service-guards.test.js`
+- `Tests/shell-state-consumer-roundtrip.test.js`
 - `Tests/niri-service-guards.test.js`
 - `Tests/hyprland-service-guards.test.js`
 - `Tests/sway-service-guards.test.js`
