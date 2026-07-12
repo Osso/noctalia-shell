@@ -28,6 +28,8 @@ function testUpdateServiceInitializationAndChangelogRequestGuards() {
   assert.match(fetchBody, /from = "v3\.0\.0"/, "fetchUpgradeLog must reset inverted version ranges");
   assert.match(fetchBody, /const url = `\$\{upgradeLogBaseUrl\}\/\$\{from\}\/\$\{to\}`/, "fetchUpgradeLog must build upgrade log URL from normalized range");
   assert.match(fetchBody, /request\.open\("GET",\s*url\)/, "fetchUpgradeLog must use GET");
+  assert.match(fetchBody, /const generation = \+\+root\.upgradeLogRequestGeneration/, "fetchUpgradeLog must identify the newest request");
+  assert.match(fetchBody, /generation !== root\.upgradeLogRequestGeneration[\s\S]*return;/, "fetchUpgradeLog must ignore stale completions");
   assert.match(fetchBody, /request\.send\(\)/, "fetchUpgradeLog must send the request");
 }
 

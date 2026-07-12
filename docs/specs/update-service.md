@@ -15,6 +15,9 @@ Update Service covers changelog initialization, upgrade-log fetching, release-no
 - [x] Upgrade-log fetching strips legacy `-dev` suffixes from source and target versions.
 - [x] Upgrade-log fetching resets inverted version ranges to the stable fallback source version.
 - [x] Upgrade-log fetching builds the request URL from the normalized range and sends a GET request.
+- [x] Plain-text 2xx responses publish parsed release-note lines; empty and markup bodies retain plain-text semantics.
+- [x] Non-2xx responses, including transport-style status `0`, clear highlights and publish the fetch error.
+- [x] Stale overlapping request completions cannot overwrite the newest request state or reopen the popup.
 
 ### Version and release-note parsing
 
@@ -66,14 +69,13 @@ Update Service covers changelog initialization, upgrade-log fetching, release-no
 
 ## Tests asserting this spec
 
+- `Tests/update-service-fixtures.test.js`
 - `Tests/update-service-guards.test.js`
 - `Tests/shell-state-consumer-roundtrip.test.js`
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable fixture coverage for successful and failed upgrade-log HTTP responses.
-- [ ] Add executable fixture coverage for release-note parsing output, not only parser structure.
 - [ ] Add fake PanelService coverage for delayed changelog panel opening.
 - [ ] Add fake ShellState load-failure coverage; successful round trips and save-failure dirty-state preservation are executable.
 
