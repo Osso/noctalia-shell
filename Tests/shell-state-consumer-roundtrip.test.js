@@ -102,6 +102,30 @@ function testChangelogStateRoundTripsThroughShellState() {
   assert.deepEqual(shellState.data.changelogState, { lastSeenVersion: "v5.2.1" });
 }
 
+function testChangelogSaveFailureRetainsPendingState() {
+  const source = readQml("Services/Noctalia/UpdateService.qml");
+  const save = qmlFunction(source, "executeSave");
+  const errors = [];
+  const ctx = {
+    ShellState: {
+      setChangelogState() {
+        throw new Error("persistence unavailable");
+      },
+    },
+    Logger: { d() {}, e(...args) { errors.push(args); } },
+    Qt: { callLater() {} },
+    changelogLastSeenVersion: "v5.2.1",
+    pendingSave: true,
+    saveInProgress: false,
+  };
+
+  save(ctx);
+
+  assert.equal(ctx.pendingSave, true, "failed persistence must retain the dirty state");
+  assert.equal(ctx.saveInProgress, false, "failed persistence must release the in-progress guard");
+  assert.equal(errors.length, 1);
+}
+
 function testColorSchemeListRoundTripsThroughShellState() {
   const source = readQml("Modules/Panels/Settings/Tabs/ColorScheme/SchemeDownloader.qml");
   const save = qmlFunction(source, "saveSchemesToCache");
@@ -137,6 +161,7 @@ const tests = [
   testCompositorDisplayStateRoundTripsThroughShellState,
   testNotificationStateRoundTripsThroughShellState,
   testChangelogStateRoundTripsThroughShellState,
+  testChangelogSaveFailureRetainsPendingState,
   testColorSchemeListRoundTripsThroughShellState,
 ];
 

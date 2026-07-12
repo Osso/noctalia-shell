@@ -50,7 +50,7 @@ Update Service covers changelog initialization, upgrade-log fetching, release-no
 - [x] Save execution no-ops without a pending save.
 - [x] Save execution retries when a save is already running.
 - [x] Save execution claims pending saves, persists the last-seen version, and clears the save-in-progress flag.
-- [x] Save execution handles saves queued during a save and logs save failures.
+- [x] Save execution handles saves queued during a save; failures release the in-progress guard, retain pending dirty state for a later retry, and log the error.
 - [x] Immediate save compatibility goes through the debounced save path.
 
 ## How it works
@@ -75,7 +75,7 @@ Update Service covers changelog initialization, upgrade-log fetching, release-no
 - [ ] Add executable fixture coverage for successful and failed upgrade-log HTTP responses.
 - [ ] Add executable fixture coverage for release-note parsing output, not only parser structure.
 - [ ] Add fake PanelService coverage for delayed changelog panel opening.
-- [ ] Add fake ShellState failure coverage for changelog state load/save; successful load/save round trips are executable.
+- [ ] Add fake ShellState load-failure coverage; successful round trips and save-failure dirty-state preservation are executable.
 
 ## Out of scope
 

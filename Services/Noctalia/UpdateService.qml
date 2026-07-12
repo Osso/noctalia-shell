@@ -369,8 +369,9 @@ Singleton {
         Qt.callLater(executeSave);
       }
     } catch (error) {
-      Logger.e("UpdateService", "Failed to save changelog state:", error);
+      pendingSave = true;
       saveInProgress = false;
+      Logger.e("UpdateService", "Failed to save changelog state:", error);
     }
   }
 
