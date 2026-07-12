@@ -69,7 +69,7 @@ Singleton {
       const bluetoothBlockedToggled = (root.blocked !== lastBluetoothBlocked);
       root.lastBluetoothBlocked = root.blocked;
       if (bluetoothBlockedToggled) {
-        checkWifiBlocked.running = true;
+        root.startWifiBlockedCheck();
       } else if (adapter.state === BluetoothAdapterState.Enabled) {
         ToastService.showNotice(I18n.tr("bluetooth.panel.title"), I18n.tr("toast.bluetooth.enabled"), "bluetooth");
         discoveryTimer.running = true;
@@ -251,32 +251,103 @@ Singleton {
     adapter.enabled = state;
   }
 
+  function startWifiBlockedCheck() {
+    checkWifiBlocked.output = "";
+    checkWifiBlocked.errorOutput = "";
+    checkWifiBlocked.exitObserved = false;
+    checkWifiBlocked.running = true;
+  }
+
+  function parseWifiBlockedOutput(output) {
+    const softBlockedLine = output.split(/\r?\n/).map(line => line.trim()).find(line => line.startsWith("Soft blocked:"));
+    if (!softBlockedLine)
+      return null;
+
+    const match = softBlockedLine.match(/^Soft blocked:\s*(yes|no)$/i);
+    if (!match)
+      return null;
+    return match[1].toLowerCase() === "yes";
+  }
+
+  function showBluetoothStateNotice() {
+    if (adapter && adapter.enabled) {
+      ToastService.showNotice(I18n.tr("bluetooth.panel.title"), I18n.tr("toast.bluetooth.enabled"), "bluetooth");
+      discoveryTimer.running = true;
+    } else {
+      ToastService.showNotice(I18n.tr("bluetooth.panel.title"), I18n.tr("toast.bluetooth.disabled"), "bluetooth-off");
+    }
+  }
+
+  function finishWifiBlockedCheck(exitCode, output, errorOutput) {
+    if (exitCode !== 0) {
+      const failure = errorOutput.trim() || `rfkill Wi-Fi probe failed with exit ${exitCode}`;
+      Logger.w("Bluetooth", failure);
+      root.showBluetoothStateNotice();
+      root.airplaneModeToggled = false;
+      return;
+    }
+
+    if (!adapter) {
+      Logger.w("Bluetooth", "rfkill Wi-Fi probe completed after adapter became unavailable");
+      root.showBluetoothStateNotice();
+      root.airplaneModeToggled = false;
+      return;
+    }
+
+    const wifiBlocked = root.parseWifiBlockedOutput(output);
+    if (wifiBlocked === null) {
+      Logger.w("Bluetooth", "rfkill Wi-Fi probe returned malformed or empty output");
+      root.showBluetoothStateNotice();
+      root.airplaneModeToggled = false;
+      return;
+    }
+
+    Logger.d("Network", "Wi-Fi adapter was detected as blocked:", wifiBlocked);
+    if (wifiBlocked && wifiBlocked === root.blocked) {
+      root.airplaneModeToggled = true;
+      NetworkService.setWifiEnabled(false);
+      ToastService.showNotice(I18n.tr("toast.airplane-mode.title"), I18n.tr("toast.airplane-mode.enabled"), "plane");
+    } else if (!wifiBlocked && wifiBlocked === root.blocked) {
+      root.airplaneModeToggled = true;
+      NetworkService.setWifiEnabled(true);
+      ToastService.showNotice(I18n.tr("toast.airplane-mode.title"), I18n.tr("toast.airplane-mode.disabled"), "plane-off");
+    } else {
+      root.showBluetoothStateNotice();
+    }
+    root.airplaneModeToggled = false;
+  }
+
+  function handleWifiBlockedCheckStartFailure(exitObserved) {
+    if (!exitObserved)
+      root.finishWifiBlockedCheck(-1, "", "rfkill Wi-Fi probe failed to start");
+  }
+
   Process {
     id: checkWifiBlocked
     running: false
     command: ["rfkill", "list", "wifi"]
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        const wifiBlocked = text && text.trim().includes("Soft blocked: yes");
-        Logger.d("Network", "Wi-Fi adapter was detected as blocked:", blocked);
-
-        // Check if airplane mode has been toggled
-        if (wifiBlocked && wifiBlocked === root.blocked) {
-          root.airplaneModeToggled = true;
-          NetworkService.setWifiEnabled(false);
-          ToastService.showNotice(I18n.tr("toast.airplane-mode.title"), I18n.tr("toast.airplane-mode.enabled"), "plane");
-        } else if (!wifiBlocked && wifiBlocked === root.blocked) {
-          root.airplaneModeToggled = true;
-          NetworkService.setWifiEnabled(true);
-          ToastService.showNotice(I18n.tr("toast.airplane-mode.title"), I18n.tr("toast.airplane-mode.disabled"), "plane-off");
-        } else if (adapter.enabled) {
-          ToastService.showNotice(I18n.tr("bluetooth.panel.title"), I18n.tr("toast.bluetooth.enabled"), "bluetooth");
-          discoveryTimer.running = true;
-        } else {
-          ToastService.showNotice(I18n.tr("bluetooth.panel.title"), I18n.tr("toast.bluetooth.disabled"), "bluetooth-off");
-        }
-        root.airplaneModeToggled = false;
+      onStreamFinished: checkWifiBlocked.output = text
+    }
+    stderr: StdioCollector {
+      onStreamFinished: checkWifiBlocked.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      checkWifiBlocked.exitObserved = true;
+      const output = checkWifiBlocked.output;
+      const errorOutput = checkWifiBlocked.errorOutput;
+      checkWifiBlocked.output = "";
+      checkWifiBlocked.errorOutput = "";
+      root.finishWifiBlockedCheck(exitCode, output, errorOutput);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleWifiBlockedCheckStartFailure(checkWifiBlocked.exitObserved);
+        checkWifiBlocked.exitObserved = false;
       }
     }
   }
