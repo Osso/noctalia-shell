@@ -8,6 +8,7 @@ const path = require("path");
 const repoRoot = path.resolve(__dirname, "..");
 const metaTestFiles = new Set([
   "Tests/qml-function-inventory.test.js",
+  "Tests/qml-test-utils.test.js",
   "Tests/runner-completeness.test.js",
   "Tests/quickshell-regression.test.sh",
   "Tests/test-runner-categories.test.sh",

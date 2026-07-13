@@ -53,6 +53,8 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - `Tests/runner-completeness.test.js` - executable runner discovery and discovery-failure coverage.
 - `Tests/test-runner-categories.test.sh` - evidence-category mapping, ordering, fail-closed execution, and caller-errexit coverage.
 - `Tests/qml-function-inventory.test.js` - explicit QML function anchor inventory for high-risk source files.
+- `Tests/qml-test-utils.js` - shared comment-aware QML component and handler extraction used by structural UI contracts.
+- `Tests/qml-test-utils.test.js` - lexical-decoy and alternate-brace-format coverage for shared QML extraction.
 - `Tests/quickshell-regression.test.sh` - current-reload log filtering fixture.
 - `Bin/dev/quickshell-regression.sh` - live Quickshell log regression gate.
 - `Bin/dev/qml-static-check.sh` - focused qmllint gate.
@@ -63,6 +65,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 - `Tests/source-coverage.test.js`
 - `Tests/qml-function-inventory.test.js`
+- `Tests/qml-test-utils.test.js`
 - `Tests/quickshell-regression.test.sh`
 - `Tests/runner-completeness.test.js`
 - `Tests/service-probes-parsing.test.sh`

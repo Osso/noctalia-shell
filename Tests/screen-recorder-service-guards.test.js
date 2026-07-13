@@ -1,47 +1,13 @@
 #!/usr/bin/env node
 
 const assert = require("assert/strict");
-const { extractFunctionBody, readQml } = require("./qml-test-utils");
+const { extractFunctionBody, findComponentBlock, readQml } = require("./qml-test-utils");
 
 const source = readQml("Services/Media/ScreenRecorderService.qml");
 
 function qmlFunction(functionName, ...argNames) {
   const body = extractFunctionBody(source, functionName);
   return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
-}
-
-function qmlBlockById(qml, componentName, id) {
-  const marker = `${componentName} {`;
-  let start = qml.indexOf(marker);
-  while (start !== -1) {
-    const open = qml.indexOf("{", start);
-    let depth = 0;
-    let quote = "";
-    let blockEnded = false;
-    for (let index = open; index < qml.length; index++) {
-      const current = qml[index];
-      if (quote) {
-        if (current === "\\") index++;
-        else if (current === quote) quote = "";
-        continue;
-      }
-      if (current === '"' || current === "'" || current === "`") {
-        quote = current;
-        continue;
-      }
-      if (current === "{") depth++;
-      if (current === "}") depth--;
-      if (depth === 0) {
-        const block = qml.slice(start, index + 1);
-        if (block.includes(`id: ${id}`)) return block;
-        start = qml.indexOf(marker, index + 1);
-        blockEnded = true;
-        break;
-      }
-    }
-    assert.equal(blockEnded, true, `unterminated ${componentName} block`);
-  }
-  assert.fail(`missing ${componentName} block with id ${id}`);
 }
 
 function settings(overrides = {}) {
@@ -380,9 +346,9 @@ function testRecorderPendingAndMonitorTimerTransitions() {
   assert.equal(ended.monitorTimer.running, false);
 
   const qml = readQml("Services/Media/ScreenRecorderService.qml");
-  const recorder = qmlBlockById(qml, "Process", "recorderProcess");
-  const pending = qmlBlockById(qml, "Timer", "pendingTimer");
-  const monitor = qmlBlockById(qml, "Timer", "monitorTimer");
+  const recorder = findComponentBlock(qml, "Process", "id: recorderProcess");
+  const pending = findComponentBlock(qml, "Timer", "id: pendingTimer");
+  const monitor = findComponentBlock(qml, "Timer", "id: monitorTimer");
   assert.match(recorder, /onExited:[\s\S]*?root\.finishRecorderProcess\(exitCode/);
   assert.match(pending, /onTriggered:\s*root\.handlePendingTimer\(recorderProcess\.running\)/);
   assert.match(monitor, /onTriggered:\s*root\.handleMonitorTimer\(recorderProcess\.running\)/);

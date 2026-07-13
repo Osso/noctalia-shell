@@ -1,72 +1,17 @@
 #!/usr/bin/env node
 
 const assert = require("assert/strict");
-const { readQml } = require("./qml-test-utils");
+const {
+  extractComponentBlocks,
+  findComponentBlock,
+  readQml,
+  stripQmlComments,
+} = require("./qml-test-utils");
 
-function stripComments(qml) {
-  let result = "";
-  let quote = "";
-  for (let index = 0; index < qml.length; index++) {
-    const current = qml[index];
-    const next = qml[index + 1];
-    if (quote) {
-      result += current;
-      if (current === "\\") {
-        result += next || "";
-        index++;
-      } else if (current === quote) quote = "";
-    } else if (current === '"' || current === "'" || current === "`") {
-      quote = current;
-      result += current;
-    } else if (current === "/" && next === "/") {
-      while (index < qml.length && qml[index] !== "\n") index++;
-      result += "\n";
-    } else if (current === "/" && next === "*") {
-      index += 2;
-      while (index < qml.length - 1 && !(qml[index] === "*" && qml[index + 1] === "/")) index++;
-      index++;
-    } else result += current;
-  }
-  return result;
-}
-
-const source = stripComments(readQml("Modules/Panels/Settings/Tabs/ScreenRecorderTab.qml"));
-
-function blocks(componentName) {
-  const result = [];
-  const marker = `${componentName} {`;
-  let start = source.indexOf(marker);
-  while (start !== -1) {
-    const open = source.indexOf("{", start);
-    let depth = 0;
-    let quote = "";
-    let end = -1;
-    for (let index = open; index < source.length; index++) {
-      const current = source[index];
-      if (quote) {
-        if (current === "\\") index++;
-        else if (current === quote) quote = "";
-        continue;
-      }
-      if (current === '"' || current === "'" || current === "`") {
-        quote = current;
-        continue;
-      }
-      if (current === "{") depth++;
-      if (current === "}") depth--;
-      if (depth === 0) { end = index; break; }
-    }
-    assert.notEqual(end, -1, `unterminated ${componentName} block`);
-    result.push(source.slice(start, end + 1));
-    start = source.indexOf(marker, end + 1);
-  }
-  return result;
-}
+const source = stripQmlComments(readQml("Modules/Panels/Settings/Tabs/ScreenRecorderTab.qml"));
 
 function control(componentName, labelKey) {
-  const matches = blocks(componentName).filter(block => block.includes(labelKey));
-  assert.equal(matches.length, 1, `${labelKey} control must be unique`);
-  return matches[0];
+  return findComponentBlock(source, componentName, labelKey);
 }
 
 function modelKeys(combo) {
@@ -87,7 +32,7 @@ function testGeneralControlsWriteMatchingSettings() {
   const cursor = control("NToggle", "show-cursor.label");
   assert.match(cursor, /checked: Settings\.data\.screenRecorder\.showCursor/);
   assert.match(cursor, /onToggled: checked => Settings\.data\.screenRecorder\.showCursor = checked/);
-  const picker = blocks("NFilePicker")[0];
+  const picker = extractComponentBlocks(source, "NFilePicker")[0];
   assert.match(picker, /selectionMode: "folders"/);
   assert.match(picker, /Settings\.data\.screenRecorder\.directory = paths\[0\]/);
 }
