@@ -47,7 +47,7 @@ function testNetworkServiceIdlePollingGuards() {
   assert.doesNotMatch(completedBlock, /scan\(\)/, "NetworkService startup must not perform a background Wi-Fi scan");
   assert.match(completedBlock, /refreshNetworkStatus\(\)/, "NetworkService startup must do a cheap status refresh instead of scanning");
   assert.match(source, /onTriggered:\s*\{\s*if \(root\.activePolling\) \{\s*scan\(\);\s*\}\s*\}/, "Delayed scan timer must not rescan while idle");
-  assert.match(source, /Connectivity check error:[\s\S]*root\.networkConnectivity = "unknown"[\s\S]*root\.internetConnectivity = true/, "Connectivity check errors must default to connected instead of preserving stale offline state");
+  assert.match(source, /Connectivity check error:[\s\S]*root\.applyConnectivityResult\("unknown"\)/, "Connectivity check errors must use the explicit unknown transition");
 }
 
 function testWiFiPanelControlsActivePolling() {
@@ -556,6 +556,92 @@ function testNetworkActionStartFailureAndProcessRouting() {
   assert.match(source, /id:\s*disconnectProcess[\s\S]*?onExited:[\s\S]*?finishDisconnect[\s\S]*?onRunningChanged:[\s\S]*?handleDisconnectStartFailure/);
 }
 
+function createConnectivityContext() {
+  const scans = [];
+  const warnings = [];
+  const ctx = {
+    networkConnectivity: "full",
+    internetConnectivity: true,
+    activePolling: true,
+    cachedLastConnected: "Home",
+    connectivityCheckProcess: { failedChecks: 0, generation: 0 },
+    pingCheckProcess: { running: false, generation: 0 },
+    Logger: { i() {} },
+    I18n: { tr(key) { return key; } },
+    ToastService: { showWarning(...args) { warnings.push(args); } },
+    scan() { scans.push(true); },
+  };
+  ctx.root = ctx;
+  ctx.scans = scans;
+  ctx.warnings = warnings;
+  return ctx;
+}
+
+function testConnectivityTransitionsRejectStalePingResults() {
+  const applyConnectivityResult = qmlFunction("applyConnectivityResult", "result");
+  const finishPingCheck = qmlFunction("finishPingCheck", "generation", "exitCode");
+  const ctx = createConnectivityContext();
+
+  applyConnectivityResult(ctx, "none");
+  assert.equal(ctx.networkConnectivity, "none");
+  assert.equal(ctx.internetConnectivity, false);
+
+  applyConnectivityResult(ctx, "full");
+  assert.equal(ctx.networkConnectivity, "full");
+  assert.equal(ctx.internetConnectivity, true);
+
+  applyConnectivityResult(ctx, "limited");
+  applyConnectivityResult(ctx, "limited");
+  applyConnectivityResult(ctx, "limited");
+  assert.equal(ctx.networkConnectivity, "limited");
+  assert.equal(ctx.internetConnectivity, false);
+  assert.equal(ctx.pingCheckProcess.running, true);
+  const staleGeneration = ctx.pingCheckProcess.generation;
+  applyConnectivityResult(ctx, "limited");
+  assert.equal(ctx.connectivityCheckProcess.generation, staleGeneration, "equivalent degraded polls must not invalidate the active fallback");
+
+  ctx.pingCheckProcess.running = false;
+  applyConnectivityResult(ctx, "full");
+  finishPingCheck(ctx, staleGeneration, 0);
+  assert.equal(ctx.networkConnectivity, "full");
+  assert.equal(ctx.internetConnectivity, true, "late ping success must not overwrite a newer full result");
+}
+
+function testConnectivityFallbackAvoidsOverlapAndHandlesFailure() {
+  const applyConnectivityResult = qmlFunction("applyConnectivityResult", "result");
+  const finishPingCheck = qmlFunction("finishPingCheck", "generation", "exitCode");
+  const handlePingStartFailure = qmlFunction("handlePingStartFailure", "generation", "exitObserved");
+  const ctx = createConnectivityContext();
+  ctx.pingCheckProcess.running = true;
+
+  applyConnectivityResult(ctx, "portal");
+  applyConnectivityResult(ctx, "portal");
+  applyConnectivityResult(ctx, "portal");
+  assert.equal(ctx.pingCheckProcess.generation, 0, "active ping must not be replaced by an overlapping fallback");
+
+  ctx.pingCheckProcess.running = false;
+  applyConnectivityResult(ctx, "portal");
+  const generation = ctx.pingCheckProcess.generation;
+  finishPingCheck(ctx, generation, 1);
+  assert.equal(ctx.internetConnectivity, false);
+  assert.equal(ctx.connectivityCheckProcess.failedChecks, 0);
+  assert.equal(ctx.warnings.length, 1);
+  assert.equal(ctx.scans.length, 1);
+
+  const failedStart = createConnectivityContext();
+  failedStart.finishPingCheck = (...args) => finishPingCheck(failedStart, ...args);
+  failedStart.connectivityCheckProcess.generation = 4;
+  handlePingStartFailure(failedStart, 4, false);
+  assert.equal(failedStart.internetConnectivity, false);
+  assert.equal(failedStart.warnings.length, 1);
+
+  const exited = createConnectivityContext();
+  exited.finishPingCheck = (...args) => finishPingCheck(exited, ...args);
+  exited.connectivityCheckProcess.generation = 4;
+  handlePingStartFailure(exited, 4, true);
+  assert.equal(exited.warnings.length, 0, "normal exit must not be finalized twice");
+}
+
 function createForgetContext() {
   const saves = [];
   const restarts = [];
@@ -670,6 +756,8 @@ const tests = [
   testNetworkConnectCompletionUsesExitStatusAndIdentity,
   testNetworkDisconnectCompletionUsesExitStatusAndIdentity,
   testNetworkActionStartFailureAndProcessRouting,
+  testConnectivityTransitionsRejectStalePingResults,
+  testConnectivityFallbackAvoidsOverlapAndHandlesFailure,
   testNetworkForgetMutatesCacheOnlyAfterSuccessfulExit,
   testNetworkForgetFailurePreservesStateAndIdentity,
   testNetworkForgetStartFailureAndProcessRouting,

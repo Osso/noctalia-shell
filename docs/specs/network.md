@@ -50,6 +50,9 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 - [x] Passive device status clears stale connected Wi-Fi state when no Wi-Fi device is connected.
 - [x] Unknown or missing connectivity checks default connected Wi-Fi to the normal Wi-Fi icon instead of `world-off`.
 - [x] Connected offline networks show the `world-off` icon only after a known offline/captive connectivity result.
+- [x] `none` transitions immediately clear internet connectivity; `full` transitions restore it.
+- [x] Repeated limited/portal results launch at most one fallback ping, expose offline state while validation is pending, and ignore ping completion superseded by a newer connectivity result.
+- [x] Fallback ping failure remains offline, resets failure accumulation, reports the limitation, and scans only while active polling is retained.
 - [x] Signal strength maps strong, medium, weak, and very weak/missing signal to the expected Wi-Fi icons.
 - [x] Security helper rejects missing, placeholder, and blank security values.
 
@@ -73,8 +76,7 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable tests for connectivity check and ping fallback transitions.
-- [ ] Add executable nonzero-exit coverage for passive status commands; connect, disconnect, and forget exit/start failure paths are covered.
+- [ ] Add executable nonzero-exit coverage for passive status commands; connectivity transitions plus connect, disconnect, and forget exit/start failure paths are covered.
 - [ ] Add spec coverage for Wi-Fi panel connect/password/forget UI behavior.
 
 ## Out of scope

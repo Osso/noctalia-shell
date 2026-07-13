@@ -559,6 +559,74 @@ Singleton {
     }
   }
 
+  function applyConnectivityResult(result) {
+    if (!result) {
+      return;
+    }
+
+    if (result === "none") {
+      connectivityCheckProcess.generation++;
+      root.networkConnectivity = result;
+      root.internetConnectivity = false;
+      connectivityCheckProcess.failedChecks = 0;
+    } else if (result === "full") {
+      connectivityCheckProcess.generation++;
+      root.networkConnectivity = result;
+      root.internetConnectivity = true;
+      connectivityCheckProcess.failedChecks = 0;
+    } else if (result === "limited" || result === "portal") {
+      connectivityCheckProcess.failedChecks = Math.min(3, connectivityCheckProcess.failedChecks + 1);
+      if (connectivityCheckProcess.failedChecks < 3) {
+        return;
+      }
+
+      root.networkConnectivity = result;
+      root.internetConnectivity = false;
+      if (pingCheckProcess.running) {
+        return;
+      }
+
+      connectivityCheckProcess.generation++;
+      pingCheckProcess.generation = connectivityCheckProcess.generation;
+      pingCheckProcess.exitObserved = false;
+      pingCheckProcess.running = true;
+      return;
+    } else if (result === "unknown") {
+      connectivityCheckProcess.generation++;
+      root.networkConnectivity = result;
+      root.internetConnectivity = true;
+      connectivityCheckProcess.failedChecks = 0;
+    } else {
+      return;
+    }
+
+    if (root.activePolling) {
+      root.scan();
+    }
+  }
+
+  function finishPingCheck(generation, exitCode) {
+    if (generation !== connectivityCheckProcess.generation) {
+      return;
+    }
+
+    connectivityCheckProcess.failedChecks = 0;
+    root.internetConnectivity = exitCode === 0;
+    if (exitCode !== 0) {
+      Logger.i("Network", "No internet connectivity");
+      ToastService.showWarning(root.cachedLastConnected, I18n.tr("toast.internet.limited"));
+    }
+    if (root.activePolling) {
+      root.scan();
+    }
+  }
+
+  function handlePingStartFailure(generation, exitObserved) {
+    if (!exitObserved) {
+      finishPingCheck(generation, -1);
+    }
+  }
+
   // Process to check the internet connectivity of the connected network
   Process {
     id: connectivityCheckProcess
@@ -566,53 +634,17 @@ Singleton {
     command: ["nmcli", "networking", "connectivity", "check"]
 
     property int failedChecks: 0
+    property int generation: 0
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        const result = text.trim();
-        if (!result) {
-          return;
-        }
-
-        if (result === "none" && root.networkConnectivity !== result) {
-          root.networkConnectivity = result;
-          connectivityCheckProcess.failedChecks = 0;
-          if (root.activePolling) {
-            root.scan();
-          }
-        }
-
-        if (result === "full" && root.networkConnectivity !== result) {
-          root.networkConnectivity = result;
-          root.internetConnectivity = true;
-          connectivityCheckProcess.failedChecks = 0;
-          if (root.activePolling) {
-            root.scan();
-          }
-        }
-
-        if ((result === "limited" || result === "portal") && root.networkConnectivity !== result) {
-          connectivityCheckProcess.failedChecks++;
-          if (connectivityCheckProcess.failedChecks === 3) {
-            root.networkConnectivity = result;
-            pingCheckProcess.running = true;
-          }
-        }
-
-        if (result === "unknown" && root.networkConnectivity !== result) {
-          root.networkConnectivity = result;
-          connectivityCheckProcess.failedChecks = 0;
-        }
-      }
+      onStreamFinished: root.applyConnectivityResult(text.trim())
     }
 
     stderr: StdioCollector {
       onStreamFinished: {
         if (text.trim()) {
           Logger.w("Network", "Connectivity check error: " + text);
-          root.networkConnectivity = "unknown";
-          root.internetConnectivity = true;
-          connectivityCheckProcess.failedChecks = 0;
+          root.applyConnectivityResult("unknown");
         }
       }
     }
@@ -622,17 +654,17 @@ Singleton {
     id: pingCheckProcess
     command: ["sh", "-c", "ping -c1 -W2 ping.archlinux.org >/dev/null 2>&1 || " + "ping -c1 -W2 1.1.1.1 >/dev/null 2>&1 || " + "curl -fsI --max-time 5 https://cloudflare.com/cdn-cgi/trace >/dev/null 2>&1"]
 
-    onExited: (exitCode, exitStatus) => {
-      if (exitCode === 0) {
-        connectivityCheckProcess.failedChecks = 0;
-      } else {
-        root.internetConnectivity = false;
-        Logger.i("Network", "No internet connectivity");
-        ToastService.showWarning(root.cachedLastConnected, I18n.tr("toast.internet.limited"));
-        connectivityCheckProcess.failedChecks = 0;
-      }
-      if (root.activePolling) {
-        root.scan();
+    property int generation: 0
+    property bool exitObserved: false
+
+    onExited: function (exitCode) {
+      pingCheckProcess.exitObserved = true;
+      root.finishPingCheck(pingCheckProcess.generation, exitCode);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handlePingStartFailure(pingCheckProcess.generation, pingCheckProcess.exitObserved);
+        pingCheckProcess.exitObserved = false;
       }
     }
   }
