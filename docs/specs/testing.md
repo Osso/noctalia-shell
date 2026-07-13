@@ -1,4 +1,4 @@
-Testing covers local regression gates, function-coverage guardrails, and log filtering used to keep this fork maintainable against current Quickshell. Runtime source lives mainly in `run-tests.sh`, `Tests/source-coverage.test.js`, `Tests/qml-function-inventory.test.js`, and `Bin/dev/quickshell-regression.sh`; implementation notes belong in [docs/wiki/systems/testing.md](../wiki/systems/testing.md).
+Testing covers local regression gates, function-coverage guardrails, and log filtering used to keep this fork maintainable against current Quickshell. Runtime source lives mainly in `run-tests.sh`, `Tests/source-coverage.test.js`, `Tests/qml-function-inventory.test.js`, and `Bin/dev/quickshell-regression.sh`.
 
 ## What it must do
 
@@ -25,15 +25,18 @@ Testing covers local regression gates, function-coverage guardrails, and log fil
 
 ### Runner contract
 
-- [x] `./run-tests.sh unit` runs pure helper, source coverage, QML guard, service guard, parser, and quickshell log-filter tests.
-- [x] `./run-tests.sh qml` runs the focused QML static check.
+- [x] `./run-tests.sh all` (the default) and `./run-tests.sh regression` run the explicit deterministic unit list, structural QML static check, read-only service probes, and active Quickshell log gate; they do not run visible notification probes.
+- [x] `./run-tests.sh unit` runs the explicit deterministic test list: JavaScript unit, guard, and contract tests plus Python/Bash parser and log-filter fixtures, without host probes or visible notifications. It does not auto-discover every executable test file.
+- [x] `./run-tests.sh qml` runs the structural QML static check.
 - [x] `./run-tests.sh probes` runs read-only service probes and injects the deterministic Bluetooth CLI fixture rather than contacting host Bluetooth hardware.
 - [x] `./run-tests.sh log` runs the active Quickshell log regression gate.
-- [x] `./run-tests.sh notifications` is isolated from the default gates because it visibly sends notifications.
+- [x] `./run-tests.sh notifications` runs the visible notification probes and is isolated from the default gates.
+- [x] The runner keeps deterministic tests (`unit`), structural QML lint (`qml`), host/read-only probes (`probes`), active log checks (`log`), and visible notification probes (`notifications`) as separate command paths; `all` and `regression` compose only the first four.
+- [x] Runner and helper gates fail closed: `set -euo pipefail` stops composed commands on non-zero subcommands; commands with explicit dependency checks and unknown commands return status 2; failed or malformed probes, a missing local shell, and fatal current-reload log matches return status 1. Documented optional states are limited to unavailable/unsupported clipboard MIME data and an absent LG DDC monitor.
 
 ## How it works
 
-- [docs/wiki/systems/testing.md](../wiki/systems/testing.md)
+- Runtime behavior is implemented in `run-tests.sh` and the test/probe files listed below.
 
 ## Implementation inventory
 
@@ -56,6 +59,8 @@ Testing covers local regression gates, function-coverage guardrails, and log fil
 ## Known gaps (current cycle)
 
 - [ ] The registry fixture does not yet assert selection of the newest matching `shell.qml` instance when multiple local registrations exist.
+- [ ] Add the spec-mapped executable guard tests currently omitted from `run_unit_tests`: `Tests/audio-ui-guards.test.js`, `Tests/background-resource-guards.test.js`, `Tests/battery-service-guards.test.js`, `Tests/clock-widget-guards.test.js`, `Tests/control-center-panel-guards.test.js`, `Tests/control-center-widget-registry-guards.test.js`, `Tests/fan-widget-guards.test.js`, `Tests/image-widget-resource-guards.test.js`, `Tests/keyboard-layout-widget-guards.test.js`, `Tests/lock-keys-service-guards.test.js`, `Tests/main-screen-lazy-panels.test.js`, `Tests/runtime-warning-guards.test.js`, and `Tests/simple-toast-guards.test.js`.
+- [ ] Normalize missing direct command dependencies in `run-tests.sh unit` and `run-tests.sh notifications`; currently those paths can return shell status 127 instead of the documented status 2.
 
 ## Out of scope
 

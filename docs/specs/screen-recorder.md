@@ -1,4 +1,4 @@
-Screen recorder covers gpu-screen-recorder source discovery, start/stop state, portal preflight, command construction, and recording shutdown. Runtime source lives mainly in `Services/Media/ScreenRecorderService.qml`; implementation notes belong in [docs/wiki/systems/screen-recorder.md](../wiki/systems/screen-recorder.md).
+Screen recorder covers gpu-screen-recorder source discovery, start/stop state, portal preflight, command construction, and recording shutdown. Runtime source lives mainly in `Services/Media/ScreenRecorderService.qml`.
 
 ## What it must do
 
@@ -7,6 +7,11 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 - [x] Refreshing capture sources starts both `gpu-screen-recorder --list-capture-options` and `gpu-screen-recorder --list-monitors`.
 - [x] Capture-source parsing skips v4l2 devices, keeps monitor resolutions, maps region capture, and appends the portal picker.
 - [x] Monitor-list parsing inserts missing monitors before the portal picker, avoids duplicate monitor keys, and records the first monitor resolution.
+
+### Host probe
+
+- [x] The read-only screen-recorder probe requires `gpu-screen-recorder` and `pidof`, validates monitor and capture-option enumeration, and fails closed on missing or malformed output.
+- [x] The probe requires `xdg-desktop-portal` and at least one supported portal backend (`wlr`, `hyprland`, `gnome`, `kde`, or `gtk`).
 
 ### Toggle and start
 
@@ -36,7 +41,7 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 
 ## How it works
 
-- [docs/wiki/systems/screen-recorder.md](../wiki/systems/screen-recorder.md)
+- Runtime behavior is implemented in `Services/Media/ScreenRecorderService.qml` and covered by the tests listed below.
 
 ## Implementation inventory
 
@@ -45,17 +50,19 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 - `Modules/Panels/ControlCenter/Widgets/ScreenRecorder.qml` - control-center screen recorder toggle.
 - `Modules/Panels/Settings/Tabs/ScreenRecorderTab.qml` - screen recorder settings UI.
 - `Services/UI/ControlCenterWidgetRegistry.qml` - control-center widget registration.
+- `Bin/dev/service-probes.sh` - read-only monitor/source enumeration and portal availability probe.
 
 ## Tests asserting this spec
 
 - `Tests/screen-recorder-service-guards.test.js`
-- `Tests/qml-runtime-guards.test.js`
+- `Tests/service-probes-parsing.test.sh`
 
 ## Known gaps (current cycle)
 
 - [x] Add executable tests for capture-source and monitor-list parsing.
 - [ ] Add executable tests for recorder process exit handling and pending/monitor timer transitions.
 - [ ] Add spec coverage for settings UI source/codec/quality controls.
+- [ ] Add host-probe coverage for multi-monitor `--list-monitors` output; the current monitor predicate accepts only one `name|WxH` row.
 
 ## Out of scope
 

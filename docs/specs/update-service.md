@@ -1,4 +1,4 @@
-Update Service covers changelog initialization, upgrade-log fetching, release-note parsing, changelog popup scheduling, external links, and persisted changelog-seen state. Runtime source lives in `Services/Noctalia/UpdateService.qml`; implementation notes belong in [docs/wiki/systems/update-service.md](../wiki/systems/update-service.md).
+Update Service covers changelog initialization, upgrade-log fetching, release-note parsing, changelog popup scheduling, external links, and persisted changelog-seen state. Runtime source lives in `Services/Noctalia/UpdateService.qml`.
 
 ## What it must do
 
@@ -13,7 +13,7 @@ Update Service covers changelog initialization, upgrade-log fetching, release-no
 - [x] Changelog requests fetch the upgrade log, emit `popupQueued`, and clear pending request state.
 - [x] Upgrade-log fetching chooses a stable fallback source version.
 - [x] Upgrade-log fetching strips legacy `-dev` suffixes from source and target versions.
-- [x] Upgrade-log fetching resets inverted version ranges to the stable fallback source version.
+- [x] Upgrade-log fetching resets ranges when the normalized source string sorts at or after the normalized target string, using the stable fallback source version.
 - [x] Upgrade-log fetching builds the request URL from the normalized range and sends a GET request.
 
 ### Version and release-note parsing
@@ -55,7 +55,7 @@ Update Service covers changelog initialization, upgrade-log fetching, release-no
 
 ## How it works
 
-- [docs/wiki/systems/update-service.md](../wiki/systems/update-service.md)
+- Runtime behavior is implemented in `Services/Noctalia/UpdateService.qml` and covered by the tests listed below.
 
 ## Implementation inventory
 

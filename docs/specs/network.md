@@ -1,4 +1,4 @@
-Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection commands, cached known networks, connection status updates, and Wi-Fi icon/security helpers. Runtime source lives mainly in `Services/Networking/NetworkService.qml`; implementation notes belong in [docs/wiki/systems/network.md](../wiki/systems/network.md).
+Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection commands, cached known networks, connection status updates, and Wi-Fi icon/security helpers. Runtime source lives mainly in `Services/Networking/NetworkService.qml`.
 
 ## What it must do
 
@@ -13,6 +13,14 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 - [x] Wi-Fi panel opening starts active polling and Wi-Fi scanning through NetworkService.
 - [x] Wi-Fi panel closing releases active polling.
 - [x] Delayed scan timers do not rescan while idle.
+
+### Wi-Fi panel UI
+
+- [x] Panel separates connected, existing, and cached networks from unsaved available networks, sorting each group by signal strength with connected networks first.
+- [x] Disabled Wi-Fi shows an enable prompt; the panel distinguishes initial scanning from a confirmed empty result and supports manual refresh.
+- [x] Saved and open networks connect directly; secured unknown networks prompt for a password.
+- [x] Password entry supports submit, cancel, and Enter actions without retaining the typed password in persistent panel state.
+- [x] Connected networks expose disconnect; saved networks expose forget confirmation; active targets show busy state and suppress duplicate actions.
 
 ### Scanning
 
@@ -47,7 +55,7 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 
 ## How it works
 
-- [docs/wiki/systems/network.md](../wiki/systems/network.md)
+- Runtime behavior is implemented in `Services/Networking/NetworkService.qml` and covered by the tests listed below.
 
 ## Implementation inventory
 
@@ -55,17 +63,16 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 - `Modules/Panels/WiFi/WiFiPanel.qml` - Wi-Fi panel shell.
 - `Modules/Panels/WiFi/WiFiNetworksList.qml` - network list, connect/disconnect/forget UI.
 - `Modules/Panels/Settings/Tabs/NetworkTab.qml` - settings toggles for network features.
-- `Modules/Bar/Widgets/Network.qml` - bar network status widget.
+- `Modules/Bar/Widgets/WiFi.qml` - bar Wi-Fi/network status widget.
 
 ## Tests asserting this spec
 
 - `Tests/network-service-guards.test.js`
-- `Tests/qml-runtime-guards.test.js`
 
 ## Known gaps (current cycle)
 
 - [ ] Add executable tests for connectivity check and ping fallback transitions.
-- [ ] Add spec coverage for Wi-Fi panel connect/password/forget UI behavior.
+- [ ] Add executable tests for Wi-Fi panel connect/password/forget UI behavior.
 
 ## Out of scope
 

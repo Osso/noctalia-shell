@@ -24,7 +24,8 @@ Run the non-invasive local gate before committing:
 
 This runs:
 
-- Pure JavaScript helper regression tests.
+- Deterministic JavaScript, Python, and shell regression tests.
+- Structural QML checks for the currently lint-clean source set.
 - Read-only service probes for notifications, audio, brightness/DDC, clipboard MIME
   types, and wallpaper/color cache state.
 - Active Quickshell log checks for high-signal QML/runtime failures.

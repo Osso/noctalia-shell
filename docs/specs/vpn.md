@@ -1,4 +1,4 @@
-VPN covers NetworkManager VPN discovery, connection state, connect/disconnect commands, refresh scheduling, and VPN panel/widget entry points. Runtime source lives mainly in `Services/Networking/VPNService.qml` and `Modules/Panels/VPN/`; implementation notes belong in [docs/wiki/systems/vpn.md](../wiki/systems/vpn.md).
+VPN covers NetworkManager VPN discovery, connection state, connect/disconnect commands, refresh scheduling, and VPN panel/widget entry points. Runtime source lives mainly in `Services/Networking/VPNService.qml` and `Modules/Panels/VPN/`.
 
 ## What it must do
 
@@ -18,10 +18,10 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 ### Connect and disconnect
 
 - [x] Connect rejects empty UUIDs and missing connections.
-- [x] Connect starts only when no connection process is already running.
+- [ ] Connect starts only when no connection process is already running.
 - [x] Connect records connecting state, target UUID, clears the last error, stores the target connection name, and starts the connect process.
 - [x] Disconnect rejects empty UUIDs and missing connections.
-- [x] Disconnect starts only when no disconnect process is already running.
+- [ ] Disconnect starts only when no disconnect process is already running.
 - [x] Disconnect records disconnecting state, target UUID, clears the last error, stores the target connection name, and starts the disconnect process.
 - [x] Toggle ignores missing connections.
 - [x] Toggle disconnects active connections.
@@ -48,7 +48,7 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 
 ## How it works
 
-- [docs/wiki/systems/vpn.md](../wiki/systems/vpn.md)
+- Runtime behavior is implemented in `Services/Networking/VPNService.qml` and the VPN panel/widget entry points.
 
 ## Implementation inventory
 
@@ -69,6 +69,7 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 
 ## Known gaps (current cycle)
 
+- [ ] Guard connect/disconnect actions with their Process `running` state; current guards check only `connecting` / `disconnecting` service flags.
 - [ ] Add executable coverage for connect/disconnect process exit and toast handling.
 - [ ] Add executable coverage for VPN panel rendered active/available sections.
 - [ ] Add executable coverage for bar and Control Center VPN entry-point interactions.
