@@ -556,6 +556,54 @@ function testNetworkActionStartFailureAndProcessRouting() {
   assert.match(source, /id:\s*disconnectProcess[\s\S]*?onExited:[\s\S]*?finishDisconnect[\s\S]*?onRunningChanged:[\s\S]*?handleDisconnectStartFailure/);
 }
 
+function testPassiveStatusCompletionUsesExitAuthority() {
+  const finishEthernetState = qmlFunction("finishEthernetState", "exitCode", "output", "errorOutput");
+  const finishWifiState = qmlFunction("finishWifiState", "exitCode", "output", "errorOutput");
+  const ethernetOutputs = [];
+  const ctx = {
+    ethernetConnected: true,
+    Settings: { data: { network: { wifiEnabled: true } } },
+    Logger: { d() {}, w() {} },
+    applyDeviceStateOutput(text) { ethernetOutputs.push(text); },
+  };
+  ctx.root = ctx;
+
+  finishEthernetState(ctx, 10, "", "nmcli failed");
+  assert.deepEqual(ethernetOutputs, [], "failed Ethernet status must preserve prior state");
+  assert.equal(ctx.ethernetConnected, true);
+  finishEthernetState(ctx, 0, "eth0:ethernet:connected:Wired", "");
+  assert.deepEqual(ethernetOutputs, ["eth0:ethernet:connected:Wired"]);
+
+  finishWifiState(ctx, 10, "", "nmcli failed");
+  assert.equal(ctx.Settings.data.network.wifiEnabled, true, "failed Wi-Fi status must preserve the setting");
+  finishWifiState(ctx, 0, "disabled\n", "");
+  assert.equal(ctx.Settings.data.network.wifiEnabled, false);
+}
+
+function testPassiveStatusProcessesRouteExitAndStartFailure() {
+  const source = readQml("Services/Networking/NetworkService.qml");
+  const finishEthernetState = qmlFunction("finishEthernetState", "exitCode", "output", "errorOutput");
+  const finishWifiState = qmlFunction("finishWifiState", "exitCode", "output", "errorOutput");
+  const handleEthernetStateStartFailure = qmlFunction("handleEthernetStateStartFailure", "exitObserved");
+  const handleWifiStateStartFailure = qmlFunction("handleWifiStateStartFailure", "exitObserved");
+  const ctx = {
+    Settings: { data: { network: { wifiEnabled: true } } },
+    Logger: { d() {}, w() {} },
+    applyDeviceStateOutput() { throw new Error("failed start must not mutate Ethernet state"); },
+  };
+  ctx.root = ctx;
+  ctx.finishEthernetState = (...args) => finishEthernetState(ctx, ...args);
+  ctx.finishWifiState = (...args) => finishWifiState(ctx, ...args);
+
+  handleEthernetStateStartFailure(ctx, false);
+  handleWifiStateStartFailure(ctx, false);
+  assert.equal(ctx.Settings.data.network.wifiEnabled, true);
+  handleEthernetStateStartFailure(ctx, true);
+  handleWifiStateStartFailure(ctx, true);
+  assert.match(source, /id:\s*ethernetStateProcess[\s\S]*?onExited:[\s\S]*?finishEthernetState[\s\S]*?onRunningChanged:[\s\S]*?handleEthernetStateStartFailure/);
+  assert.match(source, /id:\s*wifiStateProcess[\s\S]*?onExited:[\s\S]*?finishWifiState[\s\S]*?onRunningChanged:[\s\S]*?handleWifiStateStartFailure/);
+}
+
 function createConnectivityContext() {
   const scans = [];
   const warnings = [];
@@ -756,6 +804,8 @@ const tests = [
   testNetworkConnectCompletionUsesExitStatusAndIdentity,
   testNetworkDisconnectCompletionUsesExitStatusAndIdentity,
   testNetworkActionStartFailureAndProcessRouting,
+  testPassiveStatusCompletionUsesExitAuthority,
+  testPassiveStatusProcessesRouteExitAndStartFailure,
   testConnectivityTransitionsRejectStalePingResults,
   testConnectivityFallbackAvoidsOverlapAndHandlesFailure,
   testNetworkForgetMutatesCacheOnlyAfterSuccessfulExit,

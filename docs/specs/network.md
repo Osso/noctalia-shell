@@ -48,6 +48,7 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 - [x] Status updates force a `networks` property-change notification.
 - [x] Passive device status synthesizes connected Wi-Fi networks from `nmcli device` output so bar icons do not require a background scan.
 - [x] Passive device status clears stale connected Wi-Fi state when no Wi-Fi device is connected.
+- [x] Ethernet and Wi-Fi radio status mutate state only after successful process exit; nonzero and failed-start checks preserve the last known state and log a concrete diagnostic.
 - [x] Unknown or missing connectivity checks default connected Wi-Fi to the normal Wi-Fi icon instead of `world-off`.
 - [x] Connected offline networks show the `world-off` icon only after a known offline/captive connectivity result.
 - [x] `none` transitions immediately clear internet connectivity; `full` transitions restore it.
@@ -76,7 +77,6 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable nonzero-exit coverage for passive status commands; connectivity transitions plus connect, disconnect, and forget exit/start failure paths are covered.
 - [ ] Add spec coverage for Wi-Fi panel connect/password/forget UI behavior.
 
 ## Out of scope

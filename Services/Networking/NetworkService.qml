@@ -507,14 +507,66 @@ Singleton {
     };
   }
 
+  function finishEthernetState(exitCode, output, errorOutput) {
+    if (exitCode !== 0) {
+      Logger.w("Network", errorOutput.trim() || output.trim() || `nmcli device status failed with exit ${exitCode}`);
+      return;
+    }
+    root.applyDeviceStateOutput(output);
+  }
+
+  function handleEthernetStateStartFailure(exitObserved) {
+    if (!exitObserved) {
+      root.finishEthernetState(-1, "", "nmcli device status failed to start");
+    }
+  }
+
+  function finishWifiState(exitCode, output, errorOutput) {
+    if (exitCode !== 0) {
+      Logger.w("Network", errorOutput.trim() || output.trim() || `nmcli Wi-Fi status failed with exit ${exitCode}`);
+      return;
+    }
+
+    const enabled = output.trim() === "enabled";
+    Logger.d("Network", "Wi-Fi adapter detected as enabled:", enabled);
+    if (Settings.data.network.wifiEnabled !== enabled) {
+      Settings.data.network.wifiEnabled = enabled;
+    }
+  }
+
+  function handleWifiStateStartFailure(exitObserved) {
+    if (!exitObserved) {
+      root.finishWifiState(-1, "", "nmcli Wi-Fi status failed to start");
+    }
+  }
+
   // Processes
   Process {
     id: ethernetStateProcess
     running: false
     command: ["nmcli", "-t", "-f", "DEVICE,TYPE,STATE,CONNECTION", "device"]
 
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
+
     stdout: StdioCollector {
-      onStreamFinished: applyDeviceStateOutput(text)
+      onStreamFinished: ethernetStateProcess.output = text
+    }
+    stderr: StdioCollector {
+      onStreamFinished: ethernetStateProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      ethernetStateProcess.exitObserved = true;
+      root.finishEthernetState(exitCode, ethernetStateProcess.output, ethernetStateProcess.errorOutput);
+      ethernetStateProcess.output = "";
+      ethernetStateProcess.errorOutput = "";
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleEthernetStateStartFailure(ethernetStateProcess.exitObserved);
+        ethernetStateProcess.exitObserved = false;
+      }
     }
   }
 
@@ -525,13 +577,26 @@ Singleton {
     running: false
     command: ["nmcli", "radio", "wifi"]
 
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
+
     stdout: StdioCollector {
-      onStreamFinished: {
-        const enabled = text.trim() === "enabled";
-        Logger.d("Network", "Wi-Fi adapter was detect as enabled:", enabled);
-        if (Settings.data.network.wifiEnabled !== enabled) {
-          Settings.data.network.wifiEnabled = enabled;
-        }
+      onStreamFinished: wifiStateProcess.output = text
+    }
+    stderr: StdioCollector {
+      onStreamFinished: wifiStateProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      wifiStateProcess.exitObserved = true;
+      root.finishWifiState(exitCode, wifiStateProcess.output, wifiStateProcess.errorOutput);
+      wifiStateProcess.output = "";
+      wifiStateProcess.errorOutput = "";
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleWifiStateStartFailure(wifiStateProcess.exitObserved);
+        wifiStateProcess.exitObserved = false;
       }
     }
   }
