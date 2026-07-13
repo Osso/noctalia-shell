@@ -76,8 +76,7 @@ Update Service covers changelog initialization, upgrade-log fetching, release-no
 
 ## Known gaps (current cycle)
 
-- [ ] Add fake PanelService coverage for delayed changelog panel opening.
-- [ ] Add fake ShellState load-failure coverage; successful round trips and save-failure dirty-state preservation are executable.
+None.
 
 ## Out of scope
 

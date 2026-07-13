@@ -118,11 +118,95 @@ function testStaleUpgradeLogCompletionCannotOverwriteNewerResponse() {
   assert.equal(ctx.opened, 1, "stale completion must not reopen or overwrite popup state");
 }
 
+function testChangelogPanelWaitsForScreenAndRegistration() {
+  const openWhenReady = qmlFunction("openWhenReady");
+  const later = [];
+  let panelLookups = 0;
+  const ctx = {
+    popupScheduled: true,
+    changelogCurrentVersion: "v5.0.0",
+    lastShownVersion: "",
+    Quickshell: { screens: [] },
+    PanelService: { getPanel() { panelLookups += 1; return null; } },
+    Qt: { callLater(callback) { later.push(callback); } },
+  };
+  ctx.root = ctx;
+  ctx.openWhenReady = () => openWhenReady(ctx);
+
+  openWhenReady(ctx);
+  assert.equal(later.length, 1);
+  assert.equal(panelLookups, 0, "panel lookup must wait until a screen exists");
+  assert.equal(ctx.popupScheduled, true);
+
+  ctx.Quickshell.screens = [{ name: "screen" }];
+  later.shift()();
+  assert.equal(panelLookups, 1);
+  assert.equal(later.length, 1, "missing panel must schedule another attempt");
+  assert.equal(ctx.popupScheduled, true);
+
+  let opened = 0;
+  ctx.PanelService.getPanel = (name, screen) => {
+    assert.equal(name, "changelogPanel");
+    assert.equal(screen, ctx.Quickshell.screens[0]);
+    return { open() { opened += 1; } };
+  };
+  later.shift()();
+  assert.equal(opened, 1);
+  assert.equal(ctx.popupScheduled, false);
+  assert.equal(ctx.lastShownVersion, "v5.0.0");
+}
+
+function testChangelogStateLoadFailureStillReplaysDeferredShow() {
+  const loadChangelogState = qmlFunction("loadChangelogState");
+  const later = [];
+  let shown = 0;
+  let reads = 0;
+  let loggedErrors = 0;
+  const ctx = {
+    changelogLastSeenVersion: "existing",
+    changelogStateLoaded: false,
+    pendingShowRequest: true,
+    ShellState: { getChangelogState() { reads += 1; throw new Error("read failed"); } },
+    Logger: { d() {}, e() { loggedErrors += 1; } },
+    Qt: { callLater(callback) { later.push(callback); } },
+    showLatestChangelog() { shown += 1; },
+  };
+  ctx.root = ctx;
+
+  loadChangelogState(ctx);
+  assert.equal(reads, 1);
+  assert.equal(loggedErrors, 1);
+  assert.equal(ctx.changelogLastSeenVersion, "existing", "load failure must preserve the in-memory value");
+  assert.equal(ctx.changelogStateLoaded, true);
+  assert.equal(ctx.pendingShowRequest, false);
+  assert.equal(later.length, 1);
+  later.shift()();
+  assert.equal(shown, 1);
+
+  const noPendingLater = [];
+  let unexpectedShows = 0;
+  const noPending = {
+    changelogLastSeenVersion: "",
+    changelogStateLoaded: false,
+    pendingShowRequest: false,
+    ShellState: { getChangelogState() { return { lastSeenVersion: "v5.0.0" }; } },
+    Logger: { d() {}, e() {} },
+    Qt: { callLater(callback) { noPendingLater.push(callback); } },
+    showLatestChangelog() { unexpectedShows += 1; },
+  };
+  noPending.root = noPending;
+  loadChangelogState(noPending);
+  assert.equal(noPendingLater.length, 0, "load without a deferred request must not schedule replay");
+  assert.equal(unexpectedShows, 0);
+}
+
 for (const test of [
   testSuccessfulUpgradeLogResponsePublishesPlainTextEntries,
   testUpgradeLogHttpAndTransportFailuresFailClosed,
   testUpgradeLogBodiesRemainPlainText,
   testStaleUpgradeLogCompletionCannotOverwriteNewerResponse,
+  testChangelogPanelWaitsForScreenAndRegistration,
+  testChangelogStateLoadFailureStillReplaysDeferredShow,
 ]) {
   test();
   console.log(`ok ${test.name}`);
