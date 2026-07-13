@@ -57,9 +57,12 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 - [x] Signal strength maps strong, medium, weak, and very weak/missing signal to the expected Wi-Fi icons.
 - [x] Security helper rejects missing, placeholder, and blank security values.
 
-## How it works
+### Wi-Fi panel actions
 
-- [docs/wiki/systems/network.md](../wiki/systems/network.md)
+- [x] Saved and open networks connect directly; unsecured unsaved networks do not request credentials.
+- [x] Secured unsaved networks open password entry, protect typed text, reject empty/overlapping submissions, and clear the editor whenever it hides, submits, or cancels.
+- [x] Forget is offered only for saved disconnected networks and requires explicit confirmation before calling the service.
+- [x] Known and available network lists route password and forget state through the panel consistently.
 
 ## Implementation inventory
 
@@ -73,11 +76,7 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 
 - `Tests/network-forget-profiles.test.sh`
 - `Tests/network-service-guards.test.js`
-- `Tests/qml-runtime-guards.test.js`
-
-## Known gaps (current cycle)
-
-- [ ] Add spec coverage for Wi-Fi panel connect/password/forget UI behavior.
+- `Tests/wifi-panel-ui-guards.test.js`
 
 ## Out of scope
 

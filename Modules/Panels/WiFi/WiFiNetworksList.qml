@@ -61,6 +61,16 @@ NBox {
         readonly property bool networkBusy: connectingToNetwork || disconnectingFromNetwork || forgettingNetwork
         readonly property bool savedNetwork: networkExisting || networkCached
 
+        function submitPassword(password) {
+          pwdInput.text = "";
+          root.passwordSubmitted(networkSsid, password);
+        }
+
+        function cancelPassword() {
+          pwdInput.text = "";
+          root.passwordCancelled();
+        }
+
         Layout.fillWidth: true
         Layout.leftMargin: Style.marginXS
         Layout.rightMargin: Style.marginXS
@@ -294,13 +304,15 @@ NBox {
                   selectByMouse: true
                   focus: visible
                   passwordCharacter: "●"
-                  onVisibleChanged: if (visible) {
-                                      text = "";
-                                      forceActiveFocus();
-                                    }
+                  onVisibleChanged: {
+                    text = "";
+                    if (visible) {
+                      forceActiveFocus();
+                    }
+                  }
                   onAccepted: {
                     if (text && !NetworkService.connecting) {
-                      root.passwordSubmitted(networkSsid, text);
+                      networkItem.submitPassword(text);
                     }
                   }
 
@@ -319,13 +331,13 @@ NBox {
                 fontSize: Style.fontSizeXXS
                 enabled: pwdInput.text.length > 0 && !NetworkService.connecting
                 outlined: true
-                onClicked: root.passwordSubmitted(networkSsid, pwdInput.text)
+                onClicked: networkItem.submitPassword(pwdInput.text)
               }
 
               NIconButton {
                 icon: "close"
                 baseSize: Style.baseWidgetSize * 0.8
-                onClicked: root.passwordCancelled()
+                onClicked: networkItem.cancelPassword()
               }
             }
           }
