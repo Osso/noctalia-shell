@@ -23,7 +23,7 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 ### Command construction
 
 - [x] Launching builds an output path from the configured directory and formatted timestamp.
-- [x] Launching starts the pending timer and runs the recorder through a monitored shell command.
+- [x] Launching disarms any force-kill timer left by a previous stop, starts the pending timer, and runs the recorder through a monitored shell command.
 - [x] Focused capture includes the primary monitor resolution as a `-s` size flag when available.
 - [x] The combined audio source emits `-a "default_output|default_input"`.
 - [x] System-output and microphone-only audio sources are passed directly.

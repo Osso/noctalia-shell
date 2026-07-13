@@ -48,6 +48,7 @@ function launchRecorderContext(overrides = {}) {
       },
     },
     pendingTimer: { running: false },
+    killTimer: { running: true },
   };
 
   return { ctx, execs };
@@ -218,6 +219,7 @@ function testScreenRecorderLaunchRecorderBuildsCommandAndStartsPendingTimer() {
 
   assert.equal(ctx.outputPath, "/home/alessio/Videos/2026-06-16_120000.mp4");
   assert.equal(ctx.pendingTimer.running, true);
+  assert.equal(ctx.killTimer.running, false, "launch must disarm a force-kill left by the previous recording");
   assert.deepEqual(execs[0].command.slice(0, 2), ["sh", "-c"]);
   assert.match(command, /gpu-screen-recorder/);
   assert.match(command, /-w focused -s 3440x1440 -f 60/);

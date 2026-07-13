@@ -178,6 +178,7 @@ Singleton {
   }
 
   function launchRecorder() {
+    killTimer.running = false;
     var filename = Time.getFormattedTimestamp() + ".mp4";
     var videoDir = Settings.preprocessPath(settings.directory);
     if (videoDir && !videoDir.endsWith("/")) {
