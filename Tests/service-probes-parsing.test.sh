@@ -715,6 +715,21 @@ if has_ipc_toggle_handler $'target launcher\n  notfunction toggle(): void'; then
 fi
 
 canonical_repo="/syncthing/Sync/Projects/apps/noctalia-shell"
+assert_equal "$canonical_shell_root" "$canonical_repo" "host probes must target the supported canonical shell path"
+if (canonical_shell_root="/tmp/redirected-shell") 2>/dev/null; then
+    echo "canonical shell root must be immutable" >&2
+    exit 1
+fi
+launch_probe_body="$(declare -f probe_launch_contract)"
+ipc_probe_body="$(declare -f probe_ipc_targets)"
+if [[ "$launch_probe_body" != *'"$canonical_shell_root"'* || "$launch_probe_body" == *'"$repo_root"'* ]]; then
+    echo "launch contract probe must use only canonical_shell_root for canonical runtime paths" >&2
+    exit 1
+fi
+if [[ "$ipc_probe_body" != *'"$canonical_shell_root"'* || "$ipc_probe_body" == *'"$repo_root"'* ]]; then
+    echo "IPC target probe must use only canonical_shell_root for canonical runtime paths" >&2
+    exit 1
+fi
 start_wrapper_fixture=$'#!/usr/bin/env bash\nexec quickshell -p /syncthing/Sync/Projects/apps/noctalia-shell "$@"'
 niri_config_fixture=$'spawn-at-startup "/home/osso/bin/start-quickshell"\nbinds {\n    Mod+Space { spawn "quickshell" "ipc" "-p" "/syncthing/Sync/Projects/apps/noctalia-shell" "call" "launcher" "toggle"; }\n    Mod+Shift+S { spawn "quickshell" "ipc" "-p" "/syncthing/Sync/Projects/apps/noctalia-shell" "call" "settings" "toggle"; }\n}'
 

@@ -3,6 +3,15 @@ set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$repo_root/Bin/dev/quickshell-regression.sh"
+canonical_repo="/syncthing/Sync/Projects/apps/noctalia-shell"
+if [ "$canonical_shell_root" != "$canonical_repo" ]; then
+    echo "live-log gate must target the supported canonical shell path" >&2
+    exit 1
+fi
+if (canonical_shell_root="/tmp/redirected-shell") 2>/dev/null; then
+    echo "canonical live-log root must be immutable" >&2
+    exit 1
+fi
 
 sample_log='WARN scene: @Old.qml[1:-1]: TypeError: Cannot read property '\''name'\'' of null
 INFO: Reloading configuration...
@@ -70,7 +79,7 @@ if ! printf '%s\n' "$no_shell_output" | rg -q "No active local Noctalia shell in
     exit 1
 fi
 
-if ! printf '%s\n' "$no_shell_output" | rg -q "quickshell -p $repo_root"; then
+if ! printf '%s\n' "$no_shell_output" | rg -q "quickshell -p $canonical_repo"; then
     echo "main did not report expected launch command" >&2
     exit 1
 fi
@@ -81,7 +90,7 @@ if [ "\${1:-}" = "list" ]; then
     cat <<'JSON'
 [
   {
-    "config_path": "$repo_root/shell.qml",
+    "config_path": "$canonical_repo/shell.qml",
     "id": "fixture-instance-old",
     "launch_time": "2026-07-10T00:00:00",
     "pid": 4242,
@@ -95,7 +104,7 @@ if [ "\${1:-}" = "list" ]; then
     "shell_id": "fixture-shell-unrelated"
   },
   {
-    "config_path": "$repo_root/shell.qml",
+    "config_path": "$canonical_repo/shell.qml",
     "id": "fixture-instance-new",
     "launch_time": "2026-07-10T00:05:00",
     "pid": 4343,

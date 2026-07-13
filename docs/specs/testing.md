@@ -28,7 +28,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - [x] Current-reload log filtering must keep log lines from the current reload window.
 - [x] Fatal-pattern fixture coverage must match high-signal QML load/runtime failures and avoid normal informational log lines.
 - [x] The live Quickshell log gate must fail when the current reload window contains high-signal QML load/runtime failures.
-- [x] The live Quickshell log gate must identify the local shell from Quickshell's running-instance registry by matching this repository's `shell.qml`, without relying on the process command line.
+- [x] The live Quickshell log gate must identify the canonical runtime shell from Quickshell's running-instance registry by matching `/syncthing/Sync/Projects/apps/noctalia-shell/shell.qml`, independent of the checkout or worktree running the gate and without relying on the process command line.
 - [x] The live Quickshell log gate must report a clear no-shell diagnostic when no local shell is running.
 
 ### Runner contract
@@ -36,7 +36,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - [x] `./run-tests.sh unit` discovers every `Tests/*.test.js` suite, runs behavior suites under `deterministic-unit`, then runs source inventory/coverage meta-tests under `structural-reference`.
 - [x] Adding a JavaScript test suite requires no manual runner-list update; the deterministic runner-completeness test proves discovery and discovery-failure handling.
 - [x] `./run-tests.sh qml` runs the focused QML static check.
-- [x] `./run-tests.sh probes` runs read-only service probes and injects the deterministic Bluetooth CLI fixture rather than contacting host Bluetooth hardware.
+- [x] `./run-tests.sh probes` runs read-only service probes, injects the deterministic Bluetooth CLI fixture rather than contacting host Bluetooth hardware, and validates launch/IPC contracts against the canonical runtime shell path rather than the invoking worktree.
 - [x] `./run-tests.sh log` runs the active Quickshell log regression gate.
 - [x] `./run-tests.sh notifications` is isolated from the default gates because it visibly sends notifications.
 - [x] `all` and `regression` report visible notifications as explicitly excluded before running deterministic unit, structural reference, QML static, host probes, and live logs.

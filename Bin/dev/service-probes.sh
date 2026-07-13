@@ -3,6 +3,7 @@ set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd -- "$script_dir/../.." && pwd)"
+readonly canonical_shell_root="/syncthing/Sync/Projects/apps/noctalia-shell"
 
 require_command() {
     local name="$1"
@@ -1181,8 +1182,8 @@ probe_launch_contract() {
     niri_config_source="$(cat "$niri_config")"
     launch_sources="$start_wrapper_source"$'\n'"$niri_config_source"
 
-    if ! has_quickshell_launch_path "$start_wrapper_source" "$repo_root"; then
-        echo "Noctalia start wrapper does not launch the canonical repo path: $repo_root" >&2
+    if ! has_quickshell_launch_path "$start_wrapper_source" "$canonical_shell_root"; then
+        echo "Noctalia start wrapper does not launch the canonical repo path: $canonical_shell_root" >&2
         exit 1
     fi
 
@@ -1191,18 +1192,18 @@ probe_launch_contract() {
         exit 1
     fi
 
-    if ! has_quickshell_ipc_call "$niri_config_source" "$repo_root" "launcher" "toggle"; then
-        echo "Niri launcher keybind does not target the canonical Noctalia path: $repo_root" >&2
+    if ! has_quickshell_ipc_call "$niri_config_source" "$canonical_shell_root" "launcher" "toggle"; then
+        echo "Niri launcher keybind does not target the canonical Noctalia path: $canonical_shell_root" >&2
         exit 1
     fi
 
-    if ! has_quickshell_ipc_call "$niri_config_source" "$repo_root" "sessionMenu" "toggle"; then
-        echo "Niri session menu keybind does not target the canonical Noctalia path: $repo_root" >&2
+    if ! has_quickshell_ipc_call "$niri_config_source" "$canonical_shell_root" "sessionMenu" "toggle"; then
+        echo "Niri session menu keybind does not target the canonical Noctalia path: $canonical_shell_root" >&2
         exit 1
     fi
 
-    if ! has_quickshell_ipc_call "$niri_config_source" "$repo_root" "settings" "toggle"; then
-        echo "Niri settings keybind does not target the canonical Noctalia path: $repo_root" >&2
+    if ! has_quickshell_ipc_call "$niri_config_source" "$canonical_shell_root" "settings" "toggle"; then
+        echo "Niri settings keybind does not target the canonical Noctalia path: $canonical_shell_root" >&2
         exit 1
     fi
 
@@ -1224,7 +1225,7 @@ probe_ipc_targets() {
 
     local niri_config="/home/osso/.config/niri/config.kdl"
     local ipc_output required_targets
-    ipc_output="$(quickshell ipc -p "$repo_root" show)"
+    ipc_output="$(quickshell ipc -p "$canonical_shell_root" show)"
     required_targets=(
         launcher
         sessionMenu
@@ -1236,7 +1237,7 @@ probe_ipc_targets() {
     )
 
     if [[ -z "$ipc_output" ]]; then
-        echo "Quickshell IPC target list is empty for: $repo_root" >&2
+        echo "Quickshell IPC target list is empty for: $canonical_shell_root" >&2
         exit 1
     fi
 
