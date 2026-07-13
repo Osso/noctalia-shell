@@ -69,12 +69,13 @@ function testNetworkServiceScanAndConnectionGuards() {
   assert.match(scanBody, /if \(scanning\)[\s\S]*ignoreScanResults = true[\s\S]*scanPending = true[\s\S]*return;/, "scan must queue a rescan instead of racing active scans");
   assert.match(scanBody, /scanning = true[\s\S]*lastError = ""[\s\S]*ignoreScanResults = false/, "scan must reset scan state before launching");
   assert.match(scanBody, /profileCheckProcess\.running = true/, "scan must refresh known profiles before scanning networks");
-  assert.match(connectBody, /if \(connecting\)\s+return;/, "connect must ignore duplicate connection requests");
+  assert.match(connectBody, /if \(!ssid \|\| connecting \|\| connectProcess\.running\)\s+return;/, "connect must reject empty and overlapping connection requests");
   assert.match(connectBody, /connecting = true[\s\S]*connectingTo = ssid[\s\S]*lastError = ""/, "connect must set busy state and clear stale errors");
   assert.match(connectBody, /\(networks\[ssid\] && networks\[ssid\]\.existing\) \|\| cachedNetworks\[ssid\]/, "connect must reuse existing or cached profiles");
   assert.match(connectBody, /connectProcess\.mode = "saved"[\s\S]*connectProcess\.password = ""/, "connect must avoid passwords for saved profiles");
   assert.match(connectBody, /connectProcess\.mode = "new"[\s\S]*connectProcess\.password = password/, "connect must pass passwords for new profiles");
   assert.match(connectBody, /connectProcess\.running = true/, "connect must launch the connection process");
+  assert.match(disconnectBody, /if \(!ssid \|\| disconnectingFrom \|\| disconnectProcess\.running\)\s+return;/, "disconnect must reject empty and overlapping requests");
   assert.match(disconnectBody, /disconnectingFrom = ssid[\s\S]*disconnectProcess\.ssid = ssid[\s\S]*disconnectProcess\.running = true/, "disconnect must track and launch the target disconnect");
 }
 
@@ -235,8 +236,8 @@ function testNetworkServiceConnectionStatusAndIconsExecute() {
       knownNetworks: { Home: true, Office: true },
       lastConnected: "Home",
     },
-    connectProcess: {},
-    disconnectProcess: {},
+    connectProcess: { generation: 0, running: false },
+    disconnectProcess: { generation: 0, running: false },
     forgetProcess: {},
     saveCache() {
       saveCalls.push({ ...this.cacheAdapter.knownNetworks, lastConnected: this.cacheAdapter.lastConnected });
@@ -259,6 +260,7 @@ function testNetworkServiceConnectionStatusAndIconsExecute() {
   assert.deepEqual(ctx.connectProcess, savedCommand, "connect must ignore duplicate connection requests while busy");
 
   ctx.connecting = false;
+  ctx.connectProcess.running = false;
   connect(ctx, "Cafe", "guest");
   assert.equal(ctx.connectProcess.mode, "new", "connect must create new profiles when no cache exists");
   assert.equal(ctx.connectProcess.password, "guest", "new profiles must keep supplied passwords");
@@ -452,6 +454,108 @@ function testNetworkScanStartFailureExecutesWithoutExitedSignal() {
   assert.equal(ctx.lastError, "");
 }
 
+function createConnectionActionContext() {
+  const updates = [];
+  const notices = [];
+  const scans = [];
+  const ctx = {
+    connecting: true,
+    connectingTo: "Home",
+    disconnectingFrom: "Home",
+    lastError: "",
+    activePolling: true,
+    cacheAdapter: { knownNetworks: {}, lastConnected: "" },
+    connectProcess: { generation: 1, password: "secret" },
+    disconnectProcess: { generation: 1 },
+    delayedScanTimer: { interval: 0, restart() { scans.push(this.interval); } },
+    Logger: { i() {}, w() {} },
+    I18n: { tr(key) { return key; } },
+    ToastService: { showNotice(...args) { notices.push(args); } },
+    saveCache() {},
+    updateNetworkStatus(ssid, connected) { updates.push([ssid, connected]); },
+    refreshNetworkStatus() {},
+  };
+  ctx.root = ctx;
+  ctx.updates = updates;
+  ctx.notices = notices;
+  ctx.scans = scans;
+  return ctx;
+}
+
+function testNetworkConnectCompletionUsesExitStatusAndIdentity() {
+  const finishConnect = qmlFunction("finishConnect", "ssid", "generation", "exitCode", "output", "errorOutput");
+  const success = createConnectionActionContext();
+  finishConnect(success, "Home", 1, 0, "localized output", "");
+  assert.equal(success.connecting, false);
+  assert.equal(success.connectingTo, "");
+  assert.equal(success.connectProcess.password, "");
+  assert.deepEqual(success.updates, [["Home", true]]);
+  assert.equal(success.cacheAdapter.lastConnected, "Home");
+  assert.equal(success.notices.length, 1);
+  assert.deepEqual(success.scans, [5000]);
+
+  const failure = createConnectionActionContext();
+  finishConnect(failure, "Home", 1, 10, "", "permission denied\nmore");
+  assert.equal(failure.connecting, false);
+  assert.equal(failure.connectProcess.password, "");
+  assert.equal(failure.lastError, "permission denied");
+  assert.deepEqual(failure.updates, []);
+  assert.deepEqual(failure.scans, []);
+
+  const stale = createConnectionActionContext();
+  stale.connectProcess.generation = 2;
+  stale.connectingTo = "Office";
+  finishConnect(stale, "Home", 1, 0, "", "");
+  assert.equal(stale.connecting, true);
+  assert.equal(stale.connectingTo, "Office");
+  assert.deepEqual(stale.updates, []);
+}
+
+function testNetworkDisconnectCompletionUsesExitStatusAndIdentity() {
+  const finishDisconnect = qmlFunction("finishDisconnect", "ssid", "generation", "exitCode", "output", "errorOutput");
+  const success = createConnectionActionContext();
+  finishDisconnect(success, "Home", 1, 0, "", "");
+  assert.equal(success.disconnectingFrom, "");
+  assert.deepEqual(success.updates, [["Home", false]]);
+  assert.equal(success.notices.length, 1);
+  assert.deepEqual(success.scans, [1000]);
+
+  const failure = createConnectionActionContext();
+  finishDisconnect(failure, "Home", 1, 10, "stdout diagnostic", "");
+  assert.equal(failure.disconnectingFrom, "");
+  assert.equal(failure.lastError, "stdout diagnostic");
+  assert.deepEqual(failure.updates, []);
+  assert.deepEqual(failure.scans, []);
+
+  const stale = createConnectionActionContext();
+  stale.disconnectProcess.generation = 2;
+  stale.disconnectingFrom = "Office";
+  finishDisconnect(stale, "Home", 1, 0, "", "");
+  assert.equal(stale.disconnectingFrom, "Office");
+  assert.deepEqual(stale.updates, []);
+}
+
+function testNetworkActionStartFailureAndProcessRouting() {
+  const finishConnect = qmlFunction("finishConnect", "ssid", "generation", "exitCode", "output", "errorOutput");
+  const finishDisconnect = qmlFunction("finishDisconnect", "ssid", "generation", "exitCode", "output", "errorOutput");
+  const handleConnectStartFailure = qmlFunction("handleConnectStartFailure", "ssid", "generation", "exitObserved");
+  const handleDisconnectStartFailure = qmlFunction("handleDisconnectStartFailure", "ssid", "generation", "exitObserved");
+  const connect = createConnectionActionContext();
+  connect.finishConnect = (...args) => finishConnect(connect, ...args);
+  handleConnectStartFailure(connect, "Home", 1, false);
+  assert.match(connect.lastError, /failed to start/);
+  assert.equal(connect.connectProcess.password, "");
+
+  const disconnect = createConnectionActionContext();
+  disconnect.finishDisconnect = (...args) => finishDisconnect(disconnect, ...args);
+  handleDisconnectStartFailure(disconnect, "Home", 1, false);
+  assert.match(disconnect.lastError, /failed to start/);
+
+  const source = readQml("Services/Networking/NetworkService.qml");
+  assert.match(source, /id:\s*connectProcess[\s\S]*?onExited:[\s\S]*?finishConnect[\s\S]*?onRunningChanged:[\s\S]*?handleConnectStartFailure/);
+  assert.match(source, /id:\s*disconnectProcess[\s\S]*?onExited:[\s\S]*?finishDisconnect[\s\S]*?onRunningChanged:[\s\S]*?handleDisconnectStartFailure/);
+}
+
 function createForgetContext() {
   const saves = [];
   const restarts = [];
@@ -563,6 +667,9 @@ const tests = [
   testNetworkProfileAndScanExitFailuresExecute,
   testNetworkProfileAndScanSuccessParityExecutes,
   testNetworkScanStartFailureExecutesWithoutExitedSignal,
+  testNetworkConnectCompletionUsesExitStatusAndIdentity,
+  testNetworkDisconnectCompletionUsesExitStatusAndIdentity,
+  testNetworkActionStartFailureAndProcessRouting,
   testNetworkForgetMutatesCacheOnlyAfterSuccessfulExit,
   testNetworkForgetFailurePreservesStateAndIdentity,
   testNetworkForgetStartFailureAndProcessRouting,

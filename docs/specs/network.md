@@ -26,11 +26,14 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 
 ### Connect, disconnect, and forget
 
-- [x] Connect ignores duplicate requests while already connecting.
-- [x] Connect sets busy state, target SSID, and clears stale errors.
+- [x] Connect rejects empty or overlapping requests using both service and process state.
+- [x] Connect sets busy state, target SSID, clears stale errors, resets process buffers, and advances operation identity.
 - [x] Connect reuses existing or cached profiles without retaining typed passwords.
 - [x] Connect creates new profiles with supplied passwords when no existing profile is known.
-- [x] Disconnect tracks the target SSID and starts the disconnect process.
+- [x] Disconnect rejects empty/overlapping requests, tracks the target SSID, resets process buffers, advances operation identity, and starts the disconnect process.
+- [x] Connect/disconnect completion is exit-code-driven, identity-safe, and independent of localized stdout text.
+- [x] Successful actions update status/cache as applicable, clear credentials/busy/error state, show notice, refresh status, and schedule scans only while polling.
+- [x] Nonzero and failed-start actions preserve network/cache state, clear credentials/busy state, expose stderr/stdout diagnostics or a concrete fallback, and do not schedule scans that erase errors.
 - [x] Forget rejects empty/overlapping requests, tracks the target SSID, resets buffered process state, and starts system profile deletion without mutating cache/UI state first.
 - [x] The forget helper lists unescaped NetworkManager profile names, matches exact, `Auto `, and arbitrary numeric-suffix variants, and propagates list/delete failures.
 - [x] Successful forget completion identity-checks the SSID, removes only that cached network, clears `lastConnected` when needed, updates known/existing UI state, persists cache changes, and schedules verification scan while polling.
@@ -71,7 +74,7 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 ## Known gaps (current cycle)
 
 - [ ] Add executable tests for connectivity check and ping fallback transitions.
-- [ ] Add executable nonzero-exit coverage for connect, disconnect, and passive status commands; forget exit/start failure and helper aggregation are covered.
+- [ ] Add executable nonzero-exit coverage for passive status commands; connect, disconnect, and forget exit/start failure paths are covered.
 - [ ] Add spec coverage for Wi-Fi panel connect/password/forget UI behavior.
 
 ## Out of scope

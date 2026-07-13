@@ -178,30 +178,115 @@ Singleton {
   }
 
   function connect(ssid, password = "") {
-    if (connecting)
+    if (!ssid || connecting || connectProcess.running)
       return;
     connecting = true;
     connectingTo = ssid;
     lastError = "";
 
-    // Check if we have a saved connection
     if ((networks[ssid] && networks[ssid].existing) || cachedNetworks[ssid]) {
       connectProcess.mode = "saved";
-      connectProcess.ssid = ssid;
       connectProcess.password = "";
     } else {
       connectProcess.mode = "new";
-      connectProcess.ssid = ssid;
       connectProcess.password = password;
     }
-
+    connectProcess.ssid = ssid;
+    connectProcess.output = "";
+    connectProcess.errorOutput = "";
+    connectProcess.exitObserved = false;
+    connectProcess.generation += 1;
     connectProcess.running = true;
   }
 
+  function finishConnect(ssid, generation, exitCode, output, errorOutput) {
+    if (connectProcess.generation !== generation || root.connectingTo !== ssid)
+      return;
+    connectProcess.password = "";
+    root.connectingTo = "";
+    root.connecting = false;
+
+    if (exitCode === 0) {
+      const known = Object.assign({}, cacheAdapter.knownNetworks);
+      known[ssid] = {
+        "profileName": ssid,
+        "lastConnected": Date.now()
+      };
+      cacheAdapter.knownNetworks = known;
+      cacheAdapter.lastConnected = ssid;
+      root.saveCache();
+      root.updateNetworkStatus(ssid, true);
+      root.lastError = "";
+      Logger.i("Network", `Connected to network: '${ssid}'`);
+      ToastService.showNotice(I18n.tr("wifi.panel.title"), I18n.tr("toast.wifi.connected", {
+                                                                     "ssid": ssid
+                                                                   }), "wifi");
+      root.refreshNetworkStatus();
+      if (root.activePolling) {
+        delayedScanTimer.interval = 5000;
+        delayedScanTimer.restart();
+      }
+      return;
+    }
+
+    const diagnostic = errorOutput.trim() || output.trim();
+    if (diagnostic.includes("Secrets were required") || diagnostic.includes("no secrets provided")) {
+      root.lastError = "Incorrect password";
+      root.forget(ssid);
+    } else if (diagnostic.includes("No network with SSID")) {
+      root.lastError = "Network not found";
+    } else if (diagnostic.includes("Timeout")) {
+      root.lastError = "Connection timeout";
+    } else {
+      root.lastError = diagnostic.split("\n")[0].trim() || `nmcli connect failed with exit ${exitCode}`;
+    }
+    Logger.w("Network", "Connect error: " + root.lastError);
+  }
+
+  function handleConnectStartFailure(ssid, generation, exitObserved) {
+    if (!exitObserved && connectProcess.generation === generation && root.connectingTo === ssid)
+      root.finishConnect(ssid, generation, -1, "", "nmcli connect failed to start");
+  }
+
   function disconnect(ssid) {
+    if (!ssid || disconnectingFrom || disconnectProcess.running)
+      return;
     disconnectingFrom = ssid;
     disconnectProcess.ssid = ssid;
+    disconnectProcess.output = "";
+    disconnectProcess.errorOutput = "";
+    disconnectProcess.exitObserved = false;
+    disconnectProcess.generation += 1;
     disconnectProcess.running = true;
+  }
+
+  function finishDisconnect(ssid, generation, exitCode, output, errorOutput) {
+    if (disconnectProcess.generation !== generation || root.disconnectingFrom !== ssid)
+      return;
+    root.disconnectingFrom = "";
+
+    if (exitCode === 0) {
+      root.updateNetworkStatus(ssid, false);
+      root.lastError = "";
+      Logger.i("Network", `Disconnected from network: '${ssid}'`);
+      ToastService.showNotice(I18n.tr("wifi.panel.title"), I18n.tr("toast.wifi.disconnected", {
+                                                                     "ssid": ssid
+                                                                   }), "wifi-off");
+      root.refreshNetworkStatus();
+      if (root.activePolling) {
+        delayedScanTimer.interval = 1000;
+        delayedScanTimer.restart();
+      }
+      return;
+    }
+
+    root.lastError = (errorOutput.trim() || output.trim()).split("\n")[0].trim() || `nmcli disconnect failed with exit ${exitCode}`;
+    Logger.w("Network", "Disconnect error: " + root.lastError);
+  }
+
+  function handleDisconnectStartFailure(ssid, generation, exitObserved) {
+    if (!exitObserved && disconnectProcess.generation === generation && root.disconnectingFrom === ssid)
+      root.finishDisconnect(ssid, generation, -1, "", "nmcli disconnect failed to start");
   }
 
   function forget(ssid) {
@@ -712,6 +797,10 @@ Singleton {
     property string mode: "new"
     property string ssid: ""
     property string password: ""
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
+    property int generation: 0
     running: false
 
     command: {
@@ -730,67 +819,24 @@ Singleton {
                   })
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        // Check if the output actually indicates success
-        // nmcli outputs "Device '...' successfully activated" or "Connection successfully activated"
-        // on success. Empty output or other messages indicate failure.
-        const output = text.trim();
-
-        if (!output || (!output.includes("successfully activated") && !output.includes("Connection successfully"))) {
-          // No success message - likely an error occurred
-          // Don't update anything, let stderr handler deal with it
-          return;
-        }
-
-        // Success - update cache
-        let known = cacheAdapter.knownNetworks;
-        known[connectProcess.ssid] = {
-          "profileName": connectProcess.ssid,
-          "lastConnected": Date.now()
-        };
-        cacheAdapter.knownNetworks = known;
-        cacheAdapter.lastConnected = connectProcess.ssid;
-        saveCache();
-
-        // Immediately update the UI before scanning
-        root.updateNetworkStatus(connectProcess.ssid, true);
-
-        root.connecting = false;
-        root.connectingTo = "";
-        Logger.i("Network", `Connected to network: '${connectProcess.ssid}'`);
-        ToastService.showNotice(I18n.tr("wifi.panel.title"), I18n.tr("toast.wifi.connected", {
-                                                                       "ssid": connectProcess.ssid
-                                                                     }), "wifi");
-
-        refreshNetworkStatus();
-        // Still do a scan to get accurate signal and security info while Wi-Fi UI is active.
-        if (activePolling) {
-          delayedScanTimer.interval = 5000;
-          delayedScanTimer.restart();
-        }
-      }
+      onStreamFinished: connectProcess.output = text
     }
-
     stderr: StdioCollector {
-      onStreamFinished: {
-        root.connecting = false;
-        root.connectingTo = "";
-
-        if (text.trim()) {
-          // Parse common errors
-          if (text.includes("Secrets were required") || text.includes("no secrets provided")) {
-            root.lastError = "Incorrect password";
-            forget(connectProcess.ssid);
-          } else if (text.includes("No network with SSID")) {
-            root.lastError = "Network not found";
-          } else if (text.includes("Timeout")) {
-            root.lastError = "Connection timeout";
-          } else {
-            root.lastError = text.split("\n")[0].trim();
-          }
-
-          Logger.w("Network", "Connect error: " + text);
-        }
+      onStreamFinished: connectProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      connectProcess.exitObserved = true;
+      const output = connectProcess.output;
+      const errorOutput = connectProcess.errorOutput;
+      const generation = connectProcess.generation;
+      connectProcess.output = "";
+      connectProcess.errorOutput = "";
+      root.finishConnect(connectProcess.ssid, generation, exitCode, output, errorOutput);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleConnectStartFailure(connectProcess.ssid, connectProcess.generation, connectProcess.exitObserved);
+        connectProcess.exitObserved = false;
       }
     }
   }
@@ -798,41 +844,32 @@ Singleton {
   Process {
     id: disconnectProcess
     property string ssid: ""
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
+    property int generation: 0
     running: false
     command: ["nmcli", "connection", "down", "id", ssid]
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        Logger.i("Network", `Disconnected from network: '${disconnectProcess.ssid}'`);
-        ToastService.showNotice(I18n.tr("wifi.panel.title"), I18n.tr("toast.wifi.disconnected", {
-                                                                       "ssid": disconnectProcess.ssid
-                                                                     }), "wifi-off");
-
-        // Immediately update UI on successful disconnect
-        root.updateNetworkStatus(disconnectProcess.ssid, false);
-        root.disconnectingFrom = "";
-
-        refreshNetworkStatus();
-        // Do a scan to refresh the list while Wi-Fi UI is active.
-        if (activePolling) {
-          delayedScanTimer.interval = 1000;
-          delayedScanTimer.restart();
-        }
-      }
+      onStreamFinished: disconnectProcess.output = text
     }
-
     stderr: StdioCollector {
-      onStreamFinished: {
-        root.disconnectingFrom = "";
-        if (text.trim()) {
-          Logger.w("Network", "Disconnect error: " + text);
-        }
-        refreshNetworkStatus();
-        // Still trigger a scan even on error while Wi-Fi UI is active.
-        if (activePolling) {
-          delayedScanTimer.interval = 5000;
-          delayedScanTimer.restart();
-        }
+      onStreamFinished: disconnectProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      disconnectProcess.exitObserved = true;
+      const output = disconnectProcess.output;
+      const errorOutput = disconnectProcess.errorOutput;
+      const generation = disconnectProcess.generation;
+      disconnectProcess.output = "";
+      disconnectProcess.errorOutput = "";
+      root.finishDisconnect(disconnectProcess.ssid, generation, exitCode, output, errorOutput);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleDisconnectStartFailure(disconnectProcess.ssid, disconnectProcess.generation, disconnectProcess.exitObserved);
+        disconnectProcess.exitObserved = false;
       }
     }
   }
