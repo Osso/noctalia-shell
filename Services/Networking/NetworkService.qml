@@ -205,22 +205,53 @@ Singleton {
   }
 
   function forget(ssid) {
+    if (!ssid || forgettingNetwork || forgetProcess.running)
+      return;
     forgettingNetwork = ssid;
-
-    // Remove from cache
-    let known = cacheAdapter.knownNetworks;
-    delete known[ssid];
-    cacheAdapter.knownNetworks = known;
-
-    if (cacheAdapter.lastConnected === ssid) {
-      cacheAdapter.lastConnected = "";
-    }
-
-    saveCache();
-
-    // Remove from system
     forgetProcess.ssid = ssid;
+    forgetProcess.output = "";
+    forgetProcess.errorOutput = "";
+    forgetProcess.exitObserved = false;
     forgetProcess.running = true;
+  }
+
+  function finishForget(ssid, exitCode, output, errorOutput) {
+    if (root.forgettingNetwork !== ssid)
+      return;
+    root.forgettingNetwork = "";
+
+    if (exitCode === 0) {
+      const known = Object.assign({}, cacheAdapter.knownNetworks);
+      delete known[ssid];
+      cacheAdapter.knownNetworks = known;
+      if (cacheAdapter.lastConnected === ssid)
+        cacheAdapter.lastConnected = "";
+      root.saveCache();
+
+      const nets = Object.assign({}, root.networks);
+      if (nets[ssid]) {
+        nets[ssid] = Object.assign({}, nets[ssid], {
+                                    "cached": false,
+                                    "existing": false
+                                  });
+        root.networks = nets;
+      }
+      root.lastError = "";
+      Logger.i("Network", `Forget network: "${ssid}"`);
+      Logger.d("Network", output.trim().replace(/[\r\n]/g, " "));
+      if (root.activePolling) {
+        delayedScanTimer.interval = 5000;
+        delayedScanTimer.restart();
+      }
+    } else {
+      root.lastError = (errorOutput.trim() || output.trim()).split("\n")[0].trim() || `nmcli forget failed with exit ${exitCode}`;
+      Logger.w("Network", "Forget error: " + root.lastError);
+    }
+  }
+
+  function handleForgetStartFailure(ssid, exitObserved) {
+    if (!exitObserved && root.forgettingNetwork === ssid)
+      root.finishForget(ssid, -1, "", "nmcli forget failed to start");
   }
 
   // Helper function to immediately update network status
@@ -809,74 +840,31 @@ Singleton {
   Process {
     id: forgetProcess
     property string ssid: ""
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
     running: false
 
-    // Try multiple common profile name patterns
-    command: ["sh", "-c", `
-      ssid="$1"
-      deleted=false
-
-      # Try exact SSID match first
-      if nmcli connection delete id "$ssid" 2>/dev/null; then
-      echo "Deleted profile: $ssid"
-      deleted=true
-      fi
-
-      # Try "Auto <SSID>" pattern
-      if nmcli connection delete id "Auto $ssid" 2>/dev/null; then
-      echo "Deleted profile: Auto $ssid"
-      deleted=true
-      fi
-
-      # Try "<SSID> 1", "<SSID> 2", etc. patterns
-      for i in 1 2 3; do
-      if nmcli connection delete id "$ssid $i" 2>/dev/null; then
-      echo "Deleted profile: $ssid $i"
-      deleted=true
-      fi
-      done
-
-      if [ "$deleted" = "false" ]; then
-      echo "No profiles found for SSID: $ssid"
-      fi
-      `, "--", ssid]
+    command: ["bash", Quickshell.shellDir + "/Bin/network-forget-profiles.sh", ssid]
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        Logger.i("Network", `Forget network: "${forgetProcess.ssid}"`);
-        Logger.d("Network", text.trim().replace(/[\r\n]/g, " "));
-
-        // Update both cached and existing status immediately
-        let nets = root.networks;
-        if (nets[forgetProcess.ssid]) {
-          nets[forgetProcess.ssid].cached = false;
-          nets[forgetProcess.ssid].existing = false;
-          // Trigger property change
-          root.networks = ({});
-          root.networks = nets;
-        }
-
-        root.forgettingNetwork = "";
-
-        // Scan to verify the profile is gone while Wi-Fi UI is active.
-        if (activePolling) {
-          delayedScanTimer.interval = 5000;
-          delayedScanTimer.restart();
-        }
-      }
+      onStreamFinished: forgetProcess.output = text
     }
-
     stderr: StdioCollector {
-      onStreamFinished: {
-        root.forgettingNetwork = "";
-        if (text.trim() && !text.includes("No profiles found")) {
-          Logger.w("Network", "Forget error: " + text);
-        }
-        // Still trigger a scan even on error while Wi-Fi UI is active.
-        if (activePolling) {
-          delayedScanTimer.interval = 5000;
-          delayedScanTimer.restart();
-        }
+      onStreamFinished: forgetProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      forgetProcess.exitObserved = true;
+      const output = forgetProcess.output;
+      const errorOutput = forgetProcess.errorOutput;
+      forgetProcess.output = "";
+      forgetProcess.errorOutput = "";
+      root.finishForget(forgetProcess.ssid, exitCode, output, errorOutput);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleForgetStartFailure(forgetProcess.ssid, forgetProcess.exitObserved);
+        forgetProcess.exitObserved = false;
       }
     }
   }

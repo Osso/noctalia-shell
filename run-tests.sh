@@ -51,6 +51,7 @@ run_unit_tests() {
     python3 "$repo_root/Tests/calendar-events-safe-get-time.test.py"
     bash "$repo_root/Tests/i18n-json.test.sh"
     bash "$repo_root/Tests/calendar-scripts.test.sh"
+    bash "$repo_root/Tests/network-forget-profiles.test.sh"
     bash "$repo_root/Tests/service-probes-parsing.test.sh"
     bash "$repo_root/Tests/quickshell-regression.test.sh"
     bash "$repo_root/Tests/test-runner-categories.test.sh"

@@ -85,9 +85,7 @@ function testNetworkServiceForgetAndStatusGuards() {
   const deviceBody = extractFunctionBody(source, "applyDeviceStateOutput");
 
   assert.match(forgetBody, /forgettingNetwork = ssid/, "forget must expose the busy SSID");
-  assert.match(forgetBody, /let known = cacheAdapter\.knownNetworks[\s\S]*delete known\[ssid\][\s\S]*cacheAdapter\.knownNetworks = known/, "forget must remove the SSID from cached known networks");
-  assert.match(forgetBody, /if \(cacheAdapter\.lastConnected === ssid\)[\s\S]*cacheAdapter\.lastConnected = ""/, "forget must clear lastConnected when deleting that SSID");
-  assert.match(forgetBody, /saveCache\(\)/, "forget must persist cache changes");
+  assert.doesNotMatch(forgetBody, /delete known\[ssid\]/, "forget must not mutate cache before process success");
   assert.match(forgetBody, /forgetProcess\.ssid = ssid[\s\S]*forgetProcess\.running = true/, "forget must launch the system profile delete process");
   assert.match(statusBody, /for \(let key in nets\)[\s\S]*nets\[key\]\.connected = false/, "updateNetworkStatus must disconnect other active networks");
   assert.match(statusBody, /if \(nets\[ssid\]\)[\s\S]*nets\[ssid\]\.connected = connected[\s\S]*nets\[ssid\]\.existing = true[\s\S]*nets\[ssid\]\.cached = true/, "updateNetworkStatus must mark existing targets as known");
@@ -272,10 +270,10 @@ function testNetworkServiceConnectionStatusAndIconsExecute() {
 
   forget(ctx, "Home");
   assert.equal(ctx.forgettingNetwork, "Home", "forget must track target SSID");
-  assert.equal(ctx.cacheAdapter.knownNetworks.Home, undefined, "forget must remove target from known network cache");
+  assert.equal(ctx.cacheAdapter.knownNetworks.Home, true, "forget must preserve cache until process success");
   assert.equal(ctx.cacheAdapter.knownNetworks.Office, true, "forget must preserve other cached networks");
-  assert.equal(ctx.cacheAdapter.lastConnected, "", "forget must clear lastConnected when forgetting the last connected SSID");
-  assert.deepEqual(saveCalls, [{ Office: true, lastConnected: "" }], "forget must persist cache changes");
+  assert.equal(ctx.cacheAdapter.lastConnected, "Home", "forget must preserve lastConnected until process success");
+  assert.deepEqual(saveCalls, [], "forget must not persist cache changes before process success");
   assert.equal(ctx.forgetProcess.ssid, "Home", "forget must pass SSID to the forget process");
   assert.equal(ctx.forgetProcess.running, true, "forget must start the forget process");
 
@@ -454,6 +452,92 @@ function testNetworkScanStartFailureExecutesWithoutExitedSignal() {
   assert.equal(ctx.lastError, "");
 }
 
+function createForgetContext() {
+  const saves = [];
+  const restarts = [];
+  const ctx = {
+    forgettingNetwork: "Home",
+    lastError: "",
+    activePolling: true,
+    cacheAdapter: {
+      knownNetworks: { Home: { password: "secret" }, Office: {} },
+      lastConnected: "Home",
+    },
+    networks: { Home: { cached: true, existing: true }, Office: { cached: true } },
+    delayedScanTimer: {
+      interval: 0,
+      restart() { restarts.push(this.interval); },
+    },
+    saveCache() { saves.push("save"); },
+    Logger: { i() {}, d() {}, w() {} },
+  };
+  ctx.root = ctx;
+  ctx.saves = saves;
+  ctx.restarts = restarts;
+  return ctx;
+}
+
+function testNetworkForgetMutatesCacheOnlyAfterSuccessfulExit() {
+  const forget = qmlFunction("forget", "ssid");
+  const finishForget = qmlFunction("finishForget", "ssid", "exitCode", "output", "errorOutput");
+  const ctx = createForgetContext();
+  ctx.forgettingNetwork = "";
+  ctx.forgetProcess = { ssid: "", output: "stale", errorOutput: "stale", exitObserved: true, running: false };
+
+  forget(ctx, "Home");
+  assert.deepEqual(ctx.cacheAdapter.knownNetworks, { Home: { password: "secret" }, Office: {} });
+  assert.equal(ctx.cacheAdapter.lastConnected, "Home");
+  assert.deepEqual(ctx.saves, []);
+
+  finishForget(ctx, "Home", 0, "Deleted profile", "");
+  assert.deepEqual(ctx.cacheAdapter.knownNetworks, { Office: {} });
+  assert.equal(ctx.cacheAdapter.lastConnected, "");
+  assert.equal(ctx.networks.Home.cached, false);
+  assert.equal(ctx.networks.Home.existing, false);
+  assert.deepEqual(ctx.saves, ["save"]);
+  assert.equal(ctx.forgettingNetwork, "");
+  assert.deepEqual(ctx.restarts, [5000]);
+}
+
+function testNetworkForgetFailurePreservesStateAndIdentity() {
+  const finishForget = qmlFunction("finishForget", "ssid", "exitCode", "output", "errorOutput");
+  const failure = createForgetContext();
+  finishForget(failure, "Home", 10, "", "permission denied\nmore");
+  assert.deepEqual(failure.cacheAdapter.knownNetworks, { Home: { password: "secret" }, Office: {} });
+  assert.equal(failure.cacheAdapter.lastConnected, "Home");
+  assert.equal(failure.networks.Home.cached, true);
+  assert.equal(failure.lastError, "permission denied");
+  assert.equal(failure.forgettingNetwork, "");
+  assert.deepEqual(failure.restarts, [], "failure must not schedule a scan that clears its diagnostic");
+
+  const stale = createForgetContext();
+  stale.forgettingNetwork = "Office";
+  finishForget(stale, "Home", 0, "Deleted", "");
+  assert.deepEqual(stale.cacheAdapter.knownNetworks, { Home: { password: "secret" }, Office: {} });
+  assert.equal(stale.forgettingNetwork, "Office");
+}
+
+function testNetworkForgetStartFailureAndProcessRouting() {
+  const finishForget = qmlFunction("finishForget", "ssid", "exitCode", "output", "errorOutput");
+  const handleForgetStartFailure = qmlFunction("handleForgetStartFailure", "ssid", "exitObserved");
+  const ctx = createForgetContext();
+  ctx.finishForget = (...args) => finishForget(ctx, ...args);
+  handleForgetStartFailure(ctx, "Home", false);
+  assert.match(ctx.lastError, /failed to start/);
+  assert.equal(ctx.forgettingNetwork, "");
+
+  const normal = createForgetContext();
+  normal.finishForget = (...args) => finishForget(normal, ...args);
+  handleForgetStartFailure(normal, "Home", true);
+  assert.equal(normal.forgettingNetwork, "Home");
+  assert.equal(normal.lastError, "");
+
+  const source = readQml("Services/Networking/NetworkService.qml");
+  assert.match(source, /id:\s*forgetProcess[\s\S]*?property string output[\s\S]*?property string errorOutput[\s\S]*?property bool exitObserved/);
+  assert.match(source, /id:\s*forgetProcess[\s\S]*?onExited:\s*function\s*\(exitCode\)[\s\S]*?exitObserved = true[\s\S]*?finishForget/);
+  assert.match(source, /id:\s*forgetProcess[\s\S]*?onRunningChanged:[\s\S]*?handleForgetStartFailure/);
+}
+
 function testNetworkScanProcessesRouteExitAndStartFailure() {
   const source = readQml("Services/Networking/NetworkService.qml");
   assert.match(source, /id:\s*profileCheckProcess[\s\S]*?onExited:\s*function\s*\(exitCode\)[\s\S]*?finishProfileCheck/);
@@ -479,6 +563,9 @@ const tests = [
   testNetworkProfileAndScanExitFailuresExecute,
   testNetworkProfileAndScanSuccessParityExecutes,
   testNetworkScanStartFailureExecutesWithoutExitedSignal,
+  testNetworkForgetMutatesCacheOnlyAfterSuccessfulExit,
+  testNetworkForgetFailurePreservesStateAndIdentity,
+  testNetworkForgetStartFailureAndProcessRouting,
   testNetworkScanProcessesRouteExitAndStartFailure,
 ];
 

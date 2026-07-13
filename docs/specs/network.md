@@ -31,7 +31,10 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 - [x] Connect reuses existing or cached profiles without retaining typed passwords.
 - [x] Connect creates new profiles with supplied passwords when no existing profile is known.
 - [x] Disconnect tracks the target SSID and starts the disconnect process.
-- [x] Forget tracks the target SSID, removes it from the known-network cache, preserves other cached networks, clears `lastConnected` when needed, persists cache changes, and starts the forget process.
+- [x] Forget rejects empty/overlapping requests, tracks the target SSID, resets buffered process state, and starts system profile deletion without mutating cache/UI state first.
+- [x] The forget helper lists unescaped NetworkManager profile names, matches exact, `Auto `, and arbitrary numeric-suffix variants, and propagates list/delete failures.
+- [x] Successful forget completion identity-checks the SSID, removes only that cached network, clears `lastConnected` when needed, updates known/existing UI state, persists cache changes, and schedules verification scan while polling.
+- [x] Nonzero and failed-to-start forget operations preserve cache/UI state, clear busy state, expose a concrete error, and cannot let stale completion overwrite a newer request.
 
 ### Status and icons
 
@@ -61,13 +64,14 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 
 ## Tests asserting this spec
 
+- `Tests/network-forget-profiles.test.sh`
 - `Tests/network-service-guards.test.js`
 - `Tests/qml-runtime-guards.test.js`
 
 ## Known gaps (current cycle)
 
 - [ ] Add executable tests for connectivity check and ping fallback transitions.
-- [ ] Add executable nonzero-exit coverage for connect, disconnect, forget, and passive status commands.
+- [ ] Add executable nonzero-exit coverage for connect, disconnect, and passive status commands; forget exit/start failure and helper aggregation are covered.
 - [ ] Add spec coverage for Wi-Fi panel connect/password/forget UI behavior.
 
 ## Out of scope
