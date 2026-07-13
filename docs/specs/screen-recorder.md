@@ -30,6 +30,13 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 - [x] Empty output directory keeps the filename relative.
 - [x] Non-focused capture omits the focused size flag.
 
+### Process and timer lifecycle
+
+- [x] A recorder exit while pending cancels the pending timer and reports missing binaries or startup failures from buffered output.
+- [x] A successful recorder exit while active clears recording and active-recording state, stops monitoring, and reports the saved output; failure reports a concrete diagnostic.
+- [x] The pending timer promotes a still-running process to active recording and clears a pending session whose process already exited.
+- [x] The monitor timer stops polling when the recorder process disappears but leaves terminal recording state to the authoritative process-exit handler, so save/failure reporting is not suppressed.
+
 ### Stop
 
 - [x] Stop fails closed when no recording is active or pending.
@@ -56,7 +63,6 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 ## Known gaps (current cycle)
 
 - [x] Add executable tests for capture-source and monitor-list parsing.
-- [ ] Add executable tests for recorder process exit handling and pending/monitor timer transitions.
 - [ ] Add spec coverage for settings UI source/codec/quality controls.
 
 ## Out of scope

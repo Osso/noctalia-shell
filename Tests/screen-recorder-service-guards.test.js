@@ -10,6 +10,40 @@ function qmlFunction(functionName, ...argNames) {
   return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
 }
 
+function qmlBlockById(qml, componentName, id) {
+  const marker = `${componentName} {`;
+  let start = qml.indexOf(marker);
+  while (start !== -1) {
+    const open = qml.indexOf("{", start);
+    let depth = 0;
+    let quote = "";
+    let blockEnded = false;
+    for (let index = open; index < qml.length; index++) {
+      const current = qml[index];
+      if (quote) {
+        if (current === "\\") index++;
+        else if (current === quote) quote = "";
+        continue;
+      }
+      if (current === '"' || current === "'" || current === "`") {
+        quote = current;
+        continue;
+      }
+      if (current === "{") depth++;
+      if (current === "}") depth--;
+      if (depth === 0) {
+        const block = qml.slice(start, index + 1);
+        if (block.includes(`id: ${id}`)) return block;
+        start = qml.indexOf(marker, index + 1);
+        blockEnded = true;
+        break;
+      }
+    }
+    assert.equal(blockEnded, true, `unterminated ${componentName} block`);
+  }
+  assert.fail(`missing ${componentName} block with id ${id}`);
+}
+
 function settings(overrides = {}) {
   return {
     directory: "~/Videos",
@@ -253,6 +287,107 @@ function testScreenRecorderLaunchRecorderHandlesDirectoryAndFocusSizeVariants() 
   assert.doesNotMatch(emptyDirectory.command, /-s 3440x1440/, "non-focused capture omits primary monitor size");
 }
 
+function recorderLifecycleContext() {
+  const notices = [];
+  const errors = [];
+  const ctx = {
+    isPending: true,
+    isRecording: false,
+    hasActiveRecording: false,
+    outputPath: "/tmp/out.mp4",
+    pendingTimer: { running: true },
+    monitorTimer: { running: false },
+    ToastService: {
+      showNotice(...args) { notices.push(args); },
+      showError(...args) { errors.push(args); },
+    },
+    I18n: { tr(key) { return `tr:${key}`; } },
+  };
+  ctx.root = ctx;
+  ctx.notices = notices;
+  ctx.errors = errors;
+  return ctx;
+}
+
+function testRecorderProcessExitTransitions() {
+  const finishRecorderProcess = qmlFunction("finishRecorderProcess", "exitCode", "stdout", "stderr");
+  const pendingFailure = recorderLifecycleContext();
+  finishRecorderProcess(pendingFailure, 1, "", "device failed");
+  assert.equal(pendingFailure.isPending, false);
+  assert.equal(pendingFailure.pendingTimer.running, false);
+  assert.deepEqual(pendingFailure.errors, [["tr:toast.recording.failed-start", "device failed"]]);
+  assert.deepEqual(pendingFailure.notices, []);
+
+  const pendingFallback = recorderLifecycleContext();
+  finishRecorderProcess(pendingFallback, 1, "", "");
+  assert.deepEqual(pendingFallback.errors, [["tr:toast.recording.failed-start", "tr:toast.recording.failed-gpu"]]);
+  assert.deepEqual(pendingFallback.notices, []);
+
+  const missing = recorderLifecycleContext();
+  finishRecorderProcess(missing, 0, "GPU_SCREEN_RECORDER_NOT_INSTALLED", "");
+  assert.deepEqual(missing.errors, [["tr:toast.recording.not-installed", "tr:toast.recording.not-installed-desc"]]);
+  assert.deepEqual(missing.notices, []);
+
+  const completed = recorderLifecycleContext();
+  completed.isPending = false;
+  completed.isRecording = true;
+  completed.hasActiveRecording = true;
+  completed.monitorTimer.running = true;
+  finishRecorderProcess(completed, 0, "", "");
+  assert.equal(completed.isRecording, false);
+  assert.equal(completed.hasActiveRecording, false);
+  assert.equal(completed.monitorTimer.running, false);
+  assert.deepEqual(completed.notices, [["tr:toast.recording.saved", "/tmp/out.mp4", "settings-screen-recorder"]]);
+  assert.deepEqual(completed.errors, []);
+
+  const activeFailure = recorderLifecycleContext();
+  activeFailure.isPending = false;
+  activeFailure.isRecording = true;
+  activeFailure.hasActiveRecording = true;
+  activeFailure.monitorTimer.running = false;
+  finishRecorderProcess(activeFailure, 2, "", "");
+  assert.deepEqual(activeFailure.notices, []);
+  assert.deepEqual(activeFailure.errors, [["tr:toast.recording.failed-start", "tr:toast.recording.failed-general"]]);
+}
+
+function testRecorderPendingAndMonitorTimerTransitions() {
+  const handlePendingTimer = qmlFunction("handlePendingTimer", "processRunning");
+  const handleMonitorTimer = qmlFunction("handleMonitorTimer", "processRunning");
+  const started = recorderLifecycleContext();
+  handlePendingTimer(started, true);
+  assert.equal(started.isPending, false);
+  assert.equal(started.isRecording, true);
+  assert.equal(started.hasActiveRecording, true);
+  assert.equal(started.monitorTimer.running, true);
+  assert.deepEqual(started.notices, []);
+  assert.deepEqual(started.errors, []);
+
+  const cancelled = recorderLifecycleContext();
+  handlePendingTimer(cancelled, false);
+  assert.equal(cancelled.isPending, false);
+  assert.equal(cancelled.isRecording, false);
+  assert.deepEqual(cancelled.notices, []);
+  assert.deepEqual(cancelled.errors, []);
+
+  const ended = recorderLifecycleContext();
+  ended.isPending = false;
+  ended.isRecording = true;
+  ended.hasActiveRecording = true;
+  ended.monitorTimer.running = true;
+  handleMonitorTimer(ended, false);
+  assert.equal(ended.isRecording, true, "monitor must leave terminal state for authoritative process exit");
+  assert.equal(ended.hasActiveRecording, true);
+  assert.equal(ended.monitorTimer.running, false);
+
+  const qml = readQml("Services/Media/ScreenRecorderService.qml");
+  const recorder = qmlBlockById(qml, "Process", "recorderProcess");
+  const pending = qmlBlockById(qml, "Timer", "pendingTimer");
+  const monitor = qmlBlockById(qml, "Timer", "monitorTimer");
+  assert.match(recorder, /onExited:[\s\S]*?root\.finishRecorderProcess\(exitCode/);
+  assert.match(pending, /onTriggered:\s*root\.handlePendingTimer\(recorderProcess\.running\)/);
+  assert.match(monitor, /onTriggered:\s*root\.handleMonitorTimer\(recorderProcess\.running\)/);
+}
+
 function testScreenRecorderStopRecordingGuardsAndStopsState() {
   const stopRecording = qmlFunction("stopRecording");
   const toasts = [];
@@ -309,6 +444,8 @@ const tests = [
   testScreenRecorderLaunchRecorderBuildsCommandAndStartsPendingTimer,
   testScreenRecorderLaunchRecorderBuildsAudioSourceVariants,
   testScreenRecorderLaunchRecorderHandlesDirectoryAndFocusSizeVariants,
+  testRecorderProcessExitTransitions,
+  testRecorderPendingAndMonitorTimerTransitions,
   testScreenRecorderStopRecordingGuardsAndStopsState,
 ];
 
