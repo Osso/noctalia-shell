@@ -172,54 +172,171 @@ Singleton {
     ignoreScanResults = false;
 
     // Get existing profiles first, then scan
+    profileCheckProcess.exitObserved = false;
     profileCheckProcess.running = true;
     Logger.d("Network", "Wi-Fi scan in progress...");
   }
 
   function connect(ssid, password = "") {
-    if (connecting)
+    if (!ssid || connecting || connectProcess.running)
       return;
     connecting = true;
     connectingTo = ssid;
     lastError = "";
 
-    // Check if we have a saved connection
     if ((networks[ssid] && networks[ssid].existing) || cachedNetworks[ssid]) {
       connectProcess.mode = "saved";
-      connectProcess.ssid = ssid;
       connectProcess.password = "";
     } else {
       connectProcess.mode = "new";
-      connectProcess.ssid = ssid;
       connectProcess.password = password;
     }
-
+    connectProcess.ssid = ssid;
+    connectProcess.output = "";
+    connectProcess.errorOutput = "";
+    connectProcess.exitObserved = false;
+    connectProcess.generation += 1;
     connectProcess.running = true;
   }
 
+  function finishConnect(ssid, generation, exitCode, output, errorOutput) {
+    if (connectProcess.generation !== generation || root.connectingTo !== ssid)
+      return;
+    connectProcess.password = "";
+    root.connectingTo = "";
+    root.connecting = false;
+
+    if (exitCode === 0) {
+      const known = Object.assign({}, cacheAdapter.knownNetworks);
+      known[ssid] = {
+        "profileName": ssid,
+        "lastConnected": Date.now()
+      };
+      cacheAdapter.knownNetworks = known;
+      cacheAdapter.lastConnected = ssid;
+      root.saveCache();
+      root.updateNetworkStatus(ssid, true);
+      root.lastError = "";
+      Logger.i("Network", `Connected to network: '${ssid}'`);
+      ToastService.showNotice(I18n.tr("wifi.panel.title"), I18n.tr("toast.wifi.connected", {
+                                                                     "ssid": ssid
+                                                                   }), "wifi");
+      root.refreshNetworkStatus();
+      if (root.activePolling) {
+        delayedScanTimer.interval = 5000;
+        delayedScanTimer.restart();
+      }
+      return;
+    }
+
+    const diagnostic = errorOutput.trim() || output.trim();
+    if (diagnostic.includes("Secrets were required") || diagnostic.includes("no secrets provided")) {
+      root.lastError = "Incorrect password";
+      root.forget(ssid);
+    } else if (diagnostic.includes("No network with SSID")) {
+      root.lastError = "Network not found";
+    } else if (diagnostic.includes("Timeout")) {
+      root.lastError = "Connection timeout";
+    } else {
+      root.lastError = diagnostic.split("\n")[0].trim() || `nmcli connect failed with exit ${exitCode}`;
+    }
+    Logger.w("Network", "Connect error: " + root.lastError);
+  }
+
+  function handleConnectStartFailure(ssid, generation, exitObserved) {
+    if (!exitObserved && connectProcess.generation === generation && root.connectingTo === ssid)
+      root.finishConnect(ssid, generation, -1, "", "nmcli connect failed to start");
+  }
+
   function disconnect(ssid) {
+    if (!ssid || disconnectingFrom || disconnectProcess.running)
+      return;
     disconnectingFrom = ssid;
     disconnectProcess.ssid = ssid;
+    disconnectProcess.output = "";
+    disconnectProcess.errorOutput = "";
+    disconnectProcess.exitObserved = false;
+    disconnectProcess.generation += 1;
     disconnectProcess.running = true;
   }
 
-  function forget(ssid) {
-    forgettingNetwork = ssid;
+  function finishDisconnect(ssid, generation, exitCode, output, errorOutput) {
+    if (disconnectProcess.generation !== generation || root.disconnectingFrom !== ssid)
+      return;
+    root.disconnectingFrom = "";
 
-    // Remove from cache
-    let known = cacheAdapter.knownNetworks;
-    delete known[ssid];
-    cacheAdapter.knownNetworks = known;
-
-    if (cacheAdapter.lastConnected === ssid) {
-      cacheAdapter.lastConnected = "";
+    if (exitCode === 0) {
+      root.updateNetworkStatus(ssid, false);
+      root.lastError = "";
+      Logger.i("Network", `Disconnected from network: '${ssid}'`);
+      ToastService.showNotice(I18n.tr("wifi.panel.title"), I18n.tr("toast.wifi.disconnected", {
+                                                                     "ssid": ssid
+                                                                   }), "wifi-off");
+      root.refreshNetworkStatus();
+      if (root.activePolling) {
+        delayedScanTimer.interval = 1000;
+        delayedScanTimer.restart();
+      }
+      return;
     }
 
-    saveCache();
+    root.lastError = (errorOutput.trim() || output.trim()).split("\n")[0].trim() || `nmcli disconnect failed with exit ${exitCode}`;
+    Logger.w("Network", "Disconnect error: " + root.lastError);
+  }
 
-    // Remove from system
+  function handleDisconnectStartFailure(ssid, generation, exitObserved) {
+    if (!exitObserved && disconnectProcess.generation === generation && root.disconnectingFrom === ssid)
+      root.finishDisconnect(ssid, generation, -1, "", "nmcli disconnect failed to start");
+  }
+
+  function forget(ssid) {
+    if (!ssid || forgettingNetwork || forgetProcess.running)
+      return;
+    forgettingNetwork = ssid;
     forgetProcess.ssid = ssid;
+    forgetProcess.output = "";
+    forgetProcess.errorOutput = "";
+    forgetProcess.exitObserved = false;
     forgetProcess.running = true;
+  }
+
+  function finishForget(ssid, exitCode, output, errorOutput) {
+    if (root.forgettingNetwork !== ssid)
+      return;
+    root.forgettingNetwork = "";
+
+    if (exitCode === 0) {
+      const known = Object.assign({}, cacheAdapter.knownNetworks);
+      delete known[ssid];
+      cacheAdapter.knownNetworks = known;
+      if (cacheAdapter.lastConnected === ssid)
+        cacheAdapter.lastConnected = "";
+      root.saveCache();
+
+      const nets = Object.assign({}, root.networks);
+      if (nets[ssid]) {
+        nets[ssid] = Object.assign({}, nets[ssid], {
+                                    "cached": false,
+                                    "existing": false
+                                  });
+        root.networks = nets;
+      }
+      root.lastError = "";
+      Logger.i("Network", `Forget network: "${ssid}"`);
+      Logger.d("Network", output.trim().replace(/[\r\n]/g, " "));
+      if (root.activePolling) {
+        delayedScanTimer.interval = 5000;
+        delayedScanTimer.restart();
+      }
+    } else {
+      root.lastError = (errorOutput.trim() || output.trim()).split("\n")[0].trim() || `nmcli forget failed with exit ${exitCode}`;
+      Logger.w("Network", "Forget error: " + root.lastError);
+    }
+  }
+
+  function handleForgetStartFailure(ssid, exitObserved) {
+    if (!exitObserved && root.forgettingNetwork === ssid)
+      root.finishForget(ssid, -1, "", "nmcli forget failed to start");
   }
 
   // Helper function to immediately update network status
@@ -390,14 +507,66 @@ Singleton {
     };
   }
 
+  function finishEthernetState(exitCode, output, errorOutput) {
+    if (exitCode !== 0) {
+      Logger.w("Network", errorOutput.trim() || output.trim() || `nmcli device status failed with exit ${exitCode}`);
+      return;
+    }
+    root.applyDeviceStateOutput(output);
+  }
+
+  function handleEthernetStateStartFailure(exitObserved) {
+    if (!exitObserved) {
+      root.finishEthernetState(-1, "", "nmcli device status failed to start");
+    }
+  }
+
+  function finishWifiState(exitCode, output, errorOutput) {
+    if (exitCode !== 0) {
+      Logger.w("Network", errorOutput.trim() || output.trim() || `nmcli Wi-Fi status failed with exit ${exitCode}`);
+      return;
+    }
+
+    const enabled = output.trim() === "enabled";
+    Logger.d("Network", "Wi-Fi adapter detected as enabled:", enabled);
+    if (Settings.data.network.wifiEnabled !== enabled) {
+      Settings.data.network.wifiEnabled = enabled;
+    }
+  }
+
+  function handleWifiStateStartFailure(exitObserved) {
+    if (!exitObserved) {
+      root.finishWifiState(-1, "", "nmcli Wi-Fi status failed to start");
+    }
+  }
+
   // Processes
   Process {
     id: ethernetStateProcess
     running: false
     command: ["nmcli", "-t", "-f", "DEVICE,TYPE,STATE,CONNECTION", "device"]
 
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
+
     stdout: StdioCollector {
-      onStreamFinished: applyDeviceStateOutput(text)
+      onStreamFinished: ethernetStateProcess.output = text
+    }
+    stderr: StdioCollector {
+      onStreamFinished: ethernetStateProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      ethernetStateProcess.exitObserved = true;
+      root.finishEthernetState(exitCode, ethernetStateProcess.output, ethernetStateProcess.errorOutput);
+      ethernetStateProcess.output = "";
+      ethernetStateProcess.errorOutput = "";
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleEthernetStateStartFailure(ethernetStateProcess.exitObserved);
+        ethernetStateProcess.exitObserved = false;
+      }
     }
   }
 
@@ -408,13 +577,26 @@ Singleton {
     running: false
     command: ["nmcli", "radio", "wifi"]
 
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
+
     stdout: StdioCollector {
-      onStreamFinished: {
-        const enabled = text.trim() === "enabled";
-        Logger.d("Network", "Wi-Fi adapter was detect as enabled:", enabled);
-        if (Settings.data.network.wifiEnabled !== enabled) {
-          Settings.data.network.wifiEnabled = enabled;
-        }
+      onStreamFinished: wifiStateProcess.output = text
+    }
+    stderr: StdioCollector {
+      onStreamFinished: wifiStateProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      wifiStateProcess.exitObserved = true;
+      root.finishWifiState(exitCode, wifiStateProcess.output, wifiStateProcess.errorOutput);
+      wifiStateProcess.output = "";
+      wifiStateProcess.errorOutput = "";
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleWifiStateStartFailure(wifiStateProcess.exitObserved);
+        wifiStateProcess.exitObserved = false;
       }
     }
   }
@@ -442,6 +624,74 @@ Singleton {
     }
   }
 
+  function applyConnectivityResult(result) {
+    if (!result) {
+      return;
+    }
+
+    if (result === "none") {
+      connectivityCheckProcess.generation++;
+      root.networkConnectivity = result;
+      root.internetConnectivity = false;
+      connectivityCheckProcess.failedChecks = 0;
+    } else if (result === "full") {
+      connectivityCheckProcess.generation++;
+      root.networkConnectivity = result;
+      root.internetConnectivity = true;
+      connectivityCheckProcess.failedChecks = 0;
+    } else if (result === "limited" || result === "portal") {
+      connectivityCheckProcess.failedChecks = Math.min(3, connectivityCheckProcess.failedChecks + 1);
+      if (connectivityCheckProcess.failedChecks < 3) {
+        return;
+      }
+
+      root.networkConnectivity = result;
+      root.internetConnectivity = false;
+      if (pingCheckProcess.running) {
+        return;
+      }
+
+      connectivityCheckProcess.generation++;
+      pingCheckProcess.generation = connectivityCheckProcess.generation;
+      pingCheckProcess.exitObserved = false;
+      pingCheckProcess.running = true;
+      return;
+    } else if (result === "unknown") {
+      connectivityCheckProcess.generation++;
+      root.networkConnectivity = result;
+      root.internetConnectivity = true;
+      connectivityCheckProcess.failedChecks = 0;
+    } else {
+      return;
+    }
+
+    if (root.activePolling) {
+      root.scan();
+    }
+  }
+
+  function finishPingCheck(generation, exitCode) {
+    if (generation !== connectivityCheckProcess.generation) {
+      return;
+    }
+
+    connectivityCheckProcess.failedChecks = 0;
+    root.internetConnectivity = exitCode === 0;
+    if (exitCode !== 0) {
+      Logger.i("Network", "No internet connectivity");
+      ToastService.showWarning(root.cachedLastConnected, I18n.tr("toast.internet.limited"));
+    }
+    if (root.activePolling) {
+      root.scan();
+    }
+  }
+
+  function handlePingStartFailure(generation, exitObserved) {
+    if (!exitObserved) {
+      finishPingCheck(generation, -1);
+    }
+  }
+
   // Process to check the internet connectivity of the connected network
   Process {
     id: connectivityCheckProcess
@@ -449,53 +699,17 @@ Singleton {
     command: ["nmcli", "networking", "connectivity", "check"]
 
     property int failedChecks: 0
+    property int generation: 0
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        const result = text.trim();
-        if (!result) {
-          return;
-        }
-
-        if (result === "none" && root.networkConnectivity !== result) {
-          root.networkConnectivity = result;
-          connectivityCheckProcess.failedChecks = 0;
-          if (root.activePolling) {
-            root.scan();
-          }
-        }
-
-        if (result === "full" && root.networkConnectivity !== result) {
-          root.networkConnectivity = result;
-          root.internetConnectivity = true;
-          connectivityCheckProcess.failedChecks = 0;
-          if (root.activePolling) {
-            root.scan();
-          }
-        }
-
-        if ((result === "limited" || result === "portal") && root.networkConnectivity !== result) {
-          connectivityCheckProcess.failedChecks++;
-          if (connectivityCheckProcess.failedChecks === 3) {
-            root.networkConnectivity = result;
-            pingCheckProcess.running = true;
-          }
-        }
-
-        if (result === "unknown" && root.networkConnectivity !== result) {
-          root.networkConnectivity = result;
-          connectivityCheckProcess.failedChecks = 0;
-        }
-      }
+      onStreamFinished: root.applyConnectivityResult(text.trim())
     }
 
     stderr: StdioCollector {
       onStreamFinished: {
         if (text.trim()) {
           Logger.w("Network", "Connectivity check error: " + text);
-          root.networkConnectivity = "unknown";
-          root.internetConnectivity = true;
-          connectivityCheckProcess.failedChecks = 0;
+          root.applyConnectivityResult("unknown");
         }
       }
     }
@@ -505,49 +719,142 @@ Singleton {
     id: pingCheckProcess
     command: ["sh", "-c", "ping -c1 -W2 ping.archlinux.org >/dev/null 2>&1 || " + "ping -c1 -W2 1.1.1.1 >/dev/null 2>&1 || " + "curl -fsI --max-time 5 https://cloudflare.com/cdn-cgi/trace >/dev/null 2>&1"]
 
-    onExited: (exitCode, exitStatus) => {
-      if (exitCode === 0) {
-        connectivityCheckProcess.failedChecks = 0;
-      } else {
-        root.internetConnectivity = false;
-        Logger.i("Network", "No internet connectivity");
-        ToastService.showWarning(root.cachedLastConnected, I18n.tr("toast.internet.limited"));
-        connectivityCheckProcess.failedChecks = 0;
-      }
-      if (root.activePolling) {
-        root.scan();
+    property int generation: 0
+    property bool exitObserved: false
+
+    onExited: function (exitCode) {
+      pingCheckProcess.exitObserved = true;
+      root.finishPingCheck(pingCheckProcess.generation, exitCode);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handlePingStartFailure(pingCheckProcess.generation, pingCheckProcess.exitObserved);
+        pingCheckProcess.exitObserved = false;
       }
     }
   }
 
   // Helper process to get existing profiles
+  function finishScanFailure(message) {
+    root.scanning = false;
+    root.lastError = message;
+
+    if (root.scanPending) {
+      root.scanPending = false;
+      delayedScanTimer.interval = 100;
+      delayedScanTimer.restart();
+    } else if (root.activePolling) {
+      delayedScanTimer.interval = 5000;
+      delayedScanTimer.restart();
+    }
+  }
+
+  function finishSupersededScan() {
+    root.scanning = false;
+    if (root.scanPending) {
+      root.scanPending = false;
+      delayedScanTimer.interval = 100;
+      delayedScanTimer.restart();
+    }
+  }
+
+  function handleScanStartFailure(processName, exitObserved) {
+    if (!exitObserved && root.scanning) {
+      finishScanFailure(`${processName} failed to start`);
+    }
+  }
+
+  function finishProfileCheck(exitCode, output, errorOutput) {
+    if (root.ignoreScanResults) {
+      root.finishSupersededScan();
+      return;
+    }
+    if (exitCode !== 0) {
+      finishScanFailure(errorOutput.trim() || `nmcli profile check failed with exit ${exitCode}`);
+      return;
+    }
+
+    const profiles = {};
+    const lines = output.split("\n").filter(line => line.trim());
+    for (const line of lines) {
+      profiles[line.trim()] = true;
+    }
+    scanProcess.existingProfiles = profiles;
+    scanProcess.exitObserved = false;
+    scanProcess.running = true;
+  }
+
+  function finishNetworkScan(exitCode, output, errorOutput) {
+    if (root.ignoreScanResults) {
+      root.finishSupersededScan();
+      return;
+    }
+    if (exitCode !== 0) {
+      finishScanFailure(errorOutput.trim() || `nmcli scan failed with exit ${exitCode}`);
+      return;
+    }
+
+    const parsed = parseNetworkScanOutput(output, scanProcess.existingProfiles, cacheAdapter.knownNetworks, cacheAdapter.lastConnected);
+    const networksMap = parsed.networks;
+    if (parsed.shouldSaveCache) {
+      cacheAdapter.lastConnected = parsed.lastConnected;
+      saveCache();
+    }
+
+    root.logNetworkChanges(networksMap);
+    Logger.d("Network", "Wi-Fi scan completed");
+    root.networks = networksMap;
+    root.scanning = false;
+    if (root.scanPending) {
+      root.scanPending = false;
+      delayedScanTimer.interval = 100;
+      delayedScanTimer.restart();
+    }
+  }
+
+  function logNetworkChanges(networksMap) {
+    const oldSSIDs = Object.keys(root.networks);
+    const newSSIDs = Object.keys(networksMap);
+    const newNetworks = newSSIDs.filter(ssid => !oldSSIDs.includes(ssid));
+    const lostNetworks = oldSSIDs.filter(ssid => !newSSIDs.includes(ssid));
+
+    if (newNetworks.length > 0) {
+      Logger.d("Network", "New Wi-Fi SSID discovered:", newNetworks.join(", "));
+    }
+    if (lostNetworks.length > 0) {
+      Logger.d("Network", "Wi-Fi SSID disappeared:", lostNetworks.join(", "));
+    }
+    if (newNetworks.length > 0 || lostNetworks.length > 0) {
+      Logger.d("Network", "Total Wi-Fi SSIDs:", newSSIDs.length);
+    }
+  }
+
   Process {
     id: profileCheckProcess
     running: false
     command: ["nmcli", "-t", "-f", "NAME", "connection", "show"]
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        if (root.ignoreScanResults) {
-          Logger.d("Network", "Ignoring profile check results (new scan requested)");
-          root.scanning = false;
-
-          // Check if we need to start a new scan
-          if (root.scanPending) {
-            root.scanPending = false;
-            delayedScanTimer.interval = 100;
-            delayedScanTimer.restart();
-          }
-          return;
-        }
-
-        const profiles = {};
-        const lines = text.split("\n").filter(l => l.trim());
-        for (const line of lines) {
-          profiles[line.trim()] = true;
-        }
-        scanProcess.existingProfiles = profiles;
-        scanProcess.running = true;
+      onStreamFinished: profileCheckProcess.output = text
+    }
+    stderr: StdioCollector {
+      onStreamFinished: profileCheckProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      profileCheckProcess.exitObserved = true;
+      const output = profileCheckProcess.output;
+      const errorOutput = profileCheckProcess.errorOutput;
+      profileCheckProcess.output = "";
+      profileCheckProcess.errorOutput = "";
+      root.finishProfileCheck(exitCode, output, errorOutput);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleScanStartFailure("nmcli profile check", exitObserved);
+        exitObserved = false;
       }
     }
   }
@@ -556,70 +863,29 @@ Singleton {
     id: scanProcess
     running: false
     command: ["nmcli", "-t", "-f", "SSID,SECURITY,SIGNAL,IN-USE", "device", "wifi", "list", "--rescan", "yes"]
-
     property var existingProfiles: ({})
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        if (root.ignoreScanResults) {
-          Logger.d("Network", "Ignoring scan results (new scan requested)");
-          root.scanning = false;
-
-          // Check if we need to start a new scan
-          if (root.scanPending) {
-            root.scanPending = false;
-            delayedScanTimer.interval = 100;
-            delayedScanTimer.restart();
-          }
-          return;
-        }
-
-        const parsed = parseNetworkScanOutput(text, scanProcess.existingProfiles, cacheAdapter.knownNetworks, cacheAdapter.lastConnected);
-        const networksMap = parsed.networks;
-        if (parsed.shouldSaveCache) {
-          cacheAdapter.lastConnected = parsed.lastConnected;
-          saveCache();
-        }
-
-        // Logging
-        const oldSSIDs = Object.keys(root.networks);
-        const newSSIDs = Object.keys(networksMap);
-        const newNetworks = newSSIDs.filter(ssid => !oldSSIDs.includes(ssid));
-        const lostNetworks = oldSSIDs.filter(ssid => !newSSIDs.includes(ssid));
-
-        if (newNetworks.length > 0 || lostNetworks.length > 0) {
-          if (newNetworks.length > 0) {
-            Logger.d("Network", "New Wi-Fi SSID discovered:", newNetworks.join(", "));
-          }
-          if (lostNetworks.length > 0) {
-            Logger.d("Network", "Wi-Fi SSID disappeared:", lostNetworks.join(", "));
-          }
-          Logger.d("Network", "Total Wi-Fi SSIDs:", Object.keys(networksMap).length);
-        }
-
-        Logger.d("Network", "Wi-Fi scan completed");
-        root.networks = networksMap;
-        root.scanning = false;
-
-        // Check if we need to start a new scan
-        if (root.scanPending) {
-          root.scanPending = false;
-          delayedScanTimer.interval = 100;
-          delayedScanTimer.restart();
-        }
-      }
+      onStreamFinished: scanProcess.output = text
     }
-
     stderr: StdioCollector {
-      onStreamFinished: {
-        root.scanning = false;
-        if (text.trim()) {
-          Logger.w("Network", "Scan error: " + text);
-
-          // If scan fails, retry
-          delayedScanTimer.interval = 5000;
-          delayedScanTimer.restart();
-        }
+      onStreamFinished: scanProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      scanProcess.exitObserved = true;
+      const output = scanProcess.output;
+      const errorOutput = scanProcess.errorOutput;
+      scanProcess.output = "";
+      scanProcess.errorOutput = "";
+      root.finishNetworkScan(exitCode, output, errorOutput);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleScanStartFailure("nmcli Wi-Fi scan", exitObserved);
+        exitObserved = false;
       }
     }
   }
@@ -628,6 +894,10 @@ Singleton {
     property string mode: "new"
     property string ssid: ""
     property string password: ""
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
+    property int generation: 0
     running: false
 
     command: {
@@ -646,67 +916,24 @@ Singleton {
                   })
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        // Check if the output actually indicates success
-        // nmcli outputs "Device '...' successfully activated" or "Connection successfully activated"
-        // on success. Empty output or other messages indicate failure.
-        const output = text.trim();
-
-        if (!output || (!output.includes("successfully activated") && !output.includes("Connection successfully"))) {
-          // No success message - likely an error occurred
-          // Don't update anything, let stderr handler deal with it
-          return;
-        }
-
-        // Success - update cache
-        let known = cacheAdapter.knownNetworks;
-        known[connectProcess.ssid] = {
-          "profileName": connectProcess.ssid,
-          "lastConnected": Date.now()
-        };
-        cacheAdapter.knownNetworks = known;
-        cacheAdapter.lastConnected = connectProcess.ssid;
-        saveCache();
-
-        // Immediately update the UI before scanning
-        root.updateNetworkStatus(connectProcess.ssid, true);
-
-        root.connecting = false;
-        root.connectingTo = "";
-        Logger.i("Network", `Connected to network: '${connectProcess.ssid}'`);
-        ToastService.showNotice(I18n.tr("wifi.panel.title"), I18n.tr("toast.wifi.connected", {
-                                                                       "ssid": connectProcess.ssid
-                                                                     }), "wifi");
-
-        refreshNetworkStatus();
-        // Still do a scan to get accurate signal and security info while Wi-Fi UI is active.
-        if (activePolling) {
-          delayedScanTimer.interval = 5000;
-          delayedScanTimer.restart();
-        }
-      }
+      onStreamFinished: connectProcess.output = text
     }
-
     stderr: StdioCollector {
-      onStreamFinished: {
-        root.connecting = false;
-        root.connectingTo = "";
-
-        if (text.trim()) {
-          // Parse common errors
-          if (text.includes("Secrets were required") || text.includes("no secrets provided")) {
-            root.lastError = "Incorrect password";
-            forget(connectProcess.ssid);
-          } else if (text.includes("No network with SSID")) {
-            root.lastError = "Network not found";
-          } else if (text.includes("Timeout")) {
-            root.lastError = "Connection timeout";
-          } else {
-            root.lastError = text.split("\n")[0].trim();
-          }
-
-          Logger.w("Network", "Connect error: " + text);
-        }
+      onStreamFinished: connectProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      connectProcess.exitObserved = true;
+      const output = connectProcess.output;
+      const errorOutput = connectProcess.errorOutput;
+      const generation = connectProcess.generation;
+      connectProcess.output = "";
+      connectProcess.errorOutput = "";
+      root.finishConnect(connectProcess.ssid, generation, exitCode, output, errorOutput);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleConnectStartFailure(connectProcess.ssid, connectProcess.generation, connectProcess.exitObserved);
+        connectProcess.exitObserved = false;
       }
     }
   }
@@ -714,41 +941,32 @@ Singleton {
   Process {
     id: disconnectProcess
     property string ssid: ""
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
+    property int generation: 0
     running: false
     command: ["nmcli", "connection", "down", "id", ssid]
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        Logger.i("Network", `Disconnected from network: '${disconnectProcess.ssid}'`);
-        ToastService.showNotice(I18n.tr("wifi.panel.title"), I18n.tr("toast.wifi.disconnected", {
-                                                                       "ssid": disconnectProcess.ssid
-                                                                     }), "wifi-off");
-
-        // Immediately update UI on successful disconnect
-        root.updateNetworkStatus(disconnectProcess.ssid, false);
-        root.disconnectingFrom = "";
-
-        refreshNetworkStatus();
-        // Do a scan to refresh the list while Wi-Fi UI is active.
-        if (activePolling) {
-          delayedScanTimer.interval = 1000;
-          delayedScanTimer.restart();
-        }
-      }
+      onStreamFinished: disconnectProcess.output = text
     }
-
     stderr: StdioCollector {
-      onStreamFinished: {
-        root.disconnectingFrom = "";
-        if (text.trim()) {
-          Logger.w("Network", "Disconnect error: " + text);
-        }
-        refreshNetworkStatus();
-        // Still trigger a scan even on error while Wi-Fi UI is active.
-        if (activePolling) {
-          delayedScanTimer.interval = 5000;
-          delayedScanTimer.restart();
-        }
+      onStreamFinished: disconnectProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      disconnectProcess.exitObserved = true;
+      const output = disconnectProcess.output;
+      const errorOutput = disconnectProcess.errorOutput;
+      const generation = disconnectProcess.generation;
+      disconnectProcess.output = "";
+      disconnectProcess.errorOutput = "";
+      root.finishDisconnect(disconnectProcess.ssid, generation, exitCode, output, errorOutput);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleDisconnectStartFailure(disconnectProcess.ssid, disconnectProcess.generation, disconnectProcess.exitObserved);
+        disconnectProcess.exitObserved = false;
       }
     }
   }
@@ -756,74 +974,31 @@ Singleton {
   Process {
     id: forgetProcess
     property string ssid: ""
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
     running: false
 
-    // Try multiple common profile name patterns
-    command: ["sh", "-c", `
-      ssid="$1"
-      deleted=false
-
-      # Try exact SSID match first
-      if nmcli connection delete id "$ssid" 2>/dev/null; then
-      echo "Deleted profile: $ssid"
-      deleted=true
-      fi
-
-      # Try "Auto <SSID>" pattern
-      if nmcli connection delete id "Auto $ssid" 2>/dev/null; then
-      echo "Deleted profile: Auto $ssid"
-      deleted=true
-      fi
-
-      # Try "<SSID> 1", "<SSID> 2", etc. patterns
-      for i in 1 2 3; do
-      if nmcli connection delete id "$ssid $i" 2>/dev/null; then
-      echo "Deleted profile: $ssid $i"
-      deleted=true
-      fi
-      done
-
-      if [ "$deleted" = "false" ]; then
-      echo "No profiles found for SSID: $ssid"
-      fi
-      `, "--", ssid]
+    command: ["bash", Quickshell.shellDir + "/Bin/network-forget-profiles.sh", ssid]
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        Logger.i("Network", `Forget network: "${forgetProcess.ssid}"`);
-        Logger.d("Network", text.trim().replace(/[\r\n]/g, " "));
-
-        // Update both cached and existing status immediately
-        let nets = root.networks;
-        if (nets[forgetProcess.ssid]) {
-          nets[forgetProcess.ssid].cached = false;
-          nets[forgetProcess.ssid].existing = false;
-          // Trigger property change
-          root.networks = ({});
-          root.networks = nets;
-        }
-
-        root.forgettingNetwork = "";
-
-        // Scan to verify the profile is gone while Wi-Fi UI is active.
-        if (activePolling) {
-          delayedScanTimer.interval = 5000;
-          delayedScanTimer.restart();
-        }
-      }
+      onStreamFinished: forgetProcess.output = text
     }
-
     stderr: StdioCollector {
-      onStreamFinished: {
-        root.forgettingNetwork = "";
-        if (text.trim() && !text.includes("No profiles found")) {
-          Logger.w("Network", "Forget error: " + text);
-        }
-        // Still trigger a scan even on error while Wi-Fi UI is active.
-        if (activePolling) {
-          delayedScanTimer.interval = 5000;
-          delayedScanTimer.restart();
-        }
+      onStreamFinished: forgetProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      forgetProcess.exitObserved = true;
+      const output = forgetProcess.output;
+      const errorOutput = forgetProcess.errorOutput;
+      forgetProcess.output = "";
+      forgetProcess.errorOutput = "";
+      root.finishForget(forgetProcess.ssid, exitCode, output, errorOutput);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleForgetStartFailure(forgetProcess.ssid, forgetProcess.exitObserved);
+        forgetProcess.exitObserved = false;
       }
     }
   }

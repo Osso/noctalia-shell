@@ -7,6 +7,9 @@ Bluetooth covers adapter state helpers, device ordering, device icons, connectio
 - [x] Bluetooth service startup logs that the service started.
 - [x] The read-only Bluetooth probe bounds each `bluetoothctl` query and fails with the query context and configured timeout instead of hanging.
 - [x] The Bluetooth probe accepts an explicit `NOCTALIA_BLUETOOTHCTL` command for deterministic test execution; without it, it uses the host `bluetoothctl` diagnostic.
+- [x] The rfkill Wi-Fi probe buffers stdout/stderr until process exit and only changes Wi-Fi for successful, parseable blocked-state output.
+- [x] Nonzero exits, failed process starts, empty or malformed output, and adapter loss before completion preserve Wi-Fi state, log a diagnostic, and fall back to Bluetooth state feedback.
+- [x] Normal exits are not finalized again by the process running-state transition.
 - [x] Device sorting sorts the provided device array in place.
 - [x] Device sorting falls back from `name` to `deviceName`.
 - [x] Device sorting prefers human-readable names before short/opaque names.
@@ -74,7 +77,6 @@ Bluetooth covers adapter state helpers, device ordering, device icons, connectio
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable tests for rfkill/Wi-Fi blocked detection and airplane-mode toast behavior.
 - [ ] Add executable tests for Bluetooth panel row interactions and action dispatch.
 - [ ] Add executable tests for bar/control-center Bluetooth widget behavior.
 - [ ] Add probe coverage for adapter/device discovery output beyond the deterministic controller fixture if a stable read-only probe is available.

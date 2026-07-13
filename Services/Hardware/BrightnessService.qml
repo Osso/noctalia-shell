@@ -13,7 +13,7 @@ Singleton {
   readonly property var monitors: variants.instances
   property bool appleDisplayPresent: false
   property bool ddcDetectionPending: false
-  property bool ddcDetectionCompletedOnce: false
+  property int ddcDetectionGeneration: 0
 
   function getMonitorForScreen(screen) {
     return monitors.find(m => m.modelData === screen);
@@ -46,52 +46,83 @@ Singleton {
     return detectedDisplays;
   }
 
-  function requestDdcDetection(clearExisting) {
+  function requestDdcDetection() {
     if (!Settings.data.brightness.enableDdcSupport) {
       return;
     }
 
     if (ddcProc.running) {
-      ddcDetectionPending = ddcDetectionCompletedOnce;
+      ddcDetectionPending = true;
       return;
     }
 
-    if (clearExisting) {
-      ddcMonitors = [];
-    }
-
     ddcDetectionPending = false;
+    ddcDetectionGeneration += 1;
+    ddcProc.generation = ddcDetectionGeneration;
+    ddcProc.exitObserved = false;
     ddcProc.running = true;
   }
 
-  function finishDdcDetection() {
-    ddcDetectionCompletedOnce = true;
-    if (!ddcDetectionPending) {
+  function finishDdcDetection(generation, exitCode, output, errorOutput) {
+    if (generation !== root.ddcDetectionGeneration || !Settings.data.brightness.enableDdcSupport) {
       return;
     }
 
-    ddcDetectionPending = false;
-    requestDdcDetection(false);
+    if (exitCode === 0) {
+      const detectedMonitors = BrightnessParsing.parseDdcMonitors(output);
+      if (root.hasMalformedDdcMonitor(detectedMonitors)) {
+        Logger.w("Brightness", "Malformed ddcutil detection output");
+      } else {
+        detectedMonitors.forEach(monitor => {
+                                   Logger.i("Brightness", "Detected DDC Monitor:", monitor.model, "on bus", monitor.busNum, "is DDC:", monitor.isDdc);
+                                 });
+        root.ddcMonitors = detectedMonitors.filter(monitor => monitor.isDdc);
+      }
+    } else {
+      const failure = errorOutput.trim() || `ddcutil detection failed with exit ${exitCode}`;
+      Logger.w("Brightness", failure);
+    }
+  }
+
+  function hasMalformedDdcMonitor(detectedMonitors) {
+    return detectedMonitors.some(monitor => monitor.isDdc && (monitor.model === "Unknown" || monitor.busNum === "Unknown"));
+  }
+
+  function restartPendingDdcDetection() {
+    if (!root.ddcDetectionPending || !Settings.data.brightness.enableDdcSupport) {
+      return;
+    }
+
+    root.ddcDetectionPending = false;
+    root.requestDdcDetection();
+  }
+
+  function handleDdcStartFailure(generation, exitObserved) {
+    if (!exitObserved) {
+      finishDdcDetection(generation, -1, "", "ddcutil detection failed to start");
+    }
   }
 
   reloadableId: "brightness"
 
   Component.onCompleted: {
     Logger.i("Brightness", "Service started");
-    requestDdcDetection(false);
+    requestDdcDetection();
   }
 
-  onMonitorsChanged: requestDdcDetection(true)
+  onMonitorsChanged: requestDdcDetection()
 
   Connections {
     target: Settings.data.brightness
     function onEnableDdcSupportChanged() {
       if (Settings.data.brightness.enableDdcSupport) {
         // Re-detect DDC monitors when enabled
-        requestDdcDetection(true);
+        requestDdcDetection();
       } else {
         // Clear DDC monitors when disabled
+        ddcDetectionGeneration += 1;
         ddcDetectionPending = false;
+        ddcProc.running = false;
         ddcMonitors = [];
       }
     }
@@ -115,26 +146,32 @@ Singleton {
   // Detect DDC monitors
   Process {
     id: ddcProc
-    property var ddcMonitors: []
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
+    property int generation: 0
     command: ["ddcutil", "detect", "--sleep-multiplier=0.5"]
     stdout: StdioCollector {
-      onStreamFinished: {
-        ddcProc.ddcMonitors = BrightnessParsing.parseDdcMonitors(text);
-        ddcProc.ddcMonitors.forEach(monitor => {
-                                      Logger.i(
-                                        "Brigthness",
-                                        "Detected DDC Monitor:",
-                                        monitor.model,
-                                        "on bus",
-                                        monitor.busNum,
-                                        "is DDC:",
-                                        monitor.isDdc
-                                      );
-                                    });
-        root.ddcMonitors = ddcProc.ddcMonitors.filter(m => m.isDdc);
+      onStreamFinished: ddcProc.output = text
+    }
+    stderr: StdioCollector {
+      onStreamFinished: ddcProc.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      ddcProc.exitObserved = true;
+      const output = ddcProc.output;
+      const errorOutput = ddcProc.errorOutput;
+      ddcProc.output = "";
+      ddcProc.errorOutput = "";
+      root.finishDdcDetection(ddcProc.generation, exitCode, output, errorOutput);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleDdcStartFailure(ddcProc.generation, exitObserved);
+        exitObserved = false;
+        root.restartPendingDdcDetection();
       }
     }
-    onExited: finishDdcDetection()
   }
 
   component Monitor: QtObject {

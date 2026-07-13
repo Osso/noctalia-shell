@@ -3,6 +3,7 @@ set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd -- "$script_dir/../.." && pwd)"
+readonly canonical_shell_root="/syncthing/Sync/Projects/apps/noctalia-shell"
 
 require_command() {
     local name="$1"
@@ -152,6 +153,21 @@ is_gpu_screen_recorder_monitor_row() {
     local monitor_row="$1"
 
     [[ "$monitor_row" =~ ^[^|[:space:]][^|[:space:]]*[|][0-9]+x[0-9]+$ ]]
+}
+
+has_gpu_screen_recorder_monitor_rows() {
+    local monitor_output="$1"
+    local monitor_row
+    local monitor_count=0
+
+    while IFS= read -r monitor_row; do
+        if ! is_gpu_screen_recorder_monitor_row "$monitor_row"; then
+            return 1
+        fi
+        monitor_count=$((monitor_count + 1))
+    done <<<"$monitor_output"
+
+    [ "$monitor_count" -gt 0 ]
 }
 
 has_gpu_screen_recorder_capture_option() {
@@ -1057,7 +1073,7 @@ probe_screen_recorder() {
     monitors="$(gpu-screen-recorder --list-monitors 2>/dev/null)"
     capture_options="$(gpu-screen-recorder --list-capture-options 2>/dev/null)"
 
-    if ! is_gpu_screen_recorder_monitor_row "$monitors"; then
+    if ! has_gpu_screen_recorder_monitor_rows "$monitors"; then
         echo "gpu-screen-recorder monitor list is missing or malformed: $monitors" >&2
         exit 1
     fi
@@ -1166,8 +1182,8 @@ probe_launch_contract() {
     niri_config_source="$(cat "$niri_config")"
     launch_sources="$start_wrapper_source"$'\n'"$niri_config_source"
 
-    if ! has_quickshell_launch_path "$start_wrapper_source" "$repo_root"; then
-        echo "Noctalia start wrapper does not launch the canonical repo path: $repo_root" >&2
+    if ! has_quickshell_launch_path "$start_wrapper_source" "$canonical_shell_root"; then
+        echo "Noctalia start wrapper does not launch the canonical repo path: $canonical_shell_root" >&2
         exit 1
     fi
 
@@ -1176,18 +1192,18 @@ probe_launch_contract() {
         exit 1
     fi
 
-    if ! has_quickshell_ipc_call "$niri_config_source" "$repo_root" "launcher" "toggle"; then
-        echo "Niri launcher keybind does not target the canonical Noctalia path: $repo_root" >&2
+    if ! has_quickshell_ipc_call "$niri_config_source" "$canonical_shell_root" "launcher" "toggle"; then
+        echo "Niri launcher keybind does not target the canonical Noctalia path: $canonical_shell_root" >&2
         exit 1
     fi
 
-    if ! has_quickshell_ipc_call "$niri_config_source" "$repo_root" "sessionMenu" "toggle"; then
-        echo "Niri session menu keybind does not target the canonical Noctalia path: $repo_root" >&2
+    if ! has_quickshell_ipc_call "$niri_config_source" "$canonical_shell_root" "sessionMenu" "toggle"; then
+        echo "Niri session menu keybind does not target the canonical Noctalia path: $canonical_shell_root" >&2
         exit 1
     fi
 
-    if ! has_quickshell_ipc_call "$niri_config_source" "$repo_root" "settings" "toggle"; then
-        echo "Niri settings keybind does not target the canonical Noctalia path: $repo_root" >&2
+    if ! has_quickshell_ipc_call "$niri_config_source" "$canonical_shell_root" "settings" "toggle"; then
+        echo "Niri settings keybind does not target the canonical Noctalia path: $canonical_shell_root" >&2
         exit 1
     fi
 
@@ -1209,7 +1225,7 @@ probe_ipc_targets() {
 
     local niri_config="/home/osso/.config/niri/config.kdl"
     local ipc_output required_targets
-    ipc_output="$(quickshell ipc -p "$repo_root" show)"
+    ipc_output="$(quickshell ipc -p "$canonical_shell_root" show)"
     required_targets=(
         launcher
         sessionMenu
@@ -1221,7 +1237,7 @@ probe_ipc_targets() {
     )
 
     if [[ -z "$ipc_output" ]]; then
-        echo "Quickshell IPC target list is empty for: $repo_root" >&2
+        echo "Quickshell IPC target list is empty for: $canonical_shell_root" >&2
         exit 1
     fi
 

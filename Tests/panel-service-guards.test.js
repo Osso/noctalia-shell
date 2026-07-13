@@ -23,6 +23,56 @@ function testPanelRegistrationGuards() {
   assert.match(registerPopupBody, /popupMenuWindowRegistered\(screen\)/, "registerPopupMenuWindow must emit registration signal");
 }
 
+function testPanelUnregisterRemovesOnlyMatchingObjects() {
+  const unregisterPanel = qmlFunction("unregisterPanel", "panel");
+  const unregisterPanelLoader = qmlFunction("unregisterPanelLoader", "panelKey", "loader");
+  const unregisterPopupMenuWindow = qmlFunction("unregisterPopupMenuWindow", "screenKey", "window");
+  const oldPanel = { objectName: "clockPanel-eDP-1" };
+  const newPanel = { objectName: "clockPanel-eDP-1" };
+  const oldLoader = { id: "old-loader" };
+  const newLoader = { id: "new-loader" };
+  const screen = { name: "eDP-1" };
+  const oldWindow = { id: "old-window" };
+  const newWindow = { id: "new-window" };
+  const ctx = {
+    registeredPanels: { "clockPanel-eDP-1": newPanel },
+    panelLoaders: { "clockPanel-eDP-1": newLoader },
+    popupMenuWindows: { "eDP-1": newWindow },
+    openedPanel: oldPanel,
+    Logger: { d() {} },
+  };
+
+  unregisterPanel(ctx, oldPanel);
+  unregisterPanelLoader(ctx, "clockPanel-eDP-1", oldLoader);
+  unregisterPopupMenuWindow(ctx, screen.name, oldWindow);
+
+  assert.equal(ctx.registeredPanels["clockPanel-eDP-1"], newPanel);
+  assert.equal(ctx.panelLoaders["clockPanel-eDP-1"], newLoader);
+  assert.equal(ctx.popupMenuWindows["eDP-1"], newWindow);
+  assert.equal(ctx.openedPanel, null);
+
+  ctx.openedPanel = newPanel;
+  unregisterPanel(ctx, newPanel);
+  unregisterPanelLoader(ctx, "clockPanel-eDP-1", newLoader);
+  unregisterPopupMenuWindow(ctx, screen.name, newWindow);
+
+  assert.equal("clockPanel-eDP-1" in ctx.registeredPanels, false);
+  assert.equal("clockPanel-eDP-1" in ctx.panelLoaders, false);
+  assert.equal("eDP-1" in ctx.popupMenuWindows, false);
+  assert.equal(ctx.openedPanel, null);
+}
+
+function testPanelOwnersUnregisterOnDestruction() {
+  const smartPanel = readQml("Modules/MainScreen/SmartPanel.qml");
+  const mainScreen = readQml("Modules/MainScreen/MainScreen.qml");
+  const popupWindow = readQml("Modules/MainScreen/PopupMenuWindow.qml");
+
+  assert.match(smartPanel, /Component\.onDestruction:\s*PanelService\.unregisterPanel\(root\)/);
+  assert.match(mainScreen, /Component\.onDestruction:\s*root\.unregisterLazyPanels\(\)/);
+  assert.match(popupWindow, /property string registrationKey:/);
+  assert.match(popupWindow, /Component\.onDestruction:\s*PanelService\.unregisterPopupMenuWindow\(registrationKey, root\)/);
+}
+
 function testPanelLookupGuards() {
   const getPopupBody = extractFunctionBody(source, "getPopupMenuWindow");
   const getPanelBody = extractFunctionBody(source, "getPanel");
@@ -183,6 +233,8 @@ function testPanelCloseClearsOnlyActivePanelBeforeSignal() {
 
 const tests = [
   testPanelRegistrationGuards,
+  testPanelUnregisterRemovesOnlyMatchingObjects,
+  testPanelOwnersUnregisterOnDestruction,
   testPanelLookupGuards,
   testLazyPanelLookupExecutes,
   testPanelMultiScreenPopupAndPanelLookupsExecute,

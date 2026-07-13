@@ -10,6 +10,15 @@ function qmlFunction(functionName, ...argNames) {
   return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
 }
 
+function createOsReleaseContext() {
+  const ctx = {};
+  ctx.root = ctx;
+  ctx.decodeDoubleQuotedOsReleaseValue = value => qmlFunction("decodeDoubleQuotedOsReleaseValue", "value")(ctx, value);
+  ctx.decodeUnquotedOsReleaseValue = value => qmlFunction("decodeUnquotedOsReleaseValue", "value")(ctx, value);
+  ctx.decodeOsReleaseValue = rawValue => qmlFunction("decodeOsReleaseValue", "rawValue")(ctx, rawValue);
+  return ctx;
+}
+
 function testBuildCandidatesRejectsBlankAndPathLikeNames() {
   const buildCandidates = qmlFunction("buildCandidates", "name");
   const ctx = {};
@@ -77,9 +86,10 @@ function testResolveLogoBuildsShellProbeForCandidates() {
 
 function testParseOsReleaseExtractsReadinessAndLogo() {
   const parseOsRelease = qmlFunction("parseOsRelease", "rawText");
+  const ctx = createOsReleaseContext();
 
   assert.match(source, /function parseOsRelease\(rawText\)/, "parseOsRelease must type raw os-release input");
-  assert.deepEqual(parseOsRelease({}, [
+  assert.deepEqual(parseOsRelease(ctx, [
     'NAME="NixOS"',
     'PRETTY_NAME="NixOS 26.05 (Warbler)"',
     'ID=nixos',
@@ -90,7 +100,7 @@ function testParseOsReleaseExtractsReadinessAndLogo() {
     logoName: "nixos-logo",
     isReady: true,
   });
-  assert.deepEqual(parseOsRelease({}, [
+  assert.deepEqual(parseOsRelease(ctx, [
     'NAME="Arch Linux"',
     "ID=arch",
   ].join("\n")), {
@@ -99,6 +109,103 @@ function testParseOsReleaseExtractsReadinessAndLogo() {
     logoName: "",
     isReady: true,
   });
+}
+
+function testDecodeOsReleaseValueHandlesShellStyleQuotes() {
+  const decodeOsReleaseValue = qmlFunction("decodeOsReleaseValue", "rawValue");
+  const ctx = createOsReleaseContext();
+
+  assert.equal(decodeOsReleaseValue(ctx, '"Arch Linux"'), "Arch Linux");
+  assert.equal(decodeOsReleaseValue(ctx, "'Arch Linux'"), "Arch Linux");
+  assert.equal(decodeOsReleaseValue(ctx, '"Arch\\"Custom"'), 'Arch"Custom');
+  assert.equal(decodeOsReleaseValue(ctx, '"Arch\\qLinux"'), "Arch\\qLinux");
+  assert.equal(decodeOsReleaseValue(ctx, "Arch\\ Linux"), "Arch Linux");
+  assert.equal(decodeOsReleaseValue(ctx, "Arch\\ "), "Arch ");
+}
+
+function testDecodeOsReleaseValueRejectsMalformedQuotes() {
+  const decodeOsReleaseValue = qmlFunction("decodeOsReleaseValue", "rawValue");
+  const ctx = createOsReleaseContext();
+
+  assert.throws(() => decodeOsReleaseValue(ctx, '"Arch"junk"'), /malformed/i);
+  assert.throws(() => decodeOsReleaseValue(ctx, '"Arch\\"'), /unterminated/i);
+  assert.throws(() => decodeOsReleaseValue(ctx, "'Arch'junk'"), /malformed/i);
+}
+
+function testParseOsReleaseRejectsMalformedMetadata() {
+  const parseOsRelease = qmlFunction("parseOsRelease", "rawText");
+  const ctx = createOsReleaseContext();
+
+  assert.throws(() => parseOsRelease(ctx, ""), /missing NAME and ID/i);
+  assert.throws(() => parseOsRelease(ctx, "COMMENT=not-host-metadata"), /missing NAME and ID/i);
+  assert.throws(() => parseOsRelease(ctx, 'NAME="   "\nID="   "'), /missing NAME and ID/i);
+  assert.throws(() => parseOsRelease(ctx, 'NAME="Arch Linux\nID=arch'), /unterminated/i);
+  assert.throws(() => parseOsRelease(ctx, "NAME=Arch Linux\nID=arch"), /malformed/i);
+  assert.throws(() => parseOsRelease(ctx, 'NAME="Arch Linux"\nID=arch\nBROKEN'), /malformed/i);
+}
+
+function testParseOsReleasePreservesEmbeddedEquals() {
+  const parseOsRelease = qmlFunction("parseOsRelease", "rawText");
+  const parsed = parseOsRelease(createOsReleaseContext(), 'NAME="Arch=Custom"\nID=arch');
+
+  assert.equal(parsed.osPretty, "Arch=Custom");
+  assert.equal(parsed.isReady, true);
+
+  const trailingSpace = parseOsRelease(createOsReleaseContext(), "NAME=Arch\\ \nID=arch");
+  assert.equal(trailingSpace.osPretty, "Arch", "identity normalization may trim decoded trailing space after preserving valid input syntax");
+}
+
+function testHandleOsInfoLoadFailureRecordsTerminalState() {
+  const handleOsInfoLoadFailure = qmlFunction("handleOsInfoLoadFailure", "error");
+  const warnings = [];
+  const ctx = {
+    isReady: false,
+    osInfoLoadFailed: false,
+    osInfoError: "",
+    Logger: {
+      w(...args) {
+        warnings.push(args.join(" "));
+      },
+    },
+  };
+  ctx.root = ctx;
+
+  handleOsInfoLoadFailure(ctx, "permission denied");
+
+  assert.equal(ctx.isReady, false, "failed host metadata must not report ready");
+  assert.equal(ctx.osInfoLoadFailed, true, "failed host metadata must expose terminal failure");
+  assert.equal(ctx.osInfoError, "permission denied", "failed host metadata must preserve error context");
+  assert.match(warnings.at(-1), /permission denied/, "failed host metadata must log error context");
+}
+
+function testApplyOsReleaseRecoversAfterLoadFailure() {
+  const handleOsInfoLoadFailure = qmlFunction("handleOsInfoLoadFailure", "error");
+  const applyOsRelease = qmlFunction("applyOsRelease", "rawText");
+  const ctx = {
+    isReady: false,
+    isNixOS: false,
+    osPretty: "",
+    osInfoLoadFailed: false,
+    osInfoError: "",
+    Logger: { i() {}, w() {} },
+    parseOsRelease(rawText) {
+      return qmlFunction("parseOsRelease", "rawText")(ctx, rawText);
+    },
+    resolveLogo() {},
+  };
+  ctx.root = ctx;
+  ctx.decodeDoubleQuotedOsReleaseValue = value => qmlFunction("decodeDoubleQuotedOsReleaseValue", "value")(ctx, value);
+  ctx.decodeUnquotedOsReleaseValue = value => qmlFunction("decodeUnquotedOsReleaseValue", "value")(ctx, value);
+  ctx.decodeOsReleaseValue = rawValue => qmlFunction("decodeOsReleaseValue", "rawValue")(ctx, rawValue);
+
+  handleOsInfoLoadFailure(ctx, "temporary failure");
+  applyOsRelease(ctx, 'NAME="Arch Linux"\nID=arch');
+
+  assert.equal(ctx.isReady, true, "successful retry must restore host readiness");
+  assert.equal(ctx.isNixOS, false);
+  assert.equal(ctx.osPretty, "Arch Linux");
+  assert.equal(ctx.osInfoLoadFailed, false, "successful retry must clear terminal failure");
+  assert.equal(ctx.osInfoError, "", "successful retry must clear stale error context");
 }
 
 function testHandleLogoProbeExitAssignsLogoUrl() {
@@ -149,6 +256,12 @@ const tests = [
   testResolveLogoSkipsInvalidNames,
   testResolveLogoBuildsShellProbeForCandidates,
   testParseOsReleaseExtractsReadinessAndLogo,
+  testDecodeOsReleaseValueHandlesShellStyleQuotes,
+  testDecodeOsReleaseValueRejectsMalformedQuotes,
+  testParseOsReleaseRejectsMalformedMetadata,
+  testParseOsReleasePreservesEmbeddedEquals,
+  testHandleOsInfoLoadFailureRecordsTerminalState,
+  testApplyOsReleaseRecoversAfterLoadFailure,
   testHandleLogoProbeExitAssignsLogoUrl,
   testResolveDisplayNamePrecedence,
 ];

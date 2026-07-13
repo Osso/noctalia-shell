@@ -32,6 +32,7 @@ Singleton {
   property string lastShownVersion: ""
   property bool popupScheduled: false
   property string fetchError: ""
+  property int upgradeLogRequestGeneration: 0
   property string changelogLastSeenVersion: ""
   property bool changelogStateLoaded: false
   property bool pendingShowRequest: false
@@ -129,9 +130,12 @@ Singleton {
     Logger.d("UpdateService", "Fetching upgrade log", "from:", from, "to:", to);
 
     const url = `${upgradeLogBaseUrl}/${from}/${to}`;
+    const generation = ++root.upgradeLogRequestGeneration;
     const request = new XMLHttpRequest();
     request.onreadystatechange = function () {
       if (request.readyState === XMLHttpRequest.DONE) {
+        if (generation !== root.upgradeLogRequestGeneration)
+          return;
         Logger.d("UpdateService", "Request completed with status:", request.status);
         Logger.d("UpdateService", "Response text length:", request.responseText ? request.responseText.length : 0);
 
@@ -369,8 +373,9 @@ Singleton {
         Qt.callLater(executeSave);
       }
     } catch (error) {
-      Logger.e("UpdateService", "Failed to save changelog state:", error);
+      pendingSave = true;
       saveInProgress = false;
+      Logger.e("UpdateService", "Failed to save changelog state:", error);
     }
   }
 

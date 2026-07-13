@@ -5,6 +5,9 @@ Host Service covers host identity and operating-system metadata exposed to shell
 ### OS release parsing
 
 - [x] `/etc/os-release` parsing prefers `PRETTY_NAME`, falls back to `NAME`, detects NixOS from `ID` or pretty name, exposes the logo candidate name, and marks host metadata ready.
+- [x] Empty or malformed `/etc/os-release` metadata is rejected instead of being treated as a ready non-NixOS host.
+- [x] `/etc/os-release` load or parse failure records a terminal error state and logs the concrete failure instead of leaving readiness pending forever.
+- [x] A later successful load clears the failure and error state and restores host readiness.
 
 ### OS logo resolution
 

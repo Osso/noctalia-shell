@@ -120,6 +120,110 @@ function testBluetoothServiceIconAndActionHelpersExecute() {
   assert.equal(canDisconnect(ctx, { connected: true, pairing: false, blocked: true }), false, "blocked devices must not be disconnectable");
 }
 
+function createWifiBlockedCheckContext(blocked, adapterEnabled) {
+  const wifiStates = [];
+  const notices = [];
+  const warnings = [];
+  const ctx = {
+    blocked,
+    airplaneModeToggled: false,
+    adapter: adapterEnabled === null ? null : { enabled: adapterEnabled },
+    discoveryTimer: { running: false },
+    I18n: { tr(key) { return key; } },
+    Logger: {
+      d() {},
+      w(...args) { warnings.push(args.join(" ")); },
+    },
+    NetworkService: { setWifiEnabled(state) { wifiStates.push(state); } },
+    ToastService: { showNotice(...args) { notices.push(args); } },
+  };
+  ctx.root = ctx;
+  ctx.parseWifiBlockedOutput = output => qmlFunction("parseWifiBlockedOutput", "output")(ctx, output);
+  ctx.showBluetoothStateNotice = () => qmlFunction("showBluetoothStateNotice")(ctx);
+  ctx.wifiStates = wifiStates;
+  ctx.notices = notices;
+  ctx.warnings = warnings;
+  return ctx;
+}
+
+function testBluetoothRfkillStartResetsBufferedProcessState() {
+  const startWifiBlockedCheck = qmlFunction("startWifiBlockedCheck");
+  const ctx = {
+    checkWifiBlocked: {
+      output: "stale output",
+      errorOutput: "stale error",
+      exitObserved: true,
+      running: false,
+    },
+  };
+
+  startWifiBlockedCheck(ctx);
+  assert.equal(ctx.checkWifiBlocked.output, "", "new probes must discard stale stdout");
+  assert.equal(ctx.checkWifiBlocked.errorOutput, "", "new probes must discard stale stderr");
+  assert.equal(ctx.checkWifiBlocked.exitObserved, false, "new probes must reset exit observation");
+  assert.equal(ctx.checkWifiBlocked.running, true, "new probes must start the process");
+}
+
+function testBluetoothRfkillResultsGateAirplaneModeMutation() {
+  const finishWifiBlockedCheck = qmlFunction("finishWifiBlockedCheck", "exitCode", "output", "errorOutput");
+
+  const blocked = createWifiBlockedCheckContext(true, false);
+  finishWifiBlockedCheck(blocked, 0, "0: phy0: Wireless LAN\n\tSoft blocked: yes\n", "");
+  assert.deepEqual(blocked.wifiStates, [false], "matching blocked states must disable Wi-Fi");
+  assert.equal(blocked.notices.at(-1)[1], "toast.airplane-mode.enabled", "matching blocked states must show airplane-mode enabled");
+  assert.equal(blocked.airplaneModeToggled, false, "airplane-mode suppression must be released after handling");
+
+  const unblocked = createWifiBlockedCheckContext(false, true);
+  finishWifiBlockedCheck(unblocked, 0, "0: phy0: Wireless LAN\n\tSoft blocked: no\n", "");
+  assert.deepEqual(unblocked.wifiStates, [true], "matching unblocked states must enable Wi-Fi");
+  assert.equal(unblocked.notices.at(-1)[1], "toast.airplane-mode.disabled", "matching unblocked states must show airplane-mode disabled");
+}
+
+function testBluetoothRfkillFailuresPreserveWifiAndShowBluetoothState() {
+  const finishWifiBlockedCheck = qmlFunction("finishWifiBlockedCheck", "exitCode", "output", "errorOutput");
+
+  for (const [exitCode, output, errorOutput] of [
+    [1, "", "permission denied"],
+    [0, "", ""],
+    [0, "unexpected output", ""],
+    [0, "Soft blocked: yesterday", ""],
+    [0, "Soft blocked: none", ""],
+  ]) {
+    const ctx = createWifiBlockedCheckContext(true, false);
+    finishWifiBlockedCheck(ctx, exitCode, output, errorOutput);
+    assert.deepEqual(ctx.wifiStates, [], "failed or malformed probes must not mutate Wi-Fi");
+    assert.equal(ctx.notices.at(-1)[1], "toast.bluetooth.disabled", "probe failures must retain Bluetooth state feedback");
+    assert.equal(ctx.airplaneModeToggled, false, "probe failures must release airplane-mode suppression");
+    assert.equal(ctx.warnings.length, 1, "probe failures must log one diagnostic");
+  }
+
+  const missingAdapter = createWifiBlockedCheckContext(false, null);
+  finishWifiBlockedCheck(missingAdapter, 0, "Soft blocked: no", "");
+  assert.deepEqual(missingAdapter.wifiStates, [], "adapter loss before successful completion must not mutate Wi-Fi");
+  assert.equal(missingAdapter.notices.at(-1)[1], "toast.bluetooth.disabled", "adapter loss must still produce bounded state feedback");
+  assert.match(missingAdapter.warnings.at(-1), /adapter.*unavailable/, "adapter loss must log its concrete cause");
+}
+
+function testBluetoothRfkillFailedStartUsesRunningChanged() {
+  const handleWifiBlockedCheckStartFailure = qmlFunction("handleWifiBlockedCheckStartFailure", "exitObserved");
+  const ctx = createWifiBlockedCheckContext(false, true);
+  ctx.finishWifiBlockedCheck = (...args) => qmlFunction("finishWifiBlockedCheck", "exitCode", "output", "errorOutput")(ctx, ...args);
+
+  handleWifiBlockedCheckStartFailure(ctx, false);
+  assert.equal(ctx.warnings.length, 1, "failed start must produce a diagnostic");
+  assert.deepEqual(ctx.wifiStates, [], "failed start must not mutate Wi-Fi");
+
+  const warningCount = ctx.warnings.length;
+  handleWifiBlockedCheckStartFailure(ctx, true);
+  assert.equal(ctx.warnings.length, warningCount, "normal exit must not be finalized twice");
+}
+
+function testBluetoothRfkillProcessRoutesBufferedExitAndStartFailure() {
+  assert.match(source, /id:\s*checkWifiBlocked[\s\S]*?property string output[\s\S]*?property string errorOutput[\s\S]*?property bool exitObserved/);
+  assert.match(source, /id:\s*checkWifiBlocked[\s\S]*?onExited:\s*function\s*\(exitCode\)[\s\S]*?exitObserved = true[\s\S]*?finishWifiBlockedCheck/);
+  assert.match(source, /id:\s*checkWifiBlocked[\s\S]*?onRunningChanged:\s*\{[\s\S]*?handleWifiBlockedCheckStartFailure[\s\S]*?exitObserved = false/);
+}
+
 function testBluetoothServiceStatusSignalBatteryAndBusyHelpersExecute() {
   const getStatusString = qmlFunction("getStatusString", "device");
   const getSignalStrength = qmlFunction("getSignalStrength", "device");
@@ -157,6 +261,11 @@ const tests = [
   testBluetoothServiceDeviceActionsAndAdapterToggleFailClosed,
   testBluetoothServiceSortDevicesPrefersNamedThenSignal,
   testBluetoothServiceIconAndActionHelpersExecute,
+  testBluetoothRfkillStartResetsBufferedProcessState,
+  testBluetoothRfkillResultsGateAirplaneModeMutation,
+  testBluetoothRfkillFailuresPreserveWifiAndShowBluetoothState,
+  testBluetoothRfkillFailedStartUsesRunningChanged,
+  testBluetoothRfkillProcessRoutesBufferedExitAndStartFailure,
   testBluetoothServiceStatusSignalBatteryAndBusyHelpersExecute,
 ];
 

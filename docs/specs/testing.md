@@ -1,13 +1,21 @@
-Testing covers local regression gates, function-coverage guardrails, and log filtering used to keep this fork maintainable against current Quickshell. Runtime source lives mainly in `run-tests.sh`, `Tests/source-coverage.test.js`, `Tests/qml-function-inventory.test.js`, and `Bin/dev/quickshell-regression.sh`.
+Testing covers local regression gates, structural source-reference guardrails, executable behavior checks, QML lifecycle integration, live host probes, and log filtering used to keep this fork maintainable against current Quickshell. Runtime source lives mainly in `run-tests.sh`, `Tests/source-coverage.test.js`, `Tests/qml-function-inventory.test.js`, and `Bin/dev/quickshell-regression.sh`.
 
 ## What it must do
 
-### Function coverage guardrails
+### Evidence categories
 
-- [x] QML source function coverage must stay complete according to `code-index untested`.
-- [x] QML source function inventory must stay broad enough to catch regressions.
+- [x] **Structural reference coverage** uses `code-index` to prove source functions are inventoried and structurally referenced from tests. It does not prove runtime execution, branch coverage, QML lifecycle behavior, or integration behavior.
+- [x] **Executable behavior coverage** runs JavaScript/Python/shell logic and extracted QML function bodies with deterministic inputs.
+- [x] **QML lifecycle integration** means instantiating real QML/Quickshell objects and exercising signals, bindings, loaders, processes, and destruction ordering; current coverage is feature-specific and incomplete.
+- [x] **Live host probes** inspect the active machine or shell and must be reported separately from deterministic unit/static results.
+- [x] Runner output labels `deterministic-unit`, `structural-reference`, `qml-static`, `host-probes`, `live-log`, and `visible-notifications` evidence independently.
+
+### Structural reference guardrails
+
+- [x] QML source functions must stay structurally referenced from tests according to `code-index untested`.
+- [x] QML source function inventory must stay broad enough to catch structural-reference regressions.
 - [x] `code-index` must inventory every QML `function` declaration outside `Tests/`.
-- [x] Non-test source functions must have code-index coverage.
+- [x] Non-test source functions must stay structurally referenced from tests according to `code-index untested`.
 - [x] QML function inventory anchors must keep required high-risk QML functions discoverable.
 - [x] Every executable test file must be named by at least one `docs/specs` contract.
 - [x] Every non-meta executable test file must be named by at least one feature spec, not only by the testing spec.
@@ -20,19 +28,20 @@ Testing covers local regression gates, function-coverage guardrails, and log fil
 - [x] Current-reload log filtering must keep log lines from the current reload window.
 - [x] Fatal-pattern fixture coverage must match high-signal QML load/runtime failures and avoid normal informational log lines.
 - [x] The live Quickshell log gate must fail when the current reload window contains high-signal QML load/runtime failures.
-- [x] The live Quickshell log gate must identify the local shell from Quickshell's running-instance registry by matching this repository's `shell.qml`, without relying on the process command line.
+- [x] The live Quickshell log gate must identify the canonical runtime shell from Quickshell's running-instance registry by matching `/syncthing/Sync/Projects/apps/noctalia-shell/shell.qml`, independent of the checkout or worktree running the gate and without relying on the process command line.
 - [x] The live Quickshell log gate must report a clear no-shell diagnostic when no local shell is running.
 
 ### Runner contract
 
-- [x] `./run-tests.sh all` (the default) and `./run-tests.sh regression` run the explicit deterministic unit list, structural QML static check, read-only service probes, and active Quickshell log gate; they do not run visible notification probes.
-- [x] `./run-tests.sh unit` runs the explicit deterministic test list: JavaScript unit, guard, and contract tests plus Python/Bash parser and log-filter fixtures, without host probes or visible notifications. It does not auto-discover every executable test file.
-- [x] `./run-tests.sh qml` runs the structural QML static check.
-- [x] `./run-tests.sh probes` runs read-only service probes and injects the deterministic Bluetooth CLI fixture rather than contacting host Bluetooth hardware.
+- [x] `./run-tests.sh all` (the default) and `./run-tests.sh regression` run deterministic unit tests, structural-reference checks, QML static checks, read-only host probes, and the active Quickshell log gate; they do not run visible notification probes.
+- [x] `./run-tests.sh unit` discovers every `Tests/*.test.js` suite, runs behavior suites under `deterministic-unit`, then runs source inventory/coverage meta-tests under `structural-reference`.
+- [x] Adding a JavaScript test suite requires no manual runner-list update; the deterministic runner-completeness test proves discovery and discovery-failure handling.
+- [x] `./run-tests.sh qml` runs the focused QML static check.
+- [x] `./run-tests.sh probes` runs read-only service probes, injects the deterministic Bluetooth CLI fixture rather than contacting host Bluetooth hardware, and validates launch/IPC contracts against the canonical runtime shell path rather than the invoking worktree.
 - [x] `./run-tests.sh log` runs the active Quickshell log regression gate.
-- [x] `./run-tests.sh notifications` runs the visible notification probes and is isolated from the default gates.
-- [x] The runner keeps deterministic tests (`unit`), structural QML lint (`qml`), host/read-only probes (`probes`), active log checks (`log`), and visible notification probes (`notifications`) as separate command paths; `all` and `regression` compose only the first four.
-- [x] Runner and helper gates fail closed: `set -euo pipefail` stops composed commands on non-zero subcommands; commands with explicit dependency checks and unknown commands return status 2; failed or malformed probes, a missing local shell, and fatal current-reload log matches return status 1. Documented optional states are limited to unavailable/unsupported clipboard MIME data and an absent LG DDC monitor.
+- [x] `./run-tests.sh notifications` runs visible notification probes and is isolated from the default gates.
+- [x] `all` and `regression` report visible notifications as explicitly excluded before running deterministic unit, structural reference, QML static, host probes, and live logs.
+- [x] Category wrappers preserve fail-closed execution: a failed command cannot continue to a PASS category record.
 
 ## How it works
 
@@ -40,9 +49,13 @@ Testing covers local regression gates, function-coverage guardrails, and log fil
 
 ## Implementation inventory
 
-- `run-tests.sh` - local test runner and gate grouping.
-- `Tests/source-coverage.test.js` - source function coverage and QML declaration inventory guard.
+- `run-tests.sh` - local test runner, fail-closed JavaScript test discovery, and gate grouping.
+- `Tests/source-coverage.test.js` - structural source-reference, QML declaration inventory, evidence-category, and test-to-spec mapping guard.
+- `Tests/runner-completeness.test.js` - executable runner discovery and discovery-failure coverage.
+- `Tests/test-runner-categories.test.sh` - evidence-category mapping, ordering, fail-closed execution, and caller-errexit coverage.
 - `Tests/qml-function-inventory.test.js` - explicit QML function anchor inventory for high-risk source files.
+- `Tests/qml-test-utils.js` - shared comment-aware QML component and handler extraction used by structural UI contracts.
+- `Tests/qml-test-utils.test.js` - lexical-decoy and alternate-brace-format coverage for shared QML extraction.
 - `Tests/quickshell-regression.test.sh` - current-reload log filtering fixture.
 - `Bin/dev/quickshell-regression.sh` - live Quickshell log regression gate.
 - `Bin/dev/qml-static-check.sh` - focused qmllint gate.
@@ -53,14 +66,15 @@ Testing covers local regression gates, function-coverage guardrails, and log fil
 
 - `Tests/source-coverage.test.js`
 - `Tests/qml-function-inventory.test.js`
+- `Tests/qml-test-utils.test.js`
 - `Tests/quickshell-regression.test.sh`
+- `Tests/runner-completeness.test.js`
 - `Tests/service-probes-parsing.test.sh`
+- `Tests/test-runner-categories.test.sh`
 
 ## Known gaps (current cycle)
 
-- [ ] The registry fixture does not yet assert selection of the newest matching `shell.qml` instance when multiple local registrations exist.
-- [ ] Add the spec-mapped executable guard tests currently omitted from `run_unit_tests`: `Tests/audio-ui-guards.test.js`, `Tests/background-resource-guards.test.js`, `Tests/battery-service-guards.test.js`, `Tests/clock-widget-guards.test.js`, `Tests/control-center-panel-guards.test.js`, `Tests/control-center-widget-registry-guards.test.js`, `Tests/fan-widget-guards.test.js`, `Tests/image-widget-resource-guards.test.js`, `Tests/keyboard-layout-widget-guards.test.js`, `Tests/lock-keys-service-guards.test.js`, `Tests/main-screen-lazy-panels.test.js`, `Tests/runtime-warning-guards.test.js`, and `Tests/simple-toast-guards.test.js`.
-- [ ] Normalize missing direct command dependencies in `run-tests.sh unit` and `run-tests.sh notifications`; currently those paths can return shell status 127 instead of the documented status 2.
+None for the current registry-selection contract.
 
 ## Out of scope
 

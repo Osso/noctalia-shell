@@ -28,6 +28,8 @@ function testUpdateServiceInitializationAndChangelogRequestGuards() {
   assert.match(fetchBody, /from = "v3\.0\.0"/, "fetchUpgradeLog must reset inverted version ranges");
   assert.match(fetchBody, /const url = `\$\{upgradeLogBaseUrl\}\/\$\{from\}\/\$\{to\}`/, "fetchUpgradeLog must build upgrade log URL from normalized range");
   assert.match(fetchBody, /request\.open\("GET",\s*url\)/, "fetchUpgradeLog must use GET");
+  assert.match(fetchBody, /const generation = \+\+root\.upgradeLogRequestGeneration/, "fetchUpgradeLog must identify the newest request");
+  assert.match(fetchBody, /generation !== root\.upgradeLogRequestGeneration[\s\S]*return;/, "fetchUpgradeLog must ignore stale completions");
   assert.match(fetchBody, /request\.send\(\)/, "fetchUpgradeLog must send the request");
 }
 
@@ -122,7 +124,7 @@ function testUpdateServiceChangelogStatePersistenceGuards() {
   assert.match(executeBody, /ShellState\.setChangelogState\(\{[\s\S]*lastSeenVersion: changelogLastSeenVersion \|\| ""[\s\S]*\}\)/, "executeSave must persist last seen version");
   assert.match(executeBody, /saveInProgress = false/, "executeSave must clear save-in-progress flag");
   assert.match(executeBody, /if \(pendingSave\)[\s\S]*Qt\.callLater\(executeSave\)/, "executeSave must handle saves queued during save");
-  assert.match(executeBody, /Logger\.e\("UpdateService",\s*"Failed to save changelog state:",\s*error\)/, "executeSave must log save failures");
+  assert.match(executeBody, /catch \(error\)[\s\S]*pendingSave = true[\s\S]*saveInProgress = false[\s\S]*Logger\.e\("UpdateService",\s*"Failed to save changelog state:",\s*error\)/, "executeSave must preserve failed saves for a later retry");
   assert.match(saveBody, /debouncedSaveChangelogState\(\)/, "saveChangelogState must preserve immediate-save compatibility through debounce path");
 }
 

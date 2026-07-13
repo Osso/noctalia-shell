@@ -68,6 +68,7 @@ Notifications cover notification server lifecycle, suppression rules, replacemen
 ## Tests asserting this spec
 
 - `Tests/notification-service-gap-guards.test.js`
+- `Tests/shell-state-consumer-roundtrip.test.js`
 - `Tests/notification-history-panel-guards.test.js`
 - `Tests/widget-helper-guards.test.js`
 - `Tests/qml-runtime-guards.test.js`

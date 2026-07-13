@@ -1,15 +1,24 @@
-Settings covers persisted shell configuration, default settings generation, versioned migrations, widget-setting upgrades, the Settings panel navigation shell, and broad validation that QML settings references exist in defaults. Runtime source lives mainly in `Commons/Settings.qml` and `Modules/Panels/Settings/SettingsPanel.qml`; implementation notes belong in [docs/wiki/systems/settings.md](../wiki/systems/settings.md).
+Settings covers persisted shell configuration, startup bootstrap and recovery, default settings generation, versioned migrations, widget-setting upgrades, the Settings panel navigation shell, and broad validation that QML settings references exist in defaults. Runtime source lives mainly in `Commons/Settings.qml` and `Modules/Panels/Settings/SettingsPanel.qml`; implementation notes belong in [docs/wiki/systems/settings.md](../wiki/systems/settings.md).
 
 ## What it must do
 
 ### Settings singleton
 
+- [x] Settings bootstrap starts in a directory-preparation state; primary validation/default/hydration `FileView`s are lifecycle-scoped, and the full shell remains gated until `Settings.ready`.
+- [x] Settings loading validates raw JSON, snapshots the original bytes in cache, verifies the snapshot by reading it back, and hydrates the primary `JsonAdapter` only from that verified snapshot; corrupt or non-object JSON must enter an explicit error state without writing the primary settings path.
+- [x] Missing settings may create defaults only before the first successful load; later deletion or failure must not silently recreate configuration.
+- [x] Validation, default creation, and hydration callbacks must ignore stale loader generations.
+- [x] Successful snapshot hydration runs migrations, marks settings ready, and permits full-shell construction; ready-state persistence uses a write-only `FileView` and a separate raw-file watcher.
+- [x] A settings file change after readiness is re-read and canonicalized as JSON before comparison; matching current-adapter or in-flight own-write content is ignored, while divergent or invalid external content unloads the full shell and starts a new validation generation.
+- [x] After an error, settings remains in the explicit error state until the user requests Retry; retry starts a new generation and performs read-only validation, except that a first-run missing file may trigger default creation and incomplete directory preparation may be retried.
 - [x] Path preprocessing expands `~` and `~/...` using `$HOME`, leaves absolute/empty strings unchanged, and preserves non-string values.
-- [x] Immediate saves write the primary settings adapter, write the fallback adapter only when `NOCTALIA_SETTINGS_FALLBACK` is configured, and emit `settingsSaved`.
+- [x] Immediate saves write only the primary settings adapter; overlapping requests preserve the in-flight snapshot, queue one follow-up, and emit `settingsSaved` only after a current-generation read-back canonicalizes to the intended snapshot before processing the queued current adapter state.
 - [x] Default settings generation converts the adapter to a plain object, base64-encodes it, and writes `Assets/settings-default.json` through a detached shell command.
 - [x] Versioned migrations run only migrations newer than the current settings version.
 - [x] Versioned migrations pass the root object, settings adapter, and logger to migration objects.
 - [x] Versioned migrations destroy migration instances after use, log failed migrations, and log invalid migration objects.
+- [x] Migration failures do not publish partially hydrated settings: all newer migrations are attempted and cleaned up, but any failed, invalid, or throwing migration leaves bootstrap in `Error` before `Ready`.
+- [ ] `Settings.data` aliases a separate `SettingsData` `JsonAdapter`; schema/default values live in `Commons/SettingsData.qml`, while lifecycle, persistence, migration, and upgrade orchestration remain in `Commons/Settings.qml`.
 - [x] Widget upgrades prune stale keys, preserve existing valid values, add missing metadata defaults, and report whether a mutation happened.
 - [x] Settings-data upgrade defers with a warning until the BarWidgetRegistry is ready.
 - [x] Settings-data upgrade removes invalid bar widgets, upgrades valid widgets, guarantees a Control Center widget exists, and logs the mutations.
@@ -63,7 +72,10 @@ Settings covers persisted shell configuration, default settings generation, vers
 
 ## Implementation inventory
 
-- `Commons/Settings.qml` - persisted settings singleton, file adapters, default generation, migrations, and settings upgrades.
+- `Commons/Settings.qml` - persisted settings singleton, bootstrap state machine, lifecycle-scoped primary file adapters, default generation, migrations, and settings upgrades.
+- `Commons/SettingsData.qml` - declarative `JsonAdapter` schema and default settings values.
+- `Modules/Startup/SettingsLoadError.qml` - standalone settings-independent startup error surface.
+- `shell.qml` - mutually exclusive startup error and full-shell activation.
 - `Commons/Migrations/MigrationRegistry.qml` - version-to-migration component registry.
 - `Commons/Migrations/Migration26.qml` - legacy calendar card migration.
 - `Assets/settings-default.json` - canonical default settings shape used by reference validation.
@@ -77,6 +89,7 @@ Settings covers persisted shell configuration, default settings generation, vers
 ## Tests asserting this spec
 
 - `Tests/settings-service-guards.test.js`
+- `Tests/shell-setup-wizard-guards.test.js`
 - `Tests/migration26-guards.test.js`
 - `Tests/widget-registry.test.js`
 - `Tests/settings-panel-guards.test.js`
@@ -86,8 +99,8 @@ Settings covers persisted shell configuration, default settings generation, vers
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for settings file load failure and recovery behavior.
-- [ ] Add executable coverage for fallback settings file loading, not only fallback writes.
+- [x] Add executable JavaScript state-transition coverage for settings validation, stale callbacks, readiness, invalidation, and retry behavior.
+- [ ] Add a non-visible isolated Quickshell lifecycle harness for live `Process`/`FileView` integration (construction, load/save signals, file watching, and shell gating); current tests use extracted QML functions and source assertions only. Never point it at the real config or desktop runtime.
 - [ ] Add executable coverage for visible Settings panel rendering and tab switching.
 - [ ] Split feature-specific settings tab behavior into each feature spec when the tab has enough direct tests.
 

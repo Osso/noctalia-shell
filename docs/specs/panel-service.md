@@ -12,6 +12,9 @@ PanelService covers shared panel registration, popup-menu window lookup, panel l
 - [x] Popup-menu window registration ignores missing screen or window arguments.
 - [x] Popup-menu window registration stores windows by screen name.
 - [x] Popup-menu window registration emits the popup-window registration signal.
+- [x] Panels, lazy loaders, and popup windows unregister during owner destruction.
+- [x] Unregister operations remove entries only when the registered object identity still matches, so an old destroyed owner cannot delete a newer replacement using the same screen key.
+- [x] Unregistering the currently open panel clears the active-panel reference.
 
 ### Lookup
 
@@ -42,7 +45,9 @@ PanelService covers shared panel registration, popup-menu window lookup, panel l
 ## Implementation inventory
 
 - `Services/UI/PanelService.qml` - shared singleton for panel registration, lazy panel loader registration, popup menu window registration, panel lookup, and active-panel coordination.
-- `Modules/MainScreen/MainScreen.qml` - per-screen lazy panel loaders and lightweight background placeholders.
+- `Modules/MainScreen/MainScreen.qml` - per-screen lazy panel loaders, destruction cleanup, and lightweight background placeholders.
+- `Modules/MainScreen/SmartPanel.qml` - panel registration and destruction-time unregistration.
+- `Modules/MainScreen/PopupMenuWindow.qml` - per-screen popup registration and destruction-time unregistration.
 
 ## Tests asserting this spec
 

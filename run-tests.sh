@@ -2,138 +2,64 @@
 set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+export repo_root
 
 usage() {
     cat <<'USAGE'
-Usage: ./run-tests.sh [all|regression|log|unit|qml|probes|notifications]
+Usage: ./run-tests.sh [all|regression|log|unit|structural|qml|probes|notifications]
 
 Commands:
   all            Run non-invasive local regression checks.
   regression     Same as all.
   log            Check the active Quickshell instance log for high-signal errors.
-  unit           Run cheap pure JavaScript helper tests.
+  unit           Run deterministic tests, then structural-reference meta-tests.
+  structural     Run structural-reference inventory and coverage meta-tests.
   qml            Run focused qmllint coverage for currently lint-clean QML files.
   probes         Run read-only service probes for notifications, audio, brightness, battery, Bluetooth, clipboard, lock keys, VPN, screen recorder, program checks, system stats, host/fonts, wallpaper/colors, settings, state cache, network state, and power profile.
   notifications  Run notification probe scripts. This visibly sends notifications.
+
+Evidence categories:
+  deterministic-unit     Executable JavaScript, Python, and shell behavior tests.
+  structural-reference   Source inventory and structural-reference meta-tests.
+  qml-static             Static qmllint coverage.
+  host-probes            Read-only host and service observations.
+  live-log               Active local Quickshell log inspection.
+  visible-notifications  Visible notification probes; excluded from all/regression.
 USAGE
 }
 
 run_unit_tests() {
-    node "$repo_root/Tests/helpers.test.js"
-    node "$repo_root/Tests/widget-registry.test.js"
-    node "$repo_root/Tests/settings-references.test.js"
-    node "$repo_root/Tests/i18n-references.test.js"
-    node "$repo_root/Tests/qml-type-annotations.test.js"
-    node "$repo_root/Tests/qml-function-inventory.test.js"
-    node "$repo_root/Tests/qml-runtime-guards.test.js"
-    node "$repo_root/Tests/source-coverage.test.js"
-    node "$repo_root/Tests/launcher-guards.test.js"
-    node "$repo_root/Tests/emoji-service-guards.test.js"
-    node "$repo_root/Tests/media-service-guards.test.js"
-    node "$repo_root/Tests/migration26-guards.test.js"
-    node "$repo_root/Tests/network-service-guards.test.js"
-    node "$repo_root/Tests/night-light-service-guards.test.js"
-    node "$repo_root/Tests/idle-inhibitor-service-guards.test.js"
-    node "$repo_root/Tests/keyboard-layout-service-guards.test.js"
-    node "$repo_root/Tests/process-service-guards.test.js"
-    node "$repo_root/Tests/github-service-guards.test.js"
-    node "$repo_root/Tests/hooks-service-guards.test.js"
-    node "$repo_root/Tests/host-service-guards.test.js"
-    node "$repo_root/Tests/wallpaper-service-guards.test.js"
-    node "$repo_root/Tests/clipboard-service-guards.test.js"
-    node "$repo_root/Tests/font-service-guards.test.js"
-    node "$repo_root/Tests/fan-service-guards.test.js"
-    node "$repo_root/Tests/file-picker-guards.test.js"
-    node "$repo_root/Tests/view-wrapper-guards.test.js"
-    node "$repo_root/Tests/dock-menu-guards.test.js"
-    node "$repo_root/Tests/emoji-plugin-guards.test.js"
-    node "$repo_root/Tests/i18n-service-guards.test.js"
-    node "$repo_root/Tests/icons-guards.test.js"
-    node "$repo_root/Tests/location-service-guards.test.js"
-    node "$repo_root/Tests/logger-guards.test.js"
-    node "$repo_root/Tests/panel-service-guards.test.js"
-    node "$repo_root/Tests/mango-service-guards.test.js"
-    node "$repo_root/Tests/active-window-widget-guards.test.js"
-    node "$repo_root/Tests/audio-service-guards.test.js"
-    node "$repo_root/Tests/app-theme-service-guards.test.js"
-    node "$repo_root/Tests/applications-plugin-guards.test.js"
-    node "$repo_root/Tests/bar-tab-guards.test.js"
-    node "$repo_root/Tests/bar-service-guards.test.js"
-    node "$repo_root/Tests/bar-widget-registry-guards.test.js"
-    node "$repo_root/Tests/bar-pill-vertical-guards.test.js"
-    node "$repo_root/Tests/battery-panel-guards.test.js"
-    node "$repo_root/Tests/battery-tab-guards.test.js"
-    node "$repo_root/Tests/battery-widget-guards.test.js"
-    node "$repo_root/Tests/brightness-service-guards.test.js"
-    node "$repo_root/Tests/brightness-widget-guards.test.js"
-    node "$repo_root/Tests/bluetooth-service-guards.test.js"
-    node "$repo_root/Tests/calendar-month-card-guards.test.js"
-    node "$repo_root/Tests/calendar-service-guards.test.js"
-    node "$repo_root/Tests/calculator-plugin-guards.test.js"
-    node "$repo_root/Tests/clipboard-plugin-guards.test.js"
-    node "$repo_root/Tests/control-center-tab-guards.test.js"
-    node "$repo_root/Tests/color-scheme-tab-guards.test.js"
-    node "$repo_root/Tests/color-scheme-service-guards.test.js"
-    node "$repo_root/Tests/compositor-service-guards.test.js"
-    node "$repo_root/Tests/custom-button-settings-guards.test.js"
-    node "$repo_root/Tests/custom-button-widget-guards.test.js"
-    node "$repo_root/Tests/dark-mode-service-guards.test.js"
-    node "$repo_root/Tests/bar-action-helper-guards.test.js"
-    node "$repo_root/Tests/bar-helpers-guards.test.js"
-    node "$repo_root/Tests/widget-helper-guards.test.js"
-    node "$repo_root/Tests/settings-ui-helper-guards.test.js"
-    node "$repo_root/Tests/panel-lock-palette-helper-guards.test.js"
-    node "$repo_root/Tests/hyprland-service-guards.test.js"
-    node "$repo_root/Tests/niri-service-guards.test.js"
-    node "$repo_root/Tests/notification-history-panel-guards.test.js"
-    node "$repo_root/Tests/notification-service-gap-guards.test.js"
-    node "$repo_root/Tests/osd-tab-guards.test.js"
-    node "$repo_root/Tests/power-profile-service-guards.test.js"
-    node "$repo_root/Tests/program-checker-service-guards.test.js"
-    node "$repo_root/Tests/popup-context-menu-guards.test.js"
-    node "$repo_root/Tests/scheme-downloader-guards.test.js"
-    node "$repo_root/Tests/reorder-checkboxes-guards.test.js"
-    node "$repo_root/Tests/screen-recorder-service-guards.test.js"
-    node "$repo_root/Tests/shape-corner-helper-guards.test.js"
-    node "$repo_root/Tests/shell-state-guards.test.js"
-    node "$repo_root/Tests/shell-setup-wizard-guards.test.js"
-    node "$repo_root/Tests/session-menu-tab-guards.test.js"
-    node "$repo_root/Tests/session-menu-guards.test.js"
-    node "$repo_root/Tests/section-editor-guards.test.js"
-    node "$repo_root/Tests/settings-service-guards.test.js"
-    node "$repo_root/Tests/settings-panel-guards.test.js"
-    node "$repo_root/Tests/setup-wizard-guards.test.js"
-    node "$repo_root/Tests/setup-wallpaper-step-guards.test.js"
-    node "$repo_root/Tests/smart-panel-guards.test.js"
-    node "$repo_root/Tests/sound-service-guards.test.js"
-    node "$repo_root/Tests/spin-box-guards.test.js"
-    node "$repo_root/Tests/sway-service-guards.test.js"
-    node "$repo_root/Tests/system-stat-service-guards.test.js"
-    node "$repo_root/Tests/template-processor-guards.test.js"
-    node "$repo_root/Tests/template-registry-guards.test.js"
-    node "$repo_root/Tests/theme-icons-guards.test.js"
-    node "$repo_root/Tests/tooltip-guards.test.js"
-    node "$repo_root/Tests/update-service-guards.test.js"
-    node "$repo_root/Tests/timer-card-guards.test.js"
-    node "$repo_root/Tests/time-service-guards.test.js"
-    node "$repo_root/Tests/toast-screen-guards.test.js"
-    node "$repo_root/Tests/toast-service-guards.test.js"
-    node "$repo_root/Tests/searchable-combo-box-guards.test.js"
-    node "$repo_root/Tests/tray-menu-guards.test.js"
-    node "$repo_root/Tests/tray-widget-guards.test.js"
-    node "$repo_root/Tests/vpn-service-guards.test.js"
-    node "$repo_root/Tests/wallhaven-service-guards.test.js"
-    node "$repo_root/Tests/wallpaper-panel-guards.test.js"
-    node "$repo_root/Tests/wallpaper-tab-guards.test.js"
-    node "$repo_root/Tests/workspace-guards.test.js"
-    node "$repo_root/Tests/color-schemes.test.js"
-    node "$repo_root/Tests/template-registry.test.js"
-    node "$repo_root/Tests/shell-state-contract.test.js"
+    local javascript_tests
+    if ! javascript_tests="$(cd "$repo_root" && rg --files Tests --glob '*.test.js' | LC_ALL=C sort)"; then
+        echo "Failed to discover JavaScript tests" >&2
+        return 1
+    fi
+    if [ -z "$javascript_tests" ]; then
+        echo "Failed to discover JavaScript tests: no suites found" >&2
+        return 1
+    fi
+
+    while IFS= read -r test_file; do
+        case "$test_file" in
+            Tests/qml-function-inventory.test.js | Tests/source-coverage.test.js)
+                continue
+                ;;
+        esac
+        node "$repo_root/$test_file"
+    done <<<"$javascript_tests"
+
     python3 "$repo_root/Tests/calendar-events-safe-get-time.test.py"
     bash "$repo_root/Tests/i18n-json.test.sh"
     bash "$repo_root/Tests/calendar-scripts.test.sh"
+    bash "$repo_root/Tests/network-forget-profiles.test.sh"
     bash "$repo_root/Tests/service-probes-parsing.test.sh"
     bash "$repo_root/Tests/quickshell-regression.test.sh"
+    bash "$repo_root/Tests/test-runner-categories.test.sh"
+}
+
+run_structural_tests() {
+    node "$repo_root/Tests/qml-function-inventory.test.js"
+    node "$repo_root/Tests/source-coverage.test.js"
 }
 
 run_log_gate() {
@@ -154,35 +80,80 @@ run_notifications() {
     "$repo_root/Bin/dev/notifications-test-replace.sh" --run
 }
 
-command="${1:-all}"
+run_category() {
+    local category="$1"
+    local runner="$2"
+    echo "=== EVIDENCE START $category ==="
+    export -f "$runner"
+    local status
+    if bash -euo pipefail -c "$runner"; then
+        status=0
+    else
+        status="$?"
+    fi
+    if [ "$status" -eq 0 ]; then
+        echo "=== EVIDENCE PASS $category ==="
+        return 0
+    fi
+    echo "=== EVIDENCE FAIL $category (exit $status) ===" >&2
+    return "$status"
+}
 
-case "$command" in
-    all | regression)
-        run_unit_tests
-        run_qml_static_check
-        run_service_probes
-        run_log_gate
-        ;;
-    log)
-        run_log_gate
-        ;;
-    unit)
-        run_unit_tests
-        ;;
-    qml)
-        run_qml_static_check
-        ;;
-    probes)
-        run_service_probes
-        ;;
-    notifications)
-        run_notifications
-        ;;
-    -h | --help | help)
-        usage
-        ;;
-    *)
-        usage >&2
-        exit 2
-        ;;
-esac
+run_command() {
+    local command="${1:-all}"
+    case "$command" in
+        all | regression)
+            echo "=== EVIDENCE EXCLUDED visible-notifications (explicit opt-in) ==="
+            run_category "deterministic-unit" run_unit_tests
+            local status="$?"
+            [ "$status" -eq 0 ] || return "$status"
+            run_category "structural-reference" run_structural_tests
+            status="$?"
+            [ "$status" -eq 0 ] || return "$status"
+            run_category "qml-static" run_qml_static_check
+            status="$?"
+            [ "$status" -eq 0 ] || return "$status"
+            run_category "host-probes" run_service_probes
+            status="$?"
+            [ "$status" -eq 0 ] || return "$status"
+            run_category "live-log" run_log_gate
+            status="$?"
+            [ "$status" -eq 0 ] || return "$status"
+            echo "=== REGRESSION PASS ==="
+            ;;
+        log)
+            run_category "live-log" run_log_gate
+            ;;
+        unit)
+            run_category "deterministic-unit" run_unit_tests
+            local status="$?"
+            [ "$status" -eq 0 ] || return "$status"
+            run_category "structural-reference" run_structural_tests
+            status="$?"
+            [ "$status" -eq 0 ] || return "$status"
+            ;;
+        structural)
+            run_category "structural-reference" run_structural_tests
+            ;;
+        qml)
+            run_category "qml-static" run_qml_static_check
+            ;;
+        probes)
+            run_category "host-probes" run_service_probes
+            ;;
+        notifications)
+            run_category "visible-notifications" run_notifications
+            ;;
+        -h | --help | help)
+            usage
+            ;;
+        *)
+            usage >&2
+            return 2
+            ;;
+    esac
+}
+
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+    run_command "${1:-all}"
+fi

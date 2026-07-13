@@ -1,15 +1,58 @@
 #!/usr/bin/env node
 
 const assert = require("assert/strict");
-const { readQml } = require("./qml-test-utils");
+const { extractFunctionBody, readQml } = require("./qml-test-utils");
+
+const mainScreenSource = readQml("Modules/MainScreen/MainScreen.qml");
+
+function qmlFunction(functionName, ...argNames) {
+  const body = extractFunctionBody(mainScreenSource, functionName);
+  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+}
 
 function testMainScreenRegistersLazyPanelLoaders() {
   const source = readQml("Modules/MainScreen/MainScreen.qml");
 
   assert.match(source, /function registerLazyPanel\(panelName, loader\)/, "MainScreen must centralize lazy panel registration");
-  assert.match(source, /PanelService\.registerPanelLoader\(panelObjectName\(panelName\), loader\)/, "MainScreen must register panel loaders with PanelService");
+  assert.match(source, /const panelKey = panelObjectName\(panelName\)[\s\S]*PanelService\.registerPanelLoader\(panelKey, loader\)/, "MainScreen must register panel loaders with PanelService");
+  assert.match(source, /Component\.onDestruction: root\.unregisterLazyPanels\(\)/, "MainScreen must unregister its lazy loaders during destruction");
   assert.match(source, /readonly property Item audioPanelPlaceholder: audioPanelLoader\.item \? audioPanelLoader\.item\.panelRegion : audioPanelPlaceholderItem/, "audio panel background placeholder must not force panel loading");
   assert.match(source, /readonly property Item settingsPanelPlaceholder: settingsPanelLoader\.item \? settingsPanelLoader\.item\.panelRegion : settingsPanelPlaceholderItem/, "settings panel background placeholder must not force panel loading");
+}
+
+function testMainScreenRegistersAndUnregistersLazyLoaders() {
+  const registerLazyPanel = qmlFunction("registerLazyPanel", "panelName", "loader");
+  const unregisterLazyPanels = qmlFunction("unregisterLazyPanels");
+  const registrations = [];
+  const removals = [];
+  const ctx = {
+    registeredLazyPanels: [],
+    panelObjectName(name) {
+      return `${name}-eDP-1`;
+    },
+    PanelService: {
+      registerPanelLoader(key, loader) {
+        registrations.push({ key, loader });
+      },
+      unregisterPanelLoader(key, loader) {
+        removals.push({ key, loader });
+      },
+    },
+  };
+  const audioLoader = { id: "audio" };
+  const clockLoader = { id: "clock" };
+
+  registerLazyPanel(ctx, "audioPanel", audioLoader);
+  registerLazyPanel(ctx, "clockPanel", clockLoader);
+  unregisterLazyPanels(ctx);
+  unregisterLazyPanels(ctx);
+
+  assert.deepEqual(registrations, [
+    { key: "audioPanel-eDP-1", loader: audioLoader },
+    { key: "clockPanel-eDP-1", loader: clockLoader },
+  ]);
+  assert.deepEqual(removals, registrations);
+  assert.deepEqual(ctx.registeredLazyPanels, []);
 }
 
 function testMainScreenLazyPanelLoadersFillContainer() {
@@ -72,6 +115,7 @@ function testMainScreenPanelsAreLazyLoaders() {
 
 const tests = [
   testMainScreenRegistersLazyPanelLoaders,
+  testMainScreenRegistersAndUnregistersLazyLoaders,
   testMainScreenLazyPanelLoadersFillContainer,
   testMainScreenPanelsAreLazyLoaders,
 ];

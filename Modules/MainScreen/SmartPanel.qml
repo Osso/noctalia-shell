@@ -1101,4 +1101,6 @@ Item {
   Component.onCompleted: {
     PanelService.registerPanel(root);
   }
+
+  Component.onDestruction: PanelService.unregisterPanel(root)
 }

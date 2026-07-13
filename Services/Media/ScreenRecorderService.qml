@@ -178,6 +178,7 @@ Singleton {
   }
 
   function launchRecorder() {
+    killTimer.running = false;
     var filename = Time.getFormattedTimestamp() + ".mp4";
     var videoDir = Settings.preprocessPath(settings.directory);
     if (videoDir && !videoDir.endsWith("/")) {
@@ -234,47 +235,63 @@ Singleton {
     killTimer.running = true;
   }
 
+  function finishRecorderProcess(exitCode, stdout, stderr) {
+    if (isPending) {
+      isPending = false;
+      pendingTimer.running = false;
+
+      if (stdout.trim() === "GPU_SCREEN_RECORDER_NOT_INSTALLED") {
+        ToastService.showError(I18n.tr("toast.recording.not-installed"), I18n.tr("toast.recording.not-installed-desc"));
+        return;
+      }
+
+      if (exitCode !== 0) {
+        const message = stderr.trim() || I18n.tr("toast.recording.failed-gpu");
+        ToastService.showError(I18n.tr("toast.recording.failed-start"), message);
+      }
+      return;
+    }
+
+    if (!isRecording) {
+      return;
+    }
+
+    isRecording = false;
+    hasActiveRecording = false;
+    monitorTimer.running = false;
+    if (exitCode === 0) {
+      ToastService.showNotice(I18n.tr("toast.recording.saved"), outputPath, "settings-screen-recorder");
+    } else {
+      const message = stderr.trim() || I18n.tr("toast.recording.failed-general");
+      ToastService.showError(I18n.tr("toast.recording.failed-start"), message);
+    }
+  }
+
+  function handlePendingTimer(processRunning) {
+    if (!isPending) {
+      return;
+    }
+    isPending = false;
+    if (processRunning) {
+      isRecording = true;
+      hasActiveRecording = true;
+      monitorTimer.running = true;
+    }
+  }
+
+  function handleMonitorTimer(processRunning) {
+    if (!processRunning && isRecording) {
+      monitorTimer.running = false;
+    }
+  }
+
   // Process to run and monitor gpu-screen-recorder
   Process {
     id: recorderProcess
     stdout: StdioCollector {}
     stderr: StdioCollector {}
-    onExited: function (exitCode, exitStatus) {
-      if (isPending) {
-        // Process ended while we were pending - likely cancelled or error
-        isPending = false;
-        pendingTimer.running = false;
-
-        // Check if gpu-screen-recorder is not installed
-        const stdout = String(recorderProcess.stdout.text || "").trim();
-        if (stdout === "GPU_SCREEN_RECORDER_NOT_INSTALLED") {
-          ToastService.showError(I18n.tr("toast.recording.not-installed"), I18n.tr("toast.recording.not-installed-desc"));
-          return;
-        }
-
-        // If it failed to start, show a clear error toast with stderr
-        if (exitCode !== 0) {
-          const err = String(recorderProcess.stderr.text || "").trim();
-          if (err.length > 0)
-            ToastService.showError(I18n.tr("toast.recording.failed-start"), err);
-          else
-            ToastService.showError(I18n.tr("toast.recording.failed-start"), I18n.tr("toast.recording.failed-gpu"));
-        }
-      } else if (isRecording) {
-        // Process ended normally while recording
-        isRecording = false;
-        monitorTimer.running = false;
-        // Consider successful save if exitCode == 0
-        if (exitCode === 0) {
-          ToastService.showNotice(I18n.tr("toast.recording.saved"), outputPath, "settings-screen-recorder");
-        } else {
-          const err2 = String(recorderProcess.stderr.text || "").trim();
-          if (err2.length > 0)
-            ToastService.showError(I18n.tr("toast.recording.failed-start"), err2);
-          else
-            ToastService.showError(I18n.tr("toast.recording.failed-start"), I18n.tr("toast.recording.failed-general"));
-        }
-      }
+    onExited: function (exitCode) {
+      root.finishRecorderProcess(exitCode, String(recorderProcess.stdout.text || ""), String(recorderProcess.stderr.text || ""));
     }
   }
 
@@ -298,19 +315,7 @@ Singleton {
     interval: 2000 // Wait 2 seconds to see if process stays alive
     running: false
     repeat: false
-    onTriggered: {
-      if (isPending && recorderProcess.running) {
-        // Process is still running after 2 seconds - assume recording started successfully
-        isPending = false;
-        isRecording = true;
-        hasActiveRecording = true;
-        monitorTimer.running = true;
-        // Don't show a toast when recording starts to avoid having the toast in every video.
-      } else if (isPending) {
-        // Process not running anymore - was cancelled or failed
-        isPending = false;
-      }
-    }
+    onTriggered: root.handlePendingTimer(recorderProcess.running)
   }
 
   // Monitor timer to periodically check if we're still recording
@@ -319,12 +324,7 @@ Singleton {
     interval: 2000
     running: false
     repeat: true
-    onTriggered: {
-      if (!recorderProcess.running && isRecording) {
-        isRecording = false;
-        running = false;
-      }
-    }
+    onTriggered: root.handleMonitorTimer(recorderProcess.running)
   }
 
   Timer {

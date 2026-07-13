@@ -88,11 +88,12 @@ Singleton {
     }
     refreshing = true;
     lastError = "";
+    refreshProcess.exitObserved = false;
     refreshProcess.running = true;
   }
 
   function connect(uuid) {
-    if (connecting || !uuid) {
+    if (connecting || connectProcess.running || !uuid) {
       return;
     }
     const conn = connections[uuid];
@@ -104,11 +105,14 @@ Singleton {
     lastError = "";
     connectProcess.uuid = uuid;
     connectProcess.name = conn.name;
+    connectProcess.output = "";
+    connectProcess.errorOutput = "";
+    connectProcess.exitObserved = false;
     connectProcess.running = true;
   }
 
   function disconnect(uuid) {
-    if (disconnecting || !uuid) {
+    if (disconnecting || disconnectProcess.running || !uuid) {
       return;
     }
     const conn = connections[uuid];
@@ -120,6 +124,9 @@ Singleton {
     lastError = "";
     disconnectProcess.uuid = uuid;
     disconnectProcess.name = conn.name;
+    disconnectProcess.output = "";
+    disconnectProcess.errorOutput = "";
+    disconnectProcess.exitObserved = false;
     disconnectProcess.running = true;
   }
 
@@ -149,6 +156,89 @@ Singleton {
   function scheduleRefresh(interval) {
     delayedRefreshTimer.interval = interval;
     delayedRefreshTimer.restart();
+  }
+
+  function finishRefresh(exitCode, output, errorOutput) {
+    const pending = root.refreshPending;
+    root.refreshing = false;
+    root.refreshPending = false;
+
+    if (exitCode === 0) {
+      root.connections = root.parseRefreshOutput(output);
+      if (pending) {
+        root.scheduleRefresh(200);
+      }
+      return;
+    }
+
+    root.lastError = errorOutput.trim().split("\n")[0] || `nmcli VPN refresh failed with exit ${exitCode}`;
+    Logger.w("VPN", "Refresh error: " + root.lastError);
+    if (pending) {
+      root.scheduleRefresh(2000);
+    }
+  }
+
+  function handleRefreshStartFailure(exitObserved) {
+    if (!exitObserved && root.refreshing) {
+      finishRefresh(-1, "", "nmcli VPN refresh failed to start");
+    }
+  }
+
+  function finishConnect(uuid, name, exitCode, output, errorOutput) {
+    if (!root.connecting || root.connectingUuid !== uuid)
+      return;
+    root.connectingUuid = "";
+    root.connecting = false;
+    if (exitCode === 0) {
+      root.setConnection(uuid, {
+                           "active": true
+                         });
+      root.lastError = "";
+      Logger.i("VPN", "Connected to " + name);
+      ToastService.showNotice(name, I18n.tr("toast.vpn.connected", {
+                                             "name": name
+                                           }), "shield-lock");
+      root.scheduleRefresh(1000);
+      return;
+    }
+
+    root.lastError = (errorOutput.trim() || output.trim()).split("\n")[0].trim() || `nmcli VPN connect failed with exit ${exitCode}`;
+    Logger.w("VPN", "Connect error: " + root.lastError);
+    ToastService.showWarning(name, root.lastError);
+  }
+
+  function handleConnectStartFailure(uuid, name, exitObserved) {
+    if (!exitObserved && root.connecting)
+      root.finishConnect(uuid, name, -1, "", "nmcli VPN connect failed to start");
+  }
+
+  function finishDisconnect(uuid, name, exitCode, output, errorOutput) {
+    if (!root.disconnecting || root.disconnectingUuid !== uuid)
+      return;
+    root.disconnectingUuid = "";
+    root.disconnecting = false;
+    if (exitCode === 0) {
+      root.setConnection(uuid, {
+                           "active": false,
+                           "device": ""
+                         });
+      root.lastError = "";
+      Logger.i("VPN", "Disconnected from " + name);
+      ToastService.showNotice(name, I18n.tr("toast.vpn.disconnected", {
+                                             "name": name
+                                           }), "shield-off");
+      root.scheduleRefresh(1000);
+      return;
+    }
+
+    root.lastError = (errorOutput.trim() || output.trim()).split("\n")[0].trim() || `nmcli VPN disconnect failed with exit ${exitCode}`;
+    Logger.w("VPN", "Disconnect error: " + root.lastError);
+    ToastService.showWarning(name, root.lastError);
+  }
+
+  function handleDisconnectStartFailure(uuid, name, exitObserved) {
+    if (!exitObserved && root.disconnecting)
+      root.finishDisconnect(uuid, name, -1, "", "nmcli VPN disconnect failed to start");
   }
 
   function parseRefreshOutput(rawOutput) {
@@ -198,31 +288,28 @@ Singleton {
     id: refreshProcess
     running: false
     command: ["nmcli", "-t", "-f", "NAME,UUID,TYPE,DEVICE", "connection", "show"]
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        connections = parseRefreshOutput(text);
-        const pending = refreshPending;
-        refreshing = false;
-        refreshPending = false;
-        if (pending) {
-          scheduleRefresh(200);
-        }
-      }
+      onStreamFinished: refreshProcess.output = text
     }
-
     stderr: StdioCollector {
-      onStreamFinished: {
-        const pending = refreshPending;
-        refreshing = false;
-        refreshPending = false;
-        if (text.trim()) {
-          lastError = text.split("\n")[0].trim();
-          Logger.w("VPN", "Refresh error: " + text);
-        }
-        if (pending) {
-          scheduleRefresh(2000);
-        }
+      onStreamFinished: refreshProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      refreshProcess.exitObserved = true;
+      const output = refreshProcess.output;
+      const errorOutput = refreshProcess.errorOutput;
+      refreshProcess.output = "";
+      refreshProcess.errorOutput = "";
+      root.finishRefresh(exitCode, output, errorOutput);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleRefreshStartFailure(exitObserved);
+        exitObserved = false;
       }
     }
   }
@@ -231,39 +318,30 @@ Singleton {
     id: connectProcess
     property string uuid: ""
     property string name: ""
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
     running: false
     command: ["nmcli", "connection", "up", "uuid", uuid]
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        const output = text.trim();
-        if (!output || (!output.includes("successfully activated") && !output.includes("Connection successfully"))) {
-          return;
-        }
-        setConnection(connectProcess.uuid, {
-                        "active": true
-                      });
-        connecting = false;
-        connectingUuid = "";
-        lastError = "";
-        Logger.i("VPN", "Connected to " + connectProcess.name);
-        ToastService.showNotice(connectProcess.name, I18n.tr("toast.vpn.connected", {
-                                                               "name": connectProcess.name
-                                                             }), "shield-lock");
-        scheduleRefresh(1000);
-      }
+      onStreamFinished: connectProcess.output = text
     }
-
     stderr: StdioCollector {
-      onStreamFinished: {
-        const trimmed = text.trim();
-        if (trimmed) {
-          lastError = trimmed.split("\n")[0].trim();
-          Logger.w("VPN", "Connect error: " + trimmed);
-          ToastService.showWarning(connectProcess.name, lastError);
-        }
-        connecting = false;
-        connectingUuid = "";
+      onStreamFinished: connectProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      connectProcess.exitObserved = true;
+      const output = connectProcess.output;
+      const errorOutput = connectProcess.errorOutput;
+      connectProcess.output = "";
+      connectProcess.errorOutput = "";
+      root.finishConnect(connectProcess.uuid, connectProcess.name, exitCode, output, errorOutput);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleConnectStartFailure(connectProcess.uuid, connectProcess.name, connectProcess.exitObserved);
+        connectProcess.exitObserved = false;
       }
     }
   }
@@ -272,36 +350,30 @@ Singleton {
     id: disconnectProcess
     property string uuid: ""
     property string name: ""
+    property string output: ""
+    property string errorOutput: ""
+    property bool exitObserved: false
     running: false
     command: ["nmcli", "connection", "down", "uuid", uuid]
 
     stdout: StdioCollector {
-      onStreamFinished: {
-        Logger.i("VPN", "Disconnected from " + disconnectProcess.name);
-        setConnection(disconnectProcess.uuid, {
-                        "active": false,
-                        "device": ""
-                      });
-        disconnecting = false;
-        disconnectingUuid = "";
-        lastError = "";
-        ToastService.showNotice(disconnectProcess.name, I18n.tr("toast.vpn.disconnected", {
-                                                                  "name": disconnectProcess.name
-                                                                }), "shield-off");
-        scheduleRefresh(1000);
-      }
+      onStreamFinished: disconnectProcess.output = text
     }
-
     stderr: StdioCollector {
-      onStreamFinished: {
-        const trimmed = text.trim();
-        if (trimmed) {
-          lastError = trimmed.split("\n")[0].trim();
-          Logger.w("VPN", "Disconnect error: " + trimmed);
-          ToastService.showWarning(disconnectProcess.name, lastError);
-        }
-        disconnecting = false;
-        disconnectingUuid = "";
+      onStreamFinished: disconnectProcess.errorOutput = text
+    }
+    onExited: function (exitCode) {
+      disconnectProcess.exitObserved = true;
+      const output = disconnectProcess.output;
+      const errorOutput = disconnectProcess.errorOutput;
+      disconnectProcess.output = "";
+      disconnectProcess.errorOutput = "";
+      root.finishDisconnect(disconnectProcess.uuid, disconnectProcess.name, exitCode, output, errorOutput);
+    }
+    onRunningChanged: {
+      if (!running) {
+        root.handleDisconnectStartFailure(disconnectProcess.uuid, disconnectProcess.name, disconnectProcess.exitObserved);
+        disconnectProcess.exitObserved = false;
       }
     }
   }

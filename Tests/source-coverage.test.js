@@ -8,7 +8,10 @@ const path = require("path");
 const repoRoot = path.resolve(__dirname, "..");
 const metaTestFiles = new Set([
   "Tests/qml-function-inventory.test.js",
+  "Tests/qml-test-utils.test.js",
+  "Tests/runner-completeness.test.js",
   "Tests/quickshell-regression.test.sh",
+  "Tests/test-runner-categories.test.sh",
 ]);
 
 function codeIndexJson(...args) {
@@ -43,10 +46,10 @@ function qmlSourceFiles() {
 }
 
 function testFiles() {
-  return fs.readdirSync(path.join(repoRoot, "Tests"))
-    .filter(fileName => /\.test\.(js|sh|py)$/.test(fileName))
-    .map(fileName => `Tests/${fileName}`)
-    .sort();
+  return execFileSync("rg", ["--files", "Tests", "--glob", "*.test.js", "--glob", "*.test.sh", "--glob", "*.test.py"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+  }).trim().split("\n").filter(Boolean).sort();
 }
 
 function specFiles() {
@@ -89,15 +92,15 @@ function qmlFunctionDeclarations() {
   return declarations;
 }
 
-function testQmlFunctionCoverageStaysComplete() {
+function testQmlFunctionsStayStructurallyReferencedByTests() {
   const qmlFunctions = codeIndexJson("list", "--kind", "function").filter(isQmlSourcePath);
   const uncoveredQmlFunctions = codeIndexJson("untested").filter(isQmlSourcePath);
 
   assert.ok(
     qmlFunctions.length >= 1200,
-    "QML source function inventory must stay broad enough to catch coverage regressions",
+    "QML source function inventory must stay broad enough to catch structural-reference regressions",
   );
-  assert.deepEqual(uncoveredQmlFunctions.map(formatSymbol), [], "QML source functions must have code-index coverage");
+  assert.deepEqual(uncoveredQmlFunctions.map(formatSymbol), [], "QML source functions must have structural references from tests according to code-index");
 }
 
 function testQmlFunctionInventoryIncludesDeclarations() {
@@ -110,12 +113,12 @@ function testQmlFunctionInventoryIncludesDeclarations() {
   assert.deepEqual(missingDeclarations, [], "code-index must inventory every QML function declaration");
 }
 
-function testNonTestSourceFunctionsStayCovered() {
+function testNonTestSourceFunctionsStayStructurallyReferenced() {
   const uncoveredSourceFunctions = codeIndexJson("untested")
     .filter(entry => !isTestPath(entry))
     .map(formatSymbol);
 
-  assert.deepEqual(uncoveredSourceFunctions, [], "non-test source functions must have code-index coverage");
+  assert.deepEqual(uncoveredSourceFunctions, [], "non-test source functions must have structural references from tests according to code-index");
 }
 
 function testAllTestFilesAreNamedBySpecs() {
@@ -142,13 +145,23 @@ function testMetaTestAllowlistStaysIntentional() {
   assert.deepEqual(metaOnlyTests, [...metaTestFiles].sort(), "only explicitly allowlisted meta tests may skip feature specs");
 }
 
+function testTestingSpecDistinguishesEvidenceCategories() {
+  const testingSpec = fs.readFileSync(path.join(repoRoot, "docs", "specs", "testing.md"), "utf8");
+
+  for (const category of ["Structural reference coverage", "Executable behavior coverage", "QML lifecycle integration", "Live host probes"]) {
+    assert.ok(testingSpec.includes(category), `testing spec must name evidence category: ${category}`);
+  }
+  assert.match(testingSpec, /does not prove runtime execution, branch coverage, QML lifecycle behavior, or integration behavior/);
+}
+
 const tests = [
-  testQmlFunctionCoverageStaysComplete,
+  testQmlFunctionsStayStructurallyReferencedByTests,
   testQmlFunctionInventoryIncludesDeclarations,
-  testNonTestSourceFunctionsStayCovered,
+  testNonTestSourceFunctionsStayStructurallyReferenced,
   testAllTestFilesAreNamedBySpecs,
   testNonMetaTestFilesAreNamedByFeatureSpecs,
   testMetaTestAllowlistStaysIntentional,
+  testTestingSpecDistinguishesEvidenceCategories,
 ];
 
 for (const test of tests) {

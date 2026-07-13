@@ -15,6 +15,9 @@ Update Service covers changelog initialization, upgrade-log fetching, release-no
 - [x] Upgrade-log fetching strips legacy `-dev` suffixes from source and target versions.
 - [x] Upgrade-log fetching resets ranges when the normalized source string sorts at or after the normalized target string, using the stable fallback source version.
 - [x] Upgrade-log fetching builds the request URL from the normalized range and sends a GET request.
+- [x] Plain-text 2xx responses publish parsed release-note lines; empty and markup bodies retain plain-text semantics.
+- [x] Non-2xx responses, including transport-style status `0`, clear highlights and publish the fetch error.
+- [x] Stale overlapping request completions cannot overwrite the newest request state or reopen the popup.
 
 ### Version and release-note parsing
 
@@ -50,7 +53,7 @@ Update Service covers changelog initialization, upgrade-log fetching, release-no
 - [x] Save execution no-ops without a pending save.
 - [x] Save execution retries when a save is already running.
 - [x] Save execution claims pending saves, persists the last-seen version, and clears the save-in-progress flag.
-- [x] Save execution handles saves queued during a save and logs save failures.
+- [x] Save execution handles saves queued during a save; failures release the in-progress guard, retain pending dirty state for a later retry, and log the error.
 - [x] Immediate save compatibility goes through the debounced save path.
 
 ## How it works
@@ -66,15 +69,14 @@ Update Service covers changelog initialization, upgrade-log fetching, release-no
 
 ## Tests asserting this spec
 
+- `Tests/update-service-fixtures.test.js`
 - `Tests/update-service-guards.test.js`
+- `Tests/shell-state-consumer-roundtrip.test.js`
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable fixture coverage for successful and failed upgrade-log HTTP responses.
-- [ ] Add executable fixture coverage for release-note parsing output, not only parser structure.
-- [ ] Add fake PanelService coverage for delayed changelog panel opening.
-- [ ] Add fake ShellState coverage for changelog state load/save success and failure.
+None.
 
 ## Out of scope
 

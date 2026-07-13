@@ -14,15 +14,22 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 - [x] Refresh requests when idle mark the service refreshing, clear the last error, and start the refresh process.
 - [x] Delayed refresh scheduling updates the timer interval and restarts the timer.
 - [x] Refresh-process stdout parsing keeps `vpn` and `wireguard` rows, handles connection names containing colons, marks devices other than `--` as active, and ignores non-VPN or malformed rows.
+- [x] Refresh output and errors are buffered until process exit determines success or failure.
+- [x] Nonzero and failed-to-start `nmcli` refreshes clear busy state, preserve the previous connection map, expose a concrete error, and avoid normal-exit double finalization.
+- [x] A pending refresh drains after completion with a short success delay or longer failure delay.
 
 ### Connect and disconnect
 
 - [x] Connect rejects empty UUIDs and missing connections.
-- [ ] Connect starts only when no connection process is already running.
+- [x] Connect starts only when no connection process is already running.
 - [x] Connect records connecting state, target UUID, clears the last error, stores the target connection name, and starts the connect process.
 - [x] Disconnect rejects empty UUIDs and missing connections.
-- [ ] Disconnect starts only when no disconnect process is already running.
+- [x] Disconnect starts only when no disconnect process is already running.
 - [x] Disconnect records disconnecting state, target UUID, clears the last error, stores the target connection name, and starts the disconnect process.
+- [x] Connect and disconnect buffer stdout/stderr until exit status determines success or failure.
+- [x] Successful actions update connection state, clear busy/error state, show a notice, and schedule refresh without depending on localized stdout text.
+- [x] Nonzero exits and failed process starts preserve connection state, clear busy state, expose stderr/stdout diagnostics or a concrete fallback, show a warning, and avoid normal-exit double finalization.
+- [x] Action completion is UUID-identity-safe and clears the prior UUID before notifying busy-state observers, so stale or reentrant completion cannot clobber a newer action.
 - [x] Toggle ignores missing connections.
 - [x] Toggle disconnects active connections.
 - [x] Toggle connects inactive connections.
@@ -40,6 +47,13 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 - [x] NetworkManager UUID validation accepts UUID-shaped values and rejects malformed values.
 - [x] Active device validation accepts device names such as `wg0` and rejects inactive placeholders, blank values, and malformed values.
 - [x] Connected-state validation accepts connected and connecting states and rejects disconnected or malformed connected strings.
+
+### Panel and widget interactions
+
+- [x] The VPN panel owns polling while open, refreshes on request, and renders active and inactive connection groups separately.
+- [x] A connection row disables its single action while busy and routes active rows to disconnect and inactive rows to connect.
+- [x] The Control Center shortcut resolves and toggles the VPN panel for its screen.
+- [x] The bar context menu exposes connect, disconnect, and widget-settings actions and opens from both primary and secondary clicks.
 
 ### Panel row typing
 
@@ -63,16 +77,14 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 ## Tests asserting this spec
 
 - `Tests/vpn-service-guards.test.js`
+- `Tests/vpn-ui-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Guard connect/disconnect actions with their Process `running` state; current guards check only `connecting` / `disconnecting` service flags.
-- [ ] Add executable coverage for connect/disconnect process exit and toast handling.
-- [ ] Add executable coverage for VPN panel rendered active/available sections.
-- [ ] Add executable coverage for bar and Control Center VPN entry-point interactions.
+None.
 
 ## Out of scope
 

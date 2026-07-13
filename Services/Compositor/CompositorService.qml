@@ -175,10 +175,8 @@ Singleton {
                                         });
 
     backend.windowListChanged.connect(() => {
-                                        // Sync windows when they change
+                                        // syncWindows publishes the facade signal after replacing the model.
                                         syncWindows();
-                                        // Forward the signal
-                                        windowListChanged();
                                       });
 
     // Property bindings - use automatic property change signal

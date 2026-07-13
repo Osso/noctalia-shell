@@ -76,7 +76,10 @@ screen-recorder monitor/source enumeration, program availability checks, local
 Niri/start-wrapper launch path wiring, live Quickshell IPC target/function
 availability for configured shortcuts, system/process-stat inputs, host
 identity/logo/fontconfig inputs, and wallpaper/color cache are readable and
-coherent for this machine. The settings probe validates the local settings file
+coherent for this machine. Launch-contract, IPC, and active-log probes always
+validate the canonical runtime shell at
+`/syncthing/Sync/Projects/apps/noctalia-shell`, independent of which isolated
+worktree runs the gate. The settings probe validates the local settings file
 shape and default/local section parity for the bar, control center, audio,
 brightness, notifications, wallpaper, OSD, templates, dock, launcher, screen
 recorder, network, night-light, and color-scheme sections that the shell reads at

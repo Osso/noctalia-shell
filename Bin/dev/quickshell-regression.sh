@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+readonly canonical_shell_root="/syncthing/Sync/Projects/apps/noctalia-shell"
+
 require_command() {
     local name="$1"
     if ! command -v "$name" >/dev/null 2>&1; then
@@ -39,10 +41,9 @@ find_instance_pid() {
 }
 
 main() {
-    local repo_root expected_command expected_config tail_lines instances_json pid log current_log fatal_pattern
-    repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-    expected_command="quickshell -p $repo_root"
-    expected_config="$repo_root/shell.qml"
+    local expected_command expected_config tail_lines instances_json pid log current_log fatal_pattern
+    expected_command="quickshell -p $canonical_shell_root"
+    expected_config="$canonical_shell_root/shell.qml"
     tail_lines="${QUICKSHELL_LOG_TAIL:-500}"
 
     require_command quickshell

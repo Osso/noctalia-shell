@@ -7,6 +7,7 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 - [x] Refreshing capture sources starts both `gpu-screen-recorder --list-capture-options` and `gpu-screen-recorder --list-monitors`.
 - [x] Capture-source parsing skips v4l2 devices, keeps monitor resolutions, maps region capture, and appends the portal picker.
 - [x] Monitor-list parsing inserts missing monitors before the portal picker, avoids duplicate monitor keys, and records the first monitor resolution.
+- [x] The read-only host probe accepts one or more valid `NAME|WIDTHxHEIGHT` monitor rows and rejects empty or partly malformed lists.
 
 ### Host probe
 
@@ -27,12 +28,27 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 ### Command construction
 
 - [x] Launching builds an output path from the configured directory and formatted timestamp.
-- [x] Launching starts the pending timer and runs the recorder through a monitored shell command.
+- [x] Launching disarms any force-kill timer left by a previous stop, starts the pending timer, and runs the recorder through a monitored shell command.
 - [x] Focused capture includes the primary monitor resolution as a `-s` size flag when available.
 - [x] The combined audio source emits `-a "default_output|default_input"`.
 - [x] System-output and microphone-only audio sources are passed directly.
 - [x] Empty output directory keeps the filename relative.
 - [x] Non-focused capture omits the focused size flag.
+
+### Process and timer lifecycle
+
+- [x] A recorder exit while pending cancels the pending timer and reports missing binaries or startup failures from buffered output.
+- [x] A successful recorder exit while active clears recording and active-recording state, stops monitoring, and reports the saved output; failure reports a concrete diagnostic.
+- [x] The pending timer promotes a still-running process to active recording and clears a pending session whose process already exited.
+- [x] The monitor timer stops polling when the recorder process disappears but leaves terminal recording state to the authoritative process-exit handler, so save/failure reporting is not suppressed.
+
+### Settings UI
+
+- [x] Settings expose output-directory text/folder-picker writeback and cursor-visibility toggle writeback.
+- [x] The video-source selector uses discovered capture sources and falls back to `portal` and `screen`, then writes `videoSource`.
+- [x] Frame-rate options are `30`, `60`, `100`, `120`, `144`, `165`, and `240`; string option keys convert to and from the numeric persisted setting type-safely.
+- [x] Quality options are `medium`, `high`, `very_high`, and `ultra`; video codecs are `h264`, `hevc`, `av1`, `vp8`, and `vp9`; color ranges are `limited` and `full`.
+- [x] Audio-source options are `default_output`, `default_input`, and `both`; audio codecs are `opus` and `aac`; each control writes its matching setting.
 
 ### Stop
 
@@ -55,14 +71,13 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 ## Tests asserting this spec
 
 - `Tests/screen-recorder-service-guards.test.js`
+- `Tests/screen-recorder-settings-ui.test.js`
 - `Tests/service-probes-parsing.test.sh`
+- `Tests/qml-runtime-guards.test.js`
 
 ## Known gaps (current cycle)
 
-- [x] Add executable tests for capture-source and monitor-list parsing.
-- [ ] Add executable tests for recorder process exit handling and pending/monitor timer transitions.
-- [ ] Add spec coverage for settings UI source/codec/quality controls.
-- [ ] Add host-probe coverage for multi-monitor `--list-monitors` output; the current monitor predicate accepts only one `name|WxH` row.
+None.
 
 ## Out of scope
 

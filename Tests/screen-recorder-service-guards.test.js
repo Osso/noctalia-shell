@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const assert = require("assert/strict");
-const { extractFunctionBody, readQml } = require("./qml-test-utils");
+const { extractFunctionBody, findComponentBlock, readQml } = require("./qml-test-utils");
 
 const source = readQml("Services/Media/ScreenRecorderService.qml");
 
@@ -48,6 +48,7 @@ function launchRecorderContext(overrides = {}) {
       },
     },
     pendingTimer: { running: false },
+    killTimer: { running: true },
   };
 
   return { ctx, execs };
@@ -218,6 +219,7 @@ function testScreenRecorderLaunchRecorderBuildsCommandAndStartsPendingTimer() {
 
   assert.equal(ctx.outputPath, "/home/alessio/Videos/2026-06-16_120000.mp4");
   assert.equal(ctx.pendingTimer.running, true);
+  assert.equal(ctx.killTimer.running, false, "launch must disarm a force-kill left by the previous recording");
   assert.deepEqual(execs[0].command.slice(0, 2), ["sh", "-c"]);
   assert.match(command, /gpu-screen-recorder/);
   assert.match(command, /-w focused -s 3440x1440 -f 60/);
@@ -249,6 +251,107 @@ function testScreenRecorderLaunchRecorderHandlesDirectoryAndFocusSizeVariants() 
   assert.equal(emptyDirectory.ctx.outputPath, "2026-06-16_120000.mp4", "empty output directory keeps filename relative");
   assert.match(emptyDirectory.command, /-w screen  -f 60/, "non-focused capture does not add focused size flag");
   assert.doesNotMatch(emptyDirectory.command, /-s 3440x1440/, "non-focused capture omits primary monitor size");
+}
+
+function recorderLifecycleContext() {
+  const notices = [];
+  const errors = [];
+  const ctx = {
+    isPending: true,
+    isRecording: false,
+    hasActiveRecording: false,
+    outputPath: "/tmp/out.mp4",
+    pendingTimer: { running: true },
+    monitorTimer: { running: false },
+    ToastService: {
+      showNotice(...args) { notices.push(args); },
+      showError(...args) { errors.push(args); },
+    },
+    I18n: { tr(key) { return `tr:${key}`; } },
+  };
+  ctx.root = ctx;
+  ctx.notices = notices;
+  ctx.errors = errors;
+  return ctx;
+}
+
+function testRecorderProcessExitTransitions() {
+  const finishRecorderProcess = qmlFunction("finishRecorderProcess", "exitCode", "stdout", "stderr");
+  const pendingFailure = recorderLifecycleContext();
+  finishRecorderProcess(pendingFailure, 1, "", "device failed");
+  assert.equal(pendingFailure.isPending, false);
+  assert.equal(pendingFailure.pendingTimer.running, false);
+  assert.deepEqual(pendingFailure.errors, [["tr:toast.recording.failed-start", "device failed"]]);
+  assert.deepEqual(pendingFailure.notices, []);
+
+  const pendingFallback = recorderLifecycleContext();
+  finishRecorderProcess(pendingFallback, 1, "", "");
+  assert.deepEqual(pendingFallback.errors, [["tr:toast.recording.failed-start", "tr:toast.recording.failed-gpu"]]);
+  assert.deepEqual(pendingFallback.notices, []);
+
+  const missing = recorderLifecycleContext();
+  finishRecorderProcess(missing, 0, "GPU_SCREEN_RECORDER_NOT_INSTALLED", "");
+  assert.deepEqual(missing.errors, [["tr:toast.recording.not-installed", "tr:toast.recording.not-installed-desc"]]);
+  assert.deepEqual(missing.notices, []);
+
+  const completed = recorderLifecycleContext();
+  completed.isPending = false;
+  completed.isRecording = true;
+  completed.hasActiveRecording = true;
+  completed.monitorTimer.running = true;
+  finishRecorderProcess(completed, 0, "", "");
+  assert.equal(completed.isRecording, false);
+  assert.equal(completed.hasActiveRecording, false);
+  assert.equal(completed.monitorTimer.running, false);
+  assert.deepEqual(completed.notices, [["tr:toast.recording.saved", "/tmp/out.mp4", "settings-screen-recorder"]]);
+  assert.deepEqual(completed.errors, []);
+
+  const activeFailure = recorderLifecycleContext();
+  activeFailure.isPending = false;
+  activeFailure.isRecording = true;
+  activeFailure.hasActiveRecording = true;
+  activeFailure.monitorTimer.running = false;
+  finishRecorderProcess(activeFailure, 2, "", "");
+  assert.deepEqual(activeFailure.notices, []);
+  assert.deepEqual(activeFailure.errors, [["tr:toast.recording.failed-start", "tr:toast.recording.failed-general"]]);
+}
+
+function testRecorderPendingAndMonitorTimerTransitions() {
+  const handlePendingTimer = qmlFunction("handlePendingTimer", "processRunning");
+  const handleMonitorTimer = qmlFunction("handleMonitorTimer", "processRunning");
+  const started = recorderLifecycleContext();
+  handlePendingTimer(started, true);
+  assert.equal(started.isPending, false);
+  assert.equal(started.isRecording, true);
+  assert.equal(started.hasActiveRecording, true);
+  assert.equal(started.monitorTimer.running, true);
+  assert.deepEqual(started.notices, []);
+  assert.deepEqual(started.errors, []);
+
+  const cancelled = recorderLifecycleContext();
+  handlePendingTimer(cancelled, false);
+  assert.equal(cancelled.isPending, false);
+  assert.equal(cancelled.isRecording, false);
+  assert.deepEqual(cancelled.notices, []);
+  assert.deepEqual(cancelled.errors, []);
+
+  const ended = recorderLifecycleContext();
+  ended.isPending = false;
+  ended.isRecording = true;
+  ended.hasActiveRecording = true;
+  ended.monitorTimer.running = true;
+  handleMonitorTimer(ended, false);
+  assert.equal(ended.isRecording, true, "monitor must leave terminal state for authoritative process exit");
+  assert.equal(ended.hasActiveRecording, true);
+  assert.equal(ended.monitorTimer.running, false);
+
+  const qml = readQml("Services/Media/ScreenRecorderService.qml");
+  const recorder = findComponentBlock(qml, "Process", "id: recorderProcess");
+  const pending = findComponentBlock(qml, "Timer", "id: pendingTimer");
+  const monitor = findComponentBlock(qml, "Timer", "id: monitorTimer");
+  assert.match(recorder, /onExited:[\s\S]*?root\.finishRecorderProcess\(exitCode/);
+  assert.match(pending, /onTriggered:\s*root\.handlePendingTimer\(recorderProcess\.running\)/);
+  assert.match(monitor, /onTriggered:\s*root\.handleMonitorTimer\(recorderProcess\.running\)/);
 }
 
 function testScreenRecorderStopRecordingGuardsAndStopsState() {
@@ -307,6 +410,8 @@ const tests = [
   testScreenRecorderLaunchRecorderBuildsCommandAndStartsPendingTimer,
   testScreenRecorderLaunchRecorderBuildsAudioSourceVariants,
   testScreenRecorderLaunchRecorderHandlesDirectoryAndFocusSizeVariants,
+  testRecorderProcessExitTransitions,
+  testRecorderPendingAndMonitorTimerTransitions,
   testScreenRecorderStopRecordingGuardsAndStopsState,
 ];
 

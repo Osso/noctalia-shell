@@ -6,8 +6,10 @@ Setup Wizard covers first-run onboarding launch, completion, and selected setup 
 
 - [x] Setup wizard launch is skipped when setup is disabled.
 - [x] Setup wizard launch is skipped on NixOS.
-- [x] Setup wizard launch waits for host readiness before starting the setup timer.
-- [x] Setup wizard launch starts the setup timer when setup is enabled and host state is ready.
+- [x] Setup wizard launch waits for host readiness without deferred polling; HostService state changes re-run the gate.
+- [x] Setup wizard launch remains skipped after terminal host metadata failure instead of guessing that the host is non-NixOS.
+- [x] Setup wizard launch starts the setup timer only when setup is enabled and valid host state is ready.
+- [x] The timer callback re-checks setup eligibility and NixOS state before opening, so recovery cannot open onboarding on NixOS.
 - [x] Setup wizard display no-ops when no Quickshell screens are available.
 - [x] Setup wizard display opens the `setupWizardPanel` on the first screen when the panel is loaded.
 - [x] Setup wizard display restarts the setup timer when the target panel is not loaded yet.

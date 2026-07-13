@@ -71,6 +71,51 @@ function testCompositorSyncAndWindowQueriesMirrorBackendModels() {
   assert.match(activeWorkspacesBody, /if \(ws\.isActive\)[\s\S]*activeWorkspaces\.push\(ws\)/, "getActiveWorkspaces must collect active workspaces");
 }
 
+function createSignal() {
+  return {
+    callback: null,
+    connect(callback) {
+      this.callback = callback;
+    },
+  };
+}
+
+function testCompositorWindowListPublishesExactlyOncePerBackendEvent() {
+  const setupBackendConnections = qmlFunction("setupBackendConnections");
+  const syncWindows = qmlFunction("syncWindows");
+  let facadeEmissions = 0;
+  const ctx = {
+    backend: {
+      workspaces: { count: 0, get() {} },
+      windows: [{ id: 1 }],
+      focusedWindowIndex: 0,
+      workspaceChanged: createSignal(),
+      activeWindowChanged: createSignal(),
+      windowListChanged: createSignal(),
+      focusedWindowIndexChanged: createSignal(),
+    },
+    workspaces: { clear() {}, append() {} },
+    windows: {
+      rows: [],
+      clear() { this.rows = []; },
+      append(window) { this.rows.push(window); },
+    },
+    syncWorkspaces() {},
+    workspaceChanged() {},
+    activeWindowChanged() {},
+    windowListChanged() { facadeEmissions += 1; },
+    syncWindows() { return syncWindows(ctx); },
+    focusedWindowIndex: -1,
+  };
+
+  setupBackendConnections(ctx);
+  facadeEmissions = 0;
+  ctx.backend.windowListChanged.callback();
+
+  assert.equal(facadeEmissions, 1, "one backend window-list event must publish one facade event");
+  assert.deepEqual(ctx.windows.rows, [{ id: 1 }]);
+}
+
 function testCompositorBackendDelegatesFailClosed() {
   const switchBody = extractFunctionBody(source, "switchToWorkspace");
   const focusBody = extractFunctionBody(source, "focusWindow");
@@ -168,6 +213,7 @@ const tests = [
   testCompositorDetectionSelectsOneBackend,
   testCompositorDisplayScaleCacheGuardsShellState,
   testCompositorSyncAndWindowQueriesMirrorBackendModels,
+  testCompositorWindowListPublishesExactlyOncePerBackendEvent,
   testCompositorBackendDelegatesFailClosed,
   testCompositorSessionCommandsAndLockSuspendFallbacks,
   testCompositorWindowHelpersExecuteFallbacks,

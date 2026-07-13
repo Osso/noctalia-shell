@@ -3,6 +3,15 @@ set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$repo_root/Bin/dev/quickshell-regression.sh"
+canonical_repo="/syncthing/Sync/Projects/apps/noctalia-shell"
+if [ "$canonical_shell_root" != "$canonical_repo" ]; then
+    echo "live-log gate must target the supported canonical shell path" >&2
+    exit 1
+fi
+if (canonical_shell_root="/tmp/redirected-shell") 2>/dev/null; then
+    echo "canonical live-log root must be immutable" >&2
+    exit 1
+fi
 
 sample_log='WARN scene: @Old.qml[1:-1]: TypeError: Cannot read property '\''name'\'' of null
 INFO: Reloading configuration...
@@ -70,7 +79,7 @@ if ! printf '%s\n' "$no_shell_output" | rg -q "No active local Noctalia shell in
     exit 1
 fi
 
-if ! printf '%s\n' "$no_shell_output" | rg -q "quickshell -p $repo_root"; then
+if ! printf '%s\n' "$no_shell_output" | rg -q "quickshell -p $canonical_repo"; then
     echo "main did not report expected launch command" >&2
     exit 1
 fi
@@ -81,11 +90,25 @@ if [ "\${1:-}" = "list" ]; then
     cat <<'JSON'
 [
   {
-    "config_path": "$repo_root/shell.qml",
-    "id": "fixture-instance",
+    "config_path": "$canonical_repo/shell.qml",
+    "id": "fixture-instance-old",
     "launch_time": "2026-07-10T00:00:00",
     "pid": 4242,
-    "shell_id": "fixture-shell"
+    "shell_id": "fixture-shell-old"
+  },
+  {
+    "config_path": "/tmp/unrelated/shell.qml",
+    "id": "fixture-instance-unrelated",
+    "launch_time": "2026-07-10T00:10:00",
+    "pid": 4444,
+    "shell_id": "fixture-shell-unrelated"
+  },
+  {
+    "config_path": "$canonical_repo/shell.qml",
+    "id": "fixture-instance-new",
+    "launch_time": "2026-07-10T00:05:00",
+    "pid": 4343,
+    "shell_id": "fixture-shell-new"
   }
 ]
 JSON
@@ -110,7 +133,7 @@ if [ "$fatal_status" -ne 1 ]; then
     exit 1
 fi
 
-if ! printf '%s\n' "$fatal_output" | rg -q "Quickshell regression gate failed for PID 4242"; then
+if ! printf '%s\n' "$fatal_output" | rg -q "Quickshell regression gate failed for PID 4343"; then
     echo "main did not report failed regression gate" >&2
     exit 1
 fi

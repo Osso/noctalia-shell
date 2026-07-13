@@ -187,7 +187,18 @@ if is_bluetooth_device_row "Device 11:22:33:44:55:66    "; then
 fi
 
 is_gpu_screen_recorder_monitor_row "HDMI-A-1|3440x1440"
+has_gpu_screen_recorder_monitor_rows $'HDMI-A-1|3440x1440\nDP-4|2560x1440'
 has_gpu_screen_recorder_capture_option $'HDMI-A-1|3440x1440@165hz|card1\nportal'
+
+if has_gpu_screen_recorder_monitor_rows $'HDMI-A-1|3440x1440\ninvalid row'; then
+    echo "gpu-screen-recorder monitor list accepted a malformed row" >&2
+    exit 1
+fi
+
+if has_gpu_screen_recorder_monitor_rows $'\n   '; then
+    echo "empty gpu-screen-recorder monitor list was accepted" >&2
+    exit 1
+fi
 
 if is_gpu_screen_recorder_monitor_row "HDMI-A-1 3440x1440"; then
     echo "invalid gpu-screen-recorder monitor row was accepted" >&2
@@ -704,6 +715,21 @@ if has_ipc_toggle_handler $'target launcher\n  notfunction toggle(): void'; then
 fi
 
 canonical_repo="/syncthing/Sync/Projects/apps/noctalia-shell"
+assert_equal "$canonical_shell_root" "$canonical_repo" "host probes must target the supported canonical shell path"
+if (canonical_shell_root="/tmp/redirected-shell") 2>/dev/null; then
+    echo "canonical shell root must be immutable" >&2
+    exit 1
+fi
+launch_probe_body="$(declare -f probe_launch_contract)"
+ipc_probe_body="$(declare -f probe_ipc_targets)"
+if [[ "$launch_probe_body" != *'"$canonical_shell_root"'* || "$launch_probe_body" == *'"$repo_root"'* ]]; then
+    echo "launch contract probe must use only canonical_shell_root for canonical runtime paths" >&2
+    exit 1
+fi
+if [[ "$ipc_probe_body" != *'"$canonical_shell_root"'* || "$ipc_probe_body" == *'"$repo_root"'* ]]; then
+    echo "IPC target probe must use only canonical_shell_root for canonical runtime paths" >&2
+    exit 1
+fi
 start_wrapper_fixture=$'#!/usr/bin/env bash\nexec quickshell -p /syncthing/Sync/Projects/apps/noctalia-shell "$@"'
 niri_config_fixture=$'spawn-at-startup "/home/osso/bin/start-quickshell"\nbinds {\n    Mod+Space { spawn "quickshell" "ipc" "-p" "/syncthing/Sync/Projects/apps/noctalia-shell" "call" "launcher" "toggle"; }\n    Mod+Shift+S { spawn "quickshell" "ipc" "-p" "/syncthing/Sync/Projects/apps/noctalia-shell" "call" "settings" "toggle"; }\n}'
 

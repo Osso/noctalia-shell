@@ -8,6 +8,12 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 - [x] Screen lookup does not match a different object just because it has the same shape.
 - [x] Detected display reporting returns the current detected display list.
 - [x] DDC detection output parsing handles blank output, supported monitors, invalid displays, unsupported monitors, and missing model/bus fields.
+- [x] DDC process output is buffered until exit determines success or failure.
+- [x] Successful valid detection atomically replaces the prior DDC monitor list; malformed DDC-capable exit-zero output, non-zero exits, and failed `ddcutil` starts preserve the last known monitors and log a concrete error.
+- [x] Legitimate unsupported-display output is not classified as malformed and may replace stale DDC monitors with an empty list.
+- [x] Detection generations ignore stale completions, including a process completing after DDC support was disabled.
+- [x] Requests arriving during any in-flight detection, including the initial detection and disable/re-enable transitions, are coalesced and trigger one restart after the process fully stops.
+- [x] Normal exits and failed starts finalize detection exactly once.
 
 ### Available methods
 
