@@ -48,6 +48,13 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 - [x] Active device validation accepts device names such as `wg0` and rejects inactive placeholders, blank values, and malformed values.
 - [x] Connected-state validation accepts connected and connecting states and rejects disconnected or malformed connected strings.
 
+### Panel and widget interactions
+
+- [x] The VPN panel owns polling while open, refreshes on request, and renders active and inactive connection groups separately.
+- [x] A connection row disables its single action while busy and routes active rows to disconnect and inactive rows to connect.
+- [x] The Control Center shortcut resolves and toggles the VPN panel for its screen.
+- [x] The bar context menu exposes connect, disconnect, and widget-settings actions and opens from both primary and secondary clicks.
+
 ### Panel row typing
 
 - [x] VPN connection-list delegates type connection UUID, name, and active state roles and pass those scalars into each row item.
@@ -70,14 +77,14 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 ## Tests asserting this spec
 
 - `Tests/vpn-service-guards.test.js`
+- `Tests/vpn-ui-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for VPN panel rendered active/available sections.
-- [ ] Add executable coverage for bar and Control Center VPN entry-point interactions.
+None.
 
 ## Out of scope
 
