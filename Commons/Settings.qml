@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "../Helpers/QtObj2JS.js" as QtObj2JS
+import "../Helpers/SettingsDefaults.js" as SettingsDefaults
 import qs.Commons
 import qs.Commons.Migrations
 import qs.Modules.OSD
@@ -36,6 +37,7 @@ Singleton {
   property string persistedSettingsText: ""
   property bool saveInProgress: false
   property bool saveQueued: false
+  property bool watcherChangeQueued: false
   property bool verifyingSave: false
   property bool verifyingSnapshot: false
   readonly property bool ready: bootstrapState === Settings.Ready
@@ -57,7 +59,7 @@ Singleton {
   readonly property string cacheDirImagesNotifications: cacheDir + "images/notifications/"
   readonly property string settingsFile: Quickshell.env("NOCTALIA_SETTINGS_FILE") || (configDir + "settings.json")
   readonly property string settingsSnapshotFile: cacheDir + "settings-bootstrap.json"
-  readonly property string defaultLocation: "Tokyo"
+  readonly property string defaultLocation: SettingsDefaults.defaultLocation
   readonly property string defaultAvatar: Quickshell.env("HOME") + "/.face"
   readonly property string defaultVideosDirectory: Quickshell.env("HOME") + "/Videos"
   readonly property string defaultWallpapersDirectory: Quickshell.env("HOME") + "/Pictures/Wallpapers"
@@ -98,7 +100,7 @@ Singleton {
 
   Loader {
     id: validationFileLoader
-    active: root.bootstrapState === root.Validating
+    active: root.bootstrapState === Settings.Validating
 
     sourceComponent: FileView {
       property int generation: 0
@@ -115,12 +117,12 @@ Singleton {
 
   Loader {
     id: defaultsWriterLoader
-    active: root.bootstrapState === root.CreatingDefaults
+    active: root.bootstrapState === Settings.CreatingDefaults
 
     sourceComponent: FileView {
       property int generation: 0
       path: root.settingsFile
-      adapter: adapter
+      adapter: root.data
       preload: false
       printErrors: false
       watchChanges: false
@@ -137,7 +139,7 @@ Singleton {
 
   Loader {
     id: snapshotWriterLoader
-    active: root.bootstrapState === root.Snapshotting
+    active: root.bootstrapState === Settings.Snapshotting
 
     sourceComponent: FileView {
       property int generation: 0
@@ -175,12 +177,12 @@ Singleton {
 
   Loader {
     id: hydrationFileLoader
-    active: root.bootstrapState === root.Hydrating
+    active: root.bootstrapState === Settings.Hydrating
 
     sourceComponent: FileView {
       property int generation: 0
       path: root.settingsSnapshotFile
-      adapter: adapter
+      adapter: root.data
       printErrors: false
       watchChanges: false
       Component.onCompleted: generation = root.loadGeneration
@@ -193,7 +195,7 @@ Singleton {
 
   Loader {
     id: settingsWatcherLoader
-    active: root.bootstrapState === root.Ready
+    active: root.bootstrapState === Settings.Ready
 
     sourceComponent: FileView {
       property int generation: 0
@@ -205,10 +207,18 @@ Singleton {
       watchChanges: true
       Component.onCompleted: generation = root.loadGeneration
       onFileChanged: {
+        if (root.saveInProgress) {
+          root.watcherChangeQueued = true;
+          return;
+        }
         reload();
         root.handleReadyFileLoaded(generation, text());
       }
       onLoadFailed: function (error) {
+        if (root.saveInProgress) {
+          root.watcherChangeQueued = true;
+          return;
+        }
         root.handleBootstrapFailure(generation, `Failed to read changed settings: ${error}`);
       }
     }
@@ -233,18 +243,18 @@ Singleton {
 
   Loader {
     id: settingsWriterLoader
-    active: root.bootstrapState === root.Ready
+    active: root.bootstrapState === Settings.Ready
 
     sourceComponent: FileView {
       property int generation: 0
       path: root.settingsFile
-      adapter: adapter
+      adapter: root.data
       preload: false
       printErrors: false
       watchChanges: false
       Component.onCompleted: generation = root.loadGeneration
       onAdapterUpdated: saveTimer.start()
-      onSaved: root.handleSettingsSaved(generation)
+      onSaved: root.handleSettingsSaved(generation, text())
       onSaveFailed: function (error) {
         root.handleBootstrapFailure(generation, `Failed to save settings: ${error}`);
       }
@@ -254,13 +264,12 @@ Singleton {
   SettingsData {
     id: adapter
     settingsVersion: root.settingsVersion
-    defaultLocation: root.defaultLocation
   }
 
   // -----------------------------------------------------
   // Settings bootstrap state machine
   function beginBootstrap() {
-    root.bootstrapState = root.PreparingDirectories;
+    root.bootstrapState = Settings.PreparingDirectories;
     root.isLoaded = false;
     if (!directoryCreationProcess.running) {
       directoryCreationProcess.running = true;
@@ -281,6 +290,7 @@ Singleton {
     saveTimer.stop();
     root.saveInProgress = false;
     root.saveQueued = false;
+    root.watcherChangeQueued = false;
     root.verifyingSave = false;
     root.pendingSavedSettingsText = "";
     root.isLoaded = false;
@@ -288,11 +298,11 @@ Singleton {
     root.validatedSettingsText = "";
     root.validatedSettingsData = null;
     root.loadGeneration += 1;
-    root.bootstrapState = root.Validating;
+    root.bootstrapState = Settings.Validating;
   }
 
   function handleValidationLoaded(generation, rawText, rawData) {
-    if (generation !== root.loadGeneration || root.bootstrapState !== root.Validating) {
+    if (generation !== root.loadGeneration || root.bootstrapState !== Settings.Validating) {
       return;
     }
 
@@ -309,11 +319,11 @@ Singleton {
     root.errorMessage = "";
     root.validatedSettingsText = rawText;
     root.validatedSettingsData = rawData;
-    root.bootstrapState = root.Snapshotting;
+    root.bootstrapState = Settings.Snapshotting;
   }
 
   function handleSnapshotSaved(generation) {
-    if (generation !== root.loadGeneration || root.bootstrapState !== root.Snapshotting) {
+    if (generation !== root.loadGeneration || root.bootstrapState !== Settings.Snapshotting) {
       return;
     }
 
@@ -331,11 +341,11 @@ Singleton {
     }
 
     root.verifyingSnapshot = false;
-    root.bootstrapState = root.Hydrating;
+    root.bootstrapState = Settings.Hydrating;
   }
 
   function handleValidationLoadFailure(generation, error) {
-    if (generation !== root.loadGeneration || root.bootstrapState !== root.Validating) {
+    if (generation !== root.loadGeneration || root.bootstrapState !== Settings.Validating) {
       return;
     }
 
@@ -343,7 +353,7 @@ Singleton {
     const missing = error === FileViewError.FileNotFound || errorText.includes("No such file");
     if (missing && !root.hasLoadedOnce) {
       root.shouldOpenSetupWizard = true;
-      root.bootstrapState = root.CreatingDefaults;
+      root.bootstrapState = Settings.CreatingDefaults;
       return;
     }
 
@@ -351,7 +361,7 @@ Singleton {
   }
 
   function handleDefaultsSaved(generation) {
-    if (generation !== root.loadGeneration || root.bootstrapState !== root.CreatingDefaults) {
+    if (generation !== root.loadGeneration || root.bootstrapState !== Settings.CreatingDefaults) {
       return;
     }
 
@@ -359,7 +369,7 @@ Singleton {
   }
 
   function handleHydrationLoaded(generation) {
-    if (generation !== root.loadGeneration || root.bootstrapState !== root.Hydrating) {
+    if (generation !== root.loadGeneration || root.bootstrapState !== Settings.Hydrating) {
       return;
     }
 
@@ -376,20 +386,27 @@ Singleton {
     }
     root.isLoaded = true;
     root.hasLoadedOnce = true;
-    root.persistedSettingsText = JSON.stringify(JSON.parse(root.validatedSettingsText));
-    root.bootstrapState = root.Ready;
+    root.persistedSettingsText = root.canonicalizeSettingsText(root.validatedSettingsText);
+    root.bootstrapState = Settings.Ready;
     root.settingsLoaded();
     adapter.settingsVersion = settingsVersion;
 
-    const loadedSettingsText = JSON.stringify(JSON.parse(root.validatedSettingsText));
-    const hydratedSettingsText = JSON.stringify(QtObj2JS.qtObjectToPlainObject(adapter));
+    const loadedSettingsText = root.canonicalizeSettingsText(root.validatedSettingsText);
+    const hydratedSettingsText = root.canonicalizeSettingsValue(QtObj2JS.qtObjectToPlainObject(adapter));
     if (loadedSettingsText !== hydratedSettingsText) {
       Qt.callLater(root.saveImmediate);
     }
   }
 
-  function handleSettingsSaved(generation) {
-    if (generation !== root.loadGeneration || root.bootstrapState !== root.Ready || !root.saveInProgress) {
+  function handleSettingsSaved(generation, serializedText) {
+    if (generation !== root.loadGeneration || root.bootstrapState !== Settings.Ready || !root.saveInProgress) {
+      return;
+    }
+
+    try {
+      root.pendingSavedSettingsText = root.canonicalizeSettingsText(serializedText);
+    } catch (error) {
+      root.failBootstrap(`Serialized settings are invalid JSON: ${error}`);
       return;
     }
 
@@ -403,7 +420,7 @@ Singleton {
 
     let savedSettingsText = "";
     try {
-      savedSettingsText = JSON.stringify(JSON.parse(rawText));
+      savedSettingsText = root.canonicalizeSettingsText(rawText);
     } catch (error) {
       root.failBootstrap(`Saved settings are invalid JSON: ${error}`);
       return;
@@ -415,37 +432,55 @@ Singleton {
     }
 
     const shouldSaveAgain = root.saveQueued;
+    const shouldProcessWatcherChange = root.watcherChangeQueued;
     root.persistedSettingsText = savedSettingsText;
     root.verifyingSave = false;
     root.saveInProgress = false;
     root.saveQueued = false;
+    root.watcherChangeQueued = false;
     root.pendingSavedSettingsText = "";
     root.settingsSaved();
-    if (shouldSaveAgain) {
+
+    if (shouldProcessWatcherChange) {
+      root.processQueuedWatcherChange();
+    }
+    if (shouldSaveAgain && root.bootstrapState === Settings.Ready) {
       Qt.callLater(root.saveImmediate);
     }
   }
 
   function handleReadyFileLoaded(generation, rawText) {
-    if (generation !== root.loadGeneration || root.bootstrapState !== root.Ready) {
+    if (generation !== root.loadGeneration || root.bootstrapState !== Settings.Ready || root.saveInProgress) {
       return;
     }
 
     let currentSettingsText = "";
     try {
-      currentSettingsText = JSON.stringify(JSON.parse(rawText));
+      currentSettingsText = root.canonicalizeSettingsText(rawText);
     } catch (error) {
       root.beginValidation();
       return;
     }
 
-    const adapterSettingsText = JSON.stringify(QtObj2JS.qtObjectToPlainObject(adapter));
-    if (currentSettingsText === root.pendingSavedSettingsText || currentSettingsText === adapterSettingsText) {
+    const adapterSettingsText = root.canonicalizeSettingsValue(QtObj2JS.qtObjectToPlainObject(adapter));
+    if (currentSettingsText === root.pendingSavedSettingsText
+        || currentSettingsText === root.persistedSettingsText
+        || currentSettingsText === adapterSettingsText) {
       return;
     }
     if (currentSettingsText !== adapterSettingsText) {
       root.beginValidation();
     }
+  }
+
+  function processQueuedWatcherChange() {
+    const watcher = settingsWatcherLoader.item;
+    if (!watcher || root.bootstrapState !== Settings.Ready || root.saveInProgress) {
+      return;
+    }
+
+    watcher.reload();
+    root.handleReadyFileLoaded(root.loadGeneration, watcher.text());
   }
 
   function handleBootstrapFailure(generation, message) {
@@ -460,17 +495,40 @@ Singleton {
     saveTimer.stop();
     root.saveInProgress = false;
     root.saveQueued = false;
+    root.watcherChangeQueued = false;
     root.verifyingSave = false;
     root.verifyingSnapshot = false;
     root.pendingSavedSettingsText = "";
     root.isLoaded = false;
     root.errorMessage = String(message);
-    root.bootstrapState = root.Error;
+    root.bootstrapState = Settings.Error;
     if (root.lastLoggedError !== root.errorMessage) {
       Logger.e("Settings", root.errorMessage);
       root.lastLoggedError = root.errorMessage;
     }
     root.settingsLoadFailed(root.errorMessage);
+  }
+
+  function sortSettingsValue(value) {
+    if (Array.isArray(value)) {
+      return value.map(root.sortSettingsValue);
+    }
+    if (value !== null && typeof value === "object") {
+      const sortedValue = Object.create(null);
+      for (const key of Object.keys(value).sort()) {
+        sortedValue[key] = root.sortSettingsValue(value[key]);
+      }
+      return sortedValue;
+    }
+    return value;
+  }
+
+  function canonicalizeSettingsValue(value) {
+    return JSON.stringify(root.sortSettingsValue(value));
+  }
+
+  function canonicalizeSettingsText(rawText) {
+    return root.canonicalizeSettingsValue(JSON.parse(rawText));
   }
 
   function byteArraysEqual(left, right) {
@@ -528,7 +586,7 @@ Singleton {
       return;
     }
 
-    const settingsText = JSON.stringify(QtObj2JS.qtObjectToPlainObject(adapter));
+    const settingsText = root.canonicalizeSettingsValue(QtObj2JS.qtObjectToPlainObject(adapter));
     if (settingsText === root.persistedSettingsText) {
       root.settingsSaved();
       return;

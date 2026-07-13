@@ -84,6 +84,18 @@ function testResolveLogoBuildsShellProbeForCandidates() {
   assert.equal(ctx.probe.running, true);
 }
 
+function testDecodeOsReleaseSupportsQmlStringWrapperWithoutTrimStart() {
+  const decodeOsReleaseValue = qmlFunction("decodeOsReleaseValue", "rawValue");
+  const ctx = createOsReleaseContext();
+  ctx.String = () => ({
+    replace(pattern, replacement) {
+      return '   "Arch Linux"'.replace(pattern, replacement);
+    },
+  });
+
+  assert.equal(decodeOsReleaseValue(ctx, {}), "Arch Linux");
+}
+
 function testParseOsReleaseExtractsReadinessAndLogo() {
   const parseOsRelease = qmlFunction("parseOsRelease", "rawText");
   const ctx = createOsReleaseContext();
@@ -251,6 +263,7 @@ function testResolveDisplayNamePrecedence() {
 }
 
 const tests = [
+  testDecodeOsReleaseSupportsQmlStringWrapperWithoutTrimStart,
   testBuildCandidatesRejectsBlankAndPathLikeNames,
   testBuildCandidatesIncludesKnownLogoSearchRoots,
   testResolveLogoSkipsInvalidNames,

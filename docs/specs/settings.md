@@ -9,16 +9,16 @@ Settings covers persisted shell configuration, startup bootstrap and recovery, d
 - [x] Missing settings may create defaults only before the first successful load; later deletion or failure must not silently recreate configuration.
 - [x] Validation, default creation, and hydration callbacks must ignore stale loader generations.
 - [x] Successful snapshot hydration runs migrations, marks settings ready, and permits full-shell construction; ready-state persistence uses a write-only `FileView` and a separate raw-file watcher.
-- [x] A settings file change after readiness is re-read and canonicalized as JSON before comparison; matching current-adapter or in-flight own-write content is ignored, while divergent or invalid external content unloads the full shell and starts a new validation generation.
+- [x] A settings file change after readiness is re-read and canonicalized with recursively sorted object keys before comparison; key-order-only differences and matching current-adapter or persisted content are ignored, save-owned watcher events defer to verified read-back, while divergent or invalid external content unloads the full shell and starts a new validation generation.
 - [x] After an error, settings remains in the explicit error state until the user requests Retry; retry starts a new generation and performs read-only validation, except that a first-run missing file may trigger default creation and incomplete directory preparation may be retried.
 - [x] Path preprocessing expands `~` and `~/...` using `$HOME`, leaves absolute/empty strings unchanged, and preserves non-string values.
-- [x] Immediate saves write only the primary settings adapter; overlapping requests preserve the in-flight snapshot, queue one follow-up, and emit `settingsSaved` only after a current-generation read-back canonicalizes to the intended snapshot before processing the queued current adapter state.
+- [x] Immediate saves write only the primary settings adapter; overlapping requests preserve the in-flight snapshot, queue one follow-up, and emit `settingsSaved` only after a current-generation read-back canonicalizes to the actual `JsonAdapter` serialization before processing the queued current adapter state.
 - [x] Default settings generation converts the adapter to a plain object, base64-encodes it, and writes `Assets/settings-default.json` through a detached shell command.
 - [x] Versioned migrations run only migrations newer than the current settings version.
 - [x] Versioned migrations pass the root object, settings adapter, and logger to migration objects.
 - [x] Versioned migrations destroy migration instances after use, log failed migrations, and log invalid migration objects.
 - [x] Migration failures do not publish partially hydrated settings: all newer migrations are attempted and cleaned up, but any failed, invalid, or throwing migration leaves bootstrap in `Error` before `Ready`.
-- [ ] `Settings.data` aliases a separate `SettingsData` `JsonAdapter`; schema/default values live in `Commons/SettingsData.qml`, while lifecycle, persistence, migration, and upgrade orchestration remain in `Commons/Settings.qml`.
+- [ ] `Settings.data` aliases a separate `SettingsData` `JsonAdapter`; persisted schema/default values live in `Commons/SettingsData.qml`, shared non-persisted constants live in `Helpers/SettingsDefaults.js`, and lifecycle, persistence, migration, and upgrade orchestration remain in `Commons/Settings.qml`.
 - [x] Widget upgrades prune stale keys, preserve existing valid values, add missing metadata defaults, and report whether a mutation happened.
 - [x] Settings-data upgrade defers with a warning until the BarWidgetRegistry is ready.
 - [x] Settings-data upgrade removes invalid bar widgets, upgrades valid widgets, guarantees a Control Center widget exists, and logs the mutations.
@@ -74,6 +74,7 @@ Settings covers persisted shell configuration, startup bootstrap and recovery, d
 
 - `Commons/Settings.qml` - persisted settings singleton, bootstrap state machine, lifecycle-scoped primary file adapters, default generation, migrations, and settings upgrades.
 - `Commons/SettingsData.qml` - declarative `JsonAdapter` schema and default settings values.
+- `Helpers/SettingsDefaults.js` - shared non-persisted settings constants used by the singleton and adapter defaults.
 - `Modules/Startup/SettingsLoadError.qml` - standalone settings-independent startup error surface.
 - `shell.qml` - mutually exclusive startup error and full-shell activation.
 - `Commons/Migrations/MigrationRegistry.qml` - version-to-migration component registry.

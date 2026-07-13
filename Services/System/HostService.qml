@@ -137,7 +137,7 @@ Singleton {
   }
 
   function decodeOsReleaseValue(rawValue) {
-    const value = String(rawValue || "").trimStart();
+    const value = String(rawValue || "").replace(/^\s+/, "");
     if (!value)
       return "";
 
@@ -156,7 +156,7 @@ Singleton {
     const values = {};
     const lines = rawText.split("\n");
     for (const line of lines) {
-      const trimmedStart = line.trimStart();
+      const trimmedStart = String(line).replace(/^\s+/, "");
       if (!trimmedStart || trimmedStart.startsWith("#"))
         continue;
 

@@ -1,8 +1,8 @@
 import Quickshell.Io
+import "../Helpers/SettingsDefaults.js" as SettingsDefaults
 import qs.Modules.OSD
 
 JsonAdapter {
-  required property string defaultLocation
   property int settingsVersion: 26
 
   // bar
@@ -115,7 +115,7 @@ JsonAdapter {
 
   // location
   property JsonObject location: JsonObject {
-    property string name: defaultLocation
+    property string name: SettingsDefaults.defaultLocation
     property bool weatherEnabled: true
     property bool weatherShowEffects: true
     property bool useFahrenheit: false

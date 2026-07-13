@@ -4,6 +4,9 @@ const assert = require("assert/strict");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
 const source = readQml("Commons/Settings.qml");
+const settingsDataSource = readQml("Commons/SettingsData.qml");
+const settingsDefaultsSource = readQml("Helpers/SettingsDefaults.js");
+const defaultSettings = JSON.parse(readQml("Assets/settings-default.json"));
 
 function qmlFunction(functionName, ...argNames) {
   const body = extractFunctionBody(source, functionName);
@@ -41,6 +44,15 @@ function createBootstrapContext(overrides = {}) {
     Hydrating: 4,
     Ready: 5,
     Error: 6,
+    Settings: {
+      PreparingDirectories: 0,
+      Validating: 1,
+      CreatingDefaults: 2,
+      Snapshotting: 3,
+      Hydrating: 4,
+      Ready: 5,
+      Error: 6,
+    },
     Logger: createLogger(),
     FileViewError: {
       FileNotFound: 2,
@@ -63,6 +75,7 @@ function createBootstrapContext(overrides = {}) {
       persistedSettingsText: "{\"settingsVersion\":26}",
       saveInProgress: false,
       saveQueued: false,
+      watcherChangeQueued: false,
       verifyingSave: false,
       verifyingSnapshot: false,
       isLoaded: false,
@@ -108,6 +121,9 @@ function createBootstrapContext(overrides = {}) {
   ctx.root.beginBootstrap = () => qmlFunction("beginBootstrap")(ctx);
   ctx.root.beginValidation = () => qmlFunction("beginValidation")(ctx);
   ctx.root.failBootstrap = message => qmlFunction("failBootstrap", "message")(ctx, message);
+  ctx.root.sortSettingsValue = value => qmlFunction("sortSettingsValue", "value")(ctx, value);
+  ctx.root.canonicalizeSettingsValue = value => qmlFunction("canonicalizeSettingsValue", "value")(ctx, value);
+  ctx.root.canonicalizeSettingsText = rawText => qmlFunction("canonicalizeSettingsText", "rawText")(ctx, rawText);
   ctx.root.byteArraysEqual = (left, right) => qmlFunction("byteArraysEqual", "left", "right")(ctx, left, right);
   ctx.failures = failures;
   return ctx;
@@ -291,7 +307,7 @@ function testSettingsPendingWriteContentDoesNotUnloadShellDuringQueuedSave() {
   ctx.root.pendingSavedSettingsText = "{\"settingsVersion\":26}";
   ctx.adapter.settingsVersion = 27;
 
-  handleReadyFileLoaded(ctx, 5, "{\"settingsVersion\":26}");
+  handleReadyFileLoaded(ctx, 5, "{\"settingsVersion\":25}");
 
   assert.equal(ctx.root.bootstrapState, ctx.Ready);
   assert.equal(ctx.root.loadGeneration, 5);
@@ -328,9 +344,39 @@ function testSettingsErrorRetryIsReadOnlyAndStartsNewGeneration() {
   assert.equal(ctx.root.bootstrapState, ctx.Validating);
 }
 
-function testSettingsWatcherReloadsThenPerformsBlockingReadOnChange() {
+function testSettingsWatcherQueuesOwnedSaveChangesBeforeReading() {
   assert.match(source, /id:\s*settingsWatcherLoader[\s\S]*?blockLoading:\s*true[\s\S]*?blockAllReads:\s*true/);
-  assert.match(source, /onFileChanged:\s*\{\s*reload\(\);\s*root\.handleReadyFileLoaded\(generation,\s*text\(\)\);\s*\}/);
+  assert.match(source, /onFileChanged:\s*\{\s*if \(root\.saveInProgress\) \{\s*root\.watcherChangeQueued = true;\s*return;\s*\}\s*reload\(\);\s*root\.handleReadyFileLoaded\(generation,\s*text\(\)\);\s*\}/);
+  assert.match(source, /onLoadFailed:\s*function \(error\) \{\s*if \(root\.saveInProgress\) \{\s*root\.watcherChangeQueued = true;\s*return;\s*\}/);
+}
+
+function testSettingsQueuedWatcherChangeRevalidatesExternalContent() {
+  const processQueuedWatcherChange = qmlFunction("processQueuedWatcherChange");
+  const handleReadyFileLoaded = qmlFunction("handleReadyFileLoaded", "generation", "rawText");
+  const ctx = createBootstrapContext();
+  let reloads = 0;
+  ctx.root.loadGeneration = 5;
+  ctx.root.bootstrapState = ctx.Ready;
+  ctx.root.isLoaded = true;
+  ctx.adapter.settingsVersion = 26;
+  ctx.settingsWatcherLoader = {
+    item: {
+      reload() {
+        reloads += 1;
+      },
+      text() {
+        return '{"settingsVersion":99}';
+      },
+    },
+  };
+  ctx.root.handleReadyFileLoaded = (generation, rawText) => handleReadyFileLoaded(ctx, generation, rawText);
+
+  processQueuedWatcherChange(ctx);
+
+  assert.equal(reloads, 1);
+  assert.equal(ctx.root.bootstrapState, ctx.Validating);
+  assert.equal(ctx.root.loadGeneration, 6);
+  assert.equal(ctx.root.isLoaded, false);
 }
 
 function testSettingsBootstrapUsesSnapshotHydrationAndWriteOnlyPersistence() {
@@ -376,6 +422,9 @@ function testSettingsNoOpSaveCompletesWithoutStartingWriter() {
       },
     },
     root: {
+      canonicalizeSettingsValue(value) {
+        return JSON.stringify(value);
+      },
       persistedSettingsText: "{\"settingsVersion\":26}",
       saveInProgress: false,
       saveQueued: false,
@@ -410,6 +459,9 @@ function testSettingsSaveImmediateQueuesOverlappingRequestWithoutReplacingSnapsh
       },
     },
     root: {
+      canonicalizeSettingsValue(value) {
+        return JSON.stringify(value);
+      },
       pendingSavedSettingsText: "",
       saveInProgress: false,
       saveQueued: false,
@@ -430,22 +482,63 @@ function testSettingsSaveImmediateQueuesOverlappingRequestWithoutReplacingSnapsh
   assert.equal(savedSignals, 0);
 }
 
+function testSettingsCanonicalizationIgnoresObjectKeyOrder() {
+  const canonicalizeSettingsText = qmlFunction("canonicalizeSettingsText", "rawText");
+  const ctx = createBootstrapContext();
+
+  const left = canonicalizeSettingsText(ctx, '{"bar":{"position":"top","widgets":[]},"settingsVersion":26}');
+  const right = canonicalizeSettingsText(ctx, '{"settingsVersion":26,"bar":{"widgets":[],"position":"top"}}');
+
+  assert.equal(left, right);
+}
+
+function testSettingsCanonicalizationPreservesProtoKey() {
+  const canonicalizeSettingsText = qmlFunction("canonicalizeSettingsText", "rawText");
+  const ctx = createBootstrapContext();
+
+  const canonical = canonicalizeSettingsText(ctx, '{"__proto__":{"enabled":true},"settingsVersion":26}');
+
+  const parsed = JSON.parse(canonical);
+  assert.equal(Object.hasOwn(parsed, "__proto__"), true);
+  assert.deepEqual(parsed["__proto__"], { enabled: true });
+  assert.equal(parsed.settingsVersion, 26);
+}
+
+function testSettingsDefaultLocationIsNotPersistedAtAdapterRoot() {
+  const defaultLocationMatch = settingsDefaultsSource.match(/var defaultLocation = "([^"]+)";/);
+
+  assert.ok(defaultLocationMatch, "shared default location constant must exist");
+  assert.doesNotMatch(settingsDataSource, /^\s*(?:required\s+)?property\s+string\s+defaultLocation\b/m);
+  assert.match(settingsDataSource, /property string name: SettingsDefaults\.defaultLocation/);
+  assert.match(source, /readonly property string defaultLocation: SettingsDefaults\.defaultLocation/);
+  assert.equal(defaultSettings.location.name, defaultLocationMatch[1]);
+  assert.equal(Object.hasOwn(defaultSettings, "defaultLocation"), false);
+}
+
 function testSettingsSavedSignalWaitsForVerifiedPrimaryContent() {
-  const handleSettingsSaved = qmlFunction("handleSettingsSaved", "generation");
+  const handleSettingsSaved = qmlFunction("handleSettingsSaved", "generation", "serializedText");
   const handleSaveVerificationLoaded = qmlFunction("handleSaveVerificationLoaded", "generation", "rawText");
   const ctx = createBootstrapContext();
   ctx.root.loadGeneration = 4;
   ctx.root.bootstrapState = ctx.Ready;
   ctx.root.saveInProgress = true;
-  ctx.root.pendingSavedSettingsText = "{\"settingsVersion\":26}";
+  ctx.root.watcherChangeQueued = true;
+  ctx.root.pendingSavedSettingsText = "{\"settingsVersion\":999}";
+  let watcherChecks = 0;
+  ctx.root.processQueuedWatcherChange = () => {
+    watcherChecks += 1;
+  };
 
-  handleSettingsSaved(ctx, 4);
+  handleSettingsSaved(ctx, 4, "{\n  \"settingsVersion\": 26\n}");
+  assert.equal(ctx.root.pendingSavedSettingsText, "{\"settingsVersion\":26}");
   assert.equal(ctx.root.verifyingSave, true);
   assert.equal(ctx.settingsSavedCount, 0);
 
   handleSaveVerificationLoaded(ctx, 4, "{\"settingsVersion\":26}");
   assert.equal(ctx.root.verifyingSave, false);
   assert.equal(ctx.root.saveInProgress, false);
+  assert.equal(ctx.root.watcherChangeQueued, false);
+  assert.equal(watcherChecks, 1);
   assert.equal(ctx.settingsSavedCount, 1);
 }
 
@@ -732,11 +825,15 @@ const tests = [
   testSettingsPendingWriteContentDoesNotUnloadShellDuringQueuedSave,
   testSettingsDivergentFileContentUnloadsShellAndRevalidates,
   testSettingsErrorRetryIsReadOnlyAndStartsNewGeneration,
-  testSettingsWatcherReloadsThenPerformsBlockingReadOnChange,
+  testSettingsWatcherQueuesOwnedSaveChangesBeforeReading,
+  testSettingsQueuedWatcherChangeRevalidatesExternalContent,
   testSettingsBootstrapUsesSnapshotHydrationAndWriteOnlyPersistence,
   testSettingsPreprocessPathExpandsHomeOnlyForStringPaths,
   testSettingsNoOpSaveCompletesWithoutStartingWriter,
   testSettingsSaveImmediateQueuesOverlappingRequestWithoutReplacingSnapshot,
+  testSettingsCanonicalizationIgnoresObjectKeyOrder,
+  testSettingsCanonicalizationPreservesProtoKey,
+  testSettingsDefaultLocationIsNotPersistedAtAdapterRoot,
   testSettingsSavedSignalWaitsForVerifiedPrimaryContent,
   testSettingsErrorStateIsStableUntilExplicitRetry,
   testSettingsGenerateDefaultSettingsWritesEncodedAdapter,
