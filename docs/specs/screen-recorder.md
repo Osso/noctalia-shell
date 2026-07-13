@@ -37,6 +37,14 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 - [x] The pending timer promotes a still-running process to active recording and clears a pending session whose process already exited.
 - [x] The monitor timer stops polling when the recorder process disappears but leaves terminal recording state to the authoritative process-exit handler, so save/failure reporting is not suppressed.
 
+### Settings UI
+
+- [x] Settings expose output-directory text/folder-picker writeback and cursor-visibility toggle writeback.
+- [x] The video-source selector uses discovered capture sources and falls back to `portal` and `screen`, then writes `videoSource`.
+- [x] Frame-rate options are `30`, `60`, `100`, `120`, `144`, `165`, and `240`; string option keys convert to and from the numeric persisted setting type-safely.
+- [x] Quality options are `medium`, `high`, `very_high`, and `ultra`; video codecs are `h264`, `hevc`, `av1`, `vp8`, and `vp9`; color ranges are `limited` and `full`.
+- [x] Audio-source options are `default_output`, `default_input`, and `both`; audio codecs are `opus` and `aac`; each control writes its matching setting.
+
 ### Stop
 
 - [x] Stop fails closed when no recording is active or pending.
@@ -53,17 +61,18 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 - `Modules/Panels/ControlCenter/Widgets/ScreenRecorder.qml` - control-center screen recorder toggle.
 - `Modules/Panels/Settings/Tabs/ScreenRecorderTab.qml` - screen recorder settings UI.
 - `Services/UI/ControlCenterWidgetRegistry.qml` - control-center widget registration.
+- `Bin/dev/service-probes.sh` - read-only monitor/source enumeration and portal availability probe.
 
 ## Tests asserting this spec
 
 - `Tests/screen-recorder-service-guards.test.js`
+- `Tests/screen-recorder-settings-ui.test.js`
 - `Tests/service-probes-parsing.test.sh`
 - `Tests/qml-runtime-guards.test.js`
 
 ## Known gaps (current cycle)
 
-- [x] Add executable tests for capture-source and monitor-list parsing.
-- [ ] Add spec coverage for settings UI source/codec/quality controls.
+None.
 
 ## Out of scope
 

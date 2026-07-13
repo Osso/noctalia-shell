@@ -125,8 +125,8 @@ ColumnLayout {
                           })
         }
       ]
-      currentKey: Settings.data.screenRecorder.frameRate
-      onSelected: key => Settings.data.screenRecorder.frameRate = key
+      currentKey: String(Settings.data.screenRecorder.frameRate)
+      onSelected: key => Settings.data.screenRecorder.frameRate = parseInt(key, 10)
     }
 
     // Video Quality
