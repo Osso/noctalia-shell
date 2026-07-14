@@ -42,6 +42,9 @@ Item {
   // Edge snapping: if panel is within this distance (in pixels) from a screen edge, snap
   property real edgeSnapDistance: 50
 
+  // Stable registry key captured before screen bindings can change during output teardown.
+  property string registrationKey: ""
+
   // Track whether panel is open
   property bool isPanelOpen: false
 
@@ -1099,8 +1102,9 @@ Item {
   }
 
   Component.onCompleted: {
-    PanelService.registerPanel(root);
+    registrationKey = objectName;
+    PanelService.registerPanel(registrationKey, root);
   }
 
-  Component.onDestruction: PanelService.unregisterPanel(root)
+  Component.onDestruction: PanelService.unregisterPanel(registrationKey, root)
 }

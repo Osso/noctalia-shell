@@ -2,6 +2,11 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 
 ## What it must do
 
+### Registration lifecycle
+
+- [x] SmartPanel captures a stable registration key from `objectName` before registering with PanelService.
+- [x] SmartPanel unregisters with the captured key and panel identity during destruction, even if screen-bound `objectName` changes during output teardown.
+
 ### Close lifecycle
 
 - [x] Closing a panel starts the closing sequence.
@@ -42,6 +47,9 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 
 ## Tests asserting this spec
 
+- `Tests/panel-service-guards.test.js`
+- `Tests/Qml/PanelServiceLifecycleHarness.qml`
+- `Tests/panel-service-lifecycle.test.sh`
 - `Tests/smart-panel-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`

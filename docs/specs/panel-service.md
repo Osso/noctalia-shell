@@ -4,8 +4,8 @@ PanelService covers shared panel registration, popup-menu window lookup, panel l
 
 ### Registration
 
-- [x] Panel registration stores panels by `objectName`.
-- [x] Panel registration logs registered panel names.
+- [x] Panel registration captures a stable key before screen-bound object names can change during output teardown.
+- [x] Panel registration logs registered panel keys.
 - [x] Lazy panel loader registration stores loaders by panel key.
 - [x] MainScreen registers inactive per-screen panel loaders instead of instantiating all panels at startup.
 - [x] MainScreen panel background placeholders fall back to lightweight placeholder items until each panel loads.
@@ -13,6 +13,7 @@ PanelService covers shared panel registration, popup-menu window lookup, panel l
 - [x] Popup-menu window registration stores windows by screen name.
 - [x] Popup-menu window registration emits the popup-window registration signal.
 - [x] Panels, lazy loaders, and popup windows unregister during owner destruction.
+- [x] Panel destruction uses the captured registration key so monitor removal cannot leave a destroyed QObject in the registry.
 - [x] Unregister operations remove entries only when the registered object identity still matches, so an old destroyed owner cannot delete a newer replacement using the same screen key.
 - [x] Unregistering the currently open panel clears the active-panel reference.
 
@@ -52,6 +53,9 @@ PanelService covers shared panel registration, popup-menu window lookup, panel l
 ## Tests asserting this spec
 
 - `Tests/panel-service-guards.test.js`
+- `Tests/Qml/tst_panel_service_lifecycle.qml`
+- `Tests/Qml/PanelServiceLifecycleHarness.qml`
+- `Tests/panel-service-lifecycle.test.sh`
 - `Tests/main-screen-lazy-panels.test.js`
 - `Tests/source-coverage.test.js`
 

@@ -24,8 +24,9 @@ Run the non-invasive local gate before committing:
 
 This runs:
 
-- Deterministic JavaScript, Python, and shell regression tests.
+- Deterministic JavaScript, Python, shell, and headless QML runtime regression tests.
 - Structural QML checks for the currently lint-clean source set.
+- Headless Qt lifecycle tests plus non-visible production QML lifecycle checks with isolated temporary config/cache/data directories.
 - Read-only service probes for notifications, audio, brightness/DDC, clipboard MIME
   types, and wallpaper/color cache state.
 - Active Quickshell log checks for high-signal QML/runtime failures.

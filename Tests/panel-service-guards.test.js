@@ -15,16 +15,16 @@ function testPanelRegistrationGuards() {
   const registerPanelLoaderBody = extractFunctionBody(source, "registerPanelLoader");
   const registerPopupBody = extractFunctionBody(source, "registerPopupMenuWindow");
 
-  assert.match(registerPanelBody, /registeredPanels\[panel\.objectName\] = panel/, "registerPanel must store panels by objectName");
+  assert.match(registerPanelBody, /registeredPanels\[panelKey\] = panel/, "registerPanel must store panels by the captured registration key");
   assert.match(registerPanelLoaderBody, /panelLoaders\[panelKey\] = loader/, "registerPanelLoader must store panel loaders by panel key");
-  assert.match(registerPanelBody, /Logger\.d\("PanelService", "Registered panel:", panel\.objectName\)/, "registerPanel must log registered panel names");
+  assert.match(registerPanelBody, /Logger\.d\("PanelService", "Registered panel:", panelKey\)/, "registerPanel must log captured panel keys");
   assert.match(registerPopupBody, /if \(!screen \|\| !window\)[\s\S]*return/, "registerPopupMenuWindow must ignore missing screen or window");
   assert.match(registerPopupBody, /var key = screen\.name[\s\S]*popupMenuWindows\[key\] = window/, "registerPopupMenuWindow must store windows by screen name");
   assert.match(registerPopupBody, /popupMenuWindowRegistered\(screen\)/, "registerPopupMenuWindow must emit registration signal");
 }
 
 function testPanelUnregisterRemovesOnlyMatchingObjects() {
-  const unregisterPanel = qmlFunction("unregisterPanel", "panel");
+  const unregisterPanel = qmlFunction("unregisterPanel", "panelKey", "panel");
   const unregisterPanelLoader = qmlFunction("unregisterPanelLoader", "panelKey", "loader");
   const unregisterPopupMenuWindow = qmlFunction("unregisterPopupMenuWindow", "screenKey", "window");
   const oldPanel = { objectName: "clockPanel-eDP-1" };
@@ -42,7 +42,7 @@ function testPanelUnregisterRemovesOnlyMatchingObjects() {
     Logger: { d() {} },
   };
 
-  unregisterPanel(ctx, oldPanel);
+  unregisterPanel(ctx, "clockPanel-eDP-1", oldPanel);
   unregisterPanelLoader(ctx, "clockPanel-eDP-1", oldLoader);
   unregisterPopupMenuWindow(ctx, screen.name, oldWindow);
 
@@ -52,7 +52,7 @@ function testPanelUnregisterRemovesOnlyMatchingObjects() {
   assert.equal(ctx.openedPanel, null);
 
   ctx.openedPanel = newPanel;
-  unregisterPanel(ctx, newPanel);
+  unregisterPanel(ctx, "clockPanel-eDP-1", newPanel);
   unregisterPanelLoader(ctx, "clockPanel-eDP-1", newLoader);
   unregisterPopupMenuWindow(ctx, screen.name, newWindow);
 
@@ -67,7 +67,9 @@ function testPanelOwnersUnregisterOnDestruction() {
   const mainScreen = readQml("Modules/MainScreen/MainScreen.qml");
   const popupWindow = readQml("Modules/MainScreen/PopupMenuWindow.qml");
 
-  assert.match(smartPanel, /Component\.onDestruction:\s*PanelService\.unregisterPanel\(root\)/);
+  assert.match(smartPanel, /property string registrationKey:\s*""/);
+  assert.match(smartPanel, /registrationKey = objectName[\s\S]*PanelService\.registerPanel\(registrationKey, root\)/);
+  assert.match(smartPanel, /Component\.onDestruction:\s*PanelService\.unregisterPanel\(registrationKey, root\)/);
   assert.match(mainScreen, /Component\.onDestruction:\s*root\.unregisterLazyPanels\(\)/);
   assert.match(popupWindow, /property string registrationKey:/);
   assert.match(popupWindow, /Component\.onDestruction:\s*PanelService\.unregisterPopupMenuWindow\(registrationKey, root\)/);
@@ -120,7 +122,7 @@ function testLazyPanelLookupExecutes() {
 }
 
 function testPanelMultiScreenPopupAndPanelLookupsExecute() {
-  const registerPanel = qmlFunction("registerPanel", "panel");
+  const registerPanel = qmlFunction("registerPanel", "panelKey", "panel");
   const registerPopupMenuWindow = qmlFunction("registerPopupMenuWindow", "screen", "window");
   const getPopupMenuWindow = qmlFunction("getPopupMenuWindow", "screen");
   const getPanel = qmlFunction("getPanel", "name", "screen");
@@ -154,8 +156,8 @@ function testPanelMultiScreenPopupAndPanelLookupsExecute() {
     },
   };
 
-  registerPanel(ctx, leftPanel);
-  registerPanel(ctx, rightPanel);
+  registerPanel(ctx, leftPanel.objectName, leftPanel);
+  registerPanel(ctx, rightPanel.objectName, rightPanel);
   registerPopupMenuWindow(ctx, leftScreen, leftWindow);
   registerPopupMenuWindow(ctx, rightScreen, rightWindow);
   registerPopupMenuWindow(ctx, null, { id: "missing-screen" });

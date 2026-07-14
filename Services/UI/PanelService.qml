@@ -23,25 +23,21 @@ Singleton {
   signal popupMenuWindowRegistered(var screen)
 
   // Register this panel (called after panel is loaded)
-  function registerPanel(panel) {
-    registeredPanels[panel.objectName] = panel;
-    Logger.d("PanelService", "Registered panel:", panel.objectName);
+  function registerPanel(panelKey, panel) {
+    registeredPanels[panelKey] = panel;
+    Logger.d("PanelService", "Registered panel:", panelKey);
   }
 
-  function unregisterPanel(panel) {
-    if (!panel) {
-      return;
-    }
-
+  function unregisterPanel(panelKey, panel) {
     if (openedPanel === panel) {
       openedPanel = null;
     }
-    if (registeredPanels[panel.objectName] !== panel) {
+    if (registeredPanels[panelKey] !== panel) {
       return;
     }
 
-    delete registeredPanels[panel.objectName];
-    Logger.d("PanelService", "Unregistered panel:", panel.objectName);
+    delete registeredPanels[panelKey];
+    Logger.d("PanelService", "Unregistered panel:", panelKey);
   }
 
   function registerPanelLoader(panelKey, loader) {
