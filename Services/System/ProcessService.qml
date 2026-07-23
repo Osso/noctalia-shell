@@ -131,46 +131,53 @@ Singleton {
     return "process";
   }
 
-  // Internal: Parse ps output and update process list
+  // Internal: Parse consecutive /proc snapshots and update process list
   property var allProcesses: []
+  property var previousProcessSamples: ({})
+  property real previousSampleTime: 0
 
   function parseProcessOutput(text) {
     if (!text) return;
 
-    const lines = text.trim().split('\n');
+    let snapshot;
+    try {
+      snapshot = JSON.parse(text);
+    } catch (error) {
+      Logger.w("ProcessService", "Invalid process snapshot:", error);
+      return;
+    }
+    if (!snapshot || !Array.isArray(snapshot.processes)) return;
+
+    const sampleInterval = snapshot.sampleTime - previousSampleTime;
+    const newSamples = {};
     const newProcesses = [];
     let totalCpu = 0;
     let totalMem = 0;
 
-    // No header to skip since we use --no-headers
-    for (var i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
+    for (const processData of snapshot.processes) {
+      const pid = processData.pid || 0;
+      if (pid <= 0) continue;
 
-      // ps output format: PID %CPU %MEM RSS COMMAND
-      // Using fixed-width parsing since command can have spaces
-      const parts = line.split(/\s+/);
-      if (parts.length < 5) continue;
-
-      const pid = parseInt(parts[0]) || 0;
-      const cpu = parseFloat(parts[1]) || 0;
-      const memPercent = parseFloat(parts[2]) || 0;
-      const rssKB = parseInt(parts[3]) || 0;
-      const command = parts.slice(4).join(' ');
-
-      // Extract command name from full path/args
+      const previous = previousProcessSamples[pid];
+      const sameProcess = previous && previous.startTime === processData.startTime;
+      const cpuTimeDelta = sameProcess ? processData.cpuTime - previous.cpuTime : 0;
+      const cpu = sampleInterval > 0 ? Math.max(0, cpuTimeDelta / sampleInterval * 100) : 0;
+      const command = processData.command || "";
+      const memPercent = processData.memoryPercent || 0;
+      const rssKB = processData.memoryKB || 0;
       let cmdName = command;
 
-      // Handle kernel threads like [kworker/0:1]
       if (cmdName.startsWith('[')) {
         cmdName = cmdName.split(']')[0].replace('[', '').split('/')[0];
       } else {
-        // Get first argument (the executable)
         const firstArg = command.split(' ')[0];
-        // Extract basename from path
         cmdName = firstArg.split('/').pop();
       }
 
+      newSamples[pid] = {
+        cpuTime: processData.cpuTime,
+        startTime: processData.startTime
+      };
       newProcesses.push({
         pid: pid,
         cpu: cpu,
@@ -185,6 +192,8 @@ Singleton {
       totalMem += memPercent;
     }
 
+    previousProcessSamples = newSamples;
+    previousSampleTime = snapshot.sampleTime;
     allProcesses = newProcesses;
     processCount = newProcesses.length;
     totalCpuUsage = Math.min(totalCpu, 100);
@@ -242,11 +251,10 @@ Singleton {
     Logger.d("ProcessService", "Component completed");
   }
 
-  // Process to fetch process list
-  // ps aux format with custom columns for easier parsing
+  // Process to fetch cumulative CPU and memory counters from /proc
   Process {
     id: psProcess
-    command: ["ps", "-eo", "pid,%cpu,%mem,rss,args", "--sort=-%cpu", "--no-headers"]
+    command: ["python3", Quickshell.shellDir + "/Bin/process-stats.py"]
     running: false
 
     stdout: StdioCollector {

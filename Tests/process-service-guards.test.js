@@ -62,27 +62,6 @@ function testProcessServiceFormattingAndIcons() {
   assert.match(iconBody, /return "process"/, "getProcessIcon must fall back to a generic process icon");
 }
 
-function testProcessServiceParsing() {
-  const body = extractFunctionBody(source, "parseProcessOutput");
-
-  assert.match(body, /if \(!text\) return;/, "parseProcessOutput must ignore empty output");
-  assert.match(body, /const lines = text\.trim\(\)\.split\('\\n'\)/, "parseProcessOutput must parse ps output by line");
-  assert.match(body, /const parts = line\.split\(\/\\s\+\/\)/, "parseProcessOutput must split ps rows by whitespace");
-  assert.match(body, /if \(parts\.length < 5\) continue;/, "parseProcessOutput must skip malformed rows");
-  assert.match(body, /const pid = parseInt\(parts\[0\]\) \|\| 0/, "parseProcessOutput must parse pids");
-  assert.match(body, /const cpu = parseFloat\(parts\[1\]\) \|\| 0/, "parseProcessOutput must parse cpu usage");
-  assert.match(body, /const memPercent = parseFloat\(parts\[2\]\) \|\| 0/, "parseProcessOutput must parse memory percentage");
-  assert.match(body, /const rssKB = parseInt\(parts\[3\]\) \|\| 0/, "parseProcessOutput must parse RSS memory");
-  assert.match(body, /const command = parts\.slice\(4\)\.join\(' '\)/, "parseProcessOutput must preserve command arguments");
-  assert.match(body, /if \(cmdName\.startsWith\('\['\)\)[\s\S]*cmdName = cmdName\.split\('\]'\)\[0\]\.replace\('\[', ''\)\.split\('\/'\)\[0\]/, "parseProcessOutput must normalize kernel thread names");
-  assert.match(body, /const firstArg = command\.split\(' '\)\[0\][\s\S]*cmdName = firstArg\.split\('\/'\)\.pop\(\)/, "parseProcessOutput must extract executable basenames");
-  assert.match(body, /displayName: cmdName\.length > 25 \? cmdName\.substring\(0, 25\) \+ ".?" : cmdName/, "parseProcessOutput must truncate long display names");
-  assert.match(body, /totalCpu \+= cpu[\s\S]*totalMem \+= memPercent/, "parseProcessOutput must accumulate totals");
-  assert.match(body, /allProcesses = newProcesses[\s\S]*processCount = newProcesses\.length/, "parseProcessOutput must publish the parsed process list");
-  assert.match(body, /totalCpuUsage = Math\.min\(totalCpu, 100\)[\s\S]*totalMemoryUsage = Math\.min\(totalMem, 100\)/, "parseProcessOutput must cap aggregate percentages");
-  assert.match(body, /applySorting\(\)/, "parseProcessOutput must sort parsed processes");
-}
-
 function testProcessServiceSorting() {
   const body = extractFunctionBody(source, "applySorting");
 
@@ -107,12 +86,14 @@ function testProcessPanelColumnsShareMetrics() {
   assert.match(processPanelSource, /id: processRowLayout[\s\S]*?Layout\.preferredWidth: root\.processCpuColumnWidth[\s\S]*?Layout\.preferredWidth: root\.processMemoryColumnWidth[\s\S]*?Layout\.preferredWidth: root\.processPidColumnWidth[\s\S]*?Layout\.preferredWidth: root\.processSortColumnWidth/, "ProcessPanel rows must reserve the header sort column so metric columns line up");
 }
 
-function testProcessServiceParsesPsRowsAndAggregatesTotals() {
+function testProcessServiceCalculatesCpuFromConsecutiveSamples() {
   const parseProcessOutput = qmlFunction("parseProcessOutput", "text");
   const applySorting = qmlFunction("applySorting");
   const ctx = {
     allProcesses: [],
     processes: [],
+    previousProcessSamples: {},
+    previousSampleTime: 0,
     processCount: 0,
     processLimit: 10,
     sortBy: "pid",
@@ -122,18 +103,35 @@ function testProcessServiceParsesPsRowsAndAggregatesTotals() {
   };
   ctx.applySorting = () => applySorting(ctx);
 
-  parseProcessOutput(ctx, [
-    "101 12.5 5.5 2048 /usr/bin/firefox --profile default",
-    " 42 91.0 97.0 512 [kworker/0:1-events]",
-    "invalid row",
-  ].join("\n"));
+  const firstSample = {
+    sampleTime: 100,
+    processes: [
+      { pid: 101, cpuTime: 50, startTime: 10, memoryPercent: 5.5, memoryKB: 2048, command: "/usr/bin/firefox --profile default" },
+      { pid: 42, cpuTime: 20, startTime: 5, memoryPercent: 2, memoryKB: 512, command: "[kworker/0:1-events]" },
+    ],
+  };
+  const secondSample = {
+    sampleTime: 103,
+    processes: [
+      { pid: 101, cpuTime: 50.006, startTime: 10, memoryPercent: 5.5, memoryKB: 2048, command: "/usr/bin/firefox --profile default" },
+      { pid: 42, cpuTime: 21.5, startTime: 5, memoryPercent: 2, memoryKB: 512, command: "[kworker/0:1-events]" },
+      { pid: 77, cpuTime: 90, startTime: 103, memoryPercent: 1, memoryKB: 256, command: "/usr/bin/new-process" },
+    ],
+  };
 
-  assert.equal(ctx.processCount, 2, "parseProcessOutput must ignore malformed rows");
-  assert.equal(ctx.allProcesses[0].command, "firefox", "path command names must be reduced to basenames");
-  assert.equal(ctx.allProcesses[1].command, "kworker", "kernel thread display name must be normalized");
-  assert.equal(ctx.totalCpuUsage, 100, "aggregate CPU usage must be capped at 100");
-  assert.equal(ctx.totalMemoryUsage, 100, "aggregate memory usage must be capped at 100");
-  assert.deepEqual(ctx.processes.map(process => process.pid), [42, 101], "parseProcessOutput must publish sorted processes");
+  parseProcessOutput(ctx, JSON.stringify(firstSample));
+  assert.deepEqual(ctx.allProcesses.map(process => process.cpu), [0, 0], "the first snapshot must establish a baseline without showing lifetime CPU");
+
+  parseProcessOutput(ctx, JSON.stringify(secondSample));
+
+  assert.equal(ctx.processCount, 3);
+  assert.equal(ctx.allProcesses[0].command, "firefox");
+  assert.equal(ctx.allProcesses[1].command, "kworker");
+  assert.equal(ctx.allProcesses[0].cpu.toFixed(1), "0.2", "CPU must use work done during the sampling interval");
+  assert.equal(ctx.allProcesses[1].cpu.toFixed(1), "50.0");
+  assert.equal(ctx.allProcesses[2].cpu, 0, "new processes must start at zero until a second sample exists");
+  assert.equal(ctx.totalCpuUsage.toFixed(1), "50.2");
+  assert.deepEqual(ctx.processes.map(process => process.pid), [42, 77, 101]);
 }
 
 function testProcessServiceSortingExecutesLimitAndDirections() {
@@ -163,9 +161,8 @@ const tests = [
   testProcessServiceLifecycleAndCommands,
   testProcessServiceScalarInputsAreTyped,
   testProcessServiceFormattingAndIcons,
-  testProcessServiceParsing,
   testProcessServiceSorting,
-  testProcessServiceParsesPsRowsAndAggregatesTotals,
+  testProcessServiceCalculatesCpuFromConsecutiveSamples,
   testProcessServiceSortingExecutesLimitAndDirections,
   testProcessPanelColumnsShareMetrics,
 ];
