@@ -131,40 +131,36 @@ Singleton {
     return "process";
   }
 
-  // Internal: Parse consecutive /proc snapshots and update process list
+  // Internal: Parse top's latest interval snapshot and update process list
   property var allProcesses: []
-  property var previousProcessSamples: ({})
-  property real previousSampleTime: 0
 
   function parseProcessOutput(text) {
     if (!text) return;
 
-    let snapshot;
-    try {
-      snapshot = JSON.parse(text);
-    } catch (error) {
-      Logger.w("ProcessService", "Invalid process snapshot:", error);
-      return;
-    }
-    if (!snapshot || !Array.isArray(snapshot.processes)) return;
-
-    const sampleInterval = snapshot.sampleTime - previousSampleTime;
-    const newSamples = {};
+    const latestSnapshotStart = text.lastIndexOf("\ntop - ");
+    const latestSnapshot = latestSnapshotStart >= 0 ? text.substring(latestSnapshotStart + 1) : text;
+    const lines = latestSnapshot.split('\n');
     const newProcesses = [];
+    let readingProcesses = false;
     let totalCpu = 0;
     let totalMem = 0;
 
-    for (const processData of snapshot.processes) {
-      const pid = processData.pid || 0;
-      if (pid <= 0) continue;
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (line.startsWith("PID USER")) {
+        readingProcesses = true;
+        continue;
+      }
+      if (!readingProcesses || !line) continue;
 
-      const previous = previousProcessSamples[pid];
-      const sameProcess = previous && previous.startTime === processData.startTime;
-      const cpuTimeDelta = sameProcess ? processData.cpuTime - previous.cpuTime : 0;
-      const cpu = sampleInterval > 0 ? Math.max(0, cpuTimeDelta / sampleInterval * 100) : 0;
-      const command = processData.command || "";
-      const memPercent = processData.memoryPercent || 0;
-      const rssKB = processData.memoryKB || 0;
+      const parts = line.split(/\s+/);
+      if (parts.length < 12) continue;
+
+      const pid = parseInt(parts[0]) || 0;
+      const rssKB = parseInt(parts[5]) || 0;
+      const cpu = parseFloat(parts[8]) || 0;
+      const memPercent = parseFloat(parts[9]) || 0;
+      const command = parts.slice(11).join(' ');
       let cmdName = command;
 
       if (cmdName.startsWith('[')) {
@@ -174,10 +170,6 @@ Singleton {
         cmdName = firstArg.split('/').pop();
       }
 
-      newSamples[pid] = {
-        cpuTime: processData.cpuTime,
-        startTime: processData.startTime
-      };
       newProcesses.push({
         pid: pid,
         cpu: cpu,
@@ -192,8 +184,6 @@ Singleton {
       totalMem += memPercent;
     }
 
-    previousProcessSamples = newSamples;
-    previousSampleTime = snapshot.sampleTime;
     allProcesses = newProcesses;
     processCount = newProcesses.length;
     totalCpuUsage = Math.min(totalCpu, 100);
@@ -251,10 +241,10 @@ Singleton {
     Logger.d("ProcessService", "Component completed");
   }
 
-  // Process to fetch cumulative CPU and memory counters from /proc
+  // top's first batch is lifetime average; the second is interval utilization
   Process {
     id: psProcess
-    command: ["python3", Quickshell.shellDir + "/Bin/process-stats.py"]
+    command: ["env", "LC_ALL=C", "top", "-b", "-n", "2", "-d", "1", "-c", "-w", "512", "-e", "k"]
     running: false
 
     stdout: StdioCollector {

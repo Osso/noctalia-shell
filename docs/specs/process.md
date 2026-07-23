@@ -7,7 +7,7 @@ Process covers process monitoring, process-list parsing/sorting, process actions
 - [x] Adding a reference increments the reference count and starts monitoring on the first reference.
 - [x] Removing a reference clamps the reference count at zero and logs deactivation when no references remain.
 - [x] Updating processes does no work without active references.
-- [x] Updating processes starts the `ps` process when monitoring is active.
+- [x] Updating processes starts a two-snapshot `top` sample when monitoring is active.
 - [x] Changing the sort key resorts only when the key changes.
 - [x] Toggling sort direction flips direction and resorts.
 - [x] Normal process kill runs `kill` only for positive pids.
@@ -24,10 +24,9 @@ Process covers process monitoring, process-list parsing/sorting, process actions
 
 ### Parsing
 
-- [x] Empty process output is ignored.
-- [x] Process output is split by line and each row is split by whitespace.
-- [x] Malformed rows are skipped.
-- [x] Rows parse pid, CPU usage, memory percentage, RSS memory, and command text.
+- [x] Empty process output and malformed process rows are ignored.
+- [x] The initial lifetime-average `top` snapshot is discarded.
+- [x] The latest `top` snapshot supplies interval CPU usage, pid, memory percentage, RSS memory, and command text.
 - [x] Command arguments are preserved while executable display names are reduced to basenames.
 - [x] Kernel thread display names are normalized.
 - [x] Long display names are truncated.
@@ -56,7 +55,7 @@ Process covers process monitoring, process-list parsing/sorting, process actions
 
 ## Implementation inventory
 
-- `Services/System/ProcessService.qml` - process monitor lifecycle, `ps` parsing, sorting, kill commands, formatting, and process icons.
+- `Services/System/ProcessService.qml` - process monitor lifecycle, interval `top` parsing, sorting, kill commands, formatting, and process icons.
 - `Modules/Panels/Process/ProcessPanel.qml` - process list panel, sort controls, process actions, and typed process delegates.
 - `Modules/Bar/Widgets/SystemMonitor.qml` - bar widget entry point that can open the process panel.
 - `Modules/Cards/SystemMonitorCard.qml` - dashboard card that displays system-monitor summaries alongside process-related system state.
@@ -72,9 +71,9 @@ Process covers process monitoring, process-list parsing/sorting, process actions
 - [ ] Add executable coverage for ProcessPanel open/close reference ownership.
 - [ ] Add executable coverage for ProcessPanel sort button interactions.
 - [ ] Add executable coverage for rendered process action buttons.
-- [ ] Add executable coverage for ps process exit/error handling.
+- [ ] Add executable coverage for process-sampler exit/error handling.
 
 ## Out of scope
 
 - CPU, memory, disk, network, and fan metric collection belongs in a future system-monitor spec.
-- Backend kernel/process semantics belong to the host `ps` and `kill` commands; this spec covers the shell boundary.
+- Backend kernel/process semantics belong to the host `/proc` and `kill` interfaces; this spec covers the shell boundary.

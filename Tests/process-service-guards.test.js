@@ -86,52 +86,43 @@ function testProcessPanelColumnsShareMetrics() {
   assert.match(processPanelSource, /id: processRowLayout[\s\S]*?Layout\.preferredWidth: root\.processCpuColumnWidth[\s\S]*?Layout\.preferredWidth: root\.processMemoryColumnWidth[\s\S]*?Layout\.preferredWidth: root\.processPidColumnWidth[\s\S]*?Layout\.preferredWidth: root\.processSortColumnWidth/, "ProcessPanel rows must reserve the header sort column so metric columns line up");
 }
 
-function testProcessServiceCalculatesCpuFromConsecutiveSamples() {
+function testProcessServiceUsesLatestTopIntervalSnapshot() {
   const parseProcessOutput = qmlFunction("parseProcessOutput", "text");
   const applySorting = qmlFunction("applySorting");
   const ctx = {
     allProcesses: [],
     processes: [],
-    previousProcessSamples: {},
-    previousSampleTime: 0,
     processCount: 0,
     processLimit: 10,
     sortBy: "pid",
     sortDescending: false,
     totalCpuUsage: 0,
     totalMemoryUsage: 0,
+    Logger: { w() {} },
   };
   ctx.applySorting = () => applySorting(ctx);
 
-  const firstSample = {
-    sampleTime: 100,
-    processes: [
-      { pid: 101, cpuTime: 50, startTime: 10, memoryPercent: 5.5, memoryKB: 2048, command: "/usr/bin/firefox --profile default" },
-      { pid: 42, cpuTime: 20, startTime: 5, memoryPercent: 2, memoryKB: 512, command: "[kworker/0:1-events]" },
-    ],
-  };
-  const secondSample = {
-    sampleTime: 103,
-    processes: [
-      { pid: 101, cpuTime: 50.006, startTime: 10, memoryPercent: 5.5, memoryKB: 2048, command: "/usr/bin/firefox --profile default" },
-      { pid: 42, cpuTime: 21.5, startTime: 5, memoryPercent: 2, memoryKB: 512, command: "[kworker/0:1-events]" },
-      { pid: 77, cpuTime: 90, startTime: 103, memoryPercent: 1, memoryKB: 256, command: "/usr/bin/new-process" },
-    ],
-  };
+  const output = [
+    "top - 04:10:00 up 4 days",
+    "Tasks: 2 total",
+    "    PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND",
+    "    101 osso 20 0 10000 2048 512 S 13.5 5.5 13:36.40 /usr/bin/firefox --profile default",
+    "top - 04:10:01 up 4 days",
+    "Tasks: 2 total",
+    "    PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND",
+    "    101 osso 20 0 10000 2048 512 S 0.2 5.5 13:36.40 /usr/bin/firefox --profile default",
+    "     42 root 20 0 9000 512 128 S 50.0 2.0 1:20.00 [kworker/0:1-events]",
+  ].join("\n");
 
-  parseProcessOutput(ctx, JSON.stringify(firstSample));
-  assert.deepEqual(ctx.allProcesses.map(process => process.cpu), [0, 0], "the first snapshot must establish a baseline without showing lifetime CPU");
+  parseProcessOutput(ctx, output);
 
-  parseProcessOutput(ctx, JSON.stringify(secondSample));
-
-  assert.equal(ctx.processCount, 3);
+  assert.equal(ctx.processCount, 2);
   assert.equal(ctx.allProcesses[0].command, "firefox");
   assert.equal(ctx.allProcesses[1].command, "kworker");
-  assert.equal(ctx.allProcesses[0].cpu.toFixed(1), "0.2", "CPU must use work done during the sampling interval");
-  assert.equal(ctx.allProcesses[1].cpu.toFixed(1), "50.0");
-  assert.equal(ctx.allProcesses[2].cpu, 0, "new processes must start at zero until a second sample exists");
-  assert.equal(ctx.totalCpuUsage.toFixed(1), "50.2");
-  assert.deepEqual(ctx.processes.map(process => process.pid), [42, 77, 101]);
+  assert.equal(ctx.allProcesses[0].cpu, 0.2, "the displayed CPU must come from top's latest interval snapshot, not its initial lifetime snapshot");
+  assert.equal(ctx.allProcesses[1].cpu, 50);
+  assert.equal(ctx.totalCpuUsage, 50.2);
+  assert.deepEqual(ctx.processes.map(process => process.pid), [42, 101]);
 }
 
 function testProcessServiceSortingExecutesLimitAndDirections() {
@@ -162,7 +153,7 @@ const tests = [
   testProcessServiceScalarInputsAreTyped,
   testProcessServiceFormattingAndIcons,
   testProcessServiceSorting,
-  testProcessServiceCalculatesCpuFromConsecutiveSamples,
+  testProcessServiceUsesLatestTopIntervalSnapshot,
   testProcessServiceSortingExecutesLimitAndDirections,
   testProcessPanelColumnsShareMetrics,
 ];
