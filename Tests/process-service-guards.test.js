@@ -125,6 +125,29 @@ function testProcessServiceUsesLatestTopIntervalSnapshot() {
   assert.deepEqual(ctx.processes.map(process => process.pid), [42, 101]);
 }
 
+function testProcessServiceIgnoresIncompleteTopSample() {
+  const parseProcessOutput = qmlFunction("parseProcessOutput", "text");
+  const ctx = {
+    allProcesses: [{ pid: 101, cpu: 0.2 }],
+    processes: [{ pid: 101, cpu: 0.2 }],
+    processCount: 1,
+    totalCpuUsage: 0.2,
+    totalMemoryUsage: 5.5,
+    applySorting() {},
+  };
+  const firstSnapshotOnly = [
+    "top - 04:10:00 up 4 days",
+    "Tasks: 1 total",
+    "    PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND",
+    "    101 osso 20 0 10000 2048 512 S 13.5 5.5 13:36.40 /usr/bin/syncthing serve --no-browser --no-restart",
+  ].join("\n");
+
+  parseProcessOutput(ctx, firstSnapshotOnly);
+
+  assert.equal(ctx.allProcesses[0].cpu, 0.2, "an incomplete top sample must not replace interval CPU with the initial lifetime average");
+  assert.equal(ctx.totalCpuUsage, 0.2);
+}
+
 function testProcessServiceSortingExecutesLimitAndDirections() {
   const applySorting = qmlFunction("applySorting");
   const ctx = {
@@ -154,6 +177,7 @@ const tests = [
   testProcessServiceFormattingAndIcons,
   testProcessServiceSorting,
   testProcessServiceUsesLatestTopIntervalSnapshot,
+  testProcessServiceIgnoresIncompleteTopSample,
   testProcessServiceSortingExecutesLimitAndDirections,
   testProcessPanelColumnsShareMetrics,
 ];

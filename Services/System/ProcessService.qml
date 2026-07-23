@@ -138,7 +138,9 @@ Singleton {
     if (!text) return;
 
     const latestSnapshotStart = text.lastIndexOf("\ntop - ");
-    const latestSnapshot = latestSnapshotStart >= 0 ? text.substring(latestSnapshotStart + 1) : text;
+    if (latestSnapshotStart < 0) return;
+
+    const latestSnapshot = text.substring(latestSnapshotStart + 1);
     const lines = latestSnapshot.split('\n');
     const newProcesses = [];
     let readingProcesses = false;
@@ -253,7 +255,7 @@ Singleton {
 
     onExited: exitCode => {
       if (exitCode !== 0) {
-        Logger.w("ProcessService", "ps command failed with exit code:", exitCode);
+        Logger.w("ProcessService", "top command failed with exit code:", exitCode);
       }
     }
   }

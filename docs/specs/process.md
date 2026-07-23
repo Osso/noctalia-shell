@@ -25,7 +25,7 @@ Process covers process monitoring, process-list parsing/sorting, process actions
 ### Parsing
 
 - [x] Empty process output and malformed process rows are ignored.
-- [x] The initial lifetime-average `top` snapshot is discarded.
+- [x] The initial lifetime-average `top` snapshot is discarded, and incomplete one-snapshot output is ignored.
 - [x] The latest `top` snapshot supplies interval CPU usage, pid, memory percentage, RSS memory, and command text.
 - [x] Command arguments are preserved while executable display names are reduced to basenames.
 - [x] Kernel thread display names are normalized.
