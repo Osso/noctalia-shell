@@ -34,6 +34,7 @@ Audio covers PipeWire-backed output/input volume state, device selection, OSD su
 - [x] Setting the default sink or source fails closed until PipeWire is ready.
 - [x] Setting the default sink updates PipeWire's preferred default audio sink.
 - [x] Setting the default source updates PipeWire's preferred default audio source.
+- [x] The active output device selector visibly marks the current default sink.
 
 ### UI volume controls
 
@@ -41,6 +42,7 @@ Audio covers PipeWire-backed output/input volume state, device selection, OSD su
 - [x] Slider movement schedules pending output/input volume sync.
 - [x] Slider release flushes pending output/input volume sync.
 - [x] Pending sync preserves device-id guards before writing output/input volume.
+- [x] An audio panel opened after a default sink already exists immediately reflects that sink's volume and stays synchronized with later live volume changes.
 
 ### Typed UI contracts
 
@@ -69,6 +71,8 @@ Audio covers PipeWire-backed output/input volume state, device selection, OSD su
 - `Tests/audio-ui-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/qml-runtime-guards.test.js`
+- `Tests/Qml/AudioPanelRegressionHarness.qml`
+- `Tests/audio-panel-regression.test.sh`
 
 ## Known gaps (current cycle)
 

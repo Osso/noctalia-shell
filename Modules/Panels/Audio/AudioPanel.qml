@@ -19,6 +19,12 @@ SmartPanel {
   property bool localInputVolumeChanging: false
   property int lastSourceId: -1
 
+  Component.onCompleted: {
+    if (AudioService.sink) {
+      lastSinkId = AudioService.sink.id;
+    }
+  }
+
   preferredWidth: Math.round(340 * Style.uiScaleRatio)
   preferredHeight: Math.round(420 * Style.uiScaleRatio)
 
@@ -258,7 +264,7 @@ SmartPanel {
 
                   pointSize: Style.fontSizeS
                   text: deviceDescription
-                  checked: AudioService.sink ? AudioService.sink.id === deviceId : false
+                  checked: AudioService.sink ? String(AudioService.sink.id) === deviceId : false
                   onClicked: {
                     AudioService.setAudioSink(modelData);
                     localOutputVolume = AudioService.volume;

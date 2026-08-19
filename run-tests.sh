@@ -111,6 +111,7 @@ run_service_probes() {
     NOCTALIA_BLUETOOTHCTL="$repo_root/Tests/fixtures/bluetoothctl" \
         "$repo_root/Bin/dev/service-probes.sh"
     "$repo_root/Tests/panel-service-lifecycle.test.sh"
+    "$repo_root/Tests/audio-panel-regression.test.sh"
 }
 
 run_notifications() {
