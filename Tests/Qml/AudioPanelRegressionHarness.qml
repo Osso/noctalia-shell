@@ -9,6 +9,7 @@ ShellRoot {
   property var panel: null
   property string stableSinkId: ""
   property int stableSinkTicks: 0
+  readonly property int successExitCode: 42
   property int exitCode: 0
   property bool finished: false
 
@@ -80,10 +81,7 @@ ShellRoot {
       return;
     }
     finished = true;
-    if (exitCode === 0) {
-      console.log("PASS AudioPanelRegression");
-    }
-    Qt.exit(exitCode);
+    Qt.exit(exitCode === 0 ? successExitCode : exitCode);
   }
 
   function verifyLiveVolumeSync() {

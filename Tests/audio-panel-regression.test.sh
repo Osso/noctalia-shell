@@ -19,9 +19,26 @@ for source_dir in Assets Commons Helpers Modules Services Widgets; do
     ln -s "$repo_root/$source_dir" "$runtime_dir/$source_dir"
 done
 ln -s "$repo_root/Tests/Qml/AudioPanelRegressionHarness.qml" "$runtime_shell"
+output_log="$runtime_dir/output.log"
+success_status=42
 
+set +e
 XDG_CONFIG_HOME="$runtime_dir/config" \
     XDG_CACHE_HOME="$runtime_dir/cache" \
     XDG_DATA_HOME="$runtime_dir/data" \
     timeout --kill-after=2s 20s \
-    quickshell --no-color -p "$runtime_shell"
+    quickshell --no-color -p "$runtime_shell" >"$output_log" 2>&1
+status=$?
+set -e
+
+cat "$output_log"
+if [ "$status" -eq "$success_status" ]; then
+    echo "PASS AudioPanelRegression"
+    exit 0
+fi
+if [ "$status" -ne 0 ]; then
+    exit "$status"
+fi
+
+echo "AudioPanel regression did not reach its PASS sentinel" >&2
+exit 1
