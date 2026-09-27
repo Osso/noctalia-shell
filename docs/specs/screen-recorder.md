@@ -4,7 +4,8 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 
 ### Source discovery
 
-- [x] Refreshing capture sources starts both `gpu-screen-recorder --list-capture-options` and `gpu-screen-recorder --list-monitors`.
+- [x] Availability checks, startup, and `Quickshell.screensChanged` refresh capture sources; a refresh starts both `gpu-screen-recorder --list-capture-options` and `gpu-screen-recorder --list-monitors`.
+- [x] A discovery refresh publishes one replacement snapshot only after both commands exit, updating capture sources and primary resolution together, including an empty result; an in-flight refresh coalesces later requests into one queued refresh without changing the persisted video-source selection.
 - [x] Capture-source parsing skips v4l2 devices, keeps monitor resolutions, maps region capture, and appends the portal picker.
 - [x] Monitor-list parsing inserts missing monitors before the portal picker, avoids duplicate monitor keys, and records the first monitor resolution.
 - [x] The read-only host probe accepts one or more valid `NAME|WIDTHxHEIGHT` monitor rows and rejects empty or partly malformed lists.
@@ -70,6 +71,7 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 
 ## Tests asserting this spec
 
+- `Tests/screen-recorder-discovery.test.sh` - launches the real discovery processes through `Tests/Qml/ScreenRecorderDiscoveryHarness.qml`; it verifies a `Quickshell.screensChanged` refresh replaces `DP-4` with `eDP-1` when the two commands exit in reverse order, publishes matching source/resolution state, and preserves the persisted selection.
 - `Tests/screen-recorder-service-guards.test.js`
 - `Tests/screen-recorder-settings-ui.test.js`
 - `Tests/service-probes-parsing.test.sh`
