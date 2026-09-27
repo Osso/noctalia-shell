@@ -64,6 +64,7 @@ function launchRecorderCommand(overrides = {}) {
 function testScreenRecorderRefreshCaptureSourcesStartsBothQueries() {
   const refreshCaptureSources = qmlFunction("refreshCaptureSources");
   const ctx = {
+    discoveryInProgress: false,
     captureSourcesProcess: { command: [], running: false },
     monitorListProcess: { command: [], running: false },
   };
@@ -76,12 +77,51 @@ function testScreenRecorderRefreshCaptureSourcesStartsBothQueries() {
   assert.equal(ctx.monitorListProcess.running, true);
 }
 
-function testScreenRecorderParsesCaptureSourcesAndMonitorList() {
-  assert.match(source, /function parseCaptureSources\(output\)/, "capture source parser must type raw output");
-  assert.match(source, /function parseMonitorList\(output, existingSources\)/, "monitor list parser must type raw output and accept dynamic existing sources");
-  assert.match(source, /root\.captureSources = root\.parseCaptureSources\(this\.text\)/, "capture options collector must use parser helper");
-  assert.match(source, /const monitorResult = root\.parseMonitorList\(this\.text, root\.captureSources\)/, "monitor collector must use parser helper");
+function testScreenRecorderDiscoveryPublishesLatestCompleteSnapshot() {
+  const refresh = qmlFunction("refreshCaptureSources");
+  const publish = qmlFunction("publishDiscoveryIfComplete");
+  const ctx = {
+    discoveryInProgress: false,
+    discoveryQueued: false,
+    pendingCaptureOptions: null,
+    pendingMonitorOutput: null,
+    captureSources: [],
+    primaryMonitorResolution: "",
+    captureSourcesProcess: { running: false },
+    monitorListProcess: { running: false },
+  };
+  const parseSources = qmlFunction("parseCaptureSources", "output");
+  const parseMonitors = qmlFunction("parseMonitorList", "output", "existingSources");
+  ctx.parseCaptureSources = output => parseSources(ctx, output);
+  ctx.parseMonitorList = (output, sources) => parseMonitors(ctx, output, sources);
+  ctx.refreshCaptureSources = () => refresh(ctx);
 
+  refresh(ctx);
+  ctx.pendingMonitorOutput = "DP-4|2560x1440";
+  publish(ctx);
+  assert.deepEqual(ctx.captureSources, []);
+  ctx.pendingCaptureOptions = "DP-4|2560x1440\nregion";
+  publish(ctx);
+  assert.equal(ctx.primaryMonitorResolution, "2560x1440");
+
+  refresh(ctx);
+  ctx.pendingMonitorOutput = "eDP-1|1920x1200";
+  publish(ctx);
+  assert.equal(ctx.primaryMonitorResolution, "2560x1440", "partial refresh must not overwrite resolution");
+  refresh(ctx);
+  assert.equal(ctx.discoveryQueued, true, "hotplug during active query must request another snapshot");
+  ctx.pendingCaptureOptions = "eDP-1|1920x1200\nregion";
+  publish(ctx);
+  assert.equal(ctx.primaryMonitorResolution, "1920x1200");
+  assert.deepEqual(ctx.captureSources.filter(source => source.resolution).map(source => source.key), ["eDP-1"]);
+  assert.equal(ctx.discoveryInProgress, true, "queued hotplug must start a new query");
+  ctx.pendingCaptureOptions = "eDP-1|1920x1200\nregion";
+  ctx.pendingMonitorOutput = "";
+  publish(ctx);
+  assert.equal(ctx.primaryMonitorResolution, "", "missing monitor result clears stale focused-capture size");
+}
+
+function testScreenRecorderParsesCaptureSourcesAndMonitorList() {
   const parseCaptureSources = qmlFunction("parseCaptureSources", "output");
   const parseMonitorList = qmlFunction("parseMonitorList", "output", "existingSources");
 
@@ -403,6 +443,7 @@ function testScreenRecorderStopRecordingGuardsAndStopsState() {
 
 const tests = [
   testScreenRecorderRefreshCaptureSourcesStartsBothQueries,
+  testScreenRecorderDiscoveryPublishesLatestCompleteSnapshot,
   testScreenRecorderParsesCaptureSourcesAndMonitorList,
   testScreenRecorderToggleDelegatesByState,
   testScreenRecorderStartRecordingGuardsAndPortalPath,

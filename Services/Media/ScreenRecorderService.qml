@@ -22,6 +22,10 @@ Singleton {
   property var captureSources: []
   // Resolution of first detected monitor (e.g. "1920x1200"), used for -s flag with -w focused
   property string primaryMonitorResolution: ""
+  property bool discoveryInProgress: false
+  property bool discoveryQueued: false
+  property var pendingCaptureOptions: null
+  property var pendingMonitorOutput: null
 
   // Update availability when ProgramCheckerService completes its checks
   Connections {
@@ -32,6 +36,14 @@ Singleton {
     }
   }
 
+  Connections {
+    target: Quickshell
+    function onScreensChanged() {
+      if (root.isAvailable)
+        root.refreshCaptureSources();
+    }
+  }
+
   // Also query on startup in case checksCompleted already fired
   Component.onCompleted: {
     if (isAvailable)
@@ -39,21 +51,43 @@ Singleton {
   }
 
   function refreshCaptureSources() {
+    if (discoveryInProgress) {
+      discoveryQueued = true;
+      return;
+    }
+    discoveryInProgress = true;
+    pendingCaptureOptions = null;
+    pendingMonitorOutput = null;
     captureSourcesProcess.command = ["gpu-screen-recorder", "--list-capture-options"];
     captureSourcesProcess.running = true;
     monitorListProcess.command = ["gpu-screen-recorder", "--list-monitors"];
     monitorListProcess.running = true;
   }
 
+  function publishDiscoveryIfComplete() {
+    if (pendingCaptureOptions === null || pendingMonitorOutput === null)
+      return;
+
+    const sources = parseCaptureSources(pendingCaptureOptions);
+    const result = parseMonitorList(pendingMonitorOutput, sources);
+    primaryMonitorResolution = result.primaryMonitorResolution;
+    captureSources = result.sources;
+    discoveryInProgress = false;
+    if (discoveryQueued) {
+      discoveryQueued = false;
+      refreshCaptureSources();
+    }
+  }
+
   // Query gpu-screen-recorder for available capture sources
   Process {
     id: captureSourcesProcess
     running: false
-    stdout: StdioCollector {
-      onStreamFinished: {
-        root.captureSources = root.parseCaptureSources(this.text);
-      }
+    onExited: {
+      root.pendingCaptureOptions = stdout.text;
+      root.publishDiscoveryIfComplete();
     }
+    stdout: StdioCollector {}
     stderr: StdioCollector {}
   }
 
@@ -61,15 +95,11 @@ Singleton {
   Process {
     id: monitorListProcess
     running: false
-    stdout: StdioCollector {
-      onStreamFinished: {
-        const monitorResult = root.parseMonitorList(this.text, root.captureSources);
-        root.captureSources = monitorResult.sources;
-        if (!root.primaryMonitorResolution && monitorResult.primaryMonitorResolution) {
-          root.primaryMonitorResolution = monitorResult.primaryMonitorResolution;
-        }
-      }
+    onExited: {
+      root.pendingMonitorOutput = stdout.text;
+      root.publishDiscoveryIfComplete();
     }
+    stdout: StdioCollector {}
     stderr: StdioCollector {}
   }
 
