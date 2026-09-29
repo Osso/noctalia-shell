@@ -97,6 +97,7 @@ run_qml_runtime_tests() (
 )
 
 run_structural_tests() {
+    code-index index "$repo_root" || return $?
     node "$repo_root/Tests/qml-function-inventory.test.js"
     node "$repo_root/Tests/source-coverage.test.js"
 }

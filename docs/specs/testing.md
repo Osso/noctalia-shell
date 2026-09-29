@@ -14,6 +14,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 ### Structural reference guardrails
 
+- [x] The structural runner explicitly refreshes the incremental `code-index` graph before inventory or reference queries and fails without running them if indexing fails.
 - [x] QML source functions must stay structurally referenced from tests according to `code-index untested`.
 - [x] QML source function inventory must stay broad enough to catch structural-reference regressions.
 - [x] `code-index` must inventory every QML `function` declaration outside `Tests/`.
