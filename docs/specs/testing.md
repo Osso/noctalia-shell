@@ -8,7 +8,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - [x] **Executable behavior coverage** runs JavaScript/Python/shell logic and extracted QML function bodies with deterministic inputs.
 - [x] **QML lifecycle integration** means instantiating real QML/Quickshell objects and exercising signals, bindings, loaders, processes, and destruction ordering; current coverage is feature-specific and incomplete.
 - [x] Headless QML lifecycle suites run with `qmltestrunner` on `QT_QPA_PLATFORM=offscreen` and isolated temporary XDG config/cache/data directories.
-- [x] Production QML lifecycle harnesses run non-visibly against the active Wayland session with isolated temporary config/cache/data paths and explicit process cleanup.
+- [x] Production QML lifecycle harnesses run non-visibly with isolated temporary config/cache/data paths and explicit process cleanup. Night-light gamma tests use a private Wayland server, never the active display.
 - [x] **Live host probes** inspect the active machine or shell and must be reported separately from deterministic unit/static results.
 - [x] Runner output labels `deterministic-unit`, `structural-reference`, `qml-static`, `host-probes`, `live-log`, and `visible-notifications` evidence independently.
 
@@ -38,6 +38,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - [x] `./run-tests.sh all` (the default) and `./run-tests.sh regression` run deterministic unit tests, structural-reference checks, QML static checks, read-only host probes, and the active Quickshell log gate; they do not run visible notification probes.
 - [x] `./run-tests.sh unit` discovers every `Tests/*.test.js` suite, runs behavior suites and discovered `Tests/Qml/tst_*.qml` lifecycle suites under `deterministic-unit`, then runs source inventory/coverage meta-tests under `structural-reference`.
 - [x] Adding a JavaScript test suite requires no manual runner-list update; the deterministic runner-completeness test proves discovery and discovery-failure handling.
+- [ ] The deterministic gate also runs isolated [deployment](deployment.md) and [night-light](night-light.md) process regressions. Night-light fixtures require a C compiler, `pkg-config`, Wayland server development files, `wayland-scanner`, Quickshell, and `wlsunset`; these are test-only dependencies beyond the shell's existing runtime programs.
 - [x] `./run-tests.sh qml` runs the focused QML static check.
 - [x] `./run-tests.sh probes` runs read-only service probes, injects the deterministic Bluetooth CLI fixture rather than contacting host Bluetooth hardware, validates launch/IPC contracts against the canonical runtime shell path, and runs the isolated non-visible production QML lifecycle harness.
 - [x] `./run-tests.sh log` runs the active Quickshell log regression gate.

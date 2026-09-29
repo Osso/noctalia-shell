@@ -12,47 +12,51 @@ Singleton {
   // Night Light properties - directly bound to settings
   readonly property var params: Settings.data.nightLight
   property var lastCommand: []
+  property bool cleanupPending: false
 
   function apply() {
+    if (!params.enabled) {
+      runner.running = false;
+      return;
+    }
+
     // If using LocationService, wait for it to be ready
     if (!params.forced && params.autoSchedule && !LocationService.coordinatesReady) {
       return;
     }
 
-    var command = buildCommand();
-
-    // Compare with previous command to avoid unecessary restart
-    if (JSON.stringify(command) !== JSON.stringify(lastCommand)) {
+    const command = buildCommand();
+    const changed = JSON.stringify(command) !== JSON.stringify(lastCommand);
+    if (changed) {
       lastCommand = command;
-      runner.command = command;
-
-      // Set running to false so it may restarts below if still enabled
       runner.running = false;
     }
 
-    if (params.enabled) {
-      cleanupStaleWlsunset();
+    if (cleanupPending || (!changed && runner.running)) {
+      return;
     }
 
-    runner.running = params.enabled;
-  }
-
-  function cleanupStaleWlsunset() {
+    cleanupPending = true;
     staleCleanup.command = buildStaleWlsunsetCleanupCommand();
-    staleCleanup.running = false;
     staleCleanup.running = true;
   }
 
   function buildStaleWlsunsetCleanupCommand() {
-    const script = [
-      "current_ppid=\"$PPID\"",
-      "for pid in $(pgrep -x wlsunset 2>/dev/null || true); do",
-      "  ppid=\"$(ps -o ppid= -p \"$pid\" 2>/dev/null | tr -d '[:space:]')\"",
-      "  if [ -n \"$ppid\" ] && [ \"$ppid\" != \"$current_ppid\" ]; then",
-      "    kill \"$pid\" 2>/dev/null || true",
-      "  fi",
-      "done",
-    ].join("\n");
+    const script = `
+pids=$(pgrep -u "$(id -u)" -x wlsunset)
+result=$?
+if [ "$result" -gt 1 ]; then echo 'failed to enumerate wlsunset' >&2; exit "$result"; fi
+for pid in $pids; do
+  if ! kill "$pid" 2>/dev/null && kill -0 "$pid" 2>/dev/null; then echo "failed to stop wlsunset $pid" >&2; exit 1; fi
+  attempts=0
+  while kill -0 "$pid" 2>/dev/null; do
+    state=$(ps -o stat= -p "$pid" 2>/dev/null)
+    case "$state" in Z*|*' Z'*) break ;; esac
+    if [ "$attempts" -ge 40 ]; then echo "timed out waiting for wlsunset $pid" >&2; exit 1; fi
+    sleep 0.05
+    attempts=$((attempts + 1))
+  done
+done`;
 
     return ["sh", "-c", script];
   }
@@ -125,8 +129,23 @@ Singleton {
     onStarted: {
       Logger.i("NightLight", "Stale wlsunset cleanup started");
     }
+    stderr: StdioCollector {
+      onStreamFinished: {
+        if (text.trim())
+          Logger.e("NightLight", "Stale wlsunset cleanup: " + text.trim());
+      }
+    }
     onExited: function (code, status) {
+      root.cleanupPending = false;
+      if (code !== 0 || status !== 0) {
+        Logger.e("NightLight", "Stale wlsunset cleanup failed:", code, status);
+        return;
+      }
       Logger.i("NightLight", "Stale wlsunset cleanup exited:", code, status);
+      if (root.params.enabled) {
+        runner.command = root.lastCommand;
+        runner.running = true;
+      }
     }
   }
 
@@ -136,6 +155,13 @@ Singleton {
     running: false
     onStarted: {
       Logger.i("NightLight", "Wlsunset started:", runner.command);
+    }
+    stderr: SplitParser {
+      onRead: data => {
+        if (data.includes("failed") || data.includes("error")) {
+          Logger.e("NightLight", "Wlsunset stderr: " + data.trim());
+        }
+      }
     }
     onExited: function (code, status) {
       Logger.i("NightLight", "Wlsunset exited:", code, status);

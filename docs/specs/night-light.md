@@ -11,9 +11,11 @@ Night Light covers wlsunset command generation, manual and automatic scheduling,
 ### Applying state
 
 - [x] Applying automatic schedule waits for location coordinates before building or restarting the runner.
-- [x] Applying changed commands stores the new command, updates the runner command, and starts the runner.
-- [x] Applying the same command leaves the running runner unchanged.
-- [x] Applying disabled settings stops the runner.
+- [x] Applying changed commands stops the old runner and starts the latest desired command only after stale wlsunset owners have exited and released gamma control.
+- [x] Stale cleanup includes same-parent clients left by shell reload, waits only a bounded time, and prevents startup on enumeration, termination, or wait failure; errors are logged.
+- [x] Applying the same command leaves the running runner unchanged without repeating stale cleanup.
+- [x] Applying disabled settings stops the runner and never starts one while cleanup is pending; changes while cleanup is pending use the latest desired command.
+- [x] Wlsunset stderr reports gamma-control failures.
 - [x] Settings signal handlers reapply night light state and emit enabled/disabled or forced/normal notices where applicable.
 - [x] Location coordinate readiness applies night light state only after coordinates become ready.
 
@@ -32,11 +34,11 @@ Night Light covers wlsunset command generation, manual and automatic scheduling,
 ## Tests asserting this spec
 
 - `Tests/night-light-service-guards.test.js`
+- `Tests/night-light-runtime.test.py` — private headless Wayland gamma fixture and real wlsunset/Quickshell Process; test-only dependencies listed in test docstring.
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Add fake Process coverage for runner start and exit logging.
 - [ ] Add settings-level coverage for LocationTab night light controls.
 - [ ] Add widget coverage for bar and Control Center night light toggles.
 
