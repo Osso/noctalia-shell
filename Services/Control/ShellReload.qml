@@ -1,10 +1,11 @@
+import QtQml
 import Quickshell
 import Quickshell.Io
 
 IpcHandler {
-  target: "shell"
+    target: "shell"
 
-  function reload(): void {
-    Qt.callLater(() => Quickshell.reload(false));
-  }
+    function reload(): void {
+        Qt.callLater(() => Quickshell.reload(false));
+    }
 }

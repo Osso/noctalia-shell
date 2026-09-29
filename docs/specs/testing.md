@@ -40,7 +40,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - [x] `./run-tests.sh unit` discovers every `Tests/*.test.js` suite, runs behavior suites and discovered `Tests/Qml/tst_*.qml` lifecycle suites under `deterministic-unit`, then runs source inventory/coverage meta-tests under `structural-reference`.
 - [x] Adding a JavaScript test suite requires no manual runner-list update; the deterministic runner-completeness test proves discovery and discovery-failure handling.
 - [ ] The deterministic gate also runs isolated [deployment](deployment.md) and [night-light](night-light.md) process regressions. Night-light fixtures require a C compiler, `pkg-config`, Wayland server development files, `wayland-scanner`, Quickshell, and `wlsunset`; these are test-only dependencies beyond the shell's existing runtime programs.
-- [x] `./run-tests.sh qml` runs the focused QML static check.
+- [x] `./run-tests.sh qml` runs the focused QML static check using the installed Qt 6 `/usr/lib/qt6/bin/qmllint` for checked and documented-exclusion files; it does not fall back to a PATH-resolved Qt 5 tool.
 - [x] `./run-tests.sh probes` runs read-only service probes, injects the deterministic Bluetooth CLI fixture rather than contacting host Bluetooth hardware, validates launch/IPC contracts against the canonical runtime shell path, and runs the isolated non-visible production QML lifecycle harness.
 - [x] `./run-tests.sh log` runs the active Quickshell log regression gate.
 - [x] `./run-tests.sh notifications` runs visible notification probes and is isolated from the default gates.
@@ -65,7 +65,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - `Tests/qml-test-utils.test.js` - lexical-decoy and alternate-brace-format coverage for shared QML extraction.
 - `Tests/quickshell-regression.test.sh` - current-reload log filtering fixture.
 - `Bin/dev/quickshell-regression.sh` - live Quickshell log regression gate.
-- `Bin/dev/qml-static-check.sh` - focused qmllint gate.
+- `Bin/dev/qml-static-check.sh` - focused Qt 6 qmllint gate.
 - `Bin/dev/service-probes.sh` - read-only runtime/service probes; direct Bluetooth invocation remains a bounded host diagnostic.
 - `Tests/fixtures/bluetoothctl` - deterministic Bluetooth CLI fixture selected by automated probe runs.
 

@@ -11,7 +11,11 @@ require_command() {
     fi
 }
 
-require_command qmllint
+qmllint=/usr/lib/qt6/bin/qmllint
+if [ ! -x "$qmllint" ]; then
+    echo "missing required Qt 6 qmllint: $qmllint" >&2
+    exit 2
+fi
 require_command rg
 
 exclusions_file="$repo_root/Bin/dev/qml-static-exclusions.txt"
@@ -33,7 +37,7 @@ while IFS= read -r file; do
         continue
     fi
 
-    qmllint "$repo_root/$file"
+    "$qmllint" "$repo_root/$file"
     checked_count=$((checked_count + 1))
 done < <(cd "$repo_root" && rg --files -g '*.qml' | sort)
 
@@ -43,7 +47,7 @@ for file in "${!excluded_files[@]}"; do
         exit 1
     fi
 
-    if qmllint "$repo_root/$file" >/dev/null 2>&1; then
+    if "$qmllint" "$repo_root/$file" >/dev/null 2>&1; then
         echo "excluded QML file now passes qmllint; remove it from $exclusions_file: $file" >&2
         exit 1
     fi
