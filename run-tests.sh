@@ -51,6 +51,7 @@ run_unit_tests() {
     run_qml_runtime_tests
 
     python3 "$repo_root/Tests/calendar-events-safe-get-time.test.py"
+    python3 "$repo_root/Tests/deploy-source.test.py"
     bash "$repo_root/Tests/i18n-json.test.sh"
     bash "$repo_root/Tests/calendar-scripts.test.sh"
     bash "$repo_root/Tests/network-forget-profiles.test.sh"
