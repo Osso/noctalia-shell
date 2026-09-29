@@ -190,14 +190,14 @@ Popup {
     focus: true
 
     Keys.onPressed: event => {
-                      if (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_F) {
-                        root.setSearchBarVisible(!filePickerPanel.showSearchBar);
-                        event.accepted = true;
-                      } else if (event.key === Qt.Key_Escape && filePickerPanel.showSearchBar) {
-                        root.setSearchBarVisible(false);
-                        event.accepted = true;
-                      }
-                    }
+      if (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_F) {
+        root.setSearchBarVisible(!filePickerPanel.showSearchBar);
+        event.accepted = true;
+      } else if (event.key === Qt.Key_Escape && filePickerPanel.showSearchBar) {
+        root.setSearchBarVisible(false);
+        event.accepted = true;
+      }
+    }
 
     ColumnLayout {
       anchors.fill: parent
@@ -646,16 +646,16 @@ Popup {
               acceptedButtons: Qt.LeftButton | Qt.RightButton
 
               onClicked: mouse => {
-                           if (mouse.button === Qt.LeftButton) {
-                             root.handleFileEntryActivated(filePath, fileIsDir, false);
-                           }
-                         }
+                if (mouse.button === Qt.LeftButton) {
+                  root.handleFileEntryActivated(filePath, fileIsDir, false);
+                }
+              }
 
               onDoubleClicked: mouse => {
-                                 if (mouse.button === Qt.LeftButton) {
-                                   root.handleFileEntryActivated(filePath, fileIsDir, true);
-                                 }
-                               }
+                if (mouse.button === Qt.LeftButton) {
+                  root.handleFileEntryActivated(filePath, fileIsDir, true);
+                }
+              }
             }
           }
         }
@@ -680,7 +680,7 @@ Popup {
             color: {
               if (filePickerPanel.currentSelection.includes(filePath))
                 return Color.mSecondary;
-              if (mouseArea.containsMouse)
+              if (listMouseArea.containsMouse)
                 return Color.mHover;
               return Color.transparent;
             }
@@ -722,43 +722,44 @@ Popup {
             }
 
             MouseArea {
-              id: mouseArea
+              // Keep grid/list IDs distinct until Qt 6.11 qmllint respects delegate scopes.
+              id: listMouseArea
               anchors.fill: parent
               hoverEnabled: true
               acceptedButtons: Qt.LeftButton | Qt.RightButton
 
               onClicked: mouse => {
-                           if (mouse.button === Qt.LeftButton) {
-                             if (fileIsDir) {
-                               // In folder mode, single click selects the folder
-                               if (root.selectionMode === "folders") {
-                                 filePickerPanel.currentSelection = [filePath];
-                               }
-                               // In file mode, single click on folder does nothing (must double-click to enter)
-                             } else {
-                               // Single click on file selects it (only in file mode)
-                               if (root.selectionMode === "files") {
-                                 filePickerPanel.currentSelection = [filePath];
-                               }
-                             }
-                           }
-                         }
+                if (mouse.button === Qt.LeftButton) {
+                  if (fileIsDir) {
+                    // In folder mode, single click selects the folder
+                    if (root.selectionMode === "folders") {
+                      filePickerPanel.currentSelection = [filePath];
+                    }
+                    // In file mode, single click on folder does nothing (must double-click to enter)
+                  } else {
+                    // Single click on file selects it (only in file mode)
+                    if (root.selectionMode === "files") {
+                      filePickerPanel.currentSelection = [filePath];
+                    }
+                  }
+                }
+              }
 
               onDoubleClicked: mouse => {
-                                 if (mouse.button === Qt.LeftButton) {
-                                   if (fileIsDir) {
-                                     // Double-click on folder always navigates into it
-                                     folderModel.folder = "file://" + filePath;
-                                     root.currentPath = filePath;
-                                   } else {
-                                     // Double-click on file selects and confirms (only in file mode)
-                                     if (root.selectionMode === "files") {
-                                       filePickerPanel.currentSelection = [filePath];
-                                       root.confirmSelection();
-                                     }
-                                   }
-                                 }
-                               }
+                if (mouse.button === Qt.LeftButton) {
+                  if (fileIsDir) {
+                    // Double-click on folder always navigates into it
+                    folderModel.folder = "file://" + filePath;
+                    root.currentPath = filePath;
+                  } else {
+                    // Double-click on file selects and confirms (only in file mode)
+                    if (root.selectionMode === "files") {
+                      filePickerPanel.currentSelection = [filePath];
+                      root.confirmSelection();
+                    }
+                  }
+                }
+              }
             }
           }
         }
