@@ -2,7 +2,6 @@
 """Reload this checkout in its running Quickshell instance without restarting it."""
 
 import json
-import os
 from pathlib import Path
 import subprocess
 import sys
@@ -46,7 +45,7 @@ def main():
     instance = active_instance()
     pid = instance["pid"]
     baseline = instance_log(pid)
-    os.utime(SHELL, None)
+    quickshell("ipc", "--pid", str(pid), "call", "shell", "reload")
     deadline = time.monotonic() + WAIT_SECONDS
 
     while time.monotonic() < deadline:

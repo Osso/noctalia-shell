@@ -9,16 +9,17 @@ Local deployment reloads the running Quickshell instance from this checkout with
 
 ## How it works
 
-Run `./deploy.sh` after committing changes. Source already lives in the active checkout; the script touches `shell.qml` to request auto-reload, then checks the instance log and IPC. It neither starts a missing shell nor changes settings.
+Run `./deploy.sh` after committing changes. Source already lives in the active checkout; the script calls `shell reload` over IPC on the matching instance. `ShellReload.qml` defers `Quickshell.reload(false)` until after the IPC response, then the script checks for a new load in that instance's log and verifies IPC responsiveness. It does not touch source, start a missing shell, restart the process, or change settings.
 
 ## Implementation inventory
 
-- `deploy.sh` — bounded reload and same-instance confirmation.
+- `deploy.sh` — bounded IPC reload and same-instance confirmation.
+- `Services/Control/ShellReload.qml` — in-process reload IPC handler instantiated by `shell.qml`.
 - `run-tests.sh` — includes isolated deployment regressions in the deterministic gate.
 
 ## Tests asserting this spec
 
-- `Tests/deploy-source.test.py` — disposable checkout and fake Quickshell exercise successful reload and failure paths without touching the desktop.
+- `Tests/deploy-source.test.py` — fake CLI exercises failure paths; private-XDG offscreen Quickshell loads the production handler and proves same-PID reload with unchanged source.
 
 ## Known gaps (current cycle)
 

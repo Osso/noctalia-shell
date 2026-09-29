@@ -39,6 +39,8 @@ ShellRoot {
   property bool i18nLoaded: false
   property bool shellStateLoaded: false
 
+  ShellReload {}
+
   Component.onCompleted: {
     Logger.i("Shell", "---------------------------");
     Logger.i("Shell", "Noctalia Hello!");
