@@ -12,7 +12,7 @@ Night Light covers wlsunset command generation, manual and automatic scheduling,
 
 - [x] Applying automatic schedule waits for location coordinates before building or restarting the runner.
 - [x] Applying changed commands stops the old runner and starts the latest desired command only after stale wlsunset owners have exited and released gamma control.
-- [x] Stale cleanup includes same-parent clients left by shell reload, waits only a bounded time, and prevents startup on enumeration, termination, or wait failure; errors are logged.
+- [x] Before replacement, cleanup terminates all `wlsunset` processes owned by the current user, including same-parent clients left by shell reload. It waits only a bounded time and prevents startup on enumeration, termination, or wait failure; errors are logged.
 - [x] Applying the same command leaves the running runner unchanged without repeating stale cleanup.
 - [x] Applying disabled settings stops the runner and never starts one while cleanup is pending; changes while cleanup is pending use the latest desired command.
 - [x] Wlsunset stderr reports gamma-control failures.

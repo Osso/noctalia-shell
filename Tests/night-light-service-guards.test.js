@@ -87,6 +87,32 @@ function testBuildCommandUsesForcedAllDayNightSettings() {
   ]);
 }
 
+function testAutomaticScheduleWaitsForCoordinates() {
+  const ctx = createContext({ autoSchedule: true });
+  ctx.LocationService.coordinatesReady = false;
+  ctx.lastCommand = [];
+  ctx.runner = { running: false };
+  ctx.staleCleanup = { running: false, command: [] };
+  ctx.cleanupPending = false;
+  ctx.buildCommand = () => qmlFunction("buildCommand")(ctx);
+  ctx.buildStaleWlsunsetCleanupCommand = () => qmlFunction("buildStaleWlsunsetCleanupCommand")(ctx);
+
+  qmlFunction("apply")(ctx);
+
+  assert.deepEqual(ctx.lastCommand, []);
+  assert.equal(ctx.runner.running, false);
+  assert.equal(ctx.staleCleanup.running, false);
+  assert.equal(ctx.cleanupPending, false);
+}
+
+function testStopNightLightRunnerClearsRunningState() {
+  const ctx = { runner: { running: true } };
+
+  qmlFunction("stopNightLightRunner")(ctx);
+
+  assert.equal(ctx.runner.running, false);
+}
+
 function testSettingsSignalHandlersApplyAndToast() {
   const onEnabledChanged = qmlFunction("onEnabledChanged");
   const onForcedChanged = qmlFunction("onForcedChanged");
@@ -175,6 +201,8 @@ const tests = [
   testBuildCommandUsesManualSchedule,
   testBuildCommandUsesCoordinatesForAutoSchedule,
   testBuildCommandUsesForcedAllDayNightSettings,
+  testAutomaticScheduleWaitsForCoordinates,
+  testStopNightLightRunnerClearsRunningState,
   testSettingsSignalHandlersApplyAndToast,
   testCoordinatesReadyHandlerAppliesWhenReady,
 ];
