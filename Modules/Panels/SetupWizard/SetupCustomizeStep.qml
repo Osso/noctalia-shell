@@ -270,21 +270,22 @@ ColumnLayout {
 
               property bool isActive: Settings.data.bar.density === key
 
-              color: (hoverHandler.hovered || isActive) ? Color.mPrimary : Color.mSurfaceVariant
-              border.color: (hoverHandler.hovered || isActive) ? Color.mPrimary : Color.mOutline
-              opacity: (hoverHandler.hovered || isActive) ? 1.0 : 0.8
+              color: (densityHoverHandler.hovered || isActive) ? Color.mPrimary : Color.mSurfaceVariant
+              border.color: (densityHoverHandler.hovered || isActive) ? Color.mPrimary : Color.mOutline
+              opacity: (densityHoverHandler.hovered || isActive) ? 1.0 : 0.8
 
               NText {
                 id: densityText
                 text: name
                 pointSize: Style.fontSizeS
-                font.weight: (hoverHandler.hovered || parent.isActive) ? Style.fontWeightBold : Style.fontWeightMedium
-                color: (hoverHandler.hovered || parent.isActive) ? Color.mOnPrimary : Color.mOnSurface
+                font.weight: (densityHoverHandler.hovered || parent.isActive) ? Style.fontWeightBold : Style.fontWeightMedium
+                color: (densityHoverHandler.hovered || parent.isActive) ? Color.mOnPrimary : Color.mOnSurface
                 anchors.centerIn: parent
               }
 
               HoverHandler {
-                id: hoverHandler
+                // Distinct ID avoids Qt 6.11 qmllint's cross-delegate false positive; remove when it respects component scopes.
+                id: densityHoverHandler
               }
               MouseArea {
                 anchors.fill: parent
