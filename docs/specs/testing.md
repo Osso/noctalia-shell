@@ -39,7 +39,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - [x] `./run-tests.sh all` (the default) and `./run-tests.sh regression` run deterministic unit tests, structural-reference checks, QML static checks, read-only host probes, and the active Quickshell log gate; they do not run visible notification probes.
 - [x] `./run-tests.sh unit` discovers every `Tests/*.test.js` suite, runs behavior suites and discovered `Tests/Qml/tst_*.qml` lifecycle suites under `deterministic-unit`, then runs source inventory/coverage meta-tests under `structural-reference`.
 - [x] Adding a JavaScript test suite requires no manual runner-list update; the deterministic runner-completeness test proves discovery and discovery-failure handling.
-- [ ] The deterministic gate also runs isolated [deployment](deployment.md) and [night-light](night-light.md) process regressions. Night-light fixtures require a C compiler, `pkg-config`, Wayland server development files, `wayland-scanner`, Quickshell, and `wlsunset`; these are test-only dependencies beyond the shell's existing runtime programs.
+- [x] The deterministic gate also runs isolated [deployment](deployment.md) and [night-light](night-light.md) process regressions. Night-light fixtures require a C compiler, `pkg-config`, Wayland server development files, `wayland-scanner`, Quickshell, and `wlsunset`; these are test-only dependencies beyond the shell's existing runtime programs.
 - [x] `./run-tests.sh qml` runs the focused QML static check using the installed Qt 6 `/usr/lib/qt6/bin/qmllint` for checked and documented-exclusion files; it does not fall back to a PATH-resolved Qt 5 tool.
 - [x] `./run-tests.sh probes` runs read-only service probes, injects the deterministic Bluetooth CLI fixture rather than contacting host Bluetooth hardware, validates launch/IPC contracts against the canonical runtime shell path, and runs the isolated non-visible production QML lifecycle harness.
 - [x] `./run-tests.sh log` runs the active Quickshell log regression gate.
@@ -82,6 +82,8 @@ Testing covers local regression gates, structural source-reference guardrails, e
 ## Known gaps (current cycle)
 
 None for the current registry-selection contract.
+
+- [ ] Resolve virtual `qs.*` imports for type-complete Qt 6 static analysis. The static gate currently passes with import/type-context and other existing warnings; a passing exit status is not a warning-free audit.
 
 ## Out of scope
 
