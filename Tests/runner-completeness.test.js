@@ -39,12 +39,7 @@ function testUnitRunnerFailsWhenJavaScriptDiscoveryFails() {
   }
 }
 
-function runStructuralWithFakeIndex(indexFails) {
-  const fakeBin = fs.mkdtempSync(path.join(os.tmpdir(), "noctalia-structural-runner-"));
-  const state = path.join(fakeBin, "index-state");
-  const calls = path.join(fakeBin, "test-calls");
-  fs.writeFileSync(state, "stale\n");
-  fs.writeFileSync(calls, "");
+function writeStructuralCommands(fakeBin) {
   fs.writeFileSync(path.join(fakeBin, "code-index"), `#!/bin/sh
 case "$1" in
   index)
@@ -63,6 +58,15 @@ esac
 [ "$(code-index list)" = fresh ] || { echo 'stale graph' >&2; exit 25; }
 printf '%s\\n' "$(basename "$1")" >> "$TEST_NODE_CALLS"
 `, { mode: 0o755 });
+}
+
+function runStructuralWithFakeIndex(indexFails) {
+  const fakeBin = fs.mkdtempSync(path.join(os.tmpdir(), "noctalia-structural-runner-"));
+  const state = path.join(fakeBin, "index-state");
+  const calls = path.join(fakeBin, "test-calls");
+  fs.writeFileSync(state, "stale\n");
+  fs.writeFileSync(calls, "");
+  writeStructuralCommands(fakeBin);
 
   try {
     const result = spawnSync(path.join(repoRoot, "run-tests.sh"), ["structural"], {
