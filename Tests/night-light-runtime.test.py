@@ -7,6 +7,7 @@ libwayland-server development headers/pkg-config, Python 3. No desktop access.
 import hashlib
 import os
 import re
+import signal
 from pathlib import Path
 import shutil
 import subprocess
@@ -131,6 +132,9 @@ def run_case(mode, root):
             wait_for("old ramp", lambda: "RAMP count=1 " in text(server_log), processes)
             assert Path(f"/proc/{processes['old'].pid}/comm").read_text().strip() == "nl-test-client"
             (directory / "old.pid").write_text(str(processes["old"].pid))
+            if mode in ("delayed-exit", "timeout"):
+                processes["old"].send_signal(signal.SIGSTOP)
+                assert Path(f"/proc/{processes['old'].pid}/stat").read_text().split()[2] == "T"
             env = prepare_for_shell(directory, mode)
             processes["shell"] = subprocess.Popen(["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
                                                    env=env, stdout=shell_output,
@@ -145,6 +149,26 @@ def run_case(mode, root):
                 assert "RELEASE" not in text(server_log), text(server_log)
                 assert "FAILED" not in text(server_log), text(server_log)
                 assert "Wlsunset started" not in text(shell_log), text(shell_log)
+            elif mode in ("delayed-exit", "timeout"):
+                wait_for("cleanup launched", lambda: "Stale wlsunset cleanup started" in text(shell_log), processes)
+                time.sleep(0.9)
+                assert processes["old"].poll() is None, text(server_log)
+                assert "RELEASE" not in text(server_log), text(server_log)
+                assert "FAILED" not in text(server_log), text(server_log)
+                assert "Wlsunset started" not in text(shell_log), text(shell_log)
+                if mode == "timeout":
+                    wait_for("bounded cleanup timeout", lambda: "timed out waiting for wlsunset" in text(shell_log), processes)
+                    assert "Stale wlsunset cleanup failed" in text(shell_log), text(shell_log)
+                    processes["old"].send_signal(signal.SIGKILL)
+                    processes["old"].wait(timeout=2)
+                    time.sleep(0.2)
+                    assert "Wlsunset started" not in text(shell_log), text(shell_log)
+                else:
+                    processes["old"].send_signal(signal.SIGCONT)
+                    wait_for("ramp after old client exits", lambda: "RAMP count=2 " in text(server_log),
+                             {name: processes[name] for name in ("server", "shell")})
+                    assert "FAILED" not in text(server_log), text(server_log)
+                    assert "RELEASE count=1 restored=neutral" in text(server_log), text(server_log)
             elif mode == "disabled":
                 time.sleep(1.2)
                 assert "RELEASE" in text(server_log), text(server_log)
@@ -228,7 +252,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="night-light-runtime-") as temporary:
         root = Path(temporary)
         root.chmod(0o700)
-        for mode in ("overlap", "failure", "disabled", "latest", "unchanged", "gamma-failure"):
+        for mode in ("overlap", "delayed-exit", "timeout", "failure", "disabled", "latest", "unchanged", "gamma-failure"):
             run_case(mode, root)
 
 
