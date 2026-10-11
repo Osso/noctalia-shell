@@ -2,6 +2,13 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 ## What it must do
 
+### Lock-screen isolated runtime
+
+- `python3 Tests/lock-screen-warnings.test.py lint` or `runtime` runs standalone; no runner integration is claimed. At `c9ebda0fc`/`b90b5c861`/`a00e603ed`, lint requires exit status zero, exactly ten `unqualified` warnings, and diagnostic source lines containing `lockContext.`. Warning reduction, retained captures, behavioral assertions, and recorded GREEN/RED results: [lock screen](lock-screen.md#tests-asserting-this-spec).
+- Runtime stages production LockScreen with observation labels on a disposable copy. Loader, timers, layouts, password input, and signal handlers remain real; session-lock transport, authentication context, services, and leaf widgets are inert fixtures. Four behavioral cases plus QtTest init/cleanup yield six reported passes. `runtime --mutation visibility` and `runtime --mutation unload` are negative controls, expected to fail rather than acceptance modes.
+- Runtime uses software/offscreen `qmltestrunner`, private HOME/XDG/Noctalia paths, and removed desktop connection variables. Before staging, it creates a unique permission-locked byte-for-byte real-settings backup and verifies its hash; afterward it checks real settings unchanged, not backup bytes again. Child timeout is 30 seconds; acceptance requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `ReferenceError`, or `TypeError`.
+- No live lock was performed. Direct signals and fixtures do not prove compositor locking, PAM completion, physical input, live rendering, compact-mode layout, persistence, or whole-shell acceptance.
+
 ### Bar status cohort
 
 - `Tests/bar-status-warnings.test.py` runs standalone `lint` or `behavior`, optionally with `--artifacts <new-directory>`; no runner integration is claimed. At `c14da3540`, NotificationHistory/ScreenRecorder/WiFi/AudioVisualizer owner fixes remove 6+2+6+9 warnings. Lint requires exit status zero and exact residual counts: NotificationHistory three `unqualified` plus four `block-scope-var-declaration`; ScreenRecorder zero; WiFi one `block-scope-var-declaration`; AudioVisualizer six component-context `unqualified` plus two `block-scope-var-declaration`. Diagnostics remain unsuppressed.
