@@ -180,10 +180,10 @@ SmartPanel {
         }
         // Give initial focus to search input
         Qt.callLater(() => {
-                       if (searchInput.inputItem) {
-                         searchInput.inputItem.forceActiveFocus();
-                       }
-                     });
+          if (searchInput.inputItem) {
+            searchInput.inputItem.forceActiveFocus();
+          }
+        });
       }
     }
 
@@ -232,7 +232,7 @@ SmartPanel {
           tooltipText: I18n.tr("settings.wallpaper.settings.section.label")
           baseSize: Style.baseWidgetSize * 0.8
           onClicked: {
-            var settingsPanel = PanelService.getPanel("settingsPanel", screen);
+            var settingsPanel = PanelService.getPanel("settingsPanel", root.screen);
             settingsPanel.requestedTab = SettingsPanel.Tab.Wallpaper;
             settingsPanel.open();
           }
@@ -291,8 +291,8 @@ SmartPanel {
         id: screenTabBar
         visible: (!Settings.data.wallpaper.setWallpaperOnAllMonitors || Settings.data.wallpaper.enableMultiMonitorDirectories)
         Layout.fillWidth: true
-        currentIndex: currentScreenIndex
-        onCurrentIndexChanged: currentScreenIndex = currentIndex
+        currentIndex: wallpaperPanel.currentScreenIndex
+        onCurrentIndexChanged: wallpaperPanel.currentScreenIndex = currentIndex
         spacing: Style.marginM
 
         Repeater {
@@ -380,7 +380,7 @@ SmartPanel {
                 wallhavenView.gridView.forceActiveFocus();
               }
             } else {
-              let currentView = screenRepeater.itemAt(currentScreenIndex);
+              let currentView = screenRepeater.itemAt(wallpaperPanel.currentScreenIndex);
               if (currentView && currentView.gridView) {
                 currentView.gridView.forceActiveFocus();
               }
@@ -412,36 +412,36 @@ SmartPanel {
             });
           }
           onSelected: key => {
-                        if (skipNextSelected) {
-                          return;
-                        }
-                        var useWallhaven = (key === "wallhaven");
-                        Settings.data.wallpaper.useWallhaven = useWallhaven;
-                        // Update search input text based on mode
-                        if (useWallhaven) {
-                          searchInput.text = Settings.data.wallpaper.wallhavenQuery || "";
-                        } else {
-                          searchInput.text = wallpaperPanel.filterText || "";
-                        }
-                        if (useWallhaven && typeof WallhavenService !== "undefined") {
-                          // Update service properties when switching to Wallhaven
-                          // Don't search here - Component.onCompleted will handle it when the component is created
-                          // This prevents duplicate searches
-                          WallhavenService.categories = Settings.data.wallpaper.wallhavenCategories;
-                          WallhavenService.purity = Settings.data.wallpaper.wallhavenPurity;
-                          WallhavenService.sorting = Settings.data.wallpaper.wallhavenSorting;
-                          WallhavenService.order = Settings.data.wallpaper.wallhavenOrder;
+            if (skipNextSelected) {
+              return;
+            }
+            var useWallhaven = (key === "wallhaven");
+            Settings.data.wallpaper.useWallhaven = useWallhaven;
+            // Update search input text based on mode
+            if (useWallhaven) {
+              searchInput.text = Settings.data.wallpaper.wallhavenQuery || "";
+            } else {
+              searchInput.text = wallpaperPanel.filterText || "";
+            }
+            if (useWallhaven && typeof WallhavenService !== "undefined") {
+              // Update service properties when switching to Wallhaven
+              // Don't search here - Component.onCompleted will handle it when the component is created
+              // This prevents duplicate searches
+              WallhavenService.categories = Settings.data.wallpaper.wallhavenCategories;
+              WallhavenService.purity = Settings.data.wallpaper.wallhavenPurity;
+              WallhavenService.sorting = Settings.data.wallpaper.wallhavenSorting;
+              WallhavenService.order = Settings.data.wallpaper.wallhavenOrder;
 
-                          // Update resolution settings
-                          wallpaperPanel.updateWallhavenResolution();
+              // Update resolution settings
+              wallpaperPanel.updateWallhavenResolution();
 
-                          // If the view is already initialized, trigger a new search when switching to it
-                          if (wallhavenView && wallhavenView.initialized && !WallhavenService.fetching) {
-                            wallhavenView.loading = true;
-                            WallhavenService.search(Settings.data.wallpaper.wallhavenQuery || "", 1);
-                          }
-                        }
-                      }
+              // If the view is already initialized, trigger a new search when switching to it
+              if (wallhavenView && wallhavenView.initialized && !WallhavenService.fetching) {
+                wallhavenView.loading = true;
+                WallhavenService.search(Settings.data.wallpaper.wallhavenQuery || "", 1);
+              }
+            }
+          }
         }
 
         // Settings button (only visible for Wallhaven)
@@ -472,7 +472,7 @@ SmartPanel {
         // Local wallpapers
         StackLayout {
           id: screenStack
-          currentIndex: currentScreenIndex
+          currentIndex: wallpaperPanel.currentScreenIndex
 
           Repeater {
             id: screenRepeater
@@ -495,6 +495,7 @@ SmartPanel {
 
   // Component for each screen's wallpaper view
   component WallpaperScreenView: Item {
+    id: wallpaperScreenView
     property ShellScreen targetScreen
     property alias gridView: wallpaperGridView
 
@@ -512,9 +513,9 @@ SmartPanel {
       }
 
       const results = FuzzySort.go(wallpaperPanel.filterText.trim(), wallpapersWithNames, {
-                                     "key": 'name',
-                                     "limit": 200
-                                   });
+        "key": 'name',
+        "limit": 200
+      });
       // Map back to path list
       filteredWallpapers = results.map(function (r) {
         return r.obj.path;
@@ -528,18 +529,18 @@ SmartPanel {
     Connections {
       target: WallpaperService
       function onWallpaperChanged(screenName, path) {
-        if (targetScreen !== null && screenName === targetScreen.name) {
-          currentWallpaper = WallpaperService.getWallpaper(targetScreen.name);
+        if (wallpaperScreenView.targetScreen !== null && screenName === wallpaperScreenView.targetScreen.name) {
+          wallpaperScreenView.currentWallpaper = WallpaperService.getWallpaper(wallpaperScreenView.targetScreen.name);
         }
       }
       function onWallpaperDirectoryChanged(screenName, directory) {
-        if (targetScreen !== null && screenName === targetScreen.name) {
-          refreshWallpaperScreenData();
+        if (wallpaperScreenView.targetScreen !== null && screenName === wallpaperScreenView.targetScreen.name) {
+          wallpaperScreenView.refreshWallpaperScreenData();
         }
       }
       function onWallpaperListChanged(screenName, count) {
-        if (targetScreen !== null && screenName === targetScreen.name) {
-          refreshWallpaperScreenData();
+        if (wallpaperScreenView.targetScreen !== null && screenName === wallpaperScreenView.targetScreen.name) {
+          wallpaperScreenView.refreshWallpaperScreenData();
         }
       }
     }
@@ -580,7 +581,7 @@ SmartPanel {
         keyNavigationEnabled: true
         keyNavigationWraps: false
 
-        model: filteredWallpapers
+        model: wallpaperScreenView.filteredWallpapers
 
         // Capture clicks on empty areas to give focus to GridView
         MouseArea {
@@ -588,13 +589,13 @@ SmartPanel {
           z: -1
           onClicked: {
             wallpaperGridView.forceActiveFocus();
-            if (wallpaperGridView.currentIndex < 0 && filteredWallpapers.length > 0) {
+            if (wallpaperGridView.currentIndex < 0 && wallpaperScreenView.filteredWallpapers.length > 0) {
               wallpaperGridView.currentIndex = 0;
             }
           }
         }
 
-        property int columns: (screen.width > 1920) ? 5 : 4
+        property int columns: (root.screen.width > 1920) ? 5 : 4
         property int itemSize: cellWidth
 
         cellWidth: Math.floor((width - leftMargin - rightMargin) / columns)
@@ -623,20 +624,21 @@ SmartPanel {
         }
 
         Keys.onPressed: event => {
-                          if (event.key === Qt.Key_Return || event.key === Qt.Key_Space) {
-                            if (currentIndex >= 0 && currentIndex < filteredWallpapers.length) {
-                              let path = filteredWallpapers[currentIndex];
-                              if (Settings.data.wallpaper.setWallpaperOnAllMonitors) {
-                                WallpaperService.changeWallpaper(path, undefined);
-                              } else {
-                                WallpaperService.changeWallpaper(path, targetScreen.name);
-                              }
-                            }
-                            event.accepted = true;
-                          }
-                        }
+          if (event.key === Qt.Key_Return || event.key === Qt.Key_Space) {
+            if (currentIndex >= 0 && currentIndex < wallpaperScreenView.filteredWallpapers.length) {
+              let path = wallpaperScreenView.filteredWallpapers[currentIndex];
+              if (Settings.data.wallpaper.setWallpaperOnAllMonitors) {
+                WallpaperService.changeWallpaper(path, undefined);
+              } else {
+                WallpaperService.changeWallpaper(path, wallpaperScreenView.targetScreen.name);
+              }
+            }
+            event.accepted = true;
+          }
+        }
 
         ScrollBar.vertical: ScrollBar {
+          id: localScrollBar
           policy: ScrollBar.AsNeeded
           parent: wallpaperGridView
           x: wallpaperGridView.mirrored ? 0 : wallpaperGridView.width - width
@@ -650,11 +652,11 @@ SmartPanel {
           property real handleRadius: Style.radiusM
 
           contentItem: Rectangle {
-            implicitWidth: parent.handleWidth
+            implicitWidth: localScrollBar.handleWidth
             implicitHeight: 100
-            radius: parent.handleRadius
-            color: parent.pressed ? parent.handlePressedColor : parent.hovered ? parent.handleHoverColor : parent.handleColor
-            opacity: parent.policy === ScrollBar.AlwaysOn || parent.active ? 1.0 : 0.0
+            radius: localScrollBar.handleRadius
+            color: localScrollBar.pressed ? localScrollBar.handlePressedColor : localScrollBar.hovered ? localScrollBar.handleHoverColor : localScrollBar.handleColor
+            opacity: localScrollBar.policy === ScrollBar.AlwaysOn || localScrollBar.active ? 1.0 : 0.0
 
             Behavior on opacity {
               NumberAnimation {
@@ -670,11 +672,11 @@ SmartPanel {
           }
 
           background: Rectangle {
-            implicitWidth: parent.handleWidth
+            implicitWidth: localScrollBar.handleWidth
             implicitHeight: 100
             color: NColor.transparent
-            opacity: parent.policy === ScrollBar.AlwaysOn || parent.active ? 0.3 : 0.0
-            radius: parent.handleRadius / 2
+            opacity: localScrollBar.policy === ScrollBar.AlwaysOn || localScrollBar.active ? 0.3 : 0.0
+            radius: localScrollBar.handleRadius / 2
 
             Behavior on opacity {
               NumberAnimation {
@@ -687,8 +689,10 @@ SmartPanel {
         delegate: ColumnLayout {
           id: wallpaperItem
 
+          required property string modelData
+          required property int index
           property string wallpaperPath: modelData
-          property bool isSelected: (wallpaperPath === currentWallpaper)
+          property bool isSelected: (wallpaperPath === wallpaperScreenView.currentWallpaper)
           property string filename: wallpaperPath.split('/').pop()
 
           width: wallpaperGridView.itemSize
@@ -702,7 +706,7 @@ SmartPanel {
 
             NImageCached {
               id: img
-              imagePath: wallpaperPath
+              imagePath: wallpaperItem.wallpaperPath
               cacheFolder: Settings.cacheDirImagesWallpapers
               anchors.fill: parent
             }
@@ -711,10 +715,10 @@ SmartPanel {
               anchors.fill: parent
               color: NColor.transparent
               border.color: {
-                if (isSelected) {
+                if (wallpaperItem.isSelected) {
                   return NColor.mSecondary;
                 }
-                if (wallpaperGridView.currentIndex === index) {
+                if (wallpaperGridView.currentIndex === wallpaperItem.index) {
                   return NColor.mHover;
                 }
                 return NColor.mSurface;
@@ -732,7 +736,7 @@ SmartPanel {
               color: NColor.mSecondary
               border.color: NColor.mOutline
               border.width: Style.borderS
-              visible: isSelected
+              visible: wallpaperItem.isSelected
 
               NIcon {
                 icon: "check"
@@ -745,7 +749,7 @@ SmartPanel {
             Rectangle {
               anchors.fill: parent
               color: NColor.mSurface
-              opacity: (hoverHandler.hovered || isSelected || wallpaperGridView.currentIndex === index) ? 0 : 0.3
+              opacity: (hoverHandler.hovered || wallpaperItem.isSelected || wallpaperGridView.currentIndex === wallpaperItem.index) ? 0 : 0.3
               radius: parent.radius
               Behavior on opacity {
                 NumberAnimation {
@@ -762,20 +766,20 @@ SmartPanel {
             TapHandler {
               onTapped: {
                 wallpaperGridView.forceActiveFocus();
-                wallpaperGridView.currentIndex = index;
+                wallpaperGridView.currentIndex = wallpaperItem.index;
                 if (Settings.data.wallpaper.setWallpaperOnAllMonitors) {
-                  WallpaperService.changeWallpaper(wallpaperPath, undefined);
+                  WallpaperService.changeWallpaper(wallpaperItem.wallpaperPath, undefined);
                 } else {
-                  WallpaperService.changeWallpaper(wallpaperPath, targetScreen.name);
+                  WallpaperService.changeWallpaper(wallpaperItem.wallpaperPath, wallpaperScreenView.targetScreen.name);
                 }
               }
             }
           }
 
           NText {
-            text: filename
+            text: wallpaperItem.filename
             visible: !Settings.data.wallpaper.hideWallpaperFilenames
-            color: (hoverHandler.hovered || isSelected || wallpaperGridView.currentIndex === index) ? NColor.mOnSurface : NColor.mOnSurfaceVariant
+            color: (hoverHandler.hovered || wallpaperItem.isSelected || wallpaperGridView.currentIndex === wallpaperItem.index) ? NColor.mOnSurface : NColor.mOnSurfaceVariant
             pointSize: Style.fontSizeXS
             Layout.fillWidth: true
             Layout.leftMargin: Style.marginS
@@ -793,7 +797,7 @@ SmartPanel {
         radius: Style.radiusM
         border.color: NColor.mOutline
         border.width: Style.borderS
-        visible: (filteredWallpapers.length === 0 && !WallpaperService.scanning) || WallpaperService.scanning
+        visible: (wallpaperScreenView.filteredWallpapers.length === 0 && !WallpaperService.scanning) || WallpaperService.scanning
         Layout.fillWidth: true
         Layout.preferredHeight: 130
 
@@ -807,7 +811,7 @@ SmartPanel {
 
         ColumnLayout {
           anchors.fill: parent
-          visible: filteredWallpapers.length === 0 && !WallpaperService.scanning
+          visible: wallpaperScreenView.filteredWallpapers.length === 0 && !WallpaperService.scanning
           Item {
             Layout.fillHeight: true
           }
@@ -918,16 +922,16 @@ SmartPanel {
 
           anchors.fill: parent
 
-          visible: !loading && errorMessage === "" && (wallpapers && wallpapers.length > 0)
+          visible: !wallhavenViewRoot.loading && wallhavenViewRoot.errorMessage === "" && (wallhavenViewRoot.wallpapers && wallhavenViewRoot.wallpapers.length > 0)
           interactive: true
           clip: true
           focus: true
           keyNavigationEnabled: true
           keyNavigationWraps: false
 
-          model: wallpapers || []
+          model: wallhavenViewRoot.wallpapers || []
 
-          property int columns: (screen.width > 1920) ? 5 : 4
+          property int columns: (root.screen.width > 1920) ? 5 : 4
           property int itemSize: cellWidth
 
           cellWidth: Math.floor((width - leftMargin - rightMargin) / columns)
@@ -954,16 +958,17 @@ SmartPanel {
           }
 
           Keys.onPressed: event => {
-                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Space) {
-                              if (currentIndex >= 0 && currentIndex < wallpapers.length) {
-                                let wallpaper = wallpapers[currentIndex];
-                                wallhavenDownloadAndApply(wallpaper);
-                              }
-                              event.accepted = true;
-                            }
-                          }
+            if (event.key === Qt.Key_Return || event.key === Qt.Key_Space) {
+              if (currentIndex >= 0 && currentIndex < wallhavenViewRoot.wallpapers.length) {
+                let wallpaper = wallhavenViewRoot.wallpapers[currentIndex];
+                wallhavenViewRoot.wallhavenDownloadAndApply(wallpaper);
+              }
+              event.accepted = true;
+            }
+          }
 
           ScrollBar.vertical: ScrollBar {
+            id: wallhavenScrollBar
             policy: ScrollBar.AsNeeded
             parent: wallhavenGridView
             x: wallhavenGridView.mirrored ? 0 : wallhavenGridView.width - width
@@ -977,11 +982,11 @@ SmartPanel {
             property real handleRadius: Style.radiusM
 
             contentItem: Rectangle {
-              implicitWidth: parent.handleWidth
+              implicitWidth: wallhavenScrollBar.handleWidth
               implicitHeight: 100
-              radius: parent.handleRadius
-              color: parent.pressed ? parent.handlePressedColor : parent.hovered ? parent.handleHoverColor : parent.handleColor
-              opacity: parent.policy === ScrollBar.AlwaysOn || parent.active ? 1.0 : 0.0
+              radius: wallhavenScrollBar.handleRadius
+              color: wallhavenScrollBar.pressed ? wallhavenScrollBar.handlePressedColor : wallhavenScrollBar.hovered ? wallhavenScrollBar.handleHoverColor : wallhavenScrollBar.handleColor
+              opacity: wallhavenScrollBar.policy === ScrollBar.AlwaysOn || wallhavenScrollBar.active ? 1.0 : 0.0
 
               Behavior on opacity {
                 NumberAnimation {
@@ -997,11 +1002,11 @@ SmartPanel {
             }
 
             background: Rectangle {
-              implicitWidth: parent.handleWidth
+              implicitWidth: wallhavenScrollBar.handleWidth
               implicitHeight: 100
               color: NColor.transparent
-              opacity: parent.policy === ScrollBar.AlwaysOn || parent.active ? 0.3 : 0.0
-              radius: parent.handleRadius / 2
+              opacity: wallhavenScrollBar.policy === ScrollBar.AlwaysOn || wallhavenScrollBar.active ? 0.3 : 0.0
+              radius: wallhavenScrollBar.handleRadius / 2
 
               Behavior on opacity {
                 NumberAnimation {
@@ -1030,7 +1035,7 @@ SmartPanel {
 
               Image {
                 id: img
-                source: thumbnailUrl
+                source: wallhavenItem.thumbnailUrl
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
@@ -1043,14 +1048,14 @@ SmartPanel {
               Rectangle {
                 anchors.fill: parent
                 color: NColor.transparent
-                border.color: wallhavenGridView.currentIndex === index ? NColor.mHover : NColor.mSurface
+                border.color: wallhavenGridView.currentIndex === wallhavenItem.index ? NColor.mHover : NColor.mSurface
                 border.width: Math.max(1, Style.borderL * 1.5)
               }
 
               Rectangle {
                 anchors.fill: parent
                 color: NColor.mSurface
-                opacity: hoverHandler.hovered || wallhavenGridView.currentIndex === index ? 0 : 0.3
+                opacity: hoverHandler.hovered || wallhavenGridView.currentIndex === wallhavenItem.index ? 0 : 0.3
                 Behavior on opacity {
                   NumberAnimation {
                     duration: Style.animationFast
@@ -1064,16 +1069,16 @@ SmartPanel {
 
               TapHandler {
                 onTapped: {
-                  wallhavenGridView.currentIndex = index;
-                  wallhavenDownloadAndApply(modelData);
+                  wallhavenGridView.currentIndex = wallhavenItem.index;
+                  wallhavenViewRoot.wallhavenDownloadAndApply(wallhavenItem.modelData);
                 }
               }
             }
 
             NText {
-              text: wallpaperId || I18n.tr("wallpaper.unknown")
+              text: wallhavenItem.wallpaperId || I18n.tr("wallpaper.unknown")
               visible: !Settings.data.wallpaper.hideWallpaperFilenames
-              color: hoverHandler.hovered || wallhavenGridView.currentIndex === index ? NColor.mOnSurface : NColor.mOnSurfaceVariant
+              color: hoverHandler.hovered || wallhavenGridView.currentIndex === wallhavenItem.index ? NColor.mOnSurface : NColor.mOnSurfaceVariant
               pointSize: Style.fontSizeXS
               Layout.fillWidth: true
               Layout.leftMargin: Style.marginS
@@ -1092,7 +1097,7 @@ SmartPanel {
           radius: Style.radiusM
           border.color: NColor.mOutline
           border.width: Style.borderS
-          visible: loading
+          visible: wallhavenViewRoot.loading
           z: 10
 
           ColumnLayout {
@@ -1130,7 +1135,7 @@ SmartPanel {
           radius: Style.radiusM
           border.color: NColor.mOutline
           border.width: Style.borderS
-          visible: errorMessage !== "" && !loading
+          visible: wallhavenViewRoot.errorMessage !== "" && !wallhavenViewRoot.loading
           z: 10
 
           ColumnLayout {
@@ -1150,7 +1155,7 @@ SmartPanel {
             }
 
             NText {
-              text: errorMessage
+              text: wallhavenViewRoot.errorMessage
               color: NColor.mOnSurface
               wrapMode: Text.WordWrap
               Layout.alignment: Qt.AlignHCenter
@@ -1171,7 +1176,7 @@ SmartPanel {
           radius: Style.radiusM
           border.color: NColor.mOutline
           border.width: Style.borderS
-          visible: (!wallpapers || wallpapers.length === 0) && !loading && errorMessage === ""
+          visible: (!wallhavenViewRoot.wallpapers || wallhavenViewRoot.wallpapers.length === 0) && !wallhavenViewRoot.loading && wallhavenViewRoot.errorMessage === ""
           z: 10
 
           ColumnLayout {
@@ -1209,7 +1214,7 @@ SmartPanel {
       // Pagination
       RowLayout {
         Layout.fillWidth: true
-        visible: !loading && errorMessage === "" && typeof WallhavenService !== "undefined"
+        visible: !wallhavenViewRoot.loading && wallhavenViewRoot.errorMessage === "" && typeof WallhavenService !== "undefined"
         spacing: Style.marginS
 
         Item {
@@ -1245,8 +1250,8 @@ SmartPanel {
       if (typeof WallhavenService !== "undefined") {
         WallhavenService.downloadWallpaper(wallpaper, function (success, localPath) {
           if (success) {
-            if (!Settings.data.wallpaper.setWallpaperOnAllMonitors && currentScreenIndex < Quickshell.screens.length) {
-              WallpaperService.changeWallpaper(localPath, Quickshell.screens[currentScreenIndex].name);
+            if (!Settings.data.wallpaper.setWallpaperOnAllMonitors && wallpaperPanel.currentScreenIndex < Quickshell.screens.length) {
+              WallpaperService.changeWallpaper(localPath, Quickshell.screens[wallpaperPanel.currentScreenIndex].name);
             } else {
               WallpaperService.changeWallpaper(localPath, undefined);
             }

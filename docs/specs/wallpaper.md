@@ -82,6 +82,7 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 - `Tests/wallpaper-service-guards.test.js`
 - `Tests/wallhaven-service-guards.test.js`
 - `Tests/wallpaper-panel-guards.test.js`
+- `Tests/wallpaper-panel-warnings.test.py` — standalone `--mode lint` checks only the panel, rejecting known-owner unqualified accesses while retaining unbound outer-ID diagnostics; `--mode runtime` runs the production panel offscreen with temporary image paths and fake desktop/settings/services. Covers fuzzy filtering, refresh/screen roles, local keyboard/tap selection, monitor/filename options, Wallhaven search/resolution/download/pagination/error state, and disposal with pending debounce. Requires warning-free runtime output and unchanged real settings. Does not test actual wallpaper application, network, visible surfaces, or resource use.
 - `Tests/wallpaper-tab-guards.test.js`
 - `Tests/qml-runtime-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
@@ -91,7 +92,7 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 
 - [ ] Add executable tests for actual wallpaper file acceptance/rejection and image-extension filtering.
 - [ ] Add executable tests for rendered wallpaper background transition behavior.
-- [ ] Add executable tests for wallpaper panel local/Wallhaven user actions beyond current view helper lookup.
+- [ ] Extend wallpaper panel action coverage to real styled-control interaction and asynchronous download completion after disposal; current isolated coverage uses fixture controls and synchronous fake downloads.
 
 ## Out of scope
 
