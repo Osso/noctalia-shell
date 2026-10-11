@@ -17,6 +17,42 @@ if [ ! -x "$qmllint" ]; then
     exit 2
 fi
 require_command rg
+require_command python3
+
+mapfile -t qml_files < <(cd "$repo_root" && rg --files -g '*.qml' | sort)
+module_root="$(mktemp -d "${TMPDIR:-/tmp}/noctalia-qmllint-modules.XXXXXX")"
+trap 'rm -rf -- "$module_root"' EXIT
+
+# Quickshell supplies qs.* virtually; qmllint needs equivalent on-disk modules.
+python3 - "$repo_root" "$module_root" "${qml_files[@]}" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+source_root = Path(sys.argv[1])
+qs_root = Path(sys.argv[2]) / "qs"
+modules = {Path("."): []}
+for relative in sorted(sys.argv[3:]):
+    path = Path(relative)
+    directory = path.parent
+    for parent in (directory, *directory.parents):
+        modules.setdefault(parent, [])
+    target = qs_root / path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    source = source_root / path
+    target.symlink_to(source)
+    singleton = bool(
+        re.search(r"^\s*pragma\s+Singleton\b", source.read_text(), re.MULTILINE)
+    )
+    prefix = "singleton " if singleton else ""
+    modules[directory].append(f"{prefix}{path.stem} 1.0 {path.name}\n")
+
+for directory, declarations in sorted(modules.items()):
+    module = ".".join(("qs", *directory.parts))
+    (qs_root / directory / "qmldir").write_text(
+        f"module {module}\n" + "".join(declarations)
+    )
+PY
 
 exclusions_file="$repo_root/Bin/dev/qml-static-exclusions.txt"
 
@@ -31,15 +67,15 @@ done <"$exclusions_file"
 checked_count=0
 skipped_count=0
 
-while IFS= read -r file; do
+for file in "${qml_files[@]}"; do
     if [ -n "${excluded_files[$file]:-}" ]; then
         skipped_count=$((skipped_count + 1))
         continue
     fi
 
-    "$qmllint" "$repo_root/$file"
+    "$qmllint" -I "$module_root" "$module_root/qs/$file"
     checked_count=$((checked_count + 1))
-done < <(cd "$repo_root" && rg --files -g '*.qml' | sort)
+done
 
 for file in "${!excluded_files[@]}"; do
     if [ ! -f "$repo_root/$file" ]; then
@@ -47,7 +83,7 @@ for file in "${!excluded_files[@]}"; do
         exit 1
     fi
 
-    if "$qmllint" "$repo_root/$file" >/dev/null 2>&1; then
+    if "$qmllint" -I "$module_root" "$module_root/qs/$file" >/dev/null 2>&1; then
         echo "excluded QML file now passes qmllint; remove it from $exclusions_file: $file" >&2
         exit 1
     fi
