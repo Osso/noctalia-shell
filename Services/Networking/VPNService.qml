@@ -50,7 +50,7 @@ Singleton {
     interval: 5000
     running: root.isPollingActive()
     repeat: true
-    onTriggered: refresh()
+    onTriggered: root.refresh()
   }
 
   Timer {
@@ -59,7 +59,7 @@ Singleton {
     repeat: false
     onTriggered: {
       if (root.isPollingActive()) {
-        refresh();
+        root.refresh();
       }
     }
   }

@@ -55,9 +55,9 @@ Singleton {
         if (!BluetoothService.airplaneModeToggled) {
           ToastService.showNotice(I18n.tr("wifi.panel.title"), I18n.tr("toast.wifi.enabled"), "wifi");
         }
-        refreshNetworkStatus();
+        root.refreshNetworkStatus();
         // Perform a scan to update the UI only while a network panel is active.
-        if (activePolling) {
+        if (root.activePolling) {
           delayedScanTimer.interval = 3000;
           delayedScanTimer.restart();
         }
@@ -94,7 +94,7 @@ Singleton {
     interval: 7000
     onTriggered: {
       if (root.activePolling) {
-        scan();
+        root.scan();
       }
     }
   }
@@ -611,7 +611,7 @@ Singleton {
       onStreamFinished: {
         Logger.i("Network", "Wi-Fi state change command executed.");
         // Re-check the state to ensure it's in sync
-        syncWifiState();
+        root.syncWifiState();
       }
     }
 
