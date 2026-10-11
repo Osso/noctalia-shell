@@ -13,7 +13,6 @@ Item {
   id: root
 
   property ShellScreen screen
-  readonly property alias visualizerContainer: mainContainer
 
   // Widget properties passed from Bar.qml for per-instance settings
   property string widgetId: ""
@@ -286,11 +285,11 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         anchors.horizontalCenter: parent.horizontalCenter
         active: root.showVisualizer && root.visualizerType == "linear"
+        width: mainContainer.width - Style.marginS
+        height: 20
         z: 0
 
         sourceComponent: NLinearSpectrum {
-          width: root.visualizerContainer.width - Style.marginS
-          height: 20
           values: CavaService.values
           fillColor: NColor.mPrimary
           opacity: 0.4
@@ -301,11 +300,11 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         anchors.horizontalCenter: parent.horizontalCenter
         active: root.showVisualizer && root.visualizerType == "mirrored"
+        width: mainContainer.width - Style.marginS
+        height: mainContainer.height - Style.marginS
         z: 0
 
         sourceComponent: NMirroredSpectrum {
-          width: root.visualizerContainer.width - Style.marginS
-          height: root.visualizerContainer.height - Style.marginS
           values: CavaService.values
           fillColor: NColor.mPrimary
           opacity: 0.4
@@ -316,11 +315,11 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         anchors.horizontalCenter: parent.horizontalCenter
         active: root.showVisualizer && root.visualizerType == "wave"
+        width: mainContainer.width - Style.marginS
+        height: mainContainer.height - Style.marginS
         z: 0
 
         sourceComponent: NWaveSpectrum {
-          width: root.visualizerContainer.width - Style.marginS
-          height: root.visualizerContainer.height - Style.marginS
           values: CavaService.values
           fillColor: NColor.mPrimary
           opacity: 0.4

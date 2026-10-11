@@ -91,6 +91,7 @@ ShellRoot {
     repeat: true
     property int step: 0
     property int spectrumIndex: 0
+    property int spectrumPhase: 0
     readonly property var spectrumTypes: ["linear", "mirrored", "wave"]
 
     onTriggered: {
@@ -181,13 +182,38 @@ ShellRoot {
       case 8:
         const loaded = harness.spectra();
         harness.require(loaded.length === 1, "exactly one visualizer loaded: " + spectrumTypes[spectrumIndex]);
-        harness.require(loaded[0].width > 0 && loaded[0].height > 0, "loaded spectrum has outer-container dimensions");
+        const expectedWidth = widget.width - (widget.isVerticalBar ? 1 : 3) * Style.marginS;
+        const expectedHeight = spectrumIndex === 0 ? 20 : widget.height - Style.marginS;
+        harness.require(loaded[0].width === expectedWidth && loaded[0].height === expectedHeight, "loaded spectrum follows container dimensions in phase " + spectrumPhase);
         harness.require(loaded[0].values.length === 3 && loaded[0].values[1] === 0.6, "loader receives actual spectrum data");
         if (spectrumIndex === 0) {
           const bars = harness.findItems(loaded[0], item => item.rawAmp !== undefined);
           harness.require(bars.length === 6, "linear mirrored delegate count");
           harness.require(bars.map(bar => bar.rawAmp).join(",") === "0.9,0.6,0.2,0.2,0.6,0.9", "actual injected delegate indices select amplitudes");
         }
+        if (spectrumPhase === 0) {
+          harness.configure({
+            useFixedWidth: true,
+            maxWidth: 180
+          });
+          spectrumPhase++;
+          return;
+        }
+        if (spectrumPhase === 1) {
+          Settings.data = Object.assign({}, Settings.data, {
+            bar: Object.assign({}, Settings.data.bar, {
+              position: "left"
+            })
+          });
+          spectrumPhase++;
+          return;
+        }
+        Settings.data = Object.assign({}, Settings.data, {
+          bar: Object.assign({}, Settings.data.bar, {
+            position: "top"
+          })
+        });
+        spectrumPhase = 0;
         harness.configure({
           showVisualizer: false
         });
