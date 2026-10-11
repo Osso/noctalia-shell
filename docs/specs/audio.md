@@ -72,14 +72,16 @@ Audio covers PipeWire-backed output/input volume state, device selection, OSD su
 - `Tests/qml-type-annotations.test.js`
 - `Tests/qml-runtime-guards.test.js`
 - `Tests/Qml/AudioPanelRegressionHarness.qml`
-- `Tests/audio-panel-regression.test.sh`
+- `Tests/audio-panel-regression.test.sh` delegates to `Tests/audio-panel-warnings.test.py behavior`. The standalone Python `behavior` mode runs production AudioPanel/AudioService and slider/radio controls under isolated offscreen `qmltestrunner`: initial/output external volume and selected-output indicator, sink/source selection during pending sync, guarded drag/debounce/release, reordered device models and content recreation, and destruction/recreation with pending sync. Five behavioral cases plus QtTest init/cleanup yield seven reported passes. PipeWire nodes, SmartPanel host, and bootstrap services are fixtures; signals are invoked directly. Standalone `lint` requires zero AudioPanel warnings and exit status zero (39 → 0 across `9f2f66140` and `5f7553f10`). This is bounded component evidence, not whole-shell acceptance.
 - `Tests/Qml/AudioCardHarness.qml` and `Tests/audio-card-warnings.test.py behavior` exercise production AudioCard, AudioService, and supporting controls under isolated offscreen `qmltestrunner`: initial/external output and input volume, drag/debounce/release, mute and volume-driven unmute, device switching during pending sync, disconnect before sync, and destruction/recreation with pending sync. Six behavioral cases plus QtTest init/cleanup yield eight reported passes. PipeWire nodes and bootstrap/UI services are fixtures; actions invoke signals directly, not physical input. Standalone `lint` requires zero AudioCard warnings and exit status zero (41 → 0 at `755150f52`); neither mode claims runner integration or whole-shell acceptance.
 
 ## Known gaps (current cycle)
 
 - [ ] Extract separate specs for media playback, screen recording, and Cava visualization so this audio spec stays focused on core audio control.
 - [ ] Add behavior tests for UI consumers that call `AudioService.suppressOutputOSD` and `AudioService.suppressInputOSD`.
-- [ ] Real PipeWire integration and physical slider/button input remain untested by the AudioCard fixture suite; mocked node volume/mute setter paths are covered there.
+- [ ] Real PipeWire integration and physical slider/button input remain untested by the AudioCard and AudioPanel fixture suites; mocked node setter paths are covered.
+- [ ] AudioPanel source-radio checked state remains unverified: the unchanged comparison uses integer source id `===` string `deviceId`; source-selection assertions do not verify its indicator.
+- [ ] AudioPanel's initial source-id guard remains unchanged and unverified: completion initializes only the sink guard. Input drag coverage first changes the source away and back; it does not prove input sync before the first source change.
 
 ## Out of scope
 
