@@ -402,7 +402,7 @@ function testNetworkProfileAndScanSuccessParityExecutes() {
     lastError: "",
     delayedScanTimer: { restart() {} },
     scanProcess: { existingProfiles: {}, exitObserved: true, running: false },
-    cacheAdapter: { knownNetworks: {}, lastConnected: "" },
+    cacheData: { knownNetworks: {}, lastConnected: "" },
     Logger: { d() {} },
     saveCache() {},
     parseNetworkScanOutput() {

@@ -26,6 +26,7 @@ Singleton {
   readonly property bool activePolling: activePollingRefs > 0
 
   // Persistent cache
+  readonly property alias cacheData: cacheAdapter
   property string cacheFile: Settings.cacheDir + "network.json"
   readonly property string cachedLastConnected: cacheAdapter.lastConnected
   readonly property var cachedNetworks: cacheAdapter.knownNetworks
@@ -43,8 +44,8 @@ Singleton {
     }
 
     onLoadFailed: {
-      cacheAdapter.knownNetworks = ({});
-      cacheAdapter.lastConnected = "";
+      root.cacheData.knownNetworks = ({});
+      root.cacheData.lastConnected = "";
     }
   }
 
@@ -794,10 +795,10 @@ Singleton {
       return;
     }
 
-    const parsed = parseNetworkScanOutput(output, scanProcess.existingProfiles, cacheAdapter.knownNetworks, cacheAdapter.lastConnected);
+    const parsed = parseNetworkScanOutput(output, scanProcess.existingProfiles, root.cacheData.knownNetworks, root.cacheData.lastConnected);
     const networksMap = parsed.networks;
     if (parsed.shouldSaveCache) {
-      cacheAdapter.lastConnected = parsed.lastConnected;
+      root.cacheData.lastConnected = parsed.lastConnected;
       saveCache();
     }
 
