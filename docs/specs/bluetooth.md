@@ -45,6 +45,8 @@ Bluetooth covers adapter state helpers, device ordering, device icons, connectio
 
 ### Types and device-list roles
 
+- [ ] Bluetooth device lists default to an empty array; an omitted model or empty device array produces zero rows without model-length errors.
+- [ ] Bluetooth device lists use the caller-provided array and reflect its replacement, including replacement with an empty array.
 - [x] Bluetooth service `devices` is typed as `ObjectModel`, not `var`.
 - [x] Bluetooth device list delegates type `modelData` as `BluetoothDevice` and `index` as `int`.
 - [x] Bluetooth device list delegates expose stable aliases for pairing, blocked, connected, connecting, display name, signal strength, battery availability, connectability, disconnectability, and busy state.
@@ -71,6 +73,7 @@ Bluetooth covers adapter state helpers, device ordering, device icons, connectio
 ## Tests asserting this spec
 
 - `Tests/bluetooth-service-guards.test.js`
+- `Tests/bluetooth-devices-list-runtime.test.py` — default/empty models and caller-provided array replacement; not executed in this audit.
 - `Tests/qml-type-annotations.test.js`
 - `Tests/widget-helper-guards.test.js`
 - `Tests/service-probes-parsing.test.sh`
