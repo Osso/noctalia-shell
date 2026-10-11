@@ -12,6 +12,7 @@ ShellRoot {
 
     property var active: null
     property var media: null
+    property Item widgetLoader: null
 
     function require(condition, message) {
         if (!condition) {
@@ -22,7 +23,7 @@ ShellRoot {
     }
 
     function constructWidget(key, index) {
-        const loader = loaderComponent.createObject(offscreen.contentItem, {
+        harness.widgetLoader = loaderComponent.createObject(offscreen.contentItem, {
             "widgetId": key,
             "widgetScreen": Quickshell.screens[0],
             "widgetProps": {
@@ -31,17 +32,16 @@ ShellRoot {
                 "sectionWidgetIndex": index
             }
         });
-        require(loader !== null, key + " production Loader created");
-        const item = loader.children[0].item;
+        harness.require(harness.widgetLoader !== null, key + " production Loader created");
+        const item = BarWidgetRegistry.constructed[key];
+        harness.require(harness.widgetLoader.children[0].children[0] === item, key + " loaded widget is the actual visual child");
         require(item.widgetId === key && item.sectionWidgetIndex === index, key + " onLoaded assigned instance settings");
         return item;
     }
 
     function setWidgets(activeSettings, mediaSettings, position) {
-        Settings.data = Object.assign({
-        }, Settings.data, {
-            "bar": Object.assign({
-            }, Settings.data.bar, {
+        Settings.data = Object.assign({}, Settings.data, {
+            "bar": Object.assign({}, Settings.data.bar, {
                 "position": position,
                 "widgets": {
                     "left": [activeSettings, mediaSettings],
@@ -55,9 +55,7 @@ ShellRoot {
     Component {
         id: loaderComponent
 
-        BarWidgetLoader {
-        }
-
+        BarWidgetLoader {}
     }
 
     Window {
@@ -69,14 +67,16 @@ ShellRoot {
     }
 
     Timer {
+        id: scenarioTimer
+
         property int step: 0
 
         interval: 100
         running: true
         repeat: true
         onTriggered: {
-            running = false;
-            switch (step) {
+            scenarioTimer.running = false;
+            switch (scenarioTimer.step) {
             case 0:
                 harness.active = harness.constructWidget("ActiveWindow", 0);
                 harness.media = harness.constructWidget("MediaMini", 1);
@@ -88,8 +88,7 @@ ShellRoot {
                     harness.require(snapshot.width === 0 && snapshot.height === 0 && !snapshot.visible, snapshot.key + " hidden empty dimensions");
                     harness.require(snapshot.maxWidth === 145 && !snapshot.fixed, snapshot.key + " default width settings");
                 }
-                MediaService.currentPlayer = {
-                };
+                MediaService.currentPlayer = {};
                 harness.setWidgets({
                     "id": "ActiveWindow",
                     "hideMode": "visible",
@@ -104,17 +103,16 @@ ShellRoot {
                 }, "top");
                 break;
             case 1:
-                harness.require(active.visible && active.implicitWidth === 210 && active.implicitHeight === 32 && !active.showIcon, "late ActiveWindow settings and fixed dimensions");
-                harness.require(media.visible && media.implicitWidth === 190 && media.implicitHeight === 32, "late MediaMini settings and fixed dimensions");
-                active.widgetId = "different-instance-id";
-                media.widgetId = "different-instance-id";
-                harness.require(active.maxWidth === 210 && media.maxWidth === 190, "instance ID change preserves per-section user settings");
+                harness.require(harness.active.visible && harness.active.implicitWidth === 210 && harness.active.implicitHeight === 32 && !harness.active.showIcon, "late ActiveWindow settings and fixed dimensions");
+                harness.require(harness.media.visible && harness.media.implicitWidth === 190 && harness.media.implicitHeight === 32, "late MediaMini settings and fixed dimensions");
+                harness.active.widgetId = "different-instance-id";
+                harness.media.widgetId = "different-instance-id";
+                harness.require(harness.active.maxWidth === 210 && harness.media.maxWidth === 190, "instance ID change preserves per-section user settings");
                 CompositorService.focusedWindow = {
                     "title": "Concrete long focused window title",
                     "appId": "fixture"
                 };
-                MediaService.currentPlayer = {
-                };
+                MediaService.currentPlayer = {};
                 MediaService.trackTitle = "Concrete long playing track title";
                 harness.setWidgets({
                     "id": "ActiveWindow",
@@ -129,8 +127,8 @@ ShellRoot {
                 }, "top");
                 break;
             case 2:
-                harness.require(active.implicitWidth === 90, "ActiveWindow long title capped at 90");
-                harness.require(media.implicitWidth === 85, "MediaMini long title capped at 85");
+                harness.require(harness.active.implicitWidth === 90, "ActiveWindow long title capped at 90");
+                harness.require(harness.media.implicitWidth === 85, "MediaMini long title capped at 85");
                 harness.setWidgets({
                     "id": "ActiveWindow",
                     "hideMode": "visible"
@@ -138,12 +136,12 @@ ShellRoot {
                     "id": "MediaMini",
                     "hideMode": "visible"
                 }, "left");
-                active.scaling = 0.8;
-                media.scaling = 0.8;
+                harness.active.scaling = 0.8;
+                harness.media.scaling = 0.8;
                 break;
             case 3:
-                harness.require(active.implicitWidth === 22 && active.implicitHeight === 22, "ActiveWindow vertical scaling");
-                harness.require(media.implicitWidth === 22 && media.implicitHeight === 22, "MediaMini vertical scaling");
+                harness.require(harness.active.implicitWidth === 22 && harness.active.implicitHeight === 22, "ActiveWindow vertical scaling");
+                harness.require(harness.media.implicitWidth === 22 && harness.media.implicitHeight === 22, "MediaMini vertical scaling");
                 CompositorService.focusedWindow = null;
                 MediaService.currentPlayer = null;
                 harness.setWidgets({
@@ -155,15 +153,14 @@ ShellRoot {
                 }, "top");
                 break;
             case 4:
-                harness.require(!active.visible && active.implicitWidth === 0 && active.implicitHeight === 0, "ActiveWindow late hidden setting");
-                harness.require(!media.visible && media.implicitWidth === 0 && media.implicitHeight === 0, "MediaMini late hidden setting");
+                harness.require(!harness.active.visible && harness.active.implicitWidth === 0 && harness.active.implicitHeight === 0, "ActiveWindow late hidden setting");
+                harness.require(!harness.media.visible && harness.media.implicitWidth === 0 && harness.media.implicitHeight === 0, "MediaMini late hidden setting");
                 console.log("BAR_WIDGET_METADATA_PASS");
                 Qt.quit();
                 break;
             }
-            step++;
-            running = step < 5;
+            scenarioTimer.step++;
+            scenarioTimer.running = scenarioTimer.step < 5;
         }
     }
-
 }
