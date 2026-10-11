@@ -17,6 +17,8 @@ import shutil
 import subprocess
 import tempfile
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 SERVICE = Path("Services/Networking/NetworkService.qml")
 FIXTURE = ROOT / "Tests/network-service"
@@ -77,8 +79,11 @@ def stage_runtime(directory, mode):
         {
             "Settings": singleton(
                 f"property string cacheDir: {json.dumps(str(directory / 'cache') + '/')}\n"
-                "property QtObject data: QtObject {\n"
-                "  property QtObject network: QtObject { property bool wifiEnabled: false }\n}"
+                "component FixtureNetwork: QtObject { property bool wifiEnabled: false }\n"
+                "component FixtureData: QtObject {\n"
+                "  property FixtureNetwork network: FixtureNetwork {}\n"
+                "}\n"
+                "property FixtureData data: FixtureData {}"
             ),
             "Logger": singleton("""property var warnings: []
 function i(...args) {}
@@ -153,6 +158,18 @@ function showWarning(...args) { notices = notices.concat([args]); }"""),
         NETWORK_FIXTURE_MODE=mode,
     )
     return environment
+
+
+def lint_harness(directory):
+    sources = directory / "qs"
+    sources.mkdir()
+    stage_runtime(sources, "valid")
+    for relative in ("Commons", "Services/UI", "Services/Networking"):
+        qmldir = sources / relative / "qmldir"
+        qmldir.write_text(
+            f"module qs.{relative.replace('/', '.')}\n" + qmldir.read_text()
+        )
+    return check_harness(directory, sources / "shell.qml")
 
 
 def run_case(directory, mode):
@@ -243,14 +260,18 @@ def behavior(directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "behavior", "lint-harness"))
     parser.add_argument("--artifacts", type=Path)
     args = parser.parse_args()
     if args.artifacts:
         args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
+        if args.mode == "lint-harness":
+            raise SystemExit(lint_harness(args.artifacts.resolve()))
         globals()[args.mode](args.artifacts.resolve())
     else:
         with tempfile.TemporaryDirectory(prefix="noctalia-network-") as temporary:
+            if args.mode == "lint-harness":
+                raise SystemExit(lint_harness(Path(temporary)))
             globals()[args.mode](Path(temporary))
 
 

@@ -97,6 +97,9 @@ for file in "${qml_files[@]}"; do
     Tests/Qml/SetupLayoutGeometryHarness.qml)
         python3 "$repo_root/Tests/setup-layout-geometry.test.py" lint-harness
         ;;
+    Tests/network-service/shell.qml)
+        python3 "$repo_root/Tests/network-service-warnings.test.py" lint-harness
+        ;;
     *)
         "$qmllint" -I "$module_root" "$module_root/qs/$file"
         ;;
