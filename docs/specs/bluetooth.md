@@ -75,6 +75,7 @@ Bluetooth covers adapter state helpers, device ordering, device icons, connectio
 
 - `Tests/bar-controls-warnings.test.py` — isolated production bar-widget toggle dispatch, panel/context/settings routing, display modes, and vertical collapse. Cohort evidence: [bar](bar.md#bar-control-cohort); fixture limits: [testing](testing.md#bar-control-cohort).
 
+- `Tests/root-service-warnings.test.py behavior` / `Tests/Qml/RootServiceHarness.qml` — production BluetoothService handles fixture enabling/enabled/blocked/disabled events, suppresses transitional toast feedback, starts discovery through its timer, and handles injected successful/failed rfkill completion. One of five behavioral cases at `8b1de9d34`; adapter, process, network, and toast boundaries are inert. Root-only lint retains eight `unresolved-type` and three `missing-property` warnings; no real adapter/radio effects or warning-free service claim. Cohort gates: [testing](testing.md#root-service-cohort).
 - `Tests/bluetooth-service-guards.test.js`
 - `Tests/bluetooth-devices-list-runtime.test.py` — nonvisible production-list default/empty models, caller array replacement, concrete device actions/state/battery, no-signal layout geometry, installed device metadata contract, and targeted lint (only the installed state-enum metadata warning remains).
 - `Tests/qml-type-annotations.test.js`

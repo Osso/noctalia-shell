@@ -96,6 +96,7 @@ The history ListModel and Qt Repeaters/layout are real; NotificationService, Sma
 
 - `Tests/notification-warnings.test.py` (`lint` and `behavior`, standalone).
 - `Tests/notification-history-warnings.test.py` (`lint` and `runtime`, standalone).
+- `Tests/root-service-warnings.test.py behavior` / `Tests/Qml/RootServiceHarness.qml` — production NotificationService saves/reloads a concrete history row through fixture FileView/JsonAdapter state, restores its Date timestamp, updates an active ListModel row through the real progress timer, stops that timer after clearing, and advances/clears the image queue. One of five behavioral cases at `8b1de9d34`; notification delivery, file writes, settings, and surfaces are fixtures. This does not prove expiry, deduplication, image rendering, real persistence, or input regions. Root-only lint retains seventeen `unqualified`, six `block-scope-var-declaration`, two `missing-property`, one `unresolved-type`, and one `uncreatable-type` warnings. Cohort gates: [testing](testing.md#root-service-cohort).
 - `Tests/notification-service-gap-guards.test.js`
 - `Tests/shell-state-consumer-roundtrip.test.js`
 - `Tests/notification-history-panel-guards.test.js`
@@ -104,7 +105,7 @@ The history ListModel and Qt Repeaters/layout are real; NotificationService, Sma
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable tests for active-list replacement and progress expiry with a fake `ListModel`.
+- [ ] Add executable tests for active-list replacement and progress expiry with a fake `ListModel`; the root-service harness covers mid-duration progress and timer shutdown after clearing, not expiry or replacement.
 - [ ] Add spec coverage for notification settings UI contracts.
 - [ ] Resolve the ten remaining popup static diagnostics; this slice does not establish zero warnings.
 - [ ] Reproduce and fix Firefox/grouped-taskbar cursor flicker triggered per notification. It has **not been reproduced or fixed** by this slice; toast/notification layer input-region behavior is untouched, and the isolated test provides no desktop input-delivery proof.

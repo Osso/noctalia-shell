@@ -72,6 +72,7 @@ Audio covers PipeWire-backed output/input volume state, device selection, OSD su
 
 ## Tests asserting this spec
 
+- At `8b1de9d34`, the existing AudioCard behavior suite rerun against the root-qualified AudioService records six behavioral cases plus QtTest init/cleanup (eight passes). AudioService is not exercised by the new root-service behavior harness, which substitutes an audio fixture. `Tests/root-service-warnings.test.py lint` removes eligible root-owner diagnostics but retains two AudioService `missing-property` warnings; no warning-free service claim. Cohort limits: [testing](testing.md#root-service-cohort).
 - `Tests/audio-service-guards.test.js`
 - `Tests/audio-ui-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
