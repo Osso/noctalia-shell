@@ -1,12 +1,12 @@
+import Fixture
 import QtQuick
 import QtTest
-import Fixture
-import Quickshell.Io
-import Quickshell.I3
 import Quickshell.Hyprland
+import Quickshell.I3
+import Quickshell.Io
 import Quickshell.Wayland
-import qs.Services.Keyboard
 import qs.Services.Compositor
+import qs.Services.Keyboard
 
 TestCase {
   id: testCase
@@ -295,10 +295,14 @@ TestCase {
     ];
   }
 
+  function selectBackend(hyprland): var {
+    return hyprland ? Hyprland : I3;
+  }
+
   function test_compositor_events_and_rebind(row) {
-    const backend = row.hyprland ? Hyprland : I3;
-    const oldModel = modelFactory.createObject(testCase);
-    const newModel = modelFactory.createObject(testCase);
+    const backend = selectBackend(row.hyprland);
+    const oldModel = modelFactory.createObject(testCase) as EventModel;
+    const newModel = modelFactory.createObject(testCase) as EventModel;
     backend.workspaces = oldModel;
     const toplevels = row.hyprland ? Hyprland.toplevels : ToplevelManager.toplevels;
     toplevels.values = [

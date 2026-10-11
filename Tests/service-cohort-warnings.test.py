@@ -12,6 +12,8 @@ import shutil
 import subprocess
 import tempfile
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 SERVICES = [Path("Services/Keyboard/LockKeysService.qml")] + [
     Path(f"Services/Compositor/{name}Service.qml")
@@ -201,6 +203,11 @@ function getDisplayInfo(name) { return scales[name]; }"""),
     )
 
 
+def lint_harness(directory):
+    stage_runtime(directory)
+    return check_harness(directory, directory / "tst_services.qml")
+
+
 def behavior(directory):
     settings = Path.home() / ".config/noctalia/settings.json"
     original = settings.read_bytes()
@@ -266,11 +273,14 @@ def behavior(directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-service-cohort-") as temporary:
+        if args.mode == "lint-harness":
+            return lint_harness(Path(temporary))
         globals()[args.mode](Path(temporary))
+        return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
