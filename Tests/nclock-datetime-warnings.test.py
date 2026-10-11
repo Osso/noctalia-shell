@@ -104,6 +104,9 @@ function endSecondUpdates() { consumers--; }""",
     (directory / "runtime.log").write_text(output)
     print(output, end="")
     assert result.returncode == 0, output
+    assert "7 passed, 0 failed" in output, (
+        "Expected five behavior cases plus init/cleanup"
+    )
     assert not re.search(
         r"QWARN|QFATAL|ReferenceError|TypeError|Binding loop", output
     ), output
