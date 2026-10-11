@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -34,7 +36,7 @@ Popup {
   onOpened: {
     selectedIcon = initialIcon;
     query = initialIcon;
-    searchInput.forceActiveFocus();
+    searchInput.inputItem.forceActiveFocus();
   }
 
   background: Rectangle {
@@ -92,19 +94,22 @@ Popup {
       cellHeight: root.cellH
       model: root.filteredIcons
       delegate: Rectangle {
+        id: iconDelegate
+        required property string modelData
+
         width: grid.cellWidth
         height: grid.cellHeight
         radius: Style.radiusS
 
-        color: (root.selectedIcon === modelData) ? Qt.alpha(NColor.mPrimary, 0.15) : NColor.transparent
-        border.color: (root.selectedIcon === modelData) ? NColor.mPrimary : NColor.transparent
-        border.width: (root.selectedIcon === modelData) ? Style.borderS : 0
+        color: (root.selectedIcon === iconDelegate.modelData) ? Qt.alpha(NColor.mPrimary, 0.15) : NColor.transparent
+        border.color: (root.selectedIcon === iconDelegate.modelData) ? NColor.mPrimary : NColor.transparent
+        border.width: (root.selectedIcon === iconDelegate.modelData) ? Style.borderS : 0
 
         MouseArea {
           anchors.fill: parent
-          onClicked: root.selectedIcon = modelData
+          onClicked: root.selectedIcon = iconDelegate.modelData
           onDoubleClicked: {
-            root.selectedIcon = modelData;
+            root.selectedIcon = iconDelegate.modelData;
             root.iconSelected(root.selectedIcon);
             root.close();
           }
@@ -120,7 +125,7 @@ Popup {
           }
           NIcon {
             Layout.alignment: Qt.AlignHCenter
-            icon: modelData
+            icon: iconDelegate.modelData
             pointSize: 42
           }
           NText {
@@ -133,7 +138,7 @@ Popup {
             horizontalAlignment: Text.AlignHCenter
             color: NColor.mOnSurfaceVariant
             pointSize: Style.fontSizeXS
-            text: modelData
+            text: iconDelegate.modelData
           }
           Item {
             Layout.fillHeight: true
