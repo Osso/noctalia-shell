@@ -32,6 +32,8 @@ ShellRoot {
     onTriggered: {
       const service = root.service;
       if (root.step++ === 0) {
+        if (root.scenario === "missing")
+          return; // Enabled startup refresh comes from the real FileView load failure.
         root.require(!service.isFetchingWeather, "disabled weather must not fetch on cache load");
         if (root.scenario === "cached") {
           root.require(service.coordinatesReady, "cache must publish coordinates");
@@ -39,6 +41,8 @@ ShellRoot {
           root.require(service.stableName === "Fixture City", "cache name");
         }
         Settings.data.location.weatherEnabled = true;
+        if (root.scenario === "reuse")
+          return; // Exercise the production update Timer, not a manual refresh.
         service.updateWeather();
         if (root.scenario !== "cached") {
           root.require(service.isFetchingWeather, "refresh must enter fetching state");
@@ -46,7 +50,8 @@ ShellRoot {
         }
         return;
       }
-      if (service.isFetchingWeather || root.step < 14)
+      const saveFinished = root.step >= (root.scenario === "reuse" ? 25 : 14);
+      if (service.isFetchingWeather || (!root.scenario.endsWith("error") && !saveFinished))
         return; // Allow the real one-second adapter save timer to finish.
       if (root.scenario.endsWith("error")) {
         root.require(!service.coordinatesReady, "failure must not publish coordinates");
@@ -62,7 +67,7 @@ ShellRoot {
         root.require(service.data.weatherLastFetch === 1000, "fetch timestamp");
         root.require(service.data.weather.current_weather.temperature === 21, "provider JSON cached");
         root.require(service.weatherTimerIntervalMs === 1800000, "fresh cache expiry scheduling");
-        root.require(service.stableName === (root.scenario === "geocode" ? "Fixture City, ZZ" : "Fixture City"), "stable location name");
+        root.require(service.stableName === (root.scenario === "geocode" || root.scenario === "missing" ? "Fixture City, ZZ" : "Fixture City"), "stable location name");
       }
       console.log("LOCATION_PASS", root.scenario);
       Qt.exit(0);

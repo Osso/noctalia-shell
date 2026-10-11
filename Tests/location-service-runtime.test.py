@@ -15,6 +15,7 @@ SCENARIOS = (
     "cached",
     "reuse",
     "geocode",
+    "missing",
     "geo-http-error",
     "geo-unresolved-error",
     "geo-parse-error",
@@ -33,7 +34,9 @@ def command(arguments, **options):
 
 def write_singleton(directory, name, body):
     (directory / f"{name}.qml").write_text(
-        "pragma Singleton\nimport QtQuick\nQtObject {\n" + body + "\n}\n"
+        "pragma Singleton\nimport QtQuick\nimport Quickshell\nQtObject {\n"
+        + body
+        + "\n}\n"
     )
 
 
@@ -88,7 +91,13 @@ def stage_service(directory):
         commons,
         "Settings",
         """  property string cacheDir: Qt.resolvedUrl('../cache/').toString().replace('file://', '')
-  property var data: ({location: {weatherEnabled: false, name: 'Fixture City'}, colorSchemes: {schedulingMode: 'off'}})""",
+  property QtObject data: QtObject {
+    property QtObject location: QtObject {
+      property bool weatherEnabled: Quickshell.env('LOCATION_SCENARIO') === 'missing'
+      property string name: 'Fixture City'
+    }
+    property QtObject colorSchemes: QtObject { property string schedulingMode: 'off' }
+  }""",
     )
     write_singleton(commons, "Time", "  property int timestamp: 1000")
     write_singleton(
@@ -155,7 +164,11 @@ def run_scenario(directory, scenario):
             weatherLastFetch=1000 if scenario == "cached" else 1,
             weather=weather if scenario == "cached" else None,
         )
-    (directory / "location.json").write_text(json.dumps(cache))
+    location_file = directory / "location.json"
+    if scenario == "missing":
+        location_file.unlink(missing_ok=True)
+    else:
+        location_file.write_text(json.dumps(cache))
     geo = {
         "status": 200,
         "body": json.dumps(
@@ -218,7 +231,7 @@ def run_scenario(directory, scenario):
             urls[0]
             == "https://assets.noctalia.dev/geocode.php?city=Fixture%20City&language=en&format=json"
         ), urls
-    if scenario == "reuse" or scenario == "geocode" or scenario.startswith("weather-"):
+    if scenario in ("reuse", "geocode", "missing") or scenario.startswith("weather-"):
         assert urls[-1].startswith(
             "https://api.open-meteo.com/v1/forecast?latitude=32&longitude=-96&"
         ), urls
