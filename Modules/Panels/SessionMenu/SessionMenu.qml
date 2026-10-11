@@ -1,3 +1,6 @@
+// Panel content and delegates capture this menu's owner IDs.
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Effects
@@ -118,8 +121,8 @@ SmartPanel {
 
       for (var i = 0; i < settingsOptions.length; i++) {
         var settingOption = settingsOptions[i];
-        if (settingOption.enabled && actionMetadata[settingOption.action]) {
-          var metadata = actionMetadata[settingOption.action];
+        if (settingOption.enabled && root.actionMetadata[settingOption.action]) {
+          var metadata = root.actionMetadata[settingOption.action];
           options.push({
                          "action": settingOption.action,
                          "icon": metadata.icon,
@@ -314,7 +317,7 @@ SmartPanel {
     interval: 100
     repeat: true
     onTriggered: {
-      tickCountdownTimer();
+      root.tickCountdownTimer();
     }
   }
 
@@ -359,13 +362,13 @@ SmartPanel {
           Layout.preferredHeight: Style.baseWidgetSize * 0.6
 
           NText {
-            text: timerActive ? I18n.tr("session-menu.action-in-seconds", {
-                                          "action": I18n.tr("session-menu." + pendingAction),
-                                          "seconds": Math.ceil(timeRemaining / 1000)
-                                        }) : I18n.tr("session-menu.title")
+            text: root.timerActive ? I18n.tr("session-menu.action-in-seconds", {
+                                               "action": I18n.tr("session-menu." + root.pendingAction),
+                                               "seconds": Math.ceil(root.timeRemaining / 1000)
+                                             }) : I18n.tr("session-menu.title")
             font.weight: Style.fontWeightBold
             pointSize: Style.fontSizeL
-            color: timerActive ? NColor.mPrimary : NColor.mOnSurface
+            color: root.timerActive ? NColor.mPrimary : NColor.mOnSurface
             Layout.alignment: Qt.AlignVCenter
             verticalAlignment: Text.AlignVCenter
           }
@@ -375,17 +378,17 @@ SmartPanel {
           }
 
           NIconButton {
-            icon: timerActive ? "stop" : "close"
-            tooltipText: timerActive ? I18n.tr("tooltips.cancel-timer") : I18n.tr("tooltips.close")
+            icon: root.timerActive ? "stop" : "close"
+            tooltipText: root.timerActive ? I18n.tr("tooltips.cancel-timer") : I18n.tr("tooltips.close")
             Layout.alignment: Qt.AlignVCenter
             baseSize: Style.baseWidgetSize * 0.7
-            colorBg: timerActive ? Qt.alpha(NColor.mError, 0.08) : NColor.transparent
-            colorFg: timerActive ? NColor.mError : NColor.mOnSurface
+            colorBg: root.timerActive ? Qt.alpha(NColor.mError, 0.08) : NColor.transparent
+            colorFg: root.timerActive ? NColor.mError : NColor.mOnSurface
             onClicked: {
-              if (timerActive) {
-                cancelTimer();
+              if (root.timerActive) {
+                root.cancelTimer();
               } else {
-                cancelTimer();
+                root.cancelTimer();
                 root.close();
               }
             }
@@ -403,23 +406,26 @@ SmartPanel {
           spacing: Style.marginS
 
           Repeater {
-            model: powerOptions
+            model: root.powerOptions
             delegate: PowerButton {
+              id: powerOption
+
               required property int index
               required property var modelData
-              readonly property string action: modelData ? (modelData.action || "") : ""
-              readonly property bool optionIsShutdown: modelData ? modelData.isShutdown === true : false
+              readonly property string action: powerOption.modelData.action
+              readonly property bool optionIsShutdown: powerOption.modelData.isShutdown
 
               Layout.fillWidth: true
-              icon: modelData ? (modelData.icon || "") : ""
-              title: modelData ? (modelData.title || "") : ""
-              isShutdown: optionIsShutdown
-              isSelected: index === selectedIndex
+              icon: powerOption.modelData.icon
+              title: powerOption.modelData.title
+              isShutdown: powerOption.optionIsShutdown
+              isSelected: powerOption.index === root.selectedIndex
               onClicked: {
-                selectedIndex = index;
-                startTimer(action);
+                root.selectedIndex = powerOption.index;
+                root.startTimer(powerOption.action);
               }
-              pending: timerActive && pendingAction === action
+              pending: root.timerActive && root.pendingAction === powerOption.action
+              timeRemaining: root.timeRemaining
             }
           }
         }
@@ -436,6 +442,7 @@ SmartPanel {
     property bool pending: false
     property bool isShutdown: false
     property bool isSelected: false
+    property int timeRemaining: 0
 
     signal clicked
 
@@ -538,7 +545,7 @@ SmartPanel {
 
         NText {
           anchors.centerIn: parent
-          text: Math.ceil(timeRemaining / 1000)
+          text: Math.ceil(buttonRoot.timeRemaining / 1000)
           pointSize: Style.fontSizeS
           font.weight: Style.fontWeightBold
           color: NColor.mOnPrimary
