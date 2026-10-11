@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -72,7 +74,7 @@ SmartPanel {
   Connections {
     target: NotificationService.historyList
     function onCountChanged() {
-      recalcRangeCounts();
+      root.recalcRangeCounts();
     }
   }
 
@@ -165,6 +167,7 @@ SmartPanel {
             model: 4
 
             delegate: NButton {
+              required property int index
               readonly property int rangeId: index
               readonly property bool isActive: root.currentRange === rangeId
 
@@ -266,11 +269,12 @@ SmartPanel {
 
             delegate: Item {
               id: notificationDelegate
+              required property var model
               width: parent.width
-              visible: root.isInCurrentRange(model.timestamp)
+              visible: root.isInCurrentRange(notificationDelegate.model.timestamp)
               height: visible ? contentColumn.height + (Style.marginM * 2) : 0
 
-              property string notificationId: model.id
+              property string notificationId: notificationDelegate.model.id
               property bool isExpanded: scrollView.expandedId === notificationId
               property bool canExpand: summaryText.truncated || bodyText.truncated
 
@@ -296,10 +300,10 @@ SmartPanel {
                 enabled: notificationDelegate.canExpand
                 cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                 onClicked: {
-                  if (scrollView.expandedId === notificationId) {
+                  if (scrollView.expandedId === notificationDelegate.notificationId) {
                     scrollView.expandedId = "";
                   } else {
-                    scrollView.expandedId = notificationId;
+                    scrollView.expandedId = notificationDelegate.notificationId;
                   }
                 }
               }
@@ -322,7 +326,7 @@ SmartPanel {
                     width: Math.round(40 * Style.uiScaleRatio)
                     height: Math.round(40 * Style.uiScaleRatio)
                     radius: Math.min(Style.radiusL, width / 2)
-                    imagePath: model.cachedImage || model.originalImage || ""
+                    imagePath: notificationDelegate.model.cachedImage || notificationDelegate.model.originalImage || ""
                     borderColor: NColor.transparent
                     borderWidth: 0
                     fallbackIcon: "bell"
@@ -345,11 +349,11 @@ SmartPanel {
                         height: 6
                         anchors.verticalCenter: parent.verticalCenter
                         radius: 3
-                        visible: model.urgency !== 1
+                        visible: notificationDelegate.model.urgency !== 1
                         color: {
-                          if (model.urgency === 2)
+                          if (notificationDelegate.model.urgency === 2)
                             return NColor.mError;
-                          else if (model.urgency === 0)
+                          else if (notificationDelegate.model.urgency === 0)
                             return NColor.mOnSurfaceVariant;
                           else
                             return NColor.transparent;
@@ -357,7 +361,7 @@ SmartPanel {
                       }
 
                       NText {
-                        text: model.appName || "Unknown App"
+                        text: notificationDelegate.model.appName || "Unknown App"
                         pointSize: Style.fontSizeXS
                         font.weight: Style.fontWeightBold
                         color: NColor.mSecondary
@@ -365,7 +369,7 @@ SmartPanel {
 
                       NText {
                         textFormat: Text.PlainText
-                        text: " " + Time.formatRelativeTime(model.timestamp)
+                        text: " " + Time.formatRelativeTime(notificationDelegate.model.timestamp)
                         pointSize: Style.fontSizeXXS
                         color: NColor.mOnSurfaceVariant
                         anchors.bottom: parent.bottom
@@ -376,7 +380,7 @@ SmartPanel {
                     NText {
                       id: summaryText
                       width: parent.width
-                      text: model.summary || I18n.tr("general.no-summary")
+                      text: notificationDelegate.model.summary || I18n.tr("general.no-summary")
                       pointSize: Style.fontSizeM
                       font.weight: Font.Medium
                       color: NColor.mOnSurface
@@ -390,7 +394,7 @@ SmartPanel {
                     NText {
                       id: bodyText
                       width: parent.width
-                      text: model.body || ""
+                      text: notificationDelegate.model.body || ""
                       pointSize: Style.fontSizeS
                       color: NColor.mOnSurfaceVariant
                       textFormat: Text.PlainText
@@ -436,7 +440,7 @@ SmartPanel {
                     anchors.verticalCenter: parent.verticalCenter
 
                     onClicked: {
-                      NotificationService.removeFromHistory(notificationId);
+                      NotificationService.removeFromHistory(notificationDelegate.notificationId);
                     }
                   }
                 }
