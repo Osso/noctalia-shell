@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Quickshell
 import Quickshell.Services.UPower
 import qs.Commons
 import qs.Widgets
@@ -21,11 +22,11 @@ ColumnLayout {
   // Build model of available battery devices
   function buildDeviceModel() {
     var model = [
-          {
-            "key": "",
-            "name": I18n.tr("bar.widget-settings.battery.device.default")
-          }
-        ];
+      {
+        "key": "",
+        "name": I18n.tr("bar.widget-settings.battery.device.default")
+      }
+    ];
 
     if (!UPower.devices) {
       return model;
@@ -39,9 +40,9 @@ ColumnLayout {
       }
       var displayName = device.model || device.nativePath || "Unknown";
       model.push({
-                   "key": device.nativePath || "",
-                   "name": displayName
-                 });
+        "key": device.nativePath || "",
+        "name": displayName
+      });
     }
     return model;
   }
@@ -56,7 +57,7 @@ ColumnLayout {
   Connections {
     target: UPower.devices
     function onValuesChanged() {
-      deviceModel = buildDeviceModel();
+      root.deviceModel = root.buildDeviceModel();
     }
   }
 
@@ -68,7 +69,7 @@ ColumnLayout {
     onTriggered: {
       var currentCount = (UPower.devices && UPower.devices.values) ? UPower.devices.values.length : 0;
       if (currentCount !== root._deviceCount) {
-        deviceModel = buildDeviceModel();
+        root.deviceModel = root.buildDeviceModel();
       }
     }
   }
@@ -115,7 +116,7 @@ ColumnLayout {
     NIconButton {
       icon: "refresh"
       tooltipText: "Refresh device list"
-      onClicked: deviceModel = buildDeviceModel()
+      onClicked: root.deviceModel = root.buildDeviceModel()
     }
   }
 
@@ -144,10 +145,10 @@ ColumnLayout {
   NSpinBox {
     label: I18n.tr("bar.widget-settings.battery.low-battery-threshold.label")
     description: I18n.tr("bar.widget-settings.battery.low-battery-threshold.description")
-    value: valueWarningThreshold
+    value: root.valueWarningThreshold
     suffix: "%"
     minimum: 5
     maximum: 50
-    onValueChanged: valueWarningThreshold = value
+    onValueChanged: root.valueWarningThreshold = value
   }
 }
