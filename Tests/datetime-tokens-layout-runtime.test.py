@@ -30,7 +30,6 @@ TestCase {
             let found = findList(child);
             if (found)
                 return found;
-
         }
         return null;
     }
@@ -43,27 +42,32 @@ TestCase {
     }
 
     function test_geometry_data() {
-        return [{
-            "tag": "wide-normal",
-            "parentWidth": 800,
-            "longContent": false,
-            "heights": [16]
-        }, {
-            "tag": "narrow-normal",
-            "parentWidth": 320,
-            "longContent": false,
-            "heights": [80]
-        }, {
-            "tag": "wide-long",
-            "parentWidth": 800,
-            "longContent": true,
-            "heights": [48, 16, 16]
-        }, {
-            "tag": "narrow-long",
-            "parentWidth": 320,
-            "longContent": true,
-            "heights": [400, 96, 32]
-        }];
+        return [
+            {
+                "tag": "wide-normal",
+                "parentWidth": 800,
+                "longContent": false,
+                "heights": [16]
+            },
+            {
+                "tag": "narrow-normal",
+                "parentWidth": 320,
+                "longContent": false,
+                "heights": [80]
+            },
+            {
+                "tag": "wide-long",
+                "parentWidth": 800,
+                "longContent": true,
+                "heights": [48, 16, 16]
+            },
+            {
+                "tag": "narrow-long",
+                "parentWidth": 320,
+                "longContent": true,
+                "heights": [400, 96, 32]
+            }
+        ];
     }
 
     function test_geometry(data) {
@@ -76,19 +80,23 @@ TestCase {
         let list = findList(root);
         verify(list !== null);
         if (data.longContent)
-            list.model = [{
-                "category": "Exceptionally long translated category",
-                "token": "dddd, MMMM dd yyyy HH:mm:ss AP t",
-                "description": "A very long translated date and time description with many words for wrapping across multiple lines and preserving the geometry of every fixed size badge."
-            }, {
-                "category": "Month",
-                "token": "MMMM",
-                "description": "Supercalifragilisticexpialidocious repeated long unbroken description words"
-            }, {
-                "category": "Common",
-                "token": "yyyy-MM-dd",
-                "description": "Short description"
-            }];
+            list.model = [
+                {
+                    "category": "Exceptionally long translated category",
+                    "token": "dddd, MMMM dd yyyy HH:mm:ss AP t",
+                    "description": "A very long translated date and time description with many words for wrapping across multiple lines and preserving the geometry of every fixed size badge."
+                },
+                {
+                    "category": "Month",
+                    "token": "MMMM",
+                    "description": "Supercalifragilisticexpialidocious repeated long unbroken description words"
+                },
+                {
+                    "category": "Common",
+                    "token": "yyyy-MM-dd",
+                    "description": "Short description"
+                }
+            ];
 
         list.forceLayout();
         wait(100);
@@ -97,7 +105,7 @@ TestCase {
         for (let index = 0; index < list.count; ++index) {
             let delegate = list.itemAtIndex(index);
             verify(delegate !== null, "Missing delegate " + index);
-            let row = delegate.children.find((child) => {
+            let row = delegate.children.find(child => {
                 return child.children.length === 4;
             });
             verify(row !== undefined, "Missing token row " + index);
@@ -125,11 +133,8 @@ TestCase {
     Component {
         id: component
 
-        NDateTimeTokens {
-        }
-
+        NDateTimeTokens {}
     }
-
 }
 """
 
@@ -247,6 +252,7 @@ def isolate_environment(directory):
         QT_QPA_PLATFORM="offscreen",
         QT_QUICK_BACKEND="software",
         QT_QUICK_CONTROLS_STYLE="Basic",
+        QT_FORCE_STDERR_LOGGING="1",
         DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent/noctalia-test-session",
         DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent/noctalia-test-system",
     )
@@ -270,7 +276,7 @@ def main():
         try:
             result = subprocess.run(
                 [
-                    "qmltestrunner",
+                    "/usr/lib/qt6/bin/qmltestrunner",
                     "-input",
                     str(directory / "tst_geometry.qml"),
                     "-import",
