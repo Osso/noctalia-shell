@@ -84,7 +84,7 @@ Compositor covers backend detection, shared workspace/window state, display-scal
 - `Tests/sway-service-guards.test.js`
 - `Tests/mango-service-guards.test.js`
 - `Tests/workspace-guards.test.js`
-- `Tests/workspace-runtime.test.py` with `Tests/Qml/WorkspaceHarness.qml` — isolated offscreen production Workspace/Niri normalization coverage for initial horizontal geometry, output reassignment and click-command order, vertical labels and active sizing, offset switching, occupied/focused-output filtering, and Loader model context. Desktop/process/settings boundaries are fixtures; activation commands are recorded, not sent to Niri. Rejects runtime warnings/errors and verifies real settings remain unchanged.
+- `Tests/workspace-runtime.test.py` with `Tests/Qml/WorkspaceHarness.qml` — isolated offscreen production Workspace/Niri normalization coverage: eight behavioral cases plus QtTest initialization/cleanup (ten total). Covers initial geometry, output reassignment and click-command order, vertical labels/active sizing, offset switching, occupied/focused-output filtering, and Loader model context; both orientations additionally cover model clear/reassignment/destruction/recreation, label geometry/colors, urgency changes, and effect inputs. Desktop/process/settings boundaries are fixtures; activation commands are recorded, not sent to Niri. Rejects QWARN/QFATAL/ReferenceError/TypeError and verifies real settings remain unchanged. Runs in the deterministic unit gate; no live IPC coverage.
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`
 

@@ -95,4 +95,5 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 ## Out of scope
 
 - Individual audio, battery, Bluetooth, brightness, media, network, power profile, screen recorder, and wallpaper widget behavior belongs in their existing feature specs.
-- Taskbar, tray, workspace, and custom button widget behavior should get separate specs because their tests cover feature-specific state beyond the shared bar contract.
+- Workspace widget behavior and isolated runtime coverage belong in [compositor.md](compositor.md), not the shared bar contract.
+- Taskbar, tray, and custom button widget behavior should get separate specs because their tests cover feature-specific state beyond the shared bar contract.
