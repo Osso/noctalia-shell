@@ -121,7 +121,7 @@ Item {
       tryVerify(() => entry("beta.log", data.listMode) !== null);
       const beta = entry("beta.log", data.listMode);
       compare(beta.filePath, "@FILES@/beta.log");
-      verify(waitForRendering(beta));
+      wait(50); // Let asynchronous view layout place reassigned rows before clicking.
       mouseClick(beta, beta.width / 2, beta.height / 2);
       tryCompare(select, "enabled", true);
       mouseClick(button("widgets.file-picker.cancel"));

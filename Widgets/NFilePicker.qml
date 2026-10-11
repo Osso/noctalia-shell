@@ -22,6 +22,8 @@ Popup {
   property var selectedPaths: []
   property string currentPath: initialPath
   property bool shouldResetSelection: false
+  readonly property alias currentSelection: filePickerPanel.currentSelection
+  readonly property alias gridItemSize: gridView.itemSize
 
   // Signals
   signal accepted(var paths)
@@ -153,6 +155,7 @@ Popup {
         continue;
       if (searchText === "" || fileName.toLowerCase().includes(searchText)) {
         filteredModel.append({
+          "picker": root,
           "fileName": fileName,
           "filePath": filePath,
           "fileIsDir": fileIsDir,
@@ -182,7 +185,7 @@ Popup {
     color: NColor.transparent
 
     property string filterText: ""
-    property var currentSelection: []
+    property list<string> currentSelection: []
     property bool viewMode: true // true = grid, false = list
     property string searchText: ""
     property bool showSearchBar: false
@@ -420,18 +423,282 @@ Popup {
           id: filteredModel
         }
 
-        PickerGrid {
-          picker: root
-          currentSelection: filePickerPanel.currentSelection
-          model: filteredModel
+        // Grid view
+        GridView {
+          id: gridView
           visible: filePickerPanel.viewMode
+          anchors.fill: parent
+          anchors.margins: Style.marginM
+          model: filteredModel
+          clip: true
+          reuseItems: true
+
+          property int columns: Math.max(1, Math.floor(width / (120)))
+          property int itemSize: Math.floor((width - leftMargin - rightMargin - (columns * Style.marginS)) / columns)
+
+          cellWidth: Math.floor((width - leftMargin - rightMargin) / columns)
+          cellHeight: Math.floor(itemSize * 0.8) + Style.marginXS + Style.fontSizeS + Style.marginM
+
+          leftMargin: Style.marginS
+          rightMargin: Style.marginS
+          topMargin: Style.marginS
+          bottomMargin: Style.marginS
+
+          ScrollBar.vertical: PickerScrollBar {}
+
+          delegate: Rectangle {
+            id: gridItem
+            required property NFilePicker picker
+            required property string fileName
+            required property string filePath
+            required property bool fileIsDir
+            required property int fileSize
+
+            width: gridItem.picker.gridItemSize
+            height: GridView.view.cellHeight
+            color: NColor.transparent
+            radius: Style.radiusM
+
+            property bool isSelected: gridItem.picker.currentSelection.includes(gridItem.filePath)
+
+            Rectangle {
+              anchors.fill: parent
+              color: NColor.transparent
+              radius: parent.radius
+              border.color: gridItem.isSelected ? NColor.mSecondary : NColor.mSurface
+              border.width: Style.borderL
+              Behavior on color {
+                ColorAnimation {
+                  duration: Style.animationFast
+                }
+              }
+            }
+
+            Rectangle {
+              anchors.fill: parent
+              color: (mouseArea.containsMouse && !gridItem.isSelected) ? NColor.mHover : NColor.transparent
+              radius: parent.radius
+              border.color: (mouseArea.containsMouse && !gridItem.isSelected) ? NColor.mHover : NColor.transparent
+              border.width: Style.borderS
+              Behavior on color {
+                ColorAnimation {
+                  duration: Style.animationFast
+                }
+              }
+              Behavior on border.color {
+                ColorAnimation {
+                  duration: Style.animationFast
+                }
+              }
+            }
+
+            ColumnLayout {
+              anchors.fill: parent
+              anchors.margins: Style.marginS
+              spacing: Style.marginXS
+
+              Rectangle {
+                id: iconContainer
+                Layout.fillWidth: true
+                Layout.preferredHeight: Math.round(gridItem.picker.gridItemSize * 0.67)
+                color: NColor.transparent
+
+                property bool isImage: {
+                  if (gridItem.fileIsDir)
+                    return false;
+                  const ext = gridItem.fileName.split('.').pop().toLowerCase();
+                  return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'].includes(ext);
+                }
+
+                Image {
+                  id: thumbnail
+                  anchors.fill: parent
+                  anchors.margins: Style.marginXS
+                  source: iconContainer.isImage ? "file://" + gridItem.filePath : ""
+                  fillMode: Image.PreserveAspectFit
+                  visible: iconContainer.isImage && status === Image.Ready
+                  smooth: false
+                  cache: true
+                  asynchronous: true
+                  sourceSize.width: 120
+                  sourceSize.height: 120
+                  onStatusChanged: {
+                    if (status === Image.Error)
+                      visible = false;
+                  }
+
+                  Rectangle {
+                    anchors.fill: parent
+                    color: NColor.mSurfaceVariant
+                    radius: Style.radiusS
+                    visible: thumbnail.status === Image.Loading
+                    NIcon {
+                      icon: "filepicker-photo"
+                      pointSize: Style.fontSizeL
+                      color: NColor.mOnSurfaceVariant
+                      anchors.centerIn: parent
+                    }
+                  }
+                }
+
+                NIcon {
+                  icon: gridItem.fileIsDir ? "filepicker-folder" : gridItem.picker.getFileIcon(gridItem.fileName)
+                  pointSize: Style.fontSizeXXL * 2
+                  color: {
+                    if (gridItem.isSelected)
+                      return NColor.mSecondary;
+                    else if (mouseArea.containsMouse)
+                      return NColor.mOnHover;
+                    else
+                      return gridItem.fileIsDir ? NColor.mPrimary : NColor.mOnSurfaceVariant;
+                  }
+                  anchors.centerIn: parent
+                  visible: !iconContainer.isImage || thumbnail.status !== Image.Ready
+                }
+
+                Rectangle {
+                  anchors.top: parent.top
+                  anchors.right: parent.right
+                  anchors.margins: Style.marginS
+                  width: 24
+                  height: 24
+                  radius: Math.min(Style.radiusL, width / 2)
+                  color: NColor.mSecondary
+                  border.color: NColor.mOutline
+                  border.width: Style.borderS
+                  visible: gridItem.isSelected
+                  NIcon {
+                    icon: "filepicker-check"
+                    pointSize: Style.fontSizeS
+                    color: NColor.mOnSecondary
+                    anchors.centerIn: parent
+                  }
+                }
+              }
+
+              NText {
+                text: gridItem.fileName
+                color: {
+                  if (gridItem.isSelected)
+                    return NColor.mSecondary;
+                  else if (mouseArea.containsMouse)
+                    return NColor.mOnHover;
+                  else
+                    return NColor.mOnSurfaceVariant;
+                }
+                pointSize: Style.fontSizeS
+                font.weight: gridItem.isSelected ? Style.fontWeightBold : Style.fontWeightRegular
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WrapAnywhere
+                elide: Text.ElideRight
+                maximumLineCount: 2
+              }
+            }
+
+            MouseArea {
+              id: mouseArea
+              anchors.fill: parent
+              hoverEnabled: true
+              acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+              onClicked: mouse => {
+                if (mouse.button === Qt.LeftButton) {
+                  gridItem.picker.handleFileEntryActivated(gridItem.filePath, gridItem.fileIsDir, false);
+                }
+              }
+
+              onDoubleClicked: mouse => {
+                if (mouse.button === Qt.LeftButton) {
+                  gridItem.picker.handleFileEntryActivated(gridItem.filePath, gridItem.fileIsDir, true);
+                }
+              }
+            }
+          }
         }
 
-        PickerList {
-          picker: root
-          currentSelection: filePickerPanel.currentSelection
-          model: filteredModel
+        // List view
+        NListView {
+          id: listView
           visible: !filePickerPanel.viewMode
+          anchors.fill: parent
+          anchors.margins: Style.marginS
+          model: filteredModel
+
+          delegate: Rectangle {
+            id: listItem
+            required property NFilePicker picker
+            required property string fileName
+            required property string filePath
+            required property bool fileIsDir
+            required property int fileSize
+
+            width: ListView.view.width
+            height: 40
+            color: {
+              if (listItem.picker.currentSelection.includes(listItem.filePath))
+                return NColor.mSecondary;
+              if (listMouseArea.containsMouse)
+                return NColor.mHover;
+              return NColor.transparent;
+            }
+            radius: Style.radiusS
+            Behavior on color {
+              ColorAnimation {
+                duration: Style.animationFast
+              }
+            }
+
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: Style.marginM
+              anchors.rightMargin: Style.marginM
+              spacing: Style.marginM
+
+              NIcon {
+                icon: listItem.fileIsDir ? "filepicker-folder" : listItem.picker.getFileIcon(listItem.fileName)
+                pointSize: Style.fontSizeL
+                color: listItem.fileIsDir ? (listItem.picker.currentSelection.includes(listItem.filePath) ? NColor.mOnSecondary : NColor.mPrimary) : NColor.mOnSurfaceVariant
+              }
+
+              NText {
+                text: listItem.fileName
+                color: listItem.picker.currentSelection.includes(listItem.filePath) ? NColor.mOnSecondary : NColor.mOnSurface
+                pointSize: Style.fontSizeM
+                font.weight: listItem.picker.currentSelection.includes(listItem.filePath) ? Style.fontWeightBold : Style.fontWeightRegular
+                Layout.fillWidth: true
+                elide: Text.ElideRight
+              }
+
+              NText {
+                text: listItem.fileIsDir ? "" : listItem.picker.formatFileSize(listItem.fileSize)
+                color: listItem.picker.currentSelection.includes(listItem.filePath) ? NColor.mOnSecondary : NColor.mOnSurfaceVariant
+                pointSize: Style.fontSizeS
+                visible: !listItem.fileIsDir
+                Layout.preferredWidth: implicitWidth
+              }
+            }
+
+            MouseArea {
+              // Keep grid/list IDs distinct until Qt 6.11 qmllint respects delegate scopes.
+              id: listMouseArea
+              anchors.fill: parent
+              hoverEnabled: true
+              acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+              onClicked: mouse => {
+                if (mouse.button === Qt.LeftButton) {
+                  listItem.picker.handleFileEntryActivated(listItem.filePath, listItem.fileIsDir, false);
+                }
+              }
+
+              onDoubleClicked: mouse => {
+                if (mouse.button === Qt.LeftButton) {
+                  listItem.picker.handleFileEntryActivated(listItem.filePath, listItem.fileIsDir, true);
+                }
+              }
+            }
+          }
         }
       }
 
@@ -521,284 +788,6 @@ Popup {
       Behavior on opacity {
         NumberAnimation {
           duration: Style.animationFast
-        }
-      }
-    }
-  }
-
-  // Grid view
-  component PickerGrid: GridView {
-    id: gridView
-    anchors.fill: parent
-    anchors.margins: Style.marginM
-    required property NFilePicker picker
-    required property list<string> currentSelection
-    clip: true
-    reuseItems: true
-
-    property int columns: Math.max(1, Math.floor(width / (120)))
-    property int itemSize: Math.floor((width - leftMargin - rightMargin - (columns * Style.marginS)) / columns)
-
-    cellWidth: Math.floor((width - leftMargin - rightMargin) / columns)
-    cellHeight: Math.floor(itemSize * 0.8) + Style.marginXS + Style.fontSizeS + Style.marginM
-
-    leftMargin: Style.marginS
-    rightMargin: Style.marginS
-    topMargin: Style.marginS
-    bottomMargin: Style.marginS
-
-    ScrollBar.vertical: PickerScrollBar {}
-
-    delegate: Rectangle {
-      id: gridItem
-      readonly property PickerGrid view: GridView.view
-      required property string fileName
-      required property string filePath
-      required property bool fileIsDir
-      required property int fileSize
-
-      width: gridItem.view.itemSize
-      height: gridItem.view.cellHeight
-      color: NColor.transparent
-      radius: Style.radiusM
-
-      property bool isSelected: gridItem.view.currentSelection.includes(gridItem.filePath)
-
-      Rectangle {
-        anchors.fill: parent
-        color: NColor.transparent
-        radius: parent.radius
-        border.color: gridItem.isSelected ? NColor.mSecondary : NColor.mSurface
-        border.width: Style.borderL
-        Behavior on color {
-          ColorAnimation {
-            duration: Style.animationFast
-          }
-        }
-      }
-
-      Rectangle {
-        anchors.fill: parent
-        color: (mouseArea.containsMouse && !gridItem.isSelected) ? NColor.mHover : NColor.transparent
-        radius: parent.radius
-        border.color: (mouseArea.containsMouse && !gridItem.isSelected) ? NColor.mHover : NColor.transparent
-        border.width: Style.borderS
-        Behavior on color {
-          ColorAnimation {
-            duration: Style.animationFast
-          }
-        }
-        Behavior on border.color {
-          ColorAnimation {
-            duration: Style.animationFast
-          }
-        }
-      }
-
-      ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: Style.marginS
-        spacing: Style.marginXS
-
-        Rectangle {
-          id: iconContainer
-          Layout.fillWidth: true
-          Layout.preferredHeight: Math.round(gridItem.view.itemSize * 0.67)
-          color: NColor.transparent
-
-          property bool isImage: {
-            if (gridItem.fileIsDir)
-              return false;
-            const ext = gridItem.fileName.split('.').pop().toLowerCase();
-            return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'].includes(ext);
-          }
-
-          Image {
-            id: thumbnail
-            anchors.fill: parent
-            anchors.margins: Style.marginXS
-            source: iconContainer.isImage ? "file://" + gridItem.filePath : ""
-            fillMode: Image.PreserveAspectFit
-            visible: iconContainer.isImage && status === Image.Ready
-            smooth: false
-            cache: true
-            asynchronous: true
-            sourceSize.width: 120
-            sourceSize.height: 120
-            onStatusChanged: {
-              if (status === Image.Error)
-                visible = false;
-            }
-
-            Rectangle {
-              anchors.fill: parent
-              color: NColor.mSurfaceVariant
-              radius: Style.radiusS
-              visible: thumbnail.status === Image.Loading
-              NIcon {
-                icon: "filepicker-photo"
-                pointSize: Style.fontSizeL
-                color: NColor.mOnSurfaceVariant
-                anchors.centerIn: parent
-              }
-            }
-          }
-
-          NIcon {
-            icon: gridItem.fileIsDir ? "filepicker-folder" : gridItem.view.picker.getFileIcon(gridItem.fileName)
-            pointSize: Style.fontSizeXXL * 2
-            color: {
-              if (gridItem.isSelected)
-                return NColor.mSecondary;
-              else if (mouseArea.containsMouse)
-                return NColor.mOnHover;
-              else
-                return gridItem.fileIsDir ? NColor.mPrimary : NColor.mOnSurfaceVariant;
-            }
-            anchors.centerIn: parent
-            visible: !iconContainer.isImage || thumbnail.status !== Image.Ready
-          }
-
-          Rectangle {
-            anchors.top: parent.top
-            anchors.right: parent.right
-            anchors.margins: Style.marginS
-            width: 24
-            height: 24
-            radius: Math.min(Style.radiusL, width / 2)
-            color: NColor.mSecondary
-            border.color: NColor.mOutline
-            border.width: Style.borderS
-            visible: gridItem.isSelected
-            NIcon {
-              icon: "filepicker-check"
-              pointSize: Style.fontSizeS
-              color: NColor.mOnSecondary
-              anchors.centerIn: parent
-            }
-          }
-        }
-
-        NText {
-          text: gridItem.fileName
-          color: {
-            if (gridItem.isSelected)
-              return NColor.mSecondary;
-            else if (mouseArea.containsMouse)
-              return NColor.mOnHover;
-            else
-              return NColor.mOnSurfaceVariant;
-          }
-          pointSize: Style.fontSizeS
-          font.weight: gridItem.isSelected ? Style.fontWeightBold : Style.fontWeightRegular
-          Layout.fillWidth: true
-          horizontalAlignment: Text.AlignHCenter
-          wrapMode: Text.WrapAnywhere
-          elide: Text.ElideRight
-          maximumLineCount: 2
-        }
-      }
-
-      MouseArea {
-        id: mouseArea
-        anchors.fill: parent
-        hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-
-        onClicked: mouse => {
-          if (mouse.button === Qt.LeftButton) {
-            gridItem.view.picker.handleFileEntryActivated(gridItem.filePath, gridItem.fileIsDir, false);
-          }
-        }
-
-        onDoubleClicked: mouse => {
-          if (mouse.button === Qt.LeftButton) {
-            gridItem.view.picker.handleFileEntryActivated(gridItem.filePath, gridItem.fileIsDir, true);
-          }
-        }
-      }
-    }
-  }
-
-  // List view
-  component PickerList: NListView {
-    id: listView
-    anchors.fill: parent
-    anchors.margins: Style.marginS
-    required property NFilePicker picker
-    required property list<string> currentSelection
-
-    delegate: Rectangle {
-      id: listItem
-      readonly property PickerList view: ListView.view
-      required property string fileName
-      required property string filePath
-      required property bool fileIsDir
-      required property int fileSize
-
-      width: listItem.view.width
-      height: 40
-      color: {
-        if (listItem.view.currentSelection.includes(listItem.filePath))
-          return NColor.mSecondary;
-        if (listMouseArea.containsMouse)
-          return NColor.mHover;
-        return NColor.transparent;
-      }
-      radius: Style.radiusS
-      Behavior on color {
-        ColorAnimation {
-          duration: Style.animationFast
-        }
-      }
-
-      RowLayout {
-        anchors.fill: parent
-        anchors.leftMargin: Style.marginM
-        anchors.rightMargin: Style.marginM
-        spacing: Style.marginM
-
-        NIcon {
-          icon: listItem.fileIsDir ? "filepicker-folder" : listItem.view.picker.getFileIcon(listItem.fileName)
-          pointSize: Style.fontSizeL
-          color: listItem.fileIsDir ? (listItem.view.currentSelection.includes(listItem.filePath) ? NColor.mOnSecondary : NColor.mPrimary) : NColor.mOnSurfaceVariant
-        }
-
-        NText {
-          text: listItem.fileName
-          color: listItem.view.currentSelection.includes(listItem.filePath) ? NColor.mOnSecondary : NColor.mOnSurface
-          pointSize: Style.fontSizeM
-          font.weight: listItem.view.currentSelection.includes(listItem.filePath) ? Style.fontWeightBold : Style.fontWeightRegular
-          Layout.fillWidth: true
-          elide: Text.ElideRight
-        }
-
-        NText {
-          text: listItem.fileIsDir ? "" : listItem.view.picker.formatFileSize(listItem.fileSize)
-          color: listItem.view.currentSelection.includes(listItem.filePath) ? NColor.mOnSecondary : NColor.mOnSurfaceVariant
-          pointSize: Style.fontSizeS
-          visible: !listItem.fileIsDir
-          Layout.preferredWidth: implicitWidth
-        }
-      }
-
-      MouseArea {
-        // Keep grid/list IDs distinct until Qt 6.11 qmllint respects delegate scopes.
-        id: listMouseArea
-        anchors.fill: parent
-        hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-
-        onClicked: mouse => {
-          if (mouse.button === Qt.LeftButton) {
-            listItem.view.picker.handleFileEntryActivated(listItem.filePath, listItem.fileIsDir, false);
-          }
-        }
-
-        onDoubleClicked: mouse => {
-          if (mouse.button === Qt.LeftButton) {
-            listItem.view.picker.handleFileEntryActivated(listItem.filePath, listItem.fileIsDir, true);
-          }
         }
       }
     }
