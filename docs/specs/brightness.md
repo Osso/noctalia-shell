@@ -40,6 +40,13 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 - [x] Brightness widget display text uses the current monitor brightness percentage.
 - [x] Brightness widget icon maps missing/zero brightness to off, low brightness to low, and higher brightness to high.
 
+### Brightness panel
+
+- [x] Panel monitor labels and scaled descriptions follow screen metadata; provider updates refresh brightness percentages and icons without writing brightness.
+- [x] Slider press/move/release routes brightness to the current monitor; screen replacement does not write to the removed monitor.
+- [x] Unavailable and missing providers disable adjustment; even directly emitted slider signals do not write to them. Missing providers display `N/A`.
+- [x] Close dispatch targets the panel owner.
+
 ### Display settings tab
 
 - [x] DisplayTab shows monitor names and scaled descriptions, brightness percentages, unavailable-control state, and hides brightness controls when no monitor is found.
@@ -62,6 +69,12 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 
 - `Tests/bar-controls-warnings.test.py` — isolated production bar-widget panel/display-settings routing, wheel adjustment and unavailable-monitor guard, first-update suppression/subsequent pill reveal, and display modes. Cohort evidence: [bar](bar.md#bar-control-cohort); no direct widget OSD dispatch or real monitor changes: [testing](testing.md#bar-control-cohort).
 
+### Brightness panel coverage
+
+- `Tests/brightness-panel-warnings.test.py` — standalone panel-only lint and offscreen production BrightnessPanel/NValueSlider/NSlider/NScrollView behavior. Owner diagnostics drop 20→0 through `e1fb713f0`, `5fb28925d`; seven exposed generic `QtObject` member diagnostics drop 7→0 at `4b0aea12d` using the confirmed `BrightnessService.Monitor` type. Current lint requires zero warnings and exit status zero, not whole-project warning-free acceptance.
+- Five behavioral cases plus init/cleanup yield seven reported passes: monitor metadata/scaled descriptions and provider-driven percentage/icon updates without writes; synthetic mouse press/drag/release through the actual slider; screen replacement routing only to the new provider; disabled/missing-provider guards including directly emitted signals; close-owner dispatch.
+- Screens, monitors/service, SmartPanel host, settings, compositor scale, and leaf presentation widgets are inert fixtures. DDC is disabled; recorded fixture writes are not hardware writes. No real monitor service/command routing, desktop input, rendered pixel acceptance, persistence, or whole-shell integration is established. Isolation and acceptance gates: [testing](testing.md#brightness-panel-isolated-runtime).
+
 ### DisplayTab coverage
 
 - `Tests/display-tab-warnings.test.py` — standalone production DisplayTab and controls under isolated offscreen `qmltestrunner`; settings, screens, compositor scale, brightness/night-light services, Process, and toasts are fixtures. DisplayTab lint requires zero warnings and exit status zero (29→0 through `9d3ebd292`, `758202d4d`).
@@ -78,7 +91,8 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 
 - [x] Add executable tests for individual monitor `setBrightness`, debounce, and command routing.
 - [x] Add bounded DisplayTab UI contract coverage with inert monitor/settings/service boundaries.
-- [ ] Add brightness panel UI coverage and live display-settings integration proof; fixture DisplayTab coverage does not establish hardware mode/DDC writes or real persistence.
+- [x] Add bounded brightness panel UI coverage with inert providers and actual offscreen slider events.
+- [ ] Add live brightness-panel/display-settings integration proof; fixture coverage does not establish hardware mode/DDC writes or real persistence.
 
 ## Out of scope
 
