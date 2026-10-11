@@ -27,7 +27,7 @@ ShellRoot {
   }
 
   function checkStartup() {
-    if (!Settings.data.network.wifiEnabled || !NetworkService.ethernetConnected || NetworkService.networkConnectivity !== "full")
+    if (!NetworkService.ethernetConnected || NetworkService.networkConnectivity !== "full" || !Settings.data.network.wifiEnabled)
       return;
     require(Settings.data.network.wifiEnabled, "provider Wi-Fi state");
     require(NetworkService.networks.Home.connected, "provider connected SSID");

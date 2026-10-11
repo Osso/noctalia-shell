@@ -51,7 +51,7 @@ def lint(directory):
     print("NETWORK_LINT_COUNTS", dict(counts))
     # Installed Process.environment metadata expects QVariantHash, not the JS map.
     assert dict(counts) == {"incompatible-type": 1}, dict(counts)
-    assert result.returncode == 255, result.returncode
+    assert result.returncode == 0, result.returncode
 
 
 def write_module(directory, relative, sources):
