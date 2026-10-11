@@ -52,6 +52,19 @@ Notifications cover notification server lifecycle, suppression rules, replacemen
 - [x] Notification history range count lookup returns zero for out-of-range indexes.
 - [x] Notification history widget unread counts handle Date and numeric timestamps and count only notifications newer than `lastSeenTs`.
 
+### Isolated popup component coverage
+
+`Tests/notification-warnings.test.py behavior` exercises production `Modules/Notification/Notification.qml` on a private headless Cage display with inert settings, services, and widget fixtures. Assertions cover:
+
+- Displayed app, summary, body, timestamp, parsed action label, urgency colors, and progress-width updates.
+- Screen routing, hover-state pause/resume callbacks, and action identifier forwarding through direct state/signal invocation.
+- Close removing history before delayed dismissal, expiry-triggered removal, invalid action JSON producing no buttons, and empty-list Loader unloading.
+- Disconnection after unload, one reconnected removal handler, animated entry settling, and synthetic right-click removal preserving history.
+
+This is isolated component coverage, not production service expiry/deduplication, full-widget rendering, or desktop input delivery. Cage lacks layer-shell; mask geometry and compositor input regions are not asserted.
+
+Targeted static analysis after `c8a930bac` and harness timing correction `58a71a208` is **42→10 warnings**: six `unqualified` and four `missing-property` diagnostics remain. Standalone lint accepts exactly these counts and exit status zero, not warning-free analysis.
+
 ## How it works
 
 - [docs/wiki/systems/notifications.md](../wiki/systems/notifications.md)
@@ -59,6 +72,7 @@ Notifications cover notification server lifecycle, suppression rules, replacemen
 ## Implementation inventory
 
 - `Services/System/NotificationService.qml` - notification server, active/history models, suppression, dedupe, image caching, progress, and persisted state.
+- `Modules/Notification/Notification.qml` - per-screen notification popup, card actions, progress display, and removal lifecycle.
 - `Modules/Toast/ToastOverlay.qml` - visible toast overlay.
 - `Modules/Toast/ToastScreen.qml` - per-screen toast placement.
 - `Modules/Panels/NotificationHistory/NotificationHistoryPanel.qml` - history panel UI.
@@ -67,6 +81,7 @@ Notifications cover notification server lifecycle, suppression rules, replacemen
 
 ## Tests asserting this spec
 
+- `Tests/notification-warnings.test.py` (`lint` and `behavior`, standalone).
 - `Tests/notification-service-gap-guards.test.js`
 - `Tests/shell-state-consumer-roundtrip.test.js`
 - `Tests/notification-history-panel-guards.test.js`
@@ -77,6 +92,8 @@ Notifications cover notification server lifecycle, suppression rules, replacemen
 
 - [ ] Add executable tests for active-list replacement and progress expiry with a fake `ListModel`.
 - [ ] Add spec coverage for notification settings UI contracts.
+- [ ] Resolve the ten remaining popup static diagnostics; this slice does not establish zero warnings.
+- [ ] Reproduce and fix Firefox/grouped-taskbar cursor flicker triggered per notification. It has **not been reproduced or fixed** by this slice; toast/notification layer input-region behavior is untouched, and the isolated test provides no desktop input-delivery proof.
 
 ## Out of scope
 
