@@ -21,7 +21,7 @@ Item {
   property var widgetMetadata: BarWidgetRegistry.widgetMetadata[widgetId]
   property var widgetSettings: {
     if (section && sectionWidgetIndex >= 0) {
-      var widgets = Settings.data.bar.widgets[section];
+      const widgets = Settings.data.bar.widgets[section];
       if (widgets && sectionWidgetIndex < widgets.length) {
         return widgets[sectionWidgetIndex];
       }
@@ -52,17 +52,17 @@ Item {
     ]
 
     onTriggered: action => {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.close();
-                   }
+      var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+      if (popupMenuWindow) {
+        popupMenuWindow.close();
+      }
 
-                   if (action === "toggle-bluetooth") {
-                     BluetoothService.setBluetoothEnabled(!BluetoothService.enabled);
-                   } else if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                   }
-                 }
+      if (action === "toggle-bluetooth") {
+        BluetoothService.setBluetoothEnabled(!BluetoothService.enabled);
+      } else if (action === "widget-settings") {
+        BarService.openWidgetSettings(root.screen, root.section, root.sectionWidgetIndex, root.widgetId, root.widgetSettings);
+      }
+    }
   }
 
   BarPill {
@@ -86,8 +86,8 @@ Item {
       return "";
     }
     autoHide: false
-    forceOpen: !isBarVertical && root.displayMode === "alwaysShow"
-    forceClose: isBarVertical || root.displayMode === "alwaysHide" || text === ""
+    forceOpen: !root.isBarVertical && root.displayMode === "alwaysShow"
+    forceClose: root.isBarVertical || root.displayMode === "alwaysHide" || text === ""
     onClicked: {
       const panel = PanelService.getPanel("bluetoothPanel", screen);
       if (panel)

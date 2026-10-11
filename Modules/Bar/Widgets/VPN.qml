@@ -64,54 +64,54 @@ Item {
       for (let i = 0; i < active.length; ++i) {
         const conn = active[i];
         items.push({
-                     "label": I18n.tr("context-menu.disconnect-vpn", {
-                                        "name": conn.name
-                                      }),
-                     "action": "disconnect:" + conn.uuid,
-                     "icon": "shield-off"
-                   });
+          "label": I18n.tr("context-menu.disconnect-vpn", {
+            "name": conn.name
+          }),
+          "action": "disconnect:" + conn.uuid,
+          "icon": "shield-off"
+        });
       }
       const inactive = VPNService.inactiveConnections;
       for (let i = 0; i < inactive.length; ++i) {
         const conn = inactive[i];
         items.push({
-                     "label": I18n.tr("context-menu.connect-vpn", {
-                                        "name": conn.name
-                                      }),
-                     "action": "connect:" + conn.uuid,
-                     "icon": "shield-lock"
-                   });
+          "label": I18n.tr("context-menu.connect-vpn", {
+            "name": conn.name
+          }),
+          "action": "connect:" + conn.uuid,
+          "icon": "shield-lock"
+        });
       }
       items.push({
-                   "label": I18n.tr("context-menu.widget-settings"),
-                   "action": "widget-settings",
-                   "icon": "settings"
-                 });
+        "label": I18n.tr("context-menu.widget-settings"),
+        "action": "widget-settings",
+        "icon": "settings"
+      });
       return items;
     }
 
     onTriggered: action => {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.close();
-                   }
-                   if (!action) {
-                     return;
-                   }
-                   if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                     return;
-                   }
-                   if (action.startsWith("connect:")) {
-                     const uuid = action.substring("connect:".length);
-                     VPNService.connect(uuid);
-                     return;
-                   }
-                   if (action.startsWith("disconnect:")) {
-                     const uuid = action.substring("disconnect:".length);
-                     VPNService.disconnect(uuid);
-                   }
-                 }
+      var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+      if (popupMenuWindow) {
+        popupMenuWindow.close();
+      }
+      if (!action) {
+        return;
+      }
+      if (action === "widget-settings") {
+        BarService.openWidgetSettings(root.screen, root.section, root.sectionWidgetIndex, root.widgetId, root.widgetSettings);
+        return;
+      }
+      if (action.startsWith("connect:")) {
+        const uuid = action.substring("connect:".length);
+        VPNService.connect(uuid);
+        return;
+      }
+      if (action.startsWith("disconnect:")) {
+        const uuid = action.substring("disconnect:".length);
+        VPNService.disconnect(uuid);
+      }
+    }
   }
 
   BarPill {
@@ -140,8 +140,8 @@ Item {
       return "";
     }
     autoHide: false
-    forceOpen: !isBarVertical && root.displayMode === "alwaysShow"
-    forceClose: isBarVertical || root.displayMode === "alwaysHide" || !pill.text
+    forceOpen: !root.isBarVertical && root.displayMode === "alwaysShow"
+    forceClose: root.isBarVertical || root.displayMode === "alwaysHide" || !pill.text
     onClicked: {
       var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
       if (popupMenuWindow) {
