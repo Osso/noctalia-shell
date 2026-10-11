@@ -68,33 +68,52 @@ class BarFixtureLintTest(unittest.TestCase):
         print(result.stdout + result.stderr, end="")
         return result
 
-    def test_two_harnesses_are_checked_once_without_warnings(self):
-        with tempfile.TemporaryDirectory(prefix="noctalia-bar-fixture-static-") as temp:
-            root = Path(temp)
-            result = self.run_checker(self.stage_repository(root), root)
-            self.assertEqual(result.returncode, 0, result.stderr)
-            files = [
-                file
-                for line in result.stdout.splitlines()
-                if line.startswith('{"files":')
-                for file in json.loads(line)["files"]
-            ]
-            self.assertEqual(len(files), 2, result.stdout)
-            self.assertCountEqual(
-                [Path(file["filename"]).name for file in files],
-                ["shell.qml", "tst_taskbar_grouped.qml"],
-            )
-            self.assertEqual(
-                [
+    def test_each_harness_is_checked_once_with_genuine_diagnostics_preserved(self):
+        for name in HARNESS_SCRIPTS:
+            with (
+                self.subTest(harness=name),
+                tempfile.TemporaryDirectory(
+                    prefix="noctalia-bar-fixture-static-"
+                ) as temp,
+            ):
+                root = Path(temp)
+                runner = self.stage_repository(root)
+                for other in HARNESS_SCRIPTS:
+                    if other != name:
+                        (root / "Tests/Qml" / other).unlink()
+                result = self.run_checker(runner, root)
+                files = [
+                    file
+                    for line in result.stdout.splitlines()
+                    if line.startswith('{"files":')
+                    for file in json.loads(line)["files"]
+                ]
+                self.assertEqual(len(files), 1, result.stdout)
+                warnings = [
                     warning
-                    for file in files
-                    for warning in file["warnings"]
+                    for warning in files[0]["warnings"]
                     if warning["type"] in ("warning", "error")
-                ],
-                [],
-            )
-            self.assertIn("Checked 2 QML files", result.stdout)
-            self.assertIn("skipped 0", result.stdout)
+                ]
+                if name == "BarWidgetMetadataHarness.qml":
+                    self.assertEqual(Path(files[0]["filename"]).name, "shell.qml")
+                    self.assertCountEqual(
+                        [warning["id"] for warning in warnings],
+                        ["missing-property", *(["unqualified"] * 25)],
+                    )
+                    self.assertIn(
+                        'Member "children" not found on type "QObject"',
+                        [warning["message"] for warning in warnings],
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertNotIn("ok qmlStaticCheck", result.stdout)
+                else:
+                    self.assertEqual(
+                        Path(files[0]["filename"]).name, "tst_taskbar_grouped.qml"
+                    )
+                    self.assertEqual(warnings, [])
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn("Checked 1 QML files", result.stdout)
+                    self.assertIn("skipped 0", result.stdout)
 
     def test_injected_warning_fails_static_checker_for_each_harness(self):
         for name in HARNESS_SCRIPTS:
