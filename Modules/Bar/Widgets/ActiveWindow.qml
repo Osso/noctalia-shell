@@ -22,7 +22,7 @@ Item {
   property int sectionWidgetsCount: 0
   property real scaling: 1.0
 
-  property var widgetMetadata: BarWidgetRegistry.widgetMetadata[widgetId]
+  property var widgetMetadata: BarWidgetRegistry.widgetMetadata.ActiveWindow
   property var widgetSettings: {
     if (section && sectionWidgetIndex >= 0) {
       var widgets = Settings.data.bar.widgets[section];
