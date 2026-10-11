@@ -35,8 +35,6 @@ Settings covers persisted shell configuration, startup bootstrap and recovery, d
 
 ### Settings references and defaults
 
-- [x] The experimental inline-type schema exposes declared fields in every settings group through the `Settings.data` alias, including enclosing `bar`, nested `bar.widgets`, and `controlCenter.shortcuts`; integration remains outside this isolated prototype.
-- [x] Typed groups retain exact default and mutated JsonAdapter serialization, load/save/fresh-process reload behavior, unknown schema-key omission, and arbitrary nested widget and shortcut arrays.
 - [x] QML `Settings.data.*` references outside `Commons/Settings.qml` must exist in `Assets/settings-default.json`.
 - [x] Settings reference coverage must stay broad enough to catch project-wide drift, not only a small fixture set.
 
@@ -91,7 +89,6 @@ Settings covers persisted shell configuration, startup bootstrap and recovery, d
 
 ## Tests asserting this spec
 
-- `Tests/settings-types.test.py` — isolated offscreen JsonAdapter contract and targeted qmllint prototype.
 - `Tests/settings-service-guards.test.js`
 - `Tests/shell-setup-wizard-guards.test.js`
 - `Tests/migration26-guards.test.js`

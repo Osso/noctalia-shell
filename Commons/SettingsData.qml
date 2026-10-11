@@ -6,9 +6,7 @@ JsonAdapter {
   property int settingsVersion: 26
 
   // bar
-  property BarSettings bar: BarSettings {}
-
-  component BarSettings: JsonObject {
+  property JsonObject bar: JsonObject {
     property string position: "top" // "top", "bottom", "left", or "right"
     property real backgroundOpacity: 1.0
     property var monitors: [] // holds bar visibility per monitor
@@ -28,64 +26,61 @@ JsonAdapter {
     property bool exclusive: true
 
     // Widget configuration for modular bar system
-    property BarWidgets widgets: BarWidgets {}
-  }
-
-  component BarWidgets: JsonObject {
-    property var left: [
-      {
-        "icon": "rocket",
-        "id": "CustomButton",
-        "leftClickExec": "qs -c noctalia-shell ipc call launcher toggle"
-      },
-      {
-        "id": "Clock",
-        "usePrimaryColor": false
-      },
-      {
-        "id": "SystemMonitor"
-      },
-      {
-        "id": "ActiveWindow"
-      },
-      {
-        "id": "MediaMini"
-      }
-    ]
-    property var center: [
-      {
-        "id": "Workspace"
-      }
-    ]
-    property var right: [
-      {
-        "id": "ScreenRecorder"
-      },
-      {
-        "id": "Tray"
-      },
-      {
-        "id": "NotificationHistory"
-      },
-      {
-        "id": "Battery"
-      },
-      {
-        "id": "Volume"
-      },
-      {
-        "id": "Brightness"
-      },
-      {
-        "id": "ControlCenter"
-      }
-    ]
+    property JsonObject widgets
+    widgets: JsonObject {
+      property var left: [
+        {
+          "icon": "rocket",
+          "id": "CustomButton",
+          "leftClickExec": "qs -c noctalia-shell ipc call launcher toggle"
+        },
+        {
+          "id": "Clock",
+          "usePrimaryColor": false
+        },
+        {
+          "id": "SystemMonitor"
+        },
+        {
+          "id": "ActiveWindow"
+        },
+        {
+          "id": "MediaMini"
+        }
+      ]
+      property var center: [
+        {
+          "id": "Workspace"
+        }
+      ]
+      property var right: [
+        {
+          "id": "ScreenRecorder"
+        },
+        {
+          "id": "Tray"
+        },
+        {
+          "id": "NotificationHistory"
+        },
+        {
+          "id": "Battery"
+        },
+        {
+          "id": "Volume"
+        },
+        {
+          "id": "Brightness"
+        },
+        {
+          "id": "ControlCenter"
+        }
+      ]
+    }
   }
 
   // general
-  property GeneralSettings general: GeneralSettings {}
-
-  component GeneralSettings: JsonObject {
+  property JsonObject general: JsonObject {
     property string avatarImage: ""
     property real dimmerOpacity: 0.6
     property bool showScreenCorners: false
@@ -107,9 +102,7 @@ JsonAdapter {
   }
 
   // ui
-  property UiSettings ui: UiSettings {}
-
-  component UiSettings: JsonObject {
+  property JsonObject ui: JsonObject {
     property string fontDefault: ""
     property string fontFixed: ""
     property real fontDefaultScale: 1.0
@@ -121,9 +114,7 @@ JsonAdapter {
   }
 
   // location
-  property LocationSettings location: LocationSettings {}
-
-  component LocationSettings: JsonObject {
+  property JsonObject location: JsonObject {
     property string name: SettingsDefaults.defaultLocation
     property bool weatherEnabled: true
     property bool weatherShowEffects: true
@@ -137,9 +128,7 @@ JsonAdapter {
   }
 
   // calendar
-  property CalendarSettings calendar: CalendarSettings {}
-
-  component CalendarSettings: JsonObject {
+  property JsonObject calendar: JsonObject {
     property var cards: [
       {
         "id": "calendar-header-card",
@@ -161,9 +150,7 @@ JsonAdapter {
   }
 
   // screen recorder
-  property ScreenRecorderSettings screenRecorder: ScreenRecorderSettings {}
-
-  component ScreenRecorderSettings: JsonObject {
+  property JsonObject screenRecorder: JsonObject {
     property string directory: ""
     property int frameRate: 60
     property string audioCodec: "opus"
@@ -176,9 +163,7 @@ JsonAdapter {
   }
 
   // wallpaper
-  property WallpaperSettings wallpaper: WallpaperSettings {}
-
-  component WallpaperSettings: JsonObject {
+  property JsonObject wallpaper: JsonObject {
     property bool enabled: true
     property bool overviewEnabled: false
     property string directory: ""
@@ -208,9 +193,7 @@ JsonAdapter {
   }
 
   // applauncher
-  property AppLauncherSettings appLauncher: AppLauncherSettings {}
-
-  component AppLauncherSettings: JsonObject {
+  property JsonObject appLauncher: JsonObject {
     property bool enableClipboardHistory: false
     property bool enableClipPreview: true
     // Position: center, top_left, top_right, bottom_left, bottom_right, bottom_center, top_center
@@ -226,12 +209,40 @@ JsonAdapter {
   }
 
   // control center
-  property ControlCenterSettings controlCenter: ControlCenterSettings {}
-
-  component ControlCenterSettings: JsonObject {
+  property JsonObject controlCenter: JsonObject {
     // Position: close_to_bar_button, center, top_left, top_right, bottom_left, bottom_right, bottom_center, top_center
     property string position: "close_to_bar_button"
-    property ControlCenterShortcuts shortcuts: ControlCenterShortcuts {}
+    property JsonObject shortcuts
+    shortcuts: JsonObject {
+      property var left: [
+        {
+          "id": "WiFi"
+        },
+        {
+          "id": "Bluetooth"
+        },
+        {
+          "id": "ScreenRecorder"
+        },
+        {
+          "id": "WallpaperSelector"
+        }
+      ]
+      property var right: [
+        {
+          "id": "Notifications"
+        },
+        {
+          "id": "PowerProfile"
+        },
+        {
+          "id": "KeepAwake"
+        },
+        {
+          "id": "NightLight"
+        }
+      ]
+    }
     property var cards: [
       {
         "id": "profile-card",
@@ -256,41 +267,8 @@ JsonAdapter {
     ]
   }
 
-  component ControlCenterShortcuts: JsonObject {
-    property var left: [
-      {
-        "id": "WiFi"
-      },
-      {
-        "id": "Bluetooth"
-      },
-      {
-        "id": "ScreenRecorder"
-      },
-      {
-        "id": "WallpaperSelector"
-      }
-    ]
-    property var right: [
-      {
-        "id": "Notifications"
-      },
-      {
-        "id": "PowerProfile"
-      },
-      {
-        "id": "KeepAwake"
-      },
-      {
-        "id": "NightLight"
-      }
-    ]
-  }
-
   // system monitor
-  property SystemMonitorSettings systemMonitor: SystemMonitorSettings {}
-
-  component SystemMonitorSettings: JsonObject {
+  property JsonObject systemMonitor: JsonObject {
     property int cpuWarningThreshold: 80
     property int cpuCriticalThreshold: 90
     property int tempWarningThreshold: 80
@@ -310,9 +288,7 @@ JsonAdapter {
   }
 
   // dock
-  property DockSettings dock: DockSettings {}
-
-  component DockSettings: JsonObject {
+  property JsonObject dock: JsonObject {
     property bool enabled: true
     property string displayMode: "auto_hide" // "always_visible", "auto_hide", "exclusive"
     property real backgroundOpacity: 1.0
@@ -326,16 +302,12 @@ JsonAdapter {
   }
 
   // network
-  property NetworkSettings network: NetworkSettings {}
-
-  component NetworkSettings: JsonObject {
+  property JsonObject network: JsonObject {
     property bool wifiEnabled: true
   }
 
   // session menu
-  property SessionMenuSettings sessionMenu: SessionMenuSettings {}
-
-  component SessionMenuSettings: JsonObject {
+  property JsonObject sessionMenu: JsonObject {
     property bool enableCountdown: true
     property int countdownDuration: 10000
     property string position: "center"
@@ -369,9 +341,7 @@ JsonAdapter {
   }
 
   // notifications
-  property NotificationsSettings notifications: NotificationsSettings {}
-
-  component NotificationsSettings: JsonObject {
+  property JsonObject notifications: JsonObject {
     property bool enabled: true
     property var monitors: [] // holds notifications visibility per monitor
     property string location: "top_right"
@@ -385,9 +355,7 @@ JsonAdapter {
   }
 
   // on-screen display
-  property OsdSettings osd: OsdSettings {}
-
-  component OsdSettings: JsonObject {
+  property JsonObject osd: JsonObject {
     property bool enabled: true
     property string location: "top_right"
     property int autoHideMs: 2000
@@ -398,9 +366,7 @@ JsonAdapter {
   }
 
   // audio
-  property AudioSettings audio: AudioSettings {}
-
-  component AudioSettings: JsonObject {
+  property JsonObject audio: JsonObject {
     property int volumeStep: 5
     property bool volumeOverdrive: false
     property int cavaFrameRate: 30
@@ -412,17 +378,13 @@ JsonAdapter {
   }
 
   // brightness
-  property BrightnessSettings brightness: BrightnessSettings {}
-
-  component BrightnessSettings: JsonObject {
+  property JsonObject brightness: JsonObject {
     property int brightnessStep: 5
     property bool enforceMinimum: true
     property bool enableDdcSupport: false
   }
 
-  property ColorSchemesSettings colorSchemes: ColorSchemesSettings {}
-
-  component ColorSchemesSettings: JsonObject {
+  property JsonObject colorSchemes: JsonObject {
     property bool useWallpaperColors: false
     property string predefinedScheme: "Noctalia (default)"
     property bool darkMode: true
@@ -434,9 +396,7 @@ JsonAdapter {
   }
 
   // templates toggles
-  property TemplatesSettings templates: TemplatesSettings {}
-
-  component TemplatesSettings: JsonObject {
+  property JsonObject templates: JsonObject {
     property bool gtk: false
     property bool qt: false
     property bool kcolorscheme: false
@@ -460,9 +420,7 @@ JsonAdapter {
   }
 
   // night light
-  property NightLightSettings nightLight: NightLightSettings {}
-
-  component NightLightSettings: JsonObject {
+  property JsonObject nightLight: JsonObject {
     property bool enabled: false
     property bool forced: false
     property bool autoSchedule: true
@@ -472,16 +430,12 @@ JsonAdapter {
     property string manualSunset: "18:30"
   }
 
-  property ChangelogSettings changelog: ChangelogSettings {}
-
-  component ChangelogSettings: JsonObject {
+  property JsonObject changelog: JsonObject {
     property string lastSeenVersion: ""
   }
 
   // hooks
-  property HooksSettings hooks: HooksSettings {}
-
-  component HooksSettings: JsonObject {
+  property JsonObject hooks: JsonObject {
     property bool enabled: false
     property string wallpaperChange: ""
     property string darkModeChange: ""
