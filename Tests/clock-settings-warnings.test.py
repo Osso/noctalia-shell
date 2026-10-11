@@ -15,7 +15,6 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
-import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/Settings/Bar/WidgetSettings/ClockSettings.qml")
