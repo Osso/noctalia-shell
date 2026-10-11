@@ -64,11 +64,7 @@ def lint(directory):
         if line.startswith("Warning:")
     )
     print("BATTERY_TAB_LINT_COUNTS", dict(counts))
-    # Qualification exposes six energyRate diagnostics, alongside two unavailable
-    # singleton members. Keep all eight visible; owner/layout warnings must be zero.
-    assert counts == {"missing-property": 8}, (
-        f"Unexpected BatteryTab warnings: {dict(counts)}"
-    )
+    assert not counts, f"Unexpected BatteryTab warnings: {dict(counts)}"
     assert result.returncode == 0, result.returncode
 
 
@@ -103,7 +99,7 @@ QtObject {
   property real healthPercentage: 85
   property int timeToFull: 0
   property int timeToEmpty: 7200
-  property real energyRate: 12.5
+  property real changeRate: -12.5
 }""",
             "UPowerDeviceState": singleton(
                 "enum State { Discharging, Charging, FullyCharged }"
@@ -156,7 +152,7 @@ QtObject {
         "fontWeightMedium": 500,
         "fontWeightSemiBold": 600,
         "fontWeightBold": 700,
-        "animationMedium": 0,
+        "animationNormal": 300,
         "animationFast": 0,
         "baseWidgetSize": 32,
         "sliderWidth": 200,
@@ -165,7 +161,7 @@ QtObject {
         "mPrimary": "#3355aa",
         "mSecondary": "#557733",
         "mError": "#cc2233",
-        "mWarning": "#bbaa22",
+        "mTertiary": "#bbaa22",
         "mSurface": "#202020",
         "mSurfaceVariant": "#141414",
         "mOnSurface": "#ffffff",
@@ -221,9 +217,69 @@ QtObject {
             )
         },
     )
-    shutil.copyfile(
-        ROOT / "Tests/Qml/BatteryTabWarningsHarness.qml", directory / "tst_battery.qml"
+    # Extend the existing behavioral harness without changing its tracked baseline.
+    harness = (ROOT / "Tests/Qml/BatteryTabWarningsHarness.qml").read_text()
+    harness = harness.replace("wait(50);", "wait(350);")
+    harness = harness.replace("wait(100);", "wait(350);")
+    harness = harness.replace(
+        "UPower.displayDevice.timeToEmpty = 7200;",
+        "UPower.displayDevice.timeToEmpty = 7200;\n    UPower.displayDevice.changeRate = -12.5;",
     )
+    (directory / "tst_battery.qml").write_text(
+        harness.rstrip()[:-1] + DISPLAY_TESTS + "}\n"
+    )
+
+
+DISPLAY_TESTS = """
+  function test_powerAndHealth_data() {
+    return [
+      { tag: "charging-healthy", rate: 12.5, state: UPowerDeviceState.Charging, health: 80, color: NColor.mOnSurface },
+      { tag: "discharging-warning", rate: -12.5, state: UPowerDeviceState.Discharging, health: 50, color: NColor.mTertiary },
+      { tag: "idle-poor", rate: 0, state: UPowerDeviceState.FullyCharged, health: 49, color: NColor.mError }
+    ];
+  }
+
+  function test_powerAndHealth(data) {
+    UPower.displayDevice.ready = true;
+    UPower.displayDevice.percentage = 0.65;
+    UPower.displayDevice.healthSupported = true;
+    UPower.displayDevice.changeRate = data.rate;
+    UPower.displayDevice.state = data.state;
+    UPower.displayDevice.healthPercentage = data.health;
+    const tab = createTemporaryObject(tabComponent, testCase);
+    verify(tab !== null);
+    wait(350);
+    const visibleTexts = texts(tab);
+    compare(visibleTexts.includes("settings.battery.status.power"), data.rate !== 0);
+    compare(visibleTexts.includes("12.5 W"), data.rate !== 0);
+    verify(!visibleTexts.some(text => text.includes("undefined") || text.includes("NaN") || text === "-12.5 W"));
+    const health = descendants(tab).filter(item => item.visible && item.text === data.health + "%");
+    compare(health.length, 1);
+    compare(health[0].color, data.color);
+    const stateText = data.state === UPowerDeviceState.Charging ? "battery.charging" :
+                      data.state === UPowerDeviceState.Discharging ? "battery.discharging" : "battery.plugged-in";
+    verify(visibleTexts.includes(stateText));
+  }
+
+  function test_progressAnimation() {
+    UPower.displayDevice.ready = true;
+    UPower.displayDevice.percentage = 0.2;
+    const tab = createTemporaryObject(tabComponent, testCase);
+    verify(tab !== null);
+    wait(350);
+    const track = progressTrack(tab);
+    const fill = track.children[0];
+    fuzzyCompare(fill.width, track.width * 0.2, 0.01);
+    UPower.displayDevice.percentage = 0.8;
+    wait(150);
+    verify(fill.width > track.width * 0.3 && fill.width < track.width * 0.7,
+           "300ms animation is still interpolating at 150ms");
+    wait(200);
+    fuzzyCompare(fill.width, track.width * 0.8, 0.01);
+    compare(fill.height, track.height);
+    console.log("BATTERY_ANIMATION_PASS 300ms midpoint/endpoint");
+  }
+"""
 
 
 def behavior(directory, snapshot):

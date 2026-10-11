@@ -200,7 +200,7 @@ ColumnLayout {
 
               Behavior on width {
                 NumberAnimation {
-                  duration: Style.animationMedium
+                  duration: Style.animationNormal
                 }
               }
             }
@@ -259,7 +259,7 @@ ColumnLayout {
         }
         NText {
           text: root.healthPercent >= 0 ? `${root.healthPercent}%` : "--"
-          color: root.healthPercent >= 80 ? NColor.mOnSurface : (root.healthPercent >= 50 ? NColor.mWarning : NColor.mError)
+          color: root.healthPercent >= 80 ? NColor.mOnSurface : (root.healthPercent >= 50 ? NColor.mTertiary : NColor.mError)
           pointSize: Style.fontSizeS
           font.weight: Style.fontWeightMedium
           visible: root.healthAvailable
@@ -270,14 +270,14 @@ ColumnLayout {
           text: I18n.tr("settings.battery.status.power")
           color: NColor.mOnSurfaceVariant
           pointSize: Style.fontSizeS
-          visible: root.battery.energyRate !== undefined && root.battery.energyRate > 0
+          visible: Math.abs(root.battery.changeRate) > 0
         }
         NText {
-          text: root.battery.energyRate !== undefined ? `${root.battery.energyRate.toFixed(1)} W` : "--"
+          text: `${Math.abs(root.battery.changeRate).toFixed(1)} W`
           color: NColor.mOnSurface
           pointSize: Style.fontSizeS
           font.weight: Style.fontWeightMedium
-          visible: root.battery.energyRate !== undefined && root.battery.energyRate > 0
+          visible: Math.abs(root.battery.changeRate) > 0
         }
 
         // Cycle count

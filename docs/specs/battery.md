@@ -32,6 +32,9 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 - [x] Battery settings start the write-threshold process with `start` and the requested value for start-threshold changes.
 - [x] Battery settings start the write-threshold process with `end` and the requested value for stop-threshold changes.
 - [x] Battery settings preserve displayed state, threshold drag/release behavior, and progress-track/fill geometry at UI scales 1 and 1.25. The offscreen production-tab regression uses isolated fake UPower/sysfs/process/settings services and compares content/geometry with the pre-fix fixture; it never performs privileged writes.
+- [x] Battery settings display the positive magnitude of signed UPower `changeRate` in watts to one decimal for charging and discharging; zero hides the power row, and battery state separately conveys direction.
+- [x] Battery settings health uses the normal text color at 80% and above, the tertiary warning color from 50% to below 80%, and the error color below 50%.
+- [x] Battery settings progress width uses the normal animation duration (300 ms at default speed with animations enabled).
 - [x] The `batteryManager.cycle` IPC command delegates to the battery service cycle helper.
 - [x] The `batteryManager.set` IPC command maps `full`, `balanced`, and `lifespan` strings to their charging modes.
 
@@ -65,7 +68,7 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 - `Tests/battery-panel-guards.test.js`
 - `Tests/battery-service-guards.test.js`
 - `Tests/battery-tab-guards.test.js`
-- `Tests/battery-tab-warnings.test.py` (`lint` checks only BatteryTab, requires qmllint exit status zero and exactly eight `missing-property` warnings, and rejects unqualified/layout warnings; `behavior --snapshot <path>` checks the production tab/controls with unchanged real-settings SHA).
+- `Tests/battery-tab-warnings.test.py` (`lint` checks only BatteryTab, requires qmllint exit status zero and no warnings; `behavior --snapshot <path>` checks signed watts (+12.5/-12.5/0), health colors (80/50/49%), normal progress animation, baseline geometry, and inert threshold writes in the production tab/controls with unchanged real-settings SHA).
 - `Tests/qml-runtime-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`
@@ -75,7 +78,6 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 - [ ] Add executable tests for `Services/Hardware/BatteryService.qml` charging-mode cycling and command routing.
 - [ ] Add executable tests for battery panel health/time display text.
 - [ ] Add executable tests for per-widget battery settings device list filtering.
-- [ ] BatteryTab still reports eight `missing-property` warnings: `animationMedium`, `mWarning`, and six `energyRate` accesses. Removing 75 unqualified warnings and one layout warning does not make the tab warning-free.
 - [ ] Add host integration coverage for privileged threshold writes; the isolated production-tab test checks command construction, drag/release timing, threshold bounds, and successful-write reload using inert process/sysfs fixtures, not actual writes.
 
 ## Out of scope
