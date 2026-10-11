@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Effects
 import QtQuick.Layouts
@@ -24,10 +26,13 @@ Variants {
 
   model: Quickshell.screens.filter(screen => (Settings.data.osd.monitors.includes(screen.name) || Settings.data.osd.monitors.length === 0) && Settings.data.osd.enabled)
 
-  delegate: Loader {
+  delegate: OsdLoader {}
+
+  component OsdLoader: Loader {
     id: root
 
     required property ShellScreen modelData
+    readonly property OsdPanel loadedPanel: item
 
     active: false
 
@@ -211,19 +216,19 @@ Variants {
         root.active = true;
       }
 
-      if (root.item) {
-        root.item.showOSD();
+      if (root.loadedPanel) {
+        root.loadedPanel.showOSD();
       } else {
         Qt.callLater(() => {
-          if (root.item)
-            root.item.showOSD();
+          if (root.loadedPanel)
+            root.loadedPanel.showOSD();
         });
       }
     }
 
     function hideOSD() {
-      if (root.item && root.item.osdItem) {
-        root.item.osdItem.hideImmediately();
+      if (root.loadedPanel) {
+        root.loadedPanel.hideOSD();
       } else if (root.active) {
         root.active = false;
       }
@@ -320,157 +325,213 @@ Variants {
     Component.onDestruction: disconnectBrightnessMonitors()
 
     // Visual Component
-    sourceComponent: PanelWindow {
-      id: panel
-      screen: root.modelData
+    sourceComponent: OsdPanel {
+      owner: root
+      sourceScreen: root.modelData
+    }
+  }
 
-      readonly property string screenName: screen ? screen.name : "unknown"
-      readonly property var osdSettings: Settings.data.osd || {}
+  component OsdPanel: PanelWindow {
+    id: panel
 
-      // Position configuration
-      readonly property string location: osdSettings.location || "top_right"
-      readonly property bool isTop: location === "top" || location.startsWith("top")
-      readonly property bool isBottom: location === "bottom" || location.startsWith("bottom")
-      readonly property bool isLeft: location.includes("_left") || location === "left"
-      readonly property bool isRight: location.includes("_right") || location === "right"
-      readonly property bool verticalMode: location === "left" || location === "right"
+    required property OsdLoader owner
+    required property ShellScreen sourceScreen
+    screen: panel.sourceScreen
 
-      // Dimensions
-      readonly property bool isShortMode: root.currentOSDType === OSD.Type.LockKey
-      readonly property int longHWidth: Math.round(320 * Style.uiScaleRatio)
-      readonly property int longHHeight: Math.round(72 * Style.uiScaleRatio)
-      readonly property int shortHWidth: Math.round(180 * Style.uiScaleRatio)
-      readonly property int longVWidth: Math.round(80 * Style.uiScaleRatio)
-      readonly property int longVHeight: Math.round(280 * Style.uiScaleRatio)
-      readonly property int shortVHeight: Math.round(180 * Style.uiScaleRatio)
+    readonly property string screenName: panel.sourceScreen.name
+    readonly property var osdSettings: Settings.data.osd || {}
 
-      readonly property int barThickness: {
-        const base = Math.max(8, Math.round(8 * Style.uiScaleRatio));
-        return base % 2 === 0 ? base : base + 1;
+    // Position configuration
+    readonly property string location: osdSettings.location || "top_right"
+    readonly property bool isTop: location === "top" || location.startsWith("top")
+    readonly property bool isBottom: location === "bottom" || location.startsWith("bottom")
+    readonly property bool isLeft: location.includes("_left") || location === "left"
+    readonly property bool isRight: location.includes("_right") || location === "right"
+    readonly property bool verticalMode: location === "left" || location === "right"
+
+    // Dimensions
+    readonly property bool isShortMode: panel.owner.currentOSDType === OSD.Type.LockKey
+    readonly property int longHWidth: Math.round(320 * Style.uiScaleRatio)
+    readonly property int longHHeight: Math.round(72 * Style.uiScaleRatio)
+    readonly property int shortHWidth: Math.round(180 * Style.uiScaleRatio)
+    readonly property int longVWidth: Math.round(80 * Style.uiScaleRatio)
+    readonly property int longVHeight: Math.round(280 * Style.uiScaleRatio)
+    readonly property int shortVHeight: Math.round(180 * Style.uiScaleRatio)
+
+    readonly property int barThickness: {
+      const base = Math.max(8, Math.round(8 * Style.uiScaleRatio));
+      return base % 2 === 0 ? base : base + 1;
+    }
+
+    anchors.top: isTop
+    anchors.bottom: isBottom
+    anchors.left: isLeft
+    anchors.right: isRight
+
+    function calculateMargin(isAnchored, position) {
+      if (!isAnchored)
+        return 0;
+
+      let base = Style.marginM;
+      if (Settings.data.bar.position === position) {
+        const isVertical = position === "top" || position === "bottom";
+        const floatExtra = Settings.data.bar.floating ? (isVertical ? Settings.data.bar.marginVertical : Settings.data.bar.marginHorizontal) * Style.marginXL : 0;
+        return Style.barHeight + base + floatExtra;
       }
+      return base;
+    }
 
-      anchors.top: isTop
-      anchors.bottom: isBottom
-      anchors.left: isLeft
-      anchors.right: isRight
+    margins.top: calculateMargin(anchors.top, "top")
+    margins.bottom: calculateMargin(anchors.bottom, "bottom")
+    margins.left: calculateMargin(anchors.left, "left")
+    margins.right: calculateMargin(anchors.right, "right")
 
-      function calculateMargin(isAnchored, position) {
-        if (!isAnchored)
-          return 0;
+    implicitWidth: verticalMode ? longVWidth : (isShortMode ? shortHWidth : longHWidth)
+    implicitHeight: verticalMode ? (isShortMode ? shortVHeight : longVHeight) : longHHeight
+    color: NColor.transparent
 
-        let base = Style.marginM;
-        if (Settings.data.bar.position === position) {
-          const isVertical = position === "top" || position === "bottom";
-          const floatExtra = Settings.data.bar.floating ? (isVertical ? Settings.data.bar.marginVertical : Settings.data.bar.marginHorizontal) * Style.marginXL : 0;
-          return Style.barHeight + base + floatExtra;
+    WlrLayershell.namespace: "noctalia-osd-" + screenName
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    WlrLayershell.layer: osdSettings.overlayLayer ? WlrLayer.Overlay : WlrLayer.Top
+    WlrLayershell.exclusionMode: ExclusionMode.Ignore
+
+    Item {
+      id: osdItem
+      anchors.fill: parent
+      visible: false
+      opacity: 0
+      scale: 0.85
+
+      Behavior on opacity {
+        NumberAnimation {
+          duration: Style.animationNormal
+          easing.type: Easing.InOutQuad
         }
-        return base;
       }
 
-      margins.top: calculateMargin(anchors.top, "top")
-      margins.bottom: calculateMargin(anchors.bottom, "bottom")
-      margins.left: calculateMargin(anchors.left, "left")
-      margins.right: calculateMargin(anchors.right, "right")
+      Behavior on scale {
+        NumberAnimation {
+          duration: Style.animationNormal
+          easing.type: Easing.InOutQuad
+        }
+      }
 
-      implicitWidth: verticalMode ? longVWidth : (isShortMode ? shortHWidth : longHWidth)
-      implicitHeight: verticalMode ? (isShortMode ? shortVHeight : longVHeight) : longHHeight
-      color: NColor.transparent
+      Timer {
+        id: hideTimer
+        interval: Settings.data.osd.autoHideMs
+        onTriggered: osdItem.hide()
+      }
 
-      WlrLayershell.namespace: "noctalia-osd-" + screenName
-      WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-      WlrLayershell.layer: osdSettings.overlayLayer ? WlrLayer.Overlay : WlrLayer.Top
-      WlrLayershell.exclusionMode: ExclusionMode.Ignore
+      Timer {
+        id: visibilityTimer
+        interval: Style.animationNormal + 50
+        onTriggered: {
+          osdItem.visible = false;
+          panel.owner.currentOSDType = -1;
+          panel.owner.lastLockKeyChanged = ""; // Reset the lock key change indicator
+          panel.owner.active = false;
+        }
+      }
 
-      Item {
-        id: osdItem
+      Rectangle {
+        id: background
         anchors.fill: parent
-        visible: false
-        opacity: 0
-        scale: 0.85
-
-        Behavior on opacity {
-          NumberAnimation {
-            duration: Style.animationNormal
-            easing.type: Easing.InOutQuad
-          }
+        anchors.margins: Style.marginM * 1.5
+        radius: Style.radiusL
+        color: Qt.alpha(NColor.mSurface, Settings.data.osd.backgroundOpacity || 1.0)
+        border.color: Qt.alpha(NColor.mOutline, Settings.data.osd.backgroundOpacity || 1.0)
+        border.width: {
+          const bw = Math.max(2, Style.borderM);
+          return bw % 2 === 0 ? bw : bw + 1;
         }
+      }
 
-        Behavior on scale {
-          NumberAnimation {
-            duration: Style.animationNormal
-            easing.type: Easing.InOutQuad
-          }
-        }
+      NDropShadow {
+        anchors.fill: background
+        source: background
+        autoPaddingEnabled: true
+      }
 
-        Timer {
-          id: hideTimer
-          interval: Settings.data.osd.autoHideMs
-          onTriggered: osdItem.hide()
-        }
+      Loader {
+        id: contentLoader
+        anchors.fill: background
+        anchors.margins: Style.marginM
+        active: true
+        sourceComponent: panel.verticalMode ? verticalContent : horizontalContent
+      }
 
-        Timer {
-          id: visibilityTimer
-          interval: Style.animationNormal + 50
-          onTriggered: {
-            osdItem.visible = false;
-            root.currentOSDType = -1;
-            root.lastLockKeyChanged = ""; // Reset the lock key change indicator
-            root.active = false;
-          }
-        }
-
-        Rectangle {
-          id: background
+      Component {
+        id: horizontalContent
+        RowLayout {
+          id: horizontalLayout
+          property OsdLoader owner: panel.owner
+          property int barThickness: panel.barThickness
           anchors.fill: parent
-          anchors.margins: Style.marginM * 1.5
-          radius: Style.radiusL
-          color: Qt.alpha(NColor.mSurface, Settings.data.osd.backgroundOpacity || 1.0)
-          border.color: Qt.alpha(NColor.mOutline, Settings.data.osd.backgroundOpacity || 1.0)
-          border.width: {
-            const bw = Math.max(2, Style.borderM);
-            return bw % 2 === 0 ? bw : bw + 1;
+          anchors.leftMargin: Style.marginL
+          anchors.rightMargin: Style.marginL
+          spacing: Style.marginM
+          clip: true
+
+          // TextMetrics to measure the maximum possible percentage width
+          TextMetrics {
+            id: percentageMetrics
+            font.family: Settings.data.ui.fontFixed
+            font.weight: Style.fontWeightMedium
+            font.pointSize: Style.fontSizeS * (Settings.data.ui.fontFixedScale * Style.uiScaleRatio)
+            text: "150%" // Maximum possible value with volumeOverdrive
           }
-        }
 
-        NDropShadow {
-          anchors.fill: background
-          source: background
-          autoPaddingEnabled: true
-        }
+          // Common Icon for all types
+          NIcon {
+            icon: horizontalLayout.owner.getIcon()
+            color: horizontalLayout.owner.getIconColor()
+            pointSize: Style.fontSizeXL
+            Layout.alignment: Qt.AlignVCenter
 
-        Loader {
-          id: contentLoader
-          anchors.fill: background
-          anchors.margins: Style.marginM
-          active: true
-          sourceComponent: panel.verticalMode ? verticalContent : horizontalContent
-        }
-
-        Component {
-          id: horizontalContent
-          RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: Style.marginL
-            anchors.rightMargin: Style.marginL
-            spacing: Style.marginM
-            clip: true
-
-            // TextMetrics to measure the maximum possible percentage width
-            TextMetrics {
-              id: percentageMetrics
-              font.family: Settings.data.ui.fontFixed
-              font.weight: Style.fontWeightMedium
-              font.pointSize: Style.fontSizeS * (Settings.data.ui.fontFixedScale * Style.uiScaleRatio)
-              text: "150%" // Maximum possible value with volumeOverdrive
+            Behavior on color {
+              ColorAnimation {
+                duration: Style.animationNormal
+                easing.type: Easing.InOutQuad
+              }
             }
+          }
 
-            // Common Icon for all types
-            NIcon {
-              icon: root.getIcon()
-              color: root.getIconColor()
-              pointSize: Style.fontSizeXL
-              Layout.alignment: Qt.AlignVCenter
+          // Lock Key Status Text (replaces progress bar)
+          NText {
+            visible: horizontalLayout.owner.currentOSDType === OSD.Type.LockKey
+            text: horizontalLayout.owner.getDisplayPercentage()
+            color: horizontalLayout.owner.getProgressColor()
+            pointSize: Style.fontSizeM
+            family: Settings.data.ui.fontFixed
+            font.weight: Style.fontWeightMedium
+            Layout.fillWidth: true
+            horizontalAlignment: Text.AlignHCenter
+            Layout.alignment: Qt.AlignVCenter
+          }
 
+          // Progress Bar for Volume/Brightness
+          Rectangle {
+            visible: horizontalLayout.owner.currentOSDType !== OSD.Type.LockKey
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignVCenter
+            height: horizontalLayout.barThickness
+            radius: Math.round(horizontalLayout.barThickness / 2)
+            color: NColor.mSurfaceVariant
+
+            Rectangle {
+              anchors.left: parent.left
+              anchors.top: parent.top
+              anchors.bottom: parent.bottom
+              width: parent.width * Math.min(1.0, horizontalLayout.owner.getCurrentValue() / horizontalLayout.owner.getMaxValue())
+              radius: parent.radius
+              color: horizontalLayout.owner.getProgressColor()
+
+              Behavior on width {
+                NumberAnimation {
+                  duration: Style.animationNormal
+                  easing.type: Easing.InOutQuad
+                }
+              }
               Behavior on color {
                 ColorAnimation {
                   duration: Style.animationNormal
@@ -478,38 +539,76 @@ Variants {
                 }
               }
             }
+          }
 
-            // Lock Key Status Text (replaces progress bar)
-            NText {
-              visible: root.currentOSDType === OSD.Type.LockKey
-              text: root.getDisplayPercentage()
-              color: root.getProgressColor()
-              pointSize: Style.fontSizeM
-              family: Settings.data.ui.fontFixed
-              font.weight: Style.fontWeightMedium
-              Layout.fillWidth: true
-              horizontalAlignment: Text.AlignHCenter
-              Layout.alignment: Qt.AlignVCenter
-            }
+          // Percentage Text for Volume/Brightness
+          NText {
+            visible: horizontalLayout.owner.currentOSDType !== OSD.Type.LockKey
+            text: horizontalLayout.owner.getDisplayPercentage()
+            color: NColor.mOnSurface
+            pointSize: Style.fontSizeS
+            family: Settings.data.ui.fontFixed
+            Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+            horizontalAlignment: Text.AlignRight
+            verticalAlignment: Text.AlignVCenter
+            Layout.fillWidth: false
+            Layout.preferredWidth: Math.ceil(percentageMetrics.width) + Math.round(8 * Style.uiScaleRatio)
+            Layout.maximumWidth: Math.ceil(percentageMetrics.width) + Math.round(8 * Style.uiScaleRatio)
+            Layout.minimumWidth: Math.ceil(percentageMetrics.width)
+          }
+        }
+      }
 
-            // Progress Bar for Volume/Brightness
+      Component {
+        id: verticalContent
+        ColumnLayout {
+          id: verticalLayout
+          property OsdLoader owner: panel.owner
+          property int barThickness: panel.barThickness
+          anchors.fill: parent
+          anchors.topMargin: Style.marginL
+          anchors.bottomMargin: Style.marginL
+          spacing: verticalLayout.owner.currentOSDType === OSD.Type.LockKey ? Style.marginM : Style.marginS
+          clip: true
+
+          // Unified Text display for Percentage or Lock Status
+          NText {
+            text: verticalLayout.owner.getDisplayPercentage()
+            color: verticalLayout.owner.currentOSDType === OSD.Type.LockKey ? verticalLayout.owner.getProgressColor() : NColor.mOnSurface
+            pointSize: verticalLayout.owner.currentOSDType === OSD.Type.LockKey ? Style.fontSizeM : Style.fontSizeS
+            family: Settings.data.ui.fontFixed
+            font.weight: verticalLayout.owner.currentOSDType === OSD.Type.LockKey ? Style.fontWeightMedium : Style.fontWeightRegular
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignHCenter
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            // Only set preferredHeight for the standard case to maintain layout
+            Layout.preferredHeight: verticalLayout.owner.currentOSDType === OSD.Type.LockKey ? -1 : Math.round(20 * Style.uiScaleRatio)
+          }
+
+          // Progress Bar for Volume/Brightness
+          Item {
+            visible: verticalLayout.owner.currentOSDType !== OSD.Type.LockKey
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
             Rectangle {
-              visible: root.currentOSDType !== OSD.Type.LockKey
-              Layout.fillWidth: true
-              Layout.alignment: Qt.AlignVCenter
-              height: panel.barThickness
-              radius: Math.round(panel.barThickness / 2)
+              anchors.horizontalCenter: parent.horizontalCenter
+              anchors.top: parent.top
+              anchors.bottom: parent.bottom
+              width: verticalLayout.barThickness
+              radius: Math.round(verticalLayout.barThickness / 2)
               color: NColor.mSurfaceVariant
 
               Rectangle {
                 anchors.left: parent.left
-                anchors.top: parent.top
+                anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                width: parent.width * Math.min(1.0, root.getCurrentValue() / root.getMaxValue())
+                height: parent.height * Math.min(1.0, verticalLayout.owner.getCurrentValue() / verticalLayout.owner.getMaxValue())
                 radius: parent.radius
-                color: root.getProgressColor()
+                color: verticalLayout.owner.getProgressColor()
 
-                Behavior on width {
+                Behavior on height {
                   NumberAnimation {
                     duration: Style.animationNormal
                     easing.type: Easing.InOutQuad
@@ -523,139 +622,63 @@ Variants {
                 }
               }
             }
-
-            // Percentage Text for Volume/Brightness
-            NText {
-              visible: root.currentOSDType !== OSD.Type.LockKey
-              text: root.getDisplayPercentage()
-              color: NColor.mOnSurface
-              pointSize: Style.fontSizeS
-              family: Settings.data.ui.fontFixed
-              Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
-              horizontalAlignment: Text.AlignRight
-              verticalAlignment: Text.AlignVCenter
-              Layout.fillWidth: false
-              Layout.preferredWidth: Math.ceil(percentageMetrics.width) + Math.round(8 * Style.uiScaleRatio)
-              Layout.maximumWidth: Math.ceil(percentageMetrics.width) + Math.round(8 * Style.uiScaleRatio)
-              Layout.minimumWidth: Math.ceil(percentageMetrics.width)
-            }
           }
-        }
 
-        Component {
-          id: verticalContent
-          ColumnLayout {
-            anchors.fill: parent
-            anchors.topMargin: Style.marginL
-            anchors.bottomMargin: Style.marginL
-            spacing: root.currentOSDType === OSD.Type.LockKey ? Style.marginM : Style.marginS
-            clip: true
+          // Unified Icon display
+          NIcon {
+            icon: verticalLayout.owner.getIcon()
+            color: verticalLayout.owner.getIconColor()
+            pointSize: verticalLayout.owner.currentOSDType === OSD.Type.LockKey ? Style.fontSizeXL : Style.fontSizeL
+            Layout.alignment: verticalLayout.owner.currentOSDType === OSD.Type.LockKey ? Qt.AlignHCenter : (Qt.AlignHCenter | Qt.AlignBottom)
 
-            // Unified Text display for Percentage or Lock Status
-            NText {
-              text: root.getDisplayPercentage()
-              color: root.currentOSDType === OSD.Type.LockKey ? root.getProgressColor() : NColor.mOnSurface
-              pointSize: root.currentOSDType === OSD.Type.LockKey ? Style.fontSizeM : Style.fontSizeS
-              family: Settings.data.ui.fontFixed
-              font.weight: root.currentOSDType === OSD.Type.LockKey ? Style.fontWeightMedium : Style.fontWeightRegular
-              Layout.fillWidth: true
-              Layout.alignment: Qt.AlignHCenter
-              horizontalAlignment: Text.AlignHCenter
-              verticalAlignment: Text.AlignVCenter
-              // Only set preferredHeight for the standard case to maintain layout
-              Layout.preferredHeight: root.currentOSDType === OSD.Type.LockKey ? -1 : Math.round(20 * Style.uiScaleRatio)
-            }
-
-            // Progress Bar for Volume/Brightness
-            Item {
-              visible: root.currentOSDType !== OSD.Type.LockKey
-              Layout.fillWidth: true
-              Layout.fillHeight: true
-
-              Rectangle {
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                width: panel.barThickness
-                radius: Math.round(panel.barThickness / 2)
-                color: NColor.mSurfaceVariant
-
-                Rectangle {
-                  anchors.left: parent.left
-                  anchors.right: parent.right
-                  anchors.bottom: parent.bottom
-                  height: parent.height * Math.min(1.0, root.getCurrentValue() / root.getMaxValue())
-                  radius: parent.radius
-                  color: root.getProgressColor()
-
-                  Behavior on height {
-                    NumberAnimation {
-                      duration: Style.animationNormal
-                      easing.type: Easing.InOutQuad
-                    }
-                  }
-                  Behavior on color {
-                    ColorAnimation {
-                      duration: Style.animationNormal
-                      easing.type: Easing.InOutQuad
-                    }
-                  }
-                }
-              }
-            }
-
-            // Unified Icon display
-            NIcon {
-              icon: root.getIcon()
-              color: root.getIconColor()
-              pointSize: root.currentOSDType === OSD.Type.LockKey ? Style.fontSizeXL : Style.fontSizeL
-              Layout.alignment: root.currentOSDType === OSD.Type.LockKey ? Qt.AlignHCenter : (Qt.AlignHCenter | Qt.AlignBottom)
-
-              Behavior on color {
-                ColorAnimation {
-                  duration: Style.animationNormal
-                  easing.type: Easing.InOutQuad
-                }
+            Behavior on color {
+              ColorAnimation {
+                duration: Style.animationNormal
+                easing.type: Easing.InOutQuad
               }
             }
           }
         }
-
-        function show() {
-          hideTimer.stop();
-          visibilityTimer.stop();
-          osdItem.visible = true;
-
-          Qt.callLater(() => {
-            osdItem.opacity = 1;
-            osdItem.scale = 1.0;
-          });
-
-          hideTimer.start();
-        }
-
-        function hide() {
-          hideTimer.stop();
-          visibilityTimer.stop();
-          osdItem.opacity = 0;
-          osdItem.scale = 0.85;
-          visibilityTimer.start();
-        }
-
-        function hideImmediately() {
-          hideTimer.stop();
-          visibilityTimer.stop();
-          osdItem.opacity = 0;
-          osdItem.scale = 0.85;
-          osdItem.visible = false;
-          root.currentOSDType = -1;
-          root.active = false;
-        }
       }
 
-      function showOSD() {
-        osdItem.show();
+      function show() {
+        hideTimer.stop();
+        visibilityTimer.stop();
+        osdItem.visible = true;
+
+        Qt.callLater(() => {
+          osdItem.opacity = 1;
+          osdItem.scale = 1.0;
+        });
+
+        hideTimer.start();
       }
+
+      function hide() {
+        hideTimer.stop();
+        visibilityTimer.stop();
+        osdItem.opacity = 0;
+        osdItem.scale = 0.85;
+        visibilityTimer.start();
+      }
+
+      function hideImmediately() {
+        hideTimer.stop();
+        visibilityTimer.stop();
+        osdItem.opacity = 0;
+        osdItem.scale = 0.85;
+        osdItem.visible = false;
+        panel.owner.currentOSDType = -1;
+        panel.owner.active = false;
+      }
+    }
+
+    function showOSD() {
+      osdItem.show();
+    }
+
+    function hideOSD() {
+      osdItem.hideImmediately();
     }
   }
 }

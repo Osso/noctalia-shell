@@ -74,6 +74,11 @@ ShellRoot {
     harness.assertDisplay(first, "volume-low", "25%");
     clock.wait(330);
     harness.require(!first.active && first.currentOSDType === -1, "timeout unloads/reset");
+    first.showOSD(OSD.Type.Volume);
+    clock.wait(20);
+    harness.assertDisplay(first, "volume-low", "25%");
+    first.hideOSD();
+    harness.require(!first.active && first.currentOSDType === -1, "explicit hide unloads/reset");
   }
 
   function exerciseAudio(location) {
