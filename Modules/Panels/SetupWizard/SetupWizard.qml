@@ -315,6 +315,9 @@ SmartPanel {
                 Rectangle {
                   Layout.preferredWidth: 40
                   Layout.preferredHeight: 2
+                  // Hidden layout children are not sized by the layout.
+                  implicitWidth: Layout.preferredWidth
+                  implicitHeight: Layout.preferredHeight
                   radius: 1
                   color: index < currentStep ? NColor.mPrimary : NColor.mSurfaceVariant
                   visible: index < totalSteps - 1
