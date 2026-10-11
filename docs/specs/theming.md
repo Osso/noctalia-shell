@@ -9,7 +9,7 @@ Theming covers color scheme discovery/application, wallpaper and predefined them
 - [x] The namespace regression runs in `./run-tests.sh unit` offscreen with isolated writable paths and stubbed settings, without accessing the user's configuration or desktop.
 - [x] The harness verifies zero window alpha, default `mOnSurface` color `#e9e4f0`, and a non-function `NColor.transparent`; success requires exit code zero and `COLOR_NAMESPACE_PASS` within 15 seconds.
 - [x] Palette runtime cases (empty file, custom load/reload, missing-file creation, and fresh-process reload) reject every warning/error/fatal record; a success marker alone is insufficient.
-- [x] Missing `colors.json` is created with default colors without overlapping FileView completion callbacks. The harness waits for explicit save then load completion before exit and verifies a fresh process reload preserves file bytes.
+- [x] Missing `colors.json` is created with default colors without runtime diagnostics. The harness waits for explicit save then load completion before exit and verifies a fresh process reload preserves file bytes.
 
 ### Color scheme service
 

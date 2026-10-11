@@ -118,6 +118,16 @@ A second incident followed inline component commit `4fbb9a30f`: canonical auto-r
 
 For inline component changes, isolated harness success is not proof of canonical hot-reload compatibility. A controlled fresh launch requires explicit approval and settings preservation; ordinary QML edits still use auto-reload. Reload-time type resolution apparently differs from fresh launch here; a Qt cache root cause is not proven. Retire this caveat when both failing transitions pass representative canonical reload regressions on the supported runtime. Harness coverage: [settings](../specs/settings.md#tests-asserting-this-spec), [testing](../specs/testing.md#evidence-categories).
 
+### Missing palette FileView workaround
+
+Verified: 2026-10-11 (`81049c423` + `d07303648`)
+
+`NColor` defers missing `colors.json` creation with `Qt.callLater(customColorsFile.writeAdapter)`: FileView cleans up its reader after emitting `loadFailed`, so an immediate write inside `onLoadFailed` caused `got operation finished from dropped operation`. Deferral lets the callback return before writing.
+
+Keep deferral limited to missing-file creation; it is not a timed delay or diagnostic suppression. Isolated coverage proves `SAVED → LOADED`, zero warning/error/fatal records in all four modes, custom reload values, and preserved bytes on fresh reload—not canonical hot-reload behavior. Requirements: [theming](../specs/theming.md#project-palette-namespace).
+
+Retire deferral only when the supported Quickshell runtime fixes reader cleanup ordering and the same isolated cases pass with an immediate write, including save/load ordering and byte preservation.
+
 ## Update Workflow
 
 After Arch updates `quickshell`, Qt, niri, icon theme packages, or related runtime tools:
