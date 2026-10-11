@@ -98,7 +98,9 @@ Settings covers persisted shell configuration, startup bootstrap and recovery, d
 - `Tests/migration26-guards.test.js`
 - `Tests/widget-registry.test.js`
 - `Tests/settings-panel-guards.test.js`
+- `Tests/settings-panel-warnings.test.py` — standalone `lint` requires zero SettingsPanel qmllint warnings and exit status zero (35→0 at `185ed644e`). Standalone `behavior --artifacts <new-directory>` runs actual SettingsPanel, SmartPanel, Settings/SettingsData, and panel controls offscreen with inert tab bodies/services. It visits all 21 tabs, checks ordered labels, loaded fixture content and sidebar selection/model roles, forward/backward wrap, page/small-step scroll movement, close-button teardown, delayed dirty-setting persistence/read-back, requested Audio-tab reopen, and Escape close. Final isolated JSON must contain only the expected font change. Direct helper/signal calls are not physical keyboard/pointer input; tab feature UIs, desktop services, whole-shell construction, canonical reload, and real-config persistence are not covered. Safety and pass gates: [testing](testing.md).
 - `Tests/settings-references.test.js`
+- `Tests/about-tab-warnings.test.py` — standalone `behavior` runs production AboutTab and controls under isolated offscreen `qmltestrunner`: five version/title rows with reactive updates, release/support/contributor navigation and toast arguments, contributor reorder/rename/empty-model rendering and cached local avatar, three synthetic commit-query paths, and disposal during delayed lookup followed by reopen. Four additional divider/contributor geometry rows at widths 600/800 and scales 1/1.5 check default-zero margin stability; they are not tracked pre-change snapshot comparisons. Fifteen behavior rows plus init/cleanup yield 17 reported passes after `afdaf56ab` (11 plus init/cleanup at `d42f61e1f`). Standalone `lint` now requires zero warnings and exit status zero (31→1→0); the undefined divider margin is no longer an accepted residual. Fixture services/Process/launch capture, direct signal invocation, and local image bytes do not prove real package/git queries, browser launches, network avatars, physical input, visible panel switching, or whole-shell behavior. Safety and invocation gates: [testing](testing.md).
 - `Tests/settings-ui-helper-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 
@@ -107,9 +109,10 @@ Settings covers persisted shell configuration, startup bootstrap and recovery, d
 - [x] Add executable JavaScript state-transition coverage for settings validation, stale callbacks, readiness, invalidation, and retry behavior.
 - [ ] Verify typed settings integration across canonical hot auto-reload; isolated fresh-process fixtures do not cover this boundary. See [maintenance caveat](../local/maintenance.md#typed-settings-integration).
 - [x] Add non-visible isolated actual-singleton `Process`/`FileView` coverage for bootstrap snapshots, load/save signals and read-back, file watching, malformed input, retry, and first-run defaults (`5e5dcd8af`, `e212e6081`); real settings remain unchanged.
-- [ ] Extend lifecycle proof to full-shell construction/unloading gates, stale-generation races, migration failures, and delayed `saveTimer` saves; the singleton harness uses fixture dependencies and immediate saves only. Never point it at the real config or desktop runtime.
+- [ ] Extend lifecycle proof to full-shell construction/unloading gates, stale-generation races, and migration failures. The singleton harness uses fixture dependencies and immediate saves only; the isolated panel harness additionally proves delayed dirty-setting persistence across close/reopen, not arbitrary delayed-save races. Never point either at the real config or desktop runtime.
 - [ ] Resolve residual `Qt.application.font` metadata and cross-component `saveTimer` static diagnostics; the bounded singleton lint gate accepts two warnings.
-- [ ] Add executable coverage for visible Settings panel rendering and tab switching.
+- [x] Add isolated offscreen actual-panel coverage for all 21 tab selections, scrolling, close/reopen, and dirty persistence (`185ed644e`), with inert tab bodies/services.
+- [ ] Verify visible desktop rendering, physical input, and production tab-body/service integration; offscreen helper/signal-driven coverage does not establish these.
 - [ ] Split feature-specific settings tab behavior into each feature spec when the tab has enough direct tests.
 
 ## Out of scope
