@@ -69,7 +69,7 @@ def lint(directory):
     assert counts == {"missing-property": 8}, (
         f"Unexpected BatteryTab warnings: {dict(counts)}"
     )
-    assert result.returncode == 255, result.returncode
+    assert result.returncode == 0, result.returncode
 
 
 def stage_tab(directory):
