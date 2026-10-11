@@ -35,7 +35,7 @@ Settings covers persisted shell configuration, startup bootstrap and recovery, d
 
 ### Settings references and defaults
 
-- [x] The experimental inline-type schema exposes declared fields in every settings group through the `Settings.data` alias, including enclosing `bar`, nested `bar.widgets`, and `controlCenter.shortcuts`; integration remains outside this isolated prototype.
+- [x] The integrated inline `JsonObject` schema exposes declared fields in every settings group through the `Settings.data` alias, including enclosing `bar`, nested `bar.widgets`, and `controlCenter.shortcuts`.
 - [x] Typed groups retain exact default and mutated JsonAdapter serialization, load/save/fresh-process reload behavior, unknown schema-key omission, and arbitrary nested widget and shortcut arrays.
 - [x] QML `Settings.data.*` references outside `Commons/Settings.qml` must exist in `Assets/settings-default.json`.
 - [x] Settings reference coverage must stay broad enough to catch project-wide drift, not only a small fixture set.
@@ -91,7 +91,7 @@ Settings covers persisted shell configuration, startup bootstrap and recovery, d
 
 ## Tests asserting this spec
 
-- `Tests/settings-types.test.py` — isolated offscreen JsonAdapter contract and targeted qmllint prototype.
+- `Tests/settings-types.test.py` — isolated offscreen production SettingsData contract: exact default/mutated/group JSON fixtures, load/save/fresh-process reload, unknown-key omission, nested arrays, and targeted qmllint alias probes; not canonical hot-reload coverage.
 - `Tests/settings-service-guards.test.js`
 - `Tests/shell-setup-wizard-guards.test.js`
 - `Tests/migration26-guards.test.js`
@@ -104,6 +104,7 @@ Settings covers persisted shell configuration, startup bootstrap and recovery, d
 ## Known gaps (current cycle)
 
 - [x] Add executable JavaScript state-transition coverage for settings validation, stale callbacks, readiness, invalidation, and retry behavior.
+- [ ] Verify typed settings integration across canonical hot auto-reload; isolated fresh-process fixtures do not cover this boundary. See [maintenance caveat](../local/maintenance.md#typed-settings-integration).
 - [ ] Add a non-visible isolated Quickshell lifecycle harness for live `Process`/`FileView` integration (construction, load/save signals, file watching, and shell gating); current tests use extracted QML functions and source assertions only. Never point it at the real config or desktop runtime.
 - [ ] Add executable coverage for visible Settings panel rendering and tab switching.
 - [ ] Split feature-specific settings tab behavior into each feature spec when the tab has enough direct tests.

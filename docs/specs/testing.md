@@ -10,6 +10,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - [x] Headless QML lifecycle suites run with `qmltestrunner` on `QT_QPA_PLATFORM=offscreen` and isolated temporary XDG config/cache/data directories.
 - [x] Production QML lifecycle harnesses run non-visibly with isolated temporary config/cache/data paths and explicit process cleanup. Night-light gamma tests use a private Wayland server, never the active display.
 - [x] `Tests/panel-service-lifecycle.test.sh` and `Tests/audio-panel-regression.test.sh` isolate both Noctalia-specific and XDG paths, seed a temporary palette, and reject any logged `WARN`, `ERROR`, or `FATAL` even when behavioral assertions succeed. Panel lifecycle success requires exit status zero and `PASS PanelServiceLifecycle`; audio success requires its dedicated exit status 42. The panel harness waits for isolated settings bootstrap before creating SmartPanel and fails on setup timeout.
+- [x] `Tests/settings-types.test.py` runs production `SettingsData.qml` offscreen with an isolated alias singleton and OSD enum stub: exact JSON fixtures, load/mutate/save/fresh-process reload, unknown-key omission, nested widget/shortcut arrays, and targeted qmllint field resolution. It isolates HOME/XDG paths and checks the real settings hash remains unchanged; it does not exercise canonical shell bootstrap or hot auto-reload. Feature contract: [settings](settings.md).
 - [x] **Live host probes** inspect the active machine or shell and must be reported separately from deterministic unit/static results.
 - [x] Runner output labels `deterministic-unit`, `structural-reference`, `qml-static`, `host-probes`, `live-log`, and `visible-notifications` evidence independently.
 
@@ -85,6 +86,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - `Tests/service-probes-parsing.test.sh`
 - `Tests/test-runner-categories.test.sh`
 - `Tests/qml-static-imports.test.py`
+- `Tests/settings-types.test.py`
 
 ## Known gaps (current cycle)
 
