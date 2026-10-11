@@ -89,6 +89,7 @@ ShellRoot {
         harness.require(clear.includes("Dallas") && clear.includes("13°C") && clear.includes("(UTC)"), "current city/temperature/timezone");
         harness.require(clear.includes("Sun") && clear.includes("Mon") && !clear.includes("Tue"), "forecastDays caps date delegates");
         harness.require(clear.includes("20°/10°") && clear.includes("15°/4°"), "forecast max/min rounding");
+        harness.require(JSON.stringify(harness.items(card, item => item.icon !== undefined && item.visible).map(item => item.icon)) === JSON.stringify(["sun", "sun", "rain"]), "current and forecast condition icons");
         harness.require(harness.shader() === undefined, "clear weather must not load effects");
         harness.setLocation("useFahrenheit", true);
         harness.publish(61);
@@ -97,6 +98,7 @@ ShellRoot {
         const rain = harness.texts();
         harness.require(rain.includes("55°F") && rain.includes("69°/49°") && rain.includes("58°/40°"), "current/forecast Fahrenheit conversion");
         harness.require(card.isRaining && !card.isSnowing, "rain condition code");
+        harness.require(JSON.stringify(harness.items(card, item => item.icon !== undefined && item.visible).map(item => item.icon)) === JSON.stringify(["rain", "sun", "rain"]), "rain current icon updates independently of forecast");
         harness.require(harness.shader().fragmentShader.toString().endsWith("weather_rain.frag.qsb") && harness.shader().source.hideSource, "rain shader hides source");
         steps.sampledTime = harness.shader().time;
         break;
@@ -108,6 +110,7 @@ ShellRoot {
         break;
       case 4:
         harness.require(card.isSnowing && !card.isRaining, "snow condition code");
+        harness.require(JSON.stringify(harness.items(card, item => item.icon !== undefined && item.visible).map(item => item.icon)) === JSON.stringify(["snow", "sun", "rain", "snow"]), "snow current and expanded forecast icons");
         harness.require(harness.shader().fragmentShader.toString().endsWith("weather_snow.frag.qsb") && !harness.shader().source.hideSource, "snow shader preserves source");
         harness.require(harness.texts().includes("Tue") && harness.texts().includes("30°/23°"), "forecast expands up to available days");
         harness.require(!harness.texts().includes("Dallas") && !harness.texts().includes("(UTC)"), "location toggle hides city/timezone");
