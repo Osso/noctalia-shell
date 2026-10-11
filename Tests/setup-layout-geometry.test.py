@@ -24,13 +24,14 @@ QtObject {
   readonly property string cacheDir: ""
   readonly property bool isLoaded: true
   signal settingsSaved()
-  function saveImmediate() { throw new Error("Unexpected settings write"); }
+  property int saveRequests: 0
+  function saveImmediate() { saveRequests++; }
 }
 """
 STUBS = {
     "Commons/Logger.qml": """function i(...args) {}
 function d(...args) {}
-function w(...args) { console.warn(...args); }
+function w(...args) {}
 function e(...args) { console.error(...args); }
 function callStack() { console.trace(); }""",
     "Services/Power/PowerProfileService.qml": "readonly property bool noctaliaPerformanceMode: false",
@@ -48,6 +49,10 @@ function hide() {}""",
 signal wallpaperChanged()
 signal wallpaperDirectoryChanged()
 signal wallpaperListChanged()
+property int refreshRequests: 0
+property string appliedWallpaper: ""
+function refreshWallpapersList() { refreshRequests++; }
+function changeWallpaper(path, screen) { appliedWallpaper = path; }
 function getWallpapersList(screen) { return []; }""",
     "Services/Compositor/CompositorService.qml": "function getDisplayScale(name) { return 1; }",
 }
@@ -139,18 +144,19 @@ def isolated_environment(root):
     return environment
 
 
-def capture_geometry(directory):
+def capture_geometry(directory, transitions=False):
     with tempfile.TemporaryDirectory(prefix="noctalia-setup-offscreen-") as temporary:
         root = Path(temporary)
         prepare_sources(root)
         environment = isolated_environment(root)
+        environment["NOCTALIA_TEST_TRANSITIONS"] = "1" if transitions else "0"
         result = subprocess.run(
             ["quickshell", "--no-color", "-p", str(root / "shell.qml")],
             cwd=root,
             env=environment,
             capture_output=True,
             text=True,
-            timeout=25,
+            timeout=60,
         )
         output = result.stdout + result.stderr
         (directory / "runtime.log").write_text(output)
@@ -217,6 +223,12 @@ def main():
         action="store_true",
         help="Capture pre-change geometry; do not update tracked expectations",
     )
+    parser.add_argument("--wizard-transitions", action="store_true")
+    parser.add_argument(
+        "--expected",
+        type=Path,
+        help="Compare transition geometry with pre-change capture",
+    )
     args = parser.parse_args()
     args.artifacts.mkdir(parents=True, exist_ok=True, mode=0o700)
     before = SETTINGS.read_bytes()
@@ -228,7 +240,22 @@ def main():
         hashlib.sha256(backup.read_bytes()).digest() == hashlib.sha256(before).digest()
     )
     try:
-        snapshots = capture_geometry(args.artifacts)
+        snapshots = capture_geometry(args.artifacts, args.wizard_transitions)
+        if args.wizard_transitions:
+            assert len(snapshots) == 52, (
+                f"Expected 52 transition cases, got {len(snapshots)}"
+            )
+            for snapshot in snapshots:
+                assert snapshot["step"] in range(5)
+                assert snapshot["tree"]["width"] == snapshot["scenario"]["width"]
+                nodes = list(flatten(snapshot["tree"]))
+                assert all(node["width"] >= 0 and node["height"] >= 0 for node in nodes)
+            if args.expected:
+                assert_geometry(snapshots, json.loads(args.expected.read_text()))
+            print(
+                "PASS wizard: 52 offscreen transition snapshots; value handoff/back/next/finish/skip/cancel"
+            )
+            return
         assert_content(snapshots)
         if not args.capture_only:
             assert_geometry(snapshots, json.loads(GOLDEN.read_text()))

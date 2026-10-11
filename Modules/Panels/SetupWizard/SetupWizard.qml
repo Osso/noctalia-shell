@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -36,9 +38,9 @@ SmartPanel {
   Connections {
     target: Settings
     function onSettingsSaved() {
-      if (isCompleting) {
+      if (root.isCompleting) {
         Logger.i("SetupWizard", "Settings saved, closing panel");
-        isCompleting = false;
+        root.isCompleting = false;
         root.close();
       }
     }
@@ -70,7 +72,7 @@ SmartPanel {
           StackLayout {
             id: stepStack
             anchors.fill: parent
-            currentIndex: currentStep
+            currentIndex: root.currentStep
 
             // Step 0: Welcome - Beautiful centered design
             Item {
@@ -269,6 +271,7 @@ SmartPanel {
                 }
               ]
               delegate: RowLayout {
+                id: progressStep
                 required property var modelData
                 required property int index
                 readonly property string stepIcon: modelData ? (modelData.icon || "") : ""
@@ -280,14 +283,14 @@ SmartPanel {
                   Layout.preferredWidth: 24
                   Layout.preferredHeight: 24
                   radius: width / 2
-                  color: index <= currentStep ? NColor.mPrimary : NColor.mSurfaceVariant
-                  border.color: index === currentStep ? NColor.mPrimary : "transparent"
-                  border.width: index === currentStep ? 2 : 0
+                  color: progressStep.index <= root.currentStep ? NColor.mPrimary : NColor.mSurfaceVariant
+                  border.color: progressStep.index === root.currentStep ? NColor.mPrimary : "transparent"
+                  border.width: progressStep.index === root.currentStep ? 2 : 0
 
                   NIcon {
-                    icon: stepIcon
+                    icon: progressStep.stepIcon
                     pointSize: Style.fontSizeS
-                    color: index <= currentStep ? NColor.mOnPrimary : NColor.mOnSurfaceVariant
+                    color: progressStep.index <= root.currentStep ? NColor.mOnPrimary : NColor.mOnSurfaceVariant
                     anchors.centerIn: parent
                   }
 
@@ -299,10 +302,10 @@ SmartPanel {
                 }
 
                 NText {
-                  text: stepLabel
+                  text: progressStep.stepLabel
                   pointSize: Style.fontSizeS
-                  color: index <= currentStep ? NColor.mPrimary : NColor.mOnSurfaceVariant
-                  font.weight: index === currentStep ? Style.fontWeightBold : Style.fontWeightRegular
+                  color: progressStep.index <= root.currentStep ? NColor.mPrimary : NColor.mOnSurfaceVariant
+                  font.weight: progressStep.index === root.currentStep ? Style.fontWeightBold : Style.fontWeightRegular
 
                   Behavior on color {
                     ColorAnimation {
@@ -319,8 +322,8 @@ SmartPanel {
                   implicitWidth: Layout.preferredWidth
                   implicitHeight: Layout.preferredHeight
                   radius: 1
-                  color: index < currentStep ? NColor.mPrimary : NColor.mSurfaceVariant
-                  visible: index < totalSteps - 1
+                  color: progressStep.index < root.currentStep ? NColor.mPrimary : NColor.mSurfaceVariant
+                  visible: progressStep.index < root.totalSteps - 1
 
                   Behavior on color {
                     ColorAnimation {
@@ -346,7 +349,7 @@ SmartPanel {
             NButton {
               text: "Skip Setup"
               outlined: true
-              visible: currentStep === 0
+              visible: root.currentStep === 0
               Layout.preferredHeight: 44
               onClicked: {
                 root.completeSetup();
@@ -360,21 +363,21 @@ SmartPanel {
             NButton {
               text: "← Back"
               outlined: true
-              visible: currentStep > 0
+              visible: root.currentStep > 0
               Layout.preferredHeight: 44
               onClicked: {
-                if (currentStep > 0) {
-                  currentStep--;
+                if (root.currentStep > 0) {
+                  root.currentStep--;
                 }
               }
             }
 
             NButton {
-              text: currentStep === totalSteps - 1 ? "All Done!" : "Continue →"
+              text: root.currentStep === root.totalSteps - 1 ? "All Done!" : "Continue →"
               Layout.preferredHeight: 44
               onClicked: {
-                if (currentStep < totalSteps - 1) {
-                  currentStep++;
+                if (root.currentStep < root.totalSteps - 1) {
+                  root.currentStep++;
                 } else {
                   root.completeSetup();
                 }
@@ -426,9 +429,9 @@ SmartPanel {
     id: closeTimer
     interval: 2000
     onTriggered: {
-      if (isCompleting) {
+      if (root.isCompleting) {
         Logger.w("SetupWizard", "Settings save timeout, closing panel anyway");
-        isCompleting = false;
+        root.isCompleting = false;
         root.close();
       }
     }
