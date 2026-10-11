@@ -6,15 +6,15 @@ Production MediaMini, text/icons, art, popup delegates and spectra remain real.
 """
 
 import argparse
-from collections import Counter
 import hashlib
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import tempfile
+from collections import Counter
+from pathlib import Path
 
 from qml_fixture_lint import check_harness
 

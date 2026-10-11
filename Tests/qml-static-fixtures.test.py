@@ -1,13 +1,12 @@
-#!/usr/bin/env python3
 """Bounded real-qmllint regression for the three behavioral fixture contexts."""
 
-from pathlib import Path
 import json
 import os
 import shutil
 import subprocess
 import tempfile
 import unittest
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 HARNESS_SCRIPTS = {
@@ -52,6 +51,7 @@ class FixtureLintTest(unittest.TestCase):
         result = subprocess.run(
             [str(runner)],
             cwd=root,
+            check=False,
             env=dict(os.environ),
             capture_output=True,
             text=True,

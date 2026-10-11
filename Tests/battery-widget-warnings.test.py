@@ -2,15 +2,15 @@
 """Targeted Battery lint and isolated production widget/pill regression."""
 
 import argparse
-from collections import Counter
 import hashlib
 import importlib.util
 import json
 import os
-from pathlib import Path
 import re
 import subprocess
 import tempfile
+from collections import Counter
+from pathlib import Path
 
 from qml_fixture_lint import check_harness
 

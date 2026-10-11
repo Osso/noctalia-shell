@@ -1,8 +1,8 @@
 """Run qmllint on a staged behavior harness without hiding diagnostics."""
 
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 
 def check_harness(module_root, harness):
@@ -21,6 +21,7 @@ def check_harness(module_root, harness):
             str(harness),
         ],
         cwd=Path(__file__).resolve().parents[1],
+        check=False,
         capture_output=True,
         text=True,
         timeout=60,

@@ -6,16 +6,16 @@ translations and palette are inert fixtures; no desktop or host IO is possible.
 """
 
 import argparse
-from collections import Counter
 import hashlib
 import importlib.util
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import tempfile
+from collections import Counter
+from pathlib import Path
 
 from qml_fixture_lint import check_harness
 
