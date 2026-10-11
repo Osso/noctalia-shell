@@ -1,4 +1,4 @@
-"""Bounded real-qmllint regression for the three behavioral fixture contexts."""
+"""Bounded real-qmllint regression for behavioral fixture contexts."""
 
 import json
 import os
@@ -13,13 +13,14 @@ HARNESS_SCRIPTS = {
     "BatteryTabWarningsHarness.qml": "battery-tab-warnings.test.py",
     "BatteryWidgetWarningsHarness.qml": "battery-widget-warnings.test.py",
     "MediaMiniWarningsHarness.qml": "media-mini-warnings.test.py",
+    "RootServiceHarness.qml": "root-service-warnings.test.py",
 }
 
 
 class FixtureLintTest(unittest.TestCase):
     def stage_repository(self, root):
         # Real dependencies remain available to behavior staging, but discovery is
-        # bounded to these three harnesses, not a full-project lint invocation.
+        # bounded to these four harnesses, not a full-project lint invocation.
         for directory in (
             "Commons",
             "Modules",
@@ -27,23 +28,37 @@ class FixtureLintTest(unittest.TestCase):
             "Widgets",
             "Assets",
             "Shaders",
+            "Helpers",
         ):
             shutil.copytree(ROOT / directory, root / directory)
         tests = root / "Tests"
         (tests / "Qml").mkdir(parents=True)
-        for script in HARNESS_SCRIPTS.values():
+        for script in (
+            *HARNESS_SCRIPTS.values(),
+            "simple-service-warnings.test.py",
+            "workspace-runtime.test.py",
+        ):
             shutil.copy2(ROOT / "Tests" / script, tests / script)
         helper = ROOT / "Tests/qml_fixture_lint.py"
         if helper.exists():
             shutil.copy2(helper, tests / helper.name)
         for harness in HARNESS_SCRIPTS:
             shutil.copy2(ROOT / "Tests/Qml" / harness, tests / "Qml" / harness)
+        # Runtime staging copies this dependency; rg discovery skips symlinks.
+        (tests / "Qml/SimpleServiceHarness.qml").symlink_to(
+            ROOT / "Tests/Qml/SimpleServiceHarness.qml"
+        )
+        (tests / "fixtures").mkdir()
+        shutil.copy2(
+            ROOT / "Tests/fixtures/root-services-wayland.cpp",
+            tests / "fixtures/root-services-wayland.cpp",
+        )
         runner = root / "Bin/dev/qml-static-check.sh"
         runner.parent.mkdir(parents=True)
         shutil.copy2(ROOT / "Bin/dev/qml-static-check.sh", runner)
         (runner.parent / "qml-static-exclusions.txt").write_text("")
         (root / ".ignore").write_text(
-            "Commons/\nModules/\nServices/\nWidgets/\nAssets/\nShaders/\n"
+            "Commons/\nModules/\nServices/\nWidgets/\nAssets/\nShaders/\nHelpers/\n"
         )
         return runner
 
@@ -60,23 +75,32 @@ class FixtureLintTest(unittest.TestCase):
         print(result.stdout + result.stderr, end="")
         return result
 
-    def test_all_three_harnesses_are_checked_without_fixture_type_warnings(self):
+    def test_all_four_harnesses_are_checked_without_fixture_type_warnings(self):
         with tempfile.TemporaryDirectory(prefix="noctalia-fixture-static-") as temp:
             root = Path(temp)
             runner = self.stage_repository(root)
             result = self.run_checker(runner, root)
-            warnings = [
-                warning
+            files = [
+                file
                 for line in result.stdout.splitlines()
                 if line.startswith('{"files":')
                 for file in json.loads(line)["files"]
+            ]
+            warnings = [
+                warning
+                for file in files
                 for warning in file["warnings"]
                 if warning["type"] in ("warning", "error")
             ]
             self.assertFalse(any(w["id"] == "read-only-property" for w in warnings))
             self.assertEqual(warnings, [])
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertIn("Checked 3 QML files", result.stdout)
+            self.assertEqual(len(files), 4)
+            self.assertEqual(
+                sum(Path(file["filename"]).name == "tst_root.qml" for file in files),
+                1,
+            )
+            self.assertIn("Checked 4 QML files", result.stdout)
             self.assertIn("skipped 0", result.stdout)
 
     def test_real_warning_is_visible_and_fails_static_runner(self):
@@ -105,7 +129,13 @@ class FixtureLintTest(unittest.TestCase):
                 self.assertIn("missingFixtureValue", result.stdout)
                 self.assertIn('"id":"missing-property"', result.stdout)
                 self.assertNotIn("ok qmlStaticCheck", result.stdout)
-                self.assertNotIn("Checked 3 QML files", result.stdout)
+                self.assertNotIn("Checked ", result.stdout)
+                if name == "RootServiceHarness.qml":
+                    report = json.loads(result.stdout)
+                    self.assertEqual(len(report["files"]), 1)
+                    self.assertEqual(
+                        Path(report["files"][0]["filename"]).name, "tst_root.qml"
+                    )
 
 
 if __name__ == "__main__":
