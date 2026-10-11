@@ -116,15 +116,15 @@ ColumnLayout {
     description: I18n.tr("settings.bar.appearance.floating.description")
     checked: Settings.data.bar.floating
     onToggled: checked => {
-                 Settings.data.bar.floating = checked;
-                 if (checked) {
-                   // Disable outer corners when floating is enabled
-                   Settings.data.bar.outerCorners = false;
-                 } else {
-                   // Enable outer corners when floating is disabled
-                   Settings.data.bar.outerCorners = true;
-                 }
-               }
+      Settings.data.bar.floating = checked;
+      if (checked) {
+        // Disable outer corners when floating is enabled
+        Settings.data.bar.outerCorners = false;
+      } else {
+        // Enable outer corners when floating is disabled
+        Settings.data.bar.outerCorners = true;
+      }
+    }
   }
 
   NToggle {
@@ -243,12 +243,12 @@ ColumnLayout {
         settingsDialogComponent: Qt.resolvedUrl(Quickshell.shellDir + "/Modules/Panels/Settings/Bar/BarWidgetSettingsDialog.qml")
         widgetRegistry: BarWidgetRegistry
         widgetModel: Settings.data.bar.widgets.left
-        availableWidgets: availableWidgets
-        onAddWidget: (widgetId, section) => _addWidgetToSection(widgetId, section)
-        onRemoveWidget: (section, index) => _removeWidgetFromSection(section, index)
-        onReorderWidget: (section, fromIndex, toIndex) => _reorderWidgetInSection(section, fromIndex, toIndex)
-        onUpdateWidgetSettings: (section, index, settings) => _updateWidgetSettingsInSection(section, index, settings)
-        onMoveWidget: (fromSection, index, toSection) => _moveWidgetBetweenSections(fromSection, index, toSection)
+        availableWidgets: widgetChoices
+        onAddWidget: (widgetId, section) => root._addWidgetToSection(widgetId, section)
+        onRemoveWidget: (section, index) => root._removeWidgetFromSection(section, index)
+        onReorderWidget: (section, fromIndex, toIndex) => root._reorderWidgetInSection(section, fromIndex, toIndex)
+        onUpdateWidgetSettings: (section, index, settings) => root._updateWidgetSettingsInSection(section, index, settings)
+        onMoveWidget: (fromSection, index, toSection) => root._moveWidgetBetweenSections(fromSection, index, toSection)
       }
 
       // Center Section
@@ -258,12 +258,12 @@ ColumnLayout {
         settingsDialogComponent: Qt.resolvedUrl(Quickshell.shellDir + "/Modules/Panels/Settings/Bar/BarWidgetSettingsDialog.qml")
         widgetRegistry: BarWidgetRegistry
         widgetModel: Settings.data.bar.widgets.center
-        availableWidgets: availableWidgets
-        onAddWidget: (widgetId, section) => _addWidgetToSection(widgetId, section)
-        onRemoveWidget: (section, index) => _removeWidgetFromSection(section, index)
-        onReorderWidget: (section, fromIndex, toIndex) => _reorderWidgetInSection(section, fromIndex, toIndex)
-        onUpdateWidgetSettings: (section, index, settings) => _updateWidgetSettingsInSection(section, index, settings)
-        onMoveWidget: (fromSection, index, toSection) => _moveWidgetBetweenSections(fromSection, index, toSection)
+        availableWidgets: widgetChoices
+        onAddWidget: (widgetId, section) => root._addWidgetToSection(widgetId, section)
+        onRemoveWidget: (section, index) => root._removeWidgetFromSection(section, index)
+        onReorderWidget: (section, fromIndex, toIndex) => root._reorderWidgetInSection(section, fromIndex, toIndex)
+        onUpdateWidgetSettings: (section, index, settings) => root._updateWidgetSettingsInSection(section, index, settings)
+        onMoveWidget: (fromSection, index, toSection) => root._moveWidgetBetweenSections(fromSection, index, toSection)
       }
 
       // Right Section
@@ -273,12 +273,12 @@ ColumnLayout {
         settingsDialogComponent: Qt.resolvedUrl(Quickshell.shellDir + "/Modules/Panels/Settings/Bar/BarWidgetSettingsDialog.qml")
         widgetRegistry: BarWidgetRegistry
         widgetModel: Settings.data.bar.widgets.right
-        availableWidgets: availableWidgets
-        onAddWidget: (widgetId, section) => _addWidgetToSection(widgetId, section)
-        onRemoveWidget: (section, index) => _removeWidgetFromSection(section, index)
-        onReorderWidget: (section, fromIndex, toIndex) => _reorderWidgetInSection(section, fromIndex, toIndex)
-        onUpdateWidgetSettings: (section, index, settings) => _updateWidgetSettingsInSection(section, index, settings)
-        onMoveWidget: (fromSection, index, toSection) => _moveWidgetBetweenSections(fromSection, index, toSection)
+        availableWidgets: widgetChoices
+        onAddWidget: (widgetId, section) => root._addWidgetToSection(widgetId, section)
+        onRemoveWidget: (section, index) => root._removeWidgetFromSection(section, index)
+        onReorderWidget: (section, fromIndex, toIndex) => root._reorderWidgetInSection(section, fromIndex, toIndex)
+        onUpdateWidgetSettings: (section, index, settings) => root._updateWidgetSettingsInSection(section, index, settings)
+        onMoveWidget: (fromSection, index, toSection) => root._moveWidgetBetweenSections(fromSection, index, toSection)
       }
     }
   }
@@ -302,31 +302,32 @@ ColumnLayout {
     Repeater {
       model: Quickshell.screens || []
       delegate: NCheckbox {
+        id: monitorCheckbox
         required property ShellScreen modelData
-        readonly property string monitorName: modelData ? modelData.name : ""
-        readonly property string monitorModel: modelData ? modelData.model : ""
-        readonly property int monitorWidth: modelData ? modelData.width : 0
-        readonly property int monitorHeight: modelData ? modelData.height : 0
+        readonly property string monitorName: monitorCheckbox.modelData ? monitorCheckbox.modelData.name : ""
+        readonly property string monitorModel: monitorCheckbox.modelData ? monitorCheckbox.modelData.model : ""
+        readonly property int monitorWidth: monitorCheckbox.modelData ? monitorCheckbox.modelData.width : 0
+        readonly property int monitorHeight: monitorCheckbox.modelData ? monitorCheckbox.modelData.height : 0
 
         Layout.fillWidth: true
-        label: monitorName || "Unknown"
+        label: monitorCheckbox.monitorName || "Unknown"
         description: {
-          const compositorScale = CompositorService.getDisplayScale(monitorName);
+          const compositorScale = CompositorService.getDisplayScale(monitorCheckbox.monitorName);
           I18n.tr("system.monitor-description", {
-                    "model": monitorModel,
-                    "width": monitorWidth * compositorScale,
-                    "height": monitorHeight * compositorScale,
-                    "scale": compositorScale
-                  });
+            "model": monitorCheckbox.monitorModel,
+            "width": monitorCheckbox.monitorWidth * compositorScale,
+            "height": monitorCheckbox.monitorHeight * compositorScale,
+            "scale": compositorScale
+          });
         }
-        checked: (Settings.data.bar.monitors || []).indexOf(monitorName) !== -1
+        checked: (Settings.data.bar.monitors || []).indexOf(monitorCheckbox.monitorName) !== -1
         onToggled: checked => {
-                     if (checked) {
-                       Settings.data.bar.monitors = addMonitor(Settings.data.bar.monitors, monitorName);
-                     } else {
-                       Settings.data.bar.monitors = removeMonitor(Settings.data.bar.monitors, monitorName);
-                     }
-                   }
+          if (checked) {
+            Settings.data.bar.monitors = root.addMonitor(Settings.data.bar.monitors, monitorCheckbox.monitorName);
+          } else {
+            Settings.data.bar.monitors = root.removeMonitor(Settings.data.bar.monitors, monitorCheckbox.monitorName);
+          }
+        }
       }
     }
   }
@@ -428,20 +429,20 @@ ColumnLayout {
   }
 
   function updateAvailableWidgetsModel() {
-    availableWidgets.clear();
+    widgetChoices.clear();
     const widgets = BarWidgetRegistry.getAvailableWidgets();
     widgets.forEach(entry => {
-                      availableWidgets.append({
-                                                "key": entry,
-                                                "name": entry,
-                                                "badgeLocations": getWidgetLocations(entry)
-                                              });
-                    });
+      widgetChoices.append({
+        "key": entry,
+        "name": entry,
+        "badgeLocations": getWidgetLocations(entry)
+      });
+    });
   }
 
   // Base list model for all combo boxes
   ListModel {
-    id: availableWidgets
+    id: widgetChoices
   }
 
   Component.onCompleted: {
@@ -451,7 +452,7 @@ ColumnLayout {
   Connections {
     target: BarService
     function onActiveWidgetsChanged() {
-      updateAvailableWidgetsModel();
+      root.updateAvailableWidgetsModel();
     }
   }
 }
