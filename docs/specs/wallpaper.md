@@ -81,6 +81,7 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 ## Tests asserting this spec
 
 - `Tests/background-resource-guards.test.js`
+- `Tests/background-warnings.test.py` — standalone `lint` retains exactly 46 diagnostics (42 unqualified Component captures, four missing-property), down from 58 at `6c7c733ca`; rejects known-owner unqualified accesses and block-scoped `var`. Five isolated offscreen `runtime` cases cover size/fill-mode calculations, decode-size assignment before source, shader Component context, transition completion without decoding, and settings/random-selection helpers. Production layer-shell declarations are removed and PanelWindow is an invisible fixture Window; services/settings are inert and writable paths isolated. Requires exit status zero, `0 failed`, no logged `QWARN`, `QFATAL`, `ReferenceError`, `TypeError`, or `Binding loop`, and unchanged real settings after a permission-locked, hash-verified backup. No shader-pixel, actual image-decode, output-routing, or live memory proof. Idle shader unload remains unproved: the existing empty URL/string strict comparison keeps the shader active; the harness reports this blocker rather than failing or fixing it.
 - `Tests/wallpaper-service-guards.test.js`
 - `Tests/wallhaven-service-guards.test.js`
 - `Tests/wallpaper-panel-guards.test.js`
@@ -93,7 +94,8 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 ## Known gaps (current cycle)
 
 - [ ] Add executable tests for actual wallpaper file acceptance/rejection and image-extension filtering.
-- [ ] Add executable tests for rendered wallpaper background transition behavior.
+- [ ] Extend isolated background helper/transition coverage to actual image decoding, shader pixels, and output routing; transition completion with empty sources is not rendered-transition proof.
+- [ ] Prove idle shader unloading; current isolated case is blocked by the existing empty URL/string strict comparison. Wallpaper memory testing remains closed without new evidence reopening it; this warning cleanup supplies none.
 - [ ] Extend wallpaper panel action coverage to real styled-control interaction and asynchronous download completion after disposal; current isolated coverage uses fixture controls and synchronous fake downloads.
 
 ## Out of scope
