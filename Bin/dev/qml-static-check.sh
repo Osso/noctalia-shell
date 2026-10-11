@@ -97,6 +97,15 @@ for file in "${qml_files[@]}"; do
     Tests/Qml/SetupLayoutGeometryHarness.qml)
         python3 "$repo_root/Tests/setup-layout-geometry.test.py" lint-harness
         ;;
+    Tests/Qml/SchemeDownloaderHarness.qml)
+        python3 "$repo_root/Tests/scheme-downloader-runtime.test.py" lint-harness
+        ;;
+    Tests/Qml/ClipboardPreviewWarningsHarness.qml)
+        python3 "$repo_root/Tests/clipboard-preview-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/ActiveWindowWarningsHarness.qml)
+        python3 "$repo_root/Tests/active-window-warnings.test.py" lint-harness
+        ;;
     Tests/network-service/shell.qml)
         python3 "$repo_root/Tests/network-service-warnings.test.py" lint-harness
         ;;
