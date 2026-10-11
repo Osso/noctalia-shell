@@ -100,7 +100,7 @@ Item {
       return;
     }
     if (_currentStateCheckIndex < _parsedStateChecks.length) {
-      var currentCheckItem = _parsedStateChecks[_currentStateCheckIndex];
+      const currentCheckItem = _parsedStateChecks[_currentStateCheckIndex];
       if (currentCheckItem && currentCheckItem.command) {
         stateCheckProcessExecutor.command = ["sh", "-c", currentCheckItem.command];
         stateCheckProcessExecutor.generation = _stateGeneration;

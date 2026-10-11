@@ -52,8 +52,7 @@ def run_lint(directory):
     print(output, end="")
     warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
     print("CUSTOM_BUTTON_WARNINGS", len(warnings))
-    # One pre-existing block-scoped var is not an observed hoisting bug.
-    assert len(warnings) == 1 and "block scope is hoisted" in warnings[0], output
+    assert not warnings, output
     assert result.returncode == 0, result.returncode
 
 
