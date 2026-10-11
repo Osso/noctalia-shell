@@ -17,6 +17,8 @@ import shutil
 import subprocess
 import tempfile
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/Settings/Tabs/BatteryTab.qml")
 SETTINGS = Path("/home/osso/.config/noctalia/settings.json")
@@ -289,6 +291,13 @@ DISPLAY_TESTS = """
 """
 
 
+def lint_harness(directory):
+    stage_tab(directory)
+    harness = directory / "tst_battery.qml"
+    harness.write_text((ROOT / "Tests/Qml/BatteryTabWarningsHarness.qml").read_text())
+    return check_harness(directory, harness)
+
+
 def behavior(directory, snapshot):
     stage_tab(directory)
     environment = {"PATH": os.environ["PATH"], "LANG": "C.UTF-8"}
@@ -342,13 +351,15 @@ def behavior(directory, snapshot):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "behavior", "lint-harness"))
     parser.add_argument("--snapshot", type=Path)
     args = parser.parse_args()
     if args.mode == "behavior" and not args.snapshot:
         parser.error("behavior requires --snapshot")
     with tempfile.TemporaryDirectory(prefix="noctalia-battery-tab-") as temporary:
         directory = Path(temporary)
+        if args.mode == "lint-harness":
+            raise SystemExit(lint_harness(directory))
         before = SETTINGS.read_bytes()
         backup = directory / "settings-backup.json"
         backup.write_bytes(before)

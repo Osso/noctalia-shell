@@ -16,6 +16,8 @@ import shutil
 import subprocess
 import tempfile
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 WIDGET = Path("Modules/Bar/Widgets/MediaMini.qml")
 
@@ -27,10 +29,10 @@ def write_singleton(directory, name, body):
     )
 
 
-def stage_modules(directory):
+def stage_modules(directory, source_root=ROOT):
     result = subprocess.run(
         ["rg", "--files", "-g", "*.qml", "-g", "*.js", "."],
-        cwd=ROOT,
+        cwd=source_root,
         capture_output=True,
         text=True,
         check=True,
@@ -40,7 +42,7 @@ def stage_modules(directory):
         path = Path(relative)
         target = directory / "qs" / path
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(ROOT / path, target)
+        shutil.copyfile(source_root / path, target)
         if path.suffix != ".qml":
             continue
         for parent in (path.parent, *path.parent.parents):
@@ -225,6 +227,15 @@ function hide() { lastText = ""; }""",
     )
 
 
+def lint_harness(directory):
+    runtime = directory / "runtime"
+    runtime.mkdir()
+    stage_widget(runtime)
+    imports = directory / "imports"
+    stage_modules(imports, source_root=runtime)
+    return check_harness(imports, imports / "qs/shell.qml")
+
+
 def isolate_environment(directory):
     environment = {
         key: value
@@ -285,10 +296,12 @@ def run_widget(directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "behavior", "lint-harness"))
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-media-mini-") as temporary:
         directory = Path(temporary)
+        if args.mode == "lint-harness":
+            raise SystemExit(lint_harness(directory))
         if args.mode == "lint":
             run_lint(directory)
         else:

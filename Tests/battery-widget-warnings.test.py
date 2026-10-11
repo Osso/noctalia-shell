@@ -12,6 +12,8 @@ import re
 import subprocess
 import tempfile
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Bar/Widgets/Battery.qml")
 SETTINGS = Path("/home/osso/.config/noctalia/settings.json")
@@ -247,6 +249,11 @@ property var devices: ({values: [headphones]})"""),
     )
 
 
+def lint_harness(directory):
+    stage_widget(directory)
+    return check_harness(directory, directory / "tst_battery.qml")
+
+
 def behavior(directory):
     stage_widget(directory)
     environment = {"PATH": os.environ["PATH"], "LANG": "C.UTF-8"}
@@ -292,10 +299,12 @@ def behavior(directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "behavior", "lint-harness"))
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-battery-widget-") as temporary:
         directory = Path(temporary)
+        if args.mode == "lint-harness":
+            raise SystemExit(lint_harness(directory))
         original = SETTINGS.read_bytes()
         backup = directory / "settings-backup.json"
         backup.touch(mode=0o600)

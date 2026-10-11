@@ -78,7 +78,20 @@ for file in "${qml_files[@]}"; do
         continue
     fi
 
-    "$qmllint" -I "$module_root" "$module_root/qs/$file"
+    case "$file" in
+    Tests/Qml/BatteryTabWarningsHarness.qml)
+        python3 "$repo_root/Tests/battery-tab-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/BatteryWidgetWarningsHarness.qml)
+        python3 "$repo_root/Tests/battery-widget-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/MediaMiniWarningsHarness.qml)
+        python3 "$repo_root/Tests/media-mini-warnings.test.py" lint-harness
+        ;;
+    *)
+        "$qmllint" -I "$module_root" "$module_root/qs/$file"
+        ;;
+    esac
     checked_count=$((checked_count + 1))
 done
 
