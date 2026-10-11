@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -22,10 +24,10 @@ Rectangle {
   property var widgetMetadata: BarWidgetRegistry.widgetMetadata[widgetId]
   property var widgetSettings: {
     if (section && sectionWidgetIndex >= 0) {
-      var widgets = Settings.data.bar.widgets[section];
+      const widgets = Settings.data.bar.widgets[section];
       if (widgets && sectionWidgetIndex < widgets.length) {
         return widgets[sectionWidgetIndex];
-    }
+      }
     }
     return {};
   }
@@ -113,30 +115,34 @@ Rectangle {
     // Horizontal
     Loader {
       id: horizontalLoader
-      active: !isBarVertical
+      active: !root.isBarVertical
       anchors.centerIn: parent
       sourceComponent: ColumnLayout {
         anchors.centerIn: parent
         spacing: Settings.data.bar.showCapsule ? -4 : -2
         Repeater {
           id: repeater
-          model: I18n.locale.toString(now, formatHorizontal.trim()).split("\\n")
+          model: I18n.locale.toString(root.now, root.formatHorizontal.trim()).split("\\n")
           NText {
-            visible: text !== ""
-            text: modelData
-            family: useCustomFont && customFont ? customFont : Settings.data.ui.fontDefault
+            id: horizontalText
+            required property string modelData
+            required property int index
+
+            visible: horizontalText.text !== ""
+            text: horizontalText.modelData
+            family: root.useCustomFont && root.customFont ? root.customFont : Settings.data.ui.fontDefault
             Binding on pointSize {
               value: {
                 if (repeater.model.length == 1) {
-                  return Style.fontSizeM * scaling;
+                  return Style.fontSizeM * root.scaling;
                 } else {
-                  return (index == 0) ? Style.fontSizeS * scaling : Style.fontSizeXS * scaling;
+                  return (horizontalText.index == 0) ? Style.fontSizeS * root.scaling : Style.fontSizeXS * root.scaling;
                 }
               }
             }
             applyUiScale: false
             font.weight: Style.fontWeightBold
-            color: usePrimaryColor ? NColor.mPrimary : NColor.mOnSurface
+            color: root.usePrimaryColor ? NColor.mPrimary : NColor.mOnSurface
             wrapMode: Text.WordWrap
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
           }
@@ -147,24 +153,27 @@ Rectangle {
     // Vertical
     Loader {
       id: verticalLoader
-      active: isBarVertical
+      active: root.isBarVertical
       anchors.centerIn: parent // Now this works without layout conflicts
       sourceComponent: ColumnLayout {
         anchors.centerIn: parent
         spacing: -2
         Repeater {
-          model: I18n.locale.toString(now, formatVertical.trim()).split(" ")
+          model: I18n.locale.toString(root.now, root.formatVertical.trim()).split(" ")
           delegate: NText {
-            visible: text !== ""
-            text: modelData
-            family: useCustomFont && customFont ? customFont : Settings.data.ui.fontDefault
+            id: verticalText
+            required property string modelData
+
+            visible: verticalText.text !== ""
+            text: verticalText.modelData
+            family: root.useCustomFont && root.customFont ? root.customFont : Settings.data.ui.fontDefault
             Binding on pointSize {
-              value: Style.fontSizeM * scaling
+              value: Style.fontSizeM * root.scaling
             }
             applyUiScale: false
 
             font.weight: Style.fontWeightBold
-            color: usePrimaryColor ? NColor.mPrimary : NColor.mOnSurface
+            color: root.usePrimaryColor ? NColor.mPrimary : NColor.mOnSurface
             wrapMode: Text.WordWrap
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
           }
@@ -190,7 +199,7 @@ Rectangle {
     ]
 
     onTriggered: action => root.handleContextMenuAction(action)
-    }
+  }
 
   MouseArea {
     id: clockMouseArea
@@ -199,7 +208,7 @@ Rectangle {
     hoverEnabled: true
     acceptedButtons: Qt.LeftButton | Qt.RightButton
     onEntered: {
-      const panel = PanelService.getPanel("clockPanel", screen);
+      const panel = PanelService.getPanel("clockPanel", root.screen);
       if (!panel || !panel.active) {
         TooltipService.show(root, I18n.tr("clock.tooltip"), BarService.getTooltipDirection());
       }
@@ -215,5 +224,5 @@ Rectangle {
         root.toggleCalendarPanel(this);
       }
     }
-    }
+  }
 }
