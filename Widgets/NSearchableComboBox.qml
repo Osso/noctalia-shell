@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -99,10 +100,10 @@ RowLayout {
       // Use fuzzy search if available, fallback to simple search
       if (typeof Fuzzysort !== 'undefined') {
         var fuzzyResults = Fuzzysort.go(root.searchText, items, {
-          "key": "name",
-          "threshold": -1000,
-          "limit": 50
-        });
+                                          "key": "name",
+                                          "threshold": -1000,
+                                          "limit": 50
+                                        });
 
         // Add results in order of relevance
         for (var j = 0; j < fuzzyResults.length; j++) {
@@ -123,6 +124,92 @@ RowLayout {
 
   onSearchTextChanged: root.filterModel()
   onModelChanged: root.filterModel()
+
+  component Badge: Item {
+    id: badgeDelegate
+    required property bool highlighted
+    required property string modelData
+
+    width: Style.baseWidgetSize * 0.7
+    height: Style.baseWidgetSize * 0.7
+
+    NText {
+      anchors.centerIn: parent
+      text: badgeDelegate.modelData
+      pointSize: Style.fontSizeXXS
+      font.weight: Style.fontWeightBold
+      color: badgeDelegate.highlighted ? NColor.mOnHover : NColor.mOnSurface
+    }
+  }
+
+  component SearchOption: ItemDelegate {
+    id: delegateRoot
+    required property NSearchableComboBox widgetOwner
+    required property ComboBox parentComboBox
+    required property NListView ownerView
+    required property int index
+    required property string key
+    required property string name
+    required property var model
+
+    width: delegateRoot.ownerView.width
+    hoverEnabled: true
+    highlighted: delegateRoot.ListView.view.currentIndex === delegateRoot.index
+
+    onHoveredChanged: {
+      if (delegateRoot.hovered) {
+        delegateRoot.ListView.view.currentIndex = delegateRoot.index;
+      }
+    }
+
+    onClicked: {
+      delegateRoot.widgetOwner.selected(delegateRoot.key);
+      delegateRoot.parentComboBox.currentIndex = delegateRoot.widgetOwner.findIndexByKeyInFiltered(delegateRoot.key);
+      delegateRoot.parentComboBox.popup.close();
+    }
+
+    contentItem: RowLayout {
+      width: parent.width
+      spacing: Style.marginM
+
+      NText {
+        text: delegateRoot.name
+        pointSize: Style.fontSizeM
+        color: delegateRoot.highlighted ? NColor.mOnHover : NColor.mOnSurface
+        verticalAlignment: Text.AlignVCenter
+        elide: Text.ElideRight
+        Layout.fillWidth: true
+        Behavior on color {
+          ColorAnimation {
+            duration: Style.animationFast
+          }
+        }
+      }
+
+      RowLayout {
+        spacing: Style.marginS
+        Layout.alignment: Qt.AlignRight
+
+        Repeater {
+          model: delegateRoot.model.badgeLocations || []
+
+          delegate: Badge {
+            highlighted: delegateRoot.highlighted
+          }
+        }
+      }
+    }
+    background: Rectangle {
+      width: delegateRoot.ownerView.width
+      color: delegateRoot.highlighted ? NColor.mHover : NColor.transparent
+      radius: Style.radiusS
+      Behavior on color {
+        ColorAnimation {
+          duration: Style.animationFast
+        }
+      }
+    }
+  }
 
   NLabel {
     label: root.label
@@ -208,82 +295,10 @@ RowLayout {
 
           Component {
             id: defaultDelegate
-            ItemDelegate {
-              id: delegateRoot
-              required property int index
-              required property string key
-              required property string name
-              required property var model
-
-              width: listView.width
-              hoverEnabled: true
-              highlighted: delegateRoot.ListView.view.currentIndex === delegateRoot.index
-
-              onHoveredChanged: {
-                if (delegateRoot.hovered) {
-                  delegateRoot.ListView.view.currentIndex = delegateRoot.index;
-                }
-              }
-
-              onClicked: {
-                root.selected(delegateRoot.key);
-                combo.currentIndex = root.findIndexByKeyInFiltered(delegateRoot.key);
-                combo.popup.close();
-              }
-
-              contentItem: RowLayout {
-                width: parent.width
-                spacing: Style.marginM
-
-                NText {
-                  text: delegateRoot.name
-                  pointSize: Style.fontSizeM
-                  color: delegateRoot.highlighted ? NColor.mOnHover : NColor.mOnSurface
-                  verticalAlignment: Text.AlignVCenter
-                  elide: Text.ElideRight
-                  Layout.fillWidth: true
-                  Behavior on color {
-                    ColorAnimation {
-                      duration: Style.animationFast
-                    }
-                  }
-                }
-
-                RowLayout {
-                  spacing: Style.marginS
-                  Layout.alignment: Qt.AlignRight
-
-                  Repeater {
-                    model: delegateRoot.model.badgeLocations || []
-
-                    delegate: Item {
-                      id: badgeDelegate
-                      required property string modelData
-
-                      width: Style.baseWidgetSize * 0.7
-                      height: Style.baseWidgetSize * 0.7
-
-                      NText {
-                        anchors.centerIn: parent
-                        text: badgeDelegate.modelData
-                        pointSize: Style.fontSizeXXS
-                        font.weight: Style.fontWeightBold
-                        color: delegateRoot.highlighted ? NColor.mOnHover : NColor.mOnSurface
-                      }
-                    }
-                  }
-                }
-              }
-              background: Rectangle {
-                width: listView.width
-                color: delegateRoot.highlighted ? NColor.mHover : NColor.transparent
-                radius: Style.radiusS
-                Behavior on color {
-                  ColorAnimation {
-                    duration: Style.animationFast
-                  }
-                }
-              }
+            SearchOption {
+              widgetOwner: root
+              parentComboBox: combo
+              ownerView: listView
             }
           }
         }

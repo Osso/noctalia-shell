@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -97,6 +98,61 @@ RowLayout {
     return selectItem(itemIndex, parentComboBox);
   }
 
+  component OptionDelegate: ItemDelegate {
+    id: delegateRoot
+    required property NComboBox widgetOwner
+    required property int index
+
+    required property ComboBox parentComboBox
+    property int itemIndex: delegateRoot.index
+    width: delegateRoot.ListView.view ? delegateRoot.ListView.view.width : (delegateRoot.parentComboBox ? delegateRoot.parentComboBox.width - Style.marginM * 3 : 0)
+    hoverEnabled: true
+    highlighted: delegateRoot.ListView.view.currentIndex === delegateRoot.itemIndex
+
+    property bool pendingClick: false
+    Timer {
+      id: clickRetryTimer
+      interval: 50
+      repeat: false
+      onTriggered: delegateRoot.widgetOwner.retryPendingClick(delegateRoot.itemIndex, delegateRoot.parentComboBox, delegateRoot.ListView.view, clickRetryTimer, delegateRoot)
+    }
+
+    onHoveredChanged: {
+      if (delegateRoot.hovered) {
+        delegateRoot.ListView.view.currentIndex = delegateRoot.itemIndex;
+      }
+    }
+
+    onClicked: delegateRoot.widgetOwner.handleDelegateClick(delegateRoot.itemIndex, delegateRoot.parentComboBox, delegateRoot.ListView.view, clickRetryTimer, delegateRoot)
+
+    background: Rectangle {
+      anchors.fill: parent
+      color: delegateRoot.highlighted ? NColor.mHover : NColor.transparent
+      radius: Style.radiusS
+      Behavior on color {
+        ColorAnimation {
+          duration: Style.animationFast
+        }
+      }
+    }
+
+    contentItem: NText {
+      text: {
+        var item = delegateRoot.widgetOwner.getItem(delegateRoot.index);
+        return item && item.name ? item.name : "";
+      }
+      pointSize: Style.fontSizeM
+      color: delegateRoot.highlighted ? NColor.mOnHover : NColor.mOnSurface
+      verticalAlignment: Text.AlignVCenter
+      elide: Text.ElideRight
+      Behavior on color {
+        ColorAnimation {
+          duration: Style.animationFast
+        }
+      }
+    }
+  }
+
   NLabel {
     label: root.label
     description: root.description
@@ -155,58 +211,9 @@ RowLayout {
         horizontalPolicy: ScrollBar.AlwaysOff
         verticalPolicy: ScrollBar.AsNeeded
 
-        delegate: ItemDelegate {
-          id: delegateRoot
-          required property int index
-
-          property ComboBox parentComboBox: combo
-          property int itemIndex: delegateRoot.index
-          width: delegateRoot.ListView.view ? delegateRoot.ListView.view.width : (delegateRoot.parentComboBox ? delegateRoot.parentComboBox.width - Style.marginM * 3 : 0)
-          hoverEnabled: true
-          highlighted: delegateRoot.ListView.view.currentIndex === delegateRoot.itemIndex
-
-          property bool pendingClick: false
-          Timer {
-            id: clickRetryTimer
-            interval: 50
-            repeat: false
-            onTriggered: root.retryPendingClick(delegateRoot.itemIndex, delegateRoot.parentComboBox, delegateRoot.ListView.view, clickRetryTimer, delegateRoot)
-          }
-
-          onHoveredChanged: {
-            if (delegateRoot.hovered) {
-              delegateRoot.ListView.view.currentIndex = delegateRoot.itemIndex;
-            }
-          }
-
-          onClicked: root.handleDelegateClick(delegateRoot.itemIndex, delegateRoot.parentComboBox, delegateRoot.ListView.view, clickRetryTimer, delegateRoot)
-
-          background: Rectangle {
-            anchors.fill: parent
-            color: delegateRoot.highlighted ? NColor.mHover : NColor.transparent
-            radius: Style.radiusS
-            Behavior on color {
-              ColorAnimation {
-                duration: Style.animationFast
-              }
-            }
-          }
-
-          contentItem: NText {
-            text: {
-              var item = root.getItem(delegateRoot.index);
-              return item && item.name ? item.name : "";
-            }
-            pointSize: Style.fontSizeM
-            color: delegateRoot.highlighted ? NColor.mOnHover : NColor.mOnSurface
-            verticalAlignment: Text.AlignVCenter
-            elide: Text.ElideRight
-            Behavior on color {
-              ColorAnimation {
-                duration: Style.animationFast
-              }
-            }
-          }
+        delegate: OptionDelegate {
+          widgetOwner: root
+          parentComboBox: combo
         }
       }
 

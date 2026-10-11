@@ -99,6 +99,7 @@ def run_behavior(directory):
 
 def run_lint(directory):
     load("media-mini-warnings").stage_modules(directory)
+    failures = []
     for name in NAMES:
         result = subprocess.run(
             [
@@ -115,16 +116,15 @@ def run_lint(directory):
         output = result.stdout + result.stderr
         print(output, end="")
         warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
-        counts = Counter(re.findall(r"\[([^]]+)\]", line)[-1] for line in warnings)
+        blocks = output.split("Warning:")[1:]
+        counts = Counter(
+            re.findall(r"\[([^]]+)\]", block)[0]
+            for block in blocks
+        )
         print(name, "LINT_COUNTS", json.dumps(dict(counts), sort_keys=True))
-        # Cross-component IDs remain intentionally unbound; never blanket Bound.
-        actionable = [
-            block
-            for block in output.split("Warning:")[1:]
-            if "pragma ComponentBehavior: Bound" not in block
-        ]
-        assert not actionable, f"{name}: same-component/role diagnostics remain"
-        assert result.returncode == 0, f"{name}: lint exit {result.returncode}"
+        if warnings or result.returncode != 0:
+            failures.append(f"{name}: {dict(counts)}, lint exit {result.returncode}")
+    assert not failures, "; ".join(failures)
 
 
 def main():
