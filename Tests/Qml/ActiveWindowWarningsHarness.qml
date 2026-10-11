@@ -12,7 +12,7 @@ ShellRoot {
 
   property var standalone: null
   property var loaded: null
-  property Item widgetLoader: null
+  property BarWidgetLoader widgetLoader: null
 
   PersistentProperties {
     id: reloadState
@@ -37,15 +37,15 @@ ShellRoot {
 
   function setSettings(widget, position) {
     Settings.data = Object.assign({}, Settings.data, {
-                                    "bar": Object.assign({}, Settings.data.bar, {
-                                                           "position": position,
-                                                           "widgets": {
-                                                             "left": [widget],
-                                                             "center": [],
-                                                             "right": []
-                                                           }
-                                                         })
-                                  });
+      "bar": Object.assign({}, Settings.data.bar, {
+        "position": position,
+        "widgets": {
+          "left": [widget],
+          "center": [],
+          "right": []
+        }
+      })
+    });
   }
 
   function assertDimensions(width, height, message) {
@@ -84,14 +84,14 @@ ShellRoot {
         harness.require(!Settings.ready, "settings hydration deliberately delayed");
         harness.standalone = widgetComponent.createObject(offscreen.contentItem);
         harness.widgetLoader = loaderComponent.createObject(offscreen.contentItem, {
-                                                              "widgetId": "ActiveWindow",
-                                                              "widgetScreen": Quickshell.screens[0],
-                                                              "widgetProps": {
-                                                                "widgetId": "ActiveWindow",
-                                                                "section": "left",
-                                                                "sectionWidgetIndex": 0
-                                                              }
-                                                            });
+          "widgetId": "ActiveWindow",
+          "widgetScreen": Quickshell.screens[0],
+          "widgetProps": {
+            "widgetId": "ActiveWindow",
+            "section": "left",
+            "sectionWidgetIndex": 0
+          }
+        });
         harness.loaded = BarWidgetRegistry.constructed.ActiveWindow;
         harness.require(harness.standalone !== null && harness.loaded !== undefined, "actual widgets constructed");
         harness.require(BarWidgetRegistry.snapshots.length === 1, "production onLoaded observed");
@@ -114,12 +114,12 @@ ShellRoot {
         harness.standalone.section = "left";
         harness.standalone.sectionWidgetIndex = 0;
         harness.setSettings({
-                              "id": "ActiveWindow",
-                              "hideMode": "visible",
-                              "maxWidth": 210,
-                              "useFixedWidth": true,
-                              "showIcon": false
-                            }, "top");
+          "id": "ActiveWindow",
+          "hideMode": "visible",
+          "maxWidth": 210,
+          "useFixedWidth": true,
+          "showIcon": false
+        }, "top");
         Settings.ready = true;
         break;
       case 2:
@@ -133,20 +133,20 @@ ShellRoot {
         };
         CompositorService.activeWindowChanged();
         harness.setSettings({
-                              "id": "ActiveWindow",
-                              "hideMode": "visible",
-                              "maxWidth": 90,
-                              "useFixedWidth": false,
-                              "scrollingMode": "always"
-                            }, "top");
+          "id": "ActiveWindow",
+          "hideMode": "visible",
+          "maxWidth": 90,
+          "useFixedWidth": false,
+          "scrollingMode": "always"
+        }, "top");
         break;
       case 3:
         harness.assertDimensions(90, Settings.expectedHeight, "focused title dynamic cap");
         harness.require(harness.loaded.windowTitle === CompositorService.focusedWindow.title, "focused title rendered");
         harness.setSettings({
-                              "id": "ActiveWindow",
-                              "hideMode": "visible"
-                            }, "left");
+          "id": "ActiveWindow",
+          "hideMode": "visible"
+        }, "left");
         harness.standalone.scaling = 0.8;
         harness.widgetLoader.barDensity = "mini";
         break;
@@ -155,11 +155,11 @@ ShellRoot {
         CompositorService.focusedWindow = null;
         CompositorService.windowListChanged();
         harness.setSettings({
-                              "id": "ActiveWindow",
-                              "hideMode": "transparent",
-                              "maxWidth": 160,
-                              "useFixedWidth": true
-                            }, "top");
+          "id": "ActiveWindow",
+          "hideMode": "transparent",
+          "maxWidth": 160,
+          "useFixedWidth": true
+        }, "top");
         break;
       case 5:
         harness.assertDimensions(160, Settings.expectedHeight, "transparent mode retains layout space");
@@ -168,9 +168,9 @@ ShellRoot {
         harness.require(PanelService.actions.join(",") === "close,settings", "settings closes menu before opening");
         harness.require(BarService.settingsArgs[0] === Quickshell.screens[0] && BarService.settingsArgs[1] === "left" && BarService.settingsArgs[2] === 0 && BarService.settingsArgs[3] === "ActiveWindow" && BarService.settingsArgs[4].maxWidth === 160, "context settings instance arguments");
         harness.setSettings({
-                              "id": "ActiveWindow",
-                              "hideMode": "hidden"
-                            }, "top");
+          "id": "ActiveWindow",
+          "hideMode": "hidden"
+        }, "top");
         break;
       case 6:
         harness.assertDimensions(0, 0, "hidden empty state after hydration");

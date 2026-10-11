@@ -12,6 +12,8 @@ import shutil
 import subprocess
 import tempfile
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Bar/Widgets/ActiveWindow.qml")
 
@@ -122,6 +124,15 @@ function getPopupMenuWindow(screen) { return popup; }""",
     return fixture
 
 
+def lint_harness(directory, focused_start, production_style, reload_lifecycle):
+    runtime = directory / "runtime"
+    runtime.mkdir()
+    fixture = stage_widget(runtime, focused_start, production_style, reload_lifecycle)
+    imports = directory / "imports"
+    fixture.fixture.stage_modules(imports, source_root=runtime)
+    return check_harness(imports, imports / "qs/shell.qml")
+
+
 def behavior(directory, focused_start, production_style, reload_lifecycle):
     settings = Path.home() / ".config/noctalia/settings.json"
     original = settings.read_bytes()
@@ -159,7 +170,7 @@ def behavior(directory, focused_start, production_style, reload_lifecycle):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
     parser.add_argument("--focused-start", action="store_true")
     parser.add_argument("--production-style", action="store_true")
     parser.add_argument("--reload", action="store_true")
@@ -168,6 +179,12 @@ def main():
         directory = Path(temporary)
         if args.mode == "lint":
             lint(directory)
+        elif args.mode == "lint-harness":
+            raise SystemExit(
+                lint_harness(
+                    directory, args.focused_start, args.production_style, args.reload
+                )
+            )
         else:
             behavior(directory, args.focused_start, args.production_style, args.reload)
 
