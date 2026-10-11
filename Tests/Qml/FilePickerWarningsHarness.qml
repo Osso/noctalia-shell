@@ -111,6 +111,16 @@ Item {
       picker.setSearchBarVisible(false);
       tryCompare(grid(), "count", 3);
 
+      const view = data.listMode ? findChild(picker.contentItem, item => item.model !== undefined && item.currentIndex !== undefined && item.cellWidth === undefined) : grid();
+      verify(view !== null);
+      const model = view.model;
+      view.model = null;
+      tryCompare(view, "count", 0);
+      view.model = model;
+      tryCompare(view, "count", 3);
+      tryVerify(() => entry("child", data.listMode) !== null);
+      wait(50); // Reassigned delegates need a layout pass before pointer events.
+
       const child = entry("child", data.listMode);
       mouseDoubleClickSequence(child, child.width / 2, child.height / 2);
       tryCompare(picker, "currentPath", "@FILES@/child");
