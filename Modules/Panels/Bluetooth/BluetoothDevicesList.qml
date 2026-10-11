@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Bluetooth
@@ -43,7 +45,6 @@ NBox {
 
         required property BluetoothDevice modelData
         required property int index
-        readonly property BluetoothDevicesList listOwner: device.parent.parent
 
         readonly property bool devicePairing: modelData ? modelData.pairing === true : false
         readonly property bool deviceBlocked: modelData ? modelData.blocked === true : false
@@ -166,7 +167,7 @@ NBox {
               }
               return NColor.mPrimary;
             }
-            tooltipText: device.listOwner.tooltipText
+            tooltipText: root.tooltipText
             text: {
               if (device.devicePairing) {
                 return I18n.tr("bluetooth.panel.pairing");

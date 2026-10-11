@@ -24,6 +24,7 @@ TARGET = ROOT / "Modules/Panels/Bluetooth/BluetoothDevicesList.qml"
 
 HARNESS = """import QtQuick
 import Quickshell
+import Quickshell.Bluetooth
 import qs.Modules.Panels.Bluetooth
 
 ShellRoot {
@@ -50,6 +51,9 @@ ShellRoot {
     running: true
     onTriggered: {
       try {
+        require(BluetoothDeviceState.Disconnected === 0 && BluetoothDeviceState.Connected === 1
+                && BluetoothDeviceState.Disconnecting === 2 && BluetoothDeviceState.Connecting === 3,
+                "installed Bluetooth state enum unavailable");
         require(Array.isArray(defaults.model), "default model must be an array; got " + defaults.model);
         require(defaults.model.length === 0, "default model must contain zero devices");
         assertRows(defaults, 0);
@@ -99,6 +103,7 @@ ShellRoot {
     const name = layout.children[1].children[0];
     const button = layout.children[3];
     require(row.modelData === expected, "wrong device at row " + index);
+    require(row.index === index, "delegate index injection changed");
     require(name.text === expected.name, "wrong visible device name");
     require(button.text === "bluetooth.panel." + label, "wrong action label");
     require(button.enabled && button.visible, "idle device action unavailable");
