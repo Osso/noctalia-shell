@@ -3,8 +3,6 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-
-import Quickshell.Io
 import qs.Commons
 import qs.Services.System
 import qs.Services.Theming
