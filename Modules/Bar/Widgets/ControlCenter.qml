@@ -23,7 +23,7 @@ NIconButton {
   property var widgetMetadata: BarWidgetRegistry.widgetMetadata[widgetId]
   property var widgetSettings: {
     if (section && sectionWidgetIndex >= 0) {
-      var widgets = Settings.data.bar.widgets[section];
+      const widgets = Settings.data.bar.widgets[section];
       if (widgets && sectionWidgetIndex < widgets.length) {
         return widgets[sectionWidgetIndex];
       }
@@ -128,7 +128,7 @@ NIconButton {
         if (panel)
           panel.toggle();
       } else if (action === "widget-settings") {
-        BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
+        BarService.openWidgetSettings(root.screen, root.section, root.sectionWidgetIndex, root.widgetId, root.widgetSettings);
       }
     }
   }
@@ -163,18 +163,18 @@ NIconButton {
     width: root.width * 0.8
     height: width
     source: {
-      if (useDistroLogo)
+      if (root.useDistroLogo)
         return HostService.osLogo;
-      if (customIconPath !== "")
-        return customIconPath.startsWith("file://") ? customIconPath : "file://" + customIconPath;
+      if (root.customIconPath !== "")
+        return root.customIconPath.startsWith("file://") ? root.customIconPath : "file://" + root.customIconPath;
       return "";
     }
     visible: source !== ""
     smooth: true
     asynchronous: true
-    layer.enabled: isColorizing && (useDistroLogo || customIconPath !== "")
+    layer.enabled: root.isColorizing && (root.useDistroLogo || root.customIconPath !== "")
     layer.effect: ShaderEffect {
-      property color targetColor: isColorizing ? iconColor : (Settings.data.colorSchemes.darkMode ? NColor.mOnSurface : NColor.mSurfaceVariant)
+      property color targetColor: root.isColorizing ? root.iconColor : (Settings.data.colorSchemes.darkMode ? NColor.mOnSurface : NColor.mSurfaceVariant)
       property real colorizeMode: 2.0
 
       fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/appicon_colorize.frag.qsb")
