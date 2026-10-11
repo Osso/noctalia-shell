@@ -100,6 +100,7 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 - `Tests/bar-helpers-guards.test.js`
 - `Tests/bar-service-guards.test.js`
 - `Tests/bar-widget-registry-guards.test.js`
+- `Tests/bar-tab-warnings.test.py` / `Tests/Qml/BarTabWarningsHarness.qml` — standalone BarTab lint requires zero warnings/exit status zero (20→0 through `995514d7e`, `b675d1046`). Isolated actual tab, shared controls, and widget dialog cover four behavioral cases plus init/cleanup (six reported passes): registry badges/refresh; monitor selection, placement and density; section add/remove/reorder/move/update and invalid bounds/last-ControlCenter warning; dialog Cancel preserving fixture values and Apply updating the target entry with no immediate save request. Settings, screens, registry/services, and CustomButton editor are fixtures; direct signals/helpers prove neither physical drag/input nor real persistence or whole-shell behavior. Safety and invocation: [testing](testing.md#bar-settings-tab).
 - `Tests/bar-tab-guards.test.js`
 - `Tests/bar-pill-vertical-guards.test.js`
 - `Tests/bar-pill-warnings.test.py` - nine isolated production-widget behavior cases: four orientation/density geometry cases, two hover/input cases, two auto-hide cases, and one Loader replacement/force-close case. Exercises Bound component context; fixture services do not prove whole-shell behavior.
@@ -116,7 +117,7 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 - [ ] Eight BarPill Loader/QObject `missing-property` typing diagnostics remain after `705973eb2` reduced warnings from 52 to 8. Standalone lint expects exactly those eight, not warning-free analysis; owner qualification introduces no intended user-facing behavior change.
 - [ ] Extend isolated four-side Bar geometry coverage to full-shell rendering and real output/input delivery; fixture screens share one offscreen window and do not prove compositor input regions or pixel rendering.
 - [ ] Two Bar `missing-property` static diagnostics remain after `a83e8408d`; isolated behavior success is not warning-free whole-shell acceptance.
-- [ ] Extend widget settings coverage to pixel rendering, physical input, widget reorder, BarService popup ownership, and real persistence; the cohort uses fixture settings/registry/services and directly invoked control signals.
+- [ ] Extend widget settings coverage to pixel rendering, physical input/drag reorder, BarService popup ownership, and real persistence; isolated BarTab now covers helper-driven section reorder/move and dialog Apply/Cancel, but uses fixture settings/registry/services and directly invoked signals.
 - [ ] Split widget-specific behavior into dedicated specs for widgets that do not already have one.
 
 ## Out of scope
