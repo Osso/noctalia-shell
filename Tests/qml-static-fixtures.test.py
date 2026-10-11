@@ -80,17 +80,26 @@ class FixtureLintTest(unittest.TestCase):
         settings.parent.mkdir(parents=True, mode=0o700)
         settings.touch(mode=0o600)
         settings.write_bytes((root / "Assets/settings-default.json").read_bytes())
+        temporary = root / ".fixture-tmp"
+        temporary.mkdir(mode=0o700)
         result = subprocess.run(
             [str(runner)],
             cwd=root,
             check=False,
-            env=dict(os.environ, HOME=str(home)),
+            env=dict(os.environ, HOME=str(home), TMPDIR=str(temporary)),
             capture_output=True,
             text=True,
             timeout=90,
         )
         print(result.stdout + result.stderr, end="")
+        self.assertEqual(temporary.stat().st_mode & 0o777, 0o700)
+        self.assertEqual(list(temporary.iterdir()), [], "fixture artifacts leaked")
         return result
+
+    def assert_brightness_artifacts_are_isolated(self, file, root):
+        harness = Path(file["filename"])
+        harness.relative_to(root / ".fixture-tmp")
+        self.assertFalse(harness.parent.exists(), "brightness artifacts leaked")
 
     def test_all_six_harnesses_are_checked_without_fixture_type_warnings(self):
         with tempfile.TemporaryDirectory(prefix="noctalia-fixture-static-") as temp:
@@ -116,6 +125,9 @@ class FixtureLintTest(unittest.TestCase):
                 Counter(Path(file["filename"]).name for file in files),
                 Counter(HARNESS_REPORTS.values()),
             )
+            for file in files:
+                if Path(file["filename"]).name == "tst_brightness.qml":
+                    self.assert_brightness_artifacts_are_isolated(file, root)
             self.assertIn("Checked 6 QML files", result.stdout)
             self.assertIn("skipped 0", result.stdout)
 
@@ -145,6 +157,8 @@ class FixtureLintTest(unittest.TestCase):
                 file = reports[0]["files"][0]
                 self.assertEqual(Path(file["filename"]).name, HARNESS_REPORTS[name])
                 self.assertEqual(file["warnings"], [])
+                if name == "BrightnessPanelWarningsHarness.qml":
+                    self.assert_brightness_artifacts_are_isolated(file, root)
                 self.assertIn("Checked 1 QML files", result.stdout)
                 self.assertIn("skipped 0", result.stdout)
 
@@ -175,8 +189,18 @@ class FixtureLintTest(unittest.TestCase):
                 self.assertIn('"id":"missing-property"', result.stdout)
                 self.assertNotIn("ok qmlStaticCheck", result.stdout)
                 self.assertNotIn("Checked ", result.stdout)
-                report = json.loads(result.stdout)
+                reports = [
+                    json.loads(line)
+                    for line in result.stdout.splitlines()
+                    if line.startswith('{"files":')
+                ]
+                self.assertEqual(len(reports), 1, result.stdout)
+                report = reports[0]
                 self.assertEqual(len(report["files"]), 1)
+                if name == "BrightnessPanelWarningsHarness.qml":
+                    self.assert_brightness_artifacts_are_isolated(
+                        report["files"][0], root
+                    )
                 self.assertEqual(
                     Path(report["files"][0]["filename"]).name,
                     HARNESS_REPORTS[name],
