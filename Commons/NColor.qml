@@ -19,7 +19,6 @@ Singleton {
   id: root
 
   property alias colorsData: customColorsData
-  property alias defaultPalette: defaultColors
 
   // --- Key Colors: These are the main accent colors that define your app's style
   readonly property color mPrimary: root.colorsData.mPrimary
@@ -50,36 +49,6 @@ Singleton {
   readonly property color transparent: "transparent"
   readonly property color black: "#000000"
   readonly property color white: "#ffffff"
-
-  // --------------------------------
-  // Default colors: Rose Pine
-  QtObject {
-    id: defaultColors
-
-    readonly property color mPrimary: "#c7a1d8"
-    readonly property color mOnPrimary: "#1a151f"
-
-    readonly property color mSecondary: "#a984c4"
-    readonly property color mOnSecondary: "#f3edf7"
-
-    readonly property color mTertiary: "#e0b7c9"
-    readonly property color mOnTertiary: "#20161f"
-
-    readonly property color mError: "#e9899d"
-    readonly property color mOnError: "#1e1418"
-
-    readonly property color mSurface: "#1c1822"
-    readonly property color mOnSurface: "#e9e4f0"
-
-    readonly property color mSurfaceVariant: "#262130"
-    readonly property color mOnSurfaceVariant: "#a79ab0"
-
-    readonly property color mOutline: "#342c42"
-    readonly property color mShadow: "#120f18"
-
-    readonly property color mHover: "#e0b7c9"
-    readonly property color mOnHover: "#20161f"
-  }
 
   // ----------------------------------------------------------------
   // FileView to load custom colors data from colors.json
@@ -113,29 +82,30 @@ Singleton {
     JsonAdapter {
       id: customColorsData
 
-      property color mPrimary: root.defaultPalette.mPrimary
-      property color mOnPrimary: root.defaultPalette.mOnPrimary
+      // Default colors: Rose Pine
+      property color mPrimary: "#c7a1d8"
+      property color mOnPrimary: "#1a151f"
 
-      property color mSecondary: root.defaultPalette.mSecondary
-      property color mOnSecondary: root.defaultPalette.mOnSecondary
+      property color mSecondary: "#a984c4"
+      property color mOnSecondary: "#f3edf7"
 
-      property color mTertiary: root.defaultPalette.mTertiary
-      property color mOnTertiary: root.defaultPalette.mOnTertiary
+      property color mTertiary: "#e0b7c9"
+      property color mOnTertiary: "#20161f"
 
-      property color mError: root.defaultPalette.mError
-      property color mOnError: root.defaultPalette.mOnError
+      property color mError: "#e9899d"
+      property color mOnError: "#1e1418"
 
-      property color mSurface: root.defaultPalette.mSurface
-      property color mOnSurface: root.defaultPalette.mOnSurface
+      property color mSurface: "#1c1822"
+      property color mOnSurface: "#e9e4f0"
 
-      property color mSurfaceVariant: root.defaultPalette.mSurfaceVariant
-      property color mOnSurfaceVariant: root.defaultPalette.mOnSurfaceVariant
+      property color mSurfaceVariant: "#262130"
+      property color mOnSurfaceVariant: "#a79ab0"
 
-      property color mOutline: root.defaultPalette.mOutline
-      property color mShadow: root.defaultPalette.mShadow
+      property color mOutline: "#342c42"
+      property color mShadow: "#120f18"
 
-      property color mHover: root.defaultPalette.mHover
-      property color mOnHover: root.defaultPalette.mOnHover
+      property color mHover: "#e0b7c9"
+      property color mOnHover: "#20161f"
     }
   }
 }

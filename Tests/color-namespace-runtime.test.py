@@ -10,6 +10,24 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_COLORS = {
+    "mPrimary": "#c7a1d8",
+    "mOnPrimary": "#1a151f",
+    "mSecondary": "#a984c4",
+    "mOnSecondary": "#f3edf7",
+    "mTertiary": "#e0b7c9",
+    "mOnTertiary": "#20161f",
+    "mError": "#e9899d",
+    "mOnError": "#1e1418",
+    "mSurface": "#1c1822",
+    "mOnSurface": "#e9e4f0",
+    "mSurfaceVariant": "#262130",
+    "mOnSurfaceVariant": "#a79ab0",
+    "mOutline": "#342c42",
+    "mShadow": "#120f18",
+    "mHover": "#e0b7c9",
+    "mOnHover": "#20161f",
+}
 SETTINGS = """pragma Singleton
 import QtQuick
 QtObject {
@@ -27,9 +45,9 @@ QtObject {
 
 def test_custom_file_reload(directory, environment):
     colors_file = directory / "config" / "colors.json"
-    colors_file.write_text(
-        json.dumps({"mPrimary": "#123456", "mOnSurface": "#80402010"})
-    )
+    initial_bytes = b'{"mPrimary": "#123456", "mOnSurface": "#80402010"}'
+    reloaded_bytes = b'{"mPrimary": "#abcdef", "mOnSurface": "#40203040"}'
+    colors_file.write_bytes(initial_bytes)
     shutil.copyfile(ROOT / "Tests/Qml/ColorFileHarness.qml", directory / "shell.qml")
     log_path = directory / "custom-colors.log"
     with log_path.open("w") as log:
@@ -47,10 +65,10 @@ def test_custom_file_reload(directory, environment):
                         "custom palette did not load:\n" + log_path.read_text()
                     )
                 time.sleep(0.05)
-            colors_file.write_text(
-                json.dumps({"mPrimary": "#abcdef", "mOnSurface": "#40203040"})
-            )
+            assert colors_file.read_bytes() == initial_bytes
+            colors_file.write_bytes(reloaded_bytes)
             process.wait(timeout=12)
+            assert colors_file.read_bytes() == reloaded_bytes
         finally:
             if process.poll() is None:
                 process.kill()
@@ -99,7 +117,12 @@ def main():
             path.mkdir(mode=0o700)
             environment[variable] = str(path)
         (directory / "config" / "colors.json").write_text("{}\n")
-        environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
+        environment.update(
+            QT_QPA_PLATFORM="offscreen",
+            QT_QUICK_BACKEND="software",
+            NOCTALIA_CONFIG_DIR=str(directory / "config"),
+            NOCTALIA_CACHE_DIR=str(directory / "cache"),
+        )
         result = subprocess.run(
             ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
             env=environment,
@@ -115,7 +138,41 @@ def main():
             raise AssertionError(
                 f"offscreen palette/window test failed (exit {result.returncode})"
             )
+        assert (directory / "config" / "colors.json").read_bytes() == b"{}\n"
         test_custom_file_reload(directory, environment)
+        colors_file = directory / "config" / "colors.json"
+        colors_file.unlink()
+        shutil.copyfile(
+            ROOT / "Tests/Qml/ColorNamespaceHarness.qml", directory / "shell.qml"
+        )
+        result = subprocess.run(
+            ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        output = result.stdout + result.stderr
+        print(output, end="")
+        assert result.returncode == 0 and "COLOR_NAMESPACE_PASS" in output
+        # Missing-file creation can race FileView's initial reload and report a
+        # dropped operation; keep that diagnostic visible, not a palette failure.
+        assert not any(level in output for level in (" ERROR ", " FATAL "))
+        created_bytes = colors_file.read_bytes()
+        assert json.loads(created_bytes) == DEFAULT_COLORS
+        # A fresh process must reload the generated palette without rewriting it.
+        result = subprocess.run(
+            ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        output = result.stdout + result.stderr
+        print(output, end="")
+        assert result.returncode == 0 and "COLOR_NAMESPACE_PASS" in output
+        assert not any(level in output for level in (" WARN ", " ERROR ", " FATAL "))
+        assert colors_file.read_bytes() == created_bytes
 
 
 if __name__ == "__main__":
