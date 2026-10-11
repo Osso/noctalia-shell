@@ -18,6 +18,8 @@ import tempfile
 from collections import Counter
 from pathlib import Path
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/Settings/Tabs/ColorScheme/SchemeDownloader.qml")
 SETTINGS = Path("/home/osso/.config/noctalia/settings.json")
@@ -212,6 +214,15 @@ target.write_bytes(source.read_bytes())
         path.chmod(0o700)
 
 
+def lint_harness(directory):
+    runtime = directory / "runtime"
+    runtime.mkdir()
+    stage_runtime(runtime)
+    imports = directory / "imports"
+    load_staging().stage_modules(imports, source_root=runtime)
+    return check_harness(imports, imports / "qs/shell.qml")
+
+
 def runtime(directory):
     stage_runtime(directory)
     environment = {
@@ -268,8 +279,13 @@ def runtime(directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "runtime", "lint-harness"))
     args = parser.parse_args()
+    if args.mode == "lint-harness":
+        with tempfile.TemporaryDirectory(
+            prefix="noctalia-scheme-harness-lint-"
+        ) as name:
+            raise SystemExit(lint_harness(Path(name)))
     before = SETTINGS.read_bytes()
     with tempfile.TemporaryDirectory(prefix="scheme-downloader-backup-") as backup_name:
         backup = Path(backup_name) / "settings.json"
