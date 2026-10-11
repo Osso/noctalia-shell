@@ -60,10 +60,10 @@ Singleton {
         if (status === Image.Ready) {
           Quickshell.execDetached(["mkdir", "-p", Settings.cacheDirImagesNotifications]);
           grabToImage(result => {
-                        if (result.saveToFile(req.dest))
-                        updateImagePath(req.imageId, req.dest);
-                        processNextImage();
-                      });
+            if (result.saveToFile(req.dest))
+              root.updateImagePath(req.imageId, req.dest);
+            processNextImage();
+          });
         } else if (status === Image.Error) {
           processNextImage();
         }
@@ -89,7 +89,7 @@ Singleton {
       keepOnReload: false
       imageSupported: true
       actionsSupported: true
-      onNotification: notification => handleNotification(notification)
+      onNotification: notification => root.handleNotification(notification)
     }
   }
 
@@ -101,25 +101,25 @@ Singleton {
       target: targetNotification
 
       function onSummaryChanged() {
-        updateNotificationFromObject(targetDataId);
+        root.updateNotificationFromObject(targetDataId);
       }
       function onBodyChanged() {
-        updateNotificationFromObject(targetDataId);
+        root.updateNotificationFromObject(targetDataId);
       }
       function onAppNameChanged() {
-        updateNotificationFromObject(targetDataId);
+        root.updateNotificationFromObject(targetDataId);
       }
       function onUrgencyChanged() {
-        updateNotificationFromObject(targetDataId);
+        root.updateNotificationFromObject(targetDataId);
       }
       function onAppIconChanged() {
-        updateNotificationFromObject(targetDataId);
+        root.updateNotificationFromObject(targetDataId);
       }
       function onImageChanged() {
-        updateNotificationFromObject(targetDataId);
+        root.updateNotificationFromObject(targetDataId);
       }
       function onActionsChanged() {
-        updateNotificationFromObject(targetDataId);
+        root.updateNotificationFromObject(targetDataId);
       }
     }
   }
@@ -137,22 +137,22 @@ Singleton {
 
   Component.onCompleted: {
     if (Settings.isLoaded) {
-      updateNotificationServer();
+      root.updateNotificationServer();
     }
 
     // Load state from ShellState
     Qt.callLater(() => {
-                   if (typeof ShellState !== 'undefined' && ShellState.isLoaded) {
-                     loadState();
-                   }
-                 });
+      if (typeof ShellState !== 'undefined' && ShellState.isLoaded) {
+        loadState();
+      }
+    });
   }
 
   Connections {
     target: typeof ShellState !== 'undefined' ? ShellState : null
     function onIsLoadedChanged() {
       if (ShellState.isLoaded) {
-        loadState();
+        root.loadState();
       }
     }
   }
@@ -160,10 +160,10 @@ Singleton {
   Connections {
     target: Settings
     function onSettingsLoaded() {
-      updateNotificationServer();
+      root.updateNotificationServer();
     }
     function onSettingsSaved() {
-      updateNotificationServer();
+      root.updateNotificationServer();
     }
   }
 
@@ -229,9 +229,7 @@ Singleton {
   }
 
   function shouldSuppressEmptyNotification(data) {
-    return isPlaceholderNotificationText(data.appName, ["unknown", "unknown app"])
-      && isPlaceholderNotificationText(data.summary, ["no summary"])
-      && !(data.body || "").trim();
+    return isPlaceholderNotificationText(data.appName, ["unknown", "unknown app"]) && isPlaceholderNotificationText(data.summary, ["no summary"]) && !(data.body || "").trim();
   }
 
   function isPlaceholderNotificationText(value, placeholders) {
@@ -253,10 +251,7 @@ Singleton {
 
   function isTerminalBellNotification(data) {
     const appName = (data.appName || "").toLowerCase();
-    const notificationContent = [
-      data.summary || "",
-      data.body || ""
-    ].join(" ").toLowerCase();
+    const notificationContent = [data.summary || "", data.body || ""].join(" ").toLowerCase();
     const terminalAppPattern = /\b(terminal|kitty|wezterm|foot|alacritty|ghostty)\b/;
     const bellPattern = /\b(bell|beep)\b/;
     const terminalBeforeBellPattern = /\bterminal\b.*\b(bell|beep)\b/;
@@ -296,9 +291,9 @@ Singleton {
     // Guard against the previously-tracked notification's `closed` signal
     // arriving after refresh and removing the current toast.
     notification.closed.connect(() => {
-                                  if (activeNotifications[existingInternalId] && activeNotifications[existingInternalId].notification === notification)
-                                  removeNotification(existingInternalId);
-                                });
+      if (activeNotifications[existingInternalId] && activeNotifications[existingInternalId].notification === notification)
+        removeNotification(existingInternalId);
+    });
 
     quickshellIdToInternalId[quickshellId] = existingInternalId;
   }
@@ -335,9 +330,9 @@ Singleton {
                                                                   });
     notification.tracked = true;
     notification.closed.connect(() => {
-                                  if (activeNotifications[internalId] && activeNotifications[internalId].notification === notification)
-                                  removeNotification(internalId);
-                                });
+      if (activeNotifications[internalId] && activeNotifications[internalId].notification === notification)
+        removeNotification(internalId);
+    });
 
     // Update metadata
     notifData.metadata.urgency = data.urgency;
@@ -369,9 +364,9 @@ Singleton {
 
     notification.tracked = true;
     notification.closed.connect(() => {
-                                  if (activeNotifications[data.id] && activeNotifications[data.id].notification === notification)
-                                  removeNotification(data.id);
-                                });
+      if (activeNotifications[data.id] && activeNotifications[data.id].notification === notification)
+        removeNotification(data.id);
+    });
 
     // Add to list
     activeList.insert(0, data);
@@ -389,7 +384,7 @@ Singleton {
   function findDuplicateNotification(data) {
     const contentId = getContentId(data.summary, data.body, data.appName);
 
-    for (var i = 0; i < activeList.count; i++) {
+    for (let i = 0; i < activeList.count; i++) {
       const existing = activeList.get(i);
       const existingContentId = getContentId(existing.summary, existing.body, existing.appName);
       if (existingContentId === contentId) {
@@ -407,11 +402,8 @@ Singleton {
 
   function calculateDuration(data) {
     const notificationSettings = Settings.data.notifications;
-    const durations = [
-      notificationSettings && notificationSettings.lowUrgencyDuration ? notificationSettings.lowUrgencyDuration * 1000 : 3000,
-      notificationSettings && notificationSettings.normalUrgencyDuration ? notificationSettings.normalUrgencyDuration * 1000 : 8000,
-      notificationSettings && notificationSettings.criticalUrgencyDuration ? notificationSettings.criticalUrgencyDuration * 1000 : 15000
-    ];
+    const durations = [notificationSettings && notificationSettings.lowUrgencyDuration ? notificationSettings.lowUrgencyDuration * 1000 : 3000, notificationSettings && notificationSettings.normalUrgencyDuration ? notificationSettings.normalUrgencyDuration * 1000 : 8000, notificationSettings && notificationSettings.criticalUrgencyDuration
+                       ? notificationSettings.criticalUrgencyDuration * 1000 : 15000];
 
     if (data.expireTimeout === 0)
       return -1; // Never expire
@@ -447,28 +439,28 @@ Singleton {
       "originalImage": image,
       "cachedImage": imageId ? (Settings.cacheDirImagesNotifications + imageId + ".png") : image,
       "actionsJson": JSON.stringify((n.actions || []).map(a => ({
-                                                                  "text": a.text || "Action",
-                                                                  "identifier": a.identifier || ""
-                                                                })))
-    };
+        "text": a.text || "Action",
+        "identifier": a.identifier || ""
+      })))
+  };
   }
 
-  function findNotificationIndex(internalId) {
-    for (var i = 0; i < activeList.count; i++) {
-      if (activeList.get(i).id === internalId) {
-        return i;
-      }
-    }
+    function findNotificationIndex(internalId) {
+    for (let i = 0; i < activeList.count; i++) {
+    if (activeList.get(i).id === internalId) {
+    return i;
+  }
+  }
     return -1;
   }
 
-  function updateNotificationFromObject(internalId) {
+    function updateNotificationFromObject(internalId) {
     const notifData = activeNotifications[internalId];
     if (!notifData)
-      return;
+    return;
     const index = findNotificationIndex(internalId);
     if (index < 0)
-      return;
+    return;
     const data = createData(notifData.notification);
     const existing = activeList.get(index);
 
@@ -487,269 +479,269 @@ Singleton {
     notifData.metadata.duration = calculateDuration(data);
   }
 
-  function removeNotification(id) {
+    function removeNotification(id) {
     const index = findNotificationIndex(id);
     if (index >= 0) {
-      activeList.remove(index);
-    }
+    activeList.remove(index);
+  }
     cleanupNotification(id);
   }
 
-  function cleanupNotification(id) {
+    function cleanupNotification(id) {
     const notifData = activeNotifications[id];
     if (notifData) {
-      if (notifData.watcher)
-        notifData.watcher.destroy();
-      delete activeNotifications[id];
-    }
+    if (notifData.watcher)
+    notifData.watcher.destroy();
+    delete activeNotifications[id];
+  }
 
     // Clean up quickshell ID mapping. Refresh paths (and replacement updates)
     // can map several quickshell ids to the same internal id, so remove all
     // matching entries instead of stopping at the first.
     for (const qsId in quickshellIdToInternalId) {
-      if (quickshellIdToInternalId[qsId] === id) {
-        delete quickshellIdToInternalId[qsId];
-      }
-    }
+    if (quickshellIdToInternalId[qsId] === id) {
+    delete quickshellIdToInternalId[qsId];
+  }
+  }
   }
 
-  // Progress updates
-  Timer {
+    // Progress updates
+    Timer {
     interval: 50
     repeat: true
     running: root.activeList.count > 0
-    onTriggered: updateAllProgress()
+    onTriggered: root.updateAllProgress()
   }
 
-  function updateAllProgress() {
+    function updateAllProgress() {
     const now = Date.now();
     const toRemove = [];
 
-    for (var i = 0; i < activeList.count; i++) {
-      const notif = activeList.get(i);
-      const notifData = activeNotifications[notif.id];
-      if (!notifData)
-        continue;
-      const meta = notifData.metadata;
-      if (meta.duration === -1 || meta.paused)
-        continue;
-      const elapsed = now - meta.timestamp;
-      const progress = Math.max(1.0 - (elapsed / meta.duration), 0.0);
+    for (let i = 0; i < activeList.count; i++) {
+    const notif = activeList.get(i);
+    const notifData = activeNotifications[notif.id];
+    if (!notifData)
+    continue;
+    const meta = notifData.metadata;
+    if (meta.duration === -1 || meta.paused)
+    continue;
+    const elapsed = now - meta.timestamp;
+    const progress = Math.max(1.0 - (elapsed / meta.duration), 0.0);
 
-      if (progress <= 0) {
-        toRemove.push(notif.id);
-      } else if (Math.abs(notif.progress - progress) > 0.005) {
-        activeList.setProperty(i, "progress", progress);
-      }
-    }
-
-    if (toRemove.length > 0) {
-      animateAndRemove(toRemove[0]);
-    }
+    if (progress <= 0) {
+    toRemove.push(notif.id);
+  } else if (Math.abs(notif.progress - progress) > 0.005) {
+    activeList.setProperty(i, "progress", progress);
+  }
   }
 
-  // Image handling
-  function queueImage(path, imageId) {
+    if (toRemove.length > 0) {
+    animateAndRemove(toRemove[0]);
+  }
+  }
+
+    // Image handling
+    function queueImage(path, imageId) {
     if (!path || !path.startsWith("image://") || !imageId)
-      return;
+    return;
     const dest = Settings.cacheDirImagesNotifications + imageId + ".png";
 
     for (const req of imageQueue) {
-      if (req.imageId === imageId)
-        return;
-    }
-
-    imageQueue.push({
-                      "src": path,
-                      "dest": dest,
-                      "imageId": imageId
-                    });
-
-    if (imageQueue.length === 1)
-      cacher.source = path;
+    if (req.imageId === imageId)
+    return;
   }
 
-  function updateImagePath(id, path) {
+    imageQueue.push({
+    "src": path,
+    "dest": dest,
+    "imageId": imageId
+  });
+
+    if (imageQueue.length === 1)
+    cacher.source = path;
+  }
+
+    function updateImagePath(id, path) {
     updateModel(activeList, id, "cachedImage", path);
     updateModel(historyList, id, "cachedImage", path);
     saveHistory();
   }
 
-  function updateModel(model, id, prop, value) {
-    for (var i = 0; i < model.count; i++) {
-      if (model.get(i).id === id) {
-        model.setProperty(i, prop, value);
-        break;
-      }
-    }
+    function updateModel(model, id, prop, value) {
+    for (let i = 0; i < model.count; i++) {
+    if (model.get(i).id === id) {
+    model.setProperty(i, prop, value);
+    break;
+  }
+  }
   }
 
-  // History management
-  function addToHistory(data) {
+    // History management
+    function addToHistory(data) {
     historyList.insert(0, data);
 
     while (historyList.count > maxHistory) {
-      const old = historyList.get(historyList.count - 1);
-      // Only delete cached images that are in our cache directory
-      if (old.cachedImage && old.cachedImage.startsWith(Settings.cacheDirImagesNotifications)) {
-        Quickshell.execDetached(["rm", "-f", old.cachedImage]);
-      }
-      historyList.remove(historyList.count - 1);
-    }
+    const old = historyList.get(historyList.count - 1);
+    // Only delete cached images that are in our cache directory
+    if (old.cachedImage && old.cachedImage.startsWith(Settings.cacheDirImagesNotifications)) {
+    Quickshell.execDetached(["rm", "-f", old.cachedImage]);
+  }
+    historyList.remove(historyList.count - 1);
+  }
     saveHistory();
   }
 
-  // Persistence - History
-  FileView {
+    // Persistence - History
+    FileView {
     id: historyFileView
     path: root.historyFile
     printErrors: false
-    onLoaded: loadHistory()
+    onLoaded: root.loadHistory()
     onLoadFailed: error => {
-      if (error === 2)
-      writeAdapter();
-    }
+    if (error === 2)
+    writeAdapter();
+  }
 
     JsonAdapter {
-      id: adapter
-      property var notifications: []
-    }
+    id: adapter
+    property var notifications: []
+  }
   }
 
-  Timer {
+    Timer {
     id: saveTimer
     interval: 200
-    onTriggered: performSaveHistory()
+    onTriggered: root.performSaveHistory()
   }
 
-  function saveHistory() {
+    function saveHistory() {
     saveTimer.restart();
   }
 
-  function performSaveHistory() {
+    function performSaveHistory() {
     try {
-      const items = [];
-      for (var i = 0; i < historyList.count; i++) {
-        const n = historyList.get(i);
-        const copy = Object.assign({}, n);
-        copy.timestamp = n.timestamp.getTime();
-        items.push(copy);
-      }
-      adapter.notifications = items;
-      historyFileView.writeAdapter();
-    } catch (e) {
-      Logger.e("Notifications", "Save history failed:", e);
-    }
+    const items = [];
+    for (let i = 0; i < historyList.count; i++) {
+    const n = historyList.get(i);
+    const copy = Object.assign({}, n);
+    copy.timestamp = n.timestamp.getTime();
+    items.push(copy);
+  }
+    adapter.notifications = items;
+    historyFileView.writeAdapter();
+  } catch (e) {
+    Logger.e("Notifications", "Save history failed:", e);
+  }
   }
 
-  function loadHistory() {
+    function loadHistory() {
     try {
-      historyList.clear();
-      for (const item of adapter.notifications || []) {
-        const time = new Date(item.timestamp);
+    historyList.clear();
+    for (const item of adapter.notifications || []) {
+    const time = new Date(item.timestamp);
 
-        const cachedImage = resolveCachedImageForHistory(item);
+    const cachedImage = resolveCachedImageForHistory(item);
 
-        historyList.append({
-                             "id": item.id || "",
-                             "summary": item.summary || "",
-                             "body": item.body || "",
-                             "appName": item.appName || "",
-                             "urgency": item.urgency < 0 || item.urgency > 2 ? 1 : item.urgency,
-                             "timestamp": time,
-                             "originalImage": item.originalImage || "",
-                             "cachedImage": cachedImage
-                           });
-      }
-    } catch (e) {
-      Logger.e("Notifications", "Load failed:", e);
-    }
+    historyList.append({
+    "id": item.id || "",
+    "summary": item.summary || "",
+    "body": item.body || "",
+    "appName": item.appName || "",
+    "urgency": item.urgency < 0 || item.urgency > 2 ? 1 : item.urgency,
+    "timestamp": time,
+    "originalImage": item.originalImage || "",
+    "cachedImage": cachedImage
+  });
+  }
+  } catch (e) {
+    Logger.e("Notifications", "Load failed:", e);
+  }
   }
 
-  function resolveCachedImageForHistory(item) {
+    function resolveCachedImageForHistory(item) {
     const originalImage = item.originalImage || "";
     if (originalImage.startsWith("image://icon/"))
-      return "";
+    return "";
 
     const cachedImage = item.cachedImage || "";
     if (cachedImage)
-      return cachedImage;
+    return cachedImage;
 
     if (!originalImage.startsWith("image://"))
-      return "";
+    return "";
 
     const imageId = generateImageId(item, originalImage);
     return imageId ? Settings.cacheDirImagesNotifications + imageId + ".png" : "";
   }
 
-  function loadState() {
+    function loadState() {
     try {
-      const notifState = ShellState.getNotificationsState();
-      root.lastSeenTs = notifState.lastSeenTs || 0;
+    const notifState = ShellState.getNotificationsState();
+    root.lastSeenTs = notifState.lastSeenTs || 0;
 
-      // Migration is now handled in Settings.qml
-      Logger.d("Notifications", "Loaded state from ShellState");
-    } catch (e) {
-      Logger.e("Notifications", "Load state failed:", e);
-    }
+    // Migration is now handled in Settings.qml
+    Logger.d("Notifications", "Loaded state from ShellState");
+  } catch (e) {
+    Logger.e("Notifications", "Load state failed:", e);
+  }
   }
 
-  function saveState() {
+    function saveState() {
     try {
-      ShellState.setNotificationsState({
-                                         lastSeenTs: root.lastSeenTs
-                                       });
-      Logger.d("Notifications", "Saved state to ShellState");
-    } catch (e) {
-      Logger.e("Notifications", "Save state failed:", e);
-    }
+    ShellState.setNotificationsState({
+    lastSeenTs: root.lastSeenTs
+  });
+    Logger.d("Notifications", "Saved state to ShellState");
+  } catch (e) {
+    Logger.e("Notifications", "Save state failed:", e);
+  }
   }
 
-  function updateLastSeenTs() {
+    function updateLastSeenTs() {
     root.lastSeenTs = Time.timestamp * 1000;
     saveState();
   }
 
-  // Utility functions
-  function getAppName(name) {
+    // Utility functions
+    function getAppName(name) {
     if (!name || name.trim() === "")
-      return "Unknown";
+    return "Unknown";
     name = name.trim();
 
     if (name.includes(".") && (name.startsWith("com.") || name.startsWith("org.") || name.startsWith("io.") || name.startsWith("net."))) {
-      const parts = name.split(".");
-      let appPart = parts[parts.length - 1];
+    const parts = name.split(".");
+    let appPart = parts[parts.length - 1];
 
-      if (!appPart || appPart === "app" || appPart === "desktop") {
-        appPart = parts[parts.length - 2] || parts[0];
-      }
+    if (!appPart || appPart === "app" || appPart === "desktop") {
+    appPart = parts[parts.length - 2] || parts[0];
+  }
 
-      if (appPart)
-        name = appPart;
-    }
+    if (appPart)
+    name = appPart;
+  }
 
     if (name.includes(".")) {
-      const parts = name.split(".");
-      let displayName = parts[parts.length - 1];
+    const parts = name.split(".");
+    let displayName = parts[parts.length - 1];
 
-      if (!displayName || /^\d+$/.test(displayName)) {
-        displayName = parts[parts.length - 2] || parts[0];
-      }
+    if (!displayName || /^\d+$/.test(displayName)) {
+    displayName = parts[parts.length - 2] || parts[0];
+  }
 
-      if (displayName) {
-        displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
-        displayName = displayName.replace(/([a-z])([A-Z])/g, '$1 $2');
-        displayName = displayName.replace(/app$/i, '').trim();
-        displayName = displayName.replace(/desktop$/i, '').trim();
-        displayName = displayName.replace(/flatpak$/i, '').trim();
+    if (displayName) {
+    displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+    displayName = displayName.replace(/([a-z])([A-Z])/g, '$1 $2');
+    displayName = displayName.replace(/app$/i, '').trim();
+    displayName = displayName.replace(/desktop$/i, '').trim();
+    displayName = displayName.replace(/flatpak$/i, '').trim();
 
-        if (!displayName) {
-          displayName = parts[parts.length - 1].charAt(0).toUpperCase() + parts[parts.length - 1].slice(1);
-        }
-      }
+    if (!displayName) {
+    displayName = parts[parts.length - 1].charAt(0).toUpperCase() + parts[parts.length - 1].slice(1);
+  }
+  }
 
-      return displayName || name;
-    }
+    return displayName || name;
+  }
 
     let displayName = name.charAt(0).toUpperCase() + name.slice(1);
     displayName = displayName.replace(/([a-z])([A-Z])/g, '$1 $2');
@@ -759,130 +751,130 @@ Singleton {
     return displayName || name;
   }
 
-  function getIcon(icon) {
+    function getIcon(icon) {
     if (!icon)
-      return "";
+    return "";
     if (icon.startsWith("/") || icon.startsWith("file://"))
-      return icon;
+    return icon;
     return ThemeIcons.iconFromName(icon);
   }
 
-  function stripTags(text) {
+    function stripTags(text) {
     return text.replace(/<[^>]*>?/gm, '');
   }
 
-  function generateImageId(notification, image) {
+    function generateImageId(notification, image) {
     if (image && image.startsWith("image://")) {
-      if (image.startsWith("image://qsimage/")) {
-        const key = (notification.appName || "") + "|" + (notification.summary || "");
-        return Checksum.sha256(key);
-      }
-      return Checksum.sha256(image);
-    }
+    if (image.startsWith("image://qsimage/")) {
+    const key = (notification.appName || "") + "|" + (notification.summary || "");
+    return Checksum.sha256(key);
+  }
+    return Checksum.sha256(image);
+  }
     return "";
   }
 
-  function pauseTimeout(id) {
+    function pauseTimeout(id) {
     const notifData = activeNotifications[id];
     if (notifData && !notifData.metadata.paused) {
-      notifData.metadata.paused = true;
-      notifData.metadata.pauseTime = Date.now();
-    }
+    notifData.metadata.paused = true;
+    notifData.metadata.pauseTime = Date.now();
+  }
   }
 
-  function resumeTimeout(id) {
+    function resumeTimeout(id) {
     const notifData = activeNotifications[id];
     if (notifData && notifData.metadata.paused) {
-      notifData.metadata.timestamp += Date.now() - notifData.metadata.pauseTime;
-      notifData.metadata.paused = false;
-    }
+    notifData.metadata.timestamp += Date.now() - notifData.metadata.pauseTime;
+    notifData.metadata.paused = false;
+  }
   }
 
-  // Public API
-  function dismissActiveNotification(id) {
+    // Public API
+    function dismissActiveNotification(id) {
     if (activeNotifications[id] && activeNotifications[id].notification)
-      activeNotifications[id].notification.dismiss();
+    activeNotifications[id].notification.dismiss();
     removeNotification(id);
   }
 
-  function dismissOldestActive() {
+    function dismissOldestActive() {
     if (activeList.count > 0) {
-      const lastNotif = activeList.get(activeList.count - 1);
-      dismissActiveNotification(lastNotif.id);
-    }
+    const lastNotif = activeList.get(activeList.count - 1);
+    dismissActiveNotification(lastNotif.id);
+  }
   }
 
-  function dismissAllActive() {
+    function dismissAllActive() {
     for (const id in activeNotifications) {
-      if (activeNotifications[id].notification)
-        activeNotifications[id].notification.dismiss();
-      if (activeNotifications[id].watcher)
-        activeNotifications[id].watcher.destroy();
-    }
+    if (activeNotifications[id].notification)
+    activeNotifications[id].notification.dismiss();
+    if (activeNotifications[id].watcher)
+    activeNotifications[id].watcher.destroy();
+  }
     activeList.clear();
     activeNotifications = {};
     quickshellIdToInternalId = {};
   }
 
-  function invokeAction(id, actionId) {
+    function invokeAction(id, actionId) {
     const notifData = activeNotifications[id];
     if (!notifData || !notifData.notification || !notifData.notification.actions)
-      return false;
+    return false;
 
     for (const action of notifData.notification.actions) {
-      if (action.identifier === actionId && action.invoke) {
-        action.invoke();
-        return true;
-      }
-    }
+    if (action.identifier === actionId && action.invoke) {
+    action.invoke();
+    return true;
+  }
+  }
     return false;
   }
 
-  function removeFromHistory(notificationId) {
-    for (var i = 0; i < historyList.count; i++) {
-      const notif = historyList.get(i);
-      if (notif.id === notificationId) {
-        // Only delete cached images that are in our cache directory
-        if (notif.cachedImage && notif.cachedImage.startsWith(Settings.cacheDirImagesNotifications)) {
-          Quickshell.execDetached(["rm", "-f", notif.cachedImage]);
-        }
-        historyList.remove(i);
-        saveHistory();
-        return true;
-      }
-    }
+    function removeFromHistory(notificationId) {
+    for (let i = 0; i < historyList.count; i++) {
+    const notif = historyList.get(i);
+    if (notif.id === notificationId) {
+    // Only delete cached images that are in our cache directory
+    if (notif.cachedImage && notif.cachedImage.startsWith(Settings.cacheDirImagesNotifications)) {
+    Quickshell.execDetached(["rm", "-f", notif.cachedImage]);
+  }
+    historyList.remove(i);
+    saveHistory();
+    return true;
+  }
+  }
     return false;
   }
 
-  function removeOldestHistory() {
+    function removeOldestHistory() {
     if (historyList.count > 0) {
-      const oldest = historyList.get(historyList.count - 1);
-      // Only delete cached images that are in our cache directory
-      if (oldest.cachedImage && oldest.cachedImage.startsWith(Settings.cacheDirImagesNotifications)) {
-        Quickshell.execDetached(["rm", "-f", oldest.cachedImage]);
-      }
-      historyList.remove(historyList.count - 1);
-      saveHistory();
-      return true;
-    }
+    const oldest = historyList.get(historyList.count - 1);
+    // Only delete cached images that are in our cache directory
+    if (oldest.cachedImage && oldest.cachedImage.startsWith(Settings.cacheDirImagesNotifications)) {
+    Quickshell.execDetached(["rm", "-f", oldest.cachedImage]);
+  }
+    historyList.remove(historyList.count - 1);
+    saveHistory();
+    return true;
+  }
     return false;
   }
 
-  function clearHistory() {
+    function clearHistory() {
     try {
-      Quickshell.execDetached(["sh", "-c", `rm -rf "${Settings.cacheDirImagesNotifications}"*`]);
-    } catch (e) {
-      Logger.e("Notifications", "Failed to clear cache directory:", e);
-    }
+    Quickshell.execDetached(["sh", "-c", `rm -rf "${Settings.cacheDirImagesNotifications}"*`]);
+  } catch (e) {
+    Logger.e("Notifications", "Failed to clear cache directory:", e);
+  }
 
     historyList.clear();
     saveHistory();
   }
 
-  // Signals
-  signal animateAndRemove(string notificationId)
+    // Signals
+    signal animateAndRemove(string notificationId)
 
-  onDoNotDisturbChanged: {
+    onDoNotDisturbChanged: {
     ToastService.showNotice(doNotDisturb ? I18n.tr("toast.do-not-disturb.enabled") : I18n.tr("toast.do-not-disturb.disabled"), doNotDisturb ? I18n.tr("toast.do-not-disturb.enabled-desc") : I18n.tr("toast.do-not-disturb.disabled-desc"), doNotDisturb ? "bell-off" : "bell");
   }
-}
+  }
