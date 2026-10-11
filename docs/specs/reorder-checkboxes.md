@@ -44,7 +44,8 @@ Reorder Checkboxes covers the shared checklist widget that toggles required/opti
 - `Tests/reorder-checkboxes-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
-- `Tests/shared-ui-widgets-warnings.test.py behavior` / `Tests/Qml/SharedUiWidgetsWarningsHarness.qml`: actual offscreen checklist toggle, immutable source preservation, required/disabled input guards, pointer drag start→move→release and reorder signals, invalid/no-op moves, model clear and reassignment. `e32bd53ce` adds forward/reverse drag geometry, stacking, clear during an active grab, and reassigned-list recovery.
+- `Tests/shared-ui-widgets-warnings.test.py behavior` / `Tests/Qml/SharedUiWidgetsWarningsHarness.qml`: actual offscreen checklist toggle, immutable source preservation, required/disabled input guards, pointer drag start→move→release and reorder signals, invalid/no-op moves, model clear and reassignment. `e32bd53ce` adds forward/reverse drag geometry, stacking, clear during an active grab, and reassigned-list recovery. Saved isolated actual-QML proof through `a3b2fab58` reports seven passes (five behavioral cases plus initialization/cleanup), zero failures.
+- `Tests/shared-ui-widgets-warnings.test.py lint`: through `a3b2fab58`, checklist target warnings are zero; the final four block-scope declaration warnings drop 4→0. Remaining unused-import Info is not a warning.
 
 ## Known gaps (current cycle)
 
