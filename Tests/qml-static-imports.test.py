@@ -70,6 +70,7 @@ Tile {
             self.assertNotIn("Failed to import qs.", result.stderr)
             self.assertNotIn("was not found", result.stderr)
             self.assertNotIn('Member "spacing" not found', result.stderr)
+            self.assertNotIn("not declared as singleton", result.stderr)
             before = len(re.findall(r"^Warning:", baseline_diagnostics, re.MULTILINE))
             after = len(re.findall(r"^Warning:", result.stderr, re.MULTILINE))
             self.assertGreater(before, after, result.stderr)
@@ -77,6 +78,41 @@ Tile {
             self.assertEqual(list(scratch.iterdir()), [], "Lint tree leaked")
             print(f"fixture warnings: {before} -> {after} (delta {after - before})")
             print(result.stderr, end="")
+
+    def test_singleton_imports_are_warning_free_and_refresh_on_next_run(self):
+        with tempfile.TemporaryDirectory(prefix="noctalia-static-refresh-") as temp:
+            root = Path(temp)
+            runner = root / "Bin/dev/qml-static-check.sh"
+            runner.parent.mkdir(parents=True)
+            shutil.copy2(REPO / "Bin/dev/qml-static-check.sh", runner)
+            (runner.parent / "qml-static-exclusions.txt").write_text("")
+            palette = root / "Commons/Palette.qml"
+            palette.parent.mkdir()
+            consumer = root / "Consumer.qml"
+            scratch = root / "scratch"
+            scratch.mkdir()
+
+            for property_name, value in (("spacing", 8), ("margin", 16)):
+                with self.subTest(property_name=property_name):
+                    palette.write_text(
+                        "pragma Singleton\nimport QtQuick\n"
+                        f"QtObject {{ readonly property int {property_name}: {value} }}\n"
+                    )
+                    consumer.write_text(
+                        "import QtQuick\nimport qs.Commons\n"
+                        f"Item {{ width: Palette.{property_name} }}\n"
+                    )
+                    result = subprocess.run(
+                        [str(runner)],
+                        env=dict(os.environ, TMPDIR=str(scratch)),
+                        capture_output=True,
+                        text=True,
+                        timeout=30,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(result.stderr, "")
+                    self.assertIn("Checked 2 QML files", result.stdout)
+                    self.assertEqual(list(scratch.iterdir()), [], "Lint tree leaked")
 
 
 if __name__ == "__main__":

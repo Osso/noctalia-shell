@@ -27,6 +27,7 @@ trap 'rm -rf -- "$module_root"' EXIT
 python3 - "$repo_root" "$module_root" "${qml_files[@]}" <<'PY'
 from pathlib import Path
 import re
+import shutil
 import sys
 
 source_root = Path(sys.argv[1])
@@ -40,7 +41,8 @@ for relative in sorted(sys.argv[3:]):
     target = qs_root / path
     target.parent.mkdir(parents=True, exist_ok=True)
     source = source_root / path
-    target.symlink_to(source)
+    # Copies retain qmldir context; qmllint resolves symlinks outside the module.
+    shutil.copyfile(source, target)
     singleton = bool(
         re.search(r"^\s*pragma\s+Singleton\b", source.read_text(), re.MULTILINE)
     )
