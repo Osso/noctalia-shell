@@ -83,6 +83,8 @@ ShellRoot {
   Component.onCompleted: {
     if (Quickshell.env("QT_QPA_PLATFORM") !== "offscreen")
       throw new Error("Geometry harness requires offscreen platform");
+    // Wallpaper content uses a stable inert directory label, not a random HOME path.
+    Settings.data.wallpaper.directory = "/nonexistent/noctalia-geometry-wallpapers";
     Settings.data.ui.fontDefault = "DejaVu Sans";
     Settings.data.general.animationDisabled = true;
     for (const name of ["appearance", "customize", "dock", "wizard"]) {
