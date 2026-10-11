@@ -253,10 +253,7 @@ if [ "$caller_errexit_after_failure" = true ]; then
 fi
 
 set +e
-errexit_output="$(
-    set -e
-    run_command all 2>&1
-)"
+errexit_output="$(set -e; run_command all 2>&1)"
 errexit_status="$?"
 set -e
 if [ "$errexit_status" -ne 1 ]; then
