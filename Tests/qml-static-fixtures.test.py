@@ -80,25 +80,28 @@ class FixtureLintTest(unittest.TestCase):
         settings.parent.mkdir(parents=True, mode=0o700)
         settings.touch(mode=0o600)
         settings.write_bytes((root / "Assets/settings-default.json").read_bytes())
-        temporary = root / ".fixture-tmp"
-        temporary.mkdir(mode=0o700)
-        result = subprocess.run(
-            [str(runner)],
-            cwd=root,
-            check=False,
-            env=dict(os.environ, HOME=str(home), TMPDIR=str(temporary)),
-            capture_output=True,
-            text=True,
-            timeout=90,
-        )
-        print(result.stdout + result.stderr, end="")
-        self.assertEqual(temporary.stat().st_mode & 0o777, 0o700)
-        self.assertEqual(list(temporary.iterdir()), [], "fixture artifacts leaked")
+        # Keep runtime staging outside the repository's inherited .ignore rules.
+        with tempfile.TemporaryDirectory(prefix="noctalia-fixture-artifacts-") as temp:
+            self.fixture_tmp = Path(temp)
+            result = subprocess.run(
+                [str(runner)],
+                cwd=root,
+                check=False,
+                env=dict(os.environ, HOME=str(home), TMPDIR=temp),
+                capture_output=True,
+                text=True,
+                timeout=90,
+            )
+            print(result.stdout + result.stderr, end="")
+            self.assertEqual(self.fixture_tmp.stat().st_mode & 0o777, 0o700)
+            self.assertEqual(
+                list(self.fixture_tmp.iterdir()), [], "fixture artifacts leaked"
+            )
         return result
 
-    def assert_brightness_artifacts_are_isolated(self, file, root):
+    def assert_brightness_artifacts_are_isolated(self, file):
         harness = Path(file["filename"])
-        harness.relative_to(root / ".fixture-tmp")
+        harness.relative_to(self.fixture_tmp)
         self.assertFalse(harness.parent.exists(), "brightness artifacts leaked")
 
     def test_all_six_harnesses_are_checked_without_fixture_type_warnings(self):
@@ -127,7 +130,7 @@ class FixtureLintTest(unittest.TestCase):
             )
             for file in files:
                 if Path(file["filename"]).name == "tst_brightness.qml":
-                    self.assert_brightness_artifacts_are_isolated(file, root)
+                    self.assert_brightness_artifacts_are_isolated(file)
             self.assertIn("Checked 6 QML files", result.stdout)
             self.assertIn("skipped 0", result.stdout)
 
@@ -158,7 +161,7 @@ class FixtureLintTest(unittest.TestCase):
                 self.assertEqual(Path(file["filename"]).name, HARNESS_REPORTS[name])
                 self.assertEqual(file["warnings"], [])
                 if name == "BrightnessPanelWarningsHarness.qml":
-                    self.assert_brightness_artifacts_are_isolated(file, root)
+                    self.assert_brightness_artifacts_are_isolated(file)
                 self.assertIn("Checked 1 QML files", result.stdout)
                 self.assertIn("skipped 0", result.stdout)
 
@@ -198,9 +201,7 @@ class FixtureLintTest(unittest.TestCase):
                 report = reports[0]
                 self.assertEqual(len(report["files"]), 1)
                 if name == "BrightnessPanelWarningsHarness.qml":
-                    self.assert_brightness_artifacts_are_isolated(
-                        report["files"][0], root
-                    )
+                    self.assert_brightness_artifacts_are_isolated(report["files"][0])
                 self.assertEqual(
                     Path(report["files"][0]["filename"]).name,
                     HARNESS_REPORTS[name],
