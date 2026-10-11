@@ -67,6 +67,7 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 
 - `Tests/timer-card-guards.test.js`
 - `Tests/timer-card-runtime.test.py` (`lint` / `behavior`) with `Tests/Qml/TimerCardHarness.qml`: standalone targeted warning-free TimerCard lint and offscreen production TimerCard/Time integration (`behavior` also runs under `run-tests.sh`'s `deterministic-unit` gate). Assertions cover digit entry and limits, Backspace/Delete/Return/Escape, focus release, start/reset enabled states, mode switching, display/hour transitions, countdown ring, pause/resume/reset, scheduled updates, and repeating alarm requests through a fake SoundService. Countdown/stopwatch elapsed time is injected through `timerStartTimestamp`; this does not prove unassisted wall-clock progression.
+- `Tests/remaining-layout-geometry.test.py behavior` - four offscreen production ClockSettings geometry/content cases at widths 480/1000 and scales 1/1.25, compared exactly with tracked pre-cleanup fixtures after token-highlight geometry settles. Assertions include `HH:mm`, `yyyy-MM-dd`, and nonempty list content; no token-click/edit interaction or time-progression proof. Shared isolation and lint limits: [testing](testing.md).
 - `Tests/time-service-guards.test.js`
 - `Tests/source-coverage.test.js`
 

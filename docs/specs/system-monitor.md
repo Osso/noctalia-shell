@@ -80,6 +80,7 @@ System Monitor covers CPU, memory, network, and CPU-temperature metric collectio
 
 - `Tests/system-stat-service-guards.test.js`
 - `Tests/system-monitor-runtime.test.py` - standalone offscreen production-widget coverage with fixture services for density/orientation sizing, interactions, CPU critical indicator updates, and polling visibility.
+- `Tests/remaining-layout-geometry.test.py behavior` - four offscreen production SystemMonitorCard geometry/content cases at widths 480/1000 and scales 1/1.25, compared exactly with tracked pre-cleanup fixtures. Fixed CPU/temperature/memory/disk values 37/52/64/28 assert gauge text, 68-wide gauges, scaled heights, and content scale 0.8; not live sampling or threshold-transition proof. Shared isolation and lint limits: [testing](testing.md).
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)

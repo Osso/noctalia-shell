@@ -67,6 +67,7 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 
 ## Tests asserting this spec
 
+- `Tests/remaining-layout-geometry.test.py behavior` - four offscreen production CalendarHeaderCard geometry/content cases at widths 480/1000 and scales 1/1.25, compared exactly with tracked pre-cleanup fixtures; fixed date, digital clock, Dallas location, and CST timezone. Shared isolation and lint limits: [testing](testing.md).
 - `Tests/calendar-service-guards.test.js`
 - `Tests/calendar-service-runtime.test.py`
 - `Tests/calendar-month-card-guards.test.js`
@@ -78,7 +79,7 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 ## Known gaps (current cycle)
 
 - [x] Add executable tests for calendar process stdout/stderr parsing and cache fallback paths.
-- [ ] Add executable tests for calendar header card rendering and settings-card ordering.
+- [ ] Extend calendar header rendering coverage to analog clock, other locales/content, and settings-card ordering.
 - [x] Add executable tests for clock-widget calendar action routing.
 - [x] Add typed-QML coverage for calendar month week-number delegates.
 - [ ] Add typed-QML coverage for calendar event indicator delegates if current aliases can be narrowed.
