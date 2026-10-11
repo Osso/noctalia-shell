@@ -69,13 +69,13 @@ def lint(directory, expected):
     assert counts == expected, f"layout warnings {counts} != {expected}"
 
 
-def stage_runtime(directory, helpers):
+def stage_runtime(directory, helpers, source_root):
     for relative in ("Commons", "Widgets", "Helpers", "Assets"):
-        shutil.copytree(ROOT / relative, directory / relative)
+        shutil.copytree(source_root / relative, directory / relative)
     for target in TARGETS:
         destination = directory / target
         destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(ROOT / target, destination)
+        shutil.copyfile(source_root / target, destination)
     helpers.write_singleton(
         directory,
         "Commons/Settings.qml",
@@ -146,9 +146,9 @@ def assert_content(snapshots, helpers):
             assert any(node.get("contentHeight", 0) > 0 for node in nodes)
 
 
-def behavior(directory, capture_only):
+def behavior(directory, capture_only, source_root):
     helpers = load_helpers()
-    stage_runtime(directory, helpers)
+    stage_runtime(directory, helpers, source_root)
     environment = helpers.isolated_environment(directory)
     for variable in ("NOCTALIA_CONFIG_DIR", "NOCTALIA_CACHE_DIR"):
         path = directory / variable.lower()
@@ -162,7 +162,7 @@ def behavior(directory, capture_only):
             env=environment,
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=120,
         )
     except subprocess.TimeoutExpired as error:
         output = (error.stdout or b"") + (error.stderr or b"")
@@ -192,6 +192,12 @@ def main():
     parser.add_argument("mode", choices=("lint", "behavior"))
     parser.add_argument("--artifacts", type=Path, required=True)
     parser.add_argument("--capture-only", action="store_true")
+    parser.add_argument(
+        "--source-root",
+        type=Path,
+        default=ROOT,
+        help="Immutable pre-edit source staging for baseline capture",
+    )
     parser.add_argument("--expected-layout", nargs=3, type=int, default=[0, 0, 0])
     args = parser.parse_args()
     args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
@@ -207,7 +213,7 @@ def main():
         if args.mode == "lint":
             lint(args.artifacts, args.expected_layout)
         else:
-            behavior(args.artifacts, args.capture_only)
+            behavior(args.artifacts, args.capture_only, args.source_root)
     finally:
         assert SETTINGS.read_bytes() == before, "real settings changed"
     print("Real settings unchanged; bounded processes exited.")

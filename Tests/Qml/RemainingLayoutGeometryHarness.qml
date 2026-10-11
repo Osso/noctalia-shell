@@ -12,6 +12,7 @@ ShellRoot {
   property var snapshots: []
   property int caseIndex: 0
   property var componentItem: null
+  property string previousGeometry: ""
 
   Component {
     id: calendar
@@ -56,6 +57,7 @@ ShellRoot {
   }
 
   function startCase() {
+    previousGeometry = "";
     const scenario = cases[caseIndex];
     Settings.data = Object.assign({}, Settings.data, {
       general: Object.assign({}, Settings.data.general, {
@@ -117,9 +119,15 @@ ShellRoot {
     running: true
     repeat: true
     onTriggered: {
+      const tree = measure(componentItem);
+      const currentGeometry = JSON.stringify(tree);
+      if (currentGeometry !== previousGeometry) {
+        previousGeometry = currentGeometry;
+        return;
+      }
       snapshots.push({
         scenario: cases[caseIndex],
-        tree: measure(componentItem)
+        tree: tree
       });
       componentItem.destroy();
       caseIndex++;
