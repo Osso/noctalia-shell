@@ -84,11 +84,13 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 
 - `Tests/network-forget-profiles.test.sh`
 - `Tests/network-service-guards.test.js`
-- `Tests/wifi-panel-ui-guards.test.js`
+- `Tests/wifi-panel-ui-guards.test.js` - runs the production-list behavioral harness; panel signal routing remains source-guard coverage.
+- `Tests/wifi-networks-list-warnings.test.py` - standalone lint requires zero qmllint warnings and exit status zero. Offscreen behavior checks ordered delegate connect/disconnect requests, secured-network password request/submission/cancellation/clearing, forget confirmation/cancellation signals, busy states, and model replacement/reordering. It compares 28 exact geometry/content snapshots (seven states at widths 900/430 with normal/translated labels) against the pre-cleanup fixture.
 
 ## Known gaps (current cycle)
 
 - [ ] Add executable tests for connectivity check and ping fallback transitions.
+- Production-list coverage uses inert services and fixture styling/translations; it preserves caller-provided order rather than exercising panel sorting, and verifies forget signals rather than NetworkManager deletion. It does not cover live networking, full-panel interaction, all locales/scales, or pointer/keyboard event delivery (actions invoke signals directly).
 
 ## Out of scope
 
