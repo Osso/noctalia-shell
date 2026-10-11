@@ -11,6 +11,11 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 - [x] Current battery percent prefers Bluetooth battery percentage when present.
 - [x] Current battery percent falls back to UPower battery percentage or zero when no battery is available.
 
+### Battery widget display
+
+- [x] Battery widget initialization, charging/discharging icons, 90/50/25 percent icon boundaries, percentage text, colors, and collapsed text visibility remain covered by an offscreen production-widget regression.
+- [x] Configured UPower paths and case-insensitive Bluetooth paths preserve percentage selection and disconnected-device state in the production-widget regression.
+
 ### Battery panel display
 
 - [x] Battery panel device-path selection prefers a right-section battery widget over left and center sections.
@@ -65,6 +70,8 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 ## Tests asserting this spec
 
 - `Tests/battery-widget-guards.test.js`
+- `Tests/battery-widget-warnings.test.py lint` checks only `Modules/Bar/Widgets/Battery.qml`, reports warning categories, and requires no warnings and qmllint exit status zero.
+- `Tests/battery-widget-warnings.test.py behavior` runs `Tests/Qml/BatteryWidgetWarningsHarness.qml` with production Battery, BarPill layouts, NText/NIcon, and BatteryService; asserts initialization, icons, text, colors, visibility, device selection, and warning threshold/hysteresis without runtime warnings. Inert service fixtures record toast calls without delivery and replace popup windows with a non-surface item. HOME/XDG/Noctalia paths and DBus are isolated; a permission-locked real-settings backup and unchanged SHA are verified, and the child exits before cleanup.
 - `Tests/battery-panel-guards.test.js`
 - `Tests/battery-service-guards.test.js`
 - `Tests/battery-tab-guards.test.js`
@@ -75,6 +82,7 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 
 ## Known gaps (current cycle)
 
+- [ ] Add hardware and desktop integration coverage for the battery widget; its offscreen regression does not cover real UPower/Bluetooth hardware, visible popup interaction, desktop notifications, settings persistence, or whole-shell acceptance.
 - [ ] Add executable tests for `Services/Hardware/BatteryService.qml` charging-mode cycling and command routing.
 - [ ] Add executable tests for battery panel health/time display text.
 - [ ] Add executable tests for per-widget battery settings device list filtering.
