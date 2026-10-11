@@ -50,11 +50,12 @@ Scope {
     SoundService.playSound("stopped.wav", {
                              volume: -0.5
                            });
-    harness.stoppedPlayer = SoundService.activePlayers[SoundService.resolvePath("stopped.wav")];
-    harness.require(harness.volumeEquals(harness.stoppedPlayer, 0), "low volume clamp");
-    harness.stoppedPlayer.soundVolume = 0.25;
-    harness.require(harness.volumeEquals(harness.stoppedPlayer, 0.25), "nested binding follows player volume");
-    harness.stoppedPlayer.playbackStateChanged(MediaPlayer.StoppedState);
+    const stopped = SoundService.activePlayers[SoundService.resolvePath("stopped.wav")];
+    harness.stoppedPlayer = stopped;
+    harness.require(harness.volumeEquals(stopped, 0), "low volume clamp");
+    stopped.soundVolume = 0.25;
+    harness.require(harness.volumeEquals(stopped, 0.25), "nested binding follows player volume");
+    stopped.playbackStateChanged(MediaPlayer.StoppedState);
     harness.require(Object.keys(SoundService.activePlayers).length === 0, "stopped one-shot removes registration");
 
     SoundService.playSound("repeat.wav", {
@@ -62,10 +63,11 @@ Scope {
                              repeat: true,
                              fallback: true
                            });
-    harness.replacedPlayer = SoundService.activePlayers[SoundService.resolvePath("repeat.wav")];
-    harness.require(harness.volumeEquals(harness.replacedPlayer, 1), "high volume clamp");
-    harness.require(harness.replacedPlayer.loops === MediaPlayer.Infinite && !harness.replacedPlayer.shouldFallback, "repeat disables fallback");
-    harness.replacedPlayer.playbackStateChanged(MediaPlayer.StoppedState);
+    const repeating = SoundService.activePlayers[SoundService.resolvePath("repeat.wav")];
+    harness.replacedPlayer = repeating;
+    harness.require(harness.volumeEquals(repeating, 1), "high volume clamp");
+    harness.require(repeating.loops === MediaPlayer.Infinite && !repeating.shouldFallback, "repeat disables fallback");
+    repeating.playbackStateChanged(MediaPlayer.StoppedState);
     harness.require(Object.keys(SoundService.activePlayers).length === 1, "stopped repeating player remains registered");
     SoundService.playSound("repeat.wav", {
                              volume: 0.7,
