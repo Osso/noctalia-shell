@@ -76,6 +76,13 @@ Item {
         property Item processPanelPlaceholder: panel
     }
 
+    Rectangle {
+        id: underlay
+
+        anchors.fill: parent
+        color: "#123456"
+    }
+
     Item {
         id: canvas
 
@@ -142,7 +149,11 @@ Item {
             scene.width = 700;
             // Anchors retain the parent's canvas size.
             compare(backgrounds.width, canvas.width);
-            compare(grabImage(canvas).alpha(600, 300), 0);
+            compare(grabImage(canvas).pixel(600, 300), underlay.color);
+            underlay.color = "#654321";
+            tryVerify(function() {
+                return grabImage(canvas).pixel(600, 300) === underlay.color;
+            }, 2000, "transparent canvas reveals changed underlay");
         }
 
         function test_backgrounds_do_not_capture_input() {
