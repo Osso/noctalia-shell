@@ -52,9 +52,12 @@ Searchable Combo Box covers the shared searchable list selector used by settings
 
 - `Tests/searchable-combo-box-guards.test.js`
 - `Tests/source-coverage.test.js`
+- `Tests/shared-ui-widgets-warnings.test.py behavior` / `Tests/Qml/SharedUiWidgetsWarningsHarness.qml`: actual offscreen search-input focus and typing, filtered keyboard selection, pointer selection and popup close/reopen, production `"LC"` badge characters, absent badges, no-match guards, source clear followed by popup refresh, model reassignment and null model (through `92726d66a`).
 
 ## Known gaps (current cycle)
-None.
+
+- [ ] Source clear is checked after opening refreshes the popup, not as live filtered-model synchronization while already open.
+- [ ] Selected keyboard/popup paths do not establish exhaustive keyboard navigation, custom delegates, desktop input, or real settings persistence.
 
 ## Out of scope
 
