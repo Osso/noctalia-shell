@@ -74,6 +74,8 @@ Media playback covers MPRIS player discovery, virtual player pairing, active-pla
 
 ## Tests asserting this spec
 
+- `Tests/widget-settings-cohort-warnings.test.py` / `Tests/Qml/WidgetSettingsCohortHarness.qml` — MediaMiniSettings: five toggles, visualizer-dependent controls, hide/visualizer/scrolling selections, width 315 and invalid empty/non-numeric/zero values resolving to 240. Fixture defaults include `hideMode: "hidden"`; this does not verify live MPRIS or visualizer output. Each editor also exercises fixture defaults, save-copy isolation, cancel/reopen, and apply-close. Completed isolated assertions do not close the RED shared-control runtime warning gate. Cohort counts/lint evidence: [bar](bar.md#tests-asserting-this-spec); isolation and limits: [testing](testing.md#widget-settings-cohort).
+
 - `Tests/media-service-guards.test.js`
 - `Tests/media-mini-warnings.test.py` and `Tests/Qml/MediaMiniWarningsHarness.qml` - standalone isolated offscreen production-widget coverage with fixture services and real artwork/visualizer widgets; requires completed behavior assertions and no runtime WARN/ERROR/FATAL logs.
 - `Tests/widget-helper-guards.test.js`

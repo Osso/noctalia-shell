@@ -27,6 +27,8 @@ Lock keys covers Caps Lock, Num Lock, and Scroll Lock state publication for bar 
 
 ## Tests asserting this spec
 
+- `Tests/widget-settings-cohort-warnings.test.py` / `Tests/Qml/WidgetSettingsCohortHarness.qml` — LockKeysSettings: three toggles, fixture defaults, retained-field/save-copy isolation, cancel/reopen, and apply-close. Each editor also exercises fixture defaults, save-copy isolation, cancel/reopen, and apply-close. Completed isolated assertions do not close the RED shared-control runtime warning gate. Cohort counts/lint evidence: [bar](bar.md#tests-asserting-this-spec); isolation and limits: [testing](testing.md#widget-settings-cohort).
+
 - `Tests/service-cohort-warnings.test.py` with `Tests/Qml/ServiceCohortHarness.qml` — standalone `behavior` instantiates the actual LockKeys singleton offscreen. Its lock-key case covers LED discovery with unrelated/duplicate entries, pending initial reads, initial state without change signals, subsequent per-key transitions, unchanged-read signal suppression, and an absent Num Lock path resetting state. Folder discovery and brightness reads/reloads are fixtures, not real sysfs I/O; duplicate entries do not prove multi-device aggregation. The whole four-service harness reports four behavioral rows plus QtTest initialization/cleanup (six total); shared isolation and acceptance gates: [testing](testing.md). Standalone `lint` requires exit status zero and zero LockKeys warnings (27→0 at `aeb28001c`).
 - `Tests/lock-keys-service-guards.test.js`
 - `Tests/source-coverage.test.js`

@@ -58,6 +58,8 @@ Control Center covers the panel card loader, shortcut widget registry, shortcut/
 
 ## Tests asserting this spec
 
+- `Tests/widget-settings-cohort-warnings.test.py` / `Tests/Qml/WidgetSettingsCohortHarness.qml` — ControlCenterSettings (bar widget editor, not ControlCenterTab): distro-logo and colorization toggles, conditional color selection, and browse-button enablement. No real file-picker or image-selection proof. Each editor also exercises fixture defaults, save-copy isolation, cancel/reopen, and apply-close. Completed isolated assertions do not close the RED shared-control runtime warning gate. Cohort counts/lint evidence: [bar](bar.md#tests-asserting-this-spec); isolation and limits: [testing](testing.md#widget-settings-cohort).
+
 - `Tests/control-center-panel-guards.test.js`
 - `Tests/control-center-tab-guards.test.js`
 - `Tests/control-center-widget-registry-guards.test.js`
