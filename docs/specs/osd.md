@@ -17,8 +17,8 @@ Typed settings delegates:
 - [x] OSD monitor labels, scale lookup, descriptions, selection checks, and add/remove actions must use the typed monitor aliases.
 
 Bounded runtime regression:
-- [x] Production OSD must suppress startup events, react to fixture audio/brightness/lock signals and device/monitor changes, restart auto-hide after updates, and unload/reset state after timeout in horizontal and vertical layouts.
-- [x] Private headless Cage tests must isolate HOME/XDG/Noctalia paths, preserve real settings, clean up experimental processes, and retain all platform warnings. Content/state assertions are not pixel rendering or layer-shell placement proof.
+- [x] Production OSD must suppress startup events, react to fixture audio/brightness/lock signals and device/monitor changes, restart auto-hide after updates, and unload/reset state after timeout in horizontal and vertical layouts; explicit hide must also unload/reset state.
+- [x] Private headless Cage tests must isolate HOME/XDG/Noctalia paths, preserve real settings, clean up experimental processes, and retain all platform warnings. Content/state assertions are not compositor pixel, input, or layer-shell placement proof.
 
 ## How it works
 
@@ -33,13 +33,13 @@ Bounded runtime regression:
 ## Tests asserting this spec
 
 - `Tests/osd-warnings.test.py behavior` with `Tests/Qml/OSDWarningsHarness.qml`: actual production component, inert services, one private Cage output; standalone, not added to the broad runner.
-- `Tests/osd-warnings.test.py lint`: file-only diagnostics; owner qualification reduces 45 unqualified warnings to 37. Existing unbound nested-component context and five missing-property warnings remain visible; passing this bounded slice does not mean warning-free QML.
+- `Tests/osd-warnings.test.py lint`: staged production `Modules/OSD/OSD.qml` requires zero warnings and exit status zero; residual 37 unqualified plus five missing-property warnings drop 42→0 at `baf99c712`. This is target-file static coverage, not project-wide warning-free acceptance.
 - [Tests/osd-tab-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/osd-tab-guards.test.js)
 - [Tests/qml-type-annotations.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/qml-type-annotations.test.js)
 
 ## Known gaps (current cycle)
 
-- [ ] Real layer-shell placement/pixels, multi-output independent timers, enabled-type rejection and suppression consumption remain outside the private Cage regression.
+- [ ] Cage layer-shell/platform warnings remain visible. Real compositor placement/pixels/input, multi-output independent timers, enabled-type rejection and suppression consumption remain outside the private Cage regression.
 - [ ] Add executable coverage for monitor add/remove helper behavior.
 
 ## Out of scope
