@@ -31,6 +31,7 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 
 - [x] Battery settings start the write-threshold process with `start` and the requested value for start-threshold changes.
 - [x] Battery settings start the write-threshold process with `end` and the requested value for stop-threshold changes.
+- [x] Battery settings preserve displayed state, threshold drag/release behavior, and progress-track/fill geometry at UI scales 1 and 1.25. The offscreen production-tab regression uses isolated fake UPower/sysfs/process/settings services and compares content/geometry with the pre-fix fixture; it never performs privileged writes.
 - [x] The `batteryManager.cycle` IPC command delegates to the battery service cycle helper.
 - [x] The `batteryManager.set` IPC command maps `full`, `balanced`, and `lifespan` strings to their charging modes.
 
@@ -64,6 +65,7 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 - `Tests/battery-panel-guards.test.js`
 - `Tests/battery-service-guards.test.js`
 - `Tests/battery-tab-guards.test.js`
+- `Tests/battery-tab-warnings.test.py` (`lint` checks only BatteryTab, retaining two reported missing-property diagnostics; `behavior --snapshot <path>` checks the production tab/controls with unchanged real-settings SHA).
 - `Tests/qml-runtime-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`

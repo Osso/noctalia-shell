@@ -14,11 +14,11 @@ ColumnLayout {
 
   // Battery device (using UPower displayDevice)
   readonly property UPowerDevice battery: UPower.displayDevice
-  readonly property bool isReady: battery && battery.ready && battery.percentage !== undefined
-  readonly property int percent: isReady ? Math.round(battery.percentage * 100) : -1
-  readonly property bool charging: isReady ? battery.state === UPowerDeviceState.Charging : false
-  readonly property bool healthAvailable: isReady && battery.healthSupported
-  readonly property int healthPercent: healthAvailable ? Math.round(battery.healthPercentage) : -1
+  readonly property bool isReady: root.battery && root.battery.ready && root.battery.percentage !== undefined
+  readonly property int percent: root.isReady ? Math.round(root.battery.percentage * 100) : -1
+  readonly property bool charging: root.isReady ? root.battery.state === UPowerDeviceState.Charging : false
+  readonly property bool healthAvailable: root.isReady && root.battery.healthSupported
+  readonly property int healthPercent: root.healthAvailable ? Math.round(root.battery.healthPercentage) : -1
 
   // Charge threshold values read from sysfs
   property int chargeStartThreshold: 0
@@ -31,8 +31,8 @@ ColumnLayout {
   property bool cycleCountSupported: false
 
   // Local values for sliders (to avoid writing on every drag)
-  property int localStartThreshold: chargeStartThreshold
-  property int localStopThreshold: chargeStopThreshold
+  property int localStartThreshold: root.chargeStartThreshold
+  property int localStopThreshold: root.chargeStopThreshold
 
   Component.onCompleted: {
     startThresholdReader.reload();
@@ -47,7 +47,7 @@ ColumnLayout {
     printErrors: false
 
     onLoaded: {
-      const val = parseInt(text().trim());
+      const val = parseInt(startThresholdReader.text().trim());
       if (!isNaN(val)) {
         root.chargeStartThreshold = val;
         root.localStartThreshold = val;
@@ -68,7 +68,7 @@ ColumnLayout {
     printErrors: false
 
     onLoaded: {
-      const val = parseInt(text().trim());
+      const val = parseInt(stopThresholdReader.text().trim());
       if (!isNaN(val)) {
         root.chargeStopThreshold = val;
         root.localStopThreshold = val;
@@ -84,7 +84,7 @@ ColumnLayout {
     printErrors: false
 
     onLoaded: {
-      const val = parseInt(text().trim());
+      const val = parseInt(cycleCountReader.text().trim());
       if (!isNaN(val) && val >= 0) {
         root.cycleCount = val;
         root.cycleCountSupported = true;
@@ -98,21 +98,20 @@ ColumnLayout {
     property string thresholdType: ""
     property int thresholdValue: 0
 
-    command: ["pkexec", "bash", "-c",
-      `echo ${thresholdValue} > /sys/class/power_supply/BAT0/charge_control_${thresholdType}_threshold`]
+    command: ["pkexec", "bash", "-c", `echo ${writeThresholdProcess.thresholdValue} > /sys/class/power_supply/BAT0/charge_control_${writeThresholdProcess.thresholdType}_threshold`]
     running: false
 
     onExited: exitCode => {
       if (exitCode === 0) {
-        Logger.i("BatteryTab", `Set charge ${thresholdType} threshold to ${thresholdValue}`);
+        Logger.i("BatteryTab", `Set charge ${writeThresholdProcess.thresholdType} threshold to ${writeThresholdProcess.thresholdValue}`);
         // Reload to confirm
-        if (thresholdType === "start") {
+        if (writeThresholdProcess.thresholdType === "start") {
           startThresholdReader.reload();
         } else {
           stopThresholdReader.reload();
         }
       } else {
-        Logger.w("BatteryTab", `Failed to set charge ${thresholdType} threshold, exit code: ${exitCode}`);
+        Logger.w("BatteryTab", `Failed to set charge ${writeThresholdProcess.thresholdType} threshold, exit code: ${exitCode}`);
       }
     }
   }
@@ -141,7 +140,7 @@ ColumnLayout {
   NBox {
     Layout.fillWidth: true
     implicitHeight: statusLayout.implicitHeight + Style.marginL * 2
-    visible: isReady
+    visible: root.isReady
 
     ColumnLayout {
       id: statusLayout
@@ -155,9 +154,9 @@ ColumnLayout {
         spacing: Style.marginM
 
         NIcon {
-          icon: BatteryService.getIcon(percent, charging, isReady)
+          icon: BatteryService.getIcon(root.percent, root.charging, root.isReady)
           pointSize: Style.fontSizeXXL
-          color: charging ? NColor.mPrimary : NColor.mOnSurface
+          color: root.charging ? NColor.mPrimary : NColor.mOnSurface
         }
 
         ColumnLayout {
@@ -173,10 +172,12 @@ ColumnLayout {
               pointSize: Style.fontSizeM
             }
 
-            Item { Layout.fillWidth: true }
+            Item {
+              Layout.fillWidth: true
+            }
 
             NText {
-              text: percent >= 0 ? `${percent}%` : "--"
+              text: root.percent >= 0 ? `${root.percent}%` : "--"
               color: NColor.mOnSurface
               pointSize: Style.fontSizeM
               font.weight: Style.fontWeightBold
@@ -184,20 +185,23 @@ ColumnLayout {
           }
 
           Rectangle {
+            id: progressTrack
             Layout.fillWidth: true
-            height: Math.round(8 * Style.uiScaleRatio)
-            radius: Math.min(Style.radiusL, height / 2)
+            Layout.preferredHeight: Math.round(8 * Style.uiScaleRatio)
+            radius: Math.min(Style.radiusL, progressTrack.height / 2)
             color: NColor.mSurfaceVariant
 
             Rectangle {
               anchors.verticalCenter: parent.verticalCenter
               height: parent.height
               radius: parent.radius
-              width: parent.width * Math.max(0, Math.min(1, percent / 100))
-              color: charging ? NColor.mPrimary : (percent <= 20 ? NColor.mError : NColor.mSecondary)
+              width: parent.width * Math.max(0, Math.min(1, root.percent / 100))
+              color: root.charging ? NColor.mPrimary : (root.percent <= 20 ? NColor.mError : NColor.mSecondary)
 
               Behavior on width {
-                NumberAnimation { duration: Style.animationMedium }
+                NumberAnimation {
+                  duration: Style.animationMedium
+                }
               }
             }
           }
@@ -218,9 +222,7 @@ ColumnLayout {
           pointSize: Style.fontSizeS
         }
         NText {
-          text: charging ? I18n.tr("battery.charging") :
-                (battery.state === UPowerDeviceState.FullyCharged ? I18n.tr("battery.plugged-in") :
-                I18n.tr("battery.discharging"))
+          text: root.charging ? I18n.tr("battery.charging") : (root.battery.state === UPowerDeviceState.FullyCharged ? I18n.tr("battery.plugged-in") : I18n.tr("battery.discharging"))
           color: NColor.mOnSurface
           pointSize: Style.fontSizeS
           font.weight: Style.fontWeightMedium
@@ -231,21 +233,21 @@ ColumnLayout {
           text: I18n.tr("settings.battery.status.time-remaining")
           color: NColor.mOnSurfaceVariant
           pointSize: Style.fontSizeS
-          visible: (charging && battery.timeToFull > 0) || (!charging && battery.timeToEmpty > 0)
+          visible: (root.charging && root.battery.timeToFull > 0) || (!root.charging && root.battery.timeToEmpty > 0)
         }
         NText {
           text: {
-            if (charging && battery.timeToFull > 0) {
-              return Time.formatVagueHumanReadableDuration(battery.timeToFull);
-            } else if (!charging && battery.timeToEmpty > 0) {
-              return Time.formatVagueHumanReadableDuration(battery.timeToEmpty);
+            if (root.charging && root.battery.timeToFull > 0) {
+              return Time.formatVagueHumanReadableDuration(root.battery.timeToFull);
+            } else if (!root.charging && root.battery.timeToEmpty > 0) {
+              return Time.formatVagueHumanReadableDuration(root.battery.timeToEmpty);
             }
             return "";
           }
           color: NColor.mOnSurface
           pointSize: Style.fontSizeS
           font.weight: Style.fontWeightMedium
-          visible: (charging && battery.timeToFull > 0) || (!charging && battery.timeToEmpty > 0)
+          visible: (root.charging && root.battery.timeToFull > 0) || (!root.charging && root.battery.timeToEmpty > 0)
         }
 
         // Health (if available)
@@ -253,15 +255,14 @@ ColumnLayout {
           text: I18n.tr("settings.battery.status.health")
           color: NColor.mOnSurfaceVariant
           pointSize: Style.fontSizeS
-          visible: healthAvailable
+          visible: root.healthAvailable
         }
         NText {
-          text: healthPercent >= 0 ? `${healthPercent}%` : "--"
-          color: healthPercent >= 80 ? NColor.mOnSurface :
-                 (healthPercent >= 50 ? NColor.mWarning : NColor.mError)
+          text: root.healthPercent >= 0 ? `${root.healthPercent}%` : "--"
+          color: root.healthPercent >= 80 ? NColor.mOnSurface : (root.healthPercent >= 50 ? NColor.mWarning : NColor.mError)
           pointSize: Style.fontSizeS
           font.weight: Style.fontWeightMedium
-          visible: healthAvailable
+          visible: root.healthAvailable
         }
 
         // Energy rate (power consumption)
@@ -269,14 +270,14 @@ ColumnLayout {
           text: I18n.tr("settings.battery.status.power")
           color: NColor.mOnSurfaceVariant
           pointSize: Style.fontSizeS
-          visible: battery.energyRate !== undefined && battery.energyRate > 0
+          visible: root.battery.energyRate !== undefined && root.battery.energyRate > 0
         }
         NText {
-          text: battery.energyRate !== undefined ? `${battery.energyRate.toFixed(1)} W` : "--"
+          text: root.battery.energyRate !== undefined ? `${root.battery.energyRate.toFixed(1)} W` : "--"
           color: NColor.mOnSurface
           pointSize: Style.fontSizeS
           font.weight: Style.fontWeightMedium
-          visible: battery.energyRate !== undefined && battery.energyRate > 0
+          visible: root.battery.energyRate !== undefined && root.battery.energyRate > 0
         }
 
         // Cycle count
@@ -284,14 +285,14 @@ ColumnLayout {
           text: I18n.tr("settings.battery.status.cycles")
           color: NColor.mOnSurfaceVariant
           pointSize: Style.fontSizeS
-          visible: cycleCountSupported
+          visible: root.cycleCountSupported
         }
         NText {
-          text: cycleCount >= 0 ? cycleCount.toString() : "--"
+          text: root.cycleCount >= 0 ? root.cycleCount.toString() : "--"
           color: NColor.mOnSurface
           pointSize: Style.fontSizeS
           font.weight: Style.fontWeightMedium
-          visible: cycleCountSupported
+          visible: root.cycleCountSupported
         }
       }
     }
@@ -301,7 +302,7 @@ ColumnLayout {
   NBox {
     Layout.fillWidth: true
     implicitHeight: noBatteryText.implicitHeight + Style.marginL * 2
-    visible: !isReady
+    visible: !root.isReady
 
     NText {
       id: noBatteryText
@@ -316,7 +317,7 @@ ColumnLayout {
     Layout.fillWidth: true
     Layout.topMargin: Style.marginL
     Layout.bottomMargin: Style.marginL
-    visible: thresholdsSupported
+    visible: root.thresholdsSupported
   }
 
   // ============================================
@@ -325,14 +326,14 @@ ColumnLayout {
   NHeader {
     label: I18n.tr("settings.battery.thresholds.section.label")
     description: I18n.tr("settings.battery.thresholds.section.description")
-    visible: thresholdsSupported
+    visible: root.thresholdsSupported
   }
 
   // Info box about thresholds
   NBox {
     Layout.fillWidth: true
     implicitHeight: thresholdInfoLayout.implicitHeight + Style.marginM * 2
-    visible: thresholdsSupported
+    visible: root.thresholdsSupported
 
     RowLayout {
       id: thresholdInfoLayout
@@ -360,7 +361,7 @@ ColumnLayout {
   ColumnLayout {
     spacing: Style.marginXS
     Layout.fillWidth: true
-    visible: thresholdsSupported
+    visible: root.thresholdsSupported
 
     NLabel {
       label: I18n.tr("settings.battery.thresholds.start.label")
@@ -371,20 +372,20 @@ ColumnLayout {
       Layout.fillWidth: true
       from: 0
       to: 100
-      value: localStartThreshold
+      value: root.localStartThreshold
       stepSize: 5
-      text: `${localStartThreshold}%`
+      text: `${root.localStartThreshold}%`
       onMoved: value => {
         // Ensure start < stop
-        if (value >= localStopThreshold) {
-          localStartThreshold = localStopThreshold - 5;
+        if (value >= root.localStopThreshold) {
+          root.localStartThreshold = root.localStopThreshold - 5;
         } else {
-          localStartThreshold = value;
+          root.localStartThreshold = value;
         }
       }
-      onPressedChanged: {
-        if (!pressed && localStartThreshold !== chargeStartThreshold) {
-          setStartThreshold(localStartThreshold);
+      onPressedChanged: pressed => {
+        if (!pressed && root.localStartThreshold !== root.chargeStartThreshold) {
+          root.setStartThreshold(root.localStartThreshold);
         }
       }
     }
@@ -394,7 +395,7 @@ ColumnLayout {
   ColumnLayout {
     spacing: Style.marginXS
     Layout.fillWidth: true
-    visible: thresholdsSupported
+    visible: root.thresholdsSupported
 
     NLabel {
       label: I18n.tr("settings.battery.thresholds.stop.label")
@@ -405,20 +406,20 @@ ColumnLayout {
       Layout.fillWidth: true
       from: 0
       to: 100
-      value: localStopThreshold
+      value: root.localStopThreshold
       stepSize: 5
-      text: `${localStopThreshold}%`
+      text: `${root.localStopThreshold}%`
       onMoved: value => {
         // Ensure stop > start
-        if (value <= localStartThreshold) {
-          localStopThreshold = localStartThreshold + 5;
+        if (value <= root.localStartThreshold) {
+          root.localStopThreshold = root.localStartThreshold + 5;
         } else {
-          localStopThreshold = value;
+          root.localStopThreshold = value;
         }
       }
-      onPressedChanged: {
-        if (!pressed && localStopThreshold !== chargeStopThreshold) {
-          setStopThreshold(localStopThreshold);
+      onPressedChanged: pressed => {
+        if (!pressed && root.localStopThreshold !== root.chargeStopThreshold) {
+          root.setStopThreshold(root.localStopThreshold);
         }
       }
     }
@@ -428,7 +429,7 @@ ColumnLayout {
   NBox {
     Layout.fillWidth: true
     implicitHeight: currentThresholdsRow.implicitHeight + Style.marginM * 2
-    visible: thresholdsSupported
+    visible: root.thresholdsSupported
 
     RowLayout {
       id: currentThresholdsRow
@@ -442,10 +443,12 @@ ColumnLayout {
         pointSize: Style.fontSizeS
       }
 
-      Item { Layout.fillWidth: true }
+      Item {
+        Layout.fillWidth: true
+      }
 
       NText {
-        text: `${chargeStartThreshold}% - ${chargeStopThreshold}%`
+        text: `${root.chargeStartThreshold}% - ${root.chargeStopThreshold}%`
         color: NColor.mOnSurface
         pointSize: Style.fontSizeM
         font.weight: Style.fontWeightBold
@@ -457,7 +460,7 @@ ColumnLayout {
   NBox {
     Layout.fillWidth: true
     implicitHeight: notSupportedText.implicitHeight + Style.marginL * 2
-    visible: !thresholdsSupported && !thresholdsLoading
+    visible: !root.thresholdsSupported && !root.thresholdsLoading
 
     NText {
       id: notSupportedText

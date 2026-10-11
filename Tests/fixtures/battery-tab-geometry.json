@@ -1,0 +1,100 @@
+[
+  {
+    "scale": 1,
+    "texts": [
+      "settings.battery.status.section.label",
+      "settings.battery.status.section.description",
+      "battery",
+      "battery.battery-level",
+      "65%",
+      "settings.battery.status.state",
+      "battery.discharging",
+      "settings.battery.status.time-remaining",
+      "7200 seconds",
+      "settings.battery.status.health",
+      "85%",
+      "settings.battery.status.power",
+      "12.5 W",
+      "settings.battery.status.cycles",
+      "123",
+      "settings.battery.thresholds.section.label",
+      "settings.battery.thresholds.section.description",
+      "info-circle",
+      "settings.battery.thresholds.info",
+      "settings.battery.thresholds.start.label",
+      "settings.battery.thresholds.start.description",
+      "20%",
+      "20%",
+      "settings.battery.thresholds.stop.label",
+      "settings.battery.thresholds.stop.description",
+      "80%",
+      "80%",
+      "settings.battery.thresholds.current",
+      "20% - 80%"
+    ],
+    "track": {
+      "x": 0,
+      "y": 26,
+      "width": 676,
+      "height": 8,
+      "radius": 4
+    },
+    "fill": {
+      "x": 0,
+      "y": 0,
+      "width": 439.40000000000003,
+      "height": 8,
+      "radius": 4
+    },
+    "tabHeight": 675
+  },
+  {
+    "scale": 1.25,
+    "texts": [
+      "settings.battery.status.section.label",
+      "settings.battery.status.section.description",
+      "battery",
+      "battery.battery-level",
+      "65%",
+      "settings.battery.status.state",
+      "battery.discharging",
+      "settings.battery.status.time-remaining",
+      "7200 seconds",
+      "settings.battery.status.health",
+      "85%",
+      "settings.battery.status.power",
+      "12.5 W",
+      "settings.battery.status.cycles",
+      "123",
+      "settings.battery.thresholds.section.label",
+      "settings.battery.thresholds.section.description",
+      "info-circle",
+      "settings.battery.thresholds.info",
+      "settings.battery.thresholds.start.label",
+      "settings.battery.thresholds.start.description",
+      "20%",
+      "20%",
+      "settings.battery.thresholds.stop.label",
+      "settings.battery.thresholds.stop.description",
+      "80%",
+      "80%",
+      "settings.battery.thresholds.current",
+      "20% - 80%"
+    ],
+    "track": {
+      "x": 0,
+      "y": 32,
+      "width": 656,
+      "height": 10,
+      "radius": 5
+    },
+    "fill": {
+      "x": 0,
+      "y": 0,
+      "width": 426.40000000000003,
+      "height": 10,
+      "radius": 5
+    },
+    "tabHeight": 789
+  }
+]
