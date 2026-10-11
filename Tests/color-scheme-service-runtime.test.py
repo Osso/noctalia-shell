@@ -163,6 +163,7 @@ def stage_runtime(directory, mode):
 
 
 def runtime(directory):
+    failures = []
     for mode in ("normal", "early", "error"):
         case = directory / mode
         case.mkdir(mode=0o700)
@@ -213,11 +214,16 @@ def runtime(directory):
         output = stdout + stderr
         (case / "runtime.log").write_text(output)
         print(output, end="")
-        assert process.returncode == 0, (mode, process.returncode)
-        assert "COLOR_SCHEME_RUNTIME_PASS " + mode in output, mode
-        assert not re.search(
+        has_diagnostics = re.search(
             r"\b(?:WARN|ERROR|FATAL)\b|ReferenceError|TypeError|Binding loop", output
-        ), output
+        )
+        if (
+            process.returncode != 0
+            or "COLOR_SCHEME_RUNTIME_PASS " + mode not in output
+            or has_diagnostics
+        ):
+            failures.append((mode, process.returncode, str(case / "runtime.log")))
+    assert not failures, failures
 
 
 def main():
