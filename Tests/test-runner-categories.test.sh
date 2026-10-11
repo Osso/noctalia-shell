@@ -71,6 +71,20 @@ case "${1##*/}" in
         [ "$#" -eq 1 ] || exit 40
         exit "$WORKSPACE_TEST_STATUS"
         ;;
+    battery-widget-warnings.test.py | wifi-networks-list-warnings.test.py)
+        [ "${2:-}" = behavior ] && [ "$#" -eq 2 ] || exit 40
+        if [ "${1##*/}" = "$WARNING_TEST_FAILURE" ]; then
+            exit 48
+        fi
+        exit 0
+        ;;
+    wallpaper-panel-warnings.test.py)
+        [ "${2:-}" = --mode ] && [ "${3:-}" = runtime ] && [ "$#" -eq 3 ] || exit 40
+        if [ "${1##*/}" = "$WARNING_TEST_FAILURE" ]; then
+            exit 48
+        fi
+        exit 0
+        ;;
     battery-tab-warnings.test.py)
         [ "${2:-}" = behavior ] && [ "${3:-}" = --snapshot ] && [ "$#" -eq 4 ] && [ -f "$4" ] || exit 40
         printf '%s\n' "$4" >"$BATTERY_SNAPSHOT_RECORD"
@@ -93,6 +107,59 @@ source "$RUNNER_UNDER_TEST"
 run_qml_runtime_tests() { :; }
 run_command unit
 DRIVER
+
+export WARNING_TEST_FAILURE=""
+warning_tests=(
+    'battery-widget-warnings.test.py behavior'
+    'wifi-networks-list-warnings.test.py behavior'
+    'wallpaper-panel-warnings.test.py --mode runtime'
+    'color-namespace-runtime.test.py'
+)
+for failure_index in 0 1 2 3; do
+    failure_test="${warning_tests[$failure_index]}"
+    set +e
+    warning_output="$(PATH="$tmp_dir/bin:$PATH" RUNNER_UNDER_TEST="$runner" \
+        SOUND_TEST_STATUS=0 DATETIME_TEST_STATUS=0 SETUP_TEST_STATUS=0 \
+        CALENDAR_TEST_STATUS=0 TIMER_TEST_STATUS=0 PICKER_TEST_STATUS=0 \
+        WORKSPACE_TEST_STATUS=0 BATTERY_TEST_STATUS=0 COLOR_TEST_STATUS=37 \
+        BATTERY_SNAPSHOT_RECORD="$tmp_dir/warning-snapshot" \
+        WARNING_TEST_FAILURE="${failure_test%% *}" \
+        bash "$tmp_dir/unit-driver.sh" 2>&1)"
+    warning_status="$?"
+    set -e
+    expected_status=48
+    if [ "$failure_index" -eq 3 ]; then
+        expected_status=37
+    fi
+    expected_order='workspace-runtime.test.py.*battery-tab-warnings.test.py behavior --snapshot'
+    for index in "${!warning_tests[@]}"; do
+        runtime_test="${warning_tests[$index]}"
+        if [ "$index" -le "$failure_index" ]; then
+            if [ "$(printf '%s\n' "$warning_output" | rg -F -x -c "$runtime_test" || true)" != 1 ]; then
+                echo "unit runner omitted or repeated runtime regression: $runtime_test" >&2
+                exit 1
+            fi
+            expected_order="$expected_order.*$runtime_test"
+        elif printf '%s\n' "$warning_output" | rg -F -q "$runtime_test"; then
+            echo "unit runner continued after warning regression failure: $failure_test" >&2
+            exit 1
+        fi
+    done
+    if ! printf '%s\n' "$warning_output" | tr '\n' ' ' | rg -q "$expected_order"; then
+        echo "unit runner warning regression order is incoherent" >&2
+        exit 1
+    fi
+    if [ "$warning_status" -ne "$expected_status" ] ||
+        ! printf '%s\n' "$warning_output" | rg -F -q "=== EVIDENCE FAIL deterministic-unit (exit $expected_status) ===" ||
+        printf '%s\n' "$warning_output" | rg -q 'weather-card-effects.test.py|EVIDENCE PASS|EVIDENCE START structural-reference'; then
+        echo "unit runner lost warning regression failure status: $failure_test" >&2
+        exit 1
+    fi
+    if [ -e "$(<"$tmp_dir/warning-snapshot")" ]; then
+        echo "unit runner left battery snapshot after warning regression" >&2
+        exit 1
+    fi
+done
 
 for test_statuses in 0:0:0:0:0:0:0:0:0 37:0:0:0:0:0:0:0:0 0:39:0:0:0:0:0:0:0 0:0:41:0:0:0:0:0:0 0:0:0:42:0:0:0:0:0 0:0:0:0:43:0:0:0:0 0:0:0:0:0:44:0:0:0 0:0:0:0:0:0:45:0:0 0:0:0:0:0:0:0:46:0 0:0:0:0:0:0:0:0:47; do
     IFS=: read -r color_status sound_status datetime_status setup_status calendar_status timer_status picker_status workspace_status battery_status <<<"$test_statuses"

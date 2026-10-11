@@ -65,6 +65,9 @@ run_unit_tests() {
         trap 'rm -f "$battery_snapshot"' EXIT
         python3 "$repo_root/Tests/battery-tab-warnings.test.py" behavior --snapshot "$battery_snapshot"
     )
+    python3 "$repo_root/Tests/battery-widget-warnings.test.py" behavior
+    python3 "$repo_root/Tests/wifi-networks-list-warnings.test.py" behavior
+    python3 "$repo_root/Tests/wallpaper-panel-warnings.test.py" --mode runtime
     python3 "$repo_root/Tests/color-namespace-runtime.test.py"
     python3 "$repo_root/Tests/weather-card-effects.test.py"
     python3 "$repo_root/Tests/calendar-events-safe-get-time.test.py"

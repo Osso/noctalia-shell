@@ -236,12 +236,13 @@ def behavior(directory, snapshot, baseline):
         for record in re.findall(r"WIFI_SNAPSHOT (\{[^\n]+\})", output)
     ]
     assert len(records) == 4, len(records)
-    snapshot.write_text(json.dumps(records, indent=2, ensure_ascii=False) + "\n")
+    if snapshot is not None:
+        snapshot.write_text(json.dumps(records, indent=2, ensure_ascii=False) + "\n")
     if not baseline:
         assert records == json.loads(GOLDEN.read_text()), (
             "Geometry/content differs from pre-fix production baseline"
         )
-    print("WIFI_LIST_BEHAVIOR_PASS", snapshot)
+    print("WIFI_LIST_BEHAVIOR_PASS")
 
 
 def main():
@@ -250,8 +251,8 @@ def main():
     parser.add_argument("--snapshot", type=Path)
     parser.add_argument("--baseline", action="store_true")
     args = parser.parse_args()
-    if args.mode == "behavior" and not args.snapshot:
-        parser.error("behavior requires --snapshot")
+    if args.mode == "behavior" and args.baseline and not args.snapshot:
+        parser.error("--baseline requires --snapshot")
     settings = Path("/home/osso/.config/noctalia/settings.json")
     original = settings.read_bytes()
     digest = hashlib.sha256(original).hexdigest()
