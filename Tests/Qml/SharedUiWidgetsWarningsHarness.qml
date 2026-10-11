@@ -81,17 +81,17 @@ Item {
       model.append({
         key: "alpha",
         name: "Alpha",
-        badgeLocations: badges ? ["US", "FR"] : []
+        badgeLocations: badges ? "LC" : ""
       });
       model.append({
         key: "beta",
         name: "Beta",
-        badgeLocations: []
+        badgeLocations: ""
       });
       model.append({
         key: "gamma",
         name: "Gamma",
-        badgeLocations: []
+        badgeLocations: ""
       });
       return model;
     }
@@ -118,6 +118,8 @@ Item {
       compare(combo.currentIndex, 0);
       compare(combo.contentItem.text, "Alpha");
       combo.forceActiveFocus();
+      verify(combo.activeFocus);
+      verify(combo.background.border.color !== combo.background.color);
       keyClick(Qt.Key_Down);
       compare(selection.count, 1);
       compare(selection.signalArguments[0][0], "beta");
@@ -167,6 +169,39 @@ Item {
       combo.popup.close();
     }
 
+    function test_combo_click_during_real_flick() {
+      const model = create(modelFactory);
+      for (let i = 0; i < 40; i++)
+        model.append({
+          key: "item-" + i,
+          name: "Option " + i
+        });
+      const widget = create(comboFactory, {
+        width: 600,
+        label: "Many options",
+        model: model
+      });
+      const combo = control(widget);
+      selection.target = widget;
+      selection.clear();
+      open(combo);
+      const list = combo.popup.contentItem;
+      list.forceLayout();
+      const item = list.itemAtIndex(0);
+      verify(item !== null);
+      list.flick(0, -800);
+      verify(list.flicking || list.moving);
+      // Deliver the delegate click at the moving-list boundary, before cancelFlick.
+      item.clicked();
+      compare(item.pendingClick, true);
+      compare(selection.count, 0);
+      tryCompare(selection, "count", 1);
+      compare(selection.signalArguments[0][0], "item-0");
+      tryCompare(combo.popup, "visible", false);
+      wait(100);
+      compare(selection.count, 1);
+    }
+
     function test_search_filter_keyboard_close_reopen_badges() {
       const model = sourceModel(true);
       const widget = create(searchFactory, {
@@ -201,8 +236,8 @@ Item {
       widget.currentKey = "alpha";
       open(combo);
       const texts = descendants(combo.popup.contentItem, item => item instanceof Text);
-      verify(texts.some(item => item.text === "US"));
-      verify(texts.some(item => item.text === "FR"));
+      verify(texts.some(item => item.text === "L"));
+      verify(texts.some(item => item.text === "C"));
       const delegates = descendants(combo.popup.contentItem, item => item instanceof ItemDelegate);
       const gamma = delegates.filter(item => item.name === "Gamma")[0];
       verify(gamma !== undefined);
@@ -223,6 +258,19 @@ Item {
       open(combo);
       compare(widget.filteredModel.count, 3);
       combo.popup.close();
+      const withoutBadges = create(modelFactory);
+      withoutBadges.append({
+        key: "delta",
+        name: "Delta"
+      });
+      widget.model = withoutBadges;
+      open(combo);
+      compare(widget.filteredModel.count, 1);
+      const delta = descendants(combo.popup.contentItem, item => item instanceof ItemDelegate)[0];
+      verify(delta !== undefined);
+      mouseClick(delta, delta.width / 2, delta.height / 2);
+      tryCompare(combo.popup, "visible", false);
+      compare(selection.signalArguments[selection.count - 1][0], "delta");
       widget.model = null;
       compare(widget.filteredModel.count, 0);
       compare(widget.filteredKeyAt(-1), "");
