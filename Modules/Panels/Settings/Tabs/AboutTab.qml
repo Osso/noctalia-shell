@@ -7,6 +7,7 @@ import Quickshell.Io
 import qs.Commons
 import qs.Services.Noctalia
 import qs.Services.System
+import qs.Services.UI
 import qs.Widgets
 
 ColumnLayout {
@@ -285,10 +286,10 @@ ColumnLayout {
   NHeader {
     label: I18n.tr("settings.about.contributors.section.label")
     description: root.contributors.length === 1 ? I18n.tr("settings.about.contributors.section.description", {
-                                                            "count": root.contributors.length
-                                                          }) : I18n.tr("settings.about.contributors.section.description_plural", {
-                                                                         "count": root.contributors.length
-                                                                       })
+      "count": root.contributors.length
+    }) : I18n.tr("settings.about.contributors.section.description_plural", {
+      "count": root.contributors.length
+    })
     enableDescriptionRichText: true
   }
 
@@ -300,10 +301,11 @@ ColumnLayout {
     spacing: Style.marginM
 
     Repeater {
-      model: Math.min(root.contributors.length, root.topContributorsCount)
+      model: root.contributors.slice(0, root.topContributorsCount)
 
       delegate: Rectangle {
-        required property int index
+        id: contributorCard
+        required property var modelData
 
         width: Math.round(Style.baseWidgetSize * 6.8)
         height: Math.round(Style.baseWidgetSize * 2.3)
@@ -347,7 +349,7 @@ ColumnLayout {
                 anchors.fill: parent
                 source: {
                   // Try cached circular version first
-                  var username = root.contributors[index].login;
+                  var username = contributorCard.modelData.login;
                   var cached = GitHubService.cachedCircularAvatars[username];
                   if (cached) {
                     wrapper.isRounded = true;
@@ -355,13 +357,13 @@ ColumnLayout {
                   }
 
                   // Fall back to original avatar URL
-                  return root.contributors[index].avatar_url || "";
+                  return contributorCard.modelData.avatar_url || "";
                 }
                 fillMode: Image.PreserveAspectFit // Fit since image is already circular with transparency
                 mipmap: true
                 smooth: true
                 asynchronous: true
-                visible: root.contributors[index].avatar_url !== undefined && root.contributors[index].avatar_url !== ""
+                visible: contributorCard.modelData.avatar_url !== undefined && contributorCard.modelData.avatar_url !== ""
                 opacity: status === Image.Ready ? 1.0 : 0.0
 
                 Behavior on opacity {
@@ -374,7 +376,7 @@ ColumnLayout {
               // Fallback icon
               NIcon {
                 anchors.centerIn: parent
-                visible: !root.contributors[index].avatar_url || root.contributors[index].avatar_url === ""
+                visible: !contributorCard.modelData.avatar_url || contributorCard.modelData.avatar_url === ""
                 icon: "person"
                 pointSize: Style.fontSizeL
                 color: NColor.mPrimary
@@ -398,7 +400,7 @@ ColumnLayout {
             Layout.fillWidth: true
 
             NText {
-              text: root.contributors[index].login || "Unknown"
+              text: contributorCard.modelData.login || "Unknown"
               font.weight: Style.fontWeightBold
               color: contributorArea.containsMouse ? NColor.mOnHover : NColor.mOnSurface
               elide: Text.ElideRight
@@ -417,7 +419,7 @@ ColumnLayout {
               }
 
               NText {
-                text: `${(root.contributors[index].contributions || 0).toString()} commits`
+                text: `${(contributorCard.modelData.contributions || 0).toString()} commits`
                 pointSize: Style.fontSizeXS
                 color: contributorArea.containsMouse ? NColor.mOnHover : NColor.mOnSurfaceVariant
               }
@@ -446,8 +448,8 @@ ColumnLayout {
           hoverEnabled: true
           cursorShape: Qt.PointingHandCursor
           onClicked: {
-            if (root.contributors[index].html_url)
-              Quickshell.execDetached(["xdg-open", root.contributors[index].html_url]);
+            if (contributorCard.modelData.html_url)
+              Quickshell.execDetached(["xdg-open", contributorCard.modelData.html_url]);
           }
         }
       }
@@ -464,10 +466,11 @@ ColumnLayout {
     spacing: Style.marginS
 
     Repeater {
-      model: Math.max(0, root.contributors.length - root.topContributorsCount)
+      model: root.contributors.slice(root.topContributorsCount)
 
       delegate: Rectangle {
-        required property int index
+        id: contributorLink
+        required property var modelData
 
         width: nameText.implicitWidth + Style.marginM * 2
         height: nameText.implicitHeight + Style.marginS * 2
@@ -491,7 +494,7 @@ ColumnLayout {
         NText {
           id: nameText
           anchors.centerIn: parent
-          text: root.contributors[index + root.topContributorsCount].login || "Unknown"
+          text: contributorLink.modelData.login || "Unknown"
           pointSize: Style.fontSizeXS
           color: nameArea.containsMouse ? NColor.mOnHover : NColor.mOnSurface
           font.weight: Style.fontWeightMedium
@@ -509,8 +512,8 @@ ColumnLayout {
           hoverEnabled: true
           cursorShape: Qt.PointingHandCursor
           onClicked: {
-            if (root.contributors[index + root.topContributorsCount].html_url)
-              Quickshell.execDetached(["xdg-open", root.contributors[index + root.topContributorsCount].html_url]);
+            if (contributorLink.modelData.html_url)
+              Quickshell.execDetached(["xdg-open", contributorLink.modelData.html_url]);
           }
         }
       }
