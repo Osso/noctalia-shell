@@ -91,6 +91,7 @@ Compositor covers backend detection, shared workspace/window state, display-scal
 
 - `Tests/compositor-service-guards.test.js`
 - `Tests/shell-state-consumer-roundtrip.test.js`
+- `Tests/service-cohort-warnings.test.py` with `Tests/Qml/ServiceCohortHarness.qml` — standalone `behavior` instantiates actual Niri/Sway/Hyprland services offscreen. Niri covers connected socket write order, injected command/event parsing, workspace/window normalization, window-before-active signal order, focus/close/layout/overview events, output refresh requests, model clearing, socket disposal, and disconnected recreation. Separate Sway/Hyprland rows cover pre-initialize connection gating, workspace/window state, split output accumulation/reset, empty outputs, keyboard parsing, workspace-model rebinding with old-model silence, raw output/layout events, and silence after disposal. Together with LockKeys these are four behavioral rows plus QtTest initialization/cleanup (six total). I/O, backend models, compositor facade, and keyboard consumer are fixtures: no real socket/process/compositor IPC or command execution proof. Shared safety and acceptance gates: [testing](testing.md). Standalone `lint` requires exit status zero and zero warnings per service (Niri 15→0, Sway 9→0, Hyprland 9→0 at `aeb28001c`); no runner integration or whole-shell acceptance is claimed.
 - `Tests/niri-service-guards.test.js`
 - `Tests/hyprland-service-guards.test.js`
 - `Tests/sway-service-guards.test.js`
@@ -107,7 +108,7 @@ Compositor covers backend detection, shared workspace/window state, display-scal
 - [ ] Add executable coverage for active window widget display behavior.
 - [ ] Reproduce and verify Firefox/grouped-taskbar cursor flicker triggered per notification at the notification/toast layer-surface input-region boundary. Neither taskbar offscreen harness proves a fix; `60c64807d` changes neither input regions nor icon sizing.
 - [ ] Add executable coverage for backend process failure output parsing.
-- [ ] Add live-smoke coverage for one active compositor backend when a shell instance is running; the isolated Workspace/Niri harness does not exercise live IPC or compositor activation.
+- [ ] Add live-smoke coverage for one active compositor backend when a shell instance is running; the isolated Workspace/Niri and four-service cohort harnesses do not exercise live IPC or compositor activation.
 
 ## Out of scope
 
