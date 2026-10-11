@@ -265,17 +265,10 @@ def lint(directory):
     output = result.stdout + result.stderr
     print(output, end="")
     warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
-    residuals = [
-        line
-        for line in warnings
-        if 'Member "marginXXXL" not found on type "Style" [missing-property]' in line
-    ]
-    print("ABOUT_LINT_COUNTS", {"total": len(warnings), "residual": len(residuals)})
-    assert len(residuals) == 1 and warnings == residuals, (
-        "Actionable AboutTab warnings remain"
-    )
-    assert result.returncode in (0, 255), result.returncode
-    print("ABOUT_TAB_LINT_PASS_WITH_MARGIN_RESIDUAL")
+    print("ABOUT_LINT_COUNTS", {"total": len(warnings)})
+    assert not warnings, "Actionable AboutTab warnings remain"
+    assert result.returncode == 0, result.returncode
+    print("ABOUT_TAB_LINT_PASS")
 
 
 def main():

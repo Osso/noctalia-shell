@@ -57,22 +57,22 @@ TestCase {
 
   function contributors(count) {
     return Array.from({
-      length: count
-    }, (_, index) => ({
-          login: "author" + index,
-          contributions: index + 10,
-          avatar_url: index === 0 ? Qt.resolvedUrl("avatar.svg").toString() : "",
-          html_url: index === 21 ? "" : "https://example.invalid/author" + index
-        }));
+                        length: count
+                      }, (_, index) => ({
+                        login: "author" + index,
+                        contributions: index + 10,
+                        avatar_url: index === 0 ? Qt.resolvedUrl("avatar.svg").toString() : "",
+                        html_url: index === 21 ? "" : "https://example.invalid/author" + index
+                      }));
   }
 
-  function init() {
+    function init() {
     GitHubService.latestVersion = "v3.5.0";
     UpdateService.currentVersion = "v3.4.0";
     GitHubService.contributors = contributors(22);
     GitHubService.cachedCircularAvatars = {
-      author0: Qt.resolvedUrl("avatar.svg").toString()
-    };
+    author0: Qt.resolvedUrl("avatar.svg").toString()
+  };
     HostService.isNixOS = false;
     ToastService.notices = [];
     Quickshell.launches = [];
@@ -85,42 +85,98 @@ TestCase {
     Quickshell.processDelay = 20;
   }
 
-  function test_versionsAndTitles_data() {
+    function test_dividerContributorGeometry_data() {
     return [
-      {
-        tag: "newer-minor",
-        latest: "v3.5.0",
-        current: "v3.4.0",
-        update: true
-      },
-      {
-        tag: "newer-major",
-        latest: "v4.0.0",
-        current: "v3.9.9",
-        update: true
-      },
-      {
-        tag: "equal",
-        latest: "v3.4.0",
-        current: "v3.4.0",
-        update: false
-      },
-      {
-        tag: "older",
-        latest: "v3.3.9",
-        current: "v3.4.0",
-        update: false
-      },
-      {
-        tag: "unknown",
-        latest: "Unknown",
-        current: "v3.4.0",
-        update: false
-      }
+    {
+    tag: "narrow",
+    width: 600,
+    scale: 1
+  },
+    {
+    tag: "wide",
+    width: 800,
+    scale: 1
+  },
+    {
+    tag: "narrow-scaled",
+    width: 600,
+    scale: 1.5
+  },
+    {
+    tag: "wide-scaled",
+    width: 800,
+    scale: 1.5
+  }
     ];
   }
 
-  function test_versionsAndTitles(data) {
+    function contributorGeometry(tab) {
+    const divider = Array.from(tab.children).find(item => item.vertical === false);
+    const header = Array.from(tab.children).find(item => item.label === "settings.about.contributors.section.label");
+    const cards = linkArea(tab, "author0").parent.parent;
+    const links = linkArea(tab, "author20").parent.parent;
+    return [divider, header, cards, links].map(item => [item.x, item.y, item.width, item.height]);
+  }
+
+    function test_dividerContributorGeometry(data) {
+    Style.uiScaleRatio = data.scale;
+    Style.baseWidgetSize = 32 * data.scale;
+    try {
+    const tab = createTemporaryObject(tabComponent, testCase, {
+    width: data.width
+  });
+    verify(tab !== null);
+    wait(50);
+    const divider = Array.from(tab.children).find(item => item.vertical === false);
+    verify(divider !== undefined);
+    compare(divider.Layout.topMargin, 0, "Undefined margin retains Qt default zero");
+    const before = contributorGeometry(tab);
+    console.log("ABOUT_GEOMETRY", data.tag, JSON.stringify(before));
+    divider.Layout.topMargin = 0;
+    wait(50);
+    compare(JSON.stringify(contributorGeometry(tab)), JSON.stringify(before), "Default zero preserves divider and contributor geometry");
+  } finally {
+    Style.uiScaleRatio = 1;
+    Style.baseWidgetSize = 32;
+  }
+  }
+
+    function test_versionsAndTitles_data() {
+    return [
+    {
+    tag: "newer-minor",
+    latest: "v3.5.0",
+    current: "v3.4.0",
+    update: true
+  },
+    {
+    tag: "newer-major",
+    latest: "v4.0.0",
+    current: "v3.9.9",
+    update: true
+  },
+    {
+    tag: "equal",
+    latest: "v3.4.0",
+    current: "v3.4.0",
+    update: false
+  },
+    {
+    tag: "older",
+    latest: "v3.3.9",
+    current: "v3.4.0",
+    update: false
+  },
+    {
+    tag: "unknown",
+    latest: "Unknown",
+    current: "v3.4.0",
+    update: false
+  }
+    ];
+  }
+
+    function test_versionsAndTitles(data) {
     GitHubService.latestVersion = data.latest;
     UpdateService.currentVersion = data.current;
     const tab = createTemporaryObject(tabComponent, testCase);
@@ -141,7 +197,7 @@ TestCase {
     compare(Quickshell.processes.length, 0);
   }
 
-  function test_navigation() {
+    function test_navigation() {
     const tab = createTemporaryObject(tabComponent, testCase);
     verify(tab !== null);
     wait(50);
@@ -157,12 +213,12 @@ TestCase {
     compare(ToastService.notices[0].body, "toast.kofi.opened");
   }
 
-  function test_contributorRolesAndUpdates() {
+    function test_contributorRolesAndUpdates() {
     const tab = createTemporaryObject(tabComponent, testCase);
     verify(tab !== null);
     wait(50);
     for (let index = 0; index < 22; index++)
-      verify(texts(tab).includes("author" + index));
+    verify(texts(tab).includes("author" + index));
     verify(texts(tab).includes("10 commits"));
     verify(texts(tab).includes("29 commits"));
     verify(!texts(tab).includes("30 commits"));
@@ -184,12 +240,12 @@ TestCase {
     compare(Quickshell.launches[0][1], "https://example.invalid/renamed");
     compare(Quickshell.launches[1][1], "https://example.invalid/author0");
     GitHubService.contributors = [
-      {
-        login: "",
-        contributions: 0,
-        avatar_url: "",
-        html_url: ""
-      }
+    {
+    login: "",
+    contributions: 0,
+    avatar_url: "",
+    html_url: ""
+  }
     ];
     wait(50);
     verify(texts(tab).includes("Unknown"));
@@ -201,36 +257,36 @@ TestCase {
     verify(texts(tab).includes("settings.about.contributors.section.description_plural:0"));
   }
 
-  function test_gitCommit_data() {
+    function test_gitCommit_data() {
     return [
-      {
-        tag: "arch-package",
-        nix: false,
-        packageExit: 0,
-        packageOutput: "noctalia-shell-git 3.4.0.r112.g3f00bec8-1",
-        commit: "3f00bec",
-        queries: 1
-      },
-      {
-        tag: "git-after-package-failure",
-        nix: false,
-        packageExit: 1,
-        packageOutput: "",
-        commit: "abc1234",
-        queries: 2
-      },
-      {
-        tag: "nix-store",
-        nix: true,
-        packageExit: 0,
-        packageOutput: "",
-        commit: "225e6d3",
-        queries: 0
-      }
+    {
+    tag: "arch-package",
+    nix: false,
+    packageExit: 0,
+    packageOutput: "noctalia-shell-git 3.4.0.r112.g3f00bec8-1",
+    commit: "3f00bec",
+    queries: 1
+  },
+    {
+    tag: "git-after-package-failure",
+    nix: false,
+    packageExit: 1,
+    packageOutput: "",
+    commit: "abc1234",
+    queries: 2
+  },
+    {
+    tag: "nix-store",
+    nix: true,
+    packageExit: 0,
+    packageOutput: "",
+    commit: "225e6d3",
+    queries: 0
+  }
     ];
   }
 
-  function test_gitCommit(data) {
+    function test_gitCommit(data) {
     UpdateService.currentVersion = "v3.4.0-git";
     HostService.isNixOS = data.nix;
     Quickshell.shellDir = "/nix/store/fixture-noctalia-shell-2025-11-30_225e6d31234/share/noctalia-shell";
@@ -243,10 +299,10 @@ TestCase {
     verify(texts(tab).includes("settings.about.noctalia.git-commit"));
     compare(Quickshell.processes.length, data.queries);
     if (data.queries === 2)
-      compare(JSON.stringify(Quickshell.processes[1]), JSON.stringify(["git", "rev-parse", "--short", "HEAD"]));
+    compare(JSON.stringify(Quickshell.processes[1]), JSON.stringify(["git", "rev-parse", "--short", "HEAD"]));
   }
 
-  function test_disposeDuringCommitFetch() {
+    function test_disposeDuringCommitFetch() {
     UpdateService.currentVersion = "v3.4.0-git";
     Quickshell.packageExit = 1;
     Quickshell.processDelay = 700;
@@ -267,4 +323,4 @@ TestCase {
     verify(texts(reopened).includes("v5.0.0"));
     compare(reopened.commitInfo, "");
   }
-}
+  }
