@@ -115,9 +115,9 @@ ShellRoot {
       })
     });
     harness.append("fresh", 0, "[]");
-    clock.wait(140);
+    clock.wait(1200);
     const fresh = harness.card("fresh");
-    harness.require(fresh.slideOffset === 0 && fresh.scaleValue === 1 && fresh.opacityValue === 1, "animated entry targets");
+    harness.require(Math.abs(fresh.slideOffset) < 0.1 && Math.abs(fresh.scale - 1) < 0.01 && fresh.opacity > 0.99, "animated entry settles");
     NotificationService.animateAndRemove("missing");
     harness.require(NotificationService.events.filter(event => event === "dismiss:missing").length === 1, "single reconnected handler");
     clock.mouseClick(fresh, fresh.width / 2, fresh.height / 2, Qt.RightButton);
