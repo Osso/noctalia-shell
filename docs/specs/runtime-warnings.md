@@ -4,7 +4,7 @@ Runtime warning guards cover repeated QML/Qt warnings that obscure profiling and
 
 - [x] Cava process startup is gated by `ProgramCheckerService.cavaAvailable` so missing `cava` does not repeatedly spawn and warn.
 - [x] Desktop-entry icon lookup rejects absolute/file URL icon values before passing them to the Qt icon resolver, avoiding repeated missing SVG warnings from stale launcher entries.
-- [x] Process panel CPU warning colors use defined palette colors and do not reference undefined `Color.mWarning`.
+- [x] Process panel CPU warning colors use defined palette colors and do not reference undefined `NColor.mWarning`.
 
 ## Implementation inventory
 
