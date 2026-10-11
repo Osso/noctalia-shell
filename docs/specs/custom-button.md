@@ -11,9 +11,12 @@ Control Center custom button:
 - [x] Settings updates must copy left, right, and middle click commands from widget settings.
 - [x] Settings updates must parse state-check JSON, copy tooltip text, copy state-logic enablement, and refresh state.
 - [x] Missing settings must leave the current command/state values unchanged and must not refresh state.
-- [x] Invalid state-check JSON must clear parsed checks, reset missing command and tooltip settings to defaults, disable state logic, refresh state, and log the parse failure.
+- [x] Malformed state-check JSON and valid JSON that is not an array must clear parsed checks and log the parse failure. Missing command and tooltip settings use defaults; configured state-logic enablement is preserved, but empty checks restore the default icon and inactive state without launching a check.
 - [x] State checking must skip null or commandless checks until it finds a command to execute.
-- [x] State checking must start the process executor when a valid check command is found.
+- [x] State checking must assign the selected command as `['sh', '-c', command]` before starting the process, capturing that check's icon (or widget icon, then `heart`) for its result. Checks must not overlap a running state process.
+- [x] A current check's zero exit must activate its captured icon; a nonzero exit must advance to the next check.
+- [x] Every state refresh must invalidate previous results, stop the pending timer, and reset traversal. Enabled nonempty checks restart a 200 ms one-shot debounce using the latest settings.
+- [x] A stale process exit must neither activate its old icon nor advance the new traversal. Replacement checks must wait for the old process to exit and the new debounce to expire, in either order; disabling state logic while a check runs must remain inactive after its exit.
 - [x] State checking must fall back to the default icon and inactive state when no checks match.
 - [x] State updates must clear hot state and restore the default icon when state logic is disabled or no parsed checks exist.
 - [x] State updates must restart the state timer only when state logic is enabled and parsed checks exist.
@@ -43,6 +46,9 @@ Settings and typed contracts:
 
 ## Tests asserting this spec
 
+- `Tests/custom-button-warnings.test.py behavior` runs the production Control Center button offscreen with synthetic Process/Quickshell and button fixtures: settings/click commands/tooltip/missing settings, ordered skips and failure-to-success traversal, all-fail and missing-icon results, disable-during-run, replacement before/after debounce, latest-settings debounce, and malformed/null/object JSON rejection. Ten behavior rows plus init/cleanup produce 12 reported passes. No real commands or desktop input are exercised.
+- `Tests/custom-button-warnings.test.py lint` accepts exactly one block-scoped `var` hoisting warning and requires exit status zero; this is not warning-free acceptance.
+
 - [Tests/bar-action-helper-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/bar-action-helper-guards.test.js)
 - [Tests/custom-button-settings-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/custom-button-settings-guards.test.js)
 - [Tests/custom-button-widget-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/custom-button-widget-guards.test.js)
@@ -52,7 +58,7 @@ Settings and typed contracts:
 ## Known gaps (current cycle)
 
 - [ ] Add executable coverage for bar custom button click, wheel, JSON text parsing, and scrolling behavior.
-- [ ] Add executable coverage for Control Center custom button process exit handling.
+- [ ] Add real Process integration coverage for Control Center custom button exits; current ordering/exit coverage uses synthetic processes.
 
 ## Out of scope
 

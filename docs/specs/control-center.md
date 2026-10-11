@@ -76,4 +76,5 @@ Control Center covers the panel card loader, shortcut widget registry, shortcut/
 ## Out of scope
 
 - Bar button toggling behavior belongs in [bar.md](bar.md).
+- Custom button state-check validation, debounce, stale async result handling, and isolated synthetic coverage belong in [custom-button.md](custom-button.md).
 - Feature-specific shortcut behavior belongs in the corresponding specs, such as [bluetooth.md](bluetooth.md), [power-profile.md](power-profile.md), [screen-recorder.md](screen-recorder.md), [network.md](network.md), and [wallpaper.md](wallpaper.md).
