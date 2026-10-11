@@ -4,6 +4,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -43,6 +44,16 @@ QtObject {
 """
 
 
+def assert_no_diagnostics(output):
+    diagnostics = re.findall(
+        r"^\s*(?:WARN|ERROR|FATAL)(?=[:\s]).*$", output, re.MULTILINE
+    )
+    if diagnostics:
+        raise AssertionError(
+            "palette harness emitted diagnostics:\n" + "\n".join(diagnostics)
+        )
+
+
 def test_custom_file_reload(directory, environment):
     colors_file = directory / "config" / "colors.json"
     initial_bytes = b'{"mPrimary": "#123456", "mOnSurface": "#80402010"}'
@@ -75,8 +86,7 @@ def test_custom_file_reload(directory, environment):
                 process.wait(timeout=5)
     output = log_path.read_text()
     print(output, end="")
-    if any(level in output for level in (" WARN ", " ERROR ", " FATAL ")):
-        raise AssertionError("custom palette harness must run without warnings/errors")
+    assert_no_diagnostics(output)
     if process.returncode != 0 or "COLOR_FILE_RELOAD_PASS" not in output:
         raise AssertionError(
             f"custom palette reload failed (exit {process.returncode})"
@@ -143,10 +153,7 @@ def main():
         )
         output = result.stdout + result.stderr
         print(output, end="")
-        if any(level in output for level in (" WARN ", " ERROR ", " FATAL ")):
-            raise AssertionError(
-                "isolated palette harness must run without diagnostics"
-            )
+        assert_no_diagnostics(output)
         if result.returncode != 0 or "COLOR_NAMESPACE_PASS" not in output:
             raise AssertionError(
                 f"offscreen palette/window test failed (exit {result.returncode})"
@@ -168,7 +175,7 @@ def main():
         output = result.stdout + result.stderr
         print(output, end="")
         assert result.returncode == 0 and "COLOR_NAMESPACE_PASS" in output
-        assert not any(level in output for level in (" WARN ", " ERROR ", " FATAL "))
+        assert_no_diagnostics(output)
         assert "COLOR_FILE_SAVED" in output
         assert output.index("COLOR_FILE_SAVED") < output.index("COLOR_FILE_LOADED")
         created_bytes = colors_file.read_bytes()
@@ -184,7 +191,7 @@ def main():
         output = result.stdout + result.stderr
         print(output, end="")
         assert result.returncode == 0 and "COLOR_NAMESPACE_PASS" in output
-        assert not any(level in output for level in (" WARN ", " ERROR ", " FATAL "))
+        assert_no_diagnostics(output)
         assert colors_file.read_bytes() == created_bytes
 
 
