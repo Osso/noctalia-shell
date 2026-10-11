@@ -75,8 +75,9 @@ Singleton {
     onLoadFailed: function (error) {
       // Error code 2 = ENOENT (No such file or directory)
       if (error === 2 || error.toString().includes("No such file")) {
-        // File doesn't exist, create it with default values
-        writeAdapter();
+        // FileView clears its active operation after emitting loadFailed.
+        // Start the write only once that cleanup has completed.
+        Qt.callLater(customColorsFile.writeAdapter);
       }
     }
     JsonAdapter {

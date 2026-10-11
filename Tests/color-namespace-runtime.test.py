@@ -88,7 +88,18 @@ def main():
         directory = Path(temporary)
         commons = directory / "Commons"
         commons.mkdir(mode=0o700)
-        shutil.copyfile(ROOT / "Commons/NColor.qml", commons / "NColor.qml")
+        # Passive signals expose FileView completion without changing its operations.
+        palette_source = (ROOT / "Commons/NColor.qml").read_text()
+        palette_source = palette_source.replace(
+            "  id: root\n",
+            "  id: root\n  signal fileLoaded()\n  signal fileSaved()\n",
+        ).replace(
+            "    id: customColorsFile\n",
+            "    id: customColorsFile\n"
+            '    onLoaded: { console.log("COLOR_FILE_LOADED"); root.fileLoaded(); }\n'
+            '    onSaved: { console.log("COLOR_FILE_SAVED"); root.fileSaved(); }\n',
+        )
+        (commons / "NColor.qml").write_text(palette_source)
         config_path = json.dumps(str(directory / "config") + "/")
         (commons / "Settings.qml").write_text(
             SETTINGS.replace("CONFIG_PATH", config_path)
@@ -132,8 +143,10 @@ def main():
         )
         output = result.stdout + result.stderr
         print(output, end="")
-        if " WARN " in output:
-            raise AssertionError("isolated palette harness must run without warnings")
+        if any(level in output for level in (" WARN ", " ERROR ", " FATAL ")):
+            raise AssertionError(
+                "isolated palette harness must run without diagnostics"
+            )
         if result.returncode != 0 or "COLOR_NAMESPACE_PASS" not in output:
             raise AssertionError(
                 f"offscreen palette/window test failed (exit {result.returncode})"
@@ -155,9 +168,9 @@ def main():
         output = result.stdout + result.stderr
         print(output, end="")
         assert result.returncode == 0 and "COLOR_NAMESPACE_PASS" in output
-        # Missing-file creation can race FileView's initial reload and report a
-        # dropped operation; keep that diagnostic visible, not a palette failure.
-        assert not any(level in output for level in (" ERROR ", " FATAL "))
+        assert not any(level in output for level in (" WARN ", " ERROR ", " FATAL "))
+        assert "COLOR_FILE_SAVED" in output
+        assert output.index("COLOR_FILE_SAVED") < output.index("COLOR_FILE_LOADED")
         created_bytes = colors_file.read_bytes()
         assert json.loads(created_bytes) == DEFAULT_COLORS
         # A fresh process must reload the generated palette without rewriting it.
