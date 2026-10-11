@@ -1,4 +1,5 @@
 pragma Singleton
+pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
@@ -24,7 +25,7 @@ Singleton {
 
   FileView {
     id: locationFileView
-    path: locationFile
+    path: root.locationFile
     printErrors: false
     onAdapterUpdated: saveTimer.start()
     onLoaded: {
@@ -37,11 +38,11 @@ Singleton {
         root.coordinatesReady = true;
         Logger.i("Location", "Coordinates ready");
       }
-      updateWeather();
+      root.updateWeather();
       root.scheduleWeatherUpdate();
     }
     onLoadFailed: function (error) {
-      updateWeather();
+      root.updateWeather();
       root.scheduleWeatherUpdate();
     }
 
@@ -79,7 +80,7 @@ Singleton {
       }
     }
     onTriggered: {
-      updateWeather();
+      root.updateWeather();
       root.scheduleWeatherUpdate();
     }
   }

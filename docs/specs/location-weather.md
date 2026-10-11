@@ -67,13 +67,14 @@ Lifecycle/uniform proof runs against the unchanged production card and widgets w
 ## Tests asserting this spec
 
 - `Tests/weather-card-effects.test.py` with `Tests/Qml/WeatherCardEffectsHarness.qml` — offscreen production-card precipitation lifecycle and animation.
+- `Tests/location-service-runtime.test.py` with `Tests/Qml/LocationServiceHarness.qml` and `Tests/Fixtures/LocationNetworkPlugin.cpp` — unchanged production singleton, real FileView and asynchronous XMLHttpRequest callbacks; fixture replies cover cache reuse, success, unresolved locations, parse failures, HTTP failures, and in-flight refresh exclusion. Runs non-visible with isolated config/cache paths and network namespace; verifies the real settings hash remains unchanged.
 - `Tests/location-service-guards.test.js`
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable fixture coverage for geocoding success, unresolved-location, parse-error, and HTTP-error responses.
-- [ ] Add executable fixture coverage for Open-Meteo success, parse-error, and HTTP-error responses.
+- [x] Add executable fixture coverage for geocoding success, unresolved-location, parse-error, and HTTP-error responses.
+- [x] Add executable fixture coverage for Open-Meteo success, parse-error, and HTTP-error responses.
 - [ ] Add UI-level coverage for WeatherCard visibility, current weather rendering, forecast rendering, and precipitation GPU pixel output.
 - [ ] Add settings-level coverage for LocationTab weather toggles, card ordering, and provider settings.
 
