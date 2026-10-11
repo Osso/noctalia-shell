@@ -80,6 +80,7 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 
 - `Tests/vpn-service-guards.test.js`
 - `Tests/simple-service-warnings.test.py` / `Tests/Qml/SimpleServiceHarness.qml` — production refresh/connect success, disconnect/refresh failure, connect failed-start handling, and real scheduled-refresh timer execution while polling versus suppression when idle. Process/network boundaries are fake; cohort proof and lint limits: [testing](testing.md#simple-service-cohort).
+- `Tests/vpn-panel-warnings.test.py` / `Tests/Qml/VPNPanelWarningsHarness.qml` — production panel/list/rows preserve service ordering within active/inactive groups, UUID-targeted connect/disconnect dispatch, target-only busy disabling and status text, failed-connect state recovery, successful connect/disconnect regrouping, refresh dispatch/refreshing icon, open/close polling references, and empty-state reopening/closing. Failure and completion states are injected through a fake service; this does not test VPNService process handling or real VPN mutation. Standalone lint/runtime gates and isolation limits: [testing](testing.md#vpn-panel-isolated-runtime).
 - `Tests/vpn-ui-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`

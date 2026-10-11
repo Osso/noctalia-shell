@@ -15,6 +15,13 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - Behavior runs production WiFiPanel, lists, and controls in offscreen Quickshell with an inert SmartPanel host, networking, settings, and neighboring services. One phased scenario exercises real delegates and Loader recreation, not a QtTest case count. HOME/XDG/Noctalia paths are private and desktop connections removed. Both modes create a permission-locked, hash-verified real-settings backup before staging and check backup/real bytes unchanged afterward. Behavior timeout is 45 seconds; acceptance requires exit status zero, `WIFI_PANEL_BEHAVIOR_PASS`, and no `WARN`, `ERROR`, `FATAL`, `ReferenceError`, `TypeError`, or `Binding loop`.
 - Direct signals prove request routing, not physical input, backend authorization, NetworkManager/radio actions, real settings persistence, or whole-shell integration.
 
+### VPN panel isolated runtime
+
+- `python3 Tests/vpn-panel-warnings.test.py lint` and `behavior` run standalone, requiring `--artifacts <new-directory>`; no runner integration is claimed. At `ad86891a7`, VPNConnectionItem/VPNPanel warnings drop 18→0 and 6→0; VPNConnectionsList stays 0→0. Each target requires zero warnings and exit status zero.
+- Behavior runs production panel/list/rows and supporting controls under offscreen Quickshell with an inert SmartPanel host and fake VPN service. One nine-phase scenario, not nine QtTest cases, covers ordering, UUID-targeted actions, busy/failure/recovery states, regrouping, refresh, polling references, empty state, and close/reopen: [VPN](vpn.md#tests-asserting-this-spec).
+- Both modes create a unique permission-locked, hash-verified byte-for-byte real-settings backup before staging and check real/backup bytes unchanged afterward. Behavior uses private HOME/XDG/Noctalia paths and removes desktop connections. Child timeout is 45 seconds; acceptance requires exit status zero, `VPN_PANEL_BEHAVIOR_PASS`, and no `WARN`, `ERROR`, `FATAL`, `ReferenceError`, `TypeError`, or `Binding loop`.
+- Direct click signals and injected service states prove UI routing/reaction, not physical input, VPNService process completion/failure handling, real NetworkManager/VPN mutation, live polling, settings persistence, desktop surfaces, or whole-shell acceptance.
+
 ### Session menu isolated runtime
 
 - `Tests/session-menu-warnings.test.py` runs standalone `lint` or `runtime`; no runner integration is claimed. SessionMenu-only lint drops 27→0 at `e59ef4d75` and requires zero warnings/exit status zero. Four behavioral cases plus QtTest initialization/cleanup yield six cases. Coverage through `25662be64`, including destruction past the pending countdown deadline: [session menu](session-menu.md#tests-asserting-this-spec).
