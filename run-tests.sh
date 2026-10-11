@@ -71,6 +71,14 @@ run_unit_tests() {
     python3 "$repo_root/Tests/bar-pill-warnings.test.py" behavior
     python3 "$repo_root/Tests/bar-pill-horizontal-warnings.test.py" behavior
     python3 "$repo_root/Tests/bar-pill-vertical-warnings.test.py" behavior
+    python3 "$repo_root/Tests/bar-widget-metadata-runtime.test.py"
+    python3 "$repo_root/Tests/bluetooth-devices-list-runtime.test.py"
+    python3 "$repo_root/Tests/clipboard-preview-warnings.test.py" --mode runtime
+    python3 "$repo_root/Tests/location-service-runtime.test.py"
+    python3 "$repo_root/Tests/scheme-downloader-runtime.test.py"
+    python3 "$repo_root/Tests/taskbar-grouped-warnings.test.py" behavior
+    python3 "$repo_root/Tests/tray-drawer-warnings.test.py" --mode runtime
+    python3 "$repo_root/Tests/tray-widget-warnings.test.py" --mode runtime
     python3 "$repo_root/Tests/color-namespace-runtime.test.py"
     python3 "$repo_root/Tests/weather-card-effects.test.py"
     python3 "$repo_root/Tests/calendar-events-safe-get-time.test.py"

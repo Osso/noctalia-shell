@@ -71,14 +71,21 @@ case "${1##*/}" in
         [ "$#" -eq 1 ] || exit 40
         exit "$WORKSPACE_TEST_STATUS"
         ;;
-    battery-widget-warnings.test.py | wifi-networks-list-warnings.test.py | bar-pill-warnings.test.py | bar-pill-horizontal-warnings.test.py | bar-pill-vertical-warnings.test.py)
+    bar-widget-metadata-runtime.test.py | bluetooth-devices-list-runtime.test.py | location-service-runtime.test.py | scheme-downloader-runtime.test.py)
+        [ "$#" -eq 1 ] || exit 40
+        if [ "${1##*/}" = "$WARNING_TEST_FAILURE" ]; then
+            exit 48
+        fi
+        exit 0
+        ;;
+    battery-widget-warnings.test.py | wifi-networks-list-warnings.test.py | bar-pill-warnings.test.py | bar-pill-horizontal-warnings.test.py | bar-pill-vertical-warnings.test.py | taskbar-grouped-warnings.test.py)
         [ "${2:-}" = behavior ] && [ "$#" -eq 2 ] || exit 40
         if [ "${1##*/}" = "$WARNING_TEST_FAILURE" ]; then
             exit 48
         fi
         exit 0
         ;;
-    wallpaper-panel-warnings.test.py)
+    wallpaper-panel-warnings.test.py | clipboard-preview-warnings.test.py | tray-drawer-warnings.test.py | tray-widget-warnings.test.py)
         [ "${2:-}" = --mode ] && [ "${3:-}" = runtime ] && [ "$#" -eq 3 ] || exit 40
         if [ "${1##*/}" = "$WARNING_TEST_FAILURE" ]; then
             exit 48
@@ -116,6 +123,14 @@ warning_tests=(
     'bar-pill-warnings.test.py behavior'
     'bar-pill-horizontal-warnings.test.py behavior'
     'bar-pill-vertical-warnings.test.py behavior'
+    'bar-widget-metadata-runtime.test.py'
+    'bluetooth-devices-list-runtime.test.py'
+    'clipboard-preview-warnings.test.py --mode runtime'
+    'location-service-runtime.test.py'
+    'scheme-downloader-runtime.test.py'
+    'taskbar-grouped-warnings.test.py behavior'
+    'tray-drawer-warnings.test.py --mode runtime'
+    'tray-widget-warnings.test.py --mode runtime'
     'color-namespace-runtime.test.py'
 )
 for failure_index in "${!warning_tests[@]}"; do
