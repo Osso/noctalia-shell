@@ -53,19 +53,9 @@ def lint(directory):
         if line.startswith("Warning:")
     )
     print("BACKGROUND_LINT_COUNTS", dict(counts))
-    actionable = [
-        block
-        for block in re.split(r"(?=Warning:)", output)[1:]
-        if ("[unqualified]" in block and "ComponentBehavior: Bound" not in block)
-        or "var declaration in block scope" in block
-    ]
-    assert not actionable, "Known-owner/block-var warnings remain:\n" + "".join(
-        actionable
-    )
-    assert result.returncode in (0, 255), result.returncode
-    # Remaining unbound Component captures and installed screen/color typing.
-    assert counts == {"missing-property": 4, "unqualified": 42}, dict(counts)
-    print("BACKGROUND_LINT_PASS (residual diagnostics retained)")
+    assert not counts, f"Background warnings remain: {dict(counts)}"
+    assert result.returncode == 0, result.returncode
+    print("BACKGROUND_LINT_PASS")
 
 
 def stage_runtime(directory):
@@ -105,7 +95,7 @@ QtObject { property bool top; property bool bottom; property bool left; property
         enabled=True,
         transitionType="none",
         transitionDuration=250,
-        fillColor={"r": 0, "g": 0, "b": 0},
+        fillColor="#336699",
     )
     properties = "\n".join(
         f"property var {key}: {json.dumps(value)}" for key, value in defaults.items()
@@ -152,9 +142,12 @@ function getFillModeUniform() { return 0; }"""),
     )
     write_module(directory, "qs.Modules.Background", {"Background": source})
     shutil.copytree(ROOT / "Shaders/qsb", directory / "Shaders/qsb")
-    # Synthetic URLs for source-preparation probes; no image decoding is claimed.
+    # Synthetic images only; no real wallpaper or visible surface.
     (directory / "red.svg").write_text(
         '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720"><rect width="1280" height="720" fill="#ff0000"/></svg>'
+    )
+    (directory / "blue.svg").write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720"><rect width="1280" height="720" fill="#0000ff"/></svg>'
     )
     shutil.copyfile(
         ROOT / "Tests/Qml/BackgroundWarningsHarness.qml",

@@ -19,556 +19,587 @@ Variants {
 
     active: modelData && Settings.data.wallpaper.enabled
 
-    sourceComponent: PanelWindow {
-      id: root
+    sourceComponent: BackgroundWindow {
+      monitorScreen: wallpaperLoader.modelData
+    }
+  }
 
-      // Internal state management
-      property string transitionType: "fade"
-      property real transitionProgress: 0
-      property bool isStartupTransition: true
+  component TransitionLoader: Loader {
+    required property BackgroundWindow wallpaperWindow
+    required property Image currentImage
+    required property Image nextImage
 
-      readonly property real edgeSmoothness: Settings.data.wallpaper.transitionEdgeSmoothness
-      readonly property var allTransitions: WallpaperService.allTransitions
-      readonly property bool transitioning: transitionAnimation.running
-      readonly property bool shaderActive: transitioning || nextWallpaper.source !== ""
-      readonly property size targetDecodeSize: calculateTargetDecodeSize()
-
-      // Wipe direction: 0=left, 1=right, 2=up, 3=down
-      property real wipeDirection: 0
-
-      // Disc
-      property real discCenterX: 0.5
-      property real discCenterY: 0.5
-
-      // Stripe
-      property real stripesCount: 16
-      property real stripesAngle: 0
-
-      // Used to debounce wallpaper changes
-      property string futureWallpaper: ""
-
-      // Fillmode default is "crop"
-      property real fillMode: WallpaperService.getFillModeUniform()
-      property vector4d fillColor: Qt.vector4d(Settings.data.wallpaper.fillColor.r, Settings.data.wallpaper.fillColor.g, Settings.data.wallpaper.fillColor.b, 1.0)
-
-      Component.onCompleted: setWallpaperInitial()
-
-      Component.onDestruction: {
-        transitionAnimation.stop();
-        debounceTimer.stop();
-        shaderLoader.active = false;
-        currentWallpaper.source = "";
-        nextWallpaper.source = "";
+    sourceComponent: {
+      switch (wallpaperWindow.transitionType) {
+      case "wipe":
+        return wipeShaderComponent;
+      case "disc":
+        return discShaderComponent;
+      case "stripes":
+        return stripesShaderComponent;
+      case "fade":
+      case "none":
+      default:
+        return fadeShaderComponent;
       }
+    }
 
-      Connections {
-        target: Settings.data.wallpaper
-        function onFillModeChanged() {
-          root.fillMode = WallpaperService.getFillModeUniform();
-        }
-      }
-
-      // External state management
-      Connections {
-        target: WallpaperService
-        function onWallpaperChanged(screenName, path) {
-          if (screenName === wallpaperLoader.monitorName) {
-            // Update wallpaper display
-            // Set wallpaper immediately on startup
-            root.futureWallpaper = path;
-            debounceTimer.restart();
-          }
-        }
-      }
-
-      Connections {
-        target: CompositorService
-        function onDisplayScalesChanged() {
-          // Recalculate image sizes without interrupting startup transition
-          if (root.isStartupTransition) {
-            return;
-          }
-          root.recalculateImageSizes();
-        }
-      }
-
-      color: NColor.transparent
-      screen: wallpaperLoader.modelData
-      WlrLayershell.layer: WlrLayer.Background
-      WlrLayershell.exclusionMode: ExclusionMode.Ignore
-      WlrLayershell.namespace: "noctalia-wallpaper-" + (screen ? screen.name : "unknown")
-
-      anchors {
-        bottom: true
-        top: true
-        right: true
-        left: true
-      }
-
-      Timer {
-        id: debounceTimer
-        interval: 333
-        running: false
-        repeat: false
-        onTriggered: {
-          root.changeWallpaper();
-        }
-      }
-
-      Image {
-        id: currentWallpaper
-
-        property bool dimensionsCalculated: false
+    // Fade or None transition shader component
+    Component {
+      id: fadeShaderComponent
+      ShaderEffect {
+        property TransitionLoader transitionLoader: parent
+        readonly property BackgroundWindow wallpaperWindow: transitionLoader.wallpaperWindow
 
         anchors.fill: parent
-        source: ""
-        smooth: true
-        mipmap: false
-        visible: !root.shaderActive && currentWallpaper.source !== ""
-        fillMode: root.imageFillMode()
-        cache: false
-        asynchronous: true
-        sourceSize: root.targetDecodeSize
-        onStatusChanged: {
-          if (status === Image.Error) {
-            Logger.w("Current wallpaper failed to load:", source);
-          } else if (status === Image.Ready && !dimensionsCalculated) {
-            dimensionsCalculated = true;
-            const optimalSize = root.calculateOptimalWallpaperSize(implicitWidth, implicitHeight);
-            if (optimalSize !== false) {
-              sourceSize = optimalSize;
-            }
-          }
-        }
-        onSourceChanged: {
-          dimensionsCalculated = false;
-        }
+
+        property Image source1: transitionLoader.currentImage
+        property Image source2: transitionLoader.nextImage
+        property real progress: wallpaperWindow.transitionProgress
+
+        // Fill mode properties
+        property real fillMode: wallpaperWindow.fillMode
+        property vector4d fillColor: wallpaperWindow.fillColor
+        property real imageWidth1: source1.sourceSize.width
+        property real imageHeight1: source1.sourceSize.height
+        property real imageWidth2: source2.sourceSize.width
+        property real imageHeight2: source2.sourceSize.height
+        property real screenWidth: width
+        property real screenHeight: height
+
+        fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/wp_fade.frag.qsb")
       }
+    }
 
-      Image {
-        id: nextWallpaper
-
-        property bool dimensionsCalculated: false
+    // Wipe transition shader component
+    Component {
+      id: wipeShaderComponent
+      ShaderEffect {
+        property TransitionLoader transitionLoader: parent
+        readonly property BackgroundWindow wallpaperWindow: transitionLoader.wallpaperWindow
 
         anchors.fill: parent
-        source: ""
-        smooth: true
-        mipmap: false
-        visible: false
-        fillMode: root.imageFillMode()
-        cache: false
-        asynchronous: true
-        sourceSize: root.targetDecodeSize
-        onStatusChanged: {
-          if (status === Image.Error) {
-            Logger.w("Next wallpaper failed to load:", source);
-          } else if (status === Image.Ready && !dimensionsCalculated) {
-            dimensionsCalculated = true;
-            const optimalSize = root.calculateOptimalWallpaperSize(implicitWidth, implicitHeight);
-            if (optimalSize !== false) {
-              sourceSize = optimalSize;
-            }
-          }
-        }
-        onSourceChanged: {
-          dimensionsCalculated = false;
-        }
-      }
 
-      // Dynamic shader loader - only loads the active transition shader
-      Loader {
-        id: shaderLoader
+        property Image source1: transitionLoader.currentImage
+        property Image source2: transitionLoader.nextImage
+        property real progress: wallpaperWindow.transitionProgress
+        property real smoothness: wallpaperWindow.edgeSmoothness
+        property real direction: wallpaperWindow.wipeDirection
+
+        // Fill mode properties
+        property real fillMode: wallpaperWindow.fillMode
+        property vector4d fillColor: wallpaperWindow.fillColor
+        property real imageWidth1: source1.sourceSize.width
+        property real imageHeight1: source1.sourceSize.height
+        property real imageWidth2: source2.sourceSize.width
+        property real imageHeight2: source2.sourceSize.height
+        property real screenWidth: width
+        property real screenHeight: height
+
+        fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/wp_wipe.frag.qsb")
+      }
+    }
+
+    // Disc reveal transition shader component
+    Component {
+      id: discShaderComponent
+      ShaderEffect {
+        property TransitionLoader transitionLoader: parent
+        readonly property BackgroundWindow wallpaperWindow: transitionLoader.wallpaperWindow
+
         anchors.fill: parent
-        active: root.shaderActive
 
-        sourceComponent: {
-          switch (root.transitionType) {
-          case "wipe":
-            return wipeShaderComponent;
-          case "disc":
-            return discShaderComponent;
-          case "stripes":
-            return stripesShaderComponent;
-          case "fade":
-          case "none":
-          default:
-            return fadeShaderComponent;
-          }
+        property Image source1: transitionLoader.currentImage
+        property Image source2: transitionLoader.nextImage
+        property real progress: wallpaperWindow.transitionProgress
+        property real smoothness: wallpaperWindow.edgeSmoothness
+        property real aspectRatio: wallpaperWindow.width / wallpaperWindow.height
+        property real centerX: wallpaperWindow.discCenterX
+        property real centerY: wallpaperWindow.discCenterY
+
+        // Fill mode properties
+        property real fillMode: wallpaperWindow.fillMode
+        property vector4d fillColor: wallpaperWindow.fillColor
+        property real imageWidth1: source1.sourceSize.width
+        property real imageHeight1: source1.sourceSize.height
+        property real imageWidth2: source2.sourceSize.width
+        property real imageHeight2: source2.sourceSize.height
+        property real screenWidth: width
+        property real screenHeight: height
+
+        fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/wp_disc.frag.qsb")
+      }
+    }
+
+    // Diagonal stripes transition shader component
+    Component {
+      id: stripesShaderComponent
+      ShaderEffect {
+        property TransitionLoader transitionLoader: parent
+        readonly property BackgroundWindow wallpaperWindow: transitionLoader.wallpaperWindow
+
+        anchors.fill: parent
+
+        property Image source1: transitionLoader.currentImage
+        property Image source2: transitionLoader.nextImage
+        property real progress: wallpaperWindow.transitionProgress
+        property real smoothness: wallpaperWindow.edgeSmoothness
+        property real aspectRatio: wallpaperWindow.width / wallpaperWindow.height
+        property real stripeCount: wallpaperWindow.stripesCount
+        property real angle: wallpaperWindow.stripesAngle
+
+        // Fill mode properties
+        property real fillMode: wallpaperWindow.fillMode
+        property vector4d fillColor: wallpaperWindow.fillColor
+        property real imageWidth1: source1.sourceSize.width
+        property real imageHeight1: source1.sourceSize.height
+        property real imageWidth2: source2.sourceSize.width
+        property real imageHeight2: source2.sourceSize.height
+        property real screenWidth: width
+        property real screenHeight: height
+
+        fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/wp_stripes.frag.qsb")
+      }
+    }
+  }
+
+  component BackgroundWindow: PanelWindow {
+    id: root
+
+    required property ShellScreen monitorScreen
+    readonly property string monitorName: monitorScreen ? monitorScreen.name : ""
+    readonly property int monitorWidth: monitorScreen ? monitorScreen.width : 0
+    readonly property int monitorHeight: monitorScreen ? monitorScreen.height : 0
+
+    // Internal state management
+    property string transitionType: "fade"
+    property real transitionProgress: 0
+    property bool isStartupTransition: true
+
+    readonly property real edgeSmoothness: Settings.data.wallpaper.transitionEdgeSmoothness
+    readonly property var allTransitions: WallpaperService.allTransitions
+    readonly property bool transitioning: transitionAnimation.running
+    readonly property bool shaderActive: transitioning || nextWallpaper.source !== ""
+    readonly property size targetDecodeSize: calculateTargetDecodeSize()
+
+    // Wipe direction: 0=left, 1=right, 2=up, 3=down
+    property real wipeDirection: 0
+
+    // Disc
+    property real discCenterX: 0.5
+    property real discCenterY: 0.5
+
+    // Stripe
+    property real stripesCount: 16
+    property real stripesAngle: 0
+
+    // Used to debounce wallpaper changes
+    property string futureWallpaper: ""
+
+    // Fillmode default is "crop"
+    property real fillMode: WallpaperService.getFillModeUniform()
+    readonly property color wallpaperFillColor: Settings.data.wallpaper.fillColor
+    property vector4d fillColor: Qt.vector4d(wallpaperFillColor.r, wallpaperFillColor.g, wallpaperFillColor.b, 1.0)
+
+    Component.onCompleted: setWallpaperInitial()
+
+    Component.onDestruction: {
+      transitionAnimation.stop();
+      debounceTimer.stop();
+      shaderLoader.active = false;
+      currentWallpaper.source = "";
+      nextWallpaper.source = "";
+    }
+
+    Connections {
+      target: Settings.data.wallpaper
+      function onFillModeChanged() {
+        root.fillMode = WallpaperService.getFillModeUniform();
+      }
+    }
+
+    // External state management
+    Connections {
+      target: WallpaperService
+      function onWallpaperChanged(screenName, path) {
+        if (screenName === root.monitorName) {
+          // Update wallpaper display
+          // Set wallpaper immediately on startup
+          root.futureWallpaper = path;
+          debounceTimer.restart();
         }
       }
+    }
 
-      // Fade or None transition shader component
-      Component {
-        id: fadeShaderComponent
-        ShaderEffect {
-          anchors.fill: parent
-
-          property variant source1: currentWallpaper
-          property variant source2: nextWallpaper
-          property real progress: root.transitionProgress
-
-          // Fill mode properties
-          property real fillMode: root.fillMode
-          property vector4d fillColor: root.fillColor
-          property real imageWidth1: source1.sourceSize.width
-          property real imageHeight1: source1.sourceSize.height
-          property real imageWidth2: source2.sourceSize.width
-          property real imageHeight2: source2.sourceSize.height
-          property real screenWidth: width
-          property real screenHeight: height
-
-          fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/wp_fade.frag.qsb")
-        }
-      }
-
-      // Wipe transition shader component
-      Component {
-        id: wipeShaderComponent
-        ShaderEffect {
-          anchors.fill: parent
-
-          property variant source1: currentWallpaper
-          property variant source2: nextWallpaper
-          property real progress: root.transitionProgress
-          property real smoothness: root.edgeSmoothness
-          property real direction: root.wipeDirection
-
-          // Fill mode properties
-          property real fillMode: root.fillMode
-          property vector4d fillColor: root.fillColor
-          property real imageWidth1: source1.sourceSize.width
-          property real imageHeight1: source1.sourceSize.height
-          property real imageWidth2: source2.sourceSize.width
-          property real imageHeight2: source2.sourceSize.height
-          property real screenWidth: width
-          property real screenHeight: height
-
-          fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/wp_wipe.frag.qsb")
-        }
-      }
-
-      // Disc reveal transition shader component
-      Component {
-        id: discShaderComponent
-        ShaderEffect {
-          anchors.fill: parent
-
-          property variant source1: currentWallpaper
-          property variant source2: nextWallpaper
-          property real progress: root.transitionProgress
-          property real smoothness: root.edgeSmoothness
-          property real aspectRatio: root.width / root.height
-          property real centerX: root.discCenterX
-          property real centerY: root.discCenterY
-
-          // Fill mode properties
-          property real fillMode: root.fillMode
-          property vector4d fillColor: root.fillColor
-          property real imageWidth1: source1.sourceSize.width
-          property real imageHeight1: source1.sourceSize.height
-          property real imageWidth2: source2.sourceSize.width
-          property real imageHeight2: source2.sourceSize.height
-          property real screenWidth: width
-          property real screenHeight: height
-
-          fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/wp_disc.frag.qsb")
-        }
-      }
-
-      // Diagonal stripes transition shader component
-      Component {
-        id: stripesShaderComponent
-        ShaderEffect {
-          anchors.fill: parent
-
-          property variant source1: currentWallpaper
-          property variant source2: nextWallpaper
-          property real progress: root.transitionProgress
-          property real smoothness: root.edgeSmoothness
-          property real aspectRatio: root.width / root.height
-          property real stripeCount: root.stripesCount
-          property real angle: root.stripesAngle
-
-          // Fill mode properties
-          property real fillMode: root.fillMode
-          property vector4d fillColor: root.fillColor
-          property real imageWidth1: source1.sourceSize.width
-          property real imageHeight1: source1.sourceSize.height
-          property real imageWidth2: source2.sourceSize.width
-          property real imageHeight2: source2.sourceSize.height
-          property real screenWidth: width
-          property real screenHeight: height
-
-          fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/wp_stripes.frag.qsb")
-        }
-      }
-
-      // Animation for the transition progress
-      NumberAnimation {
-        id: transitionAnimation
-        target: root
-        property: "transitionProgress"
-        from: 0.0
-        to: 1.0
-        // The stripes shader feels faster visually, we make it a bit slower here.
-        duration: root.transitionType == "stripes" ? Settings.data.wallpaper.transitionDuration * 1.6 : Settings.data.wallpaper.transitionDuration
-        easing.type: Easing.InOutCubic
-        onFinished: {
-          // Assign new image to current BEFORE clearing to prevent flicker
-          const tempSource = nextWallpaper.source;
-          currentWallpaper.source = tempSource;
-          root.transitionProgress = 0.0;
-
-          // Now clear nextWallpaper after currentWallpaper has the new source
-          // Force complete cleanup to free texture memory (~18-25MB per monitor)
-          Qt.callLater(() => {
-            nextWallpaper.source = "";
-            nextWallpaper.sourceSize = root.targetDecodeSize;
-            Qt.callLater(() => {
-              currentWallpaper.asynchronous = true;
-            });
-          });
-        }
-      }
-
-      // ------------------------------------------------------
-      function calculateTargetDecodeSize() {
-        const compositorScale = CompositorService.getDisplayScale(wallpaperLoader.monitorName);
-        const scaledScreenWidth = Math.round(wallpaperLoader.monitorWidth * compositorScale);
-        const scaledScreenHeight = Math.round(wallpaperLoader.monitorHeight * compositorScale);
-        if (scaledScreenWidth <= 0 || scaledScreenHeight <= 0) {
-          return Qt.size(0, 0);
-        }
-
-        switch (Settings.data.wallpaper.fillMode) {
-        case "stretch":
-          return Qt.size(scaledScreenWidth, scaledScreenHeight);
-        case "center":
-          return Qt.size(0, 0);
-        case "fit":
-        case "crop":
-        default:
-          if (scaledScreenWidth >= scaledScreenHeight) {
-            return Qt.size(scaledScreenWidth, 0);
-          }
-          return Qt.size(0, scaledScreenHeight);
-        }
-      }
-
-      function imageFillMode() {
-        switch (Settings.data.wallpaper.fillMode) {
-        case "center":
-          return Image.Pad;
-        case "fit":
-          return Image.PreserveAspectFit;
-        case "stretch":
-          return Image.Stretch;
-        case "crop":
-        default:
-          return Image.PreserveAspectCrop;
-        }
-      }
-
-      function prepareWallpaperImage(image, source) {
-        image.sourceSize = root.targetDecodeSize;
-        image.source = source;
-      }
-
-      // ------------------------------------------------------
-      function calculateOptimalWallpaperSize(wpWidth, wpHeight) {
-        const compositorScale = CompositorService.getDisplayScale(wallpaperLoader.monitorName);
-        const scaledScreenWidth = wallpaperLoader.monitorWidth * compositorScale;
-        const scaledScreenHeight = wallpaperLoader.monitorHeight * compositorScale;
-        if (wpWidth <= scaledScreenWidth || wpHeight <= scaledScreenHeight || wpWidth <= 0 || wpHeight <= 0) {
-          // Do not resize if wallpaper is smaller than one of the screen dimension
+    Connections {
+      target: CompositorService
+      function onDisplayScalesChanged() {
+        // Recalculate image sizes without interrupting startup transition
+        if (root.isStartupTransition) {
           return;
         }
-
-        const imageAspectRatio = wpWidth / wpHeight;
-        var dim = Qt.size(0, 0);
-        if (scaledScreenWidth >= scaledScreenHeight) {
-          const w = Math.min(scaledScreenWidth, wpWidth);
-          dim = Qt.size(Math.round(w), Math.round(w / imageAspectRatio));
-        } else {
-          const h = Math.min(scaledScreenHeight, wpHeight);
-          dim = Qt.size(Math.round(h * imageAspectRatio), Math.round(h));
-        }
-
-        Logger.d("Background", `Wallpaper resized on ${wallpaperLoader.monitorName} ${scaledScreenWidth}x${scaledScreenHeight} @ ${compositorScale}x`, "src:", wpWidth, wpHeight, "dst:", dim.width, dim.height);
-        return dim;
+        root.recalculateImageSizes();
       }
+    }
 
-      // ------------------------------------------------------
-      function recalculateImageSizes() {
-        // Re-evaluate and apply optimal sourceSize for both images when ready
-        if (currentWallpaper.status === Image.Ready) {
-          const optimal = calculateOptimalWallpaperSize(currentWallpaper.implicitWidth, currentWallpaper.implicitHeight);
-          if (optimal !== undefined && optimal !== false) {
-            currentWallpaper.sourceSize = optimal;
-          } else {
-            currentWallpaper.sourceSize = root.targetDecodeSize;
+    color: NColor.transparent
+    screen: root.monitorScreen
+    WlrLayershell.layer: WlrLayer.Background
+    WlrLayershell.exclusionMode: ExclusionMode.Ignore
+    WlrLayershell.namespace: "noctalia-wallpaper-" + (root.monitorScreen ? root.monitorScreen.name : "unknown")
+
+    anchors {
+      bottom: true
+      top: true
+      right: true
+      left: true
+    }
+
+    Timer {
+      id: debounceTimer
+      interval: 333
+      running: false
+      repeat: false
+      onTriggered: {
+        root.changeWallpaper();
+      }
+    }
+
+    Image {
+      id: currentWallpaper
+
+      property bool dimensionsCalculated: false
+
+      anchors.fill: parent
+      source: ""
+      smooth: true
+      mipmap: false
+      visible: !root.shaderActive && currentWallpaper.source !== ""
+      fillMode: root.imageFillMode()
+      cache: false
+      asynchronous: true
+      sourceSize: root.targetDecodeSize
+      onStatusChanged: {
+        if (status === Image.Error) {
+          Logger.w("Current wallpaper failed to load:", source);
+        } else if (status === Image.Ready && !dimensionsCalculated) {
+          dimensionsCalculated = true;
+          const optimalSize = root.calculateOptimalWallpaperSize(implicitWidth, implicitHeight);
+          if (optimalSize !== false) {
+            sourceSize = optimalSize;
           }
         }
+      }
+      onSourceChanged: {
+        dimensionsCalculated = false;
+      }
+    }
 
-        if (nextWallpaper.status === Image.Ready) {
-          const optimal2 = calculateOptimalWallpaperSize(nextWallpaper.implicitWidth, nextWallpaper.implicitHeight);
-          if (optimal2 !== undefined && optimal2 !== false) {
-            nextWallpaper.sourceSize = optimal2;
-          } else {
-            nextWallpaper.sourceSize = root.targetDecodeSize;
+    Image {
+      id: nextWallpaper
+
+      property bool dimensionsCalculated: false
+
+      anchors.fill: parent
+      source: ""
+      smooth: true
+      mipmap: false
+      visible: false
+      fillMode: root.imageFillMode()
+      cache: false
+      asynchronous: true
+      sourceSize: root.targetDecodeSize
+      onStatusChanged: {
+        if (status === Image.Error) {
+          Logger.w("Next wallpaper failed to load:", source);
+        } else if (status === Image.Ready && !dimensionsCalculated) {
+          dimensionsCalculated = true;
+          const optimalSize = root.calculateOptimalWallpaperSize(implicitWidth, implicitHeight);
+          if (optimalSize !== false) {
+            sourceSize = optimalSize;
           }
         }
       }
-
-      // ------------------------------------------------------
-      function setWallpaperInitial() {
-        // On startup, defer assigning wallpaper until the service cache is ready, retries every tick
-        if (!WallpaperService || !WallpaperService.isInitialized) {
-          Qt.callLater(setWallpaperInitial);
-          return;
-        }
-
-        const wallpaperPath = WallpaperService.getWallpaper(wallpaperLoader.monitorName);
-
-        futureWallpaper = wallpaperPath;
-        performStartupTransition();
+      onSourceChanged: {
+        dimensionsCalculated = false;
       }
+    }
 
-      // ------------------------------------------------------
-      function setWallpaperImmediate(source) {
-        transitionAnimation.stop();
-        transitionProgress = 0.0;
+    // Dynamic shader loader - only loads the active transition shader
+    TransitionLoader {
+      id: shaderLoader
+      anchors.fill: parent
+      active: root.shaderActive
+      wallpaperWindow: root
+      currentImage: currentWallpaper
+      nextImage: nextWallpaper
+    }
 
-        // Clear nextWallpaper completely to free texture memory
-        nextWallpaper.source = "";
-        nextWallpaper.sourceSize = root.targetDecodeSize;
+    // Animation for the transition progress
+    NumberAnimation {
+      id: transitionAnimation
+      target: root
+      property: "transitionProgress"
+      from: 0.0
+      to: 1.0
+      // The stripes shader feels faster visually, we make it a bit slower here.
+      duration: root.transitionType == "stripes" ? Settings.data.wallpaper.transitionDuration * 1.6 : Settings.data.wallpaper.transitionDuration
+      easing.type: Easing.InOutCubic
+      onFinished: {
+        // Assign new image to current BEFORE clearing to prevent flicker
+        const tempSource = nextWallpaper.source;
+        currentWallpaper.source = tempSource;
+        root.transitionProgress = 0.0;
 
-        currentWallpaper.source = "";
-
+        // Now clear nextWallpaper after currentWallpaper has the new source
+        // Force complete cleanup to free texture memory (~18-25MB per monitor)
         Qt.callLater(() => {
-          prepareWallpaperImage(currentWallpaper, source);
+          nextWallpaper.source = "";
+          nextWallpaper.sourceSize = root.targetDecodeSize;
+          Qt.callLater(() => {
+            currentWallpaper.asynchronous = true;
+          });
         });
       }
+    }
 
-      // ------------------------------------------------------
-      function setWallpaperWithTransition(source) {
-        if (source === currentWallpaper.source) {
-          return;
+    // ------------------------------------------------------
+    function calculateTargetDecodeSize() {
+      const compositorScale = CompositorService.getDisplayScale(root.monitorName);
+      const scaledScreenWidth = Math.round(root.monitorWidth * compositorScale);
+      const scaledScreenHeight = Math.round(root.monitorHeight * compositorScale);
+      if (scaledScreenWidth <= 0 || scaledScreenHeight <= 0) {
+        return Qt.size(0, 0);
+      }
+
+      switch (Settings.data.wallpaper.fillMode) {
+      case "stretch":
+        return Qt.size(scaledScreenWidth, scaledScreenHeight);
+      case "center":
+        return Qt.size(0, 0);
+      case "fit":
+      case "crop":
+      default:
+        if (scaledScreenWidth >= scaledScreenHeight) {
+          return Qt.size(scaledScreenWidth, 0);
         }
+        return Qt.size(0, scaledScreenHeight);
+      }
+    }
 
-        if (transitioning) {
-          // We are interrupting a transition - handle cleanup properly
-          transitionAnimation.stop();
-          transitionProgress = 0;
+    function imageFillMode() {
+      switch (Settings.data.wallpaper.fillMode) {
+      case "center":
+        return Image.Pad;
+      case "fit":
+        return Image.PreserveAspectFit;
+      case "stretch":
+        return Image.Stretch;
+      case "crop":
+      default:
+        return Image.PreserveAspectCrop;
+      }
+    }
 
-          // Assign nextWallpaper to currentWallpaper BEFORE clearing to prevent flicker
-          const newCurrentSource = nextWallpaper.source;
-          currentWallpaper.source = newCurrentSource;
+    function prepareWallpaperImage(image, source) {
+      image.sourceSize = root.targetDecodeSize;
+      image.source = source;
+    }
 
-          // Now clear nextWallpaper after current has the new source
+    // ------------------------------------------------------
+    function calculateOptimalWallpaperSize(wpWidth, wpHeight) {
+      const compositorScale = CompositorService.getDisplayScale(root.monitorName);
+      const scaledScreenWidth = root.monitorWidth * compositorScale;
+      const scaledScreenHeight = root.monitorHeight * compositorScale;
+      if (wpWidth <= scaledScreenWidth || wpHeight <= scaledScreenHeight || wpWidth <= 0 || wpHeight <= 0) {
+        // Do not resize if wallpaper is smaller than one of the screen dimension
+        return;
+      }
+
+      const imageAspectRatio = wpWidth / wpHeight;
+      var dim = Qt.size(0, 0);
+      if (scaledScreenWidth >= scaledScreenHeight) {
+        const w = Math.min(scaledScreenWidth, wpWidth);
+        dim = Qt.size(Math.round(w), Math.round(w / imageAspectRatio));
+      } else {
+        const h = Math.min(scaledScreenHeight, wpHeight);
+        dim = Qt.size(Math.round(h * imageAspectRatio), Math.round(h));
+      }
+
+      Logger.d("Background", `Wallpaper resized on ${root.monitorName} ${scaledScreenWidth}x${scaledScreenHeight} @ ${compositorScale}x`, "src:", wpWidth, wpHeight, "dst:", dim.width, dim.height);
+      return dim;
+    }
+
+    // ------------------------------------------------------
+    function recalculateImageSizes() {
+      // Re-evaluate and apply optimal sourceSize for both images when ready
+      if (currentWallpaper.status === Image.Ready) {
+        const optimal = calculateOptimalWallpaperSize(currentWallpaper.implicitWidth, currentWallpaper.implicitHeight);
+        if (optimal !== undefined && optimal !== false) {
+          currentWallpaper.sourceSize = optimal;
+        } else {
+          currentWallpaper.sourceSize = root.targetDecodeSize;
+        }
+      }
+
+      if (nextWallpaper.status === Image.Ready) {
+        const optimal2 = calculateOptimalWallpaperSize(nextWallpaper.implicitWidth, nextWallpaper.implicitHeight);
+        if (optimal2 !== undefined && optimal2 !== false) {
+          nextWallpaper.sourceSize = optimal2;
+        } else {
+          nextWallpaper.sourceSize = root.targetDecodeSize;
+        }
+      }
+    }
+
+    // ------------------------------------------------------
+    function setWallpaperInitial() {
+      // On startup, defer assigning wallpaper until the service cache is ready, retries every tick
+      if (!WallpaperService || !WallpaperService.isInitialized) {
+        Qt.callLater(setWallpaperInitial);
+        return;
+      }
+
+      const wallpaperPath = WallpaperService.getWallpaper(root.monitorName);
+
+      futureWallpaper = wallpaperPath;
+      performStartupTransition();
+    }
+
+    // ------------------------------------------------------
+    function setWallpaperImmediate(source) {
+      transitionAnimation.stop();
+      transitionProgress = 0.0;
+
+      // Clear nextWallpaper completely to free texture memory
+      nextWallpaper.source = "";
+      nextWallpaper.sourceSize = root.targetDecodeSize;
+
+      currentWallpaper.source = "";
+
+      Qt.callLater(() => {
+        prepareWallpaperImage(currentWallpaper, source);
+      });
+    }
+
+    // ------------------------------------------------------
+    function setWallpaperWithTransition(source) {
+      if (source === currentWallpaper.source) {
+        return;
+      }
+
+      if (transitioning) {
+        // We are interrupting a transition - handle cleanup properly
+        transitionAnimation.stop();
+        transitionProgress = 0;
+
+        // Assign nextWallpaper to currentWallpaper BEFORE clearing to prevent flicker
+        const newCurrentSource = nextWallpaper.source;
+        currentWallpaper.source = newCurrentSource;
+
+        // Now clear nextWallpaper after current has the new source
+        Qt.callLater(() => {
+          nextWallpaper.source = "";
+
+          // Now set the next wallpaper after a brief delay
           Qt.callLater(() => {
-            nextWallpaper.source = "";
-
-            // Now set the next wallpaper after a brief delay
-            Qt.callLater(() => {
-              prepareWallpaperImage(nextWallpaper, source);
-              currentWallpaper.asynchronous = false;
-              transitionAnimation.start();
-            });
+            prepareWallpaperImage(nextWallpaper, source);
+            currentWallpaper.asynchronous = false;
+            transitionAnimation.start();
           });
-          return;
-        }
-
-        prepareWallpaperImage(nextWallpaper, source);
-        currentWallpaper.asynchronous = false;
-        transitionAnimation.start();
+        });
+        return;
       }
 
-      // ------------------------------------------------------
-      // Main method that actually trigger the wallpaper change
-      function changeWallpaper() {
-        // Get the transitionType from the settings
-        transitionType = Settings.data.wallpaper.transitionType;
+      prepareWallpaperImage(nextWallpaper, source);
+      currentWallpaper.asynchronous = false;
+      transitionAnimation.start();
+    }
 
-        if (transitionType == "random") {
-          const index = Math.floor(Math.random() * allTransitions.length);
-          transitionType = allTransitions[index];
-        }
+    // ------------------------------------------------------
+    // Main method that actually trigger the wallpaper change
+    function changeWallpaper() {
+      // Get the transitionType from the settings
+      transitionType = Settings.data.wallpaper.transitionType;
 
-        // Ensure the transition type really exists
-        if (transitionType !== "none" && !allTransitions.includes(transitionType)) {
-          transitionType = "fade";
-        }
-
-        switch (transitionType) {
-        case "none":
-          setWallpaperImmediate(futureWallpaper);
-          break;
-        case "wipe":
-          wipeDirection = Math.random() * 4;
-          setWallpaperWithTransition(futureWallpaper);
-          break;
-        case "disc":
-          discCenterX = Math.random();
-          discCenterY = Math.random();
-          setWallpaperWithTransition(futureWallpaper);
-          break;
-        case "stripes":
-          stripesCount = Math.round(Math.random() * 20 + 4);
-          stripesAngle = Math.random() * 360;
-          setWallpaperWithTransition(futureWallpaper);
-          break;
-        default:
-          setWallpaperWithTransition(futureWallpaper);
-          break;
-        }
+      if (transitionType == "random") {
+        const index = Math.floor(Math.random() * allTransitions.length);
+        transitionType = allTransitions[index];
       }
 
-      // ------------------------------------------------------
-      // Dedicated function for startup animation
-      function performStartupTransition() {
-        // Get the transitionType from the settings
-        transitionType = Settings.data.wallpaper.transitionType;
-
-        if (transitionType == "random") {
-          const index = Math.floor(Math.random() * allTransitions.length);
-          transitionType = allTransitions[index];
-        }
-
-        // Ensure the transition type really exists
-        if (transitionType !== "none" && !allTransitions.includes(transitionType)) {
-          transitionType = "fade";
-        }
-
-        // Apply transitionType so the shader loader picks the correct shader
-        this.transitionType = transitionType;
-
-        switch (transitionType) {
-        case "none":
-          setWallpaperImmediate(futureWallpaper);
-          break;
-        case "wipe":
-          wipeDirection = Math.random() * 4;
-          setWallpaperWithTransition(futureWallpaper);
-          break;
-        case "disc":
-          // Force center origin for elegant startup animation
-          discCenterX = 0.5;
-          discCenterY = 0.5;
-          setWallpaperWithTransition(futureWallpaper);
-          break;
-        case "stripes":
-          stripesCount = Math.round(Math.random() * 20 + 4);
-          stripesAngle = Math.random() * 360;
-          setWallpaperWithTransition(futureWallpaper);
-          break;
-        default:
-          setWallpaperWithTransition(futureWallpaper);
-          break;
-        }
-        // Mark startup transition complete
-        isStartupTransition = false;
+      // Ensure the transition type really exists
+      if (transitionType !== "none" && !allTransitions.includes(transitionType)) {
+        transitionType = "fade";
       }
+
+      switch (transitionType) {
+      case "none":
+        setWallpaperImmediate(futureWallpaper);
+        break;
+      case "wipe":
+        wipeDirection = Math.random() * 4;
+        setWallpaperWithTransition(futureWallpaper);
+        break;
+      case "disc":
+        discCenterX = Math.random();
+        discCenterY = Math.random();
+        setWallpaperWithTransition(futureWallpaper);
+        break;
+      case "stripes":
+        stripesCount = Math.round(Math.random() * 20 + 4);
+        stripesAngle = Math.random() * 360;
+        setWallpaperWithTransition(futureWallpaper);
+        break;
+      default:
+        setWallpaperWithTransition(futureWallpaper);
+        break;
+      }
+    }
+
+    // ------------------------------------------------------
+    // Dedicated function for startup animation
+    function performStartupTransition() {
+      // Get the transitionType from the settings
+      transitionType = Settings.data.wallpaper.transitionType;
+
+      if (transitionType == "random") {
+        const index = Math.floor(Math.random() * allTransitions.length);
+        transitionType = allTransitions[index];
+      }
+
+      // Ensure the transition type really exists
+      if (transitionType !== "none" && !allTransitions.includes(transitionType)) {
+        transitionType = "fade";
+      }
+
+      // Apply transitionType so the shader loader picks the correct shader
+      this.transitionType = transitionType;
+
+      switch (transitionType) {
+      case "none":
+        setWallpaperImmediate(futureWallpaper);
+        break;
+      case "wipe":
+        wipeDirection = Math.random() * 4;
+        setWallpaperWithTransition(futureWallpaper);
+        break;
+      case "disc":
+        // Force center origin for elegant startup animation
+        discCenterX = 0.5;
+        discCenterY = 0.5;
+        setWallpaperWithTransition(futureWallpaper);
+        break;
+      case "stripes":
+        stripesCount = Math.round(Math.random() * 20 + 4);
+        stripesAngle = Math.random() * 360;
+        setWallpaperWithTransition(futureWallpaper);
+        break;
+      default:
+        setWallpaperWithTransition(futureWallpaper);
+        break;
+      }
+      // Mark startup transition complete
+      isStartupTransition = false;
     }
   }
 }

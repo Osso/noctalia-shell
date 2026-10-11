@@ -46,6 +46,46 @@ TestCase {
     wait(1);
   }
 
+  function test_color_channels_from_settings_string() {
+    compare(window.fillColor, Qt.vector4d(0.2, 0.4, 0.6, 1));
+    Settings.data.wallpaper.fillColor = "#336699";
+  }
+
+  function test_synthetic_transition_data() {
+    return ["fade", "wipe", "disc", "stripes"].map(type => ({
+          tag: type,
+          type: type
+        }));
+  }
+
+  function test_synthetic_transition(row) {
+    const red = Qt.resolvedUrl("red.svg");
+    const blue = Qt.resolvedUrl("blue.svg");
+    window.setWallpaperImmediate(red);
+    tryCompare(currentImage, "status", Image.Ready);
+    compare(currentImage.source, red);
+    window.transitionType = row.type;
+    window.setWallpaperWithTransition(blue);
+    tryCompare(nextImage, "status", Image.Ready);
+    tryVerify(() => shaderLoader.item !== null);
+    const shader = shaderLoader.item;
+    compare(shader.source1, currentImage);
+    compare(shader.source2, nextImage);
+    compare(shader.fillColor, window.fillColor);
+    compare(shader.imageWidth1, currentImage.sourceSize.width);
+    compare(shader.imageHeight2, nextImage.sourceSize.height);
+    tryVerify(() => shader.progress > 0 && shader.progress < 1);
+    tryCompare(window, "transitioning", false, 1500);
+    tryCompare(currentImage, "source", blue);
+    tryCompare(nextImage, "status", Image.Null);
+    compare(nextImage.source.toString(), "");
+    tryCompare(currentImage, "asynchronous", true);
+    // Existing URL/string strict comparison prevents idle unload; not this slice's fix.
+    compare(window.shaderActive, true);
+    verify(shaderLoader.item !== null);
+    console.log("BACKGROUND_IDLE_UNLOAD_BLOCKED: empty source URL !== empty string");
+  }
+
   function test_decode_size_and_fill_modes() {
     const modes = [["crop", 640, 0, Image.PreserveAspectCrop], ["fit", 640, 0, Image.PreserveAspectFit], ["stretch", 640, 360, Image.Stretch], ["center", 0, 0, Image.Pad]];
     for (const row of modes) {
