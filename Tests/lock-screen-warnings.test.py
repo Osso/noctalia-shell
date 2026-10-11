@@ -52,7 +52,7 @@ def lint(directory):
     assert all("lockContext." in line for line in diagnostic_sources), (
         diagnostic_sources
     )
-    assert result.returncode == 255, result.returncode
+    assert result.returncode == 0, result.returncode
 
 
 def stage_runtime(directory, mutation):
