@@ -48,23 +48,23 @@ ColumnLayout {
         "name": I18n.tr("options.workspace-labels.index+name")
       }
     ]
-    currentKey: widgetData.labelMode || widgetMetadata.labelMode
-    onSelected: key => valueLabelMode = key
+    currentKey: root.widgetData.labelMode || root.widgetMetadata.labelMode
+    onSelected: key => root.valueLabelMode = key
     minimumWidth: 200
   }
 
   NToggle {
     label: I18n.tr("bar.widget-settings.workspace.follow-focused-screen.label")
     description: I18n.tr("bar.widget-settings.workspace.follow-focused-screen.description")
-    checked: valueFollowFocusedScreen
-    onToggled: checked => valueFollowFocusedScreen = checked
+    checked: root.valueFollowFocusedScreen
+    onToggled: checked => root.valueFollowFocusedScreen = checked
   }
 
   NToggle {
     label: I18n.tr("bar.widget-settings.workspace.hide-unoccupied.label")
     description: I18n.tr("bar.widget-settings.workspace.hide-unoccupied.description")
-    checked: valueHideUnoccupied
-    onToggled: checked => valueHideUnoccupied = checked
+    checked: root.valueHideUnoccupied
+    onToggled: checked => root.valueHideUnoccupied = checked
   }
 
   NSpinBox {
@@ -72,8 +72,8 @@ ColumnLayout {
     description: I18n.tr("bar.widget-settings.workspace.character-count.description")
     from: 1
     to: 10
-    value: valueCharacterCount
+    value: root.valueCharacterCount
     onValueChanged: valueCharacterCount = value
-    visible: valueLabelMode === "name"
+    visible: root.valueLabelMode === "name"
   }
 }

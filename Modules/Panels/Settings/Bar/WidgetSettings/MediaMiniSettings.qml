@@ -75,26 +75,26 @@ ColumnLayout {
   NToggle {
     label: I18n.tr("bar.widget-settings.media-mini.show-album-art.label")
     description: I18n.tr("bar.widget-settings.media-mini.show-album-art.description")
-    checked: valueShowAlbumArt
-    onToggled: checked => valueShowAlbumArt = checked
+    checked: root.valueShowAlbumArt
+    onToggled: checked => root.valueShowAlbumArt = checked
   }
 
   NToggle {
     label: I18n.tr("bar.widget-settings.media-mini.show-artist-first.label")
     description: I18n.tr("bar.widget-settings.media-mini.show-artist-first.description")
-    checked: valueShowArtistFirst
-    onToggled: checked => valueShowArtistFirst = checked
+    checked: root.valueShowArtistFirst
+    onToggled: checked => root.valueShowArtistFirst = checked
   }
 
   NToggle {
     label: I18n.tr("bar.widget-settings.media-mini.show-visualizer.label")
     description: I18n.tr("bar.widget-settings.media-mini.show-visualizer.description")
-    checked: valueShowVisualizer
-    onToggled: checked => valueShowVisualizer = checked
+    checked: root.valueShowVisualizer
+    onToggled: checked => root.valueShowVisualizer = checked
   }
 
   NComboBox {
-    visible: valueShowVisualizer
+    visible: root.valueShowVisualizer
     label: I18n.tr("bar.widget-settings.media-mini.visualizer-type.label")
     description: I18n.tr("bar.widget-settings.media-mini.visualizer-type.description")
     model: [
@@ -111,8 +111,8 @@ ColumnLayout {
         "name": I18n.tr("options.visualizer-types.wave")
       }
     ]
-    currentKey: valueVisualizerType
-    onSelected: key => valueVisualizerType = key
+    currentKey: root.valueVisualizerType
+    onSelected: key => root.valueVisualizerType = key
     minimumWidth: 200
   }
 
@@ -121,22 +121,22 @@ ColumnLayout {
     Layout.fillWidth: true
     label: I18n.tr("bar.widget-settings.media-mini.max-width.label")
     description: I18n.tr("bar.widget-settings.media-mini.max-width.description")
-    placeholderText: widgetMetadata.maxWidth
-    text: valueMaxWidth
+    placeholderText: root.widgetMetadata.maxWidth
+    text: root.valueMaxWidth
   }
 
   NToggle {
     label: I18n.tr("bar.widget-settings.media-mini.use-fixed-width.label")
     description: I18n.tr("bar.widget-settings.media-mini.use-fixed-width.description")
-    checked: valueUseFixedWidth
-    onToggled: checked => valueUseFixedWidth = checked
+    checked: root.valueUseFixedWidth
+    onToggled: checked => root.valueUseFixedWidth = checked
   }
 
   NToggle {
     label: I18n.tr("bar.widget-settings.media-mini.show-progress-ring.label")
     description: I18n.tr("bar.widget-settings.media-mini.show-progress-ring.description")
-    checked: valueShowProgressRing
-    onToggled: checked => valueShowProgressRing = checked
+    checked: root.valueShowProgressRing
+    onToggled: checked => root.valueShowProgressRing = checked
   }
 
   NComboBox {
@@ -156,8 +156,8 @@ ColumnLayout {
         "name": I18n.tr("options.scrolling-modes.never")
       }
     ]
-    currentKey: valueScrollingMode
-    onSelected: key => valueScrollingMode = key
+    currentKey: root.valueScrollingMode
+    onSelected: key => root.valueScrollingMode = key
     minimumWidth: 200
   }
 }

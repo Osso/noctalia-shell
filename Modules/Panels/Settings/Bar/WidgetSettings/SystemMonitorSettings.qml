@@ -44,8 +44,8 @@ ColumnLayout {
     Layout.fillWidth: true
     label: I18n.tr("bar.widget-settings.clock.use-primary-color.label")
     description: I18n.tr("bar.widget-settings.clock.use-primary-color.description")
-    checked: valueUsePrimaryColor
-    onToggled: checked => valueUsePrimaryColor = checked
+    checked: root.valueUsePrimaryColor
+    onToggled: checked => root.valueUsePrimaryColor = checked
   }
 
   NToggle {
@@ -53,8 +53,8 @@ ColumnLayout {
     Layout.fillWidth: true
     label: I18n.tr("bar.widget-settings.system-monitor.cpu-usage.label")
     description: I18n.tr("bar.widget-settings.system-monitor.cpu-usage.description")
-    checked: valueShowCpuUsage
-    onToggled: checked => valueShowCpuUsage = checked
+    checked: root.valueShowCpuUsage
+    onToggled: checked => root.valueShowCpuUsage = checked
   }
 
   NToggle {
@@ -62,8 +62,8 @@ ColumnLayout {
     Layout.fillWidth: true
     label: I18n.tr("bar.widget-settings.system-monitor.cpu-temperature.label")
     description: I18n.tr("bar.widget-settings.system-monitor.cpu-temperature.description")
-    checked: valueShowCpuTemp
-    onToggled: checked => valueShowCpuTemp = checked
+    checked: root.valueShowCpuTemp
+    onToggled: checked => root.valueShowCpuTemp = checked
   }
 
   NToggle {
@@ -71,8 +71,8 @@ ColumnLayout {
     Layout.fillWidth: true
     label: I18n.tr("bar.widget-settings.system-monitor.memory-usage.label")
     description: I18n.tr("bar.widget-settings.system-monitor.memory-usage.description")
-    checked: valueShowMemoryUsage
-    onToggled: checked => valueShowMemoryUsage = checked
+    checked: root.valueShowMemoryUsage
+    onToggled: checked => root.valueShowMemoryUsage = checked
   }
 
   NToggle {
@@ -80,9 +80,9 @@ ColumnLayout {
     Layout.fillWidth: true
     label: I18n.tr("bar.widget-settings.system-monitor.memory-percentage.label")
     description: I18n.tr("bar.widget-settings.system-monitor.memory-percentage.description")
-    checked: valueShowMemoryAsPercent
-    onToggled: checked => valueShowMemoryAsPercent = checked
-    visible: valueShowMemoryUsage
+    checked: root.valueShowMemoryAsPercent
+    onToggled: checked => root.valueShowMemoryAsPercent = checked
+    visible: root.valueShowMemoryUsage
   }
 
   NToggle {
@@ -90,8 +90,8 @@ ColumnLayout {
     Layout.fillWidth: true
     label: I18n.tr("bar.widget-settings.system-monitor.network-traffic.label")
     description: I18n.tr("bar.widget-settings.system-monitor.network-traffic.description")
-    checked: valueShowNetworkStats
-    onToggled: checked => valueShowNetworkStats = checked
+    checked: root.valueShowNetworkStats
+    onToggled: checked => root.valueShowNetworkStats = checked
   }
 
   NToggle {
@@ -99,8 +99,8 @@ ColumnLayout {
     Layout.fillWidth: true
     label: I18n.tr("bar.widget-settings.system-monitor.storage-usage.label")
     description: I18n.tr("bar.widget-settings.system-monitor.storage-usage.description")
-    checked: valueShowDiskUsage
-    onToggled: checked => valueShowDiskUsage = checked
+    checked: root.valueShowDiskUsage
+    onToggled: checked => root.valueShowDiskUsage = checked
   }
 
   NComboBox {
@@ -108,16 +108,16 @@ ColumnLayout {
     Layout.fillWidth: true
     label: I18n.tr("bar.widget-settings.system-monitor.disk-path.label")
     description: I18n.tr("bar.widget-settings.system-monitor.disk-path.description")
-    visible: valueShowDiskUsage
+    visible: root.valueShowDiskUsage
     model: {
       const paths = Object.keys(SystemStatService.diskPercents).sort();
       return paths.map(path => ({
-                                  key: path,
-                                  name: path
-                                }));
+            key: path,
+            name: path
+          }));
     }
-    currentKey: valueDiskPath
-    onSelected: key => valueDiskPath = key
+    currentKey: root.valueDiskPath
+    onSelected: key => root.valueDiskPath = key
   }
 
   NToggle {
@@ -125,8 +125,8 @@ ColumnLayout {
     Layout.fillWidth: true
     label: "Fan Speed"
     description: "Show fan RPM in the system monitor"
-    checked: valueShowFanSpeed
-    onToggled: checked => valueShowFanSpeed = checked
+    checked: root.valueShowFanSpeed
+    onToggled: checked => root.valueShowFanSpeed = checked
     visible: FanService.available
   }
 }

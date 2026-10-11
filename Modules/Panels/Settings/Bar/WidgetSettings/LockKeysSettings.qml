@@ -38,30 +38,30 @@ ColumnLayout {
     NToggle {
       label: I18n.tr("bar.widget-settings.lock-keys.show-caps-lock.label")
       description: I18n.tr("bar.widget-settings.lock-keys.show-caps-lock.description")
-      checked: valueShowCapsLock
-      onToggled: checked => valueShowCapsLock = checked
+      checked: root.valueShowCapsLock
+      onToggled: checked => root.valueShowCapsLock = checked
     }
 
     NIcon {
       Layout.alignment: Qt.AlignVCenter
-      icon: capsIcon
+      icon: root.capsIcon
       pointSize: Style.fontSizeXL
-      visible: capsIcon !== ""
+      visible: root.capsIcon !== ""
     }
 
     NButton {
       text: I18n.tr("bar.widget-settings.lock-keys.browse")
       onClicked: capsPicker.open()
-      enabled: valueShowCapsLock
+      enabled: root.valueShowCapsLock
     }
   }
 
   NIconPicker {
     id: capsPicker
-    initialIcon: capsIcon
+    initialIcon: root.capsIcon
     query: "letter-c"
     onIconSelected: function (iconName) {
-      capsIcon = iconName;
+      root.capsIcon = iconName;
     }
   }
 
@@ -71,30 +71,30 @@ ColumnLayout {
     NToggle {
       label: I18n.tr("bar.widget-settings.lock-keys.show-num-lock.label")
       description: I18n.tr("bar.widget-settings.lock-keys.show-num-lock.description")
-      checked: valueShowNumLock
-      onToggled: checked => valueShowNumLock = checked
+      checked: root.valueShowNumLock
+      onToggled: checked => root.valueShowNumLock = checked
     }
 
     NIcon {
       Layout.alignment: Qt.AlignVCenter
-      icon: numIcon
+      icon: root.numIcon
       pointSize: Style.fontSizeXL
-      visible: numIcon !== ""
+      visible: root.numIcon !== ""
     }
 
     NButton {
       text: I18n.tr("bar.widget-settings.lock-keys.browse")
       onClicked: numPicker.open()
-      enabled: valueShowNumLock
+      enabled: root.valueShowNumLock
     }
   }
 
   NIconPicker {
     id: numPicker
-    initialIcon: numIcon
+    initialIcon: root.numIcon
     query: "letter-n"
     onIconSelected: function (iconName) {
-      numIcon = iconName;
+      root.numIcon = iconName;
     }
   }
 
@@ -104,30 +104,30 @@ ColumnLayout {
     NToggle {
       label: I18n.tr("bar.widget-settings.lock-keys.show-scroll-lock.label")
       description: I18n.tr("bar.widget-settings.lock-keys.show-scroll-lock.description")
-      checked: valueShowScrollLock
-      onToggled: checked => valueShowScrollLock = checked
+      checked: root.valueShowScrollLock
+      onToggled: checked => root.valueShowScrollLock = checked
     }
 
     NIcon {
       Layout.alignment: Qt.AlignVCenter
-      icon: scrollIcon
+      icon: root.scrollIcon
       pointSize: Style.fontSizeXL
-      visible: scrollIcon !== ""
+      visible: root.scrollIcon !== ""
     }
 
     NButton {
       text: I18n.tr("bar.widget-settings.lock-keys.browse")
       onClicked: scrollPicker.open()
-      enabled: valueShowScrollLock
+      enabled: root.valueShowScrollLock
     }
   }
 
   NIconPicker {
     id: scrollPicker
-    initialIcon: scrollIcon
+    initialIcon: root.scrollIcon
     query: "letter-s"
     onIconSelected: function (iconName) {
-      scrollIcon = iconName;
+      root.scrollIcon = iconName;
     }
   }
 }
