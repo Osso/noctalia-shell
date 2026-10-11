@@ -1,0 +1,395 @@
+#!/usr/bin/env python3
+"""Exercise production SystemMonitor offscreen with isolated service fixtures."""
+
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[1]
+TARGET = Path("Modules/Bar/Widgets/SystemMonitor.qml")
+
+
+def write_module(directory, module, sources):
+    path = directory / module.replace(".", "/")
+    path.mkdir(parents=True, exist_ok=True)
+    declarations = []
+    for name, source in sources.items():
+        (path / f"{name}.qml").write_text(source)
+        singleton = "singleton " if source.startswith("pragma Singleton") else ""
+        declarations.append(f"{singleton}{name} 1.0 {name}.qml\n")
+    (path / "qmldir").write_text(f"module {module}\n" + "".join(declarations))
+
+
+def singleton(body):
+    return "pragma Singleton\nimport QtQuick\nQtObject {\n" + body + "\n}\n"
+
+
+def stage_runtime(directory):
+    # qmltestrunner cannot load Quickshell's executable-only plugin. The widget
+    # only carries this screen object to services; test that identity explicitly.
+    write_module(
+        directory, "Quickshell", {"ShellScreen": "import QtQuick\nQtObject {}"}
+    )
+    defaults = json.loads((ROOT / "Assets/settings-default.json").read_text())
+    defaults["bar"]["position"] = "top"
+    defaults["bar"]["density"] = "comfortable"
+    metadata = dict(
+        usePrimaryColor=False,
+        showCpuUsage=True,
+        showCpuTemp=True,
+        showMemoryUsage=True,
+        showMemoryAsPercent=True,
+        showNetworkStats=True,
+        showDiskUsage=True,
+        diskPath="/",
+        showFanSpeed=True,
+    )
+    write_module(
+        directory,
+        "qs.Modules.Bar.Widgets",
+        {
+            "SystemMonitor": (ROOT / TARGET).read_text(),
+        },
+    )
+    write_module(
+        directory,
+        "qs.Commons",
+        {
+            "Settings": singleton("property var data: " + json.dumps(defaults)),
+            "Style": singleton(
+                "\n".join(
+                    f"property real {key}: {value}"
+                    for key, value in {
+                        "capsuleHeight": 40,
+                        "marginM": 8,
+                        "marginS": 4,
+                        "marginXS": 3,
+                        "marginXXS": 2,
+                        "radiusM": 8,
+                        "fontWeightMedium": 500,
+                        "animationNormal": 0,
+                    }.items()
+                )
+                + '\nproperty color capsuleColor: "#202020"'
+            ),
+            "NColor": singleton(
+                "\n".join(
+                    f'property color {key}: "{value}"'
+                    for key, value in {
+                        "mTertiary": "#ffaa00",
+                        "mError": "#ff0000",
+                        "mOnHover": "#000000",
+                        "mPrimary": "#00ff00",
+                        "mOnSurface": "#ffffff",
+                        "mHover": "#808080",
+                        "mSurfaceVariant": "#222222",
+                    }.items()
+                )
+            ),
+            "I18n": singleton("function tr(key) { return key; }"),
+        },
+    )
+    write_module(
+        directory,
+        "qs.Modules.Bar.Extras",
+        {
+            "BarWidgetRegistry": singleton(
+                "property var widgetMetadata: ({SystemMonitor: "
+                + json.dumps(metadata)
+                + "})"
+            ),
+        },
+    )
+    write_module(
+        directory,
+        "qs.Modules.Panels.Settings",
+        {
+            "SettingsFixture": "import QtQuick\nQtObject {}",
+        },
+    )
+    write_module(
+        directory,
+        "qs.Services.System",
+        {
+            "SystemStatService": singleton("""
+property real cpuUsage: 95
+property real cpuTemp: 70
+property real memPercent: 60
+property real memGb: 8.5
+property var diskPercents: ({"/": 75})
+property real rxSpeed: 123
+property real txSpeed: 456
+property var refs: ({})
+function beginPolling(metric) { refs[metric] = (refs[metric] || 0) + 1; }
+function endPolling(metric) { refs[metric] -= 1; }
+function formatSpeed(value) { return value + " B/s"; }
+function formatCompactSpeed(value) { return value + "B"; }
+"""),
+        },
+    )
+    write_module(
+        directory,
+        "qs.Services.Hardware",
+        {
+            "FanService": singleton("""
+property bool available: true
+property bool sensorDetected: true
+property var fans: [{label: "CPU", rpm: 1200}]
+property int refs: 0
+function beginPolling() { refs += 1; }
+function endPolling() { refs -= 1; }
+function isPollingActive() { return refs > 0; }
+function formatRpm(value) { return value + "rpm"; }
+function getMaxRpm() { return 1200; }
+"""),
+        },
+    )
+    write_module(
+        directory,
+        "qs.Services.UI",
+        {
+            "PanelService": singleton("""
+property int toggles: 0
+property int closes: 0
+property int menus: 0
+property var lastAnchor
+property var lastScreen
+function getPanel(name, screen) {
+  lastScreen = screen;
+  return {toggle: anchor => { toggles += 1; lastAnchor = anchor; }};
+}
+function getPopupMenuWindow(screen) {
+  lastScreen = screen;
+  return {close: () => { closes += 1; }, showContextMenu: menu => { menus += 1; }};
+}
+"""),
+            "BarService": singleton("""
+property var openedSettings
+function openWidgetSettings(screen, section, index, widgetId, settings) {
+  openedSettings = [screen, section, index, widgetId, settings];
+}
+function getContextMenuPosition(anchor, width, height) { return {x: 7, y: 9}; }
+function getTooltipDirection() { return "bottom"; }
+"""),
+            "TooltipService": singleton("""
+property string text: ""
+property int hides: 0
+function show(anchor, value, direction) { text = value; }
+function hide() { hides += 1; }
+"""),
+        },
+    )
+    write_module(
+        directory,
+        "qs.Widgets",
+        {
+            "NIcon": "import QtQuick\nText { property string icon; property real pointSize; property bool applyUiScale; text: icon; font.pointSize: pointSize }",
+            "NText": "import QtQuick\nText { property string family; property real pointSize; property bool applyUiScale; font.family: family; font.pointSize: pointSize }",
+            "NPopupContextMenu": """import QtQuick
+Item {
+  property var model
+  property var screen: null
+  property point openedAt
+  signal triggered(string action)
+  function openAtItem(anchor, x, y) { openedAt = Qt.point(x, y); }
+}
+""",
+        },
+    )
+    (directory / "tst_system_monitor.qml").write_text(HARNESS)
+
+
+HARNESS = """import QtQuick
+import QtTest
+import Quickshell
+import qs.Commons
+import qs.Modules.Bar.Widgets
+import qs.Services.System
+import qs.Services.Hardware
+import qs.Services.UI
+
+Item {
+  width: 600; height: 400
+  ShellScreen { id: testScreen }
+  SystemMonitor {
+    id: monitor
+    screen: testScreen
+    widgetId: "SystemMonitor"
+    section: "left"
+    sectionWidgetIndex: 0
+    width: 400; height: 40
+  }
+  TestCase {
+    name: "SystemMonitor"
+    when: windowShown
+
+    function objects(parent, predicate) {
+      let matches = [];
+      for (const child of parent.children) {
+        if (predicate(child)) matches.push(child);
+        matches = matches.concat(objects(child, predicate));
+      }
+      return matches;
+    }
+    function configure(position, density) {
+      const data = JSON.parse(JSON.stringify(Settings.data));
+      data.bar.position = position;
+      data.bar.density = density;
+      data.bar.widgets.left = [{id: "SystemMonitor", showCpuUsage: true}];
+      Settings.data = data;
+    }
+    function test_scaling() {
+      configure("top", "comfortable");
+      compare(monitor.textSize, 13.2);
+      compare(monitor.pillHeight, 26);
+      configure("top", "compact");
+      compare(monitor.textSize, 17.2);
+      compare(monitor.pillHeight, 34);
+      configure("left", "compact");
+      monitor.width = 18;
+      wait(30);
+      fuzzyCompare(monitor.textSize, 18 * 0.82 * 0.43, 0.0001);
+      const texts = objects(monitor, child => child.family !== undefined);
+      compare(texts.length, 7);
+      for (const text of texts) {
+        fuzzyCompare(text.scale, Math.min(1, 18 / text.implicitWidth), 0.0001);
+        verify(text.scale <= 1 && text.scale > 0);
+      }
+      monitor.width = 400;
+      configure("top", "comfortable");
+      wait(30);
+      for (const text of texts) compare(text.scale, 1);
+    }
+    function test_interactions() {
+      configure("top", "comfortable");
+      wait(30);
+      const areas = objects(monitor, child => child.acceptedButtons !== undefined);
+      compare(areas.length, 3);
+      const main = areas.filter(child => child.acceptedButtons === (Qt.LeftButton | Qt.RightButton))[0];
+      const menus = objects(monitor, child => child.openedAt !== undefined);
+      compare(menus.length, 1);
+      mouseClick(main, main.width / 2, main.height / 2, Qt.LeftButton);
+      compare(PanelService.toggles, 1);
+      compare(PanelService.lastAnchor, monitor);
+      compare(PanelService.lastScreen, testScreen);
+      mouseClick(main, main.width / 2, main.height / 2, Qt.RightButton);
+      compare(PanelService.menus, 1);
+      compare(menus[0].openedAt, Qt.point(7, 9));
+      menus[0].triggered("widget-settings");
+      compare(PanelService.closes, 1);
+      compare(BarService.openedSettings[0], null);
+      compare(PanelService.lastScreen, null);
+      compare(BarService.openedSettings[1], "left");
+      compare(BarService.openedSettings[2], 0);
+      compare(BarService.openedSettings[3], "SystemMonitor");
+      compare(BarService.openedSettings[4].showCpuUsage, true);
+      const hoverAreas = areas.filter(child => child.acceptedButtons === Qt.NoButton);
+      hoverAreas[0].entered();
+      compare(TooltipService.text, "/");
+      hoverAreas[1].entered();
+      compare(TooltipService.text, "CPU: 1200 RPM");
+      hoverAreas[1].exited();
+      compare(TooltipService.hides, 1);
+      mouseMove(main, main.width / 2, main.height / 2);
+      tryCompare(monitor, "isHovered", true);
+      compare(monitor.textColor, NColor.mOnHover);
+      compare(monitor.iconColor, NColor.mOnHover);
+    }
+    function test_indicator_and_polling() {
+      configure("top", "comfortable");
+      wait(30);
+      const indicators = objects(monitor, child => child.indicatorWidth !== undefined);
+      compare(indicators.length, 4);
+      SystemStatService.cpuUsage = monitor.cpuCriticalThreshold + 1;
+      wait(10);
+      compare(indicators[0].critical, true);
+      compare(indicators[0].scale, 1);
+      compare(indicators[0].color, monitor.criticalColor);
+      SystemStatService.cpuUsage = 0;
+      wait(10);
+      compare(indicators[0].scale, 0);
+      configure("right", "comfortable");
+      wait(10);
+      for (const indicator of indicators) compare(indicator.visible, false);
+      monitor.visible = false;
+      compare(FanService.refs, 0);
+      for (const metric of ["cpu", "temp", "memory", "disk", "network"])
+        compare(SystemStatService.refs[metric], 0);
+      monitor.visible = true;
+      compare(FanService.refs, 1);
+      for (const metric of ["cpu", "temp", "memory", "disk", "network"])
+        compare(SystemStatService.refs[metric], 1);
+    }
+  }
+}
+"""
+
+
+def main():
+    settings = Path.home() / ".config/noctalia/settings.json"
+    original = settings.read_bytes() if settings.exists() else None
+    with tempfile.TemporaryDirectory(prefix="noctalia-system-monitor-") as temporary:
+        directory = Path(temporary)
+        if original is not None:
+            backup = directory / "settings.backup.json"
+            backup.touch(mode=0o600)
+            backup.write_bytes(original)
+            assert (
+                hashlib.sha256(backup.read_bytes()).digest()
+                == hashlib.sha256(original).digest()
+            )
+        environment = {
+            key: value
+            for key, value in os.environ.items()
+            if not key.startswith(("XDG_", "WAYLAND_", "QT_", "QML_", "NOCTALIA_"))
+            and key not in ("DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "HOME")
+        }
+        for key in (
+            "HOME",
+            "XDG_CONFIG_HOME",
+            "XDG_CACHE_HOME",
+            "XDG_DATA_HOME",
+            "XDG_STATE_HOME",
+            "XDG_RUNTIME_DIR",
+        ):
+            path = directory / key
+            path.mkdir(mode=0o700)
+            environment[key] = str(path)
+        environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
+        stage_runtime(directory)
+        try:
+            result = subprocess.run(
+                [
+                    "/usr/lib/qt6/bin/qmltestrunner",
+                    "-input",
+                    str(directory),
+                    "-import",
+                    str(directory),
+                ],
+                cwd=ROOT,
+                env=environment,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            print(result.stdout + result.stderr, end="")
+            assert result.returncode == 0, (
+                f"SystemMonitor runtime exit {result.returncode}"
+            )
+            assert "0 failed" in result.stdout
+            assert not re.search(
+                r"QWARN|QFATAL|ReferenceError|TypeError", result.stdout + result.stderr
+            )
+        finally:
+            assert (settings.read_bytes() if settings.exists() else None) == original, (
+                "real settings changed"
+            )
+
+
+if __name__ == "__main__":
+    main()

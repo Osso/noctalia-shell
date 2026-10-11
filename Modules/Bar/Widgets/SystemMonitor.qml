@@ -24,7 +24,7 @@ Rectangle {
   property var widgetMetadata: BarWidgetRegistry.widgetMetadata[widgetId]
   property var widgetSettings: {
     if (section && sectionWidgetIndex >= 0) {
-      var widgets = Settings.data.bar.widgets[section];
+      const widgets = Settings.data.bar.widgets[section];
       if (widgets && sectionWidgetIndex < widgets.length) {
         return widgets[sectionWidgetIndex];
       }
@@ -138,7 +138,7 @@ Rectangle {
   Connections {
     target: FanService
     function onSensorDetectedChanged() {
-      refreshSystemStatPolling();
+      root.refreshSystemStatPolling();
     }
   }
 
@@ -156,7 +156,7 @@ Rectangle {
     id: percentMetrics
     font.family: Settings.data.ui.fontFixed
     font.weight: Style.fontWeightMedium
-    font.pointSize: textSize * Settings.data.ui.fontFixedScale
+    font.pointSize: root.textSize * Settings.data.ui.fontFixedScale
     text: "99%" // Use the longest possible string for measurement
   }
 
@@ -164,7 +164,7 @@ Rectangle {
     id: tempMetrics
     font.family: Settings.data.ui.fontFixed
     font.weight: Style.fontWeightMedium
-    font.pointSize: textSize * Settings.data.ui.fontFixedScale
+    font.pointSize: root.textSize * Settings.data.ui.fontFixedScale
     text: "99°" // Use the longest possible string for measurement
   }
 
@@ -172,7 +172,7 @@ Rectangle {
     id: memMetrics
     font.family: Settings.data.ui.fontFixed
     font.weight: Style.fontWeightMedium
-    font.pointSize: textSize * Settings.data.ui.fontFixedScale
+    font.pointSize: root.textSize * Settings.data.ui.fontFixedScale
     text: "99.9K" // Longest value part of network speed
   }
 
@@ -180,7 +180,7 @@ Rectangle {
     id: fanMetrics
     font.family: Settings.data.ui.fontFixed
     font.weight: Style.fontWeightMedium
-    font.pointSize: textSize * Settings.data.ui.fontFixedScale
+    font.pointSize: root.textSize * Settings.data.ui.fontFixedScale
     text: "9.9k" // Fan RPM format
   }
 
@@ -216,15 +216,15 @@ Rectangle {
     ]
 
     onTriggered: action => {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.close();
-                   }
+      var popupMenuWindow = PanelService.getPopupMenuWindow(contextMenu.screen);
+      if (popupMenuWindow) {
+        popupMenuWindow.close();
+      }
 
-                   if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                   }
-                 }
+      if (action === "widget-settings") {
+        BarService.openWidgetSettings(contextMenu.screen, root.section, root.sectionWidgetIndex, root.widgetId, root.widgetSettings);
+      }
+    }
   }
 
   MouseArea {
@@ -234,21 +234,21 @@ Rectangle {
     cursorShape: Qt.PointingHandCursor
     acceptedButtons: Qt.LeftButton | Qt.RightButton
     onClicked: mouse => {
-                 if (mouse.button === Qt.LeftButton) {
-                   // Open process panel on left click
-                   var processPanel = PanelService.getPanel("processPanel", screen);
-                   if (processPanel) {
-                     processPanel.toggle(root);
-                   }
-                 } else if (mouse.button === Qt.RightButton) {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.showContextMenu(contextMenu);
-                     const pos = BarService.getContextMenuPosition(root, contextMenu.implicitWidth, contextMenu.implicitHeight);
-                     contextMenu.openAtItem(root, pos.x, pos.y);
-                   }
-                 }
-               }
+      if (mouse.button === Qt.LeftButton) {
+        // Open process panel on left click
+        const processPanel = PanelService.getPanel("processPanel", root.screen);
+        if (processPanel) {
+          processPanel.toggle(root);
+        }
+      } else if (mouse.button === Qt.RightButton) {
+        const popupMenuWindow = PanelService.getPopupMenuWindow(root.screen);
+        if (popupMenuWindow) {
+          popupMenuWindow.showContextMenu(contextMenu);
+          const pos = BarService.getContextMenuPosition(root, contextMenu.implicitWidth, contextMenu.implicitHeight);
+          contextMenu.openAtItem(root, pos.x, pos.y);
+        }
+      }
+    }
   }
 
   // Status indicator component definition
@@ -263,8 +263,8 @@ Rectangle {
       property color warningColor: NColor.mTertiary
       property color criticalColor: NColor.mError
 
-      width: isVertical ? Math.max(0, indicatorWidth - Style.marginS * 2) : Math.max(0, indicatorWidth + Style.marginXS * 2)
-      height: isVertical ? Math.max(0, Style.capsuleHeight + Style.marginXS * 2) : pillHeight
+      width: root.isVertical ? Math.max(0, indicatorWidth - Style.marginS * 2) : Math.max(0, indicatorWidth + Style.marginXS * 2)
+      height: root.isVertical ? Math.max(0, Style.capsuleHeight + Style.marginXS * 2) : root.pillHeight
       radius: Style.radiusM
       // Hide the rectangular indicator when the bar is vertical; keep it available for horizontal layout
       visible: !root.isVertical
@@ -299,19 +299,19 @@ Rectangle {
   GridLayout {
     id: mainGrid
     anchors.centerIn: parent
-    flow: isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
-    rows: isVertical ? -1 : 1
-    columns: isVertical ? 1 : -1
-    rowSpacing: isVertical ? (Style.marginM) : 0
-    columnSpacing: isVertical ? 0 : (Style.marginM)
+    flow: root.isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+    rows: root.isVertical ? -1 : 1
+    columns: root.isVertical ? 1 : -1
+    rowSpacing: root.isVertical ? (Style.marginM) : 0
+    columnSpacing: root.isVertical ? 0 : (Style.marginM)
 
     // CPU Usage Component
     Item {
       id: cpuUsageContainer
-      Layout.preferredWidth: isVertical ? root.width : iconSize + percentTextWidth + (Style.marginXXS)
+      Layout.preferredWidth: root.isVertical ? root.width : root.iconSize + root.percentTextWidth + (Style.marginXXS)
       Layout.preferredHeight: Style.capsuleHeight
-      Layout.alignment: isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
-      visible: showCpuUsage
+      Layout.alignment: root.isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
+      visible: root.showCpuUsage
 
       // Status indicator covering the entire component
       Loader {
@@ -319,8 +319,8 @@ Rectangle {
         anchors.centerIn: parent
 
         onLoaded: {
-          item.warning = Qt.binding(() => cpuWarning);
-          item.critical = Qt.binding(() => cpuCritical);
+          item.warning = Qt.binding(() => root.cpuWarning);
+          item.critical = Qt.binding(() => root.cpuCritical);
           item.indicatorWidth = Qt.binding(() => cpuUsageContainer.width);
           item.warningColor = Qt.binding(() => root.warningColor);
           item.criticalColor = Qt.binding(() => root.criticalColor);
@@ -330,27 +330,27 @@ Rectangle {
       GridLayout {
         id: cpuUsageContent
         anchors.centerIn: parent
-        flow: isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
-        rows: isVertical ? 2 : 1
-        columns: isVertical ? 1 : 2
+        flow: root.isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+        rows: root.isVertical ? 2 : 1
+        columns: root.isVertical ? 1 : 2
         rowSpacing: Style.marginXXS
         columnSpacing: Style.marginXXS
 
         Item {
           Layout.alignment: Qt.AlignCenter
-          Layout.row: isVertical ? 1 : 0
+          Layout.row: root.isVertical ? 1 : 0
           Layout.column: 0
-          Layout.fillWidth: isVertical
-          implicitWidth: iconSize
-          implicitHeight: iconSize
+          Layout.fillWidth: root.isVertical
+          implicitWidth: root.iconSize
+          implicitHeight: root.iconSize
 
           NIcon {
             icon: "cpu-usage"
-            pointSize: iconSize
+            pointSize: root.iconSize
             applyUiScale: false
             anchors.centerIn: parent
             // Invert color to bar background when indicator active
-            color: isVertical ? (cpuCritical ? criticalColor : (cpuWarning ? warningColor : iconColor)) : ((cpuWarning || cpuCritical) ? NColor.mSurfaceVariant : iconColor)
+            color: root.isVertical ? (root.cpuCritical ? root.criticalColor : (root.cpuWarning ? root.warningColor : root.iconColor)) : ((root.cpuWarning || root.cpuCritical) ? NColor.mSurfaceVariant : root.iconColor)
           }
         }
 
@@ -364,18 +364,18 @@ Rectangle {
             }
           }
           family: Settings.data.ui.fontFixed
-          pointSize: textSize
+          pointSize: root.textSize
           applyUiScale: false
           font.weight: Style.fontWeightMedium
           Layout.alignment: Qt.AlignCenter
-          Layout.preferredWidth: isVertical ? -1 : percentTextWidth
-          horizontalAlignment: isVertical ? Text.AlignHCenter : Text.AlignRight
+          Layout.preferredWidth: root.isVertical ? -1 : root.percentTextWidth
+          horizontalAlignment: root.isVertical ? Text.AlignHCenter : Text.AlignRight
           verticalAlignment: Text.AlignVCenter
           // Use highlight colors in vertical bar; otherwise invert text color to bar background when indicator active
-          color: isVertical ? (cpuCritical ? criticalColor : (cpuWarning ? warningColor : textColor)) : ((cpuWarning || cpuCritical) ? NColor.mSurfaceVariant : textColor)
-          Layout.row: isVertical ? 0 : 0
-          Layout.column: isVertical ? 0 : 1
-          scale: isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
+          color: root.isVertical ? (root.cpuCritical ? root.criticalColor : (root.cpuWarning ? root.warningColor : root.textColor)) : ((root.cpuWarning || root.cpuCritical) ? NColor.mSurfaceVariant : root.textColor)
+          Layout.row: root.isVertical ? 0 : 0
+          Layout.column: root.isVertical ? 0 : 1
+          scale: root.isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
         }
       }
     }
@@ -383,10 +383,10 @@ Rectangle {
     // CPU Temperature Component
     Item {
       id: cpuTempContainer
-      Layout.preferredWidth: isVertical ? root.width : (iconSize + tempTextWidth) + (Style.marginXXS)
+      Layout.preferredWidth: root.isVertical ? root.width : (root.iconSize + root.tempTextWidth) + (Style.marginXXS)
       Layout.preferredHeight: Style.capsuleHeight
-      Layout.alignment: isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
-      visible: showCpuTemp
+      Layout.alignment: root.isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
+      visible: root.showCpuTemp
 
       // Status indicator covering the entire component
       Loader {
@@ -394,8 +394,8 @@ Rectangle {
         anchors.centerIn: parent
 
         onLoaded: {
-          item.warning = Qt.binding(() => tempWarning);
-          item.critical = Qt.binding(() => tempCritical);
+          item.warning = Qt.binding(() => root.tempWarning);
+          item.critical = Qt.binding(() => root.tempCritical);
           item.indicatorWidth = Qt.binding(() => cpuTempContainer.width);
           item.warningColor = Qt.binding(() => root.warningColor);
           item.criticalColor = Qt.binding(() => root.criticalColor);
@@ -405,45 +405,45 @@ Rectangle {
       GridLayout {
         id: cpuTempContent
         anchors.centerIn: parent
-        flow: isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
-        rows: isVertical ? 2 : 1
-        columns: isVertical ? 1 : 2
+        flow: root.isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+        rows: root.isVertical ? 2 : 1
+        columns: root.isVertical ? 1 : 2
         rowSpacing: Style.marginXXS
         columnSpacing: Style.marginXXS
 
         Item {
           Layout.alignment: Qt.AlignCenter
-          Layout.row: isVertical ? 1 : 0
+          Layout.row: root.isVertical ? 1 : 0
           Layout.column: 0
-          Layout.fillWidth: isVertical
-          implicitWidth: iconSize
-          implicitHeight: iconSize
+          Layout.fillWidth: root.isVertical
+          implicitWidth: root.iconSize
+          implicitHeight: root.iconSize
 
           NIcon {
             icon: "cpu-temperature"
-            pointSize: iconSize
+            pointSize: root.iconSize
             applyUiScale: false
             anchors.centerIn: parent
             // Invert color when temp indicator active
-            color: isVertical ? (tempCritical ? criticalColor : (tempWarning ? warningColor : iconColor)) : ((tempWarning || tempCritical) ? NColor.mSurfaceVariant : iconColor)
+            color: root.isVertical ? (root.tempCritical ? root.criticalColor : (root.tempWarning ? root.warningColor : root.iconColor)) : ((root.tempWarning || root.tempCritical) ? NColor.mSurfaceVariant : root.iconColor)
           }
         }
 
         NText {
           text: `${Math.round(SystemStatService.cpuTemp)}°`
           family: Settings.data.ui.fontFixed
-          pointSize: textSize
+          pointSize: root.textSize
           applyUiScale: false
           font.weight: Style.fontWeightMedium
           Layout.alignment: Qt.AlignCenter
-          Layout.preferredWidth: isVertical ? -1 : tempTextWidth
-          horizontalAlignment: isVertical ? Text.AlignHCenter : Text.AlignRight
+          Layout.preferredWidth: root.isVertical ? -1 : root.tempTextWidth
+          horizontalAlignment: root.isVertical ? Text.AlignHCenter : Text.AlignRight
           verticalAlignment: Text.AlignVCenter
           // Use highlight colors in vertical bar; otherwise invert text color to bar background when temp indicator active
-          color: isVertical ? (tempCritical ? criticalColor : (tempWarning ? warningColor : textColor)) : ((tempWarning || tempCritical) ? NColor.mSurfaceVariant : textColor)
-          Layout.row: isVertical ? 0 : 0
-          Layout.column: isVertical ? 0 : 1
-          scale: isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
+          color: root.isVertical ? (root.tempCritical ? root.criticalColor : (root.tempWarning ? root.warningColor : root.textColor)) : ((root.tempWarning || root.tempCritical) ? NColor.mSurfaceVariant : root.textColor)
+          Layout.row: root.isVertical ? 0 : 0
+          Layout.column: root.isVertical ? 0 : 1
+          scale: root.isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
         }
       }
     }
@@ -451,10 +451,10 @@ Rectangle {
     // Memory Usage Component
     Item {
       id: memoryContainer
-      Layout.preferredWidth: isVertical ? root.width : iconSize + (showMemoryAsPercent ? percentTextWidth : memTextWidth) + (Style.marginXXS)
+      Layout.preferredWidth: root.isVertical ? root.width : root.iconSize + (root.showMemoryAsPercent ? root.percentTextWidth : root.memTextWidth) + (Style.marginXXS)
       Layout.preferredHeight: Style.capsuleHeight
-      Layout.alignment: isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
-      visible: showMemoryUsage
+      Layout.alignment: root.isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
+      visible: root.showMemoryUsage
 
       // Status indicator covering the entire component
       Loader {
@@ -462,8 +462,8 @@ Rectangle {
         anchors.centerIn: parent
 
         onLoaded: {
-          item.warning = Qt.binding(() => memWarning);
-          item.critical = Qt.binding(() => memCritical);
+          item.warning = Qt.binding(() => root.memWarning);
+          item.critical = Qt.binding(() => root.memCritical);
           item.indicatorWidth = Qt.binding(() => memoryContainer.width);
           item.warningColor = Qt.binding(() => root.warningColor);
           item.criticalColor = Qt.binding(() => root.criticalColor);
@@ -473,147 +473,147 @@ Rectangle {
       GridLayout {
         id: memoryContent
         anchors.centerIn: parent
-        flow: isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
-        rows: isVertical ? 2 : 1
-        columns: isVertical ? 1 : 2
+        flow: root.isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+        rows: root.isVertical ? 2 : 1
+        columns: root.isVertical ? 1 : 2
         rowSpacing: Style.marginXXS
         columnSpacing: Style.marginXXS
 
         Item {
           Layout.alignment: Qt.AlignCenter
-          Layout.row: isVertical ? 1 : 0
+          Layout.row: root.isVertical ? 1 : 0
           Layout.column: 0
-          Layout.fillWidth: isVertical
-          implicitWidth: iconSize
-          implicitHeight: iconSize
+          Layout.fillWidth: root.isVertical
+          implicitWidth: root.iconSize
+          implicitHeight: root.iconSize
 
           NIcon {
             icon: "memory"
-            pointSize: iconSize
+            pointSize: root.iconSize
             applyUiScale: false
             anchors.centerIn: parent
             // Invert color when memory indicator active
-            color: isVertical ? (memCritical ? criticalColor : (memWarning ? warningColor : iconColor)) : ((memWarning || memCritical) ? NColor.mSurfaceVariant : iconColor)
+            color: root.isVertical ? (root.memCritical ? root.criticalColor : (root.memWarning ? root.warningColor : root.iconColor)) : ((root.memWarning || root.memCritical) ? NColor.mSurfaceVariant : root.iconColor)
           }
         }
 
         NText {
-          text: showMemoryAsPercent ? `${Math.round(SystemStatService.memPercent)}%` : `${SystemStatService.memGb.toFixed(1)}G`
+          text: root.showMemoryAsPercent ? `${Math.round(SystemStatService.memPercent)}%` : `${SystemStatService.memGb.toFixed(1)}G`
           family: Settings.data.ui.fontFixed
-          pointSize: textSize
+          pointSize: root.textSize
           applyUiScale: false
           font.weight: Style.fontWeightMedium
           Layout.alignment: Qt.AlignCenter
-          Layout.preferredWidth: isVertical ? -1 : (showMemoryAsPercent ? percentTextWidth : memTextWidth)
-          horizontalAlignment: isVertical ? Text.AlignHCenter : Text.AlignRight
+          Layout.preferredWidth: root.isVertical ? -1 : (root.showMemoryAsPercent ? root.percentTextWidth : root.memTextWidth)
+          horizontalAlignment: root.isVertical ? Text.AlignHCenter : Text.AlignRight
           verticalAlignment: Text.AlignVCenter
           // Use highlight colors in vertical bar; otherwise invert text color to bar background when memory indicator active
-          color: isVertical ? (memCritical ? criticalColor : (memWarning ? warningColor : textColor)) : ((memWarning || memCritical) ? NColor.mSurfaceVariant : textColor)
-          Layout.row: isVertical ? 0 : 0
-          Layout.column: isVertical ? 0 : 1
-          scale: isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
+          color: root.isVertical ? (root.memCritical ? root.criticalColor : (root.memWarning ? root.warningColor : root.textColor)) : ((root.memWarning || root.memCritical) ? NColor.mSurfaceVariant : root.textColor)
+          Layout.row: root.isVertical ? 0 : 0
+          Layout.column: root.isVertical ? 0 : 1
+          scale: root.isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
         }
       }
     }
 
     // Network Download Speed Component
     Item {
-      Layout.preferredWidth: isVertical ? root.width : iconSize + memTextWidth + (Style.marginXXS)
+      Layout.preferredWidth: root.isVertical ? root.width : root.iconSize + root.memTextWidth + (Style.marginXXS)
       Layout.preferredHeight: Style.capsuleHeight
-      Layout.alignment: isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
-      visible: showNetworkStats
+      Layout.alignment: root.isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
+      visible: root.showNetworkStats
 
       GridLayout {
         id: downloadContent
         anchors.centerIn: parent
-        flow: isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
-        rows: isVertical ? 2 : 1
-        columns: isVertical ? 1 : 2
+        flow: root.isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+        rows: root.isVertical ? 2 : 1
+        columns: root.isVertical ? 1 : 2
         rowSpacing: Style.marginXXS
         columnSpacing: Style.marginXXS
 
         Item {
           Layout.alignment: Qt.AlignCenter
-          Layout.row: isVertical ? 1 : 0
+          Layout.row: root.isVertical ? 1 : 0
           Layout.column: 0
-          Layout.fillWidth: isVertical
-          implicitWidth: iconSize
-          implicitHeight: iconSize
+          Layout.fillWidth: root.isVertical
+          implicitWidth: root.iconSize
+          implicitHeight: root.iconSize
 
           NIcon {
             icon: "download-speed"
-            pointSize: iconSize
+            pointSize: root.iconSize
             applyUiScale: false
             anchors.centerIn: parent
-            color: iconColor
+            color: root.iconColor
           }
         }
 
         NText {
-          text: isVertical ? SystemStatService.formatCompactSpeed(SystemStatService.rxSpeed) : SystemStatService.formatSpeed(SystemStatService.rxSpeed)
+          text: root.isVertical ? SystemStatService.formatCompactSpeed(SystemStatService.rxSpeed) : SystemStatService.formatSpeed(SystemStatService.rxSpeed)
           family: Settings.data.ui.fontFixed
-          pointSize: textSize
+          pointSize: root.textSize
           applyUiScale: false
           font.weight: Style.fontWeightMedium
           Layout.alignment: Qt.AlignCenter
-          Layout.preferredWidth: isVertical ? -1 : memTextWidth
-          horizontalAlignment: isVertical ? Text.AlignHCenter : Text.AlignRight
+          Layout.preferredWidth: root.isVertical ? -1 : root.memTextWidth
+          horizontalAlignment: root.isVertical ? Text.AlignHCenter : Text.AlignRight
           verticalAlignment: Text.AlignVCenter
-          color: textColor
-          Layout.row: isVertical ? 0 : 0
-          Layout.column: isVertical ? 0 : 1
-          scale: isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
+          color: root.textColor
+          Layout.row: root.isVertical ? 0 : 0
+          Layout.column: root.isVertical ? 0 : 1
+          scale: root.isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
         }
       }
     }
 
     // Network Upload Speed Component
     Item {
-      Layout.preferredWidth: isVertical ? root.width : iconSize + memTextWidth + (Style.marginXXS)
+      Layout.preferredWidth: root.isVertical ? root.width : root.iconSize + root.memTextWidth + (Style.marginXXS)
       Layout.preferredHeight: Style.capsuleHeight
-      Layout.alignment: isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
-      visible: showNetworkStats
+      Layout.alignment: root.isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
+      visible: root.showNetworkStats
 
       GridLayout {
         id: uploadContent
         anchors.centerIn: parent
-        flow: isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
-        rows: isVertical ? 2 : 1
-        columns: isVertical ? 1 : 2
+        flow: root.isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+        rows: root.isVertical ? 2 : 1
+        columns: root.isVertical ? 1 : 2
         rowSpacing: Style.marginXXS
         columnSpacing: Style.marginXXS
 
         Item {
           Layout.alignment: Qt.AlignCenter
-          Layout.row: isVertical ? 1 : 0
+          Layout.row: root.isVertical ? 1 : 0
           Layout.column: 0
-          Layout.fillWidth: isVertical
-          implicitWidth: iconSize
-          implicitHeight: iconSize
+          Layout.fillWidth: root.isVertical
+          implicitWidth: root.iconSize
+          implicitHeight: root.iconSize
 
           NIcon {
             icon: "upload-speed"
-            pointSize: iconSize
+            pointSize: root.iconSize
             applyUiScale: false
             anchors.centerIn: parent
-            color: iconColor
+            color: root.iconColor
           }
         }
 
         NText {
-          text: isVertical ? SystemStatService.formatCompactSpeed(SystemStatService.txSpeed) : SystemStatService.formatSpeed(SystemStatService.txSpeed)
+          text: root.isVertical ? SystemStatService.formatCompactSpeed(SystemStatService.txSpeed) : SystemStatService.formatSpeed(SystemStatService.txSpeed)
           family: Settings.data.ui.fontFixed
-          pointSize: textSize
+          pointSize: root.textSize
           applyUiScale: false
           font.weight: Style.fontWeightMedium
           Layout.alignment: Qt.AlignCenter
-          Layout.preferredWidth: isVertical ? -1 : memTextWidth
-          horizontalAlignment: isVertical ? Text.AlignHCenter : Text.AlignRight
+          Layout.preferredWidth: root.isVertical ? -1 : root.memTextWidth
+          horizontalAlignment: root.isVertical ? Text.AlignHCenter : Text.AlignRight
           verticalAlignment: Text.AlignVCenter
-          color: textColor
-          Layout.row: isVertical ? 0 : 0
-          Layout.column: isVertical ? 0 : 1
-          scale: isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
+          color: root.textColor
+          Layout.row: root.isVertical ? 0 : 0
+          Layout.column: root.isVertical ? 0 : 1
+          scale: root.isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
         }
       }
     }
@@ -621,10 +621,10 @@ Rectangle {
     // Disk Usage Component (primary drive)
     Item {
       id: diskContainer
-      Layout.preferredWidth: isVertical ? root.width : iconSize + percentTextWidth + (Style.marginXXS)
+      Layout.preferredWidth: root.isVertical ? root.width : root.iconSize + root.percentTextWidth + (Style.marginXXS)
       Layout.preferredHeight: Style.capsuleHeight
-      Layout.alignment: isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
-      visible: showDiskUsage
+      Layout.alignment: root.isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
+      visible: root.showDiskUsage
 
       // Status indicator covering the entire component
       Loader {
@@ -632,8 +632,8 @@ Rectangle {
         anchors.centerIn: parent
 
         onLoaded: {
-          item.warning = Qt.binding(() => diskWarning);
-          item.critical = Qt.binding(() => diskCritical);
+          item.warning = Qt.binding(() => root.diskWarning);
+          item.critical = Qt.binding(() => root.diskCritical);
           item.indicatorWidth = Qt.binding(() => diskContainer.width);
           item.warningColor = Qt.binding(() => root.warningColor);
           item.criticalColor = Qt.binding(() => root.criticalColor);
@@ -643,46 +643,46 @@ Rectangle {
       GridLayout {
         id: diskContent
         anchors.centerIn: parent
-        flow: isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
-        rows: isVertical ? 2 : 1
-        columns: isVertical ? 1 : 2
+        flow: root.isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+        rows: root.isVertical ? 2 : 1
+        columns: root.isVertical ? 1 : 2
         rowSpacing: Style.marginXXS
         columnSpacing: Style.marginXXS
 
         Item {
           Layout.alignment: Qt.AlignCenter
-          Layout.row: isVertical ? 1 : 0
+          Layout.row: root.isVertical ? 1 : 0
           Layout.column: 0
-          Layout.fillWidth: isVertical
-          implicitWidth: iconSize
-          implicitHeight: iconSize
+          Layout.fillWidth: root.isVertical
+          implicitWidth: root.iconSize
+          implicitHeight: root.iconSize
 
           NIcon {
             icon: "storage"
-            pointSize: iconSize
+            pointSize: root.iconSize
             applyUiScale: false
             anchors.centerIn: parent
             // Invert color when disk indicator active (vertical uses highlight colors)
-            color: isVertical ? (diskCritical ? criticalColor : (diskWarning ? warningColor : iconColor)) : ((diskWarning || diskCritical) ? NColor.mSurfaceVariant : iconColor)
+            color: root.isVertical ? (root.diskCritical ? root.criticalColor : (root.diskWarning ? root.warningColor : root.iconColor)) : ((root.diskWarning || root.diskCritical) ? NColor.mSurfaceVariant : root.iconColor)
           }
         }
 
         NText {
           id: toto
-          text: SystemStatService.diskPercents[diskPath] ? `${SystemStatService.diskPercents[diskPath]}%` : "n/a"
+          text: SystemStatService.diskPercents[root.diskPath] ? `${SystemStatService.diskPercents[root.diskPath]}%` : "n/a"
           family: Settings.data.ui.fontFixed
-          pointSize: textSize
+          pointSize: root.textSize
           applyUiScale: false
           font.weight: Style.fontWeightMedium
           Layout.alignment: Qt.AlignCenter
-          Layout.preferredWidth: isVertical ? -1 : percentTextWidth
-          horizontalAlignment: isVertical ? Text.AlignHCenter : Text.AlignRight
+          Layout.preferredWidth: root.isVertical ? -1 : root.percentTextWidth
+          horizontalAlignment: root.isVertical ? Text.AlignHCenter : Text.AlignRight
           verticalAlignment: Text.AlignVCenter
           // Use highlight colors in vertical bar; otherwise invert text color to bar background when disk indicator active
-          color: isVertical ? (diskCritical ? criticalColor : (diskWarning ? warningColor : textColor)) : ((diskWarning || diskCritical) ? NColor.mSurfaceVariant : textColor)
-          Layout.row: isVertical ? 0 : 0
-          Layout.column: isVertical ? 0 : 1
-          scale: isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
+          color: root.isVertical ? (root.diskCritical ? root.criticalColor : (root.diskWarning ? root.warningColor : root.textColor)) : ((root.diskWarning || root.diskCritical) ? NColor.mSurfaceVariant : root.textColor)
+          Layout.row: root.isVertical ? 0 : 0
+          Layout.column: root.isVertical ? 0 : 1
+          scale: root.isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
         }
       }
 
@@ -693,7 +693,7 @@ Rectangle {
         acceptedButtons: Qt.NoButton
         cursorShape: Qt.PointingHandCursor
         onEntered: {
-          TooltipService.show(diskContent, diskPath, BarService.getTooltipDirection());
+          TooltipService.show(diskContent, root.diskPath, BarService.getTooltipDirection());
         }
         onExited: {
           TooltipService.hide();
@@ -704,51 +704,51 @@ Rectangle {
     // Fan Speed Component
     Item {
       id: fanContainer
-      Layout.preferredWidth: isVertical ? root.width : iconSize + fanTextWidth + (Style.marginXXS)
+      Layout.preferredWidth: root.isVertical ? root.width : root.iconSize + root.fanTextWidth + (Style.marginXXS)
       Layout.preferredHeight: Style.capsuleHeight
-      Layout.alignment: isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
-      visible: root.shouldShowFanSpeedMetric(showFanSpeed, FanService.available, FanService.sensorDetected)
+      Layout.alignment: root.isVertical ? Qt.AlignHCenter : Qt.AlignVCenter
+      visible: root.shouldShowFanSpeedMetric(root.showFanSpeed, FanService.available, FanService.sensorDetected)
 
       GridLayout {
         id: fanContent
         anchors.centerIn: parent
-        flow: isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
-        rows: isVertical ? 2 : 1
-        columns: isVertical ? 1 : 2
+        flow: root.isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+        rows: root.isVertical ? 2 : 1
+        columns: root.isVertical ? 1 : 2
         rowSpacing: Style.marginXXS
         columnSpacing: Style.marginXXS
 
         Item {
           Layout.alignment: Qt.AlignCenter
-          Layout.row: isVertical ? 1 : 0
+          Layout.row: root.isVertical ? 1 : 0
           Layout.column: 0
-          Layout.fillWidth: isVertical
-          implicitWidth: iconSize
-          implicitHeight: iconSize
+          Layout.fillWidth: root.isVertical
+          implicitWidth: root.iconSize
+          implicitHeight: root.iconSize
 
           NIcon {
             icon: "propeller"
-            pointSize: iconSize
+            pointSize: root.iconSize
             applyUiScale: false
             anchors.centerIn: parent
-            color: iconColor
+            color: root.iconColor
           }
         }
 
         NText {
           text: root.formatFanSpeedText(FanService.getMaxRpm())
           family: Settings.data.ui.fontFixed
-          pointSize: textSize
+          pointSize: root.textSize
           applyUiScale: false
           font.weight: Style.fontWeightMedium
           Layout.alignment: Qt.AlignCenter
-          Layout.preferredWidth: isVertical ? -1 : fanTextWidth
-          horizontalAlignment: isVertical ? Text.AlignHCenter : Text.AlignRight
+          Layout.preferredWidth: root.isVertical ? -1 : root.fanTextWidth
+          horizontalAlignment: root.isVertical ? Text.AlignHCenter : Text.AlignRight
           verticalAlignment: Text.AlignVCenter
-          color: textColor
-          Layout.row: isVertical ? 0 : 0
-          Layout.column: isVertical ? 0 : 1
-          scale: isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
+          color: root.textColor
+          Layout.row: root.isVertical ? 0 : 0
+          Layout.column: root.isVertical ? 0 : 1
+          scale: root.isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
         }
       }
 
