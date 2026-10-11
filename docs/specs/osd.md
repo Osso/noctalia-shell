@@ -16,6 +16,10 @@ Typed settings delegates:
 - [x] OSD monitor delegates must expose null-safe typed aliases for screen name, model, width, and height.
 - [x] OSD monitor labels, scale lookup, descriptions, selection checks, and add/remove actions must use the typed monitor aliases.
 
+Bounded runtime regression:
+- [x] Production OSD must suppress startup events, react to fixture audio/brightness/lock signals, restart auto-hide after updates, and unload/reset state after timeout in horizontal and vertical layouts.
+- [x] Private headless Cage tests must isolate HOME/XDG/Noctalia paths, preserve real settings, clean up experimental processes, and retain all platform warnings. Content/state assertions are not pixel rendering or layer-shell placement proof.
+
 ## How it works
 
 - [ ] See [docs/wiki/systems/osd.md](/syncthing/Sync/Projects/apps/noctalia-shell/docs/wiki/systems/osd.md).
@@ -28,12 +32,14 @@ Typed settings delegates:
 
 ## Tests asserting this spec
 
+- `Tests/osd-warnings.test.py behavior` with `Tests/Qml/OSDWarningsHarness.qml`: actual production component, inert services, one private Cage output; standalone, not added to the broad runner.
+- `Tests/osd-warnings.test.py lint`: file-only diagnostics; owner qualification reduces 45 unqualified warnings to 37. Existing unbound nested-component context and five missing-property warnings remain visible; passing this bounded slice does not mean warning-free QML.
 - [Tests/osd-tab-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/osd-tab-guards.test.js)
 - [Tests/qml-type-annotations.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/qml-type-annotations.test.js)
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for OSD runtime display, auto-hide, positioning, and type filtering.
+- [ ] Real layer-shell placement/pixels, multi-output independent timers, enabled-type rejection, suppression consumption, and device-change refresh remain outside the private Cage regression.
 - [ ] Add executable coverage for monitor add/remove helper behavior.
 
 ## Out of scope

@@ -215,9 +215,9 @@ Variants {
         root.item.showOSD();
       } else {
         Qt.callLater(() => {
-                       if (root.item)
-                       root.item.showOSD();
-                     });
+          if (root.item)
+            root.item.showOSD();
+        });
       }
     }
 
@@ -236,18 +236,18 @@ Variants {
       target: AudioService
 
       function onVolumeChanged() {
-        showOSD(OSD.Type.Volume);
+        root.showOSD(OSD.Type.Volume);
       }
 
       function onMutedChanged() {
         if (AudioService.consumeOutputOSDSuppression())
           return;
-        showOSD(OSD.Type.Volume);
+        root.showOSD(OSD.Type.Volume);
       }
 
       function onInputVolumeChanged() {
         if (AudioService.hasInput)
-          showOSD(OSD.Type.InputVolume);
+          root.showOSD(OSD.Type.InputVolume);
       }
 
       function onInputMutedChanged() {
@@ -255,7 +255,7 @@ Variants {
           return;
         if (AudioService.consumeInputOSDSuppression())
           return;
-        showOSD(OSD.Type.InputVolume);
+        root.showOSD(OSD.Type.InputVolume);
       }
 
       // Refresh OSD when device changes to ensure correct volume is displayed
@@ -263,8 +263,8 @@ Variants {
         // If volume OSD is currently showing, refresh it to show new device's volume
         if (root.currentOSDType === OSD.Type.Volume) {
           Qt.callLater(() => {
-                         showOSD(OSD.Type.Volume);
-                       });
+            root.showOSD(OSD.Type.Volume);
+          });
         }
       }
 
@@ -272,8 +272,8 @@ Variants {
         // If input volume OSD is currently showing, refresh it to show new device's volume
         if (root.currentOSDType === OSD.Type.InputVolume) {
           Qt.callLater(() => {
-                         showOSD(OSD.Type.InputVolume);
-                       });
+            root.showOSD(OSD.Type.InputVolume);
+          });
         }
       }
     }
@@ -282,7 +282,7 @@ Variants {
     Connections {
       target: BrightnessService
       function onMonitorsChanged() {
-        connectBrightnessMonitors();
+        root.connectBrightnessMonitors();
       }
     }
 
@@ -312,7 +312,7 @@ Variants {
       interval: 2000
       running: true
       onTriggered: {
-        connectBrightnessMonitors();
+        root.connectBrightnessMonitors();
         root.startupComplete = true;
       }
     }
@@ -322,7 +322,7 @@ Variants {
     // Visual Component
     sourceComponent: PanelWindow {
       id: panel
-      screen: modelData
+      screen: root.modelData
 
       readonly property string screenName: screen ? screen.name : "unknown"
       readonly property var osdSettings: Settings.data.osd || {}
@@ -627,9 +627,9 @@ Variants {
           osdItem.visible = true;
 
           Qt.callLater(() => {
-                         osdItem.opacity = 1;
-                         osdItem.scale = 1.0;
-                       });
+            osdItem.opacity = 1;
+            osdItem.scale = 1.0;
+          });
 
           hideTimer.start();
         }
