@@ -75,7 +75,7 @@ run_unit_tests() {
     python3 "$repo_root/Tests/bluetooth-devices-list-runtime.test.py"
     python3 "$repo_root/Tests/clipboard-preview-warnings.test.py" --mode runtime
     python3 "$repo_root/Tests/location-service-runtime.test.py"
-    python3 "$repo_root/Tests/scheme-downloader-runtime.test.py"
+    python3 "$repo_root/Tests/scheme-downloader-runtime.test.py" runtime
     python3 "$repo_root/Tests/taskbar-grouped-warnings.test.py" behavior
     python3 "$repo_root/Tests/tray-drawer-warnings.test.py" --mode runtime
     python3 "$repo_root/Tests/tray-widget-warnings.test.py" --mode runtime

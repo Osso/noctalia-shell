@@ -71,8 +71,15 @@ case "${1##*/}" in
         [ "$#" -eq 1 ] || exit 40
         exit "$WORKSPACE_TEST_STATUS"
         ;;
-    bar-widget-metadata-runtime.test.py | bluetooth-devices-list-runtime.test.py | location-service-runtime.test.py | scheme-downloader-runtime.test.py)
+    bar-widget-metadata-runtime.test.py | bluetooth-devices-list-runtime.test.py | location-service-runtime.test.py)
         [ "$#" -eq 1 ] || exit 40
+        if [ "${1##*/}" = "$WARNING_TEST_FAILURE" ]; then
+            exit 48
+        fi
+        exit 0
+        ;;
+    scheme-downloader-runtime.test.py)
+        [ "${2:-}" = runtime ] && [ "$#" -eq 2 ] || exit 40
         if [ "${1##*/}" = "$WARNING_TEST_FAILURE" ]; then
             exit 48
         fi
@@ -127,7 +134,7 @@ warning_tests=(
     'bluetooth-devices-list-runtime.test.py'
     'clipboard-preview-warnings.test.py --mode runtime'
     'location-service-runtime.test.py'
-    'scheme-downloader-runtime.test.py'
+    'scheme-downloader-runtime.test.py runtime'
     'taskbar-grouped-warnings.test.py behavior'
     'tray-drawer-warnings.test.py --mode runtime'
     'tray-widget-warnings.test.py --mode runtime'
