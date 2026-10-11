@@ -19,7 +19,7 @@ Item {
   // This property will be set by MainScreen
   property ShellScreen screen: null
 
-  readonly property Item barContentItem: barContentLoader.item
+  readonly property Item barContentItem: barContentLoader.item as Item
 
   // Expose bar region for click-through mask
   readonly property Item barRegion: {
