@@ -62,7 +62,7 @@ ShellRoot {
   Timer {
     id: scenario
     property int step: 0
-    interval: 100
+    interval: 400
     running: true
     repeat: true
     onTriggered: {
@@ -85,10 +85,11 @@ ShellRoot {
         const before = BarWidgetRegistry.snapshots[0];
         harness.require(before.widgetId === "" && before.metadataReady && before.maxWidth === 145 && !before.fixed, "metadata before production widgetProps assignment");
         harness.require(harness.loaded.widgetId === "ActiveWindow" && harness.loaded.sectionWidgetIndex === 0, "production widgetProps assignment before settings ready");
-        harness.assertDimensions(0, 0, "pre-ready hidden state");
+        harness.assertDimensions(Settings.focusedStart ? 145 : 0, Settings.focusedStart ? Settings.expectedHeight : 0, "pre-ready focus-dependent state");
         break;
       case 1:
         harness.require(!Settings.ready, "settings still delayed after construction");
+        CompositorService.focusedWindow = null;
         harness.standalone.widgetId = "ActiveWindow";
         harness.standalone.section = "left";
         harness.standalone.sectionWidgetIndex = 0;
@@ -102,7 +103,7 @@ ShellRoot {
         Settings.ready = true;
         break;
       case 2:
-        harness.assertDimensions(210, 32, "hydrated fixed horizontal dimensions");
+        harness.assertDimensions(210, Settings.expectedHeight, "hydrated fixed horizontal dimensions");
         for (const item of [harness.standalone, harness.loaded]) {
           harness.require(item.visible && item.opacity === 1 && !item.showIcon && item.windowTitle === "No active window", "hydrated empty visible state");
         }
@@ -120,7 +121,7 @@ ShellRoot {
                             }, "top");
         break;
       case 3:
-        harness.assertDimensions(90, 32, "focused title dynamic cap");
+        harness.assertDimensions(90, Settings.expectedHeight, "focused title dynamic cap");
         harness.require(harness.loaded.windowTitle === CompositorService.focusedWindow.title, "focused title rendered");
         harness.setSettings({
                               "id": "ActiveWindow",
@@ -141,7 +142,7 @@ ShellRoot {
                             }, "top");
         break;
       case 5:
-        harness.assertDimensions(160, 32, "transparent mode retains layout space");
+        harness.assertDimensions(160, Settings.expectedHeight, "transparent mode retains layout space");
         harness.require(harness.loaded.visible && harness.loaded.opacity === 0 && harness.widgetLoader.visible, "transparent widget and loader visible");
         harness.loaded.handleContextMenuAction("widget-settings");
         harness.require(PanelService.actions.join(",") === "close,settings", "settings closes menu before opening");
@@ -154,10 +155,25 @@ ShellRoot {
       case 6:
         harness.assertDimensions(0, 0, "hidden empty state after hydration");
         harness.require(!harness.loaded.visible && !harness.widgetLoader.visible, "hidden mode removes widget and loader");
+        CompositorService.focusedWindow = {
+          "title": "Focus restored for fade test",
+          "appId": "fixture"
+        };
+        break;
+      case 7:
+        harness.require(harness.loaded.visible && harness.loaded.opacity === 1, "hidden mode shows focused window");
+        CompositorService.focusedWindow = null;
+        if (Style.animationNormal > 0) {
+          harness.require(harness.loaded.visible && harness.loaded.opacity > 0, "hidden widget remains visible during fade");
+        }
+        break;
+      case 8:
+        harness.assertDimensions(0, 0, "hidden dimensions after fade");
+        harness.require(!harness.loaded.visible && !harness.widgetLoader.visible, "fade removes widget and loader");
         harness.widgetLoader.destroy();
         harness.standalone.destroy();
         scenario.running = false;
-        console.log("ACTIVE_WINDOW_BEHAVIOR_PASS", "7 stages: direct widget and production Loader");
+        console.log("ACTIVE_WINDOW_BEHAVIOR_PASS", "9 stages: direct widget and production Loader");
         Qt.quit();
         break;
       }

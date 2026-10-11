@@ -51,7 +51,7 @@ def lint(directory):
     assert result.returncode == 0, result.returncode
 
 
-def stage_widget(directory):
+def stage_widget(directory, focused_start, production_style):
     fixture = load_fixture()
     fixture.stage_widgets(directory)
     # No other widget is instantiated; retain production metadata and Loader.
@@ -67,7 +67,11 @@ def stage_widget(directory):
     fixture.fixture.write_singleton(
         directory / "Commons",
         "Settings",
-        "property bool ready: false\nproperty var data: " + json.dumps(defaults),
+        "property bool ready: false\n"
+        + f"property bool focusedStart: {str(focused_start).lower()}\n"
+        + f"property int expectedHeight: {27 if production_style else 32}\n"
+        + "property var data: "
+        + json.dumps(defaults),
     )
     fixture.fixture.write_singleton(
         directory / "Services/UI",
@@ -89,13 +93,35 @@ function getPopupMenuWindow(screen) { return popup; }""",
         )
         .replace("import QtQuick", "import QtQuick\nimport qs.Services.UI")
     )
+    if focused_start:
+        compositor = directory / "Services/Compositor/CompositorService.qml"
+        compositor.write_text(
+            compositor.read_text().replace(
+                "property var focusedWindow: null",
+                'property var focusedWindow: ({title: "Concrete focused startup title exceeding the metadata width cap", appId: "fixture"})',
+            )
+        )
+    if production_style:
+        shutil.copyfile(ROOT / "Commons/Style.qml", directory / "Commons/Style.qml")
+        fixture.fixture.write_singleton(
+            directory / "Services/Power",
+            "PowerProfileService",
+            "property bool noctaliaPerformanceMode: false",
+        )
+        colors = directory / "Commons/NColor.qml"
+        colors.write_text(
+            colors.read_text().replace(
+                "QtObject {",
+                'QtObject {\nreadonly property color mSurfaceVariant: "#303030"',
+            )
+        )
     shutil.copyfile(
         ROOT / "Tests/Qml/ActiveWindowWarningsHarness.qml", directory / "shell.qml"
     )
     return fixture
 
 
-def behavior(directory):
+def behavior(directory, focused_start, production_style):
     settings = Path.home() / ".config/noctalia/settings.json"
     original = settings.read_bytes()
     backup = directory / "settings.backup.json"
@@ -105,7 +131,7 @@ def behavior(directory):
         hashlib.sha256(backup.read_bytes()).digest()
         == hashlib.sha256(original).digest()
     )
-    fixture = stage_widget(directory)
+    fixture = stage_widget(directory, focused_start, production_style)
     try:
         result = subprocess.run(
             ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
@@ -130,13 +156,15 @@ def behavior(directory):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("--focused-start", action="store_true")
+    parser.add_argument("--production-style", action="store_true")
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-active-window-") as temporary:
         directory = Path(temporary)
         if args.mode == "lint":
             lint(directory)
         else:
-            behavior(directory)
+            behavior(directory, args.focused_start, args.production_style)
 
 
 if __name__ == "__main__":
