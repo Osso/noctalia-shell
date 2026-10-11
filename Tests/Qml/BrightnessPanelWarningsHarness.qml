@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import QtTest
 import Quickshell
 import qs.Modules.Panels.Brightness
