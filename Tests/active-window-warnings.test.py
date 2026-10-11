@@ -69,7 +69,7 @@ def stage_widget(directory, focused_start, production_style):
         "Settings",
         "property bool ready: false\n"
         + f"property bool focusedStart: {str(focused_start).lower()}\n"
-        + f"property int expectedHeight: {27 if production_style else 32}\n"
+        + f"property int expectedHeight: {25 if production_style else 32}\n"
         + "property var data: "
         + json.dumps(defaults),
     )

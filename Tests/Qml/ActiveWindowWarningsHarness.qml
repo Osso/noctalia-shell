@@ -37,7 +37,7 @@ ShellRoot {
 
   function assertDimensions(width, height, message) {
     for (const item of [harness.standalone, harness.loaded]) {
-      harness.require(item.implicitWidth === width && item.implicitHeight === height, message);
+      harness.require(item.implicitWidth === width && item.implicitHeight === height, message + ": expected " + width + "x" + height + ", actual " + item.implicitWidth + "x" + item.implicitHeight);
     }
     harness.require(harness.widgetLoader.implicitWidth === width && harness.widgetLoader.implicitHeight === height, message + " loader dimensions");
   }
@@ -85,10 +85,17 @@ ShellRoot {
         const before = BarWidgetRegistry.snapshots[0];
         harness.require(before.widgetId === "" && before.metadataReady && before.maxWidth === 145 && !before.fixed, "metadata before production widgetProps assignment");
         harness.require(harness.loaded.widgetId === "ActiveWindow" && harness.loaded.sectionWidgetIndex === 0, "production widgetProps assignment before settings ready");
-        harness.assertDimensions(Settings.focusedStart ? 145 : 0, Settings.focusedStart ? Settings.expectedHeight : 0, "pre-ready focus-dependent state");
+        if (Settings.focusedStart && Style.animationNormal > 0) {
+          for (const item of [harness.standalone, harness.loaded]) {
+            harness.require(item.visible && Number.isFinite(item.implicitWidth) && item.implicitWidth >= 0 && item.implicitWidth <= 145, "focused construction animation has bounded width");
+          }
+        } else {
+          harness.assertDimensions(Settings.focusedStart ? 145 : 0, Settings.focusedStart ? Settings.expectedHeight : 0, "pre-ready focus-dependent state");
+        }
         break;
       case 1:
         harness.require(!Settings.ready, "settings still delayed after construction");
+        harness.assertDimensions(Settings.focusedStart ? 145 : 0, Settings.focusedStart ? Settings.expectedHeight : 0, "settled pre-ready focus-dependent state");
         CompositorService.focusedWindow = null;
         harness.standalone.widgetId = "ActiveWindow";
         harness.standalone.section = "left";
