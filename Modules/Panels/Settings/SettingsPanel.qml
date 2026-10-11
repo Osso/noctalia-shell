@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -181,133 +183,133 @@ SmartPanel {
   // Order *DOES* matter
   function updateTabsModel() {
     let newTabs = [
-          {
-            "id": SettingsPanel.Tab.General,
-            "label": "settings.general.title",
-            "icon": "settings-general",
-            "source": generalTab
-          },
-          {
-            "id": SettingsPanel.Tab.UserInterface,
-            "label": "settings.user-interface.title",
-            "icon": "settings-user-interface",
-            "source": userInterfaceTab
-          },
-          {
-            "id": SettingsPanel.Tab.ColorScheme,
-            "label": "settings.color-scheme.title",
-            "icon": "settings-color-scheme",
-            "source": colorSchemeTab
-          },
-          {
-            "id": SettingsPanel.Tab.Wallpaper,
-            "label": "settings.wallpaper.title",
-            "icon": "settings-wallpaper",
-            "source": wallpaperTab
-          },
-          {
-            "id": SettingsPanel.Tab.Bar,
-            "label": "settings.bar.title",
-            "icon": "settings-bar",
-            "source": barTab
-          },
-          {
-            "id": SettingsPanel.Tab.Dock,
-            "label": "settings.dock.title",
-            "icon": "settings-dock",
-            "source": dockTab
-          },
-          {
-            "id": SettingsPanel.Tab.ControlCenter,
-            "label": "settings.control-center.title",
-            "icon": "settings-control-center",
-            "source": controlCenterTab
-          },
-          {
-            "id": SettingsPanel.Tab.Launcher,
-            "label": "settings.launcher.title",
-            "icon": "settings-launcher",
-            "source": launcherTab
-          },
-          {
-            "id": SettingsPanel.Tab.Notifications,
-            "label": "settings.notifications.title",
-            "icon": "settings-notifications",
-            "source": notificationsTab
-          },
-          {
-            "id": SettingsPanel.Tab.OSD,
-            "label": "settings.osd.title",
-            "icon": "settings-osd",
-            "source": osdTab
-          },
-          {
-            "id": SettingsPanel.Tab.LockScreen,
-            "label": "settings.lock-screen.title",
-            "icon": "settings-lock-screen",
-            "source": lockScreenTab
-          },
-          {
-            "id": SettingsPanel.Tab.SessionMenu,
-            "label": "settings.session-menu.title",
-            "icon": "settings-session-menu",
-            "source": sessionMenuTab
-          },
-          {
-            "id": SettingsPanel.Tab.Audio,
-            "label": "settings.audio.title",
-            "icon": "settings-audio",
-            "source": audioTab
-          },
-          {
-            "id": SettingsPanel.Tab.Battery,
-            "label": "settings.battery.title",
-            "icon": "battery-3",
-            "source": batteryTab
-          },
-          {
-            "id": SettingsPanel.Tab.Display,
-            "label": "settings.display.title",
-            "icon": "settings-display",
-            "source": displayTab
-          },
-          {
-            "id": SettingsPanel.Tab.Network,
-            "label": "settings.network.title",
-            "icon": "settings-network",
-            "source": networkTab
-          },
-          {
-            "id": SettingsPanel.Tab.Location,
-            "label": "settings.location.title",
-            "icon": "settings-location",
-            "source": locationTab
-          },
-          {
-            "id": SettingsPanel.Tab.ScreenRecorder,
-            "label": "settings.screen-recorder.title",
-            "icon": "settings-screen-recorder",
-            "source": screenRecorderTab
-          },
-          {
-            "id": SettingsPanel.Tab.SystemMonitor,
-            "label": "settings.system-monitor.title",
-            "icon": "settings-system-monitor",
-            "source": systemMonitorTab
-          },
-          {
-            "id": SettingsPanel.Tab.Hooks,
-            "label": "settings.hooks.title",
-            "icon": "settings-hooks",
-            "source": hooksTab
-          },
-          {
-            "id": SettingsPanel.Tab.About,
-            "label": "settings.about.title",
-            "icon": "settings-about",
-            "source": aboutTab
-          }
-        ];
+      {
+        "id": SettingsPanel.Tab.General,
+        "label": "settings.general.title",
+        "icon": "settings-general",
+        "source": generalTab
+      },
+      {
+        "id": SettingsPanel.Tab.UserInterface,
+        "label": "settings.user-interface.title",
+        "icon": "settings-user-interface",
+        "source": userInterfaceTab
+      },
+      {
+        "id": SettingsPanel.Tab.ColorScheme,
+        "label": "settings.color-scheme.title",
+        "icon": "settings-color-scheme",
+        "source": colorSchemeTab
+      },
+      {
+        "id": SettingsPanel.Tab.Wallpaper,
+        "label": "settings.wallpaper.title",
+        "icon": "settings-wallpaper",
+        "source": wallpaperTab
+      },
+      {
+        "id": SettingsPanel.Tab.Bar,
+        "label": "settings.bar.title",
+        "icon": "settings-bar",
+        "source": barTab
+      },
+      {
+        "id": SettingsPanel.Tab.Dock,
+        "label": "settings.dock.title",
+        "icon": "settings-dock",
+        "source": dockTab
+      },
+      {
+        "id": SettingsPanel.Tab.ControlCenter,
+        "label": "settings.control-center.title",
+        "icon": "settings-control-center",
+        "source": controlCenterTab
+      },
+      {
+        "id": SettingsPanel.Tab.Launcher,
+        "label": "settings.launcher.title",
+        "icon": "settings-launcher",
+        "source": launcherTab
+      },
+      {
+        "id": SettingsPanel.Tab.Notifications,
+        "label": "settings.notifications.title",
+        "icon": "settings-notifications",
+        "source": notificationsTab
+      },
+      {
+        "id": SettingsPanel.Tab.OSD,
+        "label": "settings.osd.title",
+        "icon": "settings-osd",
+        "source": osdTab
+      },
+      {
+        "id": SettingsPanel.Tab.LockScreen,
+        "label": "settings.lock-screen.title",
+        "icon": "settings-lock-screen",
+        "source": lockScreenTab
+      },
+      {
+        "id": SettingsPanel.Tab.SessionMenu,
+        "label": "settings.session-menu.title",
+        "icon": "settings-session-menu",
+        "source": sessionMenuTab
+      },
+      {
+        "id": SettingsPanel.Tab.Audio,
+        "label": "settings.audio.title",
+        "icon": "settings-audio",
+        "source": audioTab
+      },
+      {
+        "id": SettingsPanel.Tab.Battery,
+        "label": "settings.battery.title",
+        "icon": "battery-3",
+        "source": batteryTab
+      },
+      {
+        "id": SettingsPanel.Tab.Display,
+        "label": "settings.display.title",
+        "icon": "settings-display",
+        "source": displayTab
+      },
+      {
+        "id": SettingsPanel.Tab.Network,
+        "label": "settings.network.title",
+        "icon": "settings-network",
+        "source": networkTab
+      },
+      {
+        "id": SettingsPanel.Tab.Location,
+        "label": "settings.location.title",
+        "icon": "settings-location",
+        "source": locationTab
+      },
+      {
+        "id": SettingsPanel.Tab.ScreenRecorder,
+        "label": "settings.screen-recorder.title",
+        "icon": "settings-screen-recorder",
+        "source": screenRecorderTab
+      },
+      {
+        "id": SettingsPanel.Tab.SystemMonitor,
+        "label": "settings.system-monitor.title",
+        "icon": "settings-system-monitor",
+        "source": systemMonitorTab
+      },
+      {
+        "id": SettingsPanel.Tab.Hooks,
+        "label": "settings.hooks.title",
+        "icon": "settings-hooks",
+        "source": hooksTab
+      },
+      {
+        "id": SettingsPanel.Tab.About,
+        "label": "settings.about.title",
+        "icon": "settings-about",
+        "source": aboutTab
+      }
+    ];
 
     root.tabsModel = newTabs; // Assign the generated list to the model
   }
@@ -457,10 +459,10 @@ SmartPanel {
               width: sidebarList.verticalScrollBarActive ? sidebarList.width - sidebarList.scrollBarWidth - Style.marginXS : sidebarList.width
               height: tabEntryRow.implicitHeight + Style.marginS * 2
               radius: Style.radiusS
-              color: selected ? NColor.mPrimary : (tabItem.hovering ? NColor.mHover : NColor.transparent)
-              readonly property bool selected: index === root.currentTabIndex
+              color: tabItem.selected ? NColor.mPrimary : (tabItem.hovering ? NColor.mHover : NColor.transparent)
+              readonly property bool selected: tabItem.index === root.currentTabIndex
               property bool hovering: false
-              property color tabTextColor: selected ? NColor.mOnPrimary : (tabItem.hovering ? NColor.mOnHover : NColor.mOnSurface)
+              property color tabTextColor: tabItem.selected ? NColor.mOnPrimary : (tabItem.hovering ? NColor.mOnHover : NColor.mOnSurface)
 
               Behavior on width {
                 NumberAnimation {
@@ -490,14 +492,14 @@ SmartPanel {
                 // Tab icon
                 NIcon {
                   icon: tabItem.icon
-                  color: tabTextColor
+                  color: tabItem.tabTextColor
                   pointSize: Style.fontSizeXL
                 }
 
                 // Tab label
                 NText {
                   text: I18n.tr(tabItem.label)
-                  color: tabTextColor
+                  color: tabItem.tabTextColor
                   pointSize: Style.fontSizeM
                   font.weight: Style.fontWeightBold
                   Layout.fillWidth: true
@@ -512,13 +514,13 @@ SmartPanel {
                 onEntered: tabItem.hovering = true
                 onExited: tabItem.hovering = false
                 onCanceled: tabItem.hovering = false
-                onClicked: root.currentTabIndex = index
+                onClicked: root.currentTabIndex = tabItem.index
               }
             }
 
             onCurrentIndexChanged: {
-              if (currentIndex !== root.currentTabIndex) {
-                root.currentTabIndex = currentIndex;
+              if (sidebarList.currentIndex !== root.currentTabIndex) {
+                root.currentTabIndex = sidebarList.currentIndex;
               }
             }
 
@@ -559,14 +561,14 @@ SmartPanel {
 
               // Main icon
               NIcon {
-                icon: root.tabsModel[currentTabIndex] ? root.tabsModel[currentTabIndex].icon : ""
+                icon: root.tabsModel[root.currentTabIndex] ? root.tabsModel[root.currentTabIndex].icon : ""
                 color: NColor.mPrimary
                 pointSize: Style.fontSizeXXL
               }
 
               // Main title
               NText {
-                text: root.tabsModel[currentTabIndex] ? I18n.tr(root.tabsModel[currentTabIndex].label) || "" : ""
+                text: root.tabsModel[root.currentTabIndex] ? I18n.tr(root.tabsModel[root.currentTabIndex].label) || "" : ""
                 pointSize: Style.fontSizeXL
                 font.weight: Style.fontWeightBold
                 color: NColor.mPrimary
@@ -597,17 +599,18 @@ SmartPanel {
               Repeater {
                 model: root.tabsModel
                 delegate: Loader {
+                  id: tabLoader
                   required property int index
+                  readonly property Item loadedContent: tabLoader.item as Item
 
                   anchors.fill: parent
-                  active: index === root.currentTabIndex
+                  active: tabLoader.index === root.currentTabIndex
 
                   onStatusChanged: {
-                    if (status === Loader.Ready && item) {
-                      // Find and store reference to the ScrollView
-                      const scrollView = item.children[0];
-                      if (scrollView && scrollView.toString().includes("ScrollView")) {
-                        root.activeScrollView = scrollView;
+                    if (tabLoader.status === Loader.Ready && tabLoader.loadedContent) {
+                      const loadedScrollView = tabLoader.loadedContent.children[0] as NScrollView;
+                      if (loadedScrollView) {
+                        root.activeScrollView = loadedScrollView;
                       }
                     }
                   }
@@ -631,7 +634,7 @@ SmartPanel {
 
                       Loader {
                         active: true
-                        sourceComponent: root.tabsModel[index] ? root.tabsModel[index].source : null
+                        sourceComponent: root.tabsModel[tabLoader.index] ? root.tabsModel[tabLoader.index].source : null
                         width: scrollView.availableWidth
                       }
                     }
