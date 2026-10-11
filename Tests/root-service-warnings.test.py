@@ -169,14 +169,14 @@ Item {
     defaults = json.loads((ROOT / "Assets/settings-default.json").read_text())
     defaults["brightness"]["enableDdcSupport"] = False
     defaults["notifications"]["enabled"] = False
-    settings = "component FixtureData: QtObject {\n"
-    settings += (
+    settings = (
         "component BrightnessSettings: QtObject {\n"
         + "\n".join(
             f"property {'bool' if isinstance(v, bool) else 'real'} {k}: {json.dumps(v)}"
             for k, v in defaults["brightness"].items()
         )
-        + "\n}\nproperty BrightnessSettings brightness: BrightnessSettings {}\n"
+        + "\n}\ncomponent FixtureData: QtObject {\n"
+        + "property BrightnessSettings brightness: BrightnessSettings {}\n"
     )
     for name in ("notifications", "general", "bar"):
         settings += f"property var {name}: {json.dumps(defaults[name])}\n"
