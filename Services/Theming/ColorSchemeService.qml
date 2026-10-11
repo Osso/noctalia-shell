@@ -10,6 +10,9 @@ import qs.Services.UI
 Singleton {
   id: root
 
+  readonly property alias palette: out
+  readonly property alias discoveryOutput: findOutput
+
   property var schemes: []
   property bool scanning: false
   property string schemesDirectory: Quickshell.shellDir + "/Assets/ColorScheme"
@@ -140,7 +143,7 @@ Singleton {
 
     onExited: function (exitCode) {
       if (exitCode === 0) {
-        var output = stdout.text.trim();
+        var output = root.discoveryOutput.text.trim();
         var files = output.split('\n').filter(function (line) {
           return line.length > 0;
         });
@@ -170,7 +173,9 @@ Singleton {
       }
     }
 
-    stdout: StdioCollector {}
+    stdout: StdioCollector {
+      id: findOutput
+    }
     stderr: StdioCollector {}
   }
 
@@ -220,7 +225,7 @@ Singleton {
     printErrors: false
     onSaved:
 
-      // Logger.i("ColorScheme", "Colors saved")
+    // Logger.i("ColorScheme", "Colors saved")
     {}
     JsonAdapter {
       id: out
@@ -244,6 +249,7 @@ Singleton {
   }
 
   function writeColorsToDisk(obj) {
+    const out = root.palette;
     function pick(o, a, b, fallback) {
       return (o && (o[a] || o[b])) || fallback;
     }

@@ -47,6 +47,8 @@ function createService() {
     out: { mPrimary: "#000000", mSurface: "#111111" },
     colorsWriter: { writeAdapter() { effects.saved = true; } },
   });
+  root.palette = context.out;
+  Object.defineProperty(root, "discoveryOutput", { get: () => context.stdout });
   // QML root functions can resolve their own properties and functions directly.
   for (const name of Object.keys(root)) {
     Object.defineProperty(context, name, {
