@@ -1,7 +1,7 @@
 import QtQuick
-import QtQuick.Controls
 import QtTest
 import qs.Commons
+import qs.Modules.Panels.Launcher
 import qs.Services.Keyboard
 
 Item {
@@ -9,6 +9,7 @@ Item {
   width: 480
   height: 320
 
+  readonly property ClipboardPreview preview: previewLoader.item as ClipboardPreview
   readonly property string imagePath: "@IMAGE_PATH@"
   readonly property string imageData: "data:image/svg+xml;base64," + Qt.btoa('<svg xmlns="http://www.w3.org/2000/svg" width="7" height="5"><rect width="7" height="5" fill="blue"/></svg>')
 
@@ -19,14 +20,15 @@ Item {
   }
 
   TestCase {
+    id: testCase
     name: "ClipboardPreviewLifecycle"
-    when: windowShown
+    when: testCase.windowShown
 
     function descendants(item, predicate) {
       if (predicate(item))
         return item;
       for (const child of item.children) {
-        const match = descendants(child, predicate);
+        const match = testCase.descendants(child, predicate);
         if (match)
           return match;
       }
@@ -34,15 +36,15 @@ Item {
     }
 
     function imageView() {
-      return descendants(previewLoader.item, child => child.imagePath !== undefined);
+      return testCase.descendants(harness.preview, child => child.imagePath !== undefined);
     }
 
     function textView() {
-      return descendants(previewLoader.item, child => child.readOnly !== undefined && child.textFormat !== undefined);
+      return testCase.descendants(harness.preview, child => child.readOnly !== undefined && child.textFormat !== undefined);
     }
 
     function select(id, isImage) {
-      previewLoader.item.currentItem = {
+      harness.preview.currentItem = {
         clipboardId: id,
         isImage: isImage,
         mime: isImage ? "image/svg+xml" : "text/plain"
@@ -51,16 +53,16 @@ Item {
 
     function init() {
       compare(previewLoader.status, Loader.Ready);
-      previewLoader.item.currentItem = null;
+      harness.preview.currentItem = null;
       ClipboardService.reset();
     }
 
     function cleanup() {
-      previewLoader.item.currentItem = null;
+      harness.preview.currentItem = null;
     }
 
     function test_text_decode_and_path_text() {
-      const preview = previewLoader.item;
+      const preview = harness.preview;
       select("text", false);
       verify(preview.loadingFullContent);
       verify(!textView().visible);
@@ -81,7 +83,7 @@ Item {
     }
 
     function test_pending_image_revision_and_cached_reassign() {
-      const preview = previewLoader.item;
+      const preview = harness.preview;
       select("image", true);
       verify(preview.loadingFullContent);
       compare(ClipboardService.requestedImageId, "image");
@@ -109,7 +111,7 @@ Item {
     }
 
     function test_clear_pending_image_and_reassign_text() {
-      const preview = previewLoader.item;
+      const preview = harness.preview;
       select("pending", true);
       verify(preview.loadingFullContent);
       preview.currentItem = null;
@@ -132,15 +134,15 @@ Item {
     function test_loader_destroy_and_reload_cached_image() {
       ClipboardService.publishImage("cached", harness.imagePath);
       select("cached", true);
-      compare(previewLoader.item.imageDataUrl, harness.imagePath);
+      compare(harness.preview.imageDataUrl, harness.imagePath);
       previewLoader.active = false;
       compare(previewLoader.item, null);
       previewLoader.active = true;
       compare(previewLoader.status, Loader.Ready);
-      compare(previewLoader.item.currentItem, null);
+      compare(harness.preview.currentItem, null);
       select("cached", true);
       compare(imageView().imagePath, harness.imagePath);
-      verify(!previewLoader.item.loadingFullContent);
+      verify(!harness.preview.loadingFullContent);
     }
   }
 }
