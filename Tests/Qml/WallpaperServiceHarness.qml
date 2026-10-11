@@ -95,6 +95,7 @@ TestCase {
     compare(FixtureFolders.scanners[1].folder, "file:///fixture/images");
     Quickshell.screens = [test.firstScreen];
     tryVerify(() => FixtureFolders.scanners.length === 1);
+    wait(1);
     WallpaperService.wallpaperDirectoryChanged("DP-2", "/fixture/removed");
     WallpaperService.wallpaperDirectoryChanged("DP-1", "/fixture/remaining");
     compare(FixtureFolders.scanners[0].folder, "file:///fixture/remaining");

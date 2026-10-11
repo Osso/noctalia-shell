@@ -477,13 +477,13 @@ Singleton {
         folder = "file://" + currentDirectory;
       }
 
-      Component.onCompleted: {
-        // Connect to directory change signal
-        root.wallpaperDirectoryChanged.connect(function (screen, directory) {
+      property Connections directoryConnection: Connections {
+        target: root
+        function onWallpaperDirectoryChanged(screen, directory) {
           if (screen === wallpaperScanner.screenName) {
             wallpaperScanner.currentDirectory = directory;
           }
-        });
+        }
       }
 
       onStatusChanged: {

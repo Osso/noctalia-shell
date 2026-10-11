@@ -7,15 +7,15 @@ folder and persistence boundaries; it proves routing/state, not rendering or I/O
 """
 
 import argparse
-from collections import Counter
-import importlib.util
 import hashlib
+import importlib.util
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
+from collections import Counter
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SERVICE = Path("Services/UI/WallpaperService.qml")
@@ -42,6 +42,7 @@ def lint(directory):
         capture_output=True,
         text=True,
         timeout=60,
+        check=False,
         cwd=ROOT,
     )
     (directory / "lint.json").write_text(result.stdout)
@@ -231,6 +232,7 @@ def behavior(directory, mutation):
         text=True,
         env=env,
         timeout=45,
+        check=False,
         cwd=directory,
     )
     output = result.stdout + result.stderr
