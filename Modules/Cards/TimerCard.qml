@@ -27,7 +27,7 @@ NBox {
       spacing: Style.marginS
 
       NIcon {
-        icon: isStopwatchMode ? "clock" : "hourglass"
+        icon: root.isStopwatchMode ? "clock" : "hourglass"
         pointSize: Style.fontSizeL
         color: NColor.mPrimary
       }
@@ -45,7 +45,7 @@ NBox {
     Item {
       id: timerDisplayItem
       Layout.fillWidth: true
-      Layout.preferredHeight: isRunning ? 160 * Style.uiScaleRatio : timerInput.implicitHeight
+      Layout.preferredHeight: root.isRunning ? 160 * Style.uiScaleRatio : timerInput.implicitHeight
       Layout.alignment: Qt.AlignHCenter
 
       property string inputBuffer: ""
@@ -56,14 +56,14 @@ NBox {
         id: progressRing
         anchors.fill: parent
         anchors.margins: 12
-        visible: !isStopwatchMode && isRunning && totalSeconds > 0
+        visible: !root.isStopwatchMode && root.isRunning && root.totalSeconds > 0
         z: -1
 
         property real progressRatio: {
-          if (totalSeconds <= 0)
+          if (root.totalSeconds <= 0)
             return 0;
           // Inverted: show remaining time (starts at 1, goes to 0)
-          const ratio = remainingSeconds / totalSeconds;
+          const ratio = root.remainingSeconds / root.totalSeconds;
           return Math.max(0, Math.min(1, ratio));
         }
 
@@ -109,25 +109,25 @@ NBox {
         selectByMouse: false
         cursorVisible: false
         cursorDelegate: Item {} // Empty cursor delegate to hide cursor
-        readOnly: isStopwatchMode || isRunning
-        enabled: !isRunning
+        readOnly: root.isStopwatchMode || root.isRunning
+        enabled: !root.isRunning
         font.family: Settings.data.ui.fontFixed
 
         // Calculate if hours are being shown
         readonly property bool showingHours: {
-          if (isStopwatchMode) {
-            return elapsedSeconds >= 3600;
+          if (root.isStopwatchMode) {
+            return root.elapsedSeconds >= 3600;
           }
           // In edit mode, always show hours (HH:MM:SS format)
           if (timerDisplayItem.isEditing) {
             return true;
           }
           // When not editing, only show hours if >= 1 hour
-          return remainingSeconds >= 3600;
+          return root.remainingSeconds >= 3600;
         }
 
         font.pointSize: {
-          if (!isRunning) {
+          if (!root.isRunning) {
             return Style.fontSizeXXXL;
           }
           // When running, use smaller font if hours are shown
@@ -136,7 +136,7 @@ NBox {
 
         font.weight: Style.fontWeightBold
         color: {
-          if (isRunning) {
+          if (root.isRunning) {
             return NColor.mPrimary;
           }
           if (timerDisplayItem.isEditing) {
@@ -147,95 +147,95 @@ NBox {
 
         // Display formatted time, but show input buffer when editing
         text: {
-          if (isStopwatchMode) {
-            return formatTime(elapsedSeconds, false); // Stopwatch: only show hours if >= 1 hour
+          if (root.isStopwatchMode) {
+            return root.formatTime(root.elapsedSeconds, false); // Stopwatch: only show hours if >= 1 hour
           }
           if (!timerDisplayItem.isEditing) {
             // When not editing and not running, always show hours
             // When running, only show hours if >= 1 hour
-            return formatTime(remainingSeconds, isRunning);
+            return root.formatTime(root.remainingSeconds, root.isRunning);
           }
           if (timerDisplayItem.inputBuffer !== "") {
-            return formatTimeFromDigits(timerDisplayItem.inputBuffer);
+            return root.formatTimeFromDigits(timerDisplayItem.inputBuffer);
           }
-          return formatTime(0, false);
+          return root.formatTime(0, false);
         }
 
         // Only accept digit keys
         Keys.onPressed: event => {
-                          if (isRunning || isStopwatchMode) {
-                            event.accepted = true;
-                            return;
-                          }
+          if (root.isRunning || root.isStopwatchMode) {
+            event.accepted = true;
+            return;
+          }
 
-                          // Handle backspace
-                          if (event.key === Qt.Key_Backspace) {
-                            if (timerDisplayItem.isEditing && timerDisplayItem.inputBuffer.length > 0) {
-                              timerDisplayItem.inputBuffer = timerDisplayItem.inputBuffer.slice(0, -1);
-                              if (timerDisplayItem.inputBuffer !== "") {
-                                parseDigitsToTime(timerDisplayItem.inputBuffer);
-                              } else {
-                                Time.timerRemainingSeconds = 0;
-                              }
-                            }
-                            event.accepted = true;
-                            return;
-                          }
+          // Handle backspace
+          if (event.key === Qt.Key_Backspace) {
+            if (timerDisplayItem.isEditing && timerDisplayItem.inputBuffer.length > 0) {
+              timerDisplayItem.inputBuffer = timerDisplayItem.inputBuffer.slice(0, -1);
+              if (timerDisplayItem.inputBuffer !== "") {
+                root.parseDigitsToTime(timerDisplayItem.inputBuffer);
+              } else {
+                Time.timerRemainingSeconds = 0;
+              }
+            }
+            event.accepted = true;
+            return;
+          }
 
-                          // Handle delete
-                          if (event.key === Qt.Key_Delete) {
-                            if (timerDisplayItem.isEditing) {
-                              timerDisplayItem.inputBuffer = "";
-                              Time.timerRemainingSeconds = 0;
-                            }
-                            event.accepted = true;
-                            return;
-                          }
+          // Handle delete
+          if (event.key === Qt.Key_Delete) {
+            if (timerDisplayItem.isEditing) {
+              timerDisplayItem.inputBuffer = "";
+              Time.timerRemainingSeconds = 0;
+            }
+            event.accepted = true;
+            return;
+          }
 
-                          // Allow navigation keys (but don't let them modify text)
-                          if (event.key === Qt.Key_Left || event.key === Qt.Key_Right || event.key === Qt.Key_Home || event.key === Qt.Key_End || (event.modifiers & Qt.ControlModifier) || (event.modifiers & Qt.ShiftModifier)) {
-                            event.accepted = false; // Let default handling work for selection
-                            return;
-                          }
+          // Allow navigation keys (but don't let them modify text)
+          if (event.key === Qt.Key_Left || event.key === Qt.Key_Right || event.key === Qt.Key_Home || event.key === Qt.Key_End || (event.modifiers & Qt.ControlModifier) || (event.modifiers & Qt.ShiftModifier)) {
+            event.accepted = false; // Let default handling work for selection
+            return;
+          }
 
-                          // Handle enter/return
-                          if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                            applyTimeFromBuffer();
-                            timerDisplayItem.isEditing = false;
-                            focus = false;
-                            event.accepted = true;
-                            return;
-                          }
+          // Handle enter/return
+          if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+            root.applyTimeFromBuffer();
+            timerDisplayItem.isEditing = false;
+            focus = false;
+            event.accepted = true;
+            return;
+          }
 
-                          // Handle escape
-                          if (event.key === Qt.Key_Escape) {
-                            timerDisplayItem.inputBuffer = "";
-                            Time.timerRemainingSeconds = 0;
-                            timerDisplayItem.isEditing = false;
-                            focus = false;
-                            event.accepted = true;
-                            return;
-                          }
+          // Handle escape
+          if (event.key === Qt.Key_Escape) {
+            timerDisplayItem.inputBuffer = "";
+            Time.timerRemainingSeconds = 0;
+            timerDisplayItem.isEditing = false;
+            focus = false;
+            event.accepted = true;
+            return;
+          }
 
-                          // Only allow digits 0-9
-                          if (event.key >= Qt.Key_0 && event.key <= Qt.Key_9) {
-                            // Limit to 6 digits max
-                            if (timerDisplayItem.inputBuffer.length >= 6) {
-                              event.accepted = true; // Block if already at max
-                              return;
-                            }
-                            // Add the digit to the buffer
-                            timerDisplayItem.inputBuffer += String.fromCharCode(event.key);
-                            // Update the display and parse
-                            parseDigitsToTime(timerDisplayItem.inputBuffer);
-                            event.accepted = true; // We handled it
-                          } else {
-                            event.accepted = true; // Block all other keys
-                          }
-                        }
+          // Only allow digits 0-9
+          if (event.key >= Qt.Key_0 && event.key <= Qt.Key_9) {
+            // Limit to 6 digits max
+            if (timerDisplayItem.inputBuffer.length >= 6) {
+              event.accepted = true; // Block if already at max
+              return;
+            }
+            // Add the digit to the buffer
+            timerDisplayItem.inputBuffer += String.fromCharCode(event.key);
+            // Update the display and parse
+            root.parseDigitsToTime(timerDisplayItem.inputBuffer);
+            event.accepted = true; // We handled it
+          } else {
+            event.accepted = true; // Block all other keys
+          }
+        }
 
         Keys.onReturnPressed: {
-          applyTimeFromBuffer();
+          root.applyTimeFromBuffer();
           timerDisplayItem.isEditing = false;
           focus = false;
         }
@@ -252,7 +252,7 @@ NBox {
             timerDisplayItem.isEditing = true;
             timerDisplayItem.inputBuffer = "";
           } else {
-            applyTimeFromBuffer();
+            root.applyTimeFromBuffer();
             timerDisplayItem.isEditing = false;
             timerDisplayItem.inputBuffer = "";
           }
@@ -260,10 +260,10 @@ NBox {
 
         MouseArea {
           anchors.fill: parent
-          enabled: !isRunning && !isStopwatchMode
+          enabled: !root.isRunning && !root.isStopwatchMode
           cursorShape: enabled ? Qt.IBeamCursor : Qt.ArrowCursor
           onClicked: {
-            if (!isRunning && !isStopwatchMode) {
+            if (!root.isRunning && !root.isStopwatchMode) {
               timerInput.forceActiveFocus();
             }
           }
@@ -285,14 +285,14 @@ NBox {
         NButton {
           id: startButton
           anchors.fill: parent
-          text: isRunning ? I18n.tr("calendar.timer.pause") : I18n.tr("calendar.timer.start")
-          icon: isRunning ? "player-pause" : "player-play"
-          enabled: isStopwatchMode || remainingSeconds > 0
+          text: root.isRunning ? I18n.tr("calendar.timer.pause") : I18n.tr("calendar.timer.start")
+          icon: root.isRunning ? "player-pause" : "player-play"
+          enabled: root.isStopwatchMode || root.remainingSeconds > 0
           onClicked: {
-            if (isRunning) {
-              pauseTimer();
+            if (root.isRunning) {
+              root.pauseTimer();
             } else {
-              startTimer();
+              root.startTimer();
             }
           }
         }
@@ -309,9 +309,9 @@ NBox {
           anchors.fill: parent
           text: I18n.tr("calendar.timer.reset")
           icon: "refresh"
-          enabled: (isStopwatchMode && (elapsedSeconds > 0 || isRunning)) || (!isStopwatchMode && (remainingSeconds > 0 || isRunning || soundPlaying))
+          enabled: (root.isStopwatchMode && (root.elapsedSeconds > 0 || root.isRunning)) || (!root.isStopwatchMode && (root.remainingSeconds > 0 || root.isRunning || root.soundPlaying))
           onClicked: {
-            resetTimer();
+            root.resetTimer();
           }
         }
       }
@@ -321,13 +321,13 @@ NBox {
     NTabBar {
       Layout.fillWidth: true
       Layout.alignment: Qt.AlignHCenter
-      visible: !isRunning
-      currentIndex: isStopwatchMode ? 1 : 0
+      visible: !root.isRunning
+      currentIndex: root.isStopwatchMode ? 1 : 0
       onCurrentIndexChanged: {
         const newMode = currentIndex === 1;
-        if (newMode !== isStopwatchMode) {
-          if (isRunning) {
-            pauseTimer();
+        if (newMode !== root.isStopwatchMode) {
+          if (root.isRunning) {
+            root.pauseTimer();
           }
           // Stop any repeating notification sound when switching modes
           SoundService.stopSound("alarm-beep.wav");
@@ -346,13 +346,13 @@ NBox {
       NTabButton {
         text: I18n.tr("calendar.timer.countdown")
         tabIndex: 0
-        checked: !isStopwatchMode
+        checked: !root.isStopwatchMode
       }
 
       NTabButton {
         text: I18n.tr("calendar.timer.stopwatch")
         tabIndex: 1
-        checked: isStopwatchMode
+        checked: root.isStopwatchMode
       }
     }
   }
