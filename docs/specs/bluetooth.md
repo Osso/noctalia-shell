@@ -49,8 +49,9 @@ Bluetooth covers adapter state helpers, device ordering, device icons, connectio
 - [ ] Bluetooth device lists use the caller-provided array and reflect its replacement, including replacement with an empty array.
 - [x] Bluetooth service `devices` is typed as `ObjectModel`, not `var`.
 - [x] Bluetooth device list delegates type `modelData` as `BluetoothDevice` and `index` as `int`.
-- [x] Bluetooth device list delegates expose stable aliases for pairing, blocked, connected, connecting, display name, signal strength, battery availability, connectability, disconnectability, and busy state.
-- [x] Bluetooth device list delegates use those aliases for displayed text, signal/battery visibility, and action availability.
+- [x] Bluetooth device list delegates expose stable aliases for pairing, blocked, connected, connecting, display name, battery availability, connectability, disconnectability, and busy state.
+- [x] Bluetooth device list delegates use those aliases for displayed text, battery visibility, and action availability.
+- [x] Bluetooth device lists show no signal-strength row: the installed Quickshell `BluetoothDevice` contract has no signal-strength property. Name/status/battery rows retain the no-signal layout geometry even if a fixture adds a hypothetical signal-strength property.
 - [x] Bluetooth device list content color uses primary color for pairing or connecting devices.
 - [x] Bluetooth device list content color uses error color for blocked devices that are not pairing or connecting.
 - [x] Bluetooth device list content color preserves the caller-provided default color for normal devices.
@@ -73,7 +74,7 @@ Bluetooth covers adapter state helpers, device ordering, device icons, connectio
 ## Tests asserting this spec
 
 - `Tests/bluetooth-service-guards.test.js`
-- `Tests/bluetooth-devices-list-runtime.test.py` — default/empty models and caller-provided array replacement; not executed in this audit.
+- `Tests/bluetooth-devices-list-runtime.test.py` — nonvisible production-list default/empty models, caller array replacement, concrete device actions/state/battery, no-signal layout geometry, installed device metadata contract, and targeted lint (only the installed state-enum metadata warning remains).
 - `Tests/qml-type-annotations.test.js`
 - `Tests/widget-helper-guards.test.js`
 - `Tests/service-probes-parsing.test.sh`

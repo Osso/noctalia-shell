@@ -51,9 +51,6 @@ NBox {
         readonly property bool deviceConnected: modelData ? modelData.connected === true : false
         readonly property bool deviceConnecting: modelData ? modelData.state === BluetoothDeviceState.Connecting : false
         readonly property string deviceDisplayName: modelData ? (modelData.name || modelData.deviceName || "") : ""
-        readonly property bool hasSignalStrength: modelData ? modelData.signalStrength !== undefined : false
-        readonly property int deviceSignalStrength: modelData ? (modelData.signalStrength || 0) : 0
-        readonly property bool showSignalStrength: deviceSignalStrength > 0 && !devicePairing && !deviceBlocked
         readonly property bool hasBattery: modelData ? modelData.batteryAvailable === true : false
         readonly property bool canConnect: BluetoothService.canConnect(modelData)
         readonly property bool canDisconnect: BluetoothService.canDisconnect(modelData)
@@ -109,34 +106,6 @@ NBox {
               visible: text !== ""
               pointSize: Style.fontSizeXS
               color: device.getContentColor(NColor.mOnSurfaceVariant)
-            }
-
-            // Signal Strength
-            RowLayout {
-              visible: device.hasSignalStrength
-              Layout.fillWidth: true
-              spacing: Style.marginXS
-
-              // Device signal strength - "Unknown" when not connected
-              NText {
-                text: BluetoothService.getSignalStrength(device.modelData)
-                pointSize: Style.fontSizeXS
-                color: device.getContentColor(NColor.mOnSurfaceVariant)
-              }
-
-              NIcon {
-                visible: device.showSignalStrength
-                icon: BluetoothService.getSignalIcon(device.modelData)
-                pointSize: Style.fontSizeXS
-                color: device.getContentColor(NColor.mOnSurface)
-              }
-
-              NText {
-                visible: device.showSignalStrength
-                text: device.showSignalStrength ? device.deviceSignalStrength + "%" : ""
-                pointSize: Style.fontSizeXS
-                color: device.getContentColor(NColor.mOnSurface)
-              }
             }
 
             // Battery

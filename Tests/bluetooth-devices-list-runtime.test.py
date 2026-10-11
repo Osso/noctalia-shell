@@ -7,6 +7,9 @@ production delegate's null handling without contacting Bluetooth hardware.
 Concrete devices redirect only the Bluetooth import to an inert QML module:
 real device objects are uncreatable and obtaining them would require a BlueZ bus.
 Both modes retain the production component body; null slots use the installed type.
+Installed qmltypes constrain the inert device fixture's properties. A hypothetical
+signalStrength extension must not add UI or alter the normal no-signal layout.
+Neither harness creates a window.
 """
 
 import argparse
@@ -76,15 +79,16 @@ ShellRoot {
 DEVICE_HARNESS = """import QtQuick
 import Quickshell
 import Quickshell.Bluetooth
+import QtQuick.Layouts
 import qs.Modules.Panels.Bluetooth
 import qs.Services.Networking
 
 ShellRoot {
-  BluetoothDevice { id: headphones; name: "Studio Headphones"; paired: true; connected: true; state: BluetoothDeviceState.Connected; batteryAvailable: true; battery: 0.75 }
+  BluetoothDevice { id: headphones; name: "Studio Headphones"; paired: true; connected: true; state: BluetoothDeviceState.Connected; batteryAvailable: true; battery: 0.75; property int signalStrength: 85 }
   BluetoothDevice { id: keyboard; name: "Desk Keyboard"; paired: true }
   BluetoothDevice { id: phone; name: "Pocket Phone" }
   property var callerModel: [headphones, keyboard, phone]
-  BluetoothDevicesList { id: supplied; model: callerModel; tooltipText: "Device action" }
+  BluetoothDevicesList { id: supplied; width: 480; height: Layout.preferredHeight; model: callerModel; tooltipText: "Device action" }
 
   function require(condition, message) {
     if (!condition) throw new Error(message);
@@ -111,6 +115,40 @@ ShellRoot {
     return button;
   }
 
+  function assertPresentation(index, expectedTexts) {
+    const row = rowAt(index);
+    const layout = row.children[0];
+    const details = layout.children[1];
+    const displayed = Array.from(details.children).filter(child => child.visible);
+    require(displayed.length === expectedTexts.length, "unexpected visible detail row for " + row.modelData.name);
+    for (let i = 0; i < displayed.length; ++i)
+      require(displayed[i].text === expectedTexts[i], "wrong device detail " + i);
+    const textHeight = displayed.reduce((height, child) => height + child.implicitHeight, 0);
+    const expectedHeight = textHeight + (displayed.length - 1) * 2;
+    require(Math.abs(details.implicitHeight - expectedHeight) < 0.01, "detail layout gained extra height");
+    const contentHeight = Math.max(layout.children[0].implicitHeight, expectedHeight);
+    require(Math.abs(row.height - (contentHeight + 16)) < 0.01, "device row geometry changed");
+    require(row.width === supplied.width - 16, "device row width changed");
+    require(layout.x === 8 && layout.y === 8, "device content margins changed");
+  }
+
+  function assertStatePresentation() {
+    const row = rowAt(2);
+    const details = row.children[0].children[1];
+    const button = row.children[0].children[3];
+    keyboard.state = BluetoothDeviceState.Connecting;
+    require(row.deviceConnecting && !button.visible, "connecting action must stay hidden");
+    require(details.children[1].text === "Connecting" && details.children[1].visible, "connecting status lost");
+    keyboard.state = BluetoothDeviceState.Connected;
+    keyboard.pairing = true;
+    require(row.devicePairing && button.text === "bluetooth.panel.pairing", "pairing state lost");
+    keyboard.pairing = false;
+    keyboard.blocked = true;
+    require(row.deviceBlocked && button.text === "bluetooth.panel.blocked", "blocked state lost");
+    keyboard.blocked = false;
+    require(button.visible && button.text === "bluetooth.panel.disconnect", "connected action not restored");
+  }
+
   function assertRequest(index, action, expected) {
     const request = BluetoothService.requests[index];
     require(request.action === action && request.device === expected, "action targeted wrong device");
@@ -121,6 +159,9 @@ ShellRoot {
     running: true
     onTriggered: {
       try {
+        assertPresentation(0, ["Studio Headphones", "75%"]);
+        assertPresentation(1, ["Desk Keyboard"]);
+        assertPresentation(2, ["Pocket Phone"]);
         const disconnect = assertRow(0, headphones, "disconnect");
         disconnect.clicked();
         assertRequest(0, "disconnect", headphones);
@@ -140,6 +181,7 @@ ShellRoot {
         assertRow(2, keyboard, "disconnect").clicked();
         assertRequest(5, "disconnect", keyboard);
         require(BluetoothService.requests.length === 6, "unexpected action dispatch");
+        assertStatePresentation();
         callerModel = [];
         const column = supplied.children[0];
         require(column.children[column.children.length - 1].count === 0, "rows survived model clear");
@@ -179,6 +221,37 @@ def write_singleton(directory, name, body):
     (directory / f"{name}.qml").write_text(
         "pragma Singleton\nimport QtQuick\nQtObject {\n" + body + "\n}\n"
     )
+
+
+def assert_installed_device_contract():
+    metadata = Path(
+        "/usr/lib/qt6/qml/Quickshell/Bluetooth/quickshell-bluetooth.qmltypes"
+    ).read_text()
+    components = re.findall(r"^    Component \{(.*?)^    \}", metadata, re.M | re.S)
+    device = next(
+        component
+        for component in components
+        if re.search(
+            r'^        name: "qs::bluetooth::BluetoothDevice"$', component, re.M
+        )
+    )
+    properties = dict(
+        re.findall(r'Property \{\s+name: "([^"]+)"\s+type: "([^"]+)"', device)
+    )
+    expected = {
+        "name": "QString",
+        "deviceName": "QString",
+        "pairing": "bool",
+        "blocked": "bool",
+        "paired": "bool",
+        "connected": "bool",
+        "state": "BluetoothDeviceState::Enum",
+        "batteryAvailable": "bool",
+        "battery": "double",
+    }
+    assert {name: properties.get(name) for name in expected} == expected, properties
+    assert "signalStrength" not in properties, properties
+    print("BLUETOOTH_DEVICE_CONTRACT_PASS", properties)
 
 
 def stage_list(directory, concrete=False):
@@ -240,10 +313,16 @@ def stage_list(directory, concrete=False):
   function forgetDevice(device) { requests = requests.concat([{action: "forget", device: device}]); }
   function isDeviceBusy(device) { return false; }
   function getDeviceIcon(device) { return "bluetooth"; }
-  function getStatusString(device) { return ""; }
-  function getSignalStrength(device) { return ""; }
-  function getSignalIcon(device) { return ""; }
-  function getBattery(device) { return ""; }""",
+  function getStatusString(device) {
+    if (!device) return "";
+    if (device.state === 3) return "Connecting";
+    if (device.pairing) return "Pairing";
+    if (device.blocked) return "Blocked";
+    return "";
+  }
+  function getSignalStrength(device) { return "Excellent"; }
+  function getSignalIcon(device) { return "antenna"; }
+  function getBattery(device) { return device ? Math.round(device.battery * 100) + "%" : ""; }""",
     )
     if concrete:
         staged = bluetooth / TARGET.name
@@ -341,12 +420,7 @@ def lint(directory):
     diagnostics = re.findall(r"^Warning:.*\[([^]]+)\]$", output, re.M)
     print("BLUETOOTH_LIST_LINT_DIAGNOSTICS", diagnostics)
     # Keep installed API gaps visible; no warning options or suppression applied.
-    assert sorted(diagnostics) == [
-        "missing-property",
-        "missing-property",
-        "unresolved-type",
-    ], diagnostics
-    assert output.count('Member "signalStrength" not found') == 2, output
+    assert diagnostics == ["unresolved-type"], diagnostics
     assert 'Type "BluetoothDeviceState::Enum"' in output, output
     assert result.returncode == 0, result.returncode
 
@@ -357,6 +431,7 @@ def main():
         "mode", choices=("runtime", "devices", "lint"), nargs="?", default="runtime"
     )
     args = parser.parse_args()
+    assert_installed_device_contract()
     settings = Path.home() / ".config/noctalia/settings.json"
     original = settings.read_bytes() if settings.exists() else None
     with tempfile.TemporaryDirectory(prefix="noctalia-bluetooth-list-") as temporary:
