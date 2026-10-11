@@ -54,6 +54,7 @@ Tray covers the bar tray widget, tray menu popup, tray drawer panel, pinned/blac
 ## Tests asserting this spec
 
 - `Tests/tray-widget-guards.test.js`
+- `Tests/tray-widget-warnings.test.py` (`--mode lint` / `--mode runtime`), with `Tests/Qml/TrayWidgetWarningsHarness.qml`: production Tray and installed IconImage offscreen, inert notifier/popup/settings boundaries. Covers Ready/Null opacity, primary/secondary activation, only-menu inhibition, blacklist/pinned filtering, model reorder/clear/reassignment, all four bar menu positions, Loader clear/recreation, popup reassignment, tooltip ownership, and drawer metadata. Preserves SystemTray order; does not introduce alphabetical sorting or exercise real notifier/menu DBus actions. Lint rejects known-owner accesses while retaining unbound creation-context captures and existing QObject/UntypedObjectModel metadata gaps.
 - `Tests/tray-menu-guards.test.js`
 - `Tests/bar-action-helper-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
@@ -61,7 +62,7 @@ Tray covers the bar tray widget, tray menu popup, tray drawer panel, pinned/blac
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for tray icon activation and right-click menu opening.
+- [x] Add isolated executable coverage for tray icon activation and right-click menu opening.
 - [ ] Add executable coverage for tray drawer rendered grid dimensions.
 - [ ] Add executable coverage for blacklist settings persistence from the settings UI.
 - [ ] Add executable coverage for nested submenu positioning.
