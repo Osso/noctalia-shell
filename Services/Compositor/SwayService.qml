@@ -312,16 +312,16 @@ Item {
   // Connections to I3
   Connections {
     target: I3.workspaces
-    enabled: initialized
+    enabled: root.initialized
     function onValuesChanged() {
-      safeUpdateWorkspaces();
-      workspaceChanged();
+      root.safeUpdateWorkspaces();
+      root.workspaceChanged();
     }
   }
 
   Connections {
     target: ToplevelManager
-    enabled: initialized
+    enabled: root.initialized
     function onActiveToplevelChanged() {
       updateTimer.restart();
     }
@@ -329,18 +329,18 @@ Item {
 
   Connections {
     target: I3
-    enabled: initialized
+    enabled: root.initialized
     function onRawEvent(event) {
-      safeUpdateWorkspaces();
-      workspaceChanged();
+      root.safeUpdateWorkspaces();
+      root.workspaceChanged();
       updateTimer.restart();
 
       if (event.type === "output") {
-        Qt.callLater(queryDisplayScales);
+        Qt.callLater(root.queryDisplayScales);
       }
 
       if (event.type == "get_inputs") {
-        handleInputEvent(event.data);
+        root.handleInputEvent(event.data);
       }
     }
   }

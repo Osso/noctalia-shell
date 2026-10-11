@@ -124,23 +124,23 @@ Singleton {
         }
       }
 
-      capsBrightnessPath = capsPath;
-      numBrightnessPath = numPath;
-      scrollBrightnessPath = scrollPath;
-      refreshAllStates();
+      root.capsBrightnessPath = capsPath;
+      root.numBrightnessPath = numPath;
+      root.scrollBrightnessPath = scrollPath;
+      root.refreshAllStates();
     }
   }
 
   FileView {
     id: capsBrightnessFile
-    path: capsBrightnessPath
+    path: root.capsBrightnessPath
     printErrors: false
     onLoaded: {
-      applyState("caps", text().trim() === "1");
-      if (!initialCheckDone) {
-        pendingInitialReads--;
-        if (pendingInitialReads <= 0) {
-          initialCheckDone = true;
+      root.applyState("caps", capsBrightnessFile.text().trim() === "1");
+      if (!root.initialCheckDone) {
+        root.pendingInitialReads--;
+        if (root.pendingInitialReads <= 0) {
+          root.initialCheckDone = true;
         }
       }
     }
@@ -148,14 +148,14 @@ Singleton {
 
   FileView {
     id: numBrightnessFile
-    path: numBrightnessPath
+    path: root.numBrightnessPath
     printErrors: false
     onLoaded: {
-      applyState("num", text().trim() === "1");
-      if (!initialCheckDone) {
-        pendingInitialReads--;
-        if (pendingInitialReads <= 0) {
-          initialCheckDone = true;
+      root.applyState("num", numBrightnessFile.text().trim() === "1");
+      if (!root.initialCheckDone) {
+        root.pendingInitialReads--;
+        if (root.pendingInitialReads <= 0) {
+          root.initialCheckDone = true;
         }
       }
     }
@@ -163,14 +163,14 @@ Singleton {
 
   FileView {
     id: scrollBrightnessFile
-    path: scrollBrightnessPath
+    path: root.scrollBrightnessPath
     printErrors: false
     onLoaded: {
-      applyState("scroll", text().trim() === "1");
-      if (!initialCheckDone) {
-        pendingInitialReads--;
-        if (pendingInitialReads <= 0) {
-          initialCheckDone = true;
+      root.applyState("scroll", scrollBrightnessFile.text().trim() === "1");
+      if (!root.initialCheckDone) {
+        root.pendingInitialReads--;
+        if (root.pendingInitialReads <= 0) {
+          root.initialCheckDone = true;
         }
       }
     }
@@ -178,10 +178,10 @@ Singleton {
 
   Timer {
     id: pollTimer
-    interval: pollIntervalMs
+    interval: root.pollIntervalMs
     running: true
     repeat: true
-    onTriggered: refreshAllStates()
+    onTriggered: root.refreshAllStates()
   }
 
   Component.onCompleted: {

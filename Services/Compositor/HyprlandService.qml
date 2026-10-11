@@ -389,16 +389,16 @@ Item {
   // Connections to Hyprland
   Connections {
     target: Hyprland.workspaces
-    enabled: initialized
+    enabled: root.initialized
     function onValuesChanged() {
-      safeUpdateWorkspaces();
-      workspaceChanged();
+      root.safeUpdateWorkspaces();
+      root.workspaceChanged();
     }
   }
 
   Connections {
     target: Hyprland.toplevels
-    enabled: initialized
+    enabled: root.initialized
     function onValuesChanged() {
       updateTimer.restart();
     }
@@ -406,21 +406,21 @@ Item {
 
   Connections {
     target: Hyprland
-    enabled: initialized
+    enabled: root.initialized
     function onRawEvent(event) {
       Hyprland.refreshWorkspaces();
-      safeUpdateWorkspaces();
-      workspaceChanged();
+      root.safeUpdateWorkspaces();
+      root.workspaceChanged();
       updateTimer.restart();
 
       const monitorsEvents = ["configreloaded", "monitoradded", "monitorremoved", "monitoraddedv2", "monitorremovedv2"];
 
       if (monitorsEvents.includes(event.name)) {
-        Qt.callLater(queryDisplayScales);
+        Qt.callLater(root.queryDisplayScales);
       }
 
       if (event.name == "activelayout") {
-        handleActiveLayoutEvent(event.data);
+        root.handleActiveLayoutEvent(event.data);
       }
     }
   }

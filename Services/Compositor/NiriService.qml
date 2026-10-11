@@ -138,11 +138,11 @@ Item {
           if (data && data.Ok) {
             const res = data.Ok;
             if (res.Windows) {
-              recollectWindows(res.Windows);
+              root.recollectWindows(res.Windows);
             } else if (res.Outputs) {
-              recollectOutputs(res.Outputs);
+              root.recollectOutputs(res.Outputs);
             } else if (res.Workspaces) {
-              recollectWorkspaces(res.Workspaces);
+              root.recollectWorkspaces(res.Workspaces);
             }
           } else {
             Logger.e("NiriService", "Niri returned an error:", data.Err, line);
@@ -162,38 +162,38 @@ Item {
 
     parser: SplitParser {
       onRead: data => {
-                try {
-                  const event = JSON.parse(data.trim());
+        try {
+          const event = JSON.parse(data.trim());
 
-                  if (event.WorkspacesChanged) {
-                    recollectWorkspaces(event.WorkspacesChanged.workspaces);
-                  } else if (event.WindowOpenedOrChanged) {
-                    handleWindowOpenedOrChanged(event.WindowOpenedOrChanged);
-                  } else if (event.WindowClosed) {
-                    handleWindowClosed(event.WindowClosed);
-                  } else if (event.WindowsChanged) {
-                    handleWindowsChanged(event.WindowsChanged);
-                  } else if (event.WorkspaceActivated) {
-                    updateWorkspaces();
-                  } else if (event.WindowFocusChanged) {
-                    handleWindowFocusChanged(event.WindowFocusChanged);
-                  } else if (event.WindowLayoutsChanged) {
-                    handleWindowLayoutsChanged(event.WindowLayoutsChanged);
-                  } else if (event.OverviewOpenedOrClosed) {
-                    handleOverviewOpenedOrClosed(event.OverviewOpenedOrClosed);
-                  } else if (event.OutputsChanged) {
-                    queryDisplayScales();
-                  } else if (event.ConfigLoaded) {
-                    queryDisplayScales();
-                  } else if (event.KeyboardLayoutsChanged) {
-                    handleKeyboardLayoutsChanged(event.KeyboardLayoutsChanged);
-                  } else if (event.KeyboardLayoutSwitched) {
-                    handleKeyboardLayoutSwitched(event.KeyboardLayoutSwitched);
-                  }
-                } catch (e) {
-                  Logger.e("NiriService", "Error parsing event stream:", e, data);
-                }
-              }
+          if (event.WorkspacesChanged) {
+            root.recollectWorkspaces(event.WorkspacesChanged.workspaces);
+          } else if (event.WindowOpenedOrChanged) {
+            root.handleWindowOpenedOrChanged(event.WindowOpenedOrChanged);
+          } else if (event.WindowClosed) {
+            root.handleWindowClosed(event.WindowClosed);
+          } else if (event.WindowsChanged) {
+            root.handleWindowsChanged(event.WindowsChanged);
+          } else if (event.WorkspaceActivated) {
+            root.updateWorkspaces();
+          } else if (event.WindowFocusChanged) {
+            root.handleWindowFocusChanged(event.WindowFocusChanged);
+          } else if (event.WindowLayoutsChanged) {
+            root.handleWindowLayoutsChanged(event.WindowLayoutsChanged);
+          } else if (event.OverviewOpenedOrClosed) {
+            root.handleOverviewOpenedOrClosed(event.OverviewOpenedOrClosed);
+          } else if (event.OutputsChanged) {
+            root.queryDisplayScales();
+          } else if (event.ConfigLoaded) {
+            root.queryDisplayScales();
+          } else if (event.KeyboardLayoutsChanged) {
+            root.handleKeyboardLayoutsChanged(event.KeyboardLayoutsChanged);
+          } else if (event.KeyboardLayoutSwitched) {
+            root.handleKeyboardLayoutSwitched(event.KeyboardLayoutSwitched);
+          }
+        } catch (e) {
+          Logger.e("NiriService", "Error parsing event stream:", e, data);
+        }
+      }
     }
   }
 
