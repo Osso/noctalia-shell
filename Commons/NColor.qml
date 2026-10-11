@@ -18,30 +18,33 @@ misinterpreting them as signals (e.g., the 'onPrimary' property name).
 Singleton {
   id: root
 
+  property alias colorsData: customColorsData
+  property alias defaultPalette: defaultColors
+
   // --- Key Colors: These are the main accent colors that define your app's style
-  readonly property color mPrimary: customColorsData.mPrimary
-  readonly property color mOnPrimary: customColorsData.mOnPrimary
-  readonly property color mSecondary: customColorsData.mSecondary
-  readonly property color mOnSecondary: customColorsData.mOnSecondary
-  readonly property color mTertiary: customColorsData.mTertiary
-  readonly property color mOnTertiary: customColorsData.mOnTertiary
+  readonly property color mPrimary: root.colorsData.mPrimary
+  readonly property color mOnPrimary: root.colorsData.mOnPrimary
+  readonly property color mSecondary: root.colorsData.mSecondary
+  readonly property color mOnSecondary: root.colorsData.mOnSecondary
+  readonly property color mTertiary: root.colorsData.mTertiary
+  readonly property color mOnTertiary: root.colorsData.mOnTertiary
 
   // --- Utility Colors: These colors serve specific, universal purposes like indicating errors
-  readonly property color mError: customColorsData.mError
-  readonly property color mOnError: customColorsData.mOnError
+  readonly property color mError: root.colorsData.mError
+  readonly property color mOnError: root.colorsData.mOnError
 
   // --- Surface and Variant Colors: These provide additional options for surfaces and their contents, creating visual hierarchy
-  readonly property color mSurface: customColorsData.mSurface
-  readonly property color mOnSurface: customColorsData.mOnSurface
+  readonly property color mSurface: root.colorsData.mSurface
+  readonly property color mOnSurface: root.colorsData.mOnSurface
 
-  readonly property color mSurfaceVariant: customColorsData.mSurfaceVariant
-  readonly property color mOnSurfaceVariant: customColorsData.mOnSurfaceVariant
+  readonly property color mSurfaceVariant: root.colorsData.mSurfaceVariant
+  readonly property color mOnSurfaceVariant: root.colorsData.mOnSurfaceVariant
 
-  readonly property color mOutline: customColorsData.mOutline
-  readonly property color mShadow: customColorsData.mShadow
+  readonly property color mOutline: root.colorsData.mOutline
+  readonly property color mShadow: root.colorsData.mShadow
 
-  readonly property color mHover: customColorsData.mHover
-  readonly property color mOnHover: customColorsData.mOnHover
+  readonly property color mHover: root.colorsData.mHover
+  readonly property color mOnHover: root.colorsData.mOnHover
 
   // --- Absolute Colors
   readonly property color transparent: "transparent"
@@ -110,29 +113,29 @@ Singleton {
     JsonAdapter {
       id: customColorsData
 
-      property color mPrimary: defaultColors.mPrimary
-      property color mOnPrimary: defaultColors.mOnPrimary
+      property color mPrimary: root.defaultPalette.mPrimary
+      property color mOnPrimary: root.defaultPalette.mOnPrimary
 
-      property color mSecondary: defaultColors.mSecondary
-      property color mOnSecondary: defaultColors.mOnSecondary
+      property color mSecondary: root.defaultPalette.mSecondary
+      property color mOnSecondary: root.defaultPalette.mOnSecondary
 
-      property color mTertiary: defaultColors.mTertiary
-      property color mOnTertiary: defaultColors.mOnTertiary
+      property color mTertiary: root.defaultPalette.mTertiary
+      property color mOnTertiary: root.defaultPalette.mOnTertiary
 
-      property color mError: defaultColors.mError
-      property color mOnError: defaultColors.mOnError
+      property color mError: root.defaultPalette.mError
+      property color mOnError: root.defaultPalette.mOnError
 
-      property color mSurface: defaultColors.mSurface
-      property color mOnSurface: defaultColors.mOnSurface
+      property color mSurface: root.defaultPalette.mSurface
+      property color mOnSurface: root.defaultPalette.mOnSurface
 
-      property color mSurfaceVariant: defaultColors.mSurfaceVariant
-      property color mOnSurfaceVariant: defaultColors.mOnSurfaceVariant
+      property color mSurfaceVariant: root.defaultPalette.mSurfaceVariant
+      property color mOnSurfaceVariant: root.defaultPalette.mOnSurfaceVariant
 
-      property color mOutline: defaultColors.mOutline
-      property color mShadow: defaultColors.mShadow
+      property color mOutline: root.defaultPalette.mOutline
+      property color mShadow: root.defaultPalette.mShadow
 
-      property color mHover: defaultColors.mHover
-      property color mOnHover: defaultColors.mOnHover
+      property color mHover: root.defaultPalette.mHover
+      property color mOnHover: root.defaultPalette.mOnHover
     }
   }
 }
