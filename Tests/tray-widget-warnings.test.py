@@ -52,10 +52,10 @@ def lint(directory):
     assert set(counts) <= {"unqualified", "missing-property", "incompatible-type"}, (
         dict(counts)
     )
-    # Explicit delegate inputs expose thirteen more QObject popup/Loader.item
-    # diagnostics previously hidden behind unqualified creation-context captures.
+    # Explicit delegate inputs expose QObject popup/Loader.item metadata gaps.
+    # Repeater.itemAdded exposes QQuickItem, not the delegate's binding method.
     # Runtime fixtures exercise those boundaries; no casts mask metadata gaps.
-    assert counts.get("missing-property") == 18, dict(counts)
+    assert counts.get("missing-property") == 19, dict(counts)
     assert counts.get("incompatible-type") == 1, dict(counts)
     assert result.returncode in (0, 255), result.returncode
     print("TRAY_WIDGET_LINT_PASS")
