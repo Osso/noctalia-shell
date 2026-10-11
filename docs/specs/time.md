@@ -27,6 +27,8 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 - [x] Visible second-level clock consumers register and deregister second updates with ref-counted guards.
 - [x] Bar clock formats request second updates only when the active format includes second tokens.
 - [x] Analog/digital `NClock` requests second updates while visible for second-hand/progress rendering.
+- [x] Analog hands paint and repaint from the supplied `NClock.now`, not an unrelated shared date.
+- [x] Digital labels and seconds progress stay bound to the supplied date, including milliseconds, after shared Time updates.
 - [x] Running stopwatch/countdown timers force second-level updates.
 
 ### Timer lifecycle
@@ -64,6 +66,8 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 - `Commons/Logger.qml` - log timestamps generated from Time.
 
 ## Tests asserting this spec
+
+- `Tests/nclock-datetime-warnings.test.py` (`lint` / `behavior`) with `Tests/Qml/NClockDateTimeWarningsHarness.qml` — at `63f0158f2`/`2ffe8adac`, NClock/NDateTimeTokens warnings drop 17→0/13→0. Five offscreen behavioral cases plus init/cleanup yield seven reported passes: analog supplied-date repaint/pixels, digital supplied-date labels/progress after a shared Time update, 12h/locale/style/font/color and registration lifecycle, injected shared midnight, and token examples/click payloads/locale/model rebuild/recreation. Time/settings/style are fixtures; injected dates and software pixels do not prove natural scheduling or live integration. Standalone gates and isolation: [testing](testing.md#nclock-and-date-time-tokens-isolated-runtime).
 
 - `Tests/clock-warnings.test.py` (`lint` / `behavior`) with `Tests/Qml/ClockWarningsHarness.qml` — fifteen isolated production bar Clock transition rows at `1c6b00888`: 24h/12h and multiline/date formats, font/color and per-line sizing, injected second/midnight changes, horizontal/vertical active-format selection, seconds registration without duplication, hide/show, destruction, and recreation releasing all references. Time/settings/registry/UI services are fake; registration counters and injected dates do not prove real Time scheduling, natural cadence, desktop input/panels, persistence, or whole-shell integration. Clock-only lint drops 24→0 and requires zero warnings/exit status zero, not global warning-free acceptance. Standalone modes, isolation, and acceptance: [testing](testing.md#weathercard-and-bar-clock-isolated-runtime).
 - `Tests/timer-card-guards.test.js`
