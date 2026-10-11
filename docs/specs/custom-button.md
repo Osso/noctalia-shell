@@ -47,7 +47,7 @@ Settings and typed contracts:
 ## Tests asserting this spec
 
 - `Tests/custom-button-warnings.test.py behavior` runs the production Control Center button offscreen with synthetic Process/Quickshell and button fixtures: settings/click commands/tooltip/missing settings, ordered skips and failure-to-success traversal, all-fail and missing-icon results, disable-during-run, replacement before/after debounce, latest-settings debounce, and malformed/null/object JSON rejection. Ten behavior rows plus init/cleanup produce 12 reported passes. No real commands or desktop input are exercised.
-- `Tests/custom-button-warnings.test.py lint` accepts exactly one block-scoped `var` hoisting warning and requires exit status zero; this is not warning-free acceptance.
+- `Tests/custom-button-warnings.test.py lint` requires zero qmllint warnings and exit status zero. The final block-scoped `var` warning was removed at `f58175c90` (1→0); reported verification recorded six JS tests and 12 QML passes. Synthetic Process coverage does not establish real command execution or live-shell behavior.
 
 - [Tests/bar-action-helper-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/bar-action-helper-guards.test.js)
 - [Tests/custom-button-settings-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/custom-button-settings-guards.test.js)
