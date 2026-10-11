@@ -48,23 +48,23 @@ ColumnLayout {
     var toSave = [];
     for (var i = 0; i < cardsModel.length; i++) {
       toSave.push({
-                    "id": cardsModel[i].id,
-                    "enabled": cardsModel[i].enabled
-                  });
+        "id": cardsModel[i].id,
+        "enabled": cardsModel[i].enabled
+      });
     }
     Settings.data.controlCenter.cards = toSave;
   }
 
   Component.onCompleted: {
     // Fill out availableWidgets ListModel
-    availableWidgets.clear();
+    availableWidgetChoices.clear();
     var sortedEntries = ControlCenterWidgetRegistry.getAvailableWidgets().slice().sort();
     sortedEntries.forEach(entry => {
-                            availableWidgets.append({
-                                                      "key": entry,
-                                                      "name": entry
-                                                    });
-                          });
+      availableWidgetChoices.append({
+        "key": entry,
+        "name": entry
+      });
+    });
     // Starts empty
     cardsModel = [];
 
@@ -183,14 +183,14 @@ ColumnLayout {
       target: Settings.data.location
       function onWeatherEnabledChanged() {
         // Auto-disable weather card when weather is disabled
-        var newModel = cardsModel.slice();
+        var newModel = root.cardsModel.slice();
         for (var i = 0; i < newModel.length; i++) {
           if (newModel[i].id === "weather-card") {
             newModel[i] = Object.assign({}, newModel[i], {
-                                          "enabled": Settings.data.location.weatherEnabled
-                                        });
-            cardsModel = newModel;
-            saveCards();
+              "enabled": Settings.data.location.weatherEnabled
+            });
+            root.cardsModel = newModel;
+            root.saveCards();
             break;
           }
         }
@@ -199,24 +199,24 @@ ColumnLayout {
 
     NReorderCheckboxes {
       Layout.fillWidth: true
-      model: cardsModel
+      model: root.cardsModel
       disabledIds: Settings.data.location.weatherEnabled ? [] : ["weather-card"]
       onItemToggled: function (index, enabled) {
         //Logger.i("ControlCenterTab", "Item", index, "toggled to", enabled)
-        var newModel = cardsModel.slice();
+        var newModel = root.cardsModel.slice();
         newModel[index] = Object.assign({}, newModel[index], {
-                                          "enabled": enabled
-                                        });
-        cardsModel = newModel;
-        saveCards();
+          "enabled": enabled
+        });
+        root.cardsModel = newModel;
+        root.saveCards();
       }
       onItemsReordered: function (fromIndex, toIndex) {
         //Logger.i("ControlCenterTab", "Item moved from", fromIndex, "to", toIndex)
-        var newModel = cardsModel.slice();
+        var newModel = root.cardsModel.slice();
         var item = newModel.splice(fromIndex, 1)[0];
         newModel.splice(toIndex, 0, item);
-        cardsModel = newModel;
-        saveCards();
+        root.cardsModel = newModel;
+        root.saveCards();
       }
     }
   }
@@ -252,13 +252,13 @@ ColumnLayout {
         maxWidgets: Settings.data.controlCenter.shortcuts["right"].length > 5 ? 0 : (Settings.data.controlCenter.shortcuts["right"].length > 0 ? 5 : 10)
         widgetRegistry: ControlCenterWidgetRegistry
         widgetModel: Settings.data.controlCenter.shortcuts["left"]
-        availableWidgets: availableWidgets
+        availableWidgets: availableWidgetChoices
         availableSections: ["left", "right"]
-        onAddWidget: (widgetId, section) => _addWidgetToSection(widgetId, section)
-        onRemoveWidget: (section, index) => _removeWidgetFromSection(section, index)
-        onReorderWidget: (section, fromIndex, toIndex) => _reorderWidgetInSection(section, fromIndex, toIndex)
-        onUpdateWidgetSettings: (section, index, settings) => _updateWidgetSettingsInSection(section, index, settings)
-        onMoveWidget: (fromSection, index, toSection) => _moveWidgetBetweenSections(fromSection, index, toSection)
+        onAddWidget: (widgetId, section) => root._addWidgetToSection(widgetId, section)
+        onRemoveWidget: (section, index) => root._removeWidgetFromSection(section, index)
+        onReorderWidget: (section, fromIndex, toIndex) => root._reorderWidgetInSection(section, fromIndex, toIndex)
+        onUpdateWidgetSettings: (section, index, settings) => root._updateWidgetSettingsInSection(section, index, settings)
+        onMoveWidget: (fromSection, index, toSection) => root._moveWidgetBetweenSections(fromSection, index, toSection)
       }
 
       // Right
@@ -269,13 +269,13 @@ ColumnLayout {
         maxWidgets: Settings.data.controlCenter.shortcuts["left"].length > 5 ? 0 : (Settings.data.controlCenter.shortcuts["left"].length > 0 ? 5 : 10)
         widgetRegistry: ControlCenterWidgetRegistry
         widgetModel: Settings.data.controlCenter.shortcuts["right"]
-        availableWidgets: availableWidgets
+        availableWidgets: availableWidgetChoices
         availableSections: ["left", "right"]
-        onAddWidget: (widgetId, section) => _addWidgetToSection(widgetId, section)
-        onRemoveWidget: (section, index) => _removeWidgetFromSection(section, index)
-        onReorderWidget: (section, fromIndex, toIndex) => _reorderWidgetInSection(section, fromIndex, toIndex)
-        onUpdateWidgetSettings: (section, index, settings) => _updateWidgetSettingsInSection(section, index, settings)
-        onMoveWidget: (fromSection, index, toSection) => _moveWidgetBetweenSections(fromSection, index, toSection)
+        onAddWidget: (widgetId, section) => root._addWidgetToSection(widgetId, section)
+        onRemoveWidget: (section, index) => root._removeWidgetFromSection(section, index)
+        onReorderWidget: (section, fromIndex, toIndex) => root._reorderWidgetInSection(section, fromIndex, toIndex)
+        onUpdateWidgetSettings: (section, index, settings) => root._updateWidgetSettingsInSection(section, index, settings)
+        onMoveWidget: (fromSection, index, toSection) => root._moveWidgetBetweenSections(fromSection, index, toSection)
       }
     }
   }
@@ -357,6 +357,6 @@ ColumnLayout {
 
   // Base list model for all combo boxes
   ListModel {
-    id: availableWidgets
+    id: availableWidgetChoices
   }
 }
