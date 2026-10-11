@@ -63,6 +63,7 @@ File Picker covers reusable file/folder picking, file icon mapping, size formatt
 ## Tests asserting this spec
 
 - `Tests/file-picker-guards.test.js`
+- `Tests/file-picker-warnings.test.py` (`--mode lint` / `--mode runtime`) with `Tests/Qml/FilePickerWarningsHarness.qml`: targeted owner-access lint and offscreen production Popup/FolderListModel/delegate interaction with fixture controls. Runtime assertions cover hidden-file exclusion, grid folder navigation, grid file selection/acceptance, selection reset on reopening, list file double-click acceptance, selected paths, and cancellation without another accepted event. This is not coverage of all selection modes, search controls, thumbnails, or settings/setup integrations.
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
 

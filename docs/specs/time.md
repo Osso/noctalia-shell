@@ -66,12 +66,13 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 ## Tests asserting this spec
 
 - `Tests/timer-card-guards.test.js`
+- `Tests/timer-card-runtime.test.py` (`lint` / `behavior`) with `Tests/Qml/TimerCardHarness.qml`: targeted warning-free TimerCard lint and offscreen production TimerCard/Time integration. Assertions cover digit entry and limits, Backspace/Delete/Return/Escape, focus release, start/reset enabled states, mode switching, display/hour transitions, countdown ring, pause/resume/reset, scheduled updates, and repeating alarm requests through a fake SoundService. Countdown/stopwatch elapsed time is injected through `timerStartTimestamp`; this does not prove unassisted wall-clock progression.
 - `Tests/time-service-guards.test.js`
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable TimerCard coverage for focus, mode switching, and button enabled states.
+- [ ] Prove unassisted `Time.timestamp` progression across scheduled timer updates. The isolated harness notes its cached `Date.now()` binding and injects elapsed start timestamps instead; natural countdown/stopwatch progression remains unverified.
 
 ## Out of scope
 
