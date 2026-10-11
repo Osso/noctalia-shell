@@ -71,7 +71,7 @@ case "${1##*/}" in
         [ "$#" -eq 1 ] || exit 40
         exit "$WORKSPACE_TEST_STATUS"
         ;;
-    battery-widget-warnings.test.py | wifi-networks-list-warnings.test.py)
+    battery-widget-warnings.test.py | wifi-networks-list-warnings.test.py | bar-pill-warnings.test.py | bar-pill-horizontal-warnings.test.py | bar-pill-vertical-warnings.test.py)
         [ "${2:-}" = behavior ] && [ "$#" -eq 2 ] || exit 40
         if [ "${1##*/}" = "$WARNING_TEST_FAILURE" ]; then
             exit 48
@@ -113,9 +113,12 @@ warning_tests=(
     'battery-widget-warnings.test.py behavior'
     'wifi-networks-list-warnings.test.py behavior'
     'wallpaper-panel-warnings.test.py --mode runtime'
+    'bar-pill-warnings.test.py behavior'
+    'bar-pill-horizontal-warnings.test.py behavior'
+    'bar-pill-vertical-warnings.test.py behavior'
     'color-namespace-runtime.test.py'
 )
-for failure_index in 0 1 2 3; do
+for failure_index in "${!warning_tests[@]}"; do
     failure_test="${warning_tests[$failure_index]}"
     set +e
     warning_output="$(PATH="$tmp_dir/bin:$PATH" RUNNER_UNDER_TEST="$runner" \
@@ -128,7 +131,7 @@ for failure_index in 0 1 2 3; do
     warning_status="$?"
     set -e
     expected_status=48
-    if [ "$failure_index" -eq 3 ]; then
+    if [ "$failure_test" = color-namespace-runtime.test.py ]; then
         expected_status=37
     fi
     expected_order='workspace-runtime.test.py.*battery-tab-warnings.test.py behavior --snapshot'
@@ -210,31 +213,31 @@ for test_statuses in 0:0:0:0:0:0:0:0:0 37:0:0:0:0:0:0:0:0 0:39:0:0:0:0:0:0:0 0:0
             exit 1
         fi
         case "$runtime_test" in
-            datetime-tokens-layout-runtime.test.py)
-                later_tests='^setup-layout-geometry.test.py$|^calendar-service-runtime.test.py$|^timer-card-runtime.test.py behavior$|^file-picker-warnings.test.py --mode runtime$'
-                ;;
-            setup-layout-geometry.test.py)
-                later_tests='^calendar-service-runtime.test.py$|^timer-card-runtime.test.py behavior$|^file-picker-warnings.test.py --mode runtime$'
-                ;;
-            calendar-service-runtime.test.py)
-                later_tests='^timer-card-runtime.test.py behavior$|^file-picker-warnings.test.py --mode runtime$'
-                ;;
-            'timer-card-runtime.test.py behavior')
-                later_tests='^file-picker-warnings.test.py --mode runtime$'
-                ;;
-            'file-picker-warnings.test.py --mode runtime')
-                later_tests=''
-                ;;
-            workspace-runtime.test.py)
-                later_tests='^battery-tab-warnings.test.py behavior --snapshot$'
-                ;;
-            'battery-tab-warnings.test.py behavior --snapshot')
-                later_tests=''
-                ;;
+        datetime-tokens-layout-runtime.test.py)
+            later_tests='^setup-layout-geometry.test.py$|^calendar-service-runtime.test.py$|^timer-card-runtime.test.py behavior$|^file-picker-warnings.test.py --mode runtime$'
+            ;;
+        setup-layout-geometry.test.py)
+            later_tests='^calendar-service-runtime.test.py$|^timer-card-runtime.test.py behavior$|^file-picker-warnings.test.py --mode runtime$'
+            ;;
+        calendar-service-runtime.test.py)
+            later_tests='^timer-card-runtime.test.py behavior$|^file-picker-warnings.test.py --mode runtime$'
+            ;;
+        'timer-card-runtime.test.py behavior')
+            later_tests='^file-picker-warnings.test.py --mode runtime$'
+            ;;
+        'file-picker-warnings.test.py --mode runtime')
+            later_tests=''
+            ;;
+        workspace-runtime.test.py)
+            later_tests='^battery-tab-warnings.test.py behavior --snapshot$'
+            ;;
+        'battery-tab-warnings.test.py behavior --snapshot')
+            later_tests=''
+            ;;
         esac
         case "$runtime_test" in
-            workspace-runtime.test.py | 'battery-tab-warnings.test.py behavior --snapshot') ;;
-            *) later_tests="${later_tests:+$later_tests|}^workspace-runtime.test.py$|^battery-tab-warnings.test.py behavior --snapshot$" ;;
+        workspace-runtime.test.py | 'battery-tab-warnings.test.py behavior --snapshot') ;;
+        *) later_tests="${later_tests:+$later_tests|}^workspace-runtime.test.py$|^battery-tab-warnings.test.py behavior --snapshot$" ;;
         esac
         later_tests="${later_tests:+$later_tests|}^color-namespace-runtime.test.py$|^weather-card-effects.test.py$|^calendar-events-safe-get-time.test.py$|EVIDENCE PASS|EVIDENCE START structural-reference"
         if [ "$runtime_status" -ne 0 ]; then
