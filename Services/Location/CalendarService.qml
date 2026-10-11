@@ -17,6 +17,7 @@ Singleton {
   property int pollingRefs: 0
 
   // Persistent cache
+  property alias cacheData: cacheAdapter
   property string cacheFile: Settings.cacheDir + "calendar.json"
 
   // Python scripts
@@ -38,13 +39,13 @@ Singleton {
     }
 
     onLoadFailed: {
-      cacheAdapter.cachedEvents = ([]);
-      cacheAdapter.cachedCalendars = ([]);
-      cacheAdapter.lastUpdate = "";
+      root.cacheData.cachedEvents = ([]);
+      root.cacheData.cachedCalendars = ([]);
+      root.cacheData.lastUpdate = "";
     }
 
     onLoaded: {
-      loadFromCache();
+      root.loadFromCache();
     }
   }
 
@@ -67,18 +68,18 @@ Singleton {
 
   // Load events and calendars from cache
   function loadFromCache() {
-    if (cacheAdapter.cachedEvents && cacheAdapter.cachedEvents.length > 0) {
-      root.events = cacheAdapter.cachedEvents;
-      Logger.d("Calendar", `Loaded ${cacheAdapter.cachedEvents.length} cached event(s)`);
+    if (root.cacheData.cachedEvents && root.cacheData.cachedEvents.length > 0) {
+      root.events = root.cacheData.cachedEvents;
+      Logger.d("Calendar", `Loaded ${root.cacheData.cachedEvents.length} cached event(s)`);
     }
 
-    if (cacheAdapter.cachedCalendars && cacheAdapter.cachedCalendars.length > 0) {
-      root.calendars = cacheAdapter.cachedCalendars;
-      Logger.d("Calendar", `Loaded ${cacheAdapter.cachedCalendars.length} cached calendar(s)`);
+    if (root.cacheData.cachedCalendars && root.cacheData.cachedCalendars.length > 0) {
+      root.calendars = root.cacheData.cachedCalendars;
+      Logger.d("Calendar", `Loaded ${root.cacheData.cachedCalendars.length} cached calendar(s)`);
     }
 
-    if (cacheAdapter.lastUpdate) {
-      Logger.d("Calendar", `Cache last updated: ${cacheAdapter.lastUpdate}`);
+    if (root.cacheData.lastUpdate) {
+      Logger.d("Calendar", `Cache last updated: ${root.cacheData.lastUpdate}`);
     }
   }
 
@@ -88,7 +89,7 @@ Singleton {
     interval: 300000
     running: root.isPollingActive()
     repeat: true
-    onTriggered: loadEvents()
+    onTriggered: root.loadEvents()
   }
 
   function beginPolling() {
@@ -158,7 +159,7 @@ Singleton {
 
         if (root.available) {
           Logger.i("Calendar", "EDS libraries available");
-          loadCalendars();
+          root.loadCalendars();
         } else {
           Logger.w("Calendar", "EDS libraries not available: " + result);
           root.lastError = "Evolution Data Server libraries not installed";
@@ -219,7 +220,7 @@ Singleton {
     try {
       const result = JSON.parse(output.trim());
       root.calendars = result;
-      cacheAdapter.cachedCalendars = result;
+      root.cacheData.cachedCalendars = result;
       saveCache();
 
       Logger.d("Calendar", `Found ${result.length} calendar(s)`);
@@ -239,8 +240,8 @@ Singleton {
     try {
       const result = JSON.parse(output.trim());
       root.events = result;
-      cacheAdapter.cachedEvents = result;
-      cacheAdapter.lastUpdate = new Date().toISOString();
+      root.cacheData.cachedEvents = result;
+      root.cacheData.lastUpdate = new Date().toISOString();
       saveCache();
 
       Logger.d("Calendar", `Loaded ${result.length} event(s)`);
@@ -248,8 +249,8 @@ Singleton {
       Logger.d("Calendar", "Failed to parse events: " + e);
       root.lastError = "Failed to parse events";
 
-      if (cacheAdapter.cachedEvents.length > 0) {
-        root.events = cacheAdapter.cachedEvents;
+      if (root.cacheData.cachedEvents.length > 0) {
+        root.events = root.cacheData.cachedEvents;
         Logger.d("Calendar", "Using cached events");
       }
     }
@@ -265,8 +266,8 @@ Singleton {
     Logger.d("Calendar", "Load events error: " + output);
     root.lastError = output.trim();
 
-    if (cacheAdapter.cachedEvents.length > 0) {
-      root.events = cacheAdapter.cachedEvents;
+    if (root.cacheData.cachedEvents.length > 0) {
+      root.events = root.cacheData.cachedEvents;
       Logger.d("Calendar", "Using cached events due to error");
     }
   }

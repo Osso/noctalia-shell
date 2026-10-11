@@ -68,6 +68,7 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 ## Tests asserting this spec
 
 - `Tests/calendar-service-guards.test.js`
+- `Tests/calendar-service-runtime.test.py`
 - `Tests/calendar-month-card-guards.test.js`
 - `Tests/clock-widget-guards.test.js`
 - `Tests/calendar-scripts.test.sh`

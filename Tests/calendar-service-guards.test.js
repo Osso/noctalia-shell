@@ -7,7 +7,14 @@ const source = readQml("Services/Location/CalendarService.qml");
 
 function qmlFunction(functionName, ...argNames) {
   const body = extractFunctionBody(source, functionName);
-  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+  const execute = new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+  return (ctx, ...args) => {
+    // Model the root alias to the same adapter object, not a copied cache.
+    if (ctx.cacheAdapter) {
+      ctx.root.cacheData = ctx.cacheAdapter;
+    }
+    return execute(ctx, ...args);
+  };
 }
 
 function logger() {
