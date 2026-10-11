@@ -88,6 +88,12 @@ for file in "${qml_files[@]}"; do
     Tests/Qml/MediaMiniWarningsHarness.qml)
         python3 "$repo_root/Tests/media-mini-warnings.test.py" lint-harness
         ;;
+    Tests/Qml/BarWidgetMetadataHarness.qml)
+        python3 "$repo_root/Tests/bar-widget-metadata-runtime.test.py" lint-harness
+        ;;
+    Tests/Qml/TaskbarGroupedHarness.qml)
+        python3 "$repo_root/Tests/taskbar-grouped-warnings.test.py" lint-harness
+        ;;
     *)
         "$qmllint" -I "$module_root" "$module_root/qs/$file"
         ;;

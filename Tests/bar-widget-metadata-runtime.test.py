@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Actual widgets with Loader's post-construction instance assignment, offscreen."""
 
+import argparse
 import hashlib
 import importlib.util
 from pathlib import Path
@@ -8,6 +9,8 @@ import re
 import shutil
 import subprocess
 import tempfile
+
+from qml_fixture_lint import check_harness
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location(
@@ -117,7 +120,26 @@ def isolate_environment(directory):
     return environment
 
 
+def lint_harness(directory):
+    runtime = directory / "runtime"
+    runtime.mkdir()
+    stage_widgets(runtime)
+    imports = directory / "imports"
+    fixture.stage_modules(imports, source_root=runtime)
+    return check_harness(imports, imports / "qs/shell.qml")
+
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "mode", nargs="?", default="behavior", choices=("behavior", "lint-harness")
+    )
+    args = parser.parse_args()
+    if args.mode == "lint-harness":
+        with tempfile.TemporaryDirectory(
+            prefix="noctalia-widget-metadata-lint-"
+        ) as temporary:
+            raise SystemExit(lint_harness(Path(temporary)))
     settings = Path.home() / ".config/noctalia/settings.json"
     original = settings.read_bytes()
     with tempfile.TemporaryDirectory(prefix="noctalia-widget-metadata-") as temporary:
