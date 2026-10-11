@@ -107,5 +107,5 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 ## Out of scope
 
 - Individual audio, battery, Bluetooth, brightness, media, network, power profile, screen recorder, and wallpaper widget behavior belongs in their existing feature specs.
-- Workspace widget behavior and isolated runtime coverage belong in [compositor.md](compositor.md), not the shared bar contract.
+- Workspace and grouped/ungrouped Taskbar behavior and isolated runtime coverage belong in [compositor.md](compositor.md), not the shared bar contract. Ungrouped Taskbar's `60c64807d` coverage records 37→0 warnings and seven offscreen QtTest cases (five behavioral plus initialization/cleanup); it proves no Firefox notification cursor-flicker fix and leaves input regions and icon sizing untouched.
 - Taskbar, tray, and custom button widget behavior should get separate specs because their tests cover feature-specific state beyond the shared bar contract.
