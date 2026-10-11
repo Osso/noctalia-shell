@@ -47,18 +47,15 @@ def lint(directory):
     counts = Counter(re.findall(r"\[([^]]+)\]", line)[-1] for line in warnings)
     print("TRAY_WIDGET_LINT_COUNTS", dict(counts))
     blocks = re.split(r"(?=Warning:)", output)[1:]
-    actionable = [
-        block
-        for block in blocks
-        if "[unqualified]" in block
-    ]
+    actionable = [block for block in blocks if "[unqualified]" in block]
     assert not actionable, "Known-owner accesses remain:\n" + "".join(actionable)
     assert set(counts) <= {"unqualified", "missing-property", "incompatible-type"}, (
         dict(counts)
     )
-    # QObject popup/Loader.item and UntypedObjectModel metadata remain unproven
-    # by static tools; runtime fixtures exercise those exact property boundaries.
-    assert counts.get("missing-property") == 5, dict(counts)
+    # Explicit delegate inputs expose thirteen more QObject popup/Loader.item
+    # diagnostics previously hidden behind unqualified creation-context captures.
+    # Runtime fixtures exercise those boundaries; no casts mask metadata gaps.
+    assert counts.get("missing-property") == 18, dict(counts)
     assert counts.get("incompatible-type") == 1, dict(counts)
     assert result.returncode in (0, 255), result.returncode
     print("TRAY_WIDGET_LINT_PASS")

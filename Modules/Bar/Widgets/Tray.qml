@@ -271,7 +271,7 @@ Rectangle {
       id: repeater
       model: root.filteredItems
 
-      onItemAdded: (index, item) => {
+      onItemAdded: function (index: int, item: TrayItem) {
         item.iconSize = Qt.binding(() => root.iconSize);
         item.colorizeIcons = Qt.binding(() => root.widgetSettings.colorizeIcons !== false);
         item.popupMenuWindow = Qt.binding(() => root.popupMenuWindow);
@@ -281,134 +281,7 @@ Rectangle {
         item.widgetIndex = Qt.binding(() => root.sectionWidgetIndex);
       }
 
-      delegate: Item {
-        id: trayDelegate
-        required property var modelData
-        property real iconSize
-        property bool colorizeIcons
-        property QtObject popupMenuWindow
-        property Loader trayMenu
-        property string barPosition
-        property string widgetSection
-        property int widgetIndex
-
-        width: Style.capsuleHeight
-        height: Style.capsuleHeight
-        visible: !!trayDelegate.modelData
-
-        IconImage {
-          id: trayIcon
-          width: trayDelegate.iconSize
-          height: trayDelegate.iconSize
-          anchors.centerIn: parent
-          asynchronous: true
-          backer.fillMode: Image.PreserveAspectFit
-
-          property bool menuJustOpened: false
-
-          source: {
-            let icon = trayDelegate.modelData ? (trayDelegate.modelData.icon || "") : "";
-            if (!icon) {
-              return "";
-            }
-
-            // Process icon path
-            if (icon.includes("?path=")) {
-              const chunks = icon.split("?path=");
-              const name = chunks[0];
-              const path = chunks[1];
-              const fileName = name.substring(name.lastIndexOf("/") + 1);
-              return `file://${path}/${fileName}`;
-            }
-            return icon;
-          }
-          opacity: trayIcon.status === Image.Ready ? 1 : 0
-
-          layer.enabled: trayDelegate.colorizeIcons
-          layer.effect: ShaderEffect {
-            property color targetColor: Settings.data.colorSchemes.darkMode ? NColor.mOnSurface : NColor.mSurfaceVariant
-            property real colorizeMode: 1.0
-
-            fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/appicon_colorize.frag.qsb")
-          }
-
-          MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-            onClicked: mouse => {
-              if (!trayDelegate.modelData) {
-                return;
-              }
-
-              if (mouse.button === Qt.LeftButton) {
-                // Close any open menu first
-                if (trayDelegate.popupMenuWindow) {
-                  trayDelegate.popupMenuWindow.close();
-                }
-
-                if (!trayDelegate.modelData.onlyMenu) {
-                  trayDelegate.modelData.activate();
-                }
-              } else if (mouse.button === Qt.MiddleButton) {
-                // Close the menu if it was visible
-                if (trayDelegate.popupMenuWindow && trayDelegate.popupMenuWindow.visible) {
-                  trayDelegate.popupMenuWindow.close();
-                  return;
-                }
-                trayDelegate.modelData.secondaryActivate && trayDelegate.modelData.secondaryActivate();
-              } else if (mouse.button === Qt.RightButton) {
-                TooltipService.hideImmediately();
-
-                // Close the menu if it was visible
-                if (trayDelegate.popupMenuWindow && trayDelegate.popupMenuWindow.visible) {
-                  trayDelegate.popupMenuWindow.close();
-                  return;
-                }
-
-                // Close any opened panel
-                if ((PanelService.openedPanel !== null) && !PanelService.openedPanel.isClosing) {
-                  PanelService.openedPanel.close();
-                }
-
-                if (trayDelegate.modelData.hasMenu && trayDelegate.modelData.menu && trayDelegate.popupMenuWindow && trayDelegate.trayMenu && trayDelegate.trayMenu.item) {
-                  trayDelegate.popupMenuWindow.open();
-
-                  // Position menu based on bar position
-                  let menuX, menuY;
-                  if (trayDelegate.barPosition === "left") {
-                    // For left bar: position menu to the right of the bar
-                    menuX = trayIcon.width + Style.marginM;
-                    menuY = 0;
-                  } else if (trayDelegate.barPosition === "right") {
-                    // For right bar: position menu to the left of the bar
-                    menuX = -trayDelegate.trayMenu.item.width - Style.marginM;
-                    menuY = 0;
-                  } else {
-                    // For horizontal bars: center horizontally and position below
-                    menuX = (trayIcon.width / 2) - (trayDelegate.trayMenu.item.width / 2);
-                    menuY = (trayDelegate.barPosition === "top") ? Style.barHeight : -Style.barHeight;
-                  }
-                  trayDelegate.trayMenu.item.trayItem = trayDelegate.modelData;
-                  trayDelegate.trayMenu.item.widgetSection = trayDelegate.widgetSection;
-                  trayDelegate.trayMenu.item.widgetIndex = trayDelegate.widgetIndex;
-                  trayDelegate.trayMenu.item.showAt(trayIcon, menuX, menuY);
-                } else {
-                  Logger.d("Tray", "No menu available for", trayDelegate.modelData.id, "or trayMenu not set");
-                }
-              }
-            }
-            onEntered: {
-              if (trayDelegate.popupMenuWindow) {
-                trayDelegate.popupMenuWindow.close();
-              }
-              TooltipService.show(trayIcon, trayDelegate.modelData.tooltipTitle || trayDelegate.modelData.name || trayDelegate.modelData.id || "Tray Item", BarService.getTooltipDirection());
-            }
-            onExited: TooltipService.hide()
-          }
-        }
-      }
+      delegate: TrayItem {}
     }
 
     // Drawer opener (after items if normal direction)
@@ -439,6 +312,135 @@ Rectangle {
       }
       onClicked: root.toggleDrawer(this)
       onRightClicked: root.toggleDrawer(this)
+    }
+  }
+
+  component TrayItem: Item {
+    id: trayDelegate
+    required property var modelData
+    property real iconSize
+    property bool colorizeIcons
+    property QtObject popupMenuWindow
+    property Loader trayMenu
+    property string barPosition
+    property string widgetSection
+    property int widgetIndex
+
+    width: Style.capsuleHeight
+    height: Style.capsuleHeight
+    visible: !!trayDelegate.modelData
+
+    IconImage {
+      id: trayIcon
+      width: trayDelegate.iconSize
+      height: trayDelegate.iconSize
+      anchors.centerIn: parent
+      asynchronous: true
+      backer.fillMode: Image.PreserveAspectFit
+
+      property bool menuJustOpened: false
+
+      source: {
+        let icon = trayDelegate.modelData ? (trayDelegate.modelData.icon || "") : "";
+        if (!icon) {
+          return "";
+        }
+
+        // Process icon path
+        if (icon.includes("?path=")) {
+          const chunks = icon.split("?path=");
+          const name = chunks[0];
+          const path = chunks[1];
+          const fileName = name.substring(name.lastIndexOf("/") + 1);
+          return `file://${path}/${fileName}`;
+        }
+        return icon;
+      }
+      opacity: trayIcon.status === Image.Ready ? 1 : 0
+
+      layer.enabled: trayDelegate.colorizeIcons
+      layer.effect: ShaderEffect {
+        property color targetColor: Settings.data.colorSchemes.darkMode ? NColor.mOnSurface : NColor.mSurfaceVariant
+        property real colorizeMode: 1.0
+
+        fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/appicon_colorize.frag.qsb")
+      }
+
+      MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+        onClicked: mouse => {
+          if (!trayDelegate.modelData) {
+            return;
+          }
+
+          if (mouse.button === Qt.LeftButton) {
+            // Close any open menu first
+            if (trayDelegate.popupMenuWindow) {
+              trayDelegate.popupMenuWindow.close();
+            }
+
+            if (!trayDelegate.modelData.onlyMenu) {
+              trayDelegate.modelData.activate();
+            }
+          } else if (mouse.button === Qt.MiddleButton) {
+            // Close the menu if it was visible
+            if (trayDelegate.popupMenuWindow && trayDelegate.popupMenuWindow.visible) {
+              trayDelegate.popupMenuWindow.close();
+              return;
+            }
+            trayDelegate.modelData.secondaryActivate && trayDelegate.modelData.secondaryActivate();
+          } else if (mouse.button === Qt.RightButton) {
+            TooltipService.hideImmediately();
+
+            // Close the menu if it was visible
+            if (trayDelegate.popupMenuWindow && trayDelegate.popupMenuWindow.visible) {
+              trayDelegate.popupMenuWindow.close();
+              return;
+            }
+
+            // Close any opened panel
+            if ((PanelService.openedPanel !== null) && !PanelService.openedPanel.isClosing) {
+              PanelService.openedPanel.close();
+            }
+
+            if (trayDelegate.modelData.hasMenu && trayDelegate.modelData.menu && trayDelegate.popupMenuWindow && trayDelegate.trayMenu && trayDelegate.trayMenu.item) {
+              trayDelegate.popupMenuWindow.open();
+
+              // Position menu based on bar position
+              let menuX, menuY;
+              if (trayDelegate.barPosition === "left") {
+                // For left bar: position menu to the right of the bar
+                menuX = trayIcon.width + Style.marginM;
+                menuY = 0;
+              } else if (trayDelegate.barPosition === "right") {
+                // For right bar: position menu to the left of the bar
+                menuX = -trayDelegate.trayMenu.item.width - Style.marginM;
+                menuY = 0;
+              } else {
+                // For horizontal bars: center horizontally and position below
+                menuX = (trayIcon.width / 2) - (trayDelegate.trayMenu.item.width / 2);
+                menuY = (trayDelegate.barPosition === "top") ? Style.barHeight : -Style.barHeight;
+              }
+              trayDelegate.trayMenu.item.trayItem = trayDelegate.modelData;
+              trayDelegate.trayMenu.item.widgetSection = trayDelegate.widgetSection;
+              trayDelegate.trayMenu.item.widgetIndex = trayDelegate.widgetIndex;
+              trayDelegate.trayMenu.item.showAt(trayIcon, menuX, menuY);
+            } else {
+              Logger.d("Tray", "No menu available for", trayDelegate.modelData.id, "or trayMenu not set");
+            }
+          }
+        }
+        onEntered: {
+          if (trayDelegate.popupMenuWindow) {
+            trayDelegate.popupMenuWindow.close();
+          }
+          TooltipService.show(trayIcon, trayDelegate.modelData.tooltipTitle || trayDelegate.modelData.name || trayDelegate.modelData.id || "Tray Item", BarService.getTooltipDirection());
+        }
+        onExited: TooltipService.hide()
+      }
     }
   }
 }
