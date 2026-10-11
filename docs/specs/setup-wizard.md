@@ -34,6 +34,12 @@ Setup Wizard covers first-run onboarding launch, completion, and selected setup 
 - [x] Setup wallpaper directory scanning starts a command for `.jpg`, `.jpeg`, `.png`, `.bmp`, `.webp`, and `.svg` files.
 - [x] Setup wallpaper directory scanning uses a typed string directory-path input.
 
+### Setup layout geometry
+
+- [x] Appearance, customization, dock, and wizard content preserve actual child geometry and text at widths 480/1000 and UI scales 1/1.25 when layout-owned dimensions become preferred sizes.
+- [x] Appearance geometry covers both wallpaper-color modes, including scheme swatches.
+- [x] Geometry regression runs only offscreen with isolated writable paths, inert external services, and unchanged real settings.
+
 ### Typed delegates
 
 - [x] Setup progress delegates expose typed step icon and label aliases instead of repeatedly reading implicit `modelData`.
@@ -56,6 +62,8 @@ Setup Wizard covers first-run onboarding launch, completion, and selected setup 
 - `Tests/shell-setup-wizard-guards.test.js`
 - `Tests/setup-wallpaper-step-guards.test.js`
 - `Tests/setup-wizard-guards.test.js`
+- `Tests/setup-layout-geometry.test.py` — 20 production-component geometry/content cases; run `python3 Tests/setup-layout-geometry.test.py --artifacts <new-directory>`.
+- `Tests/Qml/SetupLayoutGeometryHarness.qml` — production step and wizard-content instantiation without opening SmartPanel.
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
 
