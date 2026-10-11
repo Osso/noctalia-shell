@@ -277,8 +277,8 @@ SmartPanel {
                 spacing: Style.marginS
 
                 Rectangle {
-                  width: 24
-                  height: 24
+                  Layout.preferredWidth: 24
+                  Layout.preferredHeight: 24
                   radius: width / 2
                   color: index <= currentStep ? NColor.mPrimary : NColor.mSurfaceVariant
                   border.color: index === currentStep ? NColor.mPrimary : "transparent"
@@ -313,8 +313,8 @@ SmartPanel {
 
                 // Connector line
                 Rectangle {
-                  width: 40
-                  height: 2
+                  Layout.preferredWidth: 40
+                  Layout.preferredHeight: 2
                   radius: 1
                   color: index < currentStep ? NColor.mPrimary : NColor.mSurfaceVariant
                   visible: index < totalSteps - 1
