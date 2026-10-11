@@ -17,6 +17,8 @@ import subprocess
 from collections import Counter
 from pathlib import Path
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 SERVICE = Path("Services/UI/WallpaperService.qml")
 
@@ -161,9 +163,10 @@ QtObject {
         "qs.Commons",
         {
             "Settings": singleton(
-                'property string cacheDir: "/fixture/"\nproperty QtObject data: QtObject { property QtObject wallpaper: QtObject {\n'
+                'property string cacheDir: "/fixture/"\ncomponent WallpaperSettings: QtObject {\n'
                 + "\n".join(fields)
-                + "\n} }\nfunction preprocessPath(path) { return path; }"
+                + "\n}\ncomponent FixtureData: QtObject { property WallpaperSettings wallpaper: WallpaperSettings {} }\n"
+                + "property FixtureData data: FixtureData {}\nfunction preprocessPath(path) { return path; }"
             ),
             "I18n": singleton(
                 "property bool isLoaded: true\nfunction tr(key) { return key; }"
@@ -192,6 +195,9 @@ QtObject {
 
 def behavior(directory, mutation):
     stage_runtime(directory, mutation)
+    assert check_harness(directory, directory / "tst_wallpaper.qml") == 0, (
+        "Harness lint failed"
+    )
     env = os.environ.copy()
     for key in (
         "DISPLAY",
