@@ -14,20 +14,20 @@ ColumnLayout {
   Layout.fillWidth: true
 
   NText {
-    text: label
+    text: root.label
     pointSize: Style.fontSizeL
     font.weight: Style.fontWeightSemiBold
-    color: labelColor
-    visible: label !== ""
+    color: root.labelColor
+    visible: root.label !== ""
     Layout.fillWidth: true
   }
 
   NText {
-    text: description
+    text: root.description
     pointSize: Style.fontSizeS
-    color: descriptionColor
+    color: root.descriptionColor
     wrapMode: Text.WordWrap
-    visible: description !== ""
+    visible: root.description !== ""
     Layout.fillWidth: true
     // allow HTML like <i>...</i> in labels/descriptions
     textFormat: Text.StyledText

@@ -15,7 +15,7 @@ Rectangle {
   property string tooltipText: ""
   property string tooltipDirection: "auto"
   property string density: ""
-  property bool enabled: true
+  override property bool enabled: true
   property bool allowClickWhenDisabled: false
   property bool hot: false
 
@@ -84,16 +84,16 @@ Rectangle {
     pointSize: Math.max(1, Math.round(root.width * 0.48))
     applyUiScale: root.applyUiScale
     color: {
-      if (pressed) {
-        return colorFgHover;
+      if (root.pressed) {
+        return root.colorFgHover;
       }
-      if (hot) {
-        return colorFgHot;
+      if (root.hot) {
+        return root.colorFgHot;
       }
       if (root.enabled && root.hovering) {
-        return colorFgHover;
+        return root.colorFgHover;
       }
-      return colorFg;
+      return root.colorFg;
     }
     // Center horizontally
     x: (root.width - width) / 2
@@ -117,16 +117,16 @@ Rectangle {
     hoverEnabled: true
 
     onEntered: {
-      hovering = root.enabled ? true : false;
-      if (tooltipText) {
-        TooltipService.show(parent, tooltipText, tooltipDirection);
+      root.hovering = root.enabled ? true : false;
+      if (root.tooltipText) {
+        TooltipService.show(parent, root.tooltipText, root.tooltipDirection);
       }
       root.entered();
     }
 
     onExited: {
-      hovering = false;
-      if (tooltipText) {
+      root.hovering = false;
+      if (root.tooltipText) {
         TooltipService.hide();
       }
       root.exited();
@@ -137,7 +137,7 @@ Rectangle {
         root.pressed = true;
         root.scale = 0.92;
       }
-      if (tooltipText) {
+      if (root.tooltipText) {
         TooltipService.hide();
       }
     }
@@ -146,7 +146,7 @@ Rectangle {
       root.scale = 1.0;
       root.pressed = false;
 
-      if (!root.enabled && !allowClickWhenDisabled) {
+      if (!root.enabled && !root.allowClickWhenDisabled) {
         return;
       }
 
@@ -166,7 +166,7 @@ Rectangle {
       root.hovering = false;
       root.pressed = false;
       root.scale = 1.0;
-      if (tooltipText) {
+      if (root.tooltipText) {
         TooltipService.hide();
       }
     }

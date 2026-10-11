@@ -52,7 +52,7 @@ Rectangle {
   ColumnLayout {
     id: mainLayout
     anchors.fill: parent
-    anchors.margins: Style.marginS * contentScale
+    anchors.margins: Style.marginS * root.contentScale
     spacing: 0
 
     // Main gauge container
@@ -61,8 +61,8 @@ Rectangle {
       Layout.fillWidth: true
       Layout.fillHeight: true
       Layout.alignment: Qt.AlignCenter
-      Layout.preferredWidth: 68 * contentScale
-      Layout.preferredHeight: 68 * contentScale
+      Layout.preferredWidth: 68 * root.contentScale
+      Layout.preferredHeight: 68 * root.contentScale
 
       Canvas {
         id: gauge
@@ -84,7 +84,7 @@ Rectangle {
           const ctx = getContext("2d");
           const w = width, h = height;
           const cx = w / 2, cy = h / 2;
-          const r = Math.min(w, h) / 2 - 5 * contentScale;
+          const r = Math.min(w, h) / 2 - 5 * root.contentScale;
 
           // Rotated 90° to the right: gap at the bottom
           // Start at 150° and end at 390° (30°) → bottom opening
@@ -92,7 +92,7 @@ Rectangle {
           const endBg = Math.PI * 13 / 6; // 390° (equivalent to 30°)
 
           ctx.reset();
-          ctx.lineWidth = 6 * contentScale;
+          ctx.lineWidth = 6 * root.contentScale;
 
           // Track uses surface for stronger contrast
           ctx.strokeStyle = NColor.mSurface;
@@ -115,9 +115,9 @@ Rectangle {
       NText {
         id: valueLabel
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: -4 * contentScale
+        anchors.verticalCenterOffset: -4 * root.contentScale
         text: `${Math.round(root.value)}${root.suffix}`
-        pointSize: Style.fontSizeM * contentScale * 0.9
+        pointSize: Style.fontSizeM * root.contentScale * 0.9
         font.weight: Style.fontWeightBold
         color: root.fillColor
         horizontalAlignment: Text.AlignHCenter
@@ -127,7 +127,7 @@ Rectangle {
         id: iconText
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: valueLabel.bottom
-        anchors.topMargin: 8 * contentScale
+        anchors.topMargin: 8 * root.contentScale
         icon: root.icon
         color: root.fillColor
         pointSize: Style.fontSizeM

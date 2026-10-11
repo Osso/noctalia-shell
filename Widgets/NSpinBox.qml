@@ -16,7 +16,7 @@ RowLayout {
   property string prefix: ""
   property string label: ""
   property string description: ""
-  property bool enabled: true
+  override property bool enabled: true
   property bool hovering: false
   property int baseSize: Style.baseWidgetSize
 
@@ -49,7 +49,7 @@ RowLayout {
       }
       root._holdTicks++;
       var stepMultiplier = Math.min(root.maxStepMultiplier, 1 + Math.floor(root._holdTicks / root.rampFactor));
-      changeValue(root._repeatDirection, root.stepSize * stepMultiplier);
+      root.changeValue(root._repeatDirection, root.stepSize * stepMultiplier);
     }
   }
 
@@ -110,14 +110,14 @@ RowLayout {
         root.exited();
       }
       onWheel: wheel => {
-                 if (wheel.angleDelta.y > 0 && root.value < root.to) {
-                   let newValue = Math.min(root.to, root.value + root.stepSize);
-                   root.value = newValue;
-                 } else if (wheel.angleDelta.y < 0 && root.value > root.from) {
-                   let newValue = Math.max(root.from, root.value - root.stepSize);
-                   root.value = newValue;
-                 }
-               }
+        if (wheel.angleDelta.y > 0 && root.value < root.to) {
+          let newValue = Math.min(root.to, root.value + root.stepSize);
+          root.value = newValue;
+        } else if (wheel.angleDelta.y < 0 && root.value > root.from) {
+          let newValue = Math.max(root.from, root.value - root.stepSize);
+          root.value = newValue;
+        }
+      }
     }
 
     // Decrease button (left)
@@ -211,11 +211,11 @@ RowLayout {
         enabled: root.enabled && root.value > root.from
         onPressed: {
           root._repeatDirection = -1;
-          changeValue(root._repeatDirection, root.stepSize);
+          root.changeValue(root._repeatDirection, root.stepSize);
           repeatTimer.start();
         }
-        onReleased: stopRepeat()
-        onExited: stopRepeat()
+        onReleased: root.stopRepeat()
+        onExited: root.stopRepeat()
       }
     }
 
@@ -310,11 +310,11 @@ RowLayout {
         enabled: root.enabled && root.value < root.to
         onPressed: {
           root._repeatDirection = 1;
-          changeValue(root._repeatDirection, root.stepSize);
+          root.changeValue(root._repeatDirection, root.stepSize);
           repeatTimer.start();
         }
-        onReleased: stopRepeat()
-        onExited: stopRepeat()
+        onReleased: root.stopRepeat()
+        onExited: root.stopRepeat()
       }
     }
 

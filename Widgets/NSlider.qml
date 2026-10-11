@@ -28,7 +28,7 @@ Slider {
     x: root.leftPadding
     y: root.topPadding + root.availableHeight / 2 - height / 2
     implicitWidth: Style.sliderWidth
-    implicitHeight: trackHeight
+    implicitHeight: root.trackHeight
     width: root.availableWidth
     height: implicitHeight
     radius: Math.min(Style.radiusL, height / 2)
@@ -47,7 +47,7 @@ Slider {
         width: parent.height
         height: parent.height
         radius: Math.min(Style.radiusL, width / 2)
-        color: Qt.darker(fillColor, 1.2) //starting color of gradient
+        color: Qt.darker(root.fillColor, 1.2) //starting color of gradient
       }
 
       // The main rectangle
@@ -61,11 +61,11 @@ Slider {
           orientation: Gradient.Horizontal
           GradientStop {
             position: 0.0
-            color: Qt.darker(fillColor, 1.2)
+            color: Qt.darker(root.fillColor, 1.2)
           }
           GradientStop {
             position: 1.0
-            color: fillColor
+            color: root.fillColor
           }
         }
       }
@@ -74,28 +74,28 @@ Slider {
     // Circular cutout
     Rectangle {
       id: knobCutout
-      implicitWidth: knobDiameter + cutoutExtra
-      implicitHeight: knobDiameter + cutoutExtra
+      implicitWidth: root.knobDiameter + root.cutoutExtra
+      implicitHeight: root.knobDiameter + root.cutoutExtra
       radius: Math.min(Style.radiusL, width / 2)
       color: root.cutoutColor !== undefined ? root.cutoutColor : NColor.mSurface
-      x: root.leftPadding + root.visualPosition * (root.availableWidth - root.knobDiameter) - cutoutExtra
+      x: root.leftPadding + root.visualPosition * (root.availableWidth - root.knobDiameter) - root.cutoutExtra
       anchors.verticalCenter: parent.verticalCenter
     }
   }
 
   handle: Item {
-    implicitWidth: knobDiameter
-    implicitHeight: knobDiameter
+    implicitWidth: root.knobDiameter
+    implicitHeight: root.knobDiameter
     x: root.leftPadding + root.visualPosition * (root.availableWidth - width)
     anchors.verticalCenter: parent.verticalCenter
 
     Rectangle {
       id: knob
-      implicitWidth: knobDiameter
-      implicitHeight: knobDiameter
+      implicitWidth: root.knobDiameter
+      implicitHeight: root.knobDiameter
       radius: Math.min(Style.radiusL, width / 2)
       color: root.pressed ? NColor.mHover : NColor.mSurface
-      border.color: fillColor
+      border.color: root.fillColor
       border.width: Style.borderL
       anchors.centerIn: parent
 

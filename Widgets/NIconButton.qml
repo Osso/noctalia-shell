@@ -14,7 +14,7 @@ Rectangle {
   property string tooltipText
   property string tooltipDirection: "auto"
   property string density: ""
-  property bool enabled: true
+  override property bool enabled: true
   property bool allowClickWhenDisabled: false
   property bool hovering: false
 
@@ -59,7 +59,7 @@ Rectangle {
       }
     }
     applyUiScale: root.applyUiScale
-    color: root.enabled && root.hovering ? colorFgHover : colorFg
+    color: root.enabled && root.hovering ? root.colorFgHover : root.colorFg
     // Center horizontally
     x: (root.width - width) / 2
     // Center vertically accounting for font metrics
@@ -81,24 +81,24 @@ Rectangle {
     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
     hoverEnabled: true
     onEntered: {
-      hovering = root.enabled ? true : false;
-      if (tooltipText) {
-        TooltipService.show(parent, tooltipText, tooltipDirection);
+      root.hovering = root.enabled ? true : false;
+      if (root.tooltipText) {
+        TooltipService.show(parent, root.tooltipText, root.tooltipDirection);
       }
       root.entered();
     }
     onExited: {
-      hovering = false;
-      if (tooltipText) {
+      root.hovering = false;
+      if (root.tooltipText) {
         TooltipService.hide();
       }
       root.exited();
     }
     onClicked: function (mouse) {
-      if (tooltipText) {
+      if (root.tooltipText) {
         TooltipService.hide();
       }
-      if (!root.enabled && !allowClickWhenDisabled) {
+      if (!root.enabled && !root.allowClickWhenDisabled) {
         return;
       }
       if (mouse.button === Qt.LeftButton) {

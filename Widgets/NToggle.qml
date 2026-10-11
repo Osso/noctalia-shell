@@ -8,7 +8,7 @@ RowLayout {
 
   property string label: ""
   property string description: ""
-  property bool enabled: true
+  override property bool enabled: true
   property bool checked: false
   property bool hovering: false
   property int baseSize: Math.round(Style.baseWidgetSize * 0.8 * Style.uiScaleRatio)
@@ -80,13 +80,13 @@ RowLayout {
       onEntered: {
         if (!enabled)
           return;
-        hovering = true;
+        root.hovering = true;
         root.entered();
       }
       onExited: {
         if (!enabled)
           return;
-        hovering = false;
+        root.hovering = false;
         root.exited();
       }
       onClicked: {
