@@ -51,7 +51,7 @@ def lint(directory):
     assert result.returncode == 0, result.returncode
 
 
-def stage_widget(directory, focused_start, production_style):
+def stage_widget(directory, focused_start, production_style, reload_lifecycle):
     fixture = load_fixture()
     fixture.stage_widgets(directory)
     # No other widget is instantiated; retain production metadata and Loader.
@@ -69,6 +69,7 @@ def stage_widget(directory, focused_start, production_style):
         "Settings",
         "property bool ready: false\n"
         + f"property bool focusedStart: {str(focused_start).lower()}\n"
+        + f"property bool reloadLifecycle: {str(reload_lifecycle).lower()}\n"
         + f"property int expectedHeight: {25 if production_style else 32}\n"
         + "property var data: "
         + json.dumps(defaults),
@@ -121,7 +122,7 @@ function getPopupMenuWindow(screen) { return popup; }""",
     return fixture
 
 
-def behavior(directory, focused_start, production_style):
+def behavior(directory, focused_start, production_style, reload_lifecycle):
     settings = Path.home() / ".config/noctalia/settings.json"
     original = settings.read_bytes()
     backup = directory / "settings.backup.json"
@@ -131,7 +132,7 @@ def behavior(directory, focused_start, production_style):
         hashlib.sha256(backup.read_bytes()).digest()
         == hashlib.sha256(original).digest()
     )
-    fixture = stage_widget(directory, focused_start, production_style)
+    fixture = stage_widget(directory, focused_start, production_style, reload_lifecycle)
     try:
         result = subprocess.run(
             ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
@@ -147,6 +148,11 @@ def behavior(directory, focused_start, production_style):
     print(output, end="")
     assert result.returncode == 0, result.returncode
     assert "ACTIVE_WINDOW_BEHAVIOR_PASS" in output, "scenario incomplete"
+    if reload_lifecycle:
+        assert "ACTIVE_WINDOW_ISOLATED_RELOAD_BEGIN" in output, "reload not exercised"
+        assert output.count("INFO: Configuration Loaded") == 2, (
+            "both generations must load"
+        )
     assert not any(level in output for level in (" WARN ", " ERROR ", " FATAL ")), (
         output
     )
@@ -158,13 +164,14 @@ def main():
     parser.add_argument("mode", choices=("lint", "behavior"))
     parser.add_argument("--focused-start", action="store_true")
     parser.add_argument("--production-style", action="store_true")
+    parser.add_argument("--reload", action="store_true")
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-active-window-") as temporary:
         directory = Path(temporary)
         if args.mode == "lint":
             lint(directory)
         else:
-            behavior(directory, args.focused_start, args.production_style)
+            behavior(directory, args.focused_start, args.production_style, args.reload)
 
 
 if __name__ == "__main__":

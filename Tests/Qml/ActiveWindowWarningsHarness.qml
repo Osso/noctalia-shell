@@ -14,6 +14,11 @@ ShellRoot {
   property var loaded: null
   property Item widgetLoader: null
 
+  PersistentProperties {
+    id: reloadState
+    property int generation: 0
+  }
+
   function require(condition, message) {
     if (!condition) {
       console.error("ACTIVE_WINDOW_BEHAVIOR_FAIL", message);
@@ -179,11 +184,26 @@ ShellRoot {
       case 8:
         harness.assertDimensions(0, 0, "hidden dimensions after fade");
         harness.require(!harness.loaded.visible && !harness.widgetLoader.visible, "fade removes widget and loader");
+        if (Settings.reloadLifecycle && reloadState.generation === 0) {
+          CompositorService.focusedWindow = {
+            "title": "Visible focused widget during isolated soft reload",
+            "appId": "fixture"
+          };
+          break;
+        }
+        harness.require(!Settings.reloadLifecycle || reloadState.generation === 1, "isolated generation survived reload");
         harness.widgetLoader.destroy();
         harness.standalone.destroy();
         scenario.running = false;
         console.log("ACTIVE_WINDOW_BEHAVIOR_PASS", "9 stages: direct widget and production Loader");
         Qt.quit();
+        break;
+      case 9:
+        harness.require(harness.loaded.visible && harness.loaded.opacity === 1, "old generation widget visible at reload");
+        reloadState.generation = 1;
+        scenario.running = false;
+        console.log("ACTIVE_WINDOW_ISOLATED_RELOAD_BEGIN");
+        Quickshell.reload(false);
         break;
       }
       scenario.step++;
