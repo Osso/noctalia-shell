@@ -35,6 +35,7 @@ function testBarPillVerticalCenterOffsetTracksOpenDirection() {
     },
     openDownward: true,
   };
+  ctx.root = ctx;
 
   assert.equal(getVerticalCenterOffset(ctx), 6);
 
