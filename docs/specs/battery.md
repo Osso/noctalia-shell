@@ -65,7 +65,7 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 - `Tests/battery-panel-guards.test.js`
 - `Tests/battery-service-guards.test.js`
 - `Tests/battery-tab-guards.test.js`
-- `Tests/battery-tab-warnings.test.py` (`lint` checks only BatteryTab, retaining two reported missing-property diagnostics; `behavior --snapshot <path>` checks the production tab/controls with unchanged real-settings SHA).
+- `Tests/battery-tab-warnings.test.py` (`lint` checks only BatteryTab, retaining eight reported missing-property diagnostics: `animationMedium`, `mWarning`, and six `energyRate` accesses; `behavior --snapshot <path>` checks the production tab/controls with unchanged real-settings SHA).
 - `Tests/qml-runtime-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`

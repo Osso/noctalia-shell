@@ -64,9 +64,9 @@ def lint(directory):
         if line.startswith("Warning:")
     )
     print("BATTERY_TAB_LINT_COUNTS", dict(counts))
-    # Two existing unavailable singleton members are outside this owner/layout slice.
-    # Keep their diagnostics visible and reject every additional warning.
-    assert counts == {"missing-property": 2}, (
+    # Qualification exposes six energyRate diagnostics, alongside two unavailable
+    # singleton members. Keep all eight visible; owner/layout warnings must be zero.
+    assert counts == {"missing-property": 8}, (
         f"Unexpected BatteryTab warnings: {dict(counts)}"
     )
     assert result.returncode == 255, result.returncode
