@@ -152,11 +152,9 @@ def lint_harness():
         )
         output = result.stdout + result.stderr
         print(output, end="")
-        print(
-            "SETUP_HARNESS_LINT_WARNINGS",
-            len(re.findall(r"^Warning:", output, re.MULTILINE)),
-        )
-        return result.returncode
+        warning_count = len(re.findall(r"^Warning:", output, re.MULTILINE))
+        print("SETUP_HARNESS_LINT_WARNINGS", warning_count)
+        return result.returncode or int(warning_count > 0)
 
 
 def isolated_environment(root):
