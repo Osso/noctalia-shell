@@ -19,6 +19,7 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 
 - [x] Toggle starts recording when neither recording nor pending.
 - [x] Toggle stops recording when recording or pending.
+- [x] The Control Center ScreenRecorder widget closes its panel when stopping recording; its start action leaves the panel open.
 - [x] Starting recording fails closed when gpu-screen-recorder is unavailable.
 - [x] Starting recording ignores requests while already recording or pending.
 - [x] Starting recording marks the session pending and clears active-recording state.
