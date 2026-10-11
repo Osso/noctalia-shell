@@ -285,10 +285,10 @@ ColumnLayout {
   NHeader {
     label: I18n.tr("settings.about.contributors.section.label")
     description: root.contributors.length === 1 ? I18n.tr("settings.about.contributors.section.description", {
-                                                            "count": root.contributors.length
-                                                          }) : I18n.tr("settings.about.contributors.section.description_plural", {
-                                                                         "count": root.contributors.length
-                                                                       })
+      "count": root.contributors.length
+    }) : I18n.tr("settings.about.contributors.section.description_plural", {
+      "count": root.contributors.length
+    })
     enableDescriptionRichText: true
   }
 
