@@ -1,4 +1,4 @@
-Icons covers bundled icon-font loading plus theme/desktop icon path resolution. Runtime source lives mainly in `Commons/Icons.qml` and `Commons/ThemeIcons.qml`; implementation notes belong in [docs/wiki/systems/icons.md](../wiki/systems/icons.md).
+Icons covers bundled icon-font loading, theme/desktop icon path resolution, and the shared icon picker. Runtime source lives mainly in `Commons/Icons.qml` and `Commons/ThemeIcons.qml`; implementation notes belong in [docs/wiki/systems/icons.md](../wiki/systems/icons.md).
 
 ## What it must do
 
@@ -28,6 +28,14 @@ Icons covers bundled icon-font loading plus theme/desktop icon path resolution. 
 - [x] Distro logo lookup returns the OS-provided distro icon path when present.
 - [x] Distro logo lookup fails closed to an empty path when OS info is missing or empty.
 
+### Icon picker
+
+- [x] Opening restores selection and search from the initial icon; reopening replaces the previous state.
+- [x] Search receives keyboard focus, trims/lowercases input, filters icon names, and Escape closes without emitting a selection.
+- [x] A single click updates selection and its border without emitting; Apply is disabled for empty selection and otherwise emits the selected name once and closes.
+- [x] Filtering to no matches and back recreates usable delegates; double-click emits the recreated delegate's icon once and closes.
+- [x] Cancel closes without emission; opening a second picker preserves independent selection when the first is reopened and clicked.
+
 ## How it works
 
 - [docs/wiki/systems/icons.md](../wiki/systems/icons.md)
@@ -39,12 +47,20 @@ Icons covers bundled icon-font loading plus theme/desktop icon path resolution. 
 - `Commons/ThemeIcons.qml` - theme-icon, desktop-entry, and distro-logo path helpers.
 - `Helpers/ThemeIconResolver.js` - icon theme path resolver used by `ThemeIcons`.
 - `Widgets/NIcon.qml` - shared icon-font rendering wrapper.
+- `Widgets/NIconPicker.qml` - searchable icon selection popup.
 
 ## Tests asserting this spec
 
 - `Tests/icons-guards.test.js`
 - `Tests/theme-icons-guards.test.js`
 - `Tests/source-coverage.test.js`
+- `Tests/icon-picker-warnings.test.py` and `Tests/Qml/IconPickerWarningsHarness.qml` - standalone picker lint and production-control offscreen behavior.
+
+### Icon picker isolated evidence
+
+- At `01034c9a4`, picker warnings drop 17→0. Five behavioral tests plus QtTest init/cleanup yield seven reported passes, covering the picker requirements above with four fixture icon names.
+- `pragma ComponentBehavior: Bound` and explicit `required property string modelData` have behavioral backing: filtered delegate recreation, click/double-click payloads, and two picker instances exercise delegate data and owner isolation. This is not merely warning-count proof.
+- Production picker/grid/input/buttons run with inert singleton services and icon data. Synthetic offscreen keyboard/mouse events prove focus and selection routing, not native desktop input, pixel rendering, the full icon catalogue, persistence, or whole-shell acceptance. Runner modes and acceptance checks: [testing](testing.md#icon-picker-isolated-runtime).
 
 ## Known gaps (current cycle)
 

@@ -16,6 +16,12 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - Services, settings, screen, and popup surface are inert fixtures. Behavior uses private HOME/XDG/Noctalia paths and removes desktop connections. Both modes create a permission-locked, hash-verified byte-for-byte real-settings backup before staging and check real/backup bytes unchanged afterward. Behavior timeout is 60 seconds; acceptance requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `QCRITICAL`, `ReferenceError`, `TypeError`, or `Binding loop`.
 - Synthetic mouse/wheel events and direct menu signals prove fixture routing, not native desktop input, real popup surfaces, backend/hardware actions, live audio capture, GPU rendering, persistence, toast input-region behavior, or whole-shell acceptance.
 
+### Icon picker isolated runtime
+
+- `python3 Tests/icon-picker-warnings.test.py lint` and `runtime` run standalone; no runner integration is claimed. At `01034c9a4`, picker-only qmllint warnings drop 17→0; lint requires exit status zero and no warnings. Exact behavioral coverage and `Bound`/required `modelData` evidence: [icons](icons.md#icon-picker-isolated-evidence).
+- `Tests/Qml/IconPickerWarningsHarness.qml` runs five behavioral tests plus QtTest init/cleanup (seven reported passes) with production picker/grid/input/buttons, inert services, and four fixture icon names under software/offscreen `qmltestrunner`. Runtime isolates HOME/XDG/Noctalia paths and removes desktop/session-bus environment variables; this harness does not create or verify a real-settings backup. Both child commands have 60-second timeouts. Runtime requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `ReferenceError`, `TypeError`, or `Binding loop`.
+- Synthetic keyboard/mouse events, delegate recreation, and two-instance selection isolation are component proof only; native desktop input, full-catalogue rendering, persistence, and whole-shell acceptance remain unverified.
+
 ### Process panel isolated runtime
 
 - `Tests/process-panel-warnings.test.py` runs standalone `lint` or `behavior`, requiring `--artifacts <new-directory>`; no runner integration is claimed. ProcessPanel-only lint drops 19→0 at `508e9a59b` and requires zero warnings/exit status zero. Four behavioral cases plus QtTest init/cleanup yield six cases; exact sorting, model-update, 25-row, selection/color/action, and ownership assertions: [process](process.md#tests-asserting-this-spec).
