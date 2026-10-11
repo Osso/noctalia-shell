@@ -93,22 +93,22 @@ done`;
   Connections {
     target: Settings.data.nightLight
     function onEnabledChanged() {
-      apply();
+      root.apply();
       // Toast: night light toggled
       const enabled = !!Settings.data.nightLight.enabled;
       ToastService.showNotice(I18n.tr("settings.display.night-light.section.label"), enabled ? I18n.tr("toast.night-light.enabled") : I18n.tr("toast.night-light.disabled"), enabled ? "nightlight-on" : "nightlight-off");
     }
     function onForcedChanged() {
-      apply();
+      root.apply();
       if (Settings.data.nightLight.enabled) {
         ToastService.showNotice(I18n.tr("settings.display.night-light.section.label"), Settings.data.nightLight.forced ? I18n.tr("toast.night-light.forced") : I18n.tr("toast.night-light.normal"), Settings.data.nightLight.forced ? "nightlight-forced" : "nightlight-on");
       }
     }
     function onNightTempChanged() {
-      apply();
+      root.apply();
     }
     function onDayTempChanged() {
-      apply();
+      root.apply();
     }
   }
 
@@ -116,7 +116,7 @@ done`;
     target: LocationService
     function onCoordinatesReadyChanged() {
       if (LocationService.coordinatesReady) {
-        apply();
+        root.apply();
       }
     }
   }

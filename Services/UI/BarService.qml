@@ -29,16 +29,16 @@ Singleton {
     interval: 100
     repeat: false
     onTriggered: {
-      hasAudioVisualizer = false;
-      if (getAllWidgetInstances("AudioVisualizer").length > 0) {
-        hasAudioVisualizer = true;
+      root.hasAudioVisualizer = false;
+      if (root.getAllWidgetInstances("AudioVisualizer").length > 0) {
+        root.hasAudioVisualizer = true;
         return;
       }
-      const widgets = getAllWidgetInstances("MediaMini");
+      const widgets = root.getAllWidgetInstances("MediaMini");
       for (var i = 0; i < widgets.length; i++) {
         const widget = widgets[i];
         if (widget.showVisualizer) {
-          hasAudioVisualizer = true;
+          root.hasAudioVisualizer = true;
           return;
         }
       }
