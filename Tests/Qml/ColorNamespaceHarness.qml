@@ -25,7 +25,8 @@ ShellRoot {
       const windowIsTransparent = window.color.a === 0;
       const defaultPaletteIsCorrect = Qt.colorEqual(NColor.mOnSurface, "#e9e4f0");
       const transparentIsNotFunction = typeof NColor.transparent !== "function";
-      if (!windowIsTransparent || !defaultPaletteIsCorrect || !transparentIsNotFunction) {
+      const paletteResolved = windowIsTransparent && defaultPaletteIsCorrect && transparentIsNotFunction;
+      if (!paletteResolved) {
         console.error("COLOR_NAMESPACE_FAIL: project palette must resolve and window must remain transparent");
         Qt.exit(1);
       } else {
