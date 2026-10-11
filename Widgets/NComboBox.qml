@@ -107,13 +107,13 @@ RowLayout {
 
     Layout.minimumWidth: root.minimumWidth
     Layout.preferredHeight: root.preferredHeight
-    model: model
-    currentIndex: findIndexByKey(currentKey)
+    model: root.model
+    currentIndex: root.findIndexByKey(root.currentKey)
     onActivated: root.activateCurrentIndex(combo.currentIndex)
 
     background: Rectangle {
       implicitWidth: Style.baseWidgetSize * 3.75
-      implicitHeight: preferredHeight
+      implicitHeight: root.preferredHeight
       color: NColor.mSurface
       border.color: combo.activeFocus ? NColor.mSecondary : NColor.mOutline
       border.width: Style.borderS
@@ -132,8 +132,8 @@ RowLayout {
       pointSize: Style.fontSizeM
       verticalAlignment: Text.AlignVCenter
       elide: Text.ElideRight
-      color: (combo.currentIndex >= 0 && combo.currentIndex < itemCount()) ? NColor.mOnSurface : NColor.mOnSurfaceVariant
-      text: (combo.currentIndex >= 0 && combo.currentIndex < itemCount()) ? (getItem(combo.currentIndex) ? getItem(combo.currentIndex).name : root.placeholder) : root.placeholder
+      color: (combo.currentIndex >= 0 && combo.currentIndex < root.itemCount()) ? NColor.mOnSurface : NColor.mOnSurfaceVariant
+      text: (combo.currentIndex >= 0 && combo.currentIndex < root.itemCount()) ? (root.getItem(combo.currentIndex) ? root.getItem(combo.currentIndex).name : root.placeholder) : root.placeholder
     }
 
     indicator: NIcon {
@@ -156,33 +156,34 @@ RowLayout {
         verticalPolicy: ScrollBar.AsNeeded
 
         delegate: ItemDelegate {
+          id: delegateRoot
           required property int index
 
           property ComboBox parentComboBox: combo
-          property int itemIndex: index
-          width: ListView.view ? ListView.view.width : (parentComboBox ? parentComboBox.width - Style.marginM * 3 : 0)
+          property int itemIndex: delegateRoot.index
+          width: delegateRoot.ListView.view ? delegateRoot.ListView.view.width : (delegateRoot.parentComboBox ? delegateRoot.parentComboBox.width - Style.marginM * 3 : 0)
           hoverEnabled: true
-          highlighted: ListView.view.currentIndex === itemIndex
+          highlighted: delegateRoot.ListView.view.currentIndex === delegateRoot.itemIndex
 
           property bool pendingClick: false
           Timer {
             id: clickRetryTimer
             interval: 50
             repeat: false
-            onTriggered: root.retryPendingClick(parent.itemIndex, parent.parentComboBox, parent.ListView.view, clickRetryTimer, parent)
+            onTriggered: root.retryPendingClick(delegateRoot.itemIndex, delegateRoot.parentComboBox, delegateRoot.ListView.view, clickRetryTimer, delegateRoot)
           }
 
           onHoveredChanged: {
-            if (hovered) {
-              ListView.view.currentIndex = itemIndex;
+            if (delegateRoot.hovered) {
+              delegateRoot.ListView.view.currentIndex = delegateRoot.itemIndex;
             }
           }
 
-          onClicked: root.handleDelegateClick(itemIndex, parentComboBox, ListView.view, clickRetryTimer, this)
+          onClicked: root.handleDelegateClick(delegateRoot.itemIndex, delegateRoot.parentComboBox, delegateRoot.ListView.view, clickRetryTimer, delegateRoot)
 
           background: Rectangle {
             anchors.fill: parent
-            color: highlighted ? NColor.mHover : NColor.transparent
+            color: delegateRoot.highlighted ? NColor.mHover : NColor.transparent
             radius: Style.radiusS
             Behavior on color {
               ColorAnimation {
@@ -193,11 +194,11 @@ RowLayout {
 
           contentItem: NText {
             text: {
-              var item = root.getItem(index);
+              var item = root.getItem(delegateRoot.index);
               return item && item.name ? item.name : "";
             }
             pointSize: Style.fontSizeM
-            color: highlighted ? NColor.mOnHover : NColor.mOnSurface
+            color: delegateRoot.highlighted ? NColor.mOnHover : NColor.mOnSurface
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
             Behavior on color {
@@ -220,7 +221,7 @@ RowLayout {
     Connections {
       target: root
       function onCurrentKeyChanged() {
-        combo.currentIndex = root.findIndexByKey(currentKey);
+        combo.currentIndex = root.findIndexByKey(root.currentKey);
       }
     }
   }

@@ -91,7 +91,7 @@ Item {
 
         width: parent.width
         spacing: Style.marginS
-        opacity: isDisabled ? 0.5 : 1.0
+        opacity: delegateItem.isDisabled ? 0.5 : 1.0
 
         // Drag handle
         Rectangle {
@@ -144,7 +144,7 @@ Item {
                          delegateItem.z = 999;
 
                          // Signal that interaction started (prevents panel close)
-                         preventStealing = true;
+                         dragHandleMouseArea.preventStealing = true;
                          root.dragPotentialStarted();
                        }
 
@@ -167,7 +167,7 @@ Item {
 
             onReleased: {
               // Always signal end of interaction
-              preventStealing = false;
+              dragHandleMouseArea.preventStealing = false;
               root.dragPotentialEnded();
 
               // Apply the model change now that drag is complete
@@ -183,7 +183,7 @@ Item {
 
             onCanceled: {
               // Handle cancel (e.g., ESC key pressed during drag)
-              preventStealing = false;
+              dragHandleMouseArea.preventStealing = false;
               root.dragPotentialEnded();
 
               delegateItem.dragging = false;
