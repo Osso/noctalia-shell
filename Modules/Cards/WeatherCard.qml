@@ -87,7 +87,7 @@ NBox {
 
         NIcon {
           Layout.alignment: Qt.AlignVCenter
-          icon: weatherReady ? LocationService.weatherSymbolFromCode(LocationService.data.weather.current_weather.weathercode) : ""
+          icon: root.weatherReady ? LocationService.weatherSymbolFromCode(LocationService.data.weather.current_weather.weathercode) : ""
           pointSize: Style.fontSizeXXXL * 1.75
           color: NColor.mPrimary
         }
@@ -102,34 +102,34 @@ NBox {
             }
             pointSize: Style.fontSizeL
             font.weight: Style.fontWeightBold
-            visible: showLocation
+            visible: root.showLocation
           }
 
           RowLayout {
             NText {
-              visible: weatherReady
+              visible: root.weatherReady
               text: {
-                if (!weatherReady) {
+                if (!root.weatherReady) {
                   return "";
                 }
                 var temp = LocationService.data.weather.current_weather.temperature;
-                var suffix = "C";
+                let suffix = "C";
                 if (Settings.data.location.useFahrenheit) {
                   temp = LocationService.celsiusToFahrenheit(temp);
-                  var suffix = "F";
+                  suffix = "F";
                 }
                 temp = Math.round(temp);
                 return `${temp}°${suffix}`;
               }
-              pointSize: showLocation ? Style.fontSizeXL : Style.fontSizeXL * 1.6
+              pointSize: root.showLocation ? Style.fontSizeXL : Style.fontSizeXL * 1.6
               font.weight: Style.fontWeightBold
             }
 
             NText {
-              text: weatherReady ? `(${LocationService.data.weather.timezone_abbreviation})` : ""
+              text: root.weatherReady ? `(${LocationService.data.weather.timezone_abbreviation})` : ""
               pointSize: Style.fontSizeXS
               color: NColor.mOnSurfaceVariant
-              visible: LocationService.data.weather && showLocation
+              visible: LocationService.data.weather && root.showLocation
             }
           }
         }
@@ -137,19 +137,20 @@ NBox {
     }
 
     NDivider {
-      visible: weatherReady
+      visible: root.weatherReady
       Layout.fillWidth: true
     }
 
     RowLayout {
-      visible: weatherReady
+      visible: root.weatherReady
       Layout.fillWidth: true
       Layout.alignment: Qt.AlignVCenter
       spacing: Style.marginM
 
       Repeater {
-        model: weatherReady ? Math.min(root.forecastDays, LocationService.data.weather.daily.time.length) : 0
+        model: root.weatherReady ? Math.min(root.forecastDays, LocationService.data.weather.daily.time.length) : 0
         delegate: ColumnLayout {
+          id: forecastDay
           required property int index
 
           Layout.fillWidth: true
@@ -160,22 +161,22 @@ NBox {
           NText {
             Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
             text: {
-              var weatherDate = new Date(LocationService.data.weather.daily.time[index].replace(/-/g, "/"));
+              var weatherDate = new Date(LocationService.data.weather.daily.time[forecastDay.index].replace(/-/g, "/"));
               return I18n.locale.toString(weatherDate, "ddd");
             }
             color: NColor.mOnSurface
           }
           NIcon {
             Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-            icon: LocationService.weatherSymbolFromCode(LocationService.data.weather.daily.weathercode[index])
+            icon: LocationService.weatherSymbolFromCode(LocationService.data.weather.daily.weathercode[forecastDay.index])
             pointSize: Style.fontSizeXXL * 1.6
             color: NColor.mPrimary
           }
           NText {
             Layout.alignment: Qt.AlignHCenter
             text: {
-              var max = LocationService.data.weather.daily.temperature_2m_max[index];
-              var min = LocationService.data.weather.daily.temperature_2m_min[index];
+              var max = LocationService.data.weather.daily.temperature_2m_max[forecastDay.index];
+              var min = LocationService.data.weather.daily.temperature_2m_min[forecastDay.index];
               if (Settings.data.location.useFahrenheit) {
                 max = LocationService.celsiusToFahrenheit(max);
                 min = LocationService.celsiusToFahrenheit(min);
@@ -192,7 +193,7 @@ NBox {
     }
 
     Loader {
-      active: !weatherReady
+      active: !root.weatherReady
       Layout.alignment: Qt.AlignCenter
       sourceComponent: NBusyIndicator {}
     }
