@@ -36,15 +36,15 @@ NBox {
     function onSinkChanged() {
       if (AudioService.sink) {
         const newSinkId = AudioService.sink.id;
-        if (newSinkId !== lastSinkId) {
-          lastSinkId = newSinkId;
+        if (newSinkId !== root.lastSinkId) {
+          root.lastSinkId = newSinkId;
           // Immediately set local volume to current device's volume
-          var vol = AudioService.volume;
-          localOutputVolume = (vol !== undefined && !isNaN(vol)) ? vol : 0;
+          const vol = AudioService.volume;
+          root.localOutputVolume = (vol !== undefined && !isNaN(vol)) ? vol : 0;
         }
       } else {
-        lastSinkId = -1;
-        localOutputVolume = 0;
+        root.lastSinkId = -1;
+        root.localOutputVolume = 0;
       }
     }
   }
@@ -54,15 +54,15 @@ NBox {
     function onSourceChanged() {
       if (AudioService.source) {
         const newSourceId = AudioService.source.id;
-        if (newSourceId !== lastSourceId) {
-          lastSourceId = newSourceId;
+        if (newSourceId !== root.lastSourceId) {
+          root.lastSourceId = newSourceId;
           // Immediately set local volume to current device's volume
-          var vol = AudioService.inputVolume;
-          localInputVolume = (vol !== undefined && !isNaN(vol)) ? vol : 0;
+          const vol = AudioService.inputVolume;
+          root.localInputVolume = (vol !== undefined && !isNaN(vol)) ? vol : 0;
         }
       } else {
-        lastSourceId = -1;
-        localInputVolume = 0;
+        root.lastSourceId = -1;
+        root.localInputVolume = 0;
       }
     }
   }
@@ -72,7 +72,7 @@ NBox {
     interval: 100
     running: false
     repeat: false
-    onTriggered: syncPendingVolumeChanges()
+    onTriggered: root.syncPendingVolumeChanges()
   }
 
   function scheduleVolumeSync() {
@@ -97,9 +97,9 @@ NBox {
   Connections {
     target: AudioService
     function onVolumeChanged() {
-      if (!localOutputVolumeChanging && AudioService.sink && AudioService.sink.id === lastSinkId) {
-        var vol = AudioService.volume;
-        localOutputVolume = (vol !== undefined && !isNaN(vol)) ? vol : 0;
+      if (!root.localOutputVolumeChanging && AudioService.sink && AudioService.sink.id === root.lastSinkId) {
+        const vol = AudioService.volume;
+        root.localOutputVolume = (vol !== undefined && !isNaN(vol)) ? vol : 0;
       }
     }
   }
@@ -107,9 +107,9 @@ NBox {
   Connections {
     target: AudioService.sink && AudioService.sink.audio ? AudioService.sink.audio : null
     function onVolumeChanged() {
-      if (!localOutputVolumeChanging && AudioService.sink && AudioService.sink.id === lastSinkId) {
-        var vol = AudioService.volume;
-        localOutputVolume = (vol !== undefined && !isNaN(vol)) ? vol : 0;
+      if (!root.localOutputVolumeChanging && AudioService.sink && AudioService.sink.id === root.lastSinkId) {
+        const vol = AudioService.volume;
+        root.localOutputVolume = (vol !== undefined && !isNaN(vol)) ? vol : 0;
       }
     }
   }
@@ -117,9 +117,9 @@ NBox {
   Connections {
     target: AudioService
     function onInputVolumeChanged() {
-      if (!localInputVolumeChanging && AudioService.source && AudioService.source.id === lastSourceId) {
-        var vol = AudioService.inputVolume;
-        localInputVolume = (vol !== undefined && !isNaN(vol)) ? vol : 0;
+      if (!root.localInputVolumeChanging && AudioService.source && AudioService.source.id === root.lastSourceId) {
+        const vol = AudioService.inputVolume;
+        root.localInputVolume = (vol !== undefined && !isNaN(vol)) ? vol : 0;
       }
     }
   }
@@ -127,9 +127,9 @@ NBox {
   Connections {
     target: AudioService.source && AudioService.source.audio ? AudioService.source.audio : null
     function onVolumeChanged() {
-      if (!localInputVolumeChanging && AudioService.source && AudioService.source.id === lastSourceId) {
-        var vol = AudioService.inputVolume;
-        localInputVolume = (vol !== undefined && !isNaN(vol)) ? vol : 0;
+      if (!root.localInputVolumeChanging && AudioService.source && AudioService.source.id === root.lastSourceId) {
+        const vol = AudioService.inputVolume;
+        root.localInputVolume = (vol !== undefined && !isNaN(vol)) ? vol : 0;
       }
     }
   }
@@ -182,20 +182,20 @@ NBox {
         Layout.fillWidth: true
         from: 0
         to: Settings.data.audio.volumeOverdrive ? 1.5 : 1.0
-        value: localOutputVolume
+        value: root.localOutputVolume
         stepSize: 0.01
         heightRatio: 0.5
         onMoved: {
-          localOutputVolume = value;
-          scheduleVolumeSync();
+          root.localOutputVolume = value;
+          root.scheduleVolumeSync();
         }
         onPressedChanged: {
-          localOutputVolumeChanging = pressed;
+          root.localOutputVolumeChanging = pressed;
           if (!pressed) {
-            scheduleVolumeSync();
+            root.scheduleVolumeSync();
           }
         }
-        tooltipText: `${Math.round(localOutputVolume * 100)}%`
+        tooltipText: `${Math.round(root.localOutputVolume * 100)}%`
         tooltipDirection: "bottom"
       }
     }
@@ -239,20 +239,20 @@ NBox {
         Layout.fillWidth: true
         from: 0
         to: Settings.data.audio.volumeOverdrive ? 1.5 : 1.0
-        value: localInputVolume
+        value: root.localInputVolume
         stepSize: 0.01
         heightRatio: 0.5
         onMoved: {
-          localInputVolume = value;
-          scheduleVolumeSync();
+          root.localInputVolume = value;
+          root.scheduleVolumeSync();
         }
         onPressedChanged: {
-          localInputVolumeChanging = pressed;
+          root.localInputVolumeChanging = pressed;
           if (!pressed) {
-            scheduleVolumeSync();
+            root.scheduleVolumeSync();
           }
         }
-        tooltipText: `${Math.round(localInputVolume * 100)}%`
+        tooltipText: `${Math.round(root.localInputVolume * 100)}%`
         tooltipDirection: "bottom"
       }
     }
