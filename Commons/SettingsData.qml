@@ -26,57 +26,58 @@ JsonAdapter {
     property bool exclusive: true
 
     // Widget configuration for modular bar system
-    property JsonObject widgets
-    widgets: JsonObject {
-      property var left: [
-        {
-          "icon": "rocket",
-          "id": "CustomButton",
-          "leftClickExec": "qs -c noctalia-shell ipc call launcher toggle"
-        },
-        {
-          "id": "Clock",
-          "usePrimaryColor": false
-        },
-        {
-          "id": "SystemMonitor"
-        },
-        {
-          "id": "ActiveWindow"
-        },
-        {
-          "id": "MediaMini"
-        }
-      ]
-      property var center: [
-        {
-          "id": "Workspace"
-        }
-      ]
-      property var right: [
-        {
-          "id": "ScreenRecorder"
-        },
-        {
-          "id": "Tray"
-        },
-        {
-          "id": "NotificationHistory"
-        },
-        {
-          "id": "Battery"
-        },
-        {
-          "id": "Volume"
-        },
-        {
-          "id": "Brightness"
-        },
-        {
-          "id": "ControlCenter"
-        }
-      ]
-    }
+    property BarWidgets widgets: BarWidgets {}
+  }
+
+  component BarWidgets: JsonObject {
+    property var left: [
+      {
+        "icon": "rocket",
+        "id": "CustomButton",
+        "leftClickExec": "qs -c noctalia-shell ipc call launcher toggle"
+      },
+      {
+        "id": "Clock",
+        "usePrimaryColor": false
+      },
+      {
+        "id": "SystemMonitor"
+      },
+      {
+        "id": "ActiveWindow"
+      },
+      {
+        "id": "MediaMini"
+      }
+    ]
+    property var center: [
+      {
+        "id": "Workspace"
+      }
+    ]
+    property var right: [
+      {
+        "id": "ScreenRecorder"
+      },
+      {
+        "id": "Tray"
+      },
+      {
+        "id": "NotificationHistory"
+      },
+      {
+        "id": "Battery"
+      },
+      {
+        "id": "Volume"
+      },
+      {
+        "id": "Brightness"
+      },
+      {
+        "id": "ControlCenter"
+      }
+    ]
   }
 
   // general
@@ -102,7 +103,9 @@ JsonAdapter {
   }
 
   // ui
-  property JsonObject ui: JsonObject {
+  property UiSettings ui: UiSettings {}
+
+  component UiSettings: JsonObject {
     property string fontDefault: ""
     property string fontFixed: ""
     property real fontDefaultScale: 1.0
