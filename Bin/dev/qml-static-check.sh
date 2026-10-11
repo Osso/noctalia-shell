@@ -20,11 +20,12 @@ require_command rg
 require_command python3
 
 mapfile -t qml_files < <(cd "$repo_root" && rg --files -g '*.qml' | sort)
+mapfile -t js_files < <(cd "$repo_root" && rg --files -g '*.js' | sort)
 module_root="$(mktemp -d "${TMPDIR:-/tmp}/noctalia-qmllint-modules.XXXXXX")"
 trap 'rm -rf -- "$module_root"' EXIT
 
 # Quickshell supplies qs.* virtually; qmllint needs equivalent on-disk modules.
-python3 - "$repo_root" "$module_root" "${qml_files[@]}" <<'PY'
+python3 - "$repo_root" "$module_root" "${qml_files[@]}" "${js_files[@]}" <<'PY'
 from pathlib import Path
 import re
 import shutil
@@ -35,14 +36,16 @@ qs_root = Path(sys.argv[2]) / "qs"
 modules = {Path("."): []}
 for relative in sorted(sys.argv[3:]):
     path = Path(relative)
-    directory = path.parent
-    for parent in (directory, *directory.parents):
-        modules.setdefault(parent, [])
     target = qs_root / path
     target.parent.mkdir(parents=True, exist_ok=True)
     source = source_root / path
     # Copies retain qmldir context; qmllint resolves symlinks outside the module.
     shutil.copyfile(source, target)
+    if path.suffix != ".qml":
+        continue
+    directory = path.parent
+    for parent in (directory, *directory.parents):
+        modules.setdefault(parent, [])
     singleton = bool(
         re.search(r"^\s*pragma\s+Singleton\b", source.read_text(), re.MULTILINE)
     )

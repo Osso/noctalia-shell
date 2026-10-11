@@ -79,6 +79,64 @@ Tile {
             print(f"fixture warnings: {before} -> {after} (delta {after - before})")
             print(result.stderr, end="")
 
+    def test_relative_javascript_imports_resolve_without_hiding_real_warnings(self):
+        with tempfile.TemporaryDirectory(prefix="noctalia-static-js-") as temp:
+            root = Path(temp)
+            runner = root / "Bin/dev/qml-static-check.sh"
+            runner.parent.mkdir(parents=True)
+            shutil.copy2(REPO / "Bin/dev/qml-static-check.sh", runner)
+            (runner.parent / "qml-static-exclusions.txt").write_text("")
+            consumer = root / "Widgets/Consumer.qml"
+            consumer.parent.mkdir()
+            consumer.write_text(
+                "import QtQuick\n"
+                'import "Adjacent.js" as Adjacent\n'
+                'import "../Helpers/Parent.js" as Parent\n'
+                "QtObject {\n"
+                "    property int answer: Adjacent.answer() + Parent.answer()\n"
+                "    property int broken: missingValue\n"
+                "}\n"
+            )
+            scratch = root / "scratch"
+            scratch.mkdir()
+            command = [str(runner)]
+            environment = dict(os.environ, TMPDIR=str(scratch))
+            baseline = subprocess.run(
+                command, env=environment, capture_output=True, text=True, timeout=30
+            )
+            self.assertEqual(baseline.returncode, 0, baseline.stderr)
+            before = baseline.stderr.count("[import]")
+            self.assertEqual(before, 2, baseline.stderr)
+            sources = {
+                "Widgets/Adjacent.js": ".pragma library\nfunction answer() { return 8; }\n",
+                "Helpers/Parent.js": ".pragma library\nfunction answer() { return 16; }\n",
+            }
+            for relative, source in sources.items():
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(source)
+            originals = {
+                path: path.read_bytes()
+                for path in (consumer, *(root / relative for relative in sources))
+            }
+            result = subprocess.run(
+                command, env=environment, capture_output=True, text=True, timeout=30
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            after = result.stderr.count("[import]")
+            print(
+                f"JS fixture import warnings: {before} -> {after} (delta {after - before})"
+            )
+            print(result.stderr, end="")
+            self.assertEqual(after, 0, result.stderr)
+            warnings = re.findall(r"^Warning:.*$", result.stderr, re.MULTILINE)
+            self.assertEqual(len(warnings), 1, result.stderr)
+            self.assertIn("[unqualified]", warnings[0])
+            self.assertIn("missingValue", result.stderr)
+            self.assertEqual(list(scratch.iterdir()), [], "Lint tree leaked")
+            for path, original in originals.items():
+                self.assertEqual(path.read_bytes(), original, f"Source changed: {path}")
+
     def test_singleton_imports_are_warning_free_and_refresh_on_next_run(self):
         with tempfile.TemporaryDirectory(prefix="noctalia-static-refresh-") as temp:
             root = Path(temp)
