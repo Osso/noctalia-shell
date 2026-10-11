@@ -25,6 +25,6 @@ def check_harness(module_root, harness):
         text=True,
         timeout=60,
     )
-    print(result.stdout, end="", file=sys.stdout)
+    print(result.stdout, file=sys.stdout)
     print(result.stderr, end="", file=sys.stderr)
     return result.returncode
