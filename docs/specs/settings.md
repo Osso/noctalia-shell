@@ -92,6 +92,7 @@ Settings covers persisted shell configuration, startup bootstrap and recovery, d
 ## Tests asserting this spec
 
 - `Tests/settings-types.test.py` — isolated offscreen production SettingsData contract: exact default/mutated/group JSON fixtures, load/save/fresh-process reload, unknown-key omission, nested arrays, and targeted qmllint alias probes; not canonical hot-reload coverage.
+- `Tests/settings-singleton-warnings.test.py` — standalone `runtime` runs the actual Settings singleton offscreen: validated byte-preserving snapshots, overlapping immediate saves with verified read-back, external reload, malformed startup/watcher errors, explicit repaired retry, and first-run defaults. Logger/registry/OSD are fixtures; no full-shell or canonical hot-reload proof. Standalone `lint` accepts exactly two residual warnings (46→2 at `e212e6081`): `Qt.application.font` metadata (`missing-property`) and cross-component `saveTimer` (`unqualified`), not warning-free acceptance.
 - `Tests/settings-service-guards.test.js`
 - `Tests/shell-setup-wizard-guards.test.js`
 - `Tests/migration26-guards.test.js`
@@ -105,7 +106,9 @@ Settings covers persisted shell configuration, startup bootstrap and recovery, d
 
 - [x] Add executable JavaScript state-transition coverage for settings validation, stale callbacks, readiness, invalidation, and retry behavior.
 - [ ] Verify typed settings integration across canonical hot auto-reload; isolated fresh-process fixtures do not cover this boundary. See [maintenance caveat](../local/maintenance.md#typed-settings-integration).
-- [ ] Add a non-visible isolated Quickshell lifecycle harness for live `Process`/`FileView` integration (construction, load/save signals, file watching, and shell gating); current tests use extracted QML functions and source assertions only. Never point it at the real config or desktop runtime.
+- [x] Add non-visible isolated actual-singleton `Process`/`FileView` coverage for bootstrap snapshots, load/save signals and read-back, file watching, malformed input, retry, and first-run defaults (`5e5dcd8af`, `e212e6081`); real settings remain unchanged.
+- [ ] Extend lifecycle proof to full-shell construction/unloading gates, stale-generation races, migration failures, and delayed `saveTimer` saves; the singleton harness uses fixture dependencies and immediate saves only. Never point it at the real config or desktop runtime.
+- [ ] Resolve residual `Qt.application.font` metadata and cross-component `saveTimer` static diagnostics; the bounded singleton lint gate accepts two warnings.
 - [ ] Add executable coverage for visible Settings panel rendering and tab switching.
 - [ ] Split feature-specific settings tab behavior into each feature spec when the tab has enough direct tests.
 
