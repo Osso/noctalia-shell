@@ -20,24 +20,24 @@ Item {
   Connections {
     target: previewPanel
     function onCurrentItemChanged() {
-      fullContent = "";
-      imageDataUrl = "";
-      loadingFullContent = false;
-      isImageContent = currentItem && currentItem.isImage;
+      previewPanel.fullContent = "";
+      previewPanel.imageDataUrl = "";
+      previewPanel.loadingFullContent = false;
+      previewPanel.isImageContent = previewPanel.currentItem && previewPanel.currentItem.isImage;
 
-      if (currentItem && currentItem.clipboardId) {
-        if (isImageContent) {
-          imageDataUrl = ClipboardService.getImageData(currentItem.clipboardId) || "";
-          loadingFullContent = !imageDataUrl;
+      if (previewPanel.currentItem && previewPanel.currentItem.clipboardId) {
+        if (previewPanel.isImageContent) {
+          previewPanel.imageDataUrl = ClipboardService.getImageData(previewPanel.currentItem.clipboardId) || "";
+          previewPanel.loadingFullContent = !previewPanel.imageDataUrl;
 
-          if (!imageDataUrl && currentItem.mime) {
-            ClipboardService.decodeToDataUrl(currentItem.clipboardId, currentItem.mime, null);
+          if (!previewPanel.imageDataUrl && previewPanel.currentItem.mime) {
+            ClipboardService.decodeToDataUrl(previewPanel.currentItem.clipboardId, previewPanel.currentItem.mime, null);
           }
         } else {
-          loadingFullContent = true;
-          ClipboardService.decode(currentItem.clipboardId, function (content) {
-            fullContent = TextFormatter.wrapTextForDisplay(content);
-            loadingFullContent = false;
+          previewPanel.loadingFullContent = true;
+          ClipboardService.decode(previewPanel.currentItem.clipboardId, function (content) {
+            previewPanel.fullContent = TextFormatter.wrapTextForDisplay(content);
+            previewPanel.loadingFullContent = false;
           });
         }
       }
@@ -49,16 +49,16 @@ Item {
   Timer {
     id: imageUpdateTimer
     interval: 200
-    running: currentItem && currentItem.isImage && imageDataUrl === ""
-    repeat: currentItem && currentItem.isImage && imageDataUrl === ""
+    running: previewPanel.currentItem && previewPanel.currentItem.isImage && previewPanel.imageDataUrl === ""
+    repeat: previewPanel.currentItem && previewPanel.currentItem.isImage && previewPanel.imageDataUrl === ""
 
     onTriggered: {
-      if (currentItem && currentItem.clipboardId) {
-        const newData = ClipboardService.getImageData(currentItem.clipboardId) || "";
-        if (newData !== imageDataUrl) {
-          imageDataUrl = newData;
+      if (previewPanel.currentItem && previewPanel.currentItem.clipboardId) {
+        const newData = ClipboardService.getImageData(previewPanel.currentItem.clipboardId) || "";
+        if (newData !== previewPanel.imageDataUrl) {
+          previewPanel.imageDataUrl = newData;
           if (newData) {
-            loadingFullContent = false;
+            previewPanel.loadingFullContent = false;
           }
         }
       }
@@ -88,8 +88,8 @@ Item {
 
         BusyIndicator {
           anchors.centerIn: parent
-          running: loadingFullContent
-          visible: loadingFullContent
+          running: previewPanel.loadingFullContent
+          visible: previewPanel.loadingFullContent
           width: Style.baseWidgetSize
           height: width
         }
@@ -100,8 +100,8 @@ Item {
 
           NImageRounded {
             anchors.fill: parent
-            imagePath: imageDataUrl
-            visible: isImageContent && !loadingFullContent && imageDataUrl !== ""
+            imagePath: previewPanel.imageDataUrl
+            visible: previewPanel.isImageContent && !previewPanel.loadingFullContent && previewPanel.imageDataUrl !== ""
             radius: Style.radiusS
             imageFillMode: Image.PreserveAspectFit
           }
@@ -109,10 +109,10 @@ Item {
           ScrollView {
             anchors.fill: parent
             clip: true
-            visible: !isImageContent && !loadingFullContent
+            visible: !previewPanel.isImageContent && !previewPanel.loadingFullContent
 
             TextArea {
-              text: fullContent
+              text: previewPanel.fullContent
               readOnly: true
               wrapMode: Text.Wrap
               textFormat: TextArea.RichText // Enable HTML rendering
