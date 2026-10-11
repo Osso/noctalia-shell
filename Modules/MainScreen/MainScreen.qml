@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Effects
@@ -93,7 +95,10 @@ PanelWindow {
   function registerLazyPanel(panelName, loader) {
     const panelKey = panelObjectName(panelName);
     PanelService.registerPanelLoader(panelKey, loader);
-    registeredLazyPanels.push({ "key": panelKey, "loader": loader });
+    registeredLazyPanels.push({
+      "key": panelKey,
+      "loader": loader
+    });
   }
 
   function unregisterLazyPanels() {
@@ -135,7 +140,7 @@ PanelWindow {
 
   Behavior on color {
     ColorAnimation {
-      duration: isPanelClosing ? Style.animationFaster : Style.animationNormal
+      duration: root.isPanelClosing ? Style.animationFaster : Style.animationNormal
       easing.type: Easing.OutQuad
     }
   }
@@ -188,8 +193,8 @@ PanelWindow {
       id: backgroundMaskRegion
       x: 0
       y: 0
-      width: root.isPanelOpen && !isPanelClosing ? root.width : 0
-      height: root.isPanelOpen && !isPanelClosing ? root.height : 0
+      width: root.isPanelOpen && !root.isPanelClosing ? root.width : 0
+      height: root.isPanelOpen && !root.isPanelClosing ? root.height : 0
       intersection: Intersection.Subtract
     }
   }
@@ -219,10 +224,10 @@ PanelWindow {
       enabled: root.isPanelOpen
       acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
       onClicked: mouse => {
-                   if (PanelService.openedPanel) {
-                     PanelService.openedPanel.close();
-                   }
-                 }
+        if (PanelService.openedPanel) {
+          PanelService.openedPanel.close();
+        }
+      }
       z: 0 // Behind panels and bar
     }
 
