@@ -209,8 +209,7 @@ def execute(directory, target, mode):
         assert not re.search(
             r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output
         ), output
-    expected_exit = 255 if mode == "lint" and target == "loader" else 0
-    assert result.returncode == expected_exit, result.returncode
+    assert result.returncode == 0, result.returncode
 
 
 def main():
