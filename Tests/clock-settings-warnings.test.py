@@ -195,8 +195,8 @@ def run_behavior(directory):
     assert result.returncode == 0, (
         f"ClockSettings behavior failed: exit {result.returncode}"
     )
-    assert "8 passed, 0 failed" in output, (
-        "Expected six behavior cases plus init/cleanup"
+    assert "9 passed, 0 failed" in output, (
+        "Expected seven behavior cases plus init/cleanup"
     )
     assert not re.search(
         r"QWARN|QFATAL|ReferenceError|TypeError|Binding loop", output

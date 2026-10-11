@@ -188,6 +188,67 @@ TestCase {
         compare(preview.family, Settings.data.ui.fontDefault);
     }
 
+    function test_previewDelegateLifecycle() {
+        const first = createClock({
+            "formatHorizontal": "HH:mm\\nss",
+            "formatVertical": "HH mm",
+            "useCustomFont": true,
+            "customFont": "DejaVu Sans Mono",
+            "usePrimaryColor": true
+        });
+        const second = createClock({
+            "formatHorizontal": "hh:mm AP",
+            "formatVertical": "dd MM yyyy",
+            "usePrimaryColor": false
+        });
+        const firstRepeaters = previewRepeaters(first);
+        const secondRepeaters = previewRepeaters(second);
+        compare(previewText(firstRepeaters[0]), ["14:30", "45"]);
+        compare(previewText(secondRepeaters[0]), ["02:30 PM"]);
+        compare(previewText(secondRepeaters[1]), ["25", "12", "2023"]);
+        const cases = [{
+            "horizontal": "yyyy-MM-dd",
+            "vertical": "yyyy-MM-dd",
+            "expected": ["2023-12-25"]
+        }, {
+            "horizontal": "HH\\nmm\\nss",
+            "vertical": "HH mm ss",
+            "expected": ["14", "30", "45"]
+        }, {
+            "horizontal": "HH:mm",
+            "vertical": "HH:mm",
+            "expected": ["14:30"]
+        }];
+        for (const scenario of cases) {
+            first.valueFormatHorizontal = scenario.horizontal;
+            first.valueFormatVertical = scenario.vertical;
+            compare(previewText(firstRepeaters[0]), scenario.expected);
+            compare(previewText(firstRepeaters[1]), scenario.expected);
+            for (const repeater of firstRepeaters) {
+                for (let index = 0; index < repeater.count; index++) {
+                    compare(repeater.itemAt(index).family, "DejaVu Sans Mono");
+                    compare(repeater.itemAt(index).color, NColor.mPrimary);
+                }
+            }
+            compare(previewText(secondRepeaters[0]), ["02:30 PM"]);
+            compare(secondRepeaters[0].itemAt(0).color, NColor.mOnSurface);
+        }
+        first.destroy();
+        wait(50);
+        second.valueFormatHorizontal = "HH:mm:ss";
+        compare(previewText(secondRepeaters[0]), ["14:30:45"]);
+        second.valueUsePrimaryColor = true;
+        compare(secondRepeaters[0].itemAt(0).color, NColor.mPrimary);
+        const recreated = createClock({
+            "formatHorizontal": "yyyy",
+            "formatVertical": "MM dd",
+            "usePrimaryColor": false
+        });
+        compare(previewText(previewRepeaters(recreated)[0]), ["2023"]);
+        compare(previewRepeaters(recreated)[0].itemAt(0).color, NColor.mOnSurface);
+        compare(previewText(secondRepeaters[0]), ["14:30:45"]);
+    }
+
     function test_dialogCancelAndApply() {
         const original = JSON.stringify(Settings.data.bar.widgets.left);
         const dialog = createTemporaryObject(dialogComponent, suite, {
