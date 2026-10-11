@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Services.SystemTray
 import qs.Commons
 import qs.Modules.Panels.Tray
+import qs.Modules.MainScreen
 import qs.Services.UI
 
 Item {
@@ -44,37 +45,8 @@ Item {
     }
   }
 
-  Item {
+  PopupMenuWindow {
     id: popup
-    visible: false
-    property alias trayMenuLoader: menuLoader
-    property int opens: 0
-    property int closes: 0
-    function open() {
-      opens++;
-      visible = true;
-    }
-    function close() {
-      closes++;
-      visible = false;
-    }
-    Loader {
-      id: menuLoader
-      sourceComponent: Item {
-        width: 120
-        property var trayItem
-        property string widgetSection
-        property int widgetIndex
-        property Item anchor
-        property real menuX
-        property real menuY
-        function showAt(item, x, y) {
-          anchor = item;
-          menuX = x;
-          menuY = y;
-        }
-      }
-    }
   }
 
   Component {
@@ -144,8 +116,8 @@ Item {
       popup.visible = false;
       popup.opens = 0;
       popup.closes = 0;
-      menuLoader.active = true;
-      menuLoader.item.trayItem = null;
+      popup.trayMenuLoader.active = true;
+      popup.trayMenuLoader.item.trayItem = null;
       TooltipService.text = "";
       Settings.data = {
         bar: {
@@ -174,23 +146,23 @@ Item {
         }
       };
       alpha = createTemporaryObject(notifierComponent, scene, {
-                                      name: "Alpha",
-                                      tooltipTitle: "Alpha title",
-                                      icon: "image://alpha"
-                                    });
+        name: "Alpha",
+        tooltipTitle: "Alpha title",
+        icon: "image://alpha"
+      });
       beta = createTemporaryObject(notifierComponent, scene, {
-                                     name: "Beta",
-                                     icon: "image://beta"
-                                   });
+        name: "Beta",
+        icon: "image://beta"
+      });
       gamma = createTemporaryObject(notifierComponent, scene, {
-                                      name: "Gamma",
-                                      icon: "image://gamma"
-                                    });
+        name: "Gamma",
+        icon: "image://gamma"
+      });
       SystemTray.items.values = [alpha, beta, gamma];
       PanelService.popup = popup;
       drawer = createTemporaryObject(drawerComponent, scene, {
-                                       screen: fixtureScreen
-                                     });
+        screen: fixtureScreen
+      });
       verify(drawer !== null);
       PanelService.openedPanel = drawer;
       tryVerify(() => drawer.contentItem !== null);
@@ -237,25 +209,25 @@ Item {
 
     function test_context_open_close_and_loader_reassignment_data() {
       return [
-            {
-              tag: "top",
-              position: "top",
-              x: -47,
-              y: 30
-            },
-            {
-              tag: "left",
-              position: "left",
-              x: 34,
-              y: 0
-            },
-            {
-              tag: "right",
-              position: "right",
-              x: -128,
-              y: 0
-            }
-          ];
+        {
+          tag: "top",
+          position: "top",
+          x: -47,
+          y: 30
+        },
+        {
+          tag: "left",
+          position: "left",
+          x: 34,
+          y: 0
+        },
+        {
+          tag: "right",
+          position: "right",
+          x: -128,
+          y: 0
+        }
+      ];
     }
 
     function test_context_open_close_and_loader_reassignment(data) {
@@ -263,21 +235,21 @@ Item {
       click(1, Qt.RightButton);
       compare(popup.visible, true);
       compare(popup.opens, 1);
-      compare(menuLoader.item.trayItem, beta);
-      compare(menuLoader.item.widgetSection, "left");
-      compare(menuLoader.item.widgetIndex, 1);
-      compare(menuLoader.item.anchor, icon(1));
-      compare(menuLoader.item.menuX, data.x);
-      compare(menuLoader.item.menuY, data.y);
+      compare(popup.trayMenuLoader.item.trayItem, beta);
+      compare(popup.trayMenuLoader.item.widgetSection, "left");
+      compare(popup.trayMenuLoader.item.widgetIndex, 1);
+      compare(popup.trayMenuLoader.item.anchor, icon(1));
+      compare(popup.trayMenuLoader.item.menuX, data.x);
+      compare(popup.trayMenuLoader.item.menuY, data.y);
       click(1, Qt.RightButton);
       compare(popup.visible, false);
-      menuLoader.active = false;
+      popup.trayMenuLoader.active = false;
       click(0, Qt.RightButton);
       compare(popup.opens, 1);
-      menuLoader.active = true;
-      tryVerify(() => menuLoader.item !== null);
+      popup.trayMenuLoader.active = true;
+      tryVerify(() => popup.trayMenuLoader.item !== null);
       click(2, Qt.RightButton);
-      compare(menuLoader.item.trayItem, gamma);
+      compare(popup.trayMenuLoader.item.trayItem, gamma);
       compare(popup.visible, true);
       mouse(0).entered();
       compare(popup.visible, false);
@@ -316,8 +288,8 @@ Item {
       const many = [];
       for (let i = 0; i < 9; i++)
         many.push(createTemporaryObject(notifierComponent, scene, {
-                                          name: "item-" + i
-                                        }));
+          name: "item-" + i
+        }));
       SystemTray.items.values = many;
       tryCompare(repeater(), "count", 9);
       compare(drawer.columns, 8);

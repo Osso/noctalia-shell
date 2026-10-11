@@ -5,6 +5,7 @@ import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 import qs.Commons
 import qs.Modules.MainScreen
+import qs.Modules.Bar.Extras
 import qs.Services.UI
 import qs.Widgets
 
@@ -26,19 +27,19 @@ SmartPanel {
   readonly property var widgetSettings: {
     // Reference settingsVersion to force recalculation when it changes
     var _ = root.settingsVersion;
-    if (widgetSection === "" || widgetIndex < 0)
+    if (root.widgetSection === "" || root.widgetIndex < 0)
       return {};
-    var widgets = Settings.data.bar.widgets[widgetSection];
-    if (!widgets || widgetIndex >= widgets.length)
+    var widgets = Settings.data.bar.widgets[root.widgetSection];
+    if (!widgets || root.widgetIndex >= widgets.length)
       return {};
-    var settings = widgets[widgetIndex];
+    var settings = widgets[root.widgetIndex];
     if (!settings || settings.id !== "Tray")
       return {};
     return settings;
   }
 
   // Read pinned list directly from settings for reactivity
-  readonly property var pinnedList: widgetSettings.pinned || []
+  readonly property var pinnedList: root.widgetSettings.pinned || []
 
   function wildCardMatch(str, rule) {
     if (!str || !rule)
@@ -59,11 +60,11 @@ SmartPanel {
   }
 
   function isPinned(item) {
-    if (!pinnedList || pinnedList.length === 0)
+    if (!root.pinnedList || root.pinnedList.length === 0)
       return false;
     const title = item ? (item.tooltipTitle || item.name || item.id || "") : "";
-    for (var i = 0; i < pinnedList.length; i++) {
-      if (wildCardMatch(title, pinnedList[i]))
+    for (var i = 0; i < root.pinnedList.length; i++) {
+      if (root.wildCardMatch(title, root.pinnedList[i]))
         return true;
     }
     return false;
@@ -72,20 +73,20 @@ SmartPanel {
   // Dynamic sizing based on item count
   // Show items that are NOT pinned (unpinned items go to drawer)
   readonly property var trayValuesAll: (SystemTray.items && SystemTray.items.values) ? SystemTray.items.values : []
-  readonly property var trayValues: trayValuesAll.filter(function (it) {
+  readonly property var trayValues: root.trayValuesAll.filter(function (it) {
     return !root.isPinned(it);
   })
-  readonly property int itemCount: trayValues.length
+  readonly property int itemCount: root.trayValues.length
   readonly property int maxColumns: 8
   readonly property real cellSize: Math.round(Style.capsuleHeight * 0.65)
   readonly property real outerPadding: Style.marginM
   readonly property real innerSpacing: Style.marginM
-  readonly property int columns: Math.max(1, Math.min(maxColumns, itemCount))
-  readonly property int rows: Math.max(1, Math.ceil(itemCount / Math.max(1, columns)))
+  readonly property int columns: Math.max(1, Math.min(root.maxColumns, root.itemCount))
+  readonly property int rows: Math.max(1, Math.ceil(root.itemCount / Math.max(1, root.columns)))
 
   // Static fallback sizes
-  preferredWidth: (columns * cellSize) + ((columns - 1) * innerSpacing) + (2 * outerPadding)
-  preferredHeight: (rows * cellSize) + ((rows - 1) * innerSpacing) + (2 * outerPadding)
+  preferredWidth: (root.columns * root.cellSize) + ((root.columns - 1) * root.innerSpacing) + (2 * root.outerPadding)
+  preferredHeight: (root.rows * root.cellSize) + ((root.rows - 1) * root.innerSpacing) + (2 * root.outerPadding)
 
   // Positioning is handled automatically by SmartPanel when toggle(buttonItem) is called
 
@@ -100,8 +101,8 @@ SmartPanel {
 
   // Auto-close drawer when all items are pinned (drawer becomes empty)
   onTrayValuesChanged: {
-    if (visible && trayValues.length === 0) {
-      close();
+    if (root.visible && root.trayValues.length === 0) {
+      root.close();
     }
   }
 
@@ -109,13 +110,14 @@ SmartPanel {
   property int popupMenuUpdateTrigger: 0
 
   // Get the trayMenu window and loader from PanelService (reactive to trigger changes)
-  readonly property QtObject popupMenuWindow: {
+  readonly property PopupMenuWindow popupMenuWindow: {
     // Reference trigger to force re-evaluation
-    var _ = popupMenuUpdateTrigger;
-    return PanelService.getPopupMenuWindow(screen);
+    var _ = root.popupMenuUpdateTrigger;
+    return PanelService.getPopupMenuWindow(root.screen);
   }
 
-  readonly property Loader trayMenu: popupMenuWindow ? popupMenuWindow.trayMenuLoader : null
+  readonly property Loader trayMenu: root.popupMenuWindow ? root.popupMenuWindow.trayMenuLoader : null
+  readonly property TrayMenu trayMenuItem: root.trayMenu ? root.trayMenu.item : null
 
   Connections {
     target: PanelService
@@ -126,140 +128,150 @@ SmartPanel {
     }
   }
 
-  panelContent: Item {
+  panelContent: DrawerContent {
+    drawer: root
+  }
+
+  component DrawerContent: Item {
     id: content
+    required property TrayDrawerPanel drawer
 
     // Dynamic content sizing that SmartPanel will watch for changes
-    property real contentPreferredWidth: (root.columns * root.cellSize) + ((root.columns - 1) * root.innerSpacing) + (2 * root.outerPadding)
-    property real contentPreferredHeight: (root.rows * root.cellSize) + ((root.rows - 1) * root.innerSpacing) + (2 * root.outerPadding)
+    property real contentPreferredWidth: (content.drawer.columns * content.drawer.cellSize) + ((content.drawer.columns - 1) * content.drawer.innerSpacing) + (2 * content.drawer.outerPadding)
+    property real contentPreferredHeight: (content.drawer.rows * content.drawer.cellSize) + ((content.drawer.rows - 1) * content.drawer.innerSpacing) + (2 * content.drawer.outerPadding)
 
     Grid {
       id: grid
       anchors.fill: parent
-      anchors.margins: root.outerPadding
-      spacing: root.innerSpacing
-      columns: root.columns
-      rowSpacing: root.innerSpacing
-      columnSpacing: root.innerSpacing
+      anchors.margins: content.drawer.outerPadding
+      spacing: content.drawer.innerSpacing
+      columns: content.drawer.columns
+      rowSpacing: content.drawer.innerSpacing
+      columnSpacing: content.drawer.innerSpacing
 
       Repeater {
         id: repeater
-        model: root.trayValues
+        model: content.drawer.trayValues
 
-        delegate: Item {
-          id: trayDelegate
-          required property var modelData
+        delegate: DrawerDelegate {
+          drawer: content.drawer
+        }
+      }
+    }
+  }
 
-          width: root.cellSize
-          height: root.cellSize
+  component DrawerDelegate: Item {
+    id: trayDelegate
+    required property TrayDrawerPanel drawer
+    required property var modelData
 
-          IconImage {
-            id: trayIcon
-            anchors.fill: parent
-            asynchronous: true
-            backer.fillMode: Image.PreserveAspectFit
-            source: {
-              let icon = trayDelegate.modelData ? (trayDelegate.modelData.icon || "") : "";
-              if (!icon)
-                return "";
-              if (icon.includes("?path=")) {
-                const chunks = icon.split("?path=");
-                const name = chunks[0];
-                const path = chunks[1];
-                const fileName = name.substring(name.lastIndexOf("/") + 1);
-                return `file://${path}/${fileName}`;
-              }
-              return icon;
+    width: trayDelegate.drawer.cellSize
+    height: trayDelegate.drawer.cellSize
+
+    IconImage {
+      id: trayIcon
+      anchors.fill: parent
+      asynchronous: true
+      backer.fillMode: Image.PreserveAspectFit
+      source: {
+        let icon = trayDelegate.modelData ? (trayDelegate.modelData.icon || "") : "";
+        if (!icon)
+          return "";
+        if (icon.includes("?path=")) {
+          const chunks = icon.split("?path=");
+          const name = chunks[0];
+          const path = chunks[1];
+          const fileName = name.substring(name.lastIndexOf("/") + 1);
+          return `file://${path}/${fileName}`;
+        }
+        return icon;
+      }
+
+      layer.enabled: trayDelegate.drawer.widgetSettings.colorizeIcons !== false
+      layer.effect: ShaderEffect {
+        property color targetColor: Settings.data.colorSchemes.darkMode ? NColor.mOnSurface : NColor.mSurfaceVariant
+        property real colorizeMode: 1.0
+        fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/appicon_colorize.frag.qsb")
+      }
+
+      MouseArea {
+        anchors.fill: parent
+        cursorShape: Qt.PointingHandCursor
+        hoverEnabled: true
+        acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+
+        onClicked: mouse => {
+          if (!trayDelegate.modelData)
+            return;
+          if (mouse.button === Qt.LeftButton) {
+            // Left click: activate tray item
+            if (!trayDelegate.modelData.onlyMenu) {
+              trayDelegate.modelData.activate();
+            }
+            if ((PanelService.openedPanel !== null) && !PanelService.openedPanel.isClosing) {
+              PanelService.openedPanel.close();
+            }
+          } else if (mouse.button === Qt.MiddleButton) {
+            // Middle click: activate with middle button
+            trayDelegate.modelData.secondaryActivate && trayDelegate.modelData.secondaryActivate();
+            if ((PanelService.openedPanel !== null) && !PanelService.openedPanel.isClosing) {
+              PanelService.openedPanel.close();
+            }
+          } else if (mouse.button === Qt.RightButton) {
+            // Right click: open context menu
+            TooltipService.hideImmediately();
+
+            // Close menu if already visible
+            if (trayDelegate.drawer.popupMenuWindow && trayDelegate.drawer.popupMenuWindow.visible) {
+              trayDelegate.drawer.popupMenuWindow.close();
+              return;
             }
 
-            layer.enabled: root.widgetSettings.colorizeIcons !== false
-            layer.effect: ShaderEffect {
-              property color targetColor: Settings.data.colorSchemes.darkMode ? NColor.mOnSurface : NColor.mSurfaceVariant
-              property real colorizeMode: 1.0
-              fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/appicon_colorize.frag.qsb")
-            }
+            if (trayDelegate.modelData.hasMenu && trayDelegate.modelData.menu && trayDelegate.drawer.popupMenuWindow && trayDelegate.drawer.trayMenuItem) {
+              trayDelegate.drawer.popupMenuWindow.open();
 
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              hoverEnabled: true
-              acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+              // Position menu at the tray icon
+              const barPosition = Settings.data.bar.position;
+              let menuX, menuY;
 
-              onClicked: mouse => {
-                if (!trayDelegate.modelData)
-                  return;
-                if (mouse.button === Qt.LeftButton) {
-                  // Left click: activate tray item
-                  if (!trayDelegate.modelData.onlyMenu) {
-                    trayDelegate.modelData.activate();
-                  }
-                  if ((PanelService.openedPanel !== null) && !PanelService.openedPanel.isClosing) {
-                    PanelService.openedPanel.close();
-                  }
-                } else if (mouse.button === Qt.MiddleButton) {
-                  // Middle click: activate with middle button
-                  trayDelegate.modelData.secondaryActivate && trayDelegate.modelData.secondaryActivate();
-                  if ((PanelService.openedPanel !== null) && !PanelService.openedPanel.isClosing) {
-                    PanelService.openedPanel.close();
-                  }
-                } else if (mouse.button === Qt.RightButton) {
-                  // Right click: open context menu
-                  TooltipService.hideImmediately();
-
-                  // Close menu if already visible
-                  if (root.popupMenuWindow && root.popupMenuWindow.visible) {
-                    root.popupMenuWindow.close();
-                    return;
-                  }
-
-                  if (trayDelegate.modelData.hasMenu && trayDelegate.modelData.menu && root.popupMenuWindow && root.trayMenu && root.trayMenu.item) {
-                    root.popupMenuWindow.open();
-
-                    // Position menu at the tray icon
-                    const barPosition = Settings.data.bar.position;
-                    let menuX, menuY;
-
-                    if (barPosition === "left") {
-                      menuX = trayIcon.width + Style.marginM;
-                      menuY = 0;
-                    } else if (barPosition === "right") {
-                      menuX = -root.trayMenu.item.width - Style.marginM;
-                      menuY = 0;
-                    } else {
-                      // Horizontal bars
-                      menuX = (trayIcon.width / 2) - (root.trayMenu.item.width / 2);
-                      menuY = trayIcon.height + Style.marginS;
-                    }
-
-                    root.trayMenu.item.trayItem = trayDelegate.modelData;
-                    root.trayMenu.item.widgetSection = root.widgetSection;
-                    root.trayMenu.item.widgetIndex = root.widgetIndex;
-                    root.trayMenu.item.showAt(trayIcon, menuX, menuY);
-                  }
-                }
+              if (barPosition === "left") {
+                menuX = trayIcon.width + Style.marginM;
+                menuY = 0;
+              } else if (barPosition === "right") {
+                menuX = -trayDelegate.drawer.trayMenuItem.width - Style.marginM;
+                menuY = 0;
+              } else {
+                // Horizontal bars
+                menuX = (trayIcon.width / 2) - (trayDelegate.drawer.trayMenuItem.width / 2);
+                menuY = trayIcon.height + Style.marginS;
               }
 
-              onWheel: wheel => {
-                if (!trayDelegate.modelData) {
-                  return;
-                }
-                if (wheel.angleDelta.y > 0) {
-                  trayDelegate.modelData.scrollUp();
-                } else if (wheel.angleDelta.y < 0) {
-                  trayDelegate.modelData.scrollDown();
-                }
-              }
-
-              onEntered: {
-                if (root.popupMenuWindow) {
-                  root.popupMenuWindow.close();
-                }
-                TooltipService.show(trayIcon, trayDelegate.modelData.tooltipTitle || trayDelegate.modelData.name || trayDelegate.modelData.id || "Tray Item", BarService.getTooltipDirection());
-              }
-              onExited: TooltipService.hide()
+              trayDelegate.drawer.trayMenuItem.trayItem = trayDelegate.modelData;
+              trayDelegate.drawer.trayMenuItem.widgetSection = trayDelegate.drawer.widgetSection;
+              trayDelegate.drawer.trayMenuItem.widgetIndex = trayDelegate.drawer.widgetIndex;
+              trayDelegate.drawer.trayMenuItem.showAt(trayIcon, menuX, menuY);
             }
           }
         }
+
+        onWheel: wheel => {
+          if (!trayDelegate.modelData) {
+            return;
+          }
+          if (wheel.angleDelta.y > 0) {
+            trayDelegate.modelData.scrollUp();
+          } else if (wheel.angleDelta.y < 0) {
+            trayDelegate.modelData.scrollDown();
+          }
+        }
+
+        onEntered: {
+          if (trayDelegate.drawer.popupMenuWindow) {
+            trayDelegate.drawer.popupMenuWindow.close();
+          }
+          TooltipService.show(trayIcon, trayDelegate.modelData.tooltipTitle || trayDelegate.modelData.name || trayDelegate.modelData.id || "Tray Item", BarService.getTooltipDirection());
+        }
+        onExited: TooltipService.hide()
       }
     }
   }

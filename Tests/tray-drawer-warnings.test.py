@@ -52,17 +52,17 @@ def lint(directory):
     warnings = re.findall(r"^Warning:.*$", output, re.M)
     counts = Counter(re.findall(r"\[([^]]+)\]", line)[-1] for line in warnings)
     print("TRAY_DRAWER_LINT_COUNTS", dict(counts))
-    # Preserve unbound creation-site captures, and report existing metadata gaps:
-    # UntypedObjectModel.values (twice), QObject.trayMenuLoader (once).
+    # Keep only two explicit creation-site owner captures (without Bound),
+    # UntypedObjectModel.values metadata, and Loader.item's QObject type gap.
     blocks = re.split(r"(?=Warning:)", output)[1:]
-    actionable = [
-        block
-        for block in blocks
-        if "[unqualified]" in block and "ComponentBehavior: Bound" not in block
-    ]
-    assert not actionable, "Known-owner accesses remain:\n" + "".join(actionable)
-    assert counts.get("missing-property") == 3, dict(counts)
-    assert set(counts) <= {"unqualified", "missing-property"}, dict(counts)
+    captures = [block for block in blocks if "[unqualified]" in block]
+    assert len(captures) == 2, "Unexpected owner captures:\n" + "".join(captures)
+    assert all("ComponentBehavior: Bound" in block for block in captures)
+    assert counts.get("missing-property") == 2, dict(counts)
+    assert counts.get("incompatible-type") == 1, dict(counts)
+    assert set(counts) == {"unqualified", "missing-property", "incompatible-type"}, (
+        dict(counts)
+    )
     metadata = [block for block in blocks if "[missing-property]" in block]
     assert (
         sum(
@@ -71,13 +71,8 @@ def lint(directory):
         )
         == 2
     )
-    assert (
-        sum(
-            'Member "trayMenuLoader" not found on type "QObject"' in block
-            for block in metadata
-        )
-        == 1
-    )
+    incompatible = [block for block in blocks if "[incompatible-type]" in block]
+    assert "Cannot assign binding of type QObject to TrayMenu" in incompatible[0]
     assert result.returncode in (0, 255), result.returncode
     print("TRAY_DRAWER_LINT_PASS")
 
@@ -134,6 +129,17 @@ signal settingsSaved
         directory,
         "qs.Modules.MainScreen",
         {
+            "PopupMenuWindow": """import QtQuick
+import qs.Modules.Bar.Extras
+Item {
+  visible: false
+  readonly property alias trayMenuLoader: menuLoader
+  property int opens: 0
+  property int closes: 0
+  function open() { opens++; visible = true; }
+  function close() { closes++; visible = false; }
+  Loader { id: menuLoader; sourceComponent: TrayMenu {} }
+}""",
             "SmartPanel": """import QtQuick
 import Quickshell
 Item {
@@ -168,6 +174,23 @@ function show(item, title, direction) { anchor = item; text = title; }
             "BarService": singleton(
                 'function getTooltipDirection() { return "bottom"; }'
             ),
+        },
+    )
+    write(
+        directory,
+        "qs.Modules.Bar.Extras",
+        {
+            "TrayMenu": """import QtQuick
+Item {
+  width: 120
+  property var trayItem
+  property string widgetSection
+  property int widgetIndex
+  property Item anchor
+  property real menuX
+  property real menuY
+  function showAt(item, x, y) { anchor = item; menuX = x; menuY = y; }
+}"""
         },
     )
     write(directory, "qs.Widgets", {"NText": "import QtQuick\nText {}"})
