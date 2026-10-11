@@ -78,18 +78,9 @@ def run_lint(directory):
     )
     print(output, end="")
     print("MEDIA_MINI_LINT_COUNTS", dict(counts))
-    # Five outer mainContainer ID reads inside Loader source components remain
-    # unbound. Do not change delegate context injection just to satisfy lint.
-    assert counts == {"unqualified": 5}, (
-        f"actionable MediaMini warnings remain: {dict(counts)}"
-    )
-    blocks = re.split(r"(?=Warning:)", output)[1:]
-    assert all(
-        "mainContainer." in block and "ComponentBehavior: Bound" in block
-        for block in blocks
-    )
-    assert result.returncode in (0, 255), f"unexpected qmllint exit {result.returncode}"
-    print("MEDIA_MINI_LINT_PASS (5 documented unbound component ID reads)")
+    assert not counts, f"actionable MediaMini warnings remain: {dict(counts)}"
+    assert result.returncode == 0, f"unexpected qmllint exit {result.returncode}"
+    print("MEDIA_MINI_LINT_PASS")
 
 
 def stage_widget(directory):

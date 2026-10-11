@@ -13,6 +13,7 @@ Item {
   id: root
 
   property ShellScreen screen
+  readonly property alias visualizerContainer: mainContainer
 
   // Widget properties passed from Bar.qml for per-instance settings
   property string widgetId: ""
@@ -288,7 +289,7 @@ Item {
         z: 0
 
         sourceComponent: NLinearSpectrum {
-          width: mainContainer.width - Style.marginS
+          width: root.visualizerContainer.width - Style.marginS
           height: 20
           values: CavaService.values
           fillColor: NColor.mPrimary
@@ -303,8 +304,8 @@ Item {
         z: 0
 
         sourceComponent: NMirroredSpectrum {
-          width: mainContainer.width - Style.marginS
-          height: mainContainer.height - Style.marginS
+          width: root.visualizerContainer.width - Style.marginS
+          height: root.visualizerContainer.height - Style.marginS
           values: CavaService.values
           fillColor: NColor.mPrimary
           opacity: 0.4
@@ -318,8 +319,8 @@ Item {
         z: 0
 
         sourceComponent: NWaveSpectrum {
-          width: mainContainer.width - Style.marginS
-          height: mainContainer.height - Style.marginS
+          width: root.visualizerContainer.width - Style.marginS
+          height: root.visualizerContainer.height - Style.marginS
           values: CavaService.values
           fillColor: NColor.mPrimary
           opacity: 0.4
