@@ -134,7 +134,9 @@ def run_case(mode, root):
             (directory / "old.pid").write_text(str(processes["old"].pid))
             if mode in ("delayed-exit", "timeout"):
                 processes["old"].send_signal(signal.SIGSTOP)
-                assert Path(f"/proc/{processes['old'].pid}/stat").read_text().split()[2] == "T"
+                wait_for("old client stopped",
+                         lambda: Path(f"/proc/{processes['old'].pid}/stat").read_text().split()[2] == "T",
+                         processes)
             env = prepare_for_shell(directory, mode)
             processes["shell"] = subprocess.Popen(["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
                                                    env=env, stdout=shell_output,
