@@ -82,6 +82,8 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 
 ## Tests asserting this spec
 
+- `Tests/bar-status-warnings.test.py behavior` adds two production WiFi bar-widget cases at `c14da3540`: fixture SSID/signal, Ethernet precedence/connectivity, disconnected tooltip, vertical pill collapse/geometry, panel/menu anchoring, WiFi enable/disable requests, settings dispatch, and inert wheel. Signals/icons come from an inert NetworkService; no NetworkManager/radio action, native input, real popup, or persistence is proved. Cohort lint and isolation: [testing](testing.md#bar-status-cohort).
+
 - `Tests/network-forget-profiles.test.sh`
 - `Tests/network-service-guards.test.js` — 24 mixed source-guard and extracted-function cases; not 24 live integration cases.
 - `Tests/network-service-warnings.test.py` — standalone `lint` and `behavior`, optionally with `--artifacts <new-directory>`. After `e5f142928`, `c7f9d8315`, and `0444b1a4f`, adapter-boundary `unqualified` warnings drop 5→0; lint expects exactly one unsuppressed `incompatible-type` warning (Process.environment QVariantMap→QVariantHash) and exit status zero. Five offscreen cases (`valid`, `missing`, `malformed`, `profile-error`, `scan-error`) run actual NetworkService with real Quickshell Process/streams/FileView/JsonAdapter and private command providers. They cover startup status, loaded/reset cache, scan ordering, saved/new/denied connections, forget state, debounced JSON persistence, and profile/scan stderr failures preserving prior state. Providers maintain connected SSID across requests; no live NetworkManager mutation occurs. Isolation, acceptance, and remaining limits: [testing](testing.md#network-private-runtime).

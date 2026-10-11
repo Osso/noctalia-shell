@@ -2,6 +2,13 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 ## What it must do
 
+### Bar status cohort
+
+- `Tests/bar-status-warnings.test.py` runs standalone `lint` or `behavior`, optionally with `--artifacts <new-directory>`; no runner integration is claimed. At `c14da3540`, NotificationHistory/ScreenRecorder/WiFi/AudioVisualizer owner fixes remove 6+2+6+9 warnings. Lint requires exit status zero and exact residual counts: NotificationHistory three `unqualified` plus four `block-scope-var-declaration`; ScreenRecorder zero; WiFi one `block-scope-var-declaration`; AudioVisualizer six component-context `unqualified` plus two `block-scope-var-declaration`. Diagnostics remain unsuppressed.
+- `Tests/Qml/BarStatusHarness.qml` exercises eight behavioral cases plus QtTest init/cleanup (ten reported passes), using production widgets, shared buttons/pills, spectra, Loaders, and animations under offscreen/software `qmltestrunner`. Feature assertions and limits: [bar](bar.md#bar-status-cohort).
+- Services, settings, screen, and popup surface are inert fixtures. Behavior uses private HOME/XDG/Noctalia paths and removes desktop connections. Both modes create a permission-locked, hash-verified byte-for-byte real-settings backup before staging and check real/backup bytes unchanged afterward. Behavior timeout is 60 seconds; acceptance requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `QCRITICAL`, `ReferenceError`, `TypeError`, or `Binding loop`.
+- Synthetic mouse/wheel events and direct menu signals prove fixture routing, not native desktop input, real popup surfaces, backend/hardware actions, live audio capture, GPU rendering, persistence, toast input-region behavior, or whole-shell acceptance.
+
 ### Process panel isolated runtime
 
 - `Tests/process-panel-warnings.test.py` runs standalone `lint` or `behavior`, requiring `--artifacts <new-directory>`; no runner integration is claimed. ProcessPanel-only lint drops 19→0 at `508e9a59b` and requires zero warnings/exit status zero. Four behavioral cases plus QtTest init/cleanup yield six cases; exact sorting, model-update, 25-row, selection/color/action, and ownership assertions: [process](process.md#tests-asserting-this-spec).

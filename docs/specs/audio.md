@@ -72,6 +72,8 @@ Audio covers PipeWire-backed output/input volume state, device selection, OSD su
 
 ## Tests asserting this spec
 
+- `Tests/bar-status-warnings.test.py behavior` adds two production AudioVisualizer bar-widget cases at `c14da3540`: click/menu type cycling and settings dispatch, inert wheel, real spectrum Loader switching, fixture frame/color/orientation propagation, idle destruction/reactivation, timed size transitions, and `none` collapse. This extends spectrum-component coverage to widget integration, not live Cava/audio capture, GPU pixels, native input, real popup, or persistence. Cohort lint and isolation: [testing](testing.md#bar-status-cohort).
+
 - At `8b1de9d34`, the existing AudioCard behavior suite rerun against the root-qualified AudioService records six behavioral cases plus QtTest init/cleanup (eight passes). AudioService is not exercised by the new root-service behavior harness, which substitutes an audio fixture. `Tests/root-service-warnings.test.py lint` removes eligible root-owner diagnostics but retains two AudioService `missing-property` warnings; no warning-free service claim. Cohort limits: [testing](testing.md#root-service-cohort).
 - `Tests/audio-service-guards.test.js`
 - `Tests/audio-ui-guards.test.js`

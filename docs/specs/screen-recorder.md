@@ -72,6 +72,8 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 
 ## Tests asserting this spec
 
+- `Tests/bar-status-warnings.test.py behavior` adds two production bar-widget cases at `c14da3540`: unavailable error dispatch, source-menu model/anchor and selection, fixture source setting/toggle, pending/recording stop requests, inert right-click/wheel, and spinner visibility, hover color, timed rotation/reset. Recorder and popup are inert; no real capture, process/backend completion, native input, popup surface, or settings persistence is proved. Cohort lint and isolation: [testing](testing.md#bar-status-cohort).
+
 - `Tests/screen-recorder-discovery.test.sh` - launches the real discovery processes through `Tests/Qml/ScreenRecorderDiscoveryHarness.qml`; it verifies a `Quickshell.screensChanged` refresh replaces `DP-4` with `eDP-1` when the two commands exit in reverse order, publishes matching source/resolution state, and preserves the persisted selection.
 - `Tests/screen-recorder-service-guards.test.js`
 - `Tests/simple-service-warnings.test.py` / `Tests/Qml/SimpleServiceHarness.qml` — production availability/discovery completion ordering, portal preflight failure, successful preflight dispatch, and pending recorder failure/notice. Processes are fake; no capture or portal integration. Four parser-metadata diagnostics remain; cohort proof: [testing](testing.md#simple-service-cohort).

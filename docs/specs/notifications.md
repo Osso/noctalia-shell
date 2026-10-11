@@ -94,6 +94,8 @@ The history ListModel and Qt Repeaters/layout are real; NotificationService, Sma
 
 ## Tests asserting this spec
 
+- `Tests/bar-status-warnings.test.py behavior` adds two production bar-widget cases at `c14da3540`: synthetic click/context/wheel routing, DND icon updates, fixture history clearing and settings dispatch; unread timestamps, zero/badge settings, and badge Loader destruction/recreation. ListModel mutation alone is not a tested reactive binding: the case advances `lastSeenTs`. This is separate from history-panel coverage and proves neither notification persistence/delivery nor toast/input-region flicker resolution. Cohort lint and isolation: [testing](testing.md#bar-status-cohort).
+
 - `Tests/notification-warnings.test.py` (`lint` and `behavior`, standalone).
 - `Tests/notification-history-warnings.test.py` (`lint` and `runtime`, standalone).
 - `Tests/root-service-warnings.test.py behavior` / `Tests/Qml/RootServiceHarness.qml` — production NotificationService saves/reloads a concrete history row through fixture FileView/JsonAdapter state, restores its Date timestamp, updates an active ListModel row through the real progress timer, stops that timer after clearing, and advances/clears the image queue. One of five behavioral cases at `8b1de9d34`; notification delivery, file writes, settings, and surfaces are fixtures. This does not prove expiry, deduplication, image rendering, real persistence, or input regions. Root-only lint retains seventeen `unqualified`, six `block-scope-var-declaration`, two `missing-property`, one `unresolved-type`, and one `uncreatable-type` warnings. Cohort gates: [testing](testing.md#root-service-cohort).
