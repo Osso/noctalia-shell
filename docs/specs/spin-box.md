@@ -36,14 +36,14 @@ Spin Box covers the shared numeric input widget used by settings and color-editi
 
 ## Tests asserting this spec
 
+- `Tests/simple-widgets-warnings.test.py` with `Tests/Qml/SimpleWidgetsWarningsHarness.qml` — one production NSpinBox offscreen case at `412b21967` covers increment/decrement clicks, wheel stepping, held increment reaching the upper bound, release clearing repeat direction, disabled buttons/text input, and Return committing `9` and clearing focus. Geometry checks cover the control's width, height, and radius. Existing shadowed `enabled` semantics are preserved: wheel stepping still changes the value while disabled. Fixture services, shortened repeat timing, and synthetic input limit this to bounded component proof; cohort counts and residual lint diagnostics: [testing](testing.md#shared-simple-widgets).
 - `Tests/spin-box-guards.test.js`
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for hold-repeat acceleration and max multiplier behavior.
-- [ ] Add executable coverage for mouse wheel stepping.
-- [ ] Add executable coverage for prefix/suffix text display and focus commit/cancel behavior.
+- [ ] Extend held-repeat coverage to acceleration, max multiplier, and lower-bound hold behavior; the offscreen case reaches the upper bound with shortened timing but does not assert acceleration or multiplier progression.
+- [ ] Extend text-input coverage beyond Return commit/focus clearing to prefix/suffix display and cancel behavior.
 
 ## Out of scope
 
