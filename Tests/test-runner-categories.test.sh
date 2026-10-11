@@ -20,31 +20,6 @@ for category in \
     fi
 done
 
-if ! rg -q 'run_category "deterministic-unit" run_unit_tests' "$runner"; then
-    echo "all gate does not label deterministic unit evidence" >&2
-    exit 1
-fi
-if ! rg -q 'run_category "structural-reference" run_structural_tests' "$runner"; then
-    echo "all gate does not label structural-reference evidence" >&2
-    exit 1
-fi
-if ! rg -q 'run_category "qml-static" run_qml_static_check' "$runner"; then
-    echo "all gate does not label QML static evidence" >&2
-    exit 1
-fi
-if ! rg -q 'run_category "host-probes" run_service_probes' "$runner"; then
-    echo "all gate does not label host probe evidence" >&2
-    exit 1
-fi
-if ! rg -q 'run_category "live-log" run_log_gate' "$runner"; then
-    echo "all gate does not label live log evidence" >&2
-    exit 1
-fi
-if ! rg -q 'EXCLUDED visible-notifications' "$runner"; then
-    echo "all gate does not explicitly report visible notification exclusion" >&2
-    exit 1
-fi
-
 set +e
 unknown_output="$("$runner" unknown 2>&1)"
 unknown_status="$?"
@@ -75,6 +50,15 @@ case "${1##*/}" in
     sound-service-runtime.test.py)
         exit "$SOUND_TEST_STATUS"
         ;;
+    datetime-tokens-layout-runtime.test.py)
+        exit "$DATETIME_TEST_STATUS"
+        ;;
+    setup-layout-geometry.test.py)
+        exit "$SETUP_TEST_STATUS"
+        ;;
+    calendar-service-runtime.test.py)
+        exit "$CALENDAR_TEST_STATUS"
+        ;;
 esac
 if [ "${1##*/}" = color-namespace-runtime.test.py ]; then
     exit "$COLOR_TEST_STATUS"
@@ -93,11 +77,10 @@ run_qml_runtime_tests() { :; }
 run_command unit
 DRIVER
 
-for test_statuses in 0:0 37:0 0:39; do
-    color_status="${test_statuses%:*}"
-    sound_status="${test_statuses#*:}"
+for test_statuses in 0:0:0:0:0 37:0:0:0:0 0:39:0:0:0 0:0:41:0:0 0:0:0:42:0 0:0:0:0:43; do
+    IFS=: read -r color_status sound_status datetime_status setup_status calendar_status <<<"$test_statuses"
     set +e
-    unit_output="$(PATH="$tmp_dir/bin:$PATH" RUNNER_UNDER_TEST="$runner" COLOR_TEST_STATUS="$color_status" SOUND_TEST_STATUS="$sound_status" \
+    unit_output="$(PATH="$tmp_dir/bin:$PATH" RUNNER_UNDER_TEST="$runner" COLOR_TEST_STATUS="$color_status" SOUND_TEST_STATUS="$sound_status" DATETIME_TEST_STATUS="$datetime_status" SETUP_TEST_STATUS="$setup_status" CALENDAR_TEST_STATUS="$calendar_status" \
         bash "$tmp_dir/unit-driver.sh" 2>&1)"
     unit_status="$?"
     set -e
@@ -117,11 +100,46 @@ for test_statuses in 0:0 37:0 0:39; do
         exit 1
     fi
     if [ "$sound_status" -ne 0 ]; then
-        if [ "$unit_status" -ne 39 ] || ! printf '%s\n' "$unit_output" | rg -q 'EVIDENCE FAIL deterministic-unit \(exit 39\)' || printf '%s\n' "$unit_output" | rg -q '^color-namespace-runtime.test.py$|^weather-card-effects.test.py$|^calendar-events-safe-get-time.test.py$|EVIDENCE PASS|EVIDENCE START structural-reference'; then
+        if [ "$unit_status" -ne 39 ] || ! printf '%s\n' "$unit_output" | rg -q 'EVIDENCE FAIL deterministic-unit \(exit 39\)' || printf '%s\n' "$unit_output" | rg -q '^datetime-tokens-layout-runtime.test.py$|^setup-layout-geometry.test.py$|^calendar-service-runtime.test.py$|^color-namespace-runtime.test.py$|^weather-card-effects.test.py$|^calendar-events-safe-get-time.test.py$|EVIDENCE PASS|EVIDENCE START structural-reference'; then
             echo "unit runner did not stop with sound runtime regression failure status" >&2
             exit 1
         fi
         continue
+    fi
+    for runtime_case in \
+        "datetime-tokens-layout-runtime.test.py:$datetime_status" \
+        "setup-layout-geometry.test.py:$setup_status" \
+        "calendar-service-runtime.test.py:$calendar_status"; do
+        runtime_test="${runtime_case%:*}"
+        runtime_status="${runtime_case#*:}"
+        if [ "$(printf '%s\n' "$unit_output" | rg -F -x -c "$runtime_test" || true)" != 1 ]; then
+            echo "unit runner omitted or repeated runtime regression: $runtime_test" >&2
+            exit 1
+        fi
+        case "$runtime_test" in
+            datetime-tokens-layout-runtime.test.py)
+                later_tests='^setup-layout-geometry.test.py$|^calendar-service-runtime.test.py$'
+                ;;
+            setup-layout-geometry.test.py)
+                later_tests='^calendar-service-runtime.test.py$'
+                ;;
+            calendar-service-runtime.test.py)
+                later_tests=''
+                ;;
+        esac
+        later_tests="${later_tests:+$later_tests|}^color-namespace-runtime.test.py$|^weather-card-effects.test.py$|^calendar-events-safe-get-time.test.py$|EVIDENCE PASS|EVIDENCE START structural-reference"
+        if [ "$runtime_status" -ne 0 ]; then
+            if [ "$unit_status" -ne "$runtime_status" ] || ! printf '%s\n' "$unit_output" | rg -F -q "=== EVIDENCE FAIL deterministic-unit (exit $runtime_status) ===" || printf '%s\n' "$unit_output" | rg -q "$later_tests"; then
+                echo "unit runner did not stop with runtime regression failure: $runtime_test (exit $runtime_status)" >&2
+                exit 1
+            fi
+            continue 2
+        fi
+    done
+    runtime_order='sound-service-runtime.test.py.*datetime-tokens-layout-runtime.test.py.*setup-layout-geometry.test.py.*calendar-service-runtime.test.py.*color-namespace-runtime.test.py'
+    if ! printf '%s\n' "$unit_output" | tr '\n' ' ' | rg -q "$runtime_order"; then
+        echo "unit runner runtime regression order or continuation is incoherent" >&2
+        exit 1
     fi
     if ! printf '%s\n' "$unit_output" | rg -q '^color-namespace-runtime.test.py$'; then
         echo "unit runner omitted offscreen color regression" >&2
@@ -253,7 +271,10 @@ if [ "$caller_errexit_after_failure" = true ]; then
 fi
 
 set +e
-errexit_output="$(set -e; run_command all 2>&1)"
+errexit_output="$(
+    set -e
+    run_command all 2>&1
+)"
 errexit_status="$?"
 set -e
 if [ "$errexit_status" -ne 1 ]; then

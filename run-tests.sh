@@ -54,6 +54,9 @@ run_unit_tests() {
     python3 "$repo_root/Tests/system-monitor-runtime.test.py"
     python3 "$repo_root/Tests/media-mini-warnings.test.py" behavior
     python3 "$repo_root/Tests/sound-service-runtime.test.py"
+    python3 "$repo_root/Tests/datetime-tokens-layout-runtime.test.py"
+    python3 "$repo_root/Tests/setup-layout-geometry.test.py"
+    python3 "$repo_root/Tests/calendar-service-runtime.test.py"
     python3 "$repo_root/Tests/color-namespace-runtime.test.py"
     python3 "$repo_root/Tests/weather-card-effects.test.py"
     python3 "$repo_root/Tests/calendar-events-safe-get-time.test.py"
@@ -93,10 +96,10 @@ run_qml_runtime_tests() (
             /usr/lib/qt6/bin/qmltestrunner \
             -input "$repo_root/$test_file" \
             -o -,txt || {
-                status="$?"
-                echo "QML runtime test failed: $test_file (exit $status)" >&2
-                break
-            }
+            status="$?"
+            echo "QML runtime test failed: $test_file (exit $status)" >&2
+            break
+        }
     done <<<"$qml_tests"
 
     return "$status"
