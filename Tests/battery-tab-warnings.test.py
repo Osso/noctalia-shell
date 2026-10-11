@@ -152,7 +152,6 @@ QtObject {
         "fontWeightMedium": 500,
         "fontWeightSemiBold": 600,
         "fontWeightBold": 700,
-        "animationNormal": 300,
         "animationFast": 0,
         "baseWidgetSize": 32,
         "sliderWidth": 200,
@@ -176,7 +175,7 @@ QtObject {
         {
             "Settings": singleton("property var data: " + json.dumps(defaults)),
             "Style": singleton(
-                "property real uiScaleRatio: 1\n"
+                "property real uiScaleRatio: 1\nproperty real animationNormal: 300\n"
                 + "\n".join(
                     f"readonly property real {key}: {value}"
                     for key, value in style.items()
@@ -253,7 +252,9 @@ DISPLAY_TESTS = """
     compare(visibleTexts.includes("settings.battery.status.power"), data.rate !== 0);
     compare(visibleTexts.includes("12.5 W"), data.rate !== 0);
     verify(!visibleTexts.some(text => text.includes("undefined") || text.includes("NaN") || text === "-12.5 W"));
-    const health = descendants(tab).filter(item => item.visible && item.text === data.health + "%");
+    const healthLabel = descendants(tab).find(item => item.visible && item.text === "settings.battery.status.health");
+    verify(healthLabel !== undefined);
+    const health = descendants(tab).filter(item => item.visible && item.parent === healthLabel.parent && item.text === data.health + "%");
     compare(health.length, 1);
     compare(health[0].color, data.color);
     const stateText = data.state === UPowerDeviceState.Charging ? "battery.charging" :
@@ -261,23 +262,29 @@ DISPLAY_TESTS = """
     verify(visibleTexts.includes(stateText));
   }
 
-  function test_progressAnimation() {
+  function test_progressAnimation_data() {
+    return [{ tag: "normal-300ms", duration: 300 }, { tag: "scaled-600ms", duration: 600 }];
+  }
+
+  function test_progressAnimation(data) {
+    Style.animationNormal = data.duration;
     UPower.displayDevice.ready = true;
     UPower.displayDevice.percentage = 0.2;
     const tab = createTemporaryObject(tabComponent, testCase);
     verify(tab !== null);
-    wait(350);
+    wait(data.duration + 50);
     const track = progressTrack(tab);
     const fill = track.children[0];
     fuzzyCompare(fill.width, track.width * 0.2, 0.01);
     UPower.displayDevice.percentage = 0.8;
-    wait(150);
-    verify(fill.width > track.width * 0.3 && fill.width < track.width * 0.7,
-           "300ms animation is still interpolating at 150ms");
-    wait(200);
+    wait(data.duration / 2);
+    verify(fill.width > track.width * 0.4 && fill.width < track.width * 0.6,
+           "Normal animation duration controls the observed midpoint");
+    wait(data.duration / 2 + 50);
     fuzzyCompare(fill.width, track.width * 0.8, 0.01);
     compare(fill.height, track.height);
-    console.log("BATTERY_ANIMATION_PASS 300ms midpoint/endpoint");
+    console.log("BATTERY_ANIMATION_PASS " + data.duration + "ms midpoint/endpoint");
+    Style.animationNormal = 300;
   }
 """
 
