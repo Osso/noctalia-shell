@@ -50,7 +50,7 @@ def lint(directory):
     actionable = [
         block
         for block in blocks
-        if "[unqualified]" in block and "ComponentBehavior: Bound" not in block
+        if "[unqualified]" in block
     ]
     assert not actionable, "Known-owner accesses remain:\n" + "".join(actionable)
     assert set(counts) <= {"unqualified", "missing-property", "incompatible-type"}, (
