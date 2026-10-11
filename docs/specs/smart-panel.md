@@ -58,12 +58,14 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 
 - `Tests/panel-service-guards.test.js`
 - `Tests/Qml/PanelServiceLifecycleHarness.qml`
-- `Tests/panel-service-lifecycle.test.sh`
+- `Tests/panel-service-lifecycle.test.sh` runs production SmartPanel/PanelService non-visibly: 24 geometry cases (two viewport sizes × four bar edges × three placement modes), one close-before-fade case, and one teardown-while-open case. Assertions cover nonzero animations, content resizing without recreation, Loader unloading, caller Component context, signal counts, and stable registry cleanup after output-name changes. Settings bootstrap is real but isolated; panel content is a fixture, not each consumer panel.
 - `Tests/smart-panel-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
+
+- [ ] Four dynamic Loader member diagnostics remain after the `05772415d` SmartPanel warning reduction (76 → 4); runtime lifecycle coverage is not zero-warning static-analysis acceptance.
 
 - [ ] Add executable coverage for watchdog timeout recovery and zero-duration animation paths.
 - [ ] Add executable coverage for remaining anchor combinations and constrained/oversized content.
