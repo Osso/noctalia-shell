@@ -127,6 +127,9 @@ ShellRoot {
     }
     if (wizard.currentStep === 3) {
       const customizeStep = findItem(step, item => item.selectedBarPosition !== undefined);
+      customizeStep.scaleRatioChanged(1.1);
+      assertValue(wizard.selectedScaleRatio, 1.1, "changed scale handoff");
+      assertValue(Settings.data.general.scaleRatio, 1.1, "changed scale applied");
       customizeStep.scaleRatioChanged(cases[caseIndex].scale);
       customizeStep.barPositionChanged("bottom");
       assertValue(wizard.selectedScaleRatio, cases[caseIndex].scale, "scale handoff");
@@ -138,24 +141,34 @@ ShellRoot {
 
   function exerciseCompletion() {
     const saves = Settings.saveRequests;
+    const warnings = Logger.warnings.length;
+    assertValue(wizard.isClosing, false, "navigation remains open");
     wizard.onEscapePressed();
+    assertValue(wizard.isClosing, false, "escape is disabled");
     assertValue(Settings.saveRequests, saves, "escape does not save");
     assertValue(wizard.isCompleting, false, "escape does not complete");
     wizard.close();
+    assertValue(wizard.isClosing, true, "cancel starts close");
     assertValue(Settings.saveRequests, saves, "cancel does not save");
+    wizard.isClosing = false;
     wizard.opened();
     clickButton("All Done!");
     assertValue(Settings.saveRequests, saves + 1, "finish saves once");
     assertValue(wizard.isCompleting, true, "finish waits for confirmation");
+    assertValue(wizard.isClosing, false, "finish stays open before confirmation");
     wizard.completeSetup();
     assertValue(Settings.saveRequests, saves + 1, "duplicate finish ignored");
+    assertValue(Logger.warnings.length, warnings + 1, "duplicate finish warning recorded");
     Settings.settingsSaved();
     assertValue(wizard.isCompleting, false, "confirmation clears completion");
+    assertValue(wizard.isClosing, true, "confirmation starts close");
+    wizard.isClosing = false;
     wizard.currentStep = 0;
     clickButton("Skip Setup");
     assertValue(Settings.saveRequests, saves + 2, "skip saves once");
     Settings.settingsSaved();
     assertValue(wizard.isCompleting, false, "skip confirmation clears completion");
+    assertValue(wizard.isClosing, true, "skip confirmation starts close");
   }
 
   Component.onCompleted: {
@@ -217,6 +230,8 @@ ShellRoot {
         }
         caseIndex++;
         if (caseIndex === cases.length) {
+          if (!transitions)
+            assertValue(Settings.saveRequests, 0, "geometry must not request saves");
           console.log("SETUP_GEOMETRY " + JSON.stringify(snapshots));
           Qt.quit();
         } else {

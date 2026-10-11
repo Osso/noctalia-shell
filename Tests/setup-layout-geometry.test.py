@@ -31,7 +31,8 @@ QtObject {
 STUBS = {
     "Commons/Logger.qml": """function i(...args) {}
 function d(...args) {}
-function w(...args) {}
+property var warnings: []
+function w(...args) { warnings.push(args.join(" ")); }
 function e(...args) { console.error(...args); }
 function callStack() { console.trace(); }""",
     "Services/Power/PowerProfileService.qml": "readonly property bool noctaliaPerformanceMode: false",
