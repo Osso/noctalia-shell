@@ -22,7 +22,7 @@ Item {
   property var widgetMetadata: BarWidgetRegistry.widgetMetadata[widgetId]
   property var widgetSettings: {
     if (section && sectionWidgetIndex >= 0) {
-      var widgets = Settings.data.bar.widgets[section];
+      const widgets = Settings.data.bar.widgets[section];
       if (widgets && sectionWidgetIndex < widgets.length) {
         return widgets[sectionWidgetIndex];
       }
@@ -54,13 +54,13 @@ Item {
 
   // Connection used to open the pill when brightness changes
   Connections {
-    target: getMonitor()
+    target: root.getMonitor()
     ignoreUnknownSignals: true
     function onBrightnessUpdated() {
       // Ignore if this is the first time we receive an update.
       // Most likely service just kicked off.
-      if (!firstBrightnessReceived) {
-        firstBrightnessReceived = true;
+      if (!root.firstBrightnessReceived) {
+        root.firstBrightnessReceived = true;
         return;
       }
 
@@ -94,19 +94,19 @@ Item {
     ]
 
     onTriggered: action => {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.close();
-                   }
+      var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+      if (popupMenuWindow) {
+        popupMenuWindow.close();
+      }
 
-                   if (action === "open-display-settings") {
-                     var settingsPanel = PanelService.getPanel("settingsPanel", screen);
-                     settingsPanel.requestedTab = SettingsPanel.Tab.Display;
-                     settingsPanel.open();
-                   } else if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                   }
-                 }
+      if (action === "open-display-settings") {
+        const settingsPanel = PanelService.getPanel("settingsPanel", root.screen);
+        settingsPanel.requestedTab = SettingsPanel.Tab.Display;
+        settingsPanel.open();
+      } else if (action === "widget-settings") {
+        BarService.openWidgetSettings(root.screen, root.section, root.sectionWidgetIndex, root.widgetId, root.widgetSettings);
+      }
+    }
   }
 
   BarPill {
@@ -115,26 +115,26 @@ Item {
     screen: root.screen
     density: Settings.data.bar.density
     oppositeDirection: BarService.getPillDirection(root)
-    icon: getIcon()
+    icon: root.getIcon()
     autoHide: false // Important to be false so we can hover as long as we want
     text: {
-      var monitor = getMonitor();
+      const monitor = root.getMonitor();
       return monitor ? Math.round(monitor.brightness * 100) : "";
     }
     suffix: text.length > 0 ? "%" : "-"
-    forceOpen: displayMode === "alwaysShow"
-    forceClose: displayMode === "alwaysHide"
+    forceOpen: root.displayMode === "alwaysShow"
+    forceClose: root.displayMode === "alwaysHide"
     tooltipText: {
-      var monitor = getMonitor();
+      const monitor = root.getMonitor();
       if (!monitor)
         return "";
       return I18n.tr("tooltips.brightness-at", {
-                       "brightness": Math.round(monitor.brightness * 100)
-                     });
+        "brightness": Math.round(monitor.brightness * 100)
+      });
     }
 
     onWheel: function (angle) {
-      var monitor = getMonitor();
+      const monitor = root.getMonitor();
       if (!monitor || !monitor.brightnessControlAvailable)
         return;
 

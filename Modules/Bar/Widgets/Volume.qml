@@ -23,7 +23,7 @@ Item {
   property var widgetMetadata: BarWidgetRegistry.widgetMetadata[widgetId]
   property var widgetSettings: {
     if (section && sectionWidgetIndex >= 0) {
-      var widgets = Settings.data.bar.widgets[section];
+      const widgets = Settings.data.bar.widgets[section];
       if (widgets && sectionWidgetIndex < widgets.length) {
         return widgets[sectionWidgetIndex];
       }
@@ -46,9 +46,9 @@ Item {
     target: AudioService.sink && AudioService.sink.audio ? AudioService.sink.audio : null
     function onVolumeChanged() {
       // Logger.i("Bar:Volume", "onVolumeChanged")
-      if (!firstVolumeReceived) {
+      if (!root.firstVolumeReceived) {
         // Ignore the first volume change
-        firstVolumeReceived = true;
+        root.firstVolumeReceived = true;
       } else {
         // Hide any tooltip while the pill is visible / being updated
         TooltipService.hide();
@@ -93,20 +93,20 @@ Item {
     ]
 
     onTriggered: action => {
-                   // Close the popup menu window before handling the action
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.close();
-                   }
+      // Close the popup menu window before handling the action
+      var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+      if (popupMenuWindow) {
+        popupMenuWindow.close();
+      }
 
-                   if (action === "toggle-mute") {
-                     AudioService.setOutputMuted(!AudioService.muted);
-                   } else if (action === "open-mixer") {
-                     root.openExternalMixer();
-                   } else if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                   }
-                 }
+      if (action === "toggle-mute") {
+        AudioService.setOutputMuted(!AudioService.muted);
+      } else if (action === "open-mixer") {
+        root.openExternalMixer();
+      } else if (action === "widget-settings") {
+        BarService.openWidgetSettings(root.screen, root.section, root.sectionWidgetIndex, root.widgetId, root.widgetSettings);
+      }
+    }
   }
 
   BarPill {
@@ -123,26 +123,26 @@ Item {
       return Math.round(displayVolume * 100);
     }
     suffix: "%"
-    forceOpen: displayMode === "alwaysShow"
-    forceClose: displayMode === "alwaysHide"
+    forceOpen: root.displayMode === "alwaysShow"
+    forceClose: root.displayMode === "alwaysHide"
     tooltipText: I18n.tr("tooltips.volume-at", {
-                           "volume": (() => {
-                                        const maxVolume = Settings.data.audio.volumeOverdrive ? 1.5 : 1.0;
-                                        const displayVolume = Math.min(maxVolume, AudioService.volume);
-                                        return Math.round(displayVolume * 100);
-                                      })()
-                         })
+      "volume": (() => {
+          const maxVolume = Settings.data.audio.volumeOverdrive ? 1.5 : 1.0;
+          const displayVolume = Math.min(maxVolume, AudioService.volume);
+          return Math.round(displayVolume * 100);
+        })()
+    })
 
     onWheel: function (delta) {
       // Hide tooltip as soon as the user starts scrolling to adjust volume
       TooltipService.hide();
 
-      wheelAccumulator += delta;
-      if (wheelAccumulator >= 120) {
-        wheelAccumulator = 0;
+      root.wheelAccumulator += delta;
+      if (root.wheelAccumulator >= 120) {
+        root.wheelAccumulator = 0;
         AudioService.increaseVolume();
-      } else if (wheelAccumulator <= -120) {
-        wheelAccumulator = 0;
+      } else if (root.wheelAccumulator <= -120) {
+        root.wheelAccumulator = 0;
         AudioService.decreaseVolume();
       }
     }

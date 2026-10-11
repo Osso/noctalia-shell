@@ -24,7 +24,7 @@ Item {
   property var widgetMetadata: BarWidgetRegistry.widgetMetadata[widgetId]
   property var widgetSettings: {
     if (section && sectionWidgetIndex >= 0) {
-      var widgets = Settings.data.bar.widgets[section];
+      const widgets = Settings.data.bar.widgets[section];
       if (widgets && sectionWidgetIndex < widgets.length) {
         return widgets[sectionWidgetIndex];
       }
@@ -47,9 +47,9 @@ Item {
     target: AudioService.source && AudioService.source.audio ? AudioService.source.audio : null
     function onVolumeChanged() {
       // Logger.i("Bar:Microphone", "onInputVolumeChanged")
-      if (!firstInputVolumeReceived) {
+      if (!root.firstInputVolumeReceived) {
         // Ignore the first volume change
-        firstInputVolumeReceived = true;
+        root.firstInputVolumeReceived = true;
       } else {
         // If a tooltip is visible while we show the pill
         // hide it so it doesn't overlap the volume slider.
@@ -65,9 +65,9 @@ Item {
     target: AudioService.source && AudioService.source.audio ? AudioService.source.audio : null
     function onMutedChanged() {
       // Logger.i("Bar:Microphone", "onInputMutedChanged")
-      if (!firstInputVolumeReceived) {
+      if (!root.firstInputVolumeReceived) {
         // Ignore the first mute change
-        firstInputVolumeReceived = true;
+        root.firstInputVolumeReceived = true;
       } else {
         TooltipService.hide();
         pill.show();
@@ -111,19 +111,19 @@ Item {
     ]
 
     onTriggered: action => {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.close();
-                   }
+      var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+      if (popupMenuWindow) {
+        popupMenuWindow.close();
+      }
 
-                   if (action === "toggle-mute") {
-                     AudioService.setInputMuted(!AudioService.inputMuted);
-                   } else if (action === "open-mixer") {
-                     root.openExternalMixer();
-                   } else if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                   }
-                 }
+      if (action === "toggle-mute") {
+        AudioService.setInputMuted(!AudioService.inputMuted);
+      } else if (action === "open-mixer") {
+        root.openExternalMixer();
+      } else if (action === "widget-settings") {
+        BarService.openWidgetSettings(root.screen, root.section, root.sectionWidgetIndex, root.widgetId, root.widgetSettings);
+      }
+    }
   }
 
   BarPill {
@@ -140,26 +140,26 @@ Item {
       return Math.round(displayVolume * 100);
     }
     suffix: "%"
-    forceOpen: displayMode === "alwaysShow"
-    forceClose: displayMode === "alwaysHide"
+    forceOpen: root.displayMode === "alwaysShow"
+    forceClose: root.displayMode === "alwaysHide"
     tooltipText: I18n.tr("tooltips.microphone-volume-at", {
-                           "volume": (() => {
-                                        const maxVolume = Settings.data.audio.volumeOverdrive ? 1.5 : 1.0;
-                                        const displayVolume = Math.min(maxVolume, AudioService.inputVolume);
-                                        return Math.round(displayVolume * 100);
-                                      })()
-                         })
+      "volume": (() => {
+          const maxVolume = Settings.data.audio.volumeOverdrive ? 1.5 : 1.0;
+          const displayVolume = Math.min(maxVolume, AudioService.inputVolume);
+          return Math.round(displayVolume * 100);
+        })()
+    })
 
     onWheel: function (delta) {
       // As soon as we start scrolling to adjust volume, hide the tooltip
       TooltipService.hide();
 
-      wheelAccumulator += delta;
-      if (wheelAccumulator >= 120) {
-        wheelAccumulator = 0;
+      root.wheelAccumulator += delta;
+      if (root.wheelAccumulator >= 120) {
+        root.wheelAccumulator = 0;
         AudioService.setInputVolume(AudioService.inputVolume + AudioService.stepVolume);
-      } else if (wheelAccumulator <= -120) {
-        wheelAccumulator = 0;
+      } else if (root.wheelAccumulator <= -120) {
+        root.wheelAccumulator = 0;
         AudioService.setInputVolume(AudioService.inputVolume - AudioService.stepVolume);
       }
     }
