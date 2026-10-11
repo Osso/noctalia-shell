@@ -34,6 +34,14 @@ System Monitor covers CPU, memory, network, and CPU-temperature metric collectio
 - [x] The bar system monitor registers only the metrics that are visible and configured.
 - [x] The process panel registers CPU and memory metrics only while open.
 
+### Bar widget
+
+- [x] Compact density selects compact text and pill sizing; changing density or bar orientation updates sizing, and vertical metric text scales down to fit without enlarging.
+- [x] Left click opens the system monitor panel; right click opens the context menu, whose settings action targets the widget instance.
+- [x] Disk and fan hover show their current path/RPM tooltips; hover updates text and icon colors.
+- [x] Horizontal CPU status indicators update severity, color, and scale with CPU usage; vertical bars hide status indicators.
+- [x] Hiding the widget releases system-stat and fan polling references; showing it restores them.
+
 ### Speed formatting
 
 - [x] Full speed formatting keeps sub-megabyte values in KB.
@@ -71,13 +79,14 @@ System Monitor covers CPU, memory, network, and CPU-temperature metric collectio
 ## Tests asserting this spec
 
 - `Tests/system-stat-service-guards.test.js`
+- `Tests/system-monitor-runtime.test.py` - standalone offscreen production-widget coverage with fixture services for density/orientation sizing, interactions, CPU critical indicator updates, and polling visibility.
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
 
 - [ ] Add executable fixture coverage for CPU and network parser outputs.
 - [ ] Add fake FileView coverage for AMD and Intel temperature file reads.
-- [ ] Add system monitor widget coverage for threshold colors and display modes.
+- [ ] Extend widget coverage beyond the CPU critical indicator to all metric warning/critical thresholds and display modes.
 - [ ] Add settings-level coverage for SystemMonitorTab and bar widget settings.
 
 ## Out of scope

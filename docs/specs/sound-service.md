@@ -13,11 +13,14 @@ Sound Service covers resolving sound asset paths, playing sounds through media p
 ### Playback
 
 - [x] Playing a sound creates a media player with resolved path and `file://` source.
-- [x] Playback volume is clamped to the supported range.
+- [x] Playback volume is clamped to the supported range and reaches the player's AudioOutput; later player-volume changes update that output.
 - [x] Repeating playback uses infinite loops.
 - [x] Newly created players are stored by resolved path.
 - [x] Playing a repeating sound stops and destroys any existing player for the same resolved path.
 - [x] Player creation failures warn and can retry through the fallback notification sound.
+
+- [x] Asynchronous media errors remove and destroy the failed player; fallback preserves volume, attempts the notification sound once, and cannot recurse if that sound also fails.
+- [x] Repeating playback disables fallback and remains registered on a stopped-state signal; stopped one-shot playback removes and destroys its player.
 
 ### Stopping
 
@@ -36,13 +39,12 @@ Sound Service covers resolving sound asset paths, playing sounds through media p
 ## Tests asserting this spec
 
 - `Tests/sound-service-guards.test.js`
+- `Tests/sound-service-runtime.test.py` and `Tests/Qml/SoundServiceHarness.qml` - standalone offscreen production MediaPlayer coverage in a bubblewrap sandbox without host audio/devices or session sockets: missing-file asynchronous errors, bounded fallback, volume binding, repeat replacement, explicit stopped-state signals, and stop-one/stop-all destruction. Does not decode valid audio or prove natural end-of-media cleanup.
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for MediaPlayer error handling and fallback trigger behavior.
-- [ ] Add executable coverage for playback-state cleanup after media ends.
-- [ ] Add fixture coverage for missing fallback sound behavior.
+- [ ] Add executable coverage for natural end-of-media cleanup with valid audio.
 - [ ] Add coverage for every shell feature that triggers SoundService playback.
 
 ## Out of scope

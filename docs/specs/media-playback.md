@@ -50,6 +50,12 @@ Media playback covers MPRIS player discovery, virtual player pairing, active-pla
 - [x] Media mini title formatting supports artist-first display with `Artist - Title`.
 - [x] Media mini title formatting supports title-first display with `Title - Artist`.
 - [x] Media mini title formatting omits the separator when artist metadata is empty.
+- [x] With no player, the widget shows its placeholder and settings-only menu; playback clicks do nothing.
+- [x] Left click and the menu toggle playback subject to capabilities; middle click selects the previous track and the menu can select the next track.
+- [x] Playback state and metadata changes update title, menu icons, artwork fallback, tooltips, and progress; progress clamps at the track duration.
+- [x] Album art and playback icons follow bar orientation; linear, mirrored, and wave visualizers receive spectrum data, have nonzero dimensions, and unload when disabled.
+- [x] Fixed width honors its configured limit; always-scroll mode advances overflowing titles after its delay.
+- [x] Idle hide mode hides paused playback and releases position updates; resuming playback shows the widget and registers updates again.
 
 ### Media card
 
@@ -69,13 +75,14 @@ Media playback covers MPRIS player discovery, virtual player pairing, active-pla
 ## Tests asserting this spec
 
 - `Tests/media-service-guards.test.js`
+- `Tests/media-mini-warnings.test.py` and `Tests/Qml/MediaMiniWarningsHarness.qml` - standalone isolated offscreen production-widget coverage with fixture services and real artwork/visualizer widgets; requires completed behavior assertions and no runtime WARN/ERROR/FATAL logs.
 - `Tests/widget-helper-guards.test.js`
 - `Tests/qml-runtime-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Add behavior tests for UI consumers of `MediaService` player metadata.
+- [ ] Extend metadata-consumer runtime coverage beyond MediaMini to the media card.
 - [ ] Add spec coverage for IPC media action contracts.
 
 ## Out of scope
