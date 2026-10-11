@@ -68,12 +68,13 @@ ColumnLayout {
   }
 
   NSpinBox {
+    id: characterCountSpinBox
     label: I18n.tr("bar.widget-settings.workspace.character-count.label")
     description: I18n.tr("bar.widget-settings.workspace.character-count.description")
     from: 1
     to: 10
     value: root.valueCharacterCount
-    onValueChanged: valueCharacterCount = value
+    onValueChanged: root.valueCharacterCount = characterCountSpinBox.value
     visible: root.valueLabelMode === "name"
   }
 }
