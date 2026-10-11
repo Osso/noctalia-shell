@@ -91,7 +91,7 @@ SmartPanel {
               Layout.fillWidth: true
               Layout.preferredHeight: outputColumn.implicitHeight + (Style.marginM * 2)
 
-              property QtObject brightnessMonitor: BrightnessService.getMonitorForScreen(modelData)
+              property BrightnessService.Monitor brightnessMonitor: BrightnessService.getMonitorForScreen(modelData)
 
               ColumnLayout {
                 id: outputColumn
@@ -107,11 +107,11 @@ SmartPanel {
                   description: {
                     const compositorScale = CompositorService.getDisplayScale(monitorBox.monitorName);
                     I18n.tr("system.monitor-description", {
-                      "model": monitorBox.monitorModel,
-                      "width": monitorBox.monitorWidth * compositorScale,
-                      "height": monitorBox.monitorHeight * compositorScale,
-                      "scale": compositorScale
-                    });
+                              "model": monitorBox.monitorModel,
+                              "width": monitorBox.monitorWidth * compositorScale,
+                              "height": monitorBox.monitorHeight * compositorScale,
+                              "scale": compositorScale
+                            });
                   }
                 }
 

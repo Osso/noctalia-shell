@@ -46,9 +46,7 @@ def lint(directory):
     warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
     counts = Counter(re.findall(r"\[([^]]+)\]", line)[-1] for line in warnings)
     print("BRIGHTNESS_PANEL_WARNING_COUNTS", dict(counts))
-    # Qualification exposes the existing generic QtObject provider's missing
-    # metadata. Keep those diagnostics visible; only owner cleanup is in scope.
-    assert counts == {"missing-property": 7}, counts
+    assert not counts, f"actionable BrightnessPanel warnings remain: {dict(counts)}"
     assert result.returncode == 0, result.returncode
 
 
@@ -136,15 +134,17 @@ QtObject {
             "TooltipService": singleton("function show() {}\nfunction hide() {}"),
         },
     )
-    monitor = """QtObject {
-  property real brightness: INITIAL
-  property bool brightnessControlAvailable: AVAILABLE
+    # Match the production BrightnessService.Monitor public type; only writes
+    # is fixture instrumentation, never a property consumed by the panel.
+    monitor = """component Monitor: QtObject {
+  property real brightness
+  property bool brightnessControlAvailable
   property var writes: []
   function setBrightness(value) { writes = writes.concat([value]); brightness = value; }
-}"""
-    provider = "\n".join(
-        f"property QtObject {name}: "
-        + monitor.replace("INITIAL", str(value)).replace("AVAILABLE", available)
+}
+"""
+    provider = monitor + "\n".join(
+        f"property Monitor {name}: Monitor {{ brightness: {value}; brightnessControlAvailable: {available} }}"
         for name, value, available in (
             ("internalMonitor", 0.25, "true"),
             ("externalMonitor", 0.6, "false"),
