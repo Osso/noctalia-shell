@@ -45,7 +45,7 @@ def run_lint(directory):
     warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
     counts = Counter(re.findall(r"\[([^]]+)\]", line)[-1] for line in warnings)
     print("BAR_LINT_COUNTS", dict(counts))
-    assert counts == {"missing-property": 2}, f"owner warnings remain: {dict(counts)}"
+    assert not counts, f"Bar warnings remain: {dict(counts)}"
     assert result.returncode == 0, f"unexpected qmllint exit {result.returncode}"
 
 

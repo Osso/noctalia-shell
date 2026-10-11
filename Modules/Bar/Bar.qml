@@ -19,9 +19,11 @@ Item {
   // This property will be set by MainScreen
   property ShellScreen screen: null
 
+  readonly property Item barContentItem: barContentLoader.item
+
   // Expose bar region for click-through mask
   readonly property Item barRegion: {
-    const contentItem = barContentLoader.item;
+    const contentItem = root.barContentItem;
     if (!contentItem || contentItem.children.length === 0) {
       return null;
     }
