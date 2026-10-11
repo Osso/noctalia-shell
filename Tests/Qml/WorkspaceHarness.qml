@@ -148,12 +148,14 @@ Item {
       });
     }
 
-    function labels() {
+    function labelItems() {
       return descendants(widget, child => {
         return child.family !== undefined && child.visible;
-      }).map(child => {
-        return child.text;
       });
+    }
+
+    function labels() {
+      return labelItems().map(child => child.text);
     }
 
     function clickOrder(expected) {
@@ -258,6 +260,54 @@ Item {
       wait(20);
       compare(labels(), []);
       compare(widget.implicitWidth, 73);
+    }
+
+    function test_label_geometry_urgency_and_effect_inputs_data() {
+      return [
+        {
+          "tag": "horizontal",
+          "position": "top",
+          "emptyColor": "#eeeeee"
+        },
+        {
+          "tag": "vertical",
+          "position": "left",
+          "emptyColor": "#ffffff"
+        }
+      ];
+    }
+
+    function test_label_geometry_urgency_and_effect_inputs(data) {
+      const settings = JSON.parse(JSON.stringify(Settings.data));
+      settings.bar.position = data.position;
+      Settings.data = settings;
+      wait(20);
+      const textItems = labelItems();
+      const pills = visiblePills();
+      compare(textItems.length, 3);
+      fuzzyCompare(textItems[0].pointSize, 26 * 0.45, 0.0001);
+      fuzzyCompare(textItems[1].pointSize, 26 * 0.42, 0.0001);
+      compare(textItems[0].color, "#000000");
+      compare(textItems[1].color, "#ffffff");
+      compare(textItems[2].color, data.emptyColor);
+      for (let i = 0; i < textItems.length; i++) {
+        const position = textItems[i].mapToItem(pills[i], 0, 0);
+        fuzzyCompare(position.x, (pills[i].width - textItems[i].width) / 2, 0.0001);
+        fuzzyCompare(position.y, (pills[i].height - textItems[i].contentHeight) / 2, 0.0001);
+      }
+      widget.setDisplayedUrgency(widget.localWorkspaces.get(1), false);
+      compare(textItems[1].color, "#eeeeee");
+      widget.effectsActive = true;
+      widget.masterProgress = 0.5;
+      widget.effectColor = "#123456";
+      const bursts = descendants(widget, child => child.visible && child.border !== undefined && child.border.width === 5);
+      compare(bursts.length, 1);
+      compare(bursts[0].border.color, "#123456");
+      fuzzyCompare(bursts[0].width, pills[0].width + 9, 0.0001);
+      fuzzyCompare(bursts[0].height, pills[0].height + 9, 0.0001);
+      fuzzyCompare(bursts[0].opacity, 0.35, 0.0001);
+      widget.effectsActive = false;
+      verify(!bursts[0].visible);
     }
 
     function test_model_clear_reassignment_data() {
