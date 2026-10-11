@@ -91,9 +91,13 @@ Theming covers color scheme discovery/application, wallpaper and predefined them
 - `Tests/color-schemes.test.js`
 - `Tests/color-scheme-tab-guards.test.js`
 - `Tests/scheme-downloader-guards.test.js`
+- `Tests/scheme-downloader-runtime.test.py runtime` - offscreen staged production downloader with synthetic XHR and file-only curl/wget fixtures; covers cache/color variants, concurrent-fetch prevention, metadata filtering/rate-limit/parse failures, branch/SHA/tree resolution, recursive callbacks, asynchronous download success/failure, delayed application, installed-path classification, and active-scheme deletion. Popup stays hidden; HOME/XDG paths and file writes are temporary, real settings are byte-checked unchanged, and no real network is used. Production Popup/Timer/Process remain real; services/widgets are fixtures, not whole-shell coverage.
+- `Tests/scheme-downloader-runtime.test.py lint` - targeted block-scope diagnostics reduced 35→1 at `a0581c0f9`, with zero unqualified warnings; requires exactly one block-scope warning, not warning-free analysis.
 - `Tests/shell-state-consumer-roundtrip.test.js`
 
 ## Known gaps (current cycle)
+
+- [ ] Recursive sibling-directory requests still share function-scoped `xhr` (`SchemeDownloader.qml:459` at `a0581c0f9`): callbacks can read another request and fail to complete. The synthetic runtime test preserves this ordering/failure, not correct concurrent recursion; the remaining block-scope warning is intentional in this cleanup.
 
 - [ ] Add executable coverage for real Matugen command success/failure parsing.
 - [ ] Add executable coverage for rendered Color Scheme tab states.

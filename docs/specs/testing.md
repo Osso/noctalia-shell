@@ -26,6 +26,8 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - [x] **Live host probes** inspect the active machine or shell and must be reported separately from deterministic unit/static results.
 - [x] Runner output labels `deterministic-unit`, `structural-reference`, `qml-static`, `host-probes`, `live-log`, and `visible-notifications` evidence independently.
 
+- [x] `Tests/scheme-downloader-runtime.test.py runtime` runs the staged production downloader offscreen with synthetic transport, isolated writable paths, file-only download fixtures, and byte-verified unchanged real settings; no real network or configuration writes. Success requires exit status zero, `SCHEME_DOWNLOADER_PASS`, expected downloaded/deleted fixture files, and no logged `WARN`, `ERROR`, `ReferenceError`, or `TypeError`. Both `runtime` and `lint` run standalone with `python3`; neither is wired into `run-tests.sh`. Targeted lint accepts exactly one block-scope warning (35→1 at `a0581c0f9`), hence zero unqualified warnings, not warning-free acceptance. Coverage and the preserved shared-recursive-XHR failure belong in [theming](theming.md).
+
 ### Structural reference guardrails
 
 - [x] The structural runner explicitly refreshes the incremental `code-index` graph before inventory or reference queries and fails without running them if indexing fails.
