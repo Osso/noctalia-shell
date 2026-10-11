@@ -397,9 +397,47 @@ Item {
     }
   }
 
+  component WorkspaceLabelLoader: Loader {
+    id: workspaceLabelLoader
+
+    required property var model
+    required property string labelMode
+    required property int characterCount
+    required property real pillWidth
+    required property real pillHeight
+    required property real fontDimension
+    required property bool displayedUrgent
+    required property bool vertical
+
+    active: workspaceLabelLoader.labelMode !== "none"
+    sourceComponent: WorkspaceLabel {
+      id: loadedLabel
+
+      readonly property WorkspaceLabelLoader labelLoader: parent as WorkspaceLabelLoader
+
+      model: loadedLabel.labelLoader.model
+      labelMode: loadedLabel.labelLoader.labelMode
+      characterCount: loadedLabel.labelLoader.characterCount
+      pillWidth: loadedLabel.labelLoader.pillWidth
+      pillHeight: loadedLabel.labelLoader.pillHeight
+      fontDimension: loadedLabel.labelLoader.fontDimension
+      displayedUrgent: loadedLabel.labelLoader.displayedUrgent
+      vertical: loadedLabel.labelLoader.vertical
+    }
+  }
+
+  component WorkspaceRow: Row {
+    required property Workspace workspaceOwner
+  }
+
+  component WorkspaceColumn: Column {
+    required property Workspace workspaceOwner
+  }
+
   // Horizontal layout for top/bottom bars
-  Row {
+  WorkspaceRow {
     id: pillRow
+    workspaceOwner: root
     spacing: root.spacingBetweenPills
     anchors.verticalCenter: workspaceBackground.verticalCenter
     x: root.horizontalPadding
@@ -411,7 +449,7 @@ Item {
       Item {
         id: workspacePillContainer
         required property var model
-        property Workspace workspaceOwner: root
+        readonly property Workspace workspaceOwner: (parent as WorkspaceRow).workspaceOwner
         property bool urgent: workspacePillContainer.model.isUrgent === true
         property bool displayedUrgent: workspacePillContainer.workspaceOwner.displayedUrgentForWorkspace(workspacePillContainer.model)
 
@@ -442,18 +480,15 @@ Item {
           id: pill
           anchors.fill: parent
 
-          Loader {
-            active: (workspacePillContainer.workspaceOwner.labelMode !== "none")
-            sourceComponent: WorkspaceLabel {
-              model: workspacePillContainer.model
-              labelMode: workspacePillContainer.workspaceOwner.labelMode
-              characterCount: workspacePillContainer.workspaceOwner.characterCount
-              pillWidth: pill.width
-              pillHeight: pill.height
-              fontDimension: workspacePillContainer.height
-              displayedUrgent: workspacePillContainer.displayedUrgent
-              vertical: false
-            }
+          WorkspaceLabelLoader {
+            model: workspacePillContainer.model
+            labelMode: workspacePillContainer.workspaceOwner.labelMode
+            characterCount: workspacePillContainer.workspaceOwner.characterCount
+            pillWidth: pill.width
+            pillHeight: pill.height
+            fontDimension: workspacePillContainer.height
+            displayedUrgent: workspacePillContainer.displayedUrgent
+            vertical: false
           }
 
           radius: Style.radiusM
@@ -549,8 +584,9 @@ Item {
   }
 
   // Vertical layout for left/right bars
-  Column {
+  WorkspaceColumn {
     id: pillColumn
+    workspaceOwner: root
     spacing: root.spacingBetweenPills
     anchors.horizontalCenter: workspaceBackground.horizontalCenter
     y: root.horizontalPadding
@@ -562,7 +598,7 @@ Item {
       Item {
         id: workspacePillContainerVertical
         required property var model
-        property Workspace workspaceOwner: root
+        readonly property Workspace workspaceOwner: (parent as WorkspaceColumn).workspaceOwner
         property bool urgent: workspacePillContainerVertical.model.isUrgent === true
         property bool displayedUrgent: workspacePillContainerVertical.workspaceOwner.displayedUrgentForWorkspace(workspacePillContainerVertical.model)
 
@@ -593,18 +629,15 @@ Item {
           id: pillVertical
           anchors.fill: parent
 
-          Loader {
-            active: (workspacePillContainerVertical.workspaceOwner.labelMode !== "none")
-            sourceComponent: WorkspaceLabel {
-              model: workspacePillContainerVertical.model
-              labelMode: workspacePillContainerVertical.workspaceOwner.labelMode
-              characterCount: workspacePillContainerVertical.workspaceOwner.characterCount
-              pillWidth: pillVertical.width
-              pillHeight: pillVertical.height
-              fontDimension: workspacePillContainerVertical.width
-              displayedUrgent: workspacePillContainerVertical.displayedUrgent
-              vertical: true
-            }
+          WorkspaceLabelLoader {
+            model: workspacePillContainerVertical.model
+            labelMode: workspacePillContainerVertical.workspaceOwner.labelMode
+            characterCount: workspacePillContainerVertical.workspaceOwner.characterCount
+            pillWidth: pillVertical.width
+            pillHeight: pillVertical.height
+            fontDimension: workspacePillContainerVertical.width
+            displayedUrgent: workspacePillContainerVertical.displayedUrgent
+            vertical: true
           }
 
           radius: Style.radiusM
