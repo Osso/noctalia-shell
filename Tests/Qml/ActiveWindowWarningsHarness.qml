@@ -173,6 +173,8 @@ ShellRoot {
         if (Style.animationNormal > 0) {
           harness.require(harness.loaded.visible && harness.loaded.opacity > 0, "hidden widget remains visible during fade");
         }
+        // Geometry animates to zero after opacity finishes hiding the widget.
+        scenario.interval = Math.max(400, Style.animationNormal * 2 + 100);
         break;
       case 8:
         harness.assertDimensions(0, 0, "hidden dimensions after fade");
