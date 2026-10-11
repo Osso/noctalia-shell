@@ -25,7 +25,7 @@ Item {
   property var widgetMetadata: BarWidgetRegistry.widgetMetadata.ActiveWindow
   property var widgetSettings: {
     if (section && sectionWidgetIndex >= 0) {
-      var widgets = Settings.data.bar.widgets[section];
+      const widgets = Settings.data.bar.widgets[section];
       if (widgets && sectionWidgetIndex < widgets.length) {
         return widgets[sectionWidgetIndex];
       }
@@ -199,8 +199,8 @@ Item {
   NText {
     id: fullTitleMetrics
     visible: false
-    text: windowTitle
-    pointSize: Style.fontSizeS * scaling
+    text: root.windowTitle
+    pointSize: Style.fontSizeS * root.scaling
     applyUiScale: false
     font.weight: Style.fontWeightMedium
   }
@@ -223,8 +223,8 @@ Item {
     id: windowActiveRect
     visible: root.visible
     anchors.verticalCenter: parent.verticalCenter
-    width: isVerticalBar ? ((!hasFocusedWindow) && hideMode === "hidden" ? 0 : calculatedVerticalDimension()) : ((!hasFocusedWindow) && (hideMode === "hidden") ? 0 : dynamicWidth)
-    height: isVerticalBar ? ((!hasFocusedWindow) && hideMode === "hidden" ? 0 : calculatedVerticalDimension()) : Style.capsuleHeight
+    width: root.isVerticalBar ? ((!root.hasFocusedWindow) && root.hideMode === "hidden" ? 0 : root.calculatedVerticalDimension()) : ((!root.hasFocusedWindow) && (root.hideMode === "hidden") ? 0 : root.dynamicWidth)
+    height: root.isVerticalBar ? ((!root.hasFocusedWindow) && root.hideMode === "hidden" ? 0 : root.calculatedVerticalDimension()) : Style.capsuleHeight
     radius: Style.radiusM
     color: Style.capsuleColor
 
@@ -239,34 +239,34 @@ Item {
     Item {
       id: mainContainer
       anchors.fill: parent
-      anchors.leftMargin: isVerticalBar ? 0 : Style.marginS * scaling
-      anchors.rightMargin: isVerticalBar ? 0 : Style.marginS * scaling
+      anchors.leftMargin: root.isVerticalBar ? 0 : Style.marginS * root.scaling
+      anchors.rightMargin: root.isVerticalBar ? 0 : Style.marginS * root.scaling
 
       // Horizontal layout for top/bottom bars
       RowLayout {
         id: rowLayout
         anchors.verticalCenter: parent.verticalCenter
-        spacing: Style.marginS * scaling
-        visible: !isVerticalBar
+        spacing: Style.marginS * root.scaling
+        visible: !root.isVerticalBar
         z: 1
 
         // Window icon
         Item {
-          Layout.preferredWidth: 18 * scaling
-          Layout.preferredHeight: 18 * scaling
+          Layout.preferredWidth: 18 * root.scaling
+          Layout.preferredHeight: 18 * root.scaling
           Layout.alignment: Qt.AlignVCenter
-          visible: showIcon
+          visible: root.showIcon
 
           IconImage {
             id: windowIcon
             anchors.fill: parent
-            source: getAppIcon()
+            source: root.getAppIcon()
             asynchronous: true
             smooth: true
             visible: source !== ""
 
             // Apply dock shader to active window icon (always themed)
-            layer.enabled: widgetSettings.colorizeIcons !== false
+            layer.enabled: root.widgetSettings.colorizeIcons !== false
             layer.effect: ShaderEffect {
               property color targetColor: Settings.data.colorSchemes.darkMode ? NColor.mOnSurface : NColor.mSurfaceVariant
               property real colorizeMode: 0.0 // Dock mode (grayscale)
@@ -281,7 +281,7 @@ Item {
           id: titleContainer
           Layout.preferredWidth: {
             // Calculate available width based on other elements
-            var iconWidth = (showIcon && windowIcon.visible ? (18 + Style.marginS) : 0);
+            var iconWidth = (root.showIcon && windowIcon.visible ? (18 + Style.marginS) : 0);
             var totalMargins = Style.marginXXS * 2;
             var availableWidth = mainContainer.width - iconWidth - totalMargins;
             return Math.max(20, availableWidth);
@@ -304,7 +304,7 @@ Item {
             interval: 1000
             repeat: false
             onTriggered: {
-              if (scrollingMode === "always" && titleContainer.needsScrolling) {
+              if (root.scrollingMode === "always" && titleContainer.needsScrolling) {
                 titleContainer.isScrolling = true;
                 titleContainer.isResetting = false;
               }
@@ -313,10 +313,10 @@ Item {
 
           // Update scrolling state based on mode
           property var updateScrollingState: function () {
-            if (scrollingMode === "never") {
+            if (root.scrollingMode === "never") {
               isScrolling = false;
               isResetting = false;
-            } else if (scrollingMode === "always") {
+            } else if (root.scrollingMode === "always") {
               if (needsScrolling) {
                 if (mouseArea.containsMouse) {
                   isScrolling = false;
@@ -329,7 +329,7 @@ Item {
                 isScrolling = false;
                 isResetting = false;
               }
-            } else if (scrollingMode === "hover") {
+            } else if (root.scrollingMode === "hover") {
               if (mouseArea.containsMouse && needsScrolling) {
                 isScrolling = true;
                 isResetting = false;
@@ -367,8 +367,8 @@ Item {
 
               NText {
                 id: titleText
-                text: windowTitle
-                pointSize: Style.fontSizeS * scaling
+                text: root.windowTitle
+                pointSize: Style.fontSizeS * root.scaling
                 applyUiScale: false
                 font.weight: Style.fontWeightMedium
                 verticalAlignment: Text.AlignVCenter
@@ -385,9 +385,9 @@ Item {
 
               // Second copy for seamless scrolling
               NText {
-                text: windowTitle
+                text: root.windowTitle
                 font: titleText.font
-                pointSize: Style.fontSizeS * scaling
+                pointSize: Style.fontSizeS * root.scaling
                 applyUiScale: false
                 verticalAlignment: Text.AlignVCenter
                 color: NColor.mOnSurface
@@ -412,7 +412,7 @@ Item {
               running: titleContainer.isScrolling && !titleContainer.isResetting
               from: 0
               to: -(titleContainer.textWidth + 50)
-              duration: Math.max(4000, windowTitle.length * 100)
+              duration: Math.max(4000, root.windowTitle.length * 100)
               loops: Animation.Infinite
               easing.type: Easing.Linear
             }
@@ -426,26 +426,26 @@ Item {
         anchors.centerIn: parent
         width: parent.width - Style.marginM * 2
         height: parent.height - Style.marginM * 2
-        visible: isVerticalBar
+        visible: root.isVerticalBar
         z: 1
 
         // Window icon
         Item {
-          width: Style.baseWidgetSize * 0.5 * scaling
+          width: Style.baseWidgetSize * 0.5 * root.scaling
           height: width
           anchors.centerIn: parent
-          visible: windowTitle !== ""
+          visible: root.windowTitle !== ""
 
           IconImage {
             id: windowIconVertical
             anchors.fill: parent
-            source: getAppIcon()
+            source: root.getAppIcon()
             asynchronous: true
             smooth: true
             visible: source !== ""
 
             // Apply dock shader to active window icon (always themed)
-            layer.enabled: widgetSettings.colorizeIcons !== false
+            layer.enabled: root.widgetSettings.colorizeIcons !== false
             layer.effect: ShaderEffect {
               property color targetColor: NColor.mOnSurface
               property real colorizeMode: 0.0 // Dock mode (grayscale)
@@ -464,18 +464,18 @@ Item {
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onEntered: {
-          if ((windowTitle !== "") && isVerticalBar || (scrollingMode === "never")) {
-            TooltipService.show(root, windowTitle, BarService.getTooltipDirection());
+          if ((root.windowTitle !== "") && root.isVerticalBar || (root.scrollingMode === "never")) {
+            TooltipService.show(root, root.windowTitle, BarService.getTooltipDirection());
           }
         }
         onExited: {
           TooltipService.hide();
         }
         onClicked: mouse => {
-                     if (mouse.button === Qt.RightButton) {
-                       root.openContextMenu();
-                     }
-                   }
+          if (mouse.button === Qt.RightButton) {
+            root.openContextMenu();
+          }
+        }
       }
     }
   }
@@ -484,16 +484,16 @@ Item {
     target: CompositorService
     function onActiveWindowChanged() {
       try {
-        windowIcon.source = Qt.binding(getAppIcon);
-        windowIconVertical.source = Qt.binding(getAppIcon);
+        windowIcon.source = Qt.binding(root.getAppIcon);
+        windowIconVertical.source = Qt.binding(root.getAppIcon);
       } catch (e) {
         Logger.w("ActiveWindow", "Error in onActiveWindowChanged:", e);
       }
     }
     function onWindowListChanged() {
       try {
-        windowIcon.source = Qt.binding(getAppIcon);
-        windowIconVertical.source = Qt.binding(getAppIcon);
+        windowIcon.source = Qt.binding(root.getAppIcon);
+        windowIconVertical.source = Qt.binding(root.getAppIcon);
       } catch (e) {
         Logger.w("ActiveWindow", "Error in onWindowListChanged:", e);
       }
