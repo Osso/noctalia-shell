@@ -456,7 +456,7 @@ Popup {
         checkComplete();
       } else if (item.type === "dir") {
         pending++;
-        var xhr = new XMLHttpRequest();
+        const xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function (dirItem) {
           return function () {
             if (xhr.readyState === XMLHttpRequest.DONE) {

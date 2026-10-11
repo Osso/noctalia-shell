@@ -13,15 +13,14 @@ ShellRoot {
     property int recursiveCompletions: 0
     property var recursiveFiles: []
     readonly property var scheme: ({
-        "name": "aurora",
-        "path": "aurora",
-        "url": "synthetic:aurora"
-    })
+            "name": "aurora",
+            "path": "aurora",
+            "url": "synthetic:aurora"
+        })
 
     function require(condition, message) {
         if (!condition)
             throw new Error(message);
-
     }
 
     function testCacheAndColors() {
@@ -53,21 +52,23 @@ ShellRoot {
         require(downloader.fetching, "fetch state");
         downloader.fetchAvailableSchemesFromAPI();
         require(Transport.requests.length === 1, "concurrent fetch");
-        Transport.respond(0, 200, [{
-            "type": "file",
-            "name": "README"
-        }, {
-            "type": "dir",
-            "name": "aurora",
-            "path": "aurora",
-            "url": "synthetic:aurora"
-        }]);
+        Transport.respond(0, 200, [
+            {
+                "type": "file",
+                "name": "README"
+            },
+            {
+                "type": "dir",
+                "name": "aurora",
+                "path": "aurora",
+                "url": "synthetic:aurora"
+            }
+        ]);
         require(!downloader.fetching && downloader.availableSchemes.length === 1, "directory filtering");
         require(ShellState.cache.schemes[0].name === "aurora", "saved metadata");
         downloader.lastApiFetchTime = 0;
         downloader.fetchAvailableSchemesFromAPI();
-        Transport.respond(1, 403, {
-        });
+        Transport.respond(1, 403, {});
         require(downloader.downloadError.includes("rate-limit") && downloader.availableSchemes.length === 1, "rate-limit cache");
         downloader.lastApiFetchTime = 0;
         downloader.fetchAvailableSchemesFromAPI();
@@ -78,53 +79,80 @@ ShellRoot {
     function testRecursiveClosure() {
         Transport.reset();
         recursiveFiles = [];
-        downloader.getAllFilesRecursive(scheme, [{
-            "type": "dir",
-            "path": "aurora/one",
-            "url": "synthetic:one"
-        }, {
-            "type": "dir",
-            "path": "aurora/two",
-            "url": "synthetic:two"
-        }], recursiveFiles, function() {
+        recursiveCompletions = 0;
+        downloader.getAllFilesRecursive(scheme, [
+            {
+                "type": "dir",
+                "path": "aurora/one",
+                "url": "synthetic:one"
+            },
+            {
+                "type": "dir",
+                "path": "aurora/two",
+                "url": "synthetic:two"
+            }
+        ], recursiveFiles, function () {
             harness.recursiveCompletions++;
         });
-        // Preserve existing shared-XHR behavior; block-local XHR would change this.
-        Transport.respond(0, 200, [{
-            "type": "file",
+        require(Transport.requests.length === 2, "two directory requests pending");
+        const firstFile = {
             "path": "aurora/one/a",
-            "name": "a",
-            "download_url": "file:a"
-        }]);
-        require(recursiveFiles.length === 0 && recursiveCompletions === 0, "first callback must still read shared request");
-        Transport.respond(1, 200, [{
-            "type": "file",
+            "url": "file:a",
+            "name": "a"
+        };
+        const secondFile = {
             "path": "aurora/two/b",
-            "name": "b",
-            "download_url": "file:b"
-        }]);
-        require(recursiveFiles.length === 1 && recursiveFiles[0].name === "b", "shared request response changed");
-        require(recursiveCompletions === 0, "shared request completion changed");
+            "url": "file:b",
+            "name": "b"
+        };
+        // Finish the last-created request first, while its sibling is still pending.
+        Transport.respond(1, 200, [
+            {
+                "type": "file",
+                "path": secondFile.path,
+                "name": secondFile.name,
+                "download_url": secondFile.url
+            }
+        ]);
+        require(JSON.stringify(recursiveFiles) === JSON.stringify([secondFile]), "second directory file exactly once");
+        require(recursiveCompletions === 0, "completion before pending sibling response");
+        Transport.respond(0, 200, [
+            {
+                "type": "file",
+                "path": firstFile.path,
+                "name": firstFile.name,
+                "download_url": firstFile.url
+            }
+        ]);
+        require(JSON.stringify(recursiveFiles) === JSON.stringify([secondFile, firstFile]), "both directory files exactly once, without duplicated response");
+        require(recursiveCompletions === 1, "one completion after both directory responses");
+        console.log("SCHEME_DOWNLOADER_REVERSE_DIRECTORY_PASS");
         Transport.reset();
+        recursiveCompletions = 0;
         recursiveFiles = [];
-        downloader.getAllFilesRecursive(scheme, [{
-            "type": "file",
-            "path": "aurora/aurora.json",
-            "name": "aurora.json",
-            "download_url": Qt.resolvedUrl("fixtures/scheme.json").toString()
-        }, {
-            "type": "dir",
-            "path": "aurora/nested",
-            "url": "synthetic:nested"
-        }], recursiveFiles, function() {
+        downloader.getAllFilesRecursive(scheme, [
+            {
+                "type": "file",
+                "path": "aurora/aurora.json",
+                "name": "aurora.json",
+                "download_url": Qt.resolvedUrl("fixtures/scheme.json").toString()
+            },
+            {
+                "type": "dir",
+                "path": "aurora/nested",
+                "url": "synthetic:nested"
+            }
+        ], recursiveFiles, function () {
             harness.recursiveCompletions++;
         });
-        Transport.respond(0, 200, [{
-            "type": "file",
-            "path": "aurora/nested/terminal.txt",
-            "name": "terminal.txt",
-            "download_url": Qt.resolvedUrl("fixtures/terminal.txt").toString()
-        }]);
+        Transport.respond(0, 200, [
+            {
+                "type": "file",
+                "path": "aurora/nested/terminal.txt",
+                "name": "terminal.txt",
+                "download_url": Qt.resolvedUrl("fixtures/terminal.txt").toString()
+            }
+        ]);
         require(recursiveCompletions === 1 && recursiveFiles.length === 2, "single-directory completion");
     }
 
@@ -145,18 +173,20 @@ ShellRoot {
         });
         require(downloader.cachedBranchSha === "fixture-sha", "SHA cache");
         Transport.respond(2, 200, {
-            "tree": [{
-                "type": "blob",
-                "path": "elsewhere/ignored.json"
-            }, {
-                "type": "tree",
-                "path": "aurora/nested"
-            }]
+            "tree": [
+                {
+                    "type": "blob",
+                    "path": "elsewhere/ignored.json"
+                },
+                {
+                    "type": "tree",
+                    "path": "aurora/nested"
+                }
+            ]
         });
         require(!downloader.downloading && downloader.downloadError.includes("no-files"), "tree filtering");
         downloader.getSchemeFilesDirect(scheme);
-        Transport.respond(3, 200, {
-        });
+        Transport.respond(3, 200, {});
         require(downloader.downloadError.includes("invalid-response"), "invalid direct response");
         downloader.getSchemeTreeWithSha(scheme, "synthetic", "fixture-sha");
         Transport.respond(4, 200, "{");
@@ -207,10 +237,12 @@ ShellRoot {
                     harness.require(downloader.pendingApplyScheme === "", "pending cleared");
                     harness.testInstalledPaths();
                     downloader.downloading = true;
-                    downloader.downloadSchemeFiles("broken", [{
-                        "path": "broken/a",
-                        "url": "https://forbidden.invalid/a"
-                    }]);
+                    downloader.downloadSchemeFiles("broken", [
+                        {
+                            "path": "broken/a",
+                            "url": "https://forbidden.invalid/a"
+                        }
+                    ]);
                     harness.phase = 3;
                 } else if (harness.phase === 3 && !downloader.downloading) {
                     harness.require(ToastService.errors === 1 && downloader.downloadError.includes("Exit code: 9"), "failed process details");
@@ -231,5 +263,4 @@ ShellRoot {
             }
         }
     }
-
 }

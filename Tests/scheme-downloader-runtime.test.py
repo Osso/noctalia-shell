@@ -58,8 +58,9 @@ def lint(directory):
         for line in warnings
     )
     print("SCHEME_DOWNLOADER_LINT_COUNTS", dict(counts))
-    # Recursive callbacks intentionally retain the pre-existing shared request.
-    assert counts == {"block-scope-var-declaration": 1}, dict(counts)
+    assert not counts, dict(counts)
+    assert result.returncode == 0, result.returncode
+    print("SCHEME_DOWNLOADER_LINT_PASS")
 
 
 def write_module(directory, name, sources):
@@ -254,6 +255,7 @@ def runtime(directory):
     print(output, end="")
     assert result.returncode == 0, result.returncode
     assert "SCHEME_DOWNLOADER_PASS" in output, output
+    assert output.count("SCHEME_DOWNLOADER_REVERSE_DIRECTORY_PASS") == 1, output
     assert not re.search(r" WARN | ERROR |ReferenceError|TypeError", output), output
     assert (directory / "output/aurora/aurora.json").read_bytes() == (
         directory / "fixtures/scheme.json"

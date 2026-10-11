@@ -59,6 +59,7 @@ Theming covers color scheme discovery/application, wallpaper and predefined them
 - [x] Scheme fetching avoids concurrent fetches, prefers loaded ShellState cache, and falls back to API when ShellState is unavailable.
 - [x] Scheme tree resolution has tested fallback paths.
 - [x] Scheme file download and installation checks are guarded.
+- [x] Recursive sibling-directory listings retain independent request responses: reverse-order completion includes each directory's files exactly once, never completes while a sibling is pending, and invokes the final completion callback exactly once.
 - [x] Scheme deletion only deletes from the downloaded scheme directory, detects active-scheme deletion, resets to the default scheme when needed, reloads schemes, notifies success/failure, and manages the delete process lifecycle.
 - [x] Scheme color prefetch runs only while visible with available schemes, defers work, and skips already cached scheme colors.
 
@@ -91,13 +92,11 @@ Theming covers color scheme discovery/application, wallpaper and predefined them
 - `Tests/color-schemes.test.js`
 - `Tests/color-scheme-tab-guards.test.js`
 - `Tests/scheme-downloader-guards.test.js`
-- `Tests/scheme-downloader-runtime.test.py runtime` - offscreen staged production downloader with synthetic XHR and file-only curl/wget fixtures; covers cache/color variants, concurrent-fetch prevention, metadata filtering/rate-limit/parse failures, branch/SHA/tree resolution, recursive callbacks, asynchronous download success/failure, delayed application, installed-path classification, and active-scheme deletion. Popup stays hidden; HOME/XDG paths and file writes are temporary, real settings are byte-checked unchanged, and no real network is used. Production Popup/Timer/Process remain real; services/widgets are fixtures, not whole-shell coverage.
-- `Tests/scheme-downloader-runtime.test.py lint` - targeted block-scope diagnostics reduced 35→1 at `a0581c0f9`, with zero unqualified warnings; requires exactly one block-scope warning, not warning-free analysis.
+- `Tests/scheme-downloader-runtime.test.py runtime` - offscreen staged production downloader with synthetic XHR and file-only curl/wget fixtures; covers cache/color variants, concurrent-fetch prevention, metadata filtering/rate-limit/parse failures, branch/SHA/tree resolution, two concurrent directory responses delivered in reverse order with exact file and completion assertions, single-directory recursion, asynchronous download success/failure, delayed application, installed-path classification, and active-scheme deletion. Popup stays hidden; HOME/XDG paths and file writes are temporary, real settings are byte-checked unchanged, and no real network is used. Production Popup/Timer/Process remain real; services/widgets are fixtures, not whole-shell coverage.
+- `Tests/scheme-downloader-runtime.test.py lint` - targeted production downloader analysis requires zero warnings and exit code zero; the final sibling-request hoisting warning is removed (1→0).
 - `Tests/shell-state-consumer-roundtrip.test.js`
 
 ## Known gaps (current cycle)
-
-- [ ] Recursive sibling-directory requests still share function-scoped `xhr` (`SchemeDownloader.qml:459` at `a0581c0f9`): callbacks can read another request and fail to complete. The synthetic runtime test preserves this ordering/failure, not correct concurrent recursion; the remaining block-scope warning is intentional in this cleanup.
 
 - [ ] Add executable coverage for real Matugen command success/failure parsing.
 - [ ] Add executable coverage for rendered Color Scheme tab states.
