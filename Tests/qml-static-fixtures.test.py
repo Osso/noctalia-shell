@@ -84,14 +84,19 @@ class FixtureLintTest(unittest.TestCase):
                 harness.write_text(
                     source.replace(
                         "{",
-                        "{\n  property int regressionWarning: missingFixtureValue",
+                        "{\n  property int regressionWarning: Qt.application.missingFixtureValue",
                         1,
                     )
                 )
+                # Earlier genuine warnings must not mask this injected failure.
+                with (root / ".ignore").open("a") as ignored:
+                    for other in HARNESS_SCRIPTS:
+                        if other != name:
+                            ignored.write(f"Tests/Qml/{other}\n")
                 result = self.run_checker(runner, root)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("missingFixtureValue", result.stderr)
-                self.assertIn("[unqualified]", result.stderr)
+                self.assertIn("[missing-property]", result.stderr)
                 self.assertNotIn("ok qmlStaticCheck", result.stdout)
                 self.assertNotIn("Checked 3 QML files", result.stdout)
 
