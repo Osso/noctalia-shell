@@ -1,3 +1,6 @@
+// panelContent is Loader-created and keeps this panel's owner context.
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -27,10 +30,10 @@ SmartPanel {
 
     // Sort: connected first, then by signal strength
     known.sort((a, b) => {
-                 if (a.connected !== b.connected)
-                 return b.connected - a.connected;
-                 return b.signal - a.signal;
-               });
+      if (a.connected !== b.connected)
+        return b.connected - a.connected;
+      return b.signal - a.signal;
+    });
 
     return known;
   }
@@ -49,7 +52,7 @@ SmartPanel {
   }
 
   onOpened: {
-    hasHadNetworks = false;
+    root.hasHadNetworks = false;
     NetworkService.beginActivePolling();
   }
 
@@ -58,13 +61,13 @@ SmartPanel {
   }
 
   onKnownNetworksChanged: {
-    if (knownNetworks.length > 0)
-      hasHadNetworks = true;
+    if (root.knownNetworks.length > 0)
+      root.hasHadNetworks = true;
   }
 
   onAvailableNetworksChanged: {
-    if (availableNetworks.length > 0)
-      hasHadNetworks = true;
+    if (root.availableNetworks.length > 0)
+      root.hasHadNetworks = true;
   }
 
   Connections {
@@ -76,13 +79,15 @@ SmartPanel {
   }
 
   panelContent: Rectangle {
+    id: panelBody
+
     color: NColor.transparent
 
     // Calculate content height based on header + networks list (or minimum for empty states)
     property real headerHeight: headerRow.implicitHeight + Style.marginM * 2
     property real networksHeight: networksList.implicitHeight
-    property real calculatedHeight: (networksHeight !== 0) ? (headerHeight + networksHeight + Style.marginL * 2 + Style.marginM) : (280 * Style.uiScaleRatio)
-    property real contentPreferredHeight: Settings.data.network.wifiEnabled && Object.keys(NetworkService.networks).length > 0 ? Math.min(root.preferredHeight, calculatedHeight) : Math.min(root.preferredHeight, 280 * Style.uiScaleRatio)
+    property real calculatedHeight: (panelBody.networksHeight !== 0) ? (panelBody.headerHeight + panelBody.networksHeight + Style.marginL * 2 + Style.marginM) : (280 * Style.uiScaleRatio)
+    property real contentPreferredHeight: Settings.data.network.wifiEnabled && Object.keys(NetworkService.networks).length > 0 ? Math.min(root.preferredHeight, panelBody.calculatedHeight) : Math.min(root.preferredHeight, 280 * Style.uiScaleRatio)
 
     ColumnLayout {
       id: mainColumn
@@ -315,19 +320,19 @@ SmartPanel {
             passwordSsid: root.passwordSsid
             expandedSsid: root.expandedSsid
             onPasswordRequested: ssid => {
-                                   root.passwordSsid = ssid;
-                                   root.expandedSsid = "";
-                                 }
+              root.passwordSsid = ssid;
+              root.expandedSsid = "";
+            }
             onPasswordSubmitted: (ssid, password) => {
-                                   NetworkService.connect(ssid, password);
-                                   root.passwordSsid = "";
-                                 }
+              NetworkService.connect(ssid, password);
+              root.passwordSsid = "";
+            }
             onPasswordCancelled: root.passwordSsid = ""
             onForgetRequested: ssid => root.expandedSsid = root.expandedSsid === ssid ? "" : ssid
             onForgetConfirmed: ssid => {
-                                 NetworkService.forget(ssid);
-                                 root.expandedSsid = "";
-                               }
+              NetworkService.forget(ssid);
+              root.expandedSsid = "";
+            }
             onForgetCancelled: root.expandedSsid = ""
           }
 
@@ -337,19 +342,19 @@ SmartPanel {
             passwordSsid: root.passwordSsid
             expandedSsid: root.expandedSsid
             onPasswordRequested: ssid => {
-                                   root.passwordSsid = ssid;
-                                   root.expandedSsid = "";
-                                 }
+              root.passwordSsid = ssid;
+              root.expandedSsid = "";
+            }
             onPasswordSubmitted: (ssid, password) => {
-                                   NetworkService.connect(ssid, password);
-                                   root.passwordSsid = "";
-                                 }
+              NetworkService.connect(ssid, password);
+              root.passwordSsid = "";
+            }
             onPasswordCancelled: root.passwordSsid = ""
             onForgetRequested: ssid => root.expandedSsid = root.expandedSsid === ssid ? "" : ssid
             onForgetConfirmed: ssid => {
-                                 NetworkService.forget(ssid);
-                                 root.expandedSsid = "";
-                               }
+              NetworkService.forget(ssid);
+              root.expandedSsid = "";
+            }
             onForgetCancelled: root.expandedSsid = ""
           }
         }
