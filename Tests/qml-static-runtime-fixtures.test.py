@@ -45,6 +45,7 @@ class RuntimeFixtureRoutingTest(unittest.TestCase):
         for script, harness in (
             ("scheme-downloader-runtime.test.py", "SchemeDownloaderTransport.qml"),
             ("media-mini-warnings.test.py", "MediaMiniWarningsHarness.qml"),
+            ("bar-widget-metadata-runtime.test.py", "BarWidgetMetadataHarness.qml"),
         ):
             shutil.copy2(ROOT / "Tests/Qml" / harness, dependencies / harness)
             copied_script = tests / script
