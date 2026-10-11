@@ -48,6 +48,8 @@ TestCase {
 
   function test_color_channels_from_settings_string() {
     compare(window.fillColor, Qt.vector4d(0.2, 0.4, 0.6, 1));
+    Settings.data.wallpaper.fillColor = "#993366";
+    compare(window.fillColor, Qt.vector4d(0.6, 0.2, 0.4, 1));
     Settings.data.wallpaper.fillColor = "#336699";
   }
 
