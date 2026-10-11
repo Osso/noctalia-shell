@@ -55,6 +55,12 @@ Compositor covers backend detection, shared workspace/window state, display-scal
 - [x] Focused workspace lookup returns the focused local index, switching by offset wraps/clamps through local workspaces, and empty workspace lists fail closed.
 - [x] Workspace refresh filters by screen, follow-focused-screen mode, and occupied state, updates repeater models, and refreshes focus state.
 
+### Grouped taskbar
+
+- [x] Grouped taskbar filters workspace groups by screen and preserves normalized workspace/window order through launches, model clears, and screen reassignment.
+- [x] Window left-click focuses that window; empty-group left-click switches workspace. Window context actions appear in activate/close/settings order; empty groups expose settings only. Actions clear selection and retain widget settings context.
+- [x] Delegate ownership qualification preserves icon sizing and leaves notification/toast input regions unchanged.
+
 ### Types and probes
 
 - [x] Compositor backend references are typed.
@@ -85,13 +91,14 @@ Compositor covers backend detection, shared workspace/window state, display-scal
 - `Tests/mango-service-guards.test.js`
 - `Tests/workspace-guards.test.js`
 - `Tests/workspace-runtime.test.py` with `Tests/Qml/WorkspaceHarness.qml` — isolated offscreen production Workspace/Niri normalization coverage: eight behavioral cases plus QtTest initialization/cleanup (ten total). Covers initial geometry, output reassignment and click-command order, vertical labels/active sizing, offset switching, occupied/focused-output filtering, and Loader model context; both orientations additionally cover model clear/reassignment/destruction/recreation, label geometry/colors, urgency changes, and effect inputs. Desktop/process/settings boundaries are fixtures; activation commands are recorded, not sent to Niri. Rejects QWARN/QFATAL/ReferenceError/TypeError and verifies real settings remain unchanged. Runs in the deterministic unit gate; no live IPC coverage.
+- `Tests/taskbar-grouped-warnings.test.py` with `Tests/Qml/TaskbarGroupedHarness.qml` — standalone `lint` audits only production TaskbarGrouped; `behavior` runs the production widget and Niri normalization offscreen. Covers concrete shuffled window groups, launch events, focus/close/workspace command arguments, menu order/reset/settings context, icon dimensions, and clear/output reassignment in horizontal/vertical layouts. Desktop commands, popup surfaces, icons, settings and compositor facade are fixtures; no live Wayland IPC or notification-flicker coverage. Real settings are backed up and checked unchanged.
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`
 
 ## Known gaps (current cycle)
 
 - [ ] Add executable coverage for active window widget display behavior.
-- [ ] Add executable coverage for taskbar compositor actions beyond typed delegate roles.
+- [ ] Add executable coverage for ungrouped taskbar compositor actions beyond typed delegate roles.
 - [ ] Add executable coverage for backend process failure output parsing.
 - [ ] Add live-smoke coverage for one active compositor backend when a shell instance is running; the isolated Workspace/Niri harness does not exercise live IPC or compositor activation.
 

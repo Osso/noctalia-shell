@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -164,11 +166,11 @@ Item {
     target: CompositorService
 
     function onWorkspacesChanged() {
-      refreshWorkspaces();
+      root.refreshWorkspaces();
     }
 
     function onWindowListChanged() {
-      refreshWorkspaces();
+      root.refreshWorkspaces();
     }
   }
 
@@ -209,44 +211,44 @@ Item {
       var items = [];
       if (root.selectedWindow) {
         items.push({
-                     "label": I18n.tr("context-menu.activate-app", {
-                                        "app": root.selectedAppName
-                                      }),
-                     "action": "activate",
-                     "icon": "focus"
-                   });
+          "label": I18n.tr("context-menu.activate-app", {
+            "app": root.selectedAppName
+          }),
+          "action": "activate",
+          "icon": "focus"
+        });
         items.push({
-                     "label": I18n.tr("context-menu.close-app", {
-                                        "app": root.selectedAppName
-                                      }),
-                     "action": "close",
-                     "icon": "x"
-                   });
+          "label": I18n.tr("context-menu.close-app", {
+            "app": root.selectedAppName
+          }),
+          "action": "close",
+          "icon": "x"
+        });
       }
       items.push({
-                   "label": I18n.tr("context-menu.widget-settings"),
-                   "action": "widget-settings",
-                   "icon": "settings"
-                 });
+        "label": I18n.tr("context-menu.widget-settings"),
+        "action": "widget-settings",
+        "icon": "settings"
+      });
       return items;
     }
 
     onTriggered: action => {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.close();
-                   }
+      var popupMenuWindow = PanelService.getPopupMenuWindow(root.screen);
+      if (popupMenuWindow) {
+        popupMenuWindow.close();
+      }
 
-                   if (action === "activate" && selectedWindow) {
-                     CompositorService.focusWindow(selectedWindow);
-                   } else if (action === "close" && selectedWindow) {
-                     CompositorService.closeWindow(selectedWindow);
-                   } else if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                   }
-                   selectedWindow = null;
-                   selectedAppName = "";
-                 }
+      if (action === "activate" && root.selectedWindow) {
+        CompositorService.focusWindow(root.selectedWindow);
+      } else if (action === "close" && root.selectedWindow) {
+        CompositorService.closeWindow(root.selectedWindow);
+      } else if (action === "widget-settings") {
+        BarService.openWidgetSettings(root.screen, root.section, root.sectionWidgetIndex, root.widgetId, root.widgetSettings);
+      }
+      root.selectedWindow = null;
+      root.selectedAppName = "";
+    }
   }
 
   // Debounce timer for wheel interactions
@@ -325,37 +327,37 @@ Item {
         id: badgeUrgencyCooldown
         interval: 5000
         repeat: false
-        onTriggered: root.setDisplayedUrgency(workspaceModel, container.badgeUrgent)
+        onTriggered: root.setDisplayedUrgency(container.workspaceModel, container.badgeUrgent)
       }
 
       MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        enabled: !hasWindows
+        enabled: !container.hasWindows
         cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         preventStealing: true
         onPressed: mouse => {
-                     if (mouse.button === Qt.LeftButton) {
-                       CompositorService.switchToWorkspace(workspaceModel);
-                     }
-                   }
+          if (mouse.button === Qt.LeftButton) {
+            CompositorService.switchToWorkspace(container.workspaceModel);
+          }
+        }
         onReleased: mouse => {
-                      if (mouse.button === Qt.RightButton) {
-                        mouse.accepted = true;
-                        TooltipService.hide();
-                        root.selectedWindow = "";
-                        root.selectedAppName = "";
+          if (mouse.button === Qt.RightButton) {
+            mouse.accepted = true;
+            TooltipService.hide();
+            root.selectedWindow = "";
+            root.selectedAppName = "";
 
-                        // Store position and size for timer callback
-                        const globalPos = container.mapToItem(root, 0, 0);
-                        contextMenuOpenTimer1.globalX = globalPos.x;
-                        contextMenuOpenTimer1.globalY = globalPos.y;
-                        contextMenuOpenTimer1.itemWidth = container.width;
-                        contextMenuOpenTimer1.itemHeight = container.height;
-                        contextMenuOpenTimer1.restart();
-                      }
-                    }
+            // Store position and size for timer callback
+            const globalPos = container.mapToItem(root, 0, 0);
+            contextMenuOpenTimer1.globalX = globalPos.x;
+            contextMenuOpenTimer1.globalY = globalPos.y;
+            contextMenuOpenTimer1.itemWidth = container.width;
+            contextMenuOpenTimer1.itemHeight = container.height;
+            contextMenuOpenTimer1.restart();
+          }
+        }
       }
 
       Flow {
@@ -366,10 +368,12 @@ Item {
         flow: root.isVerticalBar ? Flow.TopToBottom : Flow.LeftToRight
 
         Repeater {
-          model: workspaceModel.windows
+          model: container.workspaceModel.windows
 
           delegate: Item {
             id: taskbarItem
+
+            required property var model
 
             property bool itemHovered: false
 
@@ -381,12 +385,12 @@ Item {
 
               width: parent.width
               height: parent.height
-              source: ThemeIcons.iconForAppId(model.appId)
+              source: ThemeIcons.iconForAppId(taskbarItem.model.appId)
               smooth: true
               asynchronous: true
-              opacity: model.isFocused ? Style.opacityFull : 0.6
+              opacity: taskbarItem.model.isFocused ? Style.opacityFull : 0.6
               scale: taskbarItem.itemHovered ? 1.1 : 1.0
-              layer.enabled: root.colorizeIcons && !model.isFocused
+              layer.enabled: root.colorizeIcons && !taskbarItem.model.isFocused
 
               Behavior on scale {
                 NumberAnimation {
@@ -407,9 +411,9 @@ Item {
                 anchors.bottomMargin: -2
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: model.isFocused ? 4 : 0
-                height: model.isFocused ? 4 : 0
-                color: model.isFocused ? NColor.mPrimary : NColor.transparent
+                width: taskbarItem.model.isFocused ? 4 : 0
+                height: taskbarItem.model.isFocused ? 4 : 0
+                color: taskbarItem.model.isFocused ? NColor.mPrimary : NColor.transparent
                 radius: Math.min(Style.radiusXXS, width / 2)
               }
 
@@ -428,38 +432,38 @@ Item {
               preventStealing: true
 
               onPressed: mouse => {
-                           if (!model) {
-                             return;
-                           }
+                if (!taskbarItem.model) {
+                  return;
+                }
 
-                           if (mouse.button === Qt.LeftButton) {
-                             CompositorService.focusWindow(model);
-                           }
-                         }
+                if (mouse.button === Qt.LeftButton) {
+                  CompositorService.focusWindow(taskbarItem.model);
+                }
+              }
 
               onReleased: mouse => {
-                            if (!model) {
-                              return;
-                            }
+                if (!taskbarItem.model) {
+                  return;
+                }
 
-                            if (mouse.button === Qt.RightButton) {
-                              mouse.accepted = true;
-                              TooltipService.hide();
-                              root.selectedWindow = model;
-                              root.selectedAppName = CompositorService.getCleanAppName(model.appId, model.title);
+                if (mouse.button === Qt.RightButton) {
+                  mouse.accepted = true;
+                  TooltipService.hide();
+                  root.selectedWindow = taskbarItem.model;
+                  root.selectedAppName = CompositorService.getCleanAppName(taskbarItem.model.appId, taskbarItem.model.title);
 
-                              // Store position and size for timer callback
-                              const globalPos = taskbarItem.mapToItem(root, 0, 0);
-                              contextMenuOpenTimer2.globalX = globalPos.x;
-                              contextMenuOpenTimer2.globalY = globalPos.y;
-                              contextMenuOpenTimer2.itemWidth = taskbarItem.width;
-                              contextMenuOpenTimer2.itemHeight = taskbarItem.height;
-                              contextMenuOpenTimer2.restart();
-                            }
-                          }
+                  // Store position and size for timer callback
+                  const globalPos = taskbarItem.mapToItem(root, 0, 0);
+                  contextMenuOpenTimer2.globalX = globalPos.x;
+                  contextMenuOpenTimer2.globalY = globalPos.y;
+                  contextMenuOpenTimer2.itemWidth = taskbarItem.width;
+                  contextMenuOpenTimer2.itemHeight = taskbarItem.height;
+                  contextMenuOpenTimer2.restart();
+                }
+              }
               onEntered: {
                 taskbarItem.itemHovered = true;
-                TooltipService.show(taskbarItem, model.title || model.appId || "Unknown app.", BarService.getTooltipDirection());
+                TooltipService.show(taskbarItem, taskbarItem.model.title || taskbarItem.model.appId || "Unknown app.", BarService.getTooltipDirection());
               }
               onExited: {
                 taskbarItem.itemHovered = false;
@@ -493,11 +497,11 @@ Item {
           radius: Math.min(Style.radiusL, width / 2)
 
           color: {
-            if (workspaceModel.isFocused)
+            if (container.workspaceModel.isFocused)
               return NColor.mPrimary;
             if (container.displayedBadgeUrgent)
               return NColor.mError;
-            if (hasWindows)
+            if (container.hasWindows)
               return NColor.mSecondary;
 
             if (Settings.data.colorSchemes.darkMode) {
@@ -507,7 +511,7 @@ Item {
             }
           }
 
-          scale: workspaceModel.isActive ? 1.0 : 0.9
+          scale: container.workspaceModel.isActive ? 1.0 : 0.9
 
           Behavior on scale {
             NumberAnimation {
@@ -534,8 +538,8 @@ Item {
           color: NColor.transparent
           border.color: root.effectColor
           border.width: Math.max(1, Math.round((2 + 4 * (1.0 - root.masterProgress))))
-          opacity: root.effectsActive && workspaceModel.isFocused ? (1.0 - root.masterProgress) * 0.7 : 0
-          visible: root.effectsActive && workspaceModel.isFocused
+          opacity: root.effectsActive && container.workspaceModel.isFocused ? (1.0 - root.masterProgress) * 0.7 : 0
+          visible: root.effectsActive && container.workspaceModel.isFocused
           z: 1
         }
 
@@ -545,15 +549,15 @@ Item {
           anchors.centerIn: parent
 
           text: {
-            if (workspaceModel.name && workspaceModel.name.length > 0) {
+            if (container.workspaceModel.name && container.workspaceModel.name.length > 0) {
               if (root.labelMode === "name") {
-                return workspaceModel.name.substring(0, root.characterCount);
+                return container.workspaceModel.name.substring(0, root.characterCount);
               }
               if (root.labelMode === "index+name") {
-                return (workspaceModel.idx.toString() + workspaceModel.name.substring(0, 1));
+                return (container.workspaceModel.idx.toString() + container.workspaceModel.name.substring(0, 1));
               }
             }
-            return workspaceModel.idx.toString();
+            return container.workspaceModel.idx.toString();
           }
 
           family: Settings.data.ui.fontFixed
@@ -565,7 +569,7 @@ Item {
           applyUiScale: false
 
           color: {
-            if (workspaceModel.isFocused)
+            if (container.workspaceModel.isFocused)
               return NColor.mOnPrimary;
             if (container.displayedBadgeUrgent)
               return NColor.mOnError;
@@ -596,18 +600,18 @@ Item {
   Flow {
     id: taskbarGrid
 
-    anchors.verticalCenter: isVerticalBar ? undefined : parent.verticalCenter
-    anchors.left: isVerticalBar ? undefined : parent.left
-    anchors.leftMargin: isVerticalBar ? 0 : Style.marginM
-    anchors.horizontalCenter: isVerticalBar ? parent.horizontalCenter : undefined
-    anchors.top: isVerticalBar ? parent.top : undefined
-    anchors.topMargin: isVerticalBar ? Style.marginM : 0
+    anchors.verticalCenter: root.isVerticalBar ? undefined : parent.verticalCenter
+    anchors.left: root.isVerticalBar ? undefined : parent.left
+    anchors.leftMargin: root.isVerticalBar ? 0 : Style.marginM
+    anchors.horizontalCenter: root.isVerticalBar ? parent.horizontalCenter : undefined
+    anchors.top: root.isVerticalBar ? parent.top : undefined
+    anchors.topMargin: root.isVerticalBar ? Style.marginM : 0
 
     spacing: Style.marginS
-    flow: isVerticalBar ? Flow.TopToBottom : Flow.LeftToRight
+    flow: root.isVerticalBar ? Flow.TopToBottom : Flow.LeftToRight
 
     Repeater {
-      model: localWorkspaces
+      model: root.localWorkspaces
       delegate: workspaceRepeaterDelegate
     }
   }
@@ -620,7 +624,7 @@ Item {
     property real globalY: 0
     property real itemWidth: 0
     property real itemHeight: 0
-    onTriggered: openContextMenu(globalX, globalY, itemWidth, itemHeight)
+    onTriggered: root.openContextMenu(globalX, globalY, itemWidth, itemHeight)
   }
 
   Timer {
@@ -631,7 +635,7 @@ Item {
     property real globalY: 0
     property real itemWidth: 0
     property real itemHeight: 0
-    onTriggered: openContextMenu(globalX, globalY, itemWidth, itemHeight)
+    onTriggered: root.openContextMenu(globalX, globalY, itemWidth, itemHeight)
   }
 
   // --------------------------------------------------
@@ -640,25 +644,25 @@ Item {
     var items = [];
     if (root.selectedWindow) {
       items.push({
-                   "label": I18n.tr("context-menu.activate-app", {
-                                      "app": root.selectedAppName
-                                    }),
-                   "action": "activate",
-                   "icon": "focus"
-                 });
+        "label": I18n.tr("context-menu.activate-app", {
+          "app": root.selectedAppName
+        }),
+        "action": "activate",
+        "icon": "focus"
+      });
       items.push({
-                   "label": I18n.tr("context-menu.close-app", {
-                                      "app": root.selectedAppName
-                                    }),
-                   "action": "close",
-                   "icon": "x"
-                 });
+        "label": I18n.tr("context-menu.close-app", {
+          "app": root.selectedAppName
+        }),
+        "action": "close",
+        "icon": "x"
+      });
     }
     items.push({
-                 "label": I18n.tr("context-menu.widget-settings"),
-                 "action": "widget-settings",
-                 "icon": "settings"
-               });
+      "label": I18n.tr("context-menu.widget-settings"),
+      "action": "widget-settings",
+      "icon": "settings"
+    });
 
     // Set the model directly
     contextMenu.model = items;
