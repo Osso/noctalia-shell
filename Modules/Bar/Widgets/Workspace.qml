@@ -354,6 +354,49 @@ Item {
     }
   }
 
+  component WorkspaceLabel: NText {
+    id: workspaceLabel
+
+    required property var model
+    required property string labelMode
+    required property int characterCount
+    required property real pillWidth
+    required property real pillHeight
+    required property real fontDimension
+    required property bool displayedUrgent
+    required property bool vertical
+
+    x: (workspaceLabel.pillWidth - workspaceLabel.width) / 2
+    y: (workspaceLabel.pillHeight - workspaceLabel.height) / 2 + (workspaceLabel.height - workspaceLabel.contentHeight) / 2
+    text: {
+      if (workspaceLabel.model.name && workspaceLabel.model.name.length > 0) {
+        if (workspaceLabel.labelMode === "name")
+          return workspaceLabel.model.name.substring(0, workspaceLabel.characterCount);
+        if (workspaceLabel.labelMode === "index+name") {
+          if (workspaceLabel.vertical)
+            return workspaceLabel.model.idx.toString() + workspaceLabel.model.name.substring(0, 1);
+          return workspaceLabel.model.idx.toString() + " " + workspaceLabel.model.name.substring(0, workspaceLabel.characterCount);
+        }
+      }
+      return workspaceLabel.model.idx.toString();
+    }
+    family: Settings.data.ui.fontFixed
+    pointSize: workspaceLabel.fontDimension * (workspaceLabel.model.isActive ? 0.45 : 0.42)
+    applyUiScale: false
+    font.capitalization: Font.AllUppercase
+    font.weight: Style.fontWeightBold
+    wrapMode: Text.Wrap
+    color: {
+      if (workspaceLabel.model.isFocused)
+        return NColor.mOnPrimary;
+      if (workspaceLabel.displayedUrgent)
+        return NColor.mOnError;
+      if (workspaceLabel.model.isOccupied)
+        return NColor.mOnSecondary;
+      return workspaceLabel.vertical ? NColor.mOnSurface : NColor.mOnSecondary;
+    }
+  }
+
   // Horizontal layout for top/bottom bars
   Row {
     id: pillRow
@@ -368,15 +411,16 @@ Item {
       Item {
         id: workspacePillContainer
         required property var model
+        property Workspace workspaceOwner: root
         property bool urgent: workspacePillContainer.model.isUrgent === true
-        property bool displayedUrgent: root.displayedUrgentForWorkspace(workspacePillContainer.model)
+        property bool displayedUrgent: workspacePillContainer.workspaceOwner.displayedUrgentForWorkspace(workspacePillContainer.model)
 
-        width: root.getWorkspaceWidth(workspacePillContainer.model)
-        height: Style.capsuleHeight * root.baseDimensionRatio
+        width: workspacePillContainer.workspaceOwner.getWorkspaceWidth(workspacePillContainer.model)
+        height: Style.capsuleHeight * workspacePillContainer.workspaceOwner.baseDimensionRatio
 
         onUrgentChanged: {
           if (workspacePillContainer.urgent) {
-            root.setDisplayedUrgency(workspacePillContainer.model, true);
+            workspacePillContainer.workspaceOwner.setDisplayedUrgency(workspacePillContainer.model, true);
           }
           horizontalUrgencyCooldown.restart();
         }
@@ -391,7 +435,7 @@ Item {
           id: horizontalUrgencyCooldown
           interval: 5000
           repeat: false
-          onTriggered: root.setDisplayedUrgency(workspacePillContainer.model, workspacePillContainer.urgent)
+          onTriggered: workspacePillContainer.workspaceOwner.setDisplayedUrgency(workspacePillContainer.model, workspacePillContainer.urgent)
         }
 
         Rectangle {
@@ -399,39 +443,16 @@ Item {
           anchors.fill: parent
 
           Loader {
-            active: (root.labelMode !== "none")
-            sourceComponent: Component {
-              NText {
-                x: (pill.width - width) / 2
-                y: (pill.height - height) / 2 + (height - contentHeight) / 2
-                text: {
-                  if (model.name && model.name.length > 0) {
-                    if (root.labelMode === "name") {
-                      return model.name.substring(0, root.characterCount);
-                    }
-                    if (root.labelMode === "index+name") {
-                      return (model.idx.toString() + " " + model.name.substring(0, root.characterCount));
-                    }
-                  }
-                  return model.idx.toString();
-                }
-                family: Settings.data.ui.fontFixed
-                pointSize: model.isActive ? workspacePillContainer.height * 0.45 : workspacePillContainer.height * 0.42
-                applyUiScale: false
-                font.capitalization: Font.AllUppercase
-                font.weight: Style.fontWeightBold
-                wrapMode: Text.Wrap
-                color: {
-                  if (model.isFocused)
-                    return NColor.mOnPrimary;
-                  if (workspacePillContainer.displayedUrgent)
-                    return NColor.mOnError;
-                  if (model.isOccupied)
-                    return NColor.mOnSecondary;
-
-                  return NColor.mOnSecondary;
-                }
-              }
+            active: (workspacePillContainer.workspaceOwner.labelMode !== "none")
+            sourceComponent: WorkspaceLabel {
+              model: workspacePillContainer.model
+              labelMode: workspacePillContainer.workspaceOwner.labelMode
+              characterCount: workspacePillContainer.workspaceOwner.characterCount
+              pillWidth: pill.width
+              pillHeight: pill.height
+              fontDimension: workspacePillContainer.height
+              displayedUrgent: workspacePillContainer.displayedUrgent
+              vertical: false
             }
           }
 
@@ -513,14 +534,14 @@ Item {
         Rectangle {
           id: pillBurst
           anchors.centerIn: workspacePillContainer
-          width: workspacePillContainer.width + 18 * root.masterProgress * scale
-          height: workspacePillContainer.height + 18 * root.masterProgress * scale
+          width: workspacePillContainer.width + 18 * workspacePillContainer.workspaceOwner.masterProgress * scale
+          height: workspacePillContainer.height + 18 * workspacePillContainer.workspaceOwner.masterProgress * scale
           radius: width / 2
           color: NColor.transparent
-          border.color: root.effectColor
-          border.width: Math.max(1, Math.round((2 + 6 * (1.0 - root.masterProgress))))
-          opacity: root.effectsActive && workspacePillContainer.model.isFocused ? (1.0 - root.masterProgress) * 0.7 : 0
-          visible: root.effectsActive && workspacePillContainer.model.isFocused
+          border.color: workspacePillContainer.workspaceOwner.effectColor
+          border.width: Math.max(1, Math.round((2 + 6 * (1.0 - workspacePillContainer.workspaceOwner.masterProgress))))
+          opacity: workspacePillContainer.workspaceOwner.effectsActive && workspacePillContainer.model.isFocused ? (1.0 - workspacePillContainer.workspaceOwner.masterProgress) * 0.7 : 0
+          visible: workspacePillContainer.workspaceOwner.effectsActive && workspacePillContainer.model.isFocused
           z: 1
         }
       }
@@ -541,15 +562,16 @@ Item {
       Item {
         id: workspacePillContainerVertical
         required property var model
+        property Workspace workspaceOwner: root
         property bool urgent: workspacePillContainerVertical.model.isUrgent === true
-        property bool displayedUrgent: root.displayedUrgentForWorkspace(workspacePillContainerVertical.model)
+        property bool displayedUrgent: workspacePillContainerVertical.workspaceOwner.displayedUrgentForWorkspace(workspacePillContainerVertical.model)
 
-        width: Style.capsuleHeight * root.baseDimensionRatio
-        height: root.getWorkspaceHeight(workspacePillContainerVertical.model)
+        width: Style.capsuleHeight * workspacePillContainerVertical.workspaceOwner.baseDimensionRatio
+        height: workspacePillContainerVertical.workspaceOwner.getWorkspaceHeight(workspacePillContainerVertical.model)
 
         onUrgentChanged: {
           if (workspacePillContainerVertical.urgent) {
-            root.setDisplayedUrgency(workspacePillContainerVertical.model, true);
+            workspacePillContainerVertical.workspaceOwner.setDisplayedUrgency(workspacePillContainerVertical.model, true);
           }
           verticalUrgencyCooldown.restart();
         }
@@ -564,7 +586,7 @@ Item {
           id: verticalUrgencyCooldown
           interval: 5000
           repeat: false
-          onTriggered: root.setDisplayedUrgency(workspacePillContainerVertical.model, workspacePillContainerVertical.urgent)
+          onTriggered: workspacePillContainerVertical.workspaceOwner.setDisplayedUrgency(workspacePillContainerVertical.model, workspacePillContainerVertical.urgent)
         }
 
         Rectangle {
@@ -572,39 +594,16 @@ Item {
           anchors.fill: parent
 
           Loader {
-            active: (root.labelMode !== "none")
-            sourceComponent: Component {
-              NText {
-                x: (pillVertical.width - width) / 2
-                y: (pillVertical.height - height) / 2 + (height - contentHeight) / 2
-                text: {
-                  if (model.name && model.name.length > 0) {
-                    if (root.labelMode === "name") {
-                      return model.name.substring(0, root.characterCount);
-                    }
-                    if (root.labelMode === "index+name") {
-                      return (model.idx.toString() + model.name.substring(0, 1));
-                    }
-                  }
-                  return model.idx.toString();
-                }
-                family: Settings.data.ui.fontFixed
-                pointSize: model.isActive ? workspacePillContainerVertical.width * 0.45 : workspacePillContainerVertical.width * 0.42
-                applyUiScale: false
-                font.capitalization: Font.AllUppercase
-                font.weight: Style.fontWeightBold
-                wrapMode: Text.Wrap
-                color: {
-                  if (model.isFocused)
-                    return NColor.mOnPrimary;
-                  if (workspacePillContainerVertical.displayedUrgent)
-                    return NColor.mOnError;
-                  if (model.isOccupied)
-                    return NColor.mOnSecondary;
-
-                  return NColor.mOnSurface;
-                }
-              }
+            active: (workspacePillContainerVertical.workspaceOwner.labelMode !== "none")
+            sourceComponent: WorkspaceLabel {
+              model: workspacePillContainerVertical.model
+              labelMode: workspacePillContainerVertical.workspaceOwner.labelMode
+              characterCount: workspacePillContainerVertical.workspaceOwner.characterCount
+              pillWidth: pillVertical.width
+              pillHeight: pillVertical.height
+              fontDimension: workspacePillContainerVertical.width
+              displayedUrgent: workspacePillContainerVertical.displayedUrgent
+              vertical: true
             }
           }
 
@@ -686,14 +685,14 @@ Item {
         Rectangle {
           id: pillBurstVertical
           anchors.centerIn: workspacePillContainerVertical
-          width: workspacePillContainerVertical.width + 18 * root.masterProgress * scale
-          height: workspacePillContainerVertical.height + 18 * root.masterProgress * scale
+          width: workspacePillContainerVertical.width + 18 * workspacePillContainerVertical.workspaceOwner.masterProgress * scale
+          height: workspacePillContainerVertical.height + 18 * workspacePillContainerVertical.workspaceOwner.masterProgress * scale
           radius: width / 2
           color: NColor.transparent
-          border.color: root.effectColor
-          border.width: Math.max(1, Math.round((2 + 6 * (1.0 - root.masterProgress))))
-          opacity: root.effectsActive && workspacePillContainerVertical.model.isFocused ? (1.0 - root.masterProgress) * 0.7 : 0
-          visible: root.effectsActive && workspacePillContainerVertical.model.isFocused
+          border.color: workspacePillContainerVertical.workspaceOwner.effectColor
+          border.width: Math.max(1, Math.round((2 + 6 * (1.0 - workspacePillContainerVertical.workspaceOwner.masterProgress))))
+          opacity: workspacePillContainerVertical.workspaceOwner.effectsActive && workspacePillContainerVertical.model.isFocused ? (1.0 - workspacePillContainerVertical.workspaceOwner.masterProgress) * 0.7 : 0
+          visible: workspacePillContainerVertical.workspaceOwner.effectsActive && workspacePillContainerVertical.model.isFocused
           z: 1
         }
       }

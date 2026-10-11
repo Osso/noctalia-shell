@@ -260,6 +260,75 @@ Item {
       compare(widget.implicitWidth, 73);
     }
 
+    function test_model_clear_reassignment_data() {
+      return [
+        {
+          "tag": "horizontal",
+          "position": "top",
+          "labels": ["7 Rea", "9 Lat"]
+        },
+        {
+          "tag": "vertical",
+          "position": "left",
+          "labels": ["7R", "9L"]
+        }
+      ];
+    }
+
+    function test_model_clear_reassignment(data) {
+      const settings = JSON.parse(JSON.stringify(Settings.data));
+      settings.bar.position = data.position;
+      Settings.data = settings;
+      widget.widgetSettings = {
+        "labelMode": "index+name",
+        "characterCount": 3
+      };
+      wait(20);
+      CompositorService.backend.recollectWorkspaces([]);
+      wait(20);
+      compare(widget.localWorkspaces.count, 0);
+      compare(visiblePills().length, 0);
+      compare(labels(), []);
+      widget.switchByOffset(1);
+      compare(Quickshell.commands, []);
+
+      const reassigned = fixtures();
+      reassigned[2].idx = 7;
+      reassigned[2].name = "Reassigned";
+      reassigned[4].idx = 9;
+      reassigned[4].name = "Later";
+      reassigned[1].output = "HDMI-A-1";
+      CompositorService.backend.recollectWorkspaces(reassigned);
+      wait(20);
+      compare(labels(), data.labels);
+      clickOrder([7, 9]);
+
+      widget.widgetSettings = {
+        "labelMode": "none"
+      };
+      wait(20);
+      compare(labels(), []);
+      widget.widgetSettings = {
+        "labelMode": "name",
+        "characterCount": 3
+      };
+      wait(20);
+      compare(labels(), widget.isVertical ? ["Re", "La"] : ["Rea", "Lat"]);
+      CompositorService.backend.recollectWorkspaces([]);
+      widget.destroy();
+      widget = null;
+      wait(20);
+      CompositorService.backend.recollectWorkspaces(fixtures());
+      widget = createTemporaryObject(workspaceComponent, scene, {
+        "screen": secondary
+      });
+      verify(widget !== null);
+      wait(20);
+      compare(labels(), ["1", "2"]);
+      Quickshell.commands = [];
+      clickOrder([1, 2]);
+    }
+
     name: "Workspace"
     when: windowShown
   }
