@@ -36,6 +36,16 @@ Location/weather covers configured location lookup, cached coordinate reuse, wea
 - [x] Shared error handling logs the error, clears the fetch-in-progress state, and schedules the next refresh.
 - [x] Shared error handling types module and message inputs.
 
+### Weather card precipitation effects
+
+- [x] Disabled effects and clear weather leave the precipitation effect unloaded.
+- [x] Rain and snow load their respective shaders with finite, continuously advancing time uniforms.
+- [x] Rain hides the source content for distortion; snow leaves source content visible.
+- [x] Disabling effects unloads them; enabling them again reloads an animating effect.
+- [x] Switching from rain to snow updates the shader and source visibility while animation continues.
+
+Lifecycle/uniform proof runs against the unchanged production card and widgets with fixed settings/location fixtures, isolated user paths, and an offscreen software backend. It does not prove GPU shader rendering or visual quality.
+
 ### Formatting helpers
 
 - [x] Weather icon, description, and Celsius conversion helpers type their scalar inputs.
@@ -56,6 +66,7 @@ Location/weather covers configured location lookup, cached coordinate reuse, wea
 
 ## Tests asserting this spec
 
+- `Tests/weather-card-effects.test.py` with `Tests/Qml/WeatherCardEffectsHarness.qml` — offscreen production-card precipitation lifecycle and animation.
 - `Tests/location-service-guards.test.js`
 - `Tests/source-coverage.test.js`
 
@@ -63,7 +74,7 @@ Location/weather covers configured location lookup, cached coordinate reuse, wea
 
 - [ ] Add executable fixture coverage for geocoding success, unresolved-location, parse-error, and HTTP-error responses.
 - [ ] Add executable fixture coverage for Open-Meteo success, parse-error, and HTTP-error responses.
-- [ ] Add UI-level coverage for WeatherCard visibility, current weather rendering, forecast rendering, and precipitation effects.
+- [ ] Add UI-level coverage for WeatherCard visibility, current weather rendering, forecast rendering, and precipitation GPU pixel output.
 - [ ] Add settings-level coverage for LocationTab weather toggles, card ordering, and provider settings.
 
 ## Out of scope
