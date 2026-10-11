@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -55,38 +57,38 @@ Rectangle {
       var items = [];
       if (root.selectedWindow) {
         items.push({
-                     "label": I18n.tr("context-menu.activate-app", {
-                                        "app": root.selectedAppName
-                                      }),
-                     "action": "activate",
-                     "icon": "focus"
-                   });
+          "label": I18n.tr("context-menu.activate-app", {
+            "app": root.selectedAppName
+          }),
+          "action": "activate",
+          "icon": "focus"
+        });
         items.push({
-                     "label": I18n.tr("context-menu.close-app", {
-                                        "app": root.selectedAppName
-                                      }),
-                     "action": "close",
-                     "icon": "x"
-                   });
+          "label": I18n.tr("context-menu.close-app", {
+            "app": root.selectedAppName
+          }),
+          "action": "close",
+          "icon": "x"
+        });
       }
       items.push({
-                   "label": I18n.tr("context-menu.widget-settings"),
-                   "action": "widget-settings",
-                   "icon": "settings"
-                 });
+        "label": I18n.tr("context-menu.widget-settings"),
+        "action": "widget-settings",
+        "icon": "settings"
+      });
       return items;
     }
     onTriggered: action => {
-                   if (action === "activate" && selectedWindow) {
-                     CompositorService.focusWindow(selectedWindow);
-                   } else if (action === "close" && selectedWindow) {
-                     CompositorService.closeWindow(selectedWindow);
-                   } else if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                   }
-                   selectedWindow = null;
-                   selectedAppName = "";
-                 }
+      if (action === "activate" && root.selectedWindow) {
+        CompositorService.focusWindow(root.selectedWindow);
+      } else if (action === "close" && root.selectedWindow) {
+        CompositorService.closeWindow(root.selectedWindow);
+      } else if (action === "widget-settings") {
+        BarService.openWidgetSettings(root.screen, root.section, root.sectionWidgetIndex, root.widgetId, root.widgetSettings);
+      }
+      root.selectedWindow = null;
+      root.selectedAppName = "";
+    }
   }
 
   function updateHasWindow() {
@@ -116,10 +118,10 @@ Rectangle {
   Connections {
     target: CompositorService
     function onWindowListChanged() {
-      updateHasWindow();
+      root.updateHasWindow();
     }
     function onWorkspaceChanged() {
-      updateHasWindow();
+      root.updateHasWindow();
     }
   }
 
@@ -145,18 +147,18 @@ Rectangle {
     id: taskbarLayout
     anchors.fill: parent
     anchors {
-      leftMargin: isVerticalBar ? undefined : Style.marginM
-      rightMargin: isVerticalBar ? undefined : Style.marginM
-      topMargin: (density === "compact") ? 0 : isVerticalBar ? Style.marginM : undefined
-      bottomMargin: (density === "compact") ? 0 : isVerticalBar ? Style.marginM : undefined
+      leftMargin: root.isVerticalBar ? undefined : Style.marginM
+      rightMargin: root.isVerticalBar ? undefined : Style.marginM
+      topMargin: (root.density === "compact") ? 0 : root.isVerticalBar ? Style.marginM : undefined
+      bottomMargin: (root.density === "compact") ? 0 : root.isVerticalBar ? Style.marginM : undefined
     }
 
     // Configure GridLayout to behave like RowLayout or ColumnLayout
-    rows: isVerticalBar ? -1 : 1 // -1 means unlimited
-    columns: isVerticalBar ? 1 : -1 // -1 means unlimited
+    rows: root.isVerticalBar ? -1 : 1 // -1 means unlimited
+    columns: root.isVerticalBar ? 1 : -1 // -1 means unlimited
 
-    rowSpacing: isVerticalBar ? Style.marginXXS : 0
-    columnSpacing: isVerticalBar ? 0 : Style.marginXXS
+    rowSpacing: root.isVerticalBar ? Style.marginXXS : 0
+    columnSpacing: root.isVerticalBar ? 0 : Style.marginXXS
 
     Repeater {
       model: CompositorService.windows
@@ -171,8 +173,8 @@ Rectangle {
 
         property ShellScreen screen: root.screen
         readonly property string screenName: screen ? screen.name : ""
-        readonly property bool matchesOutput: !onlySameOutput || output === screenName
-        readonly property bool matchesWorkspace: !onlyActiveWorkspaces || CompositorService.getActiveWorkspaces().map(function (ws) {
+        readonly property bool matchesOutput: !root.onlySameOutput || output === screenName
+        readonly property bool matchesWorkspace: !root.onlyActiveWorkspaces || CompositorService.getActiveWorkspaces().map(function (ws) {
           return ws.id;
         }).includes(workspaceId)
 
@@ -192,7 +194,7 @@ Rectangle {
           opacity: taskbarItem.isFocused ? Style.opacityFull : 0.6
 
           // Apply dock shader to all taskbar icons
-          layer.enabled: widgetSettings.colorizeIcons !== false
+          layer.enabled: root.widgetSettings.colorizeIcons !== false
           layer.effect: ShaderEffect {
             property color targetColor: Settings.data.colorSchemes.darkMode ? NColor.mOnSurface : NColor.mSurfaceVariant
             property real colorizeMode: 0.0 // Dock mode (grayscale)
@@ -270,30 +272,30 @@ Rectangle {
       var items = [];
       if (root.selectedWindow) {
         items.push({
-                     "label": I18n.tr("context-menu.activate-app", {
-                                        "app": root.selectedAppName
-                                      }),
-                     "action": "activate",
-                     "icon": "focus"
-                   });
+          "label": I18n.tr("context-menu.activate-app", {
+            "app": root.selectedAppName
+          }),
+          "action": "activate",
+          "icon": "focus"
+        });
         items.push({
-                     "label": I18n.tr("context-menu.close-app", {
-                                        "app": root.selectedAppName
-                                      }),
-                     "action": "close",
-                     "icon": "x"
-                   });
+          "label": I18n.tr("context-menu.close-app", {
+            "app": root.selectedAppName
+          }),
+          "action": "close",
+          "icon": "x"
+        });
       }
       items.push({
-                   "label": I18n.tr("context-menu.widget-settings"),
-                   "action": "widget-settings",
-                   "icon": "settings"
-                 });
+        "label": I18n.tr("context-menu.widget-settings"),
+        "action": "widget-settings",
+        "icon": "settings"
+      });
 
       // Set the model directly
       contextMenu.model = items;
 
-      var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+      var popupMenuWindow = PanelService.getPopupMenuWindow(root.screen);
       if (popupMenuWindow) {
         popupMenuWindow.open();
 
