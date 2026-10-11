@@ -120,7 +120,7 @@ SmartPanel {
   Connections {
     target: PanelService
     function onPopupMenuWindowRegistered(registeredScreen) {
-      if (registeredScreen === screen) {
+      if (registeredScreen === root.screen) {
         root.popupMenuUpdateTrigger++;
       }
     }
@@ -136,17 +136,20 @@ SmartPanel {
     Grid {
       id: grid
       anchors.fill: parent
-      anchors.margins: outerPadding
-      spacing: innerSpacing
+      anchors.margins: root.outerPadding
+      spacing: root.innerSpacing
       columns: root.columns
-      rowSpacing: innerSpacing
-      columnSpacing: innerSpacing
+      rowSpacing: root.innerSpacing
+      columnSpacing: root.innerSpacing
 
       Repeater {
         id: repeater
         model: root.trayValues
 
         delegate: Item {
+          id: trayDelegate
+          required property var modelData
+
           width: root.cellSize
           height: root.cellSize
 
@@ -156,7 +159,7 @@ SmartPanel {
             asynchronous: true
             backer.fillMode: Image.PreserveAspectFit
             source: {
-              let icon = modelData ? (modelData.icon || "") : "";
+              let icon = trayDelegate.modelData ? (trayDelegate.modelData.icon || "") : "";
               if (!icon)
                 return "";
               if (icon.includes("?path=")) {
@@ -183,75 +186,75 @@ SmartPanel {
               acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
 
               onClicked: mouse => {
-                           if (!modelData)
-                           return;
-                           if (mouse.button === Qt.LeftButton) {
-                             // Left click: activate tray item
-                             if (!modelData.onlyMenu) {
-                               modelData.activate();
-                             }
-                             if ((PanelService.openedPanel !== null) && !PanelService.openedPanel.isClosing) {
-                               PanelService.openedPanel.close();
-                             }
-                           } else if (mouse.button === Qt.MiddleButton) {
-                             // Middle click: activate with middle button
-                             modelData.secondaryActivate && modelData.secondaryActivate();
-                             if ((PanelService.openedPanel !== null) && !PanelService.openedPanel.isClosing) {
-                               PanelService.openedPanel.close();
-                             }
-                           } else if (mouse.button === Qt.RightButton) {
-                             // Right click: open context menu
-                             TooltipService.hideImmediately();
+                if (!trayDelegate.modelData)
+                  return;
+                if (mouse.button === Qt.LeftButton) {
+                  // Left click: activate tray item
+                  if (!trayDelegate.modelData.onlyMenu) {
+                    trayDelegate.modelData.activate();
+                  }
+                  if ((PanelService.openedPanel !== null) && !PanelService.openedPanel.isClosing) {
+                    PanelService.openedPanel.close();
+                  }
+                } else if (mouse.button === Qt.MiddleButton) {
+                  // Middle click: activate with middle button
+                  trayDelegate.modelData.secondaryActivate && trayDelegate.modelData.secondaryActivate();
+                  if ((PanelService.openedPanel !== null) && !PanelService.openedPanel.isClosing) {
+                    PanelService.openedPanel.close();
+                  }
+                } else if (mouse.button === Qt.RightButton) {
+                  // Right click: open context menu
+                  TooltipService.hideImmediately();
 
-                             // Close menu if already visible
-                             if (popupMenuWindow && popupMenuWindow.visible) {
-                               popupMenuWindow.close();
-                               return;
-                             }
+                  // Close menu if already visible
+                  if (root.popupMenuWindow && root.popupMenuWindow.visible) {
+                    root.popupMenuWindow.close();
+                    return;
+                  }
 
-                             if (modelData.hasMenu && modelData.menu && popupMenuWindow && trayMenu && trayMenu.item) {
-                               popupMenuWindow.open();
+                  if (trayDelegate.modelData.hasMenu && trayDelegate.modelData.menu && root.popupMenuWindow && root.trayMenu && root.trayMenu.item) {
+                    root.popupMenuWindow.open();
 
-                               // Position menu at the tray icon
-                               const barPosition = Settings.data.bar.position;
-                               let menuX, menuY;
+                    // Position menu at the tray icon
+                    const barPosition = Settings.data.bar.position;
+                    let menuX, menuY;
 
-                               if (barPosition === "left") {
-                                 menuX = trayIcon.width + Style.marginM;
-                                 menuY = 0;
-                               } else if (barPosition === "right") {
-                                 menuX = -trayMenu.item.width - Style.marginM;
-                                 menuY = 0;
-                               } else {
-                                 // Horizontal bars
-                                 menuX = (trayIcon.width / 2) - (trayMenu.item.width / 2);
-                                 menuY = trayIcon.height + Style.marginS;
-                               }
+                    if (barPosition === "left") {
+                      menuX = trayIcon.width + Style.marginM;
+                      menuY = 0;
+                    } else if (barPosition === "right") {
+                      menuX = -root.trayMenu.item.width - Style.marginM;
+                      menuY = 0;
+                    } else {
+                      // Horizontal bars
+                      menuX = (trayIcon.width / 2) - (root.trayMenu.item.width / 2);
+                      menuY = trayIcon.height + Style.marginS;
+                    }
 
-                               trayMenu.item.trayItem = modelData;
-                               trayMenu.item.widgetSection = root.widgetSection;
-                               trayMenu.item.widgetIndex = root.widgetIndex;
-                               trayMenu.item.showAt(trayIcon, menuX, menuY);
-                             }
-                           }
-                         }
+                    root.trayMenu.item.trayItem = trayDelegate.modelData;
+                    root.trayMenu.item.widgetSection = root.widgetSection;
+                    root.trayMenu.item.widgetIndex = root.widgetIndex;
+                    root.trayMenu.item.showAt(trayIcon, menuX, menuY);
+                  }
+                }
+              }
 
               onWheel: wheel => {
-                         if (!modelData) {
-                           return;
-                         }
-                         if (wheel.angleDelta.y > 0) {
-                           modelData.scrollUp();
-                         } else if (wheel.angleDelta.y < 0) {
-                           modelData.scrollDown();
-                         }
-                       }
+                if (!trayDelegate.modelData) {
+                  return;
+                }
+                if (wheel.angleDelta.y > 0) {
+                  trayDelegate.modelData.scrollUp();
+                } else if (wheel.angleDelta.y < 0) {
+                  trayDelegate.modelData.scrollDown();
+                }
+              }
 
               onEntered: {
-                if (popupMenuWindow) {
-                  popupMenuWindow.close();
+                if (root.popupMenuWindow) {
+                  root.popupMenuWindow.close();
                 }
-                TooltipService.show(trayIcon, modelData.tooltipTitle || modelData.name || modelData.id || "Tray Item", BarService.getTooltipDirection());
+                TooltipService.show(trayIcon, trayDelegate.modelData.tooltipTitle || trayDelegate.modelData.name || trayDelegate.modelData.id || "Tray Item", BarService.getTooltipDirection());
               }
               onExited: TooltipService.hide()
             }
