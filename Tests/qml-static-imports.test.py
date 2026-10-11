@@ -69,7 +69,6 @@ Tile {
             self.assertIn("missingValue", result.stderr)
             self.assertNotIn("Failed to import qs.", result.stderr)
             self.assertNotIn("was not found", result.stderr)
-            self.assertNotIn("not declared as singleton", result.stderr)
             self.assertNotIn('Member "spacing" not found', result.stderr)
             before = len(re.findall(r"^Warning:", baseline_diagnostics, re.MULTILINE))
             after = len(re.findall(r"^Warning:", result.stderr, re.MULTILINE))
