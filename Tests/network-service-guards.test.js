@@ -46,7 +46,6 @@ function testNetworkServiceIdlePollingGuards() {
   assert.match(source, /id: connectivityCheckTimer[\s\S]*running: root\.activePolling[\s\S]*if \(!connectivityCheckProcess\.running\)/, "Connectivity timer must run only for active consumers and avoid overlapping nmcli runs");
   assert.doesNotMatch(completedBlock, /scan\(\)/, "NetworkService startup must not perform a background Wi-Fi scan");
   assert.match(completedBlock, /refreshNetworkStatus\(\)/, "NetworkService startup must do a cheap status refresh instead of scanning");
-  assert.match(source, /onTriggered:\s*\{\s*if \(root\.activePolling\) \{\s*scan\(\);\s*\}\s*\}/, "Delayed scan timer must not rescan while idle");
   assert.match(source, /Connectivity check error:[\s\S]*root\.applyConnectivityResult\("unknown"\)/, "Connectivity check errors must use the explicit unknown transition");
 }
 

@@ -63,6 +63,21 @@ TestCase {
     compare(NetworkService.lastError, "profile denied");
     NetworkService.endActivePolling();
     compare(NetworkService.activePolling, false);
+    // Setting change schedules the production delayed scan timer.
+    NetworkService.activePollingRefs = 1;
+    Settings.data.network.wifiEnabled = false;
+    Settings.data.network.wifiEnabled = true;
+    tryCompare(NetworkService, "scanning", true, 4000);
+    profile.finish(0, "Office\n", "");
+    scan.finish(0, "Office:WPA2:75:*\n", "");
+    Settings.data.network.wifiEnabled = false;
+    Settings.data.network.wifiEnabled = true;
+    NetworkService.endActivePolling();
+    wait(3100);
+    compare(NetworkService.scanning, false);
+    const radio = FixtureIo.find("nmcli radio wifi on");
+    radio.finish(0, "", "");
+    verify(FixtureIo.find("nmcli radio wifi").running);
   }
 
   function test_vpn_requestExitAndStartFailure() {
@@ -87,6 +102,15 @@ TestCase {
     VPNService.refresh();
     refresh.finish(1, "", "refresh denied");
     compare(VPNService.lastError, "refresh denied");
+    VPNService.beginPolling();
+    refresh.finish(0, "Office:vpn-1:wireguard:--\n", "");
+    VPNService.scheduleRefresh(1);
+    tryCompare(VPNService, "refreshing", true);
+    refresh.finish(0, "Office:vpn-1:wireguard:--\n", "");
+    VPNService.endPolling();
+    VPNService.scheduleRefresh(1);
+    wait(30);
+    compare(VPNService.refreshing, false);
   }
 
   function test_cava_configFramesSilenceAndExit() {

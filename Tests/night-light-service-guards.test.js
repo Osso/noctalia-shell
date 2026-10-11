@@ -142,6 +142,7 @@ function testSettingsSignalHandlersApplyAndToast() {
       calls.push(["apply"]);
     },
   };
+  ctx.root = ctx;
 
   onEnabledChanged(ctx);
   assert.deepEqual(calls, [
@@ -188,6 +189,7 @@ function testCoordinatesReadyHandlerAppliesWhenReady() {
       calls.push("apply");
     },
   };
+  ctx.root = ctx;
 
   onCoordinatesReadyChanged(ctx);
   assert.deepEqual(calls, []);
