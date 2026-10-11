@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
 const assert = require("assert/strict");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const { spawnSync } = require("child_process");
 const { extractFunctionBody, findComponentBlock, readQml } = require("./qml-test-utils");
 
 const source = readQml("Services/Media/ScreenRecorderService.qml");
@@ -441,7 +445,162 @@ function testScreenRecorderStopRecordingGuardsAndStopsState() {
   assert.match(commands[0][2], /pkill -SIGINT -f 'gpu-screen-recorder'/);
 }
 
+function screenRecorderWidgetFixture() {
+  return {
+    "Widgets/NIconButtonHot.qml": `import QtQuick
+
+Item {
+  property string icon
+  property bool hot
+  property string tooltipText
+  signal clicked
+}`,
+    "Commons/I18n.qml": `pragma Singleton
+import QtQuick
+
+QtObject {
+  function tr(key) {
+    return key;
+  }
+}`,
+    "Services/System/ProgramCheckerService.qml": `pragma Singleton
+import QtQuick
+
+QtObject {
+  readonly property bool gpuScreenRecorderAvailable: true
+}`,
+    "Services/Media/ScreenRecorderService.qml": `pragma Singleton
+import QtQuick
+
+QtObject {
+  property bool isRecording: true
+  property int toggles: 0
+  function toggleRecording() {
+    toggles++;
+    isRecording = !isRecording;
+  }
+}`,
+    "Services/UI/PanelService.qml": `pragma Singleton
+import QtQuick
+
+QtObject {
+  property int lookups: 0
+  property bool available: true
+  property QtObject panel: QtObject {
+    property bool isOpen: true
+    property int closeCount: 0
+    function close() {
+      isOpen = false;
+      closeCount++;
+    }
+  }
+  function getPanel(name, screen) {
+    if (name !== "controlCenterPanel" || screen !== null)
+      throw new Error("incorrect panel routing");
+    lookups++;
+    return available ? panel : null;
+  }
+}`,
+    "ScreenRecorder.qml": readQml("Modules/Panels/ControlCenter/Widgets/ScreenRecorder.qml"),
+    "shell.qml": `import QtQuick
+import Quickshell
+import qs.Services.Media
+import qs.Services.UI
+
+ShellRoot {
+  ScreenRecorder {
+    id: widget
+  }
+  function requireCondition(condition, message) {
+    if (!condition) {
+      console.error("SCREEN_RECORDER_WIDGET_FAIL: " + message);
+      Qt.exit(1);
+      return false;
+    }
+    return true;
+  }
+  Timer {
+    interval: 1
+    running: true
+    onTriggered: {
+      widget.clicked();
+      if (!requireCondition(!ScreenRecorderService.isRecording && ScreenRecorderService.toggles === 1, "stop must toggle recording off"))
+        return;
+      if (!requireCondition(!PanelService.panel.isOpen && PanelService.panel.closeCount === 1, "stop must close control-center panel"))
+        return;
+      if (!requireCondition(PanelService.lookups === 1, "stop must route to control-center panel"))
+        return;
+      PanelService.panel.isOpen = true;
+      widget.clicked();
+      if (!requireCondition(ScreenRecorderService.isRecording && ScreenRecorderService.toggles === 2, "start must toggle recording on"))
+        return;
+      if (!requireCondition(PanelService.panel.isOpen && PanelService.panel.closeCount === 1 && PanelService.lookups === 1, "start must not close or look up a panel"))
+        return;
+      PanelService.available = false;
+      widget.clicked();
+      if (!requireCondition(!ScreenRecorderService.isRecording && ScreenRecorderService.toggles === 3 && PanelService.lookups === 2, "stop without panel must finish"))
+        return;
+      if (!requireCondition(PanelService.panel.isOpen && PanelService.panel.closeCount === 1, "missing panel must not close another panel"))
+        return;
+      console.log("SCREEN_RECORDER_WIDGET_PASS");
+      Qt.quit();
+    }
+  }
+}`,
+  };
+}
+
+function isolatedWidgetEnvironment(directory) {
+  const environment = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
+    !/^(XDG_|WAYLAND_|QT_|QML_|NOCTALIA_)/.test(key) &&
+    !["DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "HOME"].includes(key)));
+  for (const [variable, name] of Object.entries({
+    HOME: "home", XDG_CONFIG_HOME: "config", XDG_CACHE_HOME: "cache",
+    XDG_DATA_HOME: "data", XDG_STATE_HOME: "state", XDG_RUNTIME_DIR: "runtime",
+  })) {
+    const location = path.join(directory, name);
+    fs.mkdirSync(location, { mode: 0o700 });
+    environment[variable] = location;
+  }
+  return { ...environment, QT_QPA_PLATFORM: "offscreen", QT_QUICK_BACKEND: "software" };
+}
+
+function testControlCenterScreenRecorderClickClosesOnlyOnStop() {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "noctalia-recorder-widget-"));
+  const shell = path.join(directory, "shell.qml");
+  let environment;
+  try {
+    environment = isolatedWidgetEnvironment(directory);
+    for (const [relativePath, contents] of Object.entries(screenRecorderWidgetFixture())) {
+      const destination = path.join(directory, relativePath);
+      fs.mkdirSync(path.dirname(destination), { recursive: true, mode: 0o700 });
+      fs.writeFileSync(destination, contents);
+    }
+    const result = spawnSync("timeout", ["--kill-after=2s", "10s", "quickshell", "--no-color", "-p", shell], {
+      env: environment, encoding: "utf8", timeout: 15000,
+    });
+    const output = (result.stdout || "") + (result.stderr || "");
+    assert.ifError(result.error);
+    assert.equal(result.status, 0, output);
+    assert.match(output, /SCREEN_RECORDER_WIDGET_PASS/, output);
+    assert.doesNotMatch(output, / WARN | ERROR /, output);
+  } finally {
+    try {
+      if (environment) {
+        spawnSync("quickshell", ["kill", "--any-display", "-p", shell], { env: environment, timeout: 5000 });
+        const registry = spawnSync("quickshell", ["list", "--all"], { env: environment, encoding: "utf8", timeout: 5000 });
+        assert.ifError(registry.error);
+        assert.equal(registry.status, 0, registry.stderr);
+        assert.ok(!registry.stdout.includes(shell), "experimental widget shell must not remain registered");
+      }
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
+  }
+}
+
 const tests = [
+  testControlCenterScreenRecorderClickClosesOnlyOnStop,
   testScreenRecorderRefreshCaptureSourcesStartsBothQueries,
   testScreenRecorderDiscoveryPublishesLatestCompleteSnapshot,
   testScreenRecorderParsesCaptureSourcesAndMonitorList,
