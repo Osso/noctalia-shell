@@ -165,15 +165,15 @@ Variants {
         id: notificationStack
 
         anchors {
-          top: parent.isTop ? parent.top : undefined
-          bottom: parent.isBottom ? parent.bottom : undefined
-          left: parent.isLeft ? parent.left : undefined
-          right: parent.isRight ? parent.right : undefined
-          horizontalCenter: parent.isCentered ? parent.horizontalCenter : undefined
+          top: notifWindow.isTop ? parent.top : undefined
+          bottom: notifWindow.isBottom ? parent.bottom : undefined
+          left: notifWindow.isLeft ? parent.left : undefined
+          right: notifWindow.isRight ? parent.right : undefined
+          horizontalCenter: notifWindow.isCentered ? parent.horizontalCenter : undefined
         }
 
         spacing: -Style.marginS
-        width: notifWidth
+        width: notifWindow.notifWidth
 
         Behavior on implicitHeight {
           enabled: !Settings.data.general.animationDisabled
@@ -187,7 +187,7 @@ Variants {
 
         Repeater {
           id: notificationRepeater
-          model: notificationModel
+          model: root.notificationModel
 
           delegate: Item {
             id: card
@@ -211,7 +211,7 @@ Variants {
             readonly property int animationDelay: index * 100
             readonly property int slideDistance: 300
 
-            Layout.preferredWidth: notifWidth
+            Layout.preferredWidth: notifWindow.notifWidth
             Layout.preferredHeight: notificationContent.implicitHeight + Style.marginL * 2
             Layout.maximumHeight: Layout.preferredHeight
 
@@ -247,16 +247,17 @@ Variants {
                 height: 2
                 color: NColor.transparent
 
+                id: progressTrack
                 readonly property real availableWidth: parent.width - (2 * parent.radius)
 
                 Rectangle {
                   id: progressBar
                   height: parent.height
-                  x: parent.parent.radius + (parent.availableWidth * (1 - progress)) / 2
-                  width: parent.availableWidth * progress
+                  x: cardBackground.radius + (progressTrack.availableWidth * (1 - card.progress)) / 2
+                  width: progressTrack.availableWidth * card.progress
 
                   color: {
-                    var baseColor = urgency === 2 ? NColor.mError : urgency === 0 ? NColor.mOnSurface : NColor.mPrimary;
+                    var baseColor = card.urgency === 2 ? NColor.mError : card.urgency === 0 ? NColor.mOnSurface : NColor.mPrimary;
                     return Qt.alpha(baseColor, Settings.data.notifications.backgroundOpacity || 1.0);
                   }
 
@@ -302,8 +303,8 @@ Variants {
               interval: 50
               repeat: false
               onTriggered: {
-                if (hoverCount === 0) {
-                  NotificationService.resumeTimeout(notificationId);
+                if (card.hoverCount === 0) {
+                  NotificationService.resumeTimeout(card.notificationId);
                 }
               }
             }
@@ -315,9 +316,9 @@ Variants {
               hoverEnabled: true
               onEntered: parent.hoverCount++
               onExited: parent.hoverCount--
-              onClicked: {
+              onClicked: mouse => {
                 if (mouse.button === Qt.RightButton) {
-                  animateOut();
+                  card.animateOut();
                 }
               }
             }
@@ -354,9 +355,9 @@ Variants {
               onTriggered: {
                 if (card.isRemoving)
                   return;
-                slideOffset = 0;
-                scaleValue = 1.0;
-                opacityValue = 1.0;
+                card.slideOffset = 0;
+                card.scaleValue = 1.0;
+                card.opacityValue = 1.0;
               }
             }
 
@@ -378,7 +379,7 @@ Variants {
               interval: Style.animationSlow
               repeat: false
               onTriggered: {
-                NotificationService.dismissActiveNotification(notificationId);
+                NotificationService.dismissActiveNotification(card.notificationId);
               }
             }
 
@@ -436,7 +437,7 @@ Variants {
                   Layout.preferredHeight: Math.round(40 * Style.uiScaleRatio)
                   Layout.alignment: Qt.AlignVCenter
                   radius: Math.min(Style.radiusL, Layout.preferredWidth / 2)
-                  imagePath: originalImage || ""
+                  imagePath: card.originalImage || ""
                   borderColor: NColor.transparent
                   borderWidth: 0
                   fallbackIcon: "bell"
@@ -457,11 +458,11 @@ Variants {
                       Layout.preferredHeight: 6
                       Layout.alignment: Qt.AlignVCenter
                       radius: Style.radiusXS
-                      color: urgency === 2 ? NColor.mError : urgency === 0 ? NColor.mOnSurface : NColor.mPrimary
+                      color: card.urgency === 2 ? NColor.mError : card.urgency === 0 ? NColor.mOnSurface : NColor.mPrimary
                     }
 
                     NText {
-                      text: appName || "Unknown App"
+                      text: card.appName || "Unknown App"
                       pointSize: Style.fontSizeXS
                       font.weight: Style.fontWeightBold
                       color: NColor.mSecondary
@@ -469,7 +470,7 @@ Variants {
 
                     NText {
                       textFormat: Text.PlainText
-                      text: " " + Time.formatRelativeTime(timestamp)
+                      text: " " + Time.formatRelativeTime(card.timestamp)
                       pointSize: Style.fontSizeXXS
                       color: NColor.mOnSurfaceVariant
                       Layout.alignment: Qt.AlignBottom
@@ -481,7 +482,7 @@ Variants {
                   }
 
                   NText {
-                    text: summary || I18n.tr("general.no-summary")
+                    text: card.summary || I18n.tr("general.no-summary")
                     pointSize: Style.fontSizeM
                     font.weight: Style.fontWeightMedium
                     color: NColor.mOnSurface
@@ -495,7 +496,7 @@ Variants {
                   }
 
                   NText {
-                    text: body || ""
+                    text: card.body || ""
                     pointSize: Style.fontSizeM
                     color: NColor.mOnSurface
                     textFormat: Text.PlainText
@@ -515,10 +516,10 @@ Variants {
                     Layout.topMargin: Style.marginM
                     flow: Flow.LeftToRight
 
-                    property string parentNotificationId: notificationId
+                    property string parentNotificationId: card.notificationId
                     property var parsedActions: {
                       try {
-                        return actionsJson ? JSON.parse(actionsJson) : [];
+                        return card.actionsJson ? JSON.parse(card.actionsJson) : [];
                       } catch (e) {
                         return [];
                       }
@@ -529,7 +530,9 @@ Variants {
                       model: parent.parsedActions
 
                       delegate: NButton {
-                        property var actionData: modelData
+                        id: actionButton
+                        required property var modelData
+                        property var actionData: actionButton.modelData
 
                         onEntered: card.hoverCount++
                         onExited: card.hoverCount--
@@ -568,8 +571,8 @@ Variants {
               anchors.rightMargin: Style.marginXL
 
               onClicked: {
-                NotificationService.removeFromHistory(notificationId);
-                animateOut();
+                NotificationService.removeFromHistory(card.notificationId);
+                card.animateOut();
               }
             }
           }
