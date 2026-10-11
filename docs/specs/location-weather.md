@@ -66,6 +66,7 @@ Lifecycle/uniform proof runs against the unchanged production card and widgets w
 
 ## Tests asserting this spec
 
+- `Tests/weather-card-warnings.test.py` (`lint` / `behavior`) with `Tests/Qml/WeatherCardWarningsHarness.qml` — eleven isolated production-card transition rows through `e270b67b9`/`18d5943a2`: missing-data busy state, city/current temperature/timezone, capped and expanded forecast dates, rounded Celsius/Fahrenheit extrema, current/forecast icons, location visibility, rain→snow shader/source visibility and advancing uniforms, effects unload/reload, cleared-data delegate removal, and weather-disabled visibility. Fake settings/location services supply fixed weather; no provider requests, natural refresh cadence, or GPU pixel proof. Targeted lint drops 25→9 and accepts only nine shader creation-context diagnostics, not warning-free analysis. Standalone modes, isolation, and acceptance: [testing](testing.md#weathercard-and-bar-clock-isolated-runtime).
 - `Tests/weather-card-effects.test.py` with `Tests/Qml/WeatherCardEffectsHarness.qml` — offscreen production-card precipitation lifecycle and animation.
 - `Tests/location-service-runtime.test.py` with `Tests/Qml/LocationServiceHarness.qml` and `Tests/Fixtures/LocationNetworkPlugin.cpp` — nine isolated cases against the unchanged production singleton, real FileView and asynchronous XMLHttpRequest callbacks; fixture replies cover loaded/missing-cache startup callbacks, timer-driven coordinate reuse, success, unresolved locations, parse failures, HTTP failures, in-flight refresh exclusion, and actual cache writes. Runs non-visible with isolated config/cache paths and network namespace; verifies the real settings hash remains unchanged.
 - Runtime proof uses fixture Settings/Time/Logger singletons and synthetic provider replies, not live geocoding/Open-Meteo, real configuration integration, or whole-shell acceptance. The Python suite runs standalone; it is not wired into `run-tests.sh`.
@@ -77,7 +78,8 @@ Lifecycle/uniform proof runs against the unchanged production card and widgets w
 
 - [x] Add executable fixture coverage for geocoding success, unresolved-location, parse-error, and HTTP-error responses.
 - [x] Add executable fixture coverage for Open-Meteo success, parse-error, and HTTP-error responses.
-- [ ] Add UI-level coverage for WeatherCard visibility, current weather rendering, forecast rendering, and precipitation GPU pixel output.
+- [x] Add isolated WeatherCard visibility, current/forecast text and icon, and precipitation lifecycle/uniform coverage.
+- [ ] Prove precipitation GPU pixel output and natural weather refresh cadence; isolated property/delegate assertions do not establish rendered visual quality.
 - [ ] Add settings-level coverage for LocationTab weather toggles, card ordering, and provider settings.
 
 ## Out of scope
