@@ -99,6 +99,40 @@ for color_status in 0 37; do
     fi
 done
 
+# Run the real QML category in an isolated checkout with bounded fixture commands.
+qml_root="$tmp_dir/qml"
+mkdir -p "$qml_root/Tests" "$qml_root/Bin/dev"
+cp "$runner" "$qml_root/run-tests.sh"
+cat >"$qml_root/Tests/qml-static-imports.test.py" <<'PYTHON'
+import os
+import sys
+
+print("import-regression")
+sys.exit(int(os.environ["IMPORT_TEST_STATUS"]))
+PYTHON
+printf '#!/bin/sh\nprintf "static-checker\\n"\n' >"$qml_root/Bin/dev/qml-static-check.sh"
+chmod +x "$qml_root/Bin/dev/qml-static-check.sh"
+
+for import_status in 0 37; do
+    set +e
+    qml_output="$(IMPORT_TEST_STATUS="$import_status" "$qml_root/run-tests.sh" qml 2>&1)"
+    qml_status="$?"
+    set -e
+    if ! printf '%s\n' "$qml_output" | rg -q '^import-regression$'; then
+        echo "QML runner omitted import-resolution regression" >&2
+        exit 1
+    fi
+    if [ "$import_status" -eq 0 ]; then
+        if [ "$qml_status" -ne 0 ] || ! printf '%s\n' "$qml_output" | tr '\n' ' ' | rg -q 'import-regression.*static-checker.*EVIDENCE PASS qml-static'; then
+            echo "QML runner did not run static checker after successful import regression" >&2
+            exit 1
+        fi
+    elif [ "$qml_status" -ne 37 ] || printf '%s\n' "$qml_output" | rg -q 'static-checker|EVIDENCE PASS'; then
+        echo "QML runner did not stop with import regression failure status" >&2
+        exit 1
+    fi
+done
+
 source "$runner"
 run_unit_tests() { echo "unit-body"; }
 run_structural_tests() { echo "structural-body"; }
