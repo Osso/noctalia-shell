@@ -63,15 +63,17 @@ Setup Wizard covers first-run onboarding launch, completion, and selected setup 
 - `Tests/shell-setup-wizard-guards.test.js`
 - `Tests/setup-wallpaper-step-guards.test.js`
 - `Tests/setup-wizard-guards.test.js`
-- `Tests/setup-layout-geometry.test.py` — 20 offscreen production-component geometry/content cases: eight appearance cases and four each for customization, dock, and initial wizard content. Recursive snapshots include hidden children. Run standalone with `python3 Tests/setup-layout-geometry.test.py --artifacts <new-directory>`; this does not cover every wizard step, interaction, locale, or display configuration.
+- `Tests/setup-layout-geometry.test.py` — 20 offscreen production-component geometry/content cases compared with tracked fixtures: eight appearance cases and four each for customization, dock, and initial wizard content. Recursive snapshots include hidden children. Run standalone with `python3 Tests/setup-layout-geometry.test.py --artifacts <new-directory>`.
+- The same script's `--wizard-transitions` mode captures 52 snapshots: 13 forward/back step states across widths 480/1000 and scales 1/1.25. Assertions cover all five steps, wallpaper directory/image and customization scale/bar handoff, a changed-scale probe at 1.1, finish/skip save requests and settings-saved close state, duplicate completion, disabled Escape, and cancellation without saving. Transition geometry comparison requires `--expected <pre-change-capture>`; no tracked transition golden is implied. Buttons and selection signals are invoked directly, settings/services are fixtures, and animations are disabled: this is not physical input, real persistence, or visible-panel acceptance.
+- Targeted `SetupWizard.qml` unqualified-access warnings fell from 48 to zero after owner qualification; this is not a zero-total-warning claim or an intended behavior change.
 - `Tests/Qml/SetupLayoutGeometryHarness.qml` — production step and wizard-content instantiation without opening SmartPanel.
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for the close timer timeout and settings-saved close path.
-- [ ] Add executable coverage for setup appearance and customization step value handoff.
+- [ ] Add executable coverage for the close timer timeout; settings-saved close state is covered with a fixture signal, not real persistence or completed panel teardown.
+- [ ] Add executable coverage for setup appearance step value handoff; customization scale/bar signal handoff is covered.
 - [ ] Add executable coverage for setup dock step integration beyond typed delegates.
 - [ ] Add executable coverage for setup wallpaper UI selection signals and directory-picker integration.
 
