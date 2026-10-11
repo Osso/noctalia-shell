@@ -18,32 +18,34 @@ NBox {
 
   ColumnLayout {
     id: column
+
     anchors.fill: parent
     anchors.margins: Style.marginM
     spacing: Style.marginM
 
     NText {
-      text: root.label
-      pointSize: Style.fontSizeS
-      color: NColor.mSecondary
-      font.weight: Style.fontWeightBold
-      visible: root.model.length > 0
       Layout.fillWidth: true
       Layout.leftMargin: Style.marginS
+      color: NColor.mSecondary
+      font.weight: Style.fontWeightBold
+      pointSize: Style.fontSizeS
+      text: root.label
+      visible: root.model.length > 0
     }
-
     Repeater {
       model: root.model
 
       VPNConnectionItem {
-        required property string uuid
-        required property string name
-        required property bool active
+        id: connectionDelegate
 
-        connectionUuid: uuid
-        connectionName: name
-        connectionActive: active
+        required property bool active
+        required property string name
+        required property string uuid
+
         Layout.fillWidth: true
+        connectionActive: connectionDelegate.active
+        connectionName: connectionDelegate.name
+        connectionUuid: connectionDelegate.uuid
       }
     }
   }

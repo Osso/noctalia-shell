@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -11,25 +13,24 @@ import qs.Widgets
 SmartPanel {
   id: root
 
-  preferredWidth: Math.round(400 * Style.uiScaleRatio)
-  preferredHeight: Math.round(400 * Style.uiScaleRatio)
-
   readonly property bool hasConnections: Object.keys(VPNService.connections).length > 0
 
-  onOpened: VPNService.beginPolling()
-  onClosed: VPNService.endPolling()
+  preferredHeight: Math.round(400 * Style.uiScaleRatio)
+  preferredWidth: Math.round(400 * Style.uiScaleRatio)
 
   panelContent: Rectangle {
-    color: NColor.transparent
+    property real calculatedHeight: headerHeight + connectionsHeight + Style.marginL * 2 + Style.marginM
+    property real connectionsHeight: connectionsList.implicitHeight
+    property real contentPreferredHeight: root.hasConnections ? Math.min(root.preferredHeight, calculatedHeight) : Math.min(root.preferredHeight, 280 * Style.uiScaleRatio)
 
     // Calculate content height based on header + connections list (or minimum for empty state)
     property real headerHeight: headerRow.implicitHeight + Style.marginM * 2
-    property real connectionsHeight: connectionsList.implicitHeight
-    property real calculatedHeight: headerHeight + connectionsHeight + Style.marginL * 2 + Style.marginM
-    property real contentPreferredHeight: root.hasConnections ? Math.min(root.preferredHeight, calculatedHeight) : Math.min(root.preferredHeight, 280 * Style.uiScaleRatio)
+
+    color: NColor.transparent
 
     ColumnLayout {
       id: mainColumn
+
       anchors.fill: parent
       anchors.margins: Style.marginL
       spacing: Style.marginM
@@ -41,35 +42,35 @@ SmartPanel {
 
         RowLayout {
           id: headerRow
+
           anchors.fill: parent
           anchors.margins: Style.marginM
           spacing: Style.marginM
 
           NIcon {
+            color: NColor.mPrimary
             icon: "shield-lock"
             pointSize: Style.fontSizeXXL
-            color: NColor.mPrimary
           }
-
           NText {
-            text: I18n.tr("vpn.panel.title")
-            pointSize: Style.fontSizeL
-            font.weight: Style.fontWeightBold
-            color: NColor.mOnSurface
             Layout.fillWidth: true
+            color: NColor.mOnSurface
+            font.weight: Style.fontWeightBold
+            pointSize: Style.fontSizeL
+            text: I18n.tr("vpn.panel.title")
           }
-
           NIconButton {
+            baseSize: Style.baseWidgetSize * 0.8
             icon: VPNService.refreshing ? "stop" : "refresh"
             tooltipText: I18n.tr("tooltips.refresh")
-            baseSize: Style.baseWidgetSize * 0.8
+
             onClicked: VPNService.refresh()
           }
-
           NIconButton {
+            baseSize: Style.baseWidgetSize * 0.8
             icon: "close"
             tooltipText: I18n.tr("tooltips.close")
-            baseSize: Style.baseWidgetSize * 0.8
+
             onClicked: root.close()
           }
         }
@@ -78,9 +79,10 @@ SmartPanel {
       // No VPN connections configured
       NBox {
         id: emptyBox
-        visible: !root.hasConnections
-        Layout.fillWidth: true
+
         Layout.fillHeight: true
+        Layout.fillWidth: true
+        visible: !root.hasConnections
 
         ColumnLayout {
           anchors.fill: parent
@@ -89,30 +91,26 @@ SmartPanel {
           Item {
             Layout.fillHeight: true
           }
-
           NIcon {
+            Layout.alignment: Qt.AlignHCenter
+            color: NColor.mOnSurfaceVariant
             icon: "shield"
             pointSize: 48
-            color: NColor.mOnSurfaceVariant
-            Layout.alignment: Qt.AlignHCenter
           }
-
           NText {
-            text: I18n.tr("vpn.panel.no-connections")
+            Layout.alignment: Qt.AlignHCenter
+            color: NColor.mOnSurfaceVariant
             pointSize: Style.fontSizeL
-            color: NColor.mOnSurfaceVariant
-            Layout.alignment: Qt.AlignHCenter
+            text: I18n.tr("vpn.panel.no-connections")
           }
-
           NText {
-            text: I18n.tr("vpn.panel.configure-message")
-            pointSize: Style.fontSizeS
+            Layout.fillWidth: true
             color: NColor.mOnSurfaceVariant
             horizontalAlignment: Text.AlignHCenter
-            Layout.fillWidth: true
+            pointSize: Style.fontSizeS
+            text: I18n.tr("vpn.panel.configure-message")
             wrapMode: Text.WordWrap
           }
-
           Item {
             Layout.fillHeight: true
           }
@@ -121,17 +119,18 @@ SmartPanel {
 
       // VPN connections list
       NScrollView {
-        visible: root.hasConnections
-        Layout.fillWidth: true
         Layout.fillHeight: true
+        Layout.fillWidth: true
+        clip: true
         horizontalPolicy: ScrollBar.AlwaysOff
         verticalPolicy: ScrollBar.AsNeeded
-        clip: true
+        visible: root.hasConnections
 
         ColumnLayout {
           id: connectionsList
-          width: parent.width
+
           spacing: Style.marginM
+          width: parent.width
 
           // Active connections
           VPNConnectionsList {
@@ -148,4 +147,7 @@ SmartPanel {
       }
     }
   }
+
+  onClosed: VPNService.endPolling()
+  onOpened: VPNService.beginPolling()
 }

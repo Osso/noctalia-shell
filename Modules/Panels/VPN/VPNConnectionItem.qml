@@ -9,83 +9,91 @@ import qs.Widgets
 Rectangle {
   id: root
 
-  required property string connectionUuid
-  required property string connectionName
   required property bool connectionActive
-
-  readonly property bool isActive: connectionActive
-  readonly property bool isConnecting: VPNService.connectingUuid === connectionUuid
-  readonly property bool isDisconnecting: VPNService.disconnectingUuid === connectionUuid
-  readonly property bool isBusy: isConnecting || isDisconnecting
+  required property string connectionName
+  required property string connectionUuid
+  readonly property bool isActive: root.connectionActive
+  readonly property bool isBusy: root.isConnecting || root.isDisconnecting
+  readonly property bool isConnecting: VPNService.connectingUuid === root.connectionUuid
+  readonly property bool isDisconnecting: VPNService.disconnectingUuid === root.connectionUuid
 
   Layout.fillWidth: true
   Layout.preferredHeight: itemLayout.implicitHeight + (Style.marginM * 2)
-  radius: Style.radiusM
-  color: NColor.mSurface
+  border.color: root.isActive ? NColor.mPrimary : NColor.mOutline
   border.width: Style.borderS
-  border.color: isActive ? NColor.mPrimary : NColor.mOutline
+  color: NColor.mSurface
+  radius: Style.radiusM
 
   RowLayout {
     id: itemLayout
+
     anchors.fill: parent
     anchors.margins: Style.marginM
     spacing: Style.marginM
 
     NIcon {
-      icon: isActive ? "shield-lock" : "shield"
-      pointSize: Style.fontSizeXXL
-      color: isActive ? NColor.mPrimary : NColor.mOnSurface
       Layout.alignment: Qt.AlignVCenter
+      color: root.isActive ? NColor.mPrimary : NColor.mOnSurface
+      icon: root.isActive ? "shield-lock" : "shield"
+      pointSize: Style.fontSizeXXL
     }
-
     ColumnLayout {
       Layout.fillWidth: true
       spacing: Style.marginXXS
 
       NText {
-        text: connectionName
-        pointSize: Style.fontSizeM
-        font.weight: isActive ? Style.fontWeightBold : Style.fontWeightMedium
-        elide: Text.ElideRight
-        color: isActive ? NColor.mPrimary : NColor.mOnSurface
         Layout.fillWidth: true
+        color: root.isActive ? NColor.mPrimary : NColor.mOnSurface
+        elide: Text.ElideRight
+        font.weight: root.isActive ? Style.fontWeightBold : Style.fontWeightMedium
+        pointSize: Style.fontSizeM
+        text: root.connectionName
       }
-
       NText {
+        color: root.isActive ? NColor.mPrimary : NColor.mOnSurfaceVariant
+        pointSize: Style.fontSizeXS
         text: {
-          if (isConnecting) return I18n.tr("vpn.panel.connecting");
-          if (isDisconnecting) return I18n.tr("vpn.panel.disconnecting");
-          if (isActive) return I18n.tr("vpn.panel.connected");
+          if (root.isConnecting)
+            return I18n.tr("vpn.panel.connecting");
+
+          if (root.isDisconnecting)
+            return I18n.tr("vpn.panel.disconnecting");
+
+          if (root.isActive)
+            return I18n.tr("vpn.panel.connected");
+
           return I18n.tr("vpn.panel.disconnected");
         }
-        pointSize: Style.fontSizeXS
-        color: isActive ? NColor.mPrimary : NColor.mOnSurfaceVariant
       }
     }
-
     Item {
       Layout.fillWidth: true
     }
-
     NButton {
-      enabled: !isBusy
-      outlined: !hovered
+      backgroundColor: root.isActive ? NColor.mError : NColor.mPrimary
+      enabled: !root.isBusy
       fontSize: Style.fontSizeXS
       fontWeight: Style.fontWeightMedium
-      backgroundColor: isActive ? NColor.mError : NColor.mPrimary
+      icon: root.isBusy ? "busy" : null
+      outlined: !hovered
       text: {
-        if (isConnecting) return I18n.tr("vpn.panel.connecting");
-        if (isDisconnecting) return I18n.tr("vpn.panel.disconnecting");
-        if (isActive) return I18n.tr("vpn.panel.disconnect");
+        if (root.isConnecting)
+          return I18n.tr("vpn.panel.connecting");
+
+        if (root.isDisconnecting)
+          return I18n.tr("vpn.panel.disconnecting");
+
+        if (root.isActive)
+          return I18n.tr("vpn.panel.disconnect");
+
         return I18n.tr("vpn.panel.connect");
       }
-      icon: isBusy ? "busy" : null
+
       onClicked: {
-        if (isActive) {
-          VPNService.disconnect(connectionUuid);
-        } else {
-          VPNService.connect(connectionUuid);
-        }
+        if (root.isActive)
+          VPNService.disconnect(root.connectionUuid);
+        else
+          VPNService.connect(root.connectionUuid);
       }
     }
   }
