@@ -67,6 +67,9 @@ printf '%s\n' "${1##*/}"
 if [ "${1##*/}" = color-namespace-runtime.test.py ]; then
     exit "$COLOR_TEST_STATUS"
 fi
+if [ "${1##*/}" = weather-card-effects.test.py ]; then
+    exit 0
+fi
 exit 38
 PYTHON
 chmod +x "$tmp_dir/bin/node" "$tmp_dir/bin/python3"
@@ -89,11 +92,11 @@ for color_status in 0 37; do
         exit 1
     fi
     if [ "$color_status" -eq 0 ]; then
-        if [ "$unit_status" -ne 38 ] || ! printf '%s\n' "$unit_output" | rg -q '^calendar-events-safe-get-time.test.py$'; then
-            echo "unit runner did not continue after successful color regression" >&2
+        if [ "$unit_status" -ne 38 ] || ! printf '%s\n' "$unit_output" | rg -q '^weather-card-effects.test.py$' || ! printf '%s\n' "$unit_output" | rg -q '^calendar-events-safe-get-time.test.py$'; then
+            echo "unit runner did not continue after successful color and weather regressions" >&2
             exit 1
         fi
-    elif [ "$unit_status" -ne 37 ] || printf '%s\n' "$unit_output" | rg -q '^calendar-events-safe-get-time.test.py$'; then
+    elif [ "$unit_status" -ne 37 ] || printf '%s\n' "$unit_output" | rg -q '^weather-card-effects.test.py$|^calendar-events-safe-get-time.test.py$'; then
         echo "unit runner did not stop with color regression failure status" >&2
         exit 1
     fi
