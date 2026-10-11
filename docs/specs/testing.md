@@ -2,6 +2,13 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 ## What it must do
 
+### Simple service cohort
+
+- `python3 Tests/simple-service-warnings.test.py lint` and `behavior` run standalone, optionally with `--artifacts <new-directory>`; no runner integration is claimed. Through `cbaf31bd0`, production GitHub/Network/VPN/Cava/ScreenRecorder/NightLight/BarService unqualified-access diagnostics drop 44→5. Lint requires exact residual counts: five Network JsonAdapter-boundary `unqualified` plus one Network `incompatible-type`, and four recorder parser-metadata `missing-property`; the other five services require zero warnings and exit status zero. Residual warnings are retained, not suppressed.
+- Saved proof includes 72 existing JavaScript guard cases (mixed source guards and extracted-function behavior), seven production-service QML cases plus init/cleanup (nine reported passes), and eight separate private gamma/process cases in [night-light](night-light.md#tests-asserting-this-spec). Cava's QML case checks configuration input, frame normalization, silence reset, stderr, and exit/disable state. Feature-specific QML coverage: [GitHub](github.md), [network](network.md), [VPN](vpn.md), [recorder](screen-recorder.md), [night light](night-light.md), [bar](bar.md).
+- `Tests/Qml/SimpleServiceHarness.qml` runs actual services and timers under offscreen `qmltestrunner`, but Process, streams, FileView/cache, settings, and network/service boundaries are fake. Completion ordering is streams → exited → running=false. GitHub's stream-before-exit fetch gap is reproduced and manually completed, not fixed. No OS command, external network, recorder capture, gamma control, real persistence, or whole-shell acceptance is established by this harness; the separate private gamma suite uses real processes, never the active display.
+- Behavior isolates HOME/XDG/Noctalia paths and removes desktop/compositor connections, creates a unique permission-locked byte-for-byte real-settings backup and verifies its hash before staging, then checks backup and real bytes unchanged. Child timeout is 45 seconds; acceptance requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `QCRITICAL`, `ReferenceError`, `TypeError`, or `Binding loop`.
+
 ### Widget settings cohort
 
 - `python3 Tests/widget-settings-cohort-warnings.test.py lint --artifacts <new-directory>` and `behavior --artifacts <new-directory>` are standalone only; no runner integration is claimed. Editor-only lint requires zero warnings and exit status zero per file; counts and coverage after `c9fd2feed` + `eac48e27a`: [bar](bar.md#tests-asserting-this-spec).

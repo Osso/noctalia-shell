@@ -84,12 +84,14 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 
 - `Tests/network-forget-profiles.test.sh`
 - `Tests/network-service-guards.test.js`
+- `Tests/simple-service-warnings.test.py` / `Tests/Qml/SimpleServiceHarness.qml` — production status/scan success and profile-query error ordering, radio recheck, and real delayed-scan timer execution while active versus suppression after polling ends. Commands and I/O are fake, not NetworkManager integration. Exact residual diagnostics and cohort proof: [testing](testing.md#simple-service-cohort).
 - `Tests/wifi-panel-ui-guards.test.js` - runs the production-list behavioral harness; panel signal routing remains source-guard coverage.
 - `Tests/wifi-networks-list-warnings.test.py` - standalone lint requires zero qmllint warnings and exit status zero. `behavior` runs standalone and directly in `run-tests.sh`'s `deterministic-unit` gate after battery-widget coverage; the discovered JavaScript suite also invokes it. `--snapshot <path>` optionally exports records without changing fixture comparison; `--baseline` requires a snapshot path and skips comparison. Offscreen behavior checks ordered delegate connect/disconnect requests, secured-network password request/submission/cancellation/clearing, forget confirmation/cancellation signals, busy states, and model replacement/reordering. It compares 28 exact geometry/content snapshots (seven states at widths 900/430 with normal/translated labels) against the pre-cleanup fixture.
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable tests for connectivity check and ping fallback transitions.
+- Extracted-function cases in `Tests/network-service-guards.test.js` cover connectivity transitions, stale ping rejection, overlap prevention, and failure handling; live connectivity/ping integration remains unverified.
+- [ ] Five Network JsonAdapter-boundary `unqualified` diagnostics and one `incompatible-type` diagnostic remain; exact staged-lint expectations: [testing](testing.md#simple-service-cohort).
 - Production-list coverage uses inert services and fixture styling/translations; it preserves caller-provided order rather than exercising panel sorting, and verifies forget signals rather than NetworkManager deletion. It does not cover live networking, full-panel interaction, all locales/scales, or pointer/keyboard event delivery (actions invoke signals directly).
 
 ## Out of scope

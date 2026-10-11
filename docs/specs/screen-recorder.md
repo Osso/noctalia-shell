@@ -74,13 +74,14 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 
 - `Tests/screen-recorder-discovery.test.sh` - launches the real discovery processes through `Tests/Qml/ScreenRecorderDiscoveryHarness.qml`; it verifies a `Quickshell.screensChanged` refresh replaces `DP-4` with `eDP-1` when the two commands exit in reverse order, publishes matching source/resolution state, and preserves the persisted selection.
 - `Tests/screen-recorder-service-guards.test.js`
+- `Tests/simple-service-warnings.test.py` / `Tests/Qml/SimpleServiceHarness.qml` — production availability/discovery completion ordering, portal preflight failure, successful preflight dispatch, and pending recorder failure/notice. Processes are fake; no capture or portal integration. Four parser-metadata diagnostics remain; cohort proof: [testing](testing.md#simple-service-cohort).
 - `Tests/screen-recorder-settings-ui.test.js`
 - `Tests/service-probes-parsing.test.sh`
 - `Tests/qml-runtime-guards.test.js`
 
 ## Known gaps (current cycle)
 
-None.
+- [ ] Four recorder parser-metadata `missing-property` diagnostics remain; owner qualification does not make static analysis warning-free.
 
 ## Out of scope
 

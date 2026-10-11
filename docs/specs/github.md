@@ -81,11 +81,13 @@ GitHub covers cached Noctalia GitHub metadata, contributor lists, contributor av
 ## Tests asserting this spec
 
 - `Tests/github-service-guards.test.js`
+- `Tests/simple-service-warnings.test.py` / `Tests/Qml/SimpleServiceHarness.qml` — production service metadata-process destruction, version/contributor stream parsing, malformed responses, and deferred fake cache writes. Invocation, lint counts, and fake I/O limits: [testing](testing.md#simple-service-cohort).
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
 
+- [ ] Stream-before-exit fetch completion remains unchanged: the QML fixture observes `isFetchingData` still true after both streams finish and explicitly calls `checkAndSaveData()` to complete saving. This is gap reproduction, not an automatic completion fix.
 - [ ] Add executable coverage for About tab contributor rendering and click actions.
 - [ ] Add executable coverage for avatar cache metadata loaded from real fixture JSON.
 - [ ] Add executable coverage for failure to run curl/wget or ImageMagick.

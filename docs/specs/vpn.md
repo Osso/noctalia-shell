@@ -79,6 +79,7 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 - `Tests/bar-controls-warnings.test.py` — isolated production bar-widget context/settings routing, connect/disconnect dispatch, visibility polling references, display modes, and vertical collapse. Cohort evidence and limits: [bar](bar.md#bar-control-cohort), [testing](testing.md#bar-control-cohort).
 
 - `Tests/vpn-service-guards.test.js`
+- `Tests/simple-service-warnings.test.py` / `Tests/Qml/SimpleServiceHarness.qml` — production refresh/connect success, disconnect/refresh failure, connect failed-start handling, and real scheduled-refresh timer execution while polling versus suppression when idle. Process/network boundaries are fake; cohort proof and lint limits: [testing](testing.md#simple-service-cohort).
 - `Tests/vpn-ui-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`

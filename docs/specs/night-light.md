@@ -34,7 +34,8 @@ Night Light covers wlsunset command generation, manual and automatic scheduling,
 ## Tests asserting this spec
 
 - `Tests/night-light-service-guards.test.js`
-- `Tests/night-light-runtime.test.py` — private headless Wayland gamma fixture and real wlsunset/Quickshell Process; test-only dependencies listed in test docstring.
+- `Tests/night-light-runtime.test.py` — eight private headless Wayland gamma cases with real wlsunset/Quickshell Process, passing at `cbaf31bd0`: overlap, delayed exit, timeout, enumeration failure, disabled cleanup, latest desired command, unchanged command, and gamma failure. This is private process/gamma proof, not active-display acceptance; test-only dependencies listed in test docstring.
+- `Tests/simple-service-warnings.test.py` / `Tests/Qml/SimpleServiceHarness.qml` — production settings signal reapplication, cleanup failure logging, changed temperature, and disable-during-cleanup race with fake processes. Distinct from real gamma proof; cohort invocation and limits: [testing](testing.md#simple-service-cohort).
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
