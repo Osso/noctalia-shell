@@ -1,3 +1,6 @@
+// SmartPanel's Loader retains this panel's context; rows declare their model roles.
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -398,6 +401,8 @@ SmartPanel {
         model: root.processList
 
         delegate: Rectangle {
+          id: processDelegate
+
           required property var modelData
           required property int index
 
@@ -429,7 +434,7 @@ SmartPanel {
             acceptedButtons: Qt.RightButton
             onClicked: mouse => {
               if (mouse.button === Qt.RightButton) {
-                processContextMenu.processData = modelData;
+                processContextMenu.processData = processDelegate.modelData;
                 processContextMenu.popup();
               }
             }
@@ -444,7 +449,7 @@ SmartPanel {
 
             // Process icon
             NIcon {
-              icon: ProcessService.getProcessIcon(processCommand)
+              icon: ProcessService.getProcessIcon(processDelegate.processCommand)
               pointSize: Style.fontSizeM
               color: NColor.mOnSurfaceVariant
             }
@@ -452,7 +457,7 @@ SmartPanel {
             // Process name
             NText {
               Layout.fillWidth: true
-              text: processName
+              text: processDelegate.processName
               pointSize: Style.fontSizeS
               color: NColor.mOnSurface
               elide: Text.ElideRight
@@ -461,17 +466,17 @@ SmartPanel {
             // CPU usage
             NText {
               Layout.preferredWidth: root.processCpuColumnWidth
-              text: ProcessService.formatCpu(processCpu)
+              text: ProcessService.formatCpu(processDelegate.processCpu)
               pointSize: Style.fontSizeS
               family: Settings.data.ui.fontFixed
-              color: processCpuColor
+              color: processDelegate.processCpuColor
               horizontalAlignment: Text.AlignRight
             }
 
             // Memory usage
             NText {
               Layout.preferredWidth: root.processMemoryColumnWidth
-              text: ProcessService.formatMemory(processMemoryKb)
+              text: ProcessService.formatMemory(processDelegate.processMemoryKb)
               pointSize: Style.fontSizeS
               family: Settings.data.ui.fontFixed
               color: NColor.mOnSurfaceVariant
@@ -481,7 +486,7 @@ SmartPanel {
             // PID
             NText {
               Layout.preferredWidth: root.processPidColumnWidth
-              text: processPid.toString()
+              text: processDelegate.processPid.toString()
               pointSize: Style.fontSizeXS
               family: Settings.data.ui.fontFixed
               color: NColor.mOnSurfaceVariant
