@@ -14,7 +14,7 @@ Rectangle {
   property color backgroundColor: NColor.mPrimary
   property color textColor: NColor.mOnPrimary
   property color hoverColor: NColor.mHover
-  property bool enabled: true
+  override property bool enabled: true
   property real fontSize: Style.fontSizeM
   property int fontWeight: Style.fontWeightBold
   property real iconSize: Style.fontSizeL
@@ -156,17 +156,17 @@ Rectangle {
       }
     }
     onPressed: mouse => {
-                 if (tooltipText) {
-                   TooltipService.hide();
-                 }
-                 if (mouse.button === Qt.LeftButton) {
-                   root.clicked();
-                 } else if (mouse.button == Qt.RightButton) {
-                   root.rightClicked();
-                 } else if (mouse.button == Qt.MiddleButton) {
-                   root.middleClicked();
-                 }
-               }
+      if (tooltipText) {
+        TooltipService.hide();
+      }
+      if (mouse.button === Qt.LeftButton) {
+        root.clicked();
+      } else if (mouse.button == Qt.RightButton) {
+        root.rightClicked();
+      } else if (mouse.button == Qt.MiddleButton) {
+        root.middleClicked();
+      }
+    }
 
     onCanceled: {
       root.hovered = false;

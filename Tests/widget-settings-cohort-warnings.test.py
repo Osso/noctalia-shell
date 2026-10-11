@@ -203,7 +203,8 @@ def behavior(directory):
     print(output, end="")
     assert result.returncode == 0 and "18 passed, 0 failed" in output, output
     assert not re.search(
-        r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output
+        r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|qt\.qml\.|Warning:",
+        output,
     ), output
     print("WIDGET_SETTINGS_COHORT_BEHAVIOR_PASS")
 
