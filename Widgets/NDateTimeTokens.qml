@@ -256,8 +256,8 @@ Rectangle {
           // Category badge
           Rectangle {
             Layout.alignment: Qt.AlignVCenter
-            width: 70
-            height: 22
+            Layout.preferredWidth: 70
+            Layout.preferredHeight: 22
             color: getCategoryColor(category)[0]
             radius: Style.radiusS
             opacity: tokenMouseArea.containsMouse ? 0.9 : 1.0
@@ -280,8 +280,8 @@ Rectangle {
           Rectangle {
             id: tokenButton
             Layout.alignment: Qt.AlignVCenter // Added this line
-            width: 100
-            height: 22
+            Layout.preferredWidth: 100
+            Layout.preferredHeight: 22
             color: tokenMouseArea.containsMouse ? NColor.mPrimary : NColor.mOnSurface
             radius: Style.radiusS
 
@@ -325,8 +325,8 @@ Rectangle {
           // Live example
           Rectangle {
             Layout.alignment: Qt.AlignVCenter // Added this line
-            width: 90
-            height: 22
+            Layout.preferredWidth: 90
+            Layout.preferredHeight: 22
             color: tokenMouseArea.containsMouse ? NColor.mPrimary : NColor.mOnSurfaceVariant
             radius: Style.radiusS
             border.color: tokenMouseArea.containsMouse ? NColor.mPrimary : NColor.mOutline
