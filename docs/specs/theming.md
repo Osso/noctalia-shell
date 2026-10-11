@@ -6,7 +6,9 @@ Theming covers color scheme discovery/application, wallpaper and predefined them
 
 - [x] Project palette bindings resolve to `NColor`, distinct from QtQuick's `Color` singleton, including on Qt 6.12.
 - [x] Transparent window bindings retain zero alpha and palette bindings retain their configured colors.
-- [x] The namespace regression runs offscreen with isolated writable paths and stubbed settings, without accessing the user's configuration or desktop.
+- [x] The namespace regression runs in `./run-tests.sh unit` offscreen with isolated writable paths and stubbed settings, without accessing the user's configuration or desktop.
+- [x] The harness verifies zero window alpha, default `mOnSurface` color `#e9e4f0`, and a non-function `NColor.transparent`; success requires exit code zero and `COLOR_NAMESPACE_PASS` within 15 seconds.
+- [x] The harness preseeds isolated `colors.json` with an empty object and rejects any ` WARN ` record in combined stdout/stderr; a success marker alone is insufficient.
 
 ### Color scheme service
 

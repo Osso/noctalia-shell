@@ -38,6 +38,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 - [x] `./run-tests.sh all` (the default) and `./run-tests.sh regression` run deterministic unit tests, structural-reference checks, QML static checks, read-only host probes, and the active Quickshell log gate; they do not run visible notification probes.
 - [x] `./run-tests.sh unit` discovers every `Tests/*.test.js` suite, runs behavior suites and discovered `Tests/Qml/tst_*.qml` lifecycle suites under `deterministic-unit`, then runs source inventory/coverage meta-tests under `structural-reference`.
+- [x] The deterministic unit gate runs `Tests/color-namespace-runtime.test.py`, an isolated offscreen production palette/QColor binding regression; its behavioral and warning-free success requirements belong in [theming](theming.md).
 - [x] Adding a JavaScript test suite requires no manual runner-list update; the deterministic runner-completeness test proves discovery and discovery-failure handling.
 - [x] The deterministic gate also runs isolated [deployment](deployment.md) and [night-light](night-light.md) process regressions. Night-light fixtures require a C compiler, `pkg-config`, Wayland server development files, `wayland-scanner`, Quickshell, and `wlsunset`; these are test-only dependencies beyond the shell's existing runtime programs.
 - [x] `./run-tests.sh qml` runs the focused QML static check using the installed Qt 6 `/usr/lib/qt6/bin/qmllint` for checked and documented-exclusion files; it does not fall back to a PATH-resolved Qt 5 tool.
