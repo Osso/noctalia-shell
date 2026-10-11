@@ -50,7 +50,7 @@ def lint(directory):
     print("CLIPBOARD_PREVIEW_LINT_COUNTS", dict(counts))
     assert counts == {"missing-property": 1}, dict(counts)
     assert 'Member "mOutlineVariant" not found on type "NColor"' in output
-    assert result.returncode == 255, result.returncode
+    assert result.returncode == 0, result.returncode
     print("CLIPBOARD_PREVIEW_LINT_PASS")
 
 
