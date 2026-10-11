@@ -65,12 +65,13 @@ Process covers process monitoring, process-list parsing/sorting, process actions
 - `Tests/process-service-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
+- `Tests/process-panel-warnings.test.py` and `Tests/Qml/ProcessPanelWarningsHarness.qml` — standalone ProcessPanel-only lint (19→0 at `508e9a59b`) and four actual offscreen panel behavioral cases plus QtTest init/cleanup. Assertions cover CPU/memory sorting and direction, fixture-filtered model updates including empty/reset states, 25 rendered rows and model replacement, displayed roles/layout and CPU threshold colors, selected-row context action routing, and independent panel close/reopen reference ownership and Loader recreation.
+- ProcessService sorting/filtering/formatting, SystemStatService polling, SmartPanel, leaf controls, settings, and Quickshell dispatch are fixtures. Kill/force-kill and clipboard requests are recorded only; no host process or clipboard mutation occurs. Synthetic row/header clicks and direct action signals do not prove physical desktop input, live service integration, real persistence, or whole-shell acceptance. Isolation and acceptance gates: [testing](testing.md#process-panel-isolated-runtime).
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for ProcessPanel open/close reference ownership.
-- [ ] Add executable coverage for ProcessPanel sort button interactions.
-- [ ] Add executable coverage for rendered process action buttons.
+- [ ] Verify panel lifecycle, sorting, and context actions with real services and desktop input; isolated fixture coverage above does not establish those boundaries.
+- ProcessPanel has no filter UI or pagination. Fixture filtering proves reaction to published model updates, and 25 rows prove rendering, not paging.
 - [ ] Add executable coverage for process-sampler exit/error handling.
 
 ## Out of scope

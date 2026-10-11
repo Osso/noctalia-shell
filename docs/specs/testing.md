@@ -2,6 +2,12 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 ## What it must do
 
+### Process panel isolated runtime
+
+- `Tests/process-panel-warnings.test.py` runs standalone `lint` or `behavior`, requiring `--artifacts <new-directory>`; no runner integration is claimed. ProcessPanel-only lint drops 19→0 at `508e9a59b` and requires zero warnings/exit status zero. Four behavioral cases plus QtTest init/cleanup yield six cases; exact sorting, model-update, 25-row, selection/color/action, and ownership assertions: [process](process.md#tests-asserting-this-spec).
+- Behavior stages actual ProcessPanel under offscreen `qmltestrunner` with fixture services, SmartPanel, leaf controls, settings, and recorded Quickshell dispatch. Writable HOME/XDG/Noctalia paths are isolated and desktop connections removed. Both modes create a unique permission-locked, hash-verified byte-for-byte real-settings backup before staging and finally check real/backup bytes and canonical Quickshell registry identity unchanged. Child timeout is 60 seconds; behavior requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `QCRITICAL`, `ReferenceError`, `TypeError`, or `Binding loop`.
+- Kill/force-kill and copy requests are inert: no host process or clipboard mutations. Synthetic clicks/direct signals do not prove physical desktop input, real service sorting/polling, persistence, or whole-shell acceptance. No filter UI or pagination exists; fixture filtering tests model updates, and 25 rendered rows are not paging proof.
+
 ### Root-service cohort
 
 - `Tests/root-service-warnings.test.py lint` and `behavior` run standalone, optionally with `--artifacts <directory>`; no runner integration is claimed. At `8b1de9d34`, root qualification across Compositor/IPC/Brightness/Audio/Bluetooth/Notification removes 40 eligible owner diagnostics. Lint requires each qmllint exit status zero and no auto-applicable zero-length `root.` insertion suggestions, not zero warnings or fixed residual counts. Remaining enum/type/member, hoisting, and unbound-owner diagnostics are retained: feature counts in [compositor](compositor.md#tests-asserting-this-spec), [audio](audio.md#tests-asserting-this-spec), [Bluetooth](bluetooth.md#tests-asserting-this-spec), and [notifications](notifications.md#tests-asserting-this-spec); IPC retains seven `missing-property` and two `unqualified`, Brightness six `unqualified` warnings.
