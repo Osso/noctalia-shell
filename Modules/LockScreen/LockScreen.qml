@@ -62,6 +62,7 @@ Loader {
 
         WlSessionLockSurface {
           id: lockSurface
+          readonly property ShellScreen shellScreen: lockSurface.screen
           readonly property date now: Time.now
 
           Item {
@@ -115,7 +116,7 @@ Loader {
             id: lockBgImage
             anchors.fill: parent
             fillMode: Image.PreserveAspectCrop
-            source: lockSurface.screen ? WallpaperService.getWallpaper(lockSurface.screen.name) : ""
+            source: lockSurface.shellScreen ? WallpaperService.getWallpaper(lockSurface.shellScreen.name) : ""
             cache: true
             smooth: true
             mipmap: false

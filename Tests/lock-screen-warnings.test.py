@@ -48,7 +48,10 @@ def lint(directory):
     print("LOCK_SCREEN_LINT_COUNTS", dict(counts), "TOTAL", len(warnings))
     # Remaining diagnostics are the unchanged implicit-component context accesses.
     assert counts == {"unqualified": 10}, dict(counts)
-    assert output.count("Unqualified access [unqualified]\n") == 10
+    diagnostic_sources = re.findall(r"^Warning:.*\n([^\n]+)", output, re.M)
+    assert all("lockContext." in line for line in diagnostic_sources), (
+        diagnostic_sources
+    )
     assert result.returncode == 255, result.returncode
 
 
@@ -56,8 +59,12 @@ def stage_runtime(directory, mutation):
     helpers = helper("about-tab-warnings.test.py")
     write, singleton = helpers.write_module, helpers.singleton
     inert = {"Inert": "import QtQuick\nQtObject {}"}
-    for uri in (
+    write(
+        directory,
         "Quickshell",
+        {"ShellScreen": "import QtQuick\nQtObject { property string name }"},
+    )
+    for uri in (
         "Quickshell.Io",
         "Quickshell.Services.Pam",
         "Quickshell.Widgets",
@@ -69,7 +76,7 @@ def stage_runtime(directory, mutation):
         "Quickshell.Wayland",
         {
             "WlSessionLock": "import QtQuick\nItem { property bool locked: false }",
-            "WlSessionLockSurface": 'import QtQuick\nItem { width: 1920; height: 1080; property var screen: ({name: "fixture-screen"}) }',
+            "WlSessionLockSurface": 'import QtQuick\nimport Quickshell\nItem { width: 1920; height: 1080; property ShellScreen screen: ShellScreen { name: "fixture-screen" } }',
         },
     )
     write(
@@ -358,8 +365,21 @@ Item {
       compare(named("passwordInput").echoMode, TextInput.Password);
       compare(named("lockContext").currentText, "");
     }
+    function test_destroy_pending_unload_does_not_affect_new_instance() {
+      lock.scheduleUnloadAfterUnlock();
+      lock.destroy();
+      lock = factory.createObject(scene);
+      compare(PanelService.lockScreen, lock);
+      lock.active = true;
+      tryVerify(() => lock.item !== null);
+      wait(350);
+      compare(lock.active, true);
+      compare(named("lockSession").locked, true);
+    }
     function test_forecast_indices_and_screen() {
       compare(named("lockBgImage").source.toString(), "");
+      const weekdays = descendants(lock.item, child => child.text !== undefined && /^(Sun|Mon|Tue|Wed)$/.test(child.text));
+      compare(weekdays.map(child => child.text), ["Sun", "Mon", "Tue", "Wed"]);
       const symbols = descendants(lock.item, child => child.icon !== undefined && /^weather-(11|22|33|44)$/.test(child.icon));
       compare(symbols.map(child => child.icon), ["weather-11", "weather-22", "weather-33", "weather-44"]);
       const temperatures = descendants(lock.item, child => child.text !== undefined && /^\\d+°\\/\\d+°$/.test(child.text));
