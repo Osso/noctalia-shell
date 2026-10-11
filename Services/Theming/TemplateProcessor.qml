@@ -160,7 +160,7 @@ Singleton {
 
   function isDiscordClientEnabled(clientName) {
     // Check ProgramCheckerService to see if client is detected
-    for (var i = 0; i < ProgramCheckerService.availableDiscordClients.length; i++) {
+    for (let i = 0; i < ProgramCheckerService.availableDiscordClients.length; i++) {
       if (ProgramCheckerService.availableDiscordClients[i].name === clientName) {
         return true;
       }
@@ -170,7 +170,7 @@ Singleton {
 
   function isCodeClientEnabled(clientName) {
     // Check ProgramCheckerService to see if client is detected
-    for (var i = 0; i < ProgramCheckerService.availableCodeClients.length; i++) {
+    for (let i = 0; i < ProgramCheckerService.availableCodeClients.length; i++) {
       if (ProgramCheckerService.availableCodeClients[i].name === clientName) {
         return true;
       }
