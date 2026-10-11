@@ -122,10 +122,10 @@ Item {
   // 1. Explicitly anchored, OR
   // 2. Using button position and bar is on that edge, OR
   // 3. Attached to bar with no explicit anchors (default centering behavior)
-  readonly property bool effectivePanelAnchorTop: panelAnchorTop || (useButtonPosition && barPosition === "top") || (panelContent.allowAttach && !hasExplicitVerticalAnchor && barPosition === "top" && !barIsVertical)
-  readonly property bool effectivePanelAnchorBottom: panelAnchorBottom || (useButtonPosition && barPosition === "bottom") || (panelContent.allowAttach && !hasExplicitVerticalAnchor && barPosition === "bottom" && !barIsVertical)
-  readonly property bool effectivePanelAnchorLeft: panelAnchorLeft || (useButtonPosition && barPosition === "left") || (panelContent.allowAttach && !hasExplicitHorizontalAnchor && barPosition === "left" && barIsVertical)
-  readonly property bool effectivePanelAnchorRight: panelAnchorRight || (useButtonPosition && barPosition === "right") || (panelContent.allowAttach && !hasExplicitHorizontalAnchor && barPosition === "right" && barIsVertical)
+  readonly property bool effectivePanelAnchorTop: panelAnchorTop || (useButtonPosition && barPosition === "top") || (panelContainer.allowAttach && !hasExplicitVerticalAnchor && barPosition === "top" && !barIsVertical)
+  readonly property bool effectivePanelAnchorBottom: panelAnchorBottom || (useButtonPosition && barPosition === "bottom") || (panelContainer.allowAttach && !hasExplicitVerticalAnchor && barPosition === "bottom" && !barIsVertical)
+  readonly property bool effectivePanelAnchorLeft: panelAnchorLeft || (useButtonPosition && barPosition === "left") || (panelContainer.allowAttach && !hasExplicitHorizontalAnchor && barPosition === "left" && barIsVertical)
+  readonly property bool effectivePanelAnchorRight: panelAnchorRight || (useButtonPosition && barPosition === "right") || (panelContainer.allowAttach && !hasExplicitHorizontalAnchor && barPosition === "right" && barIsVertical)
 
   signal opened
   signal closed
@@ -162,7 +162,7 @@ Item {
     if (buttonItem) {
       root.buttonItem = buttonItem;
       // Map button position to screen coordinates
-      var buttonPos = buttonItem.mapToItem(null, 0, 0);
+      const buttonPos = buttonItem.mapToItem(null, 0, 0);
       root.buttonPosition = Qt.point(buttonPos.x, buttonPos.y);
       root.buttonWidth = buttonItem.width;
       root.buttonHeight = buttonItem.height;
@@ -285,21 +285,21 @@ Item {
     if (root.useButtonPosition && root.width > 0 && panelWidth > 0) {
       if (root.barIsVertical) {
         // For vertical bars
-        if (panelContent.allowAttach) {
+        if (panelContainer.allowAttach) {
           // Attached panels: align with bar edge (left or right side)
           if (root.barPosition === "left") {
-            var leftBarEdge = root.barMarginH + Style.barHeight;
+            const leftBarEdge = root.barMarginH + Style.barHeight;
             calculatedX = leftBarEdge;
           } else {
             // right
-            var rightBarEdge = root.width - root.barMarginH - Style.barHeight;
+            const rightBarEdge = root.width - root.barMarginH - Style.barHeight;
             calculatedX = rightBarEdge - panelWidth;
           }
         } else {
           // Detached panels: center on button X position
-          var panelX = root.buttonPosition.x + root.buttonWidth / 2 - panelWidth / 2;
-          var minX = Style.marginL;
-          var maxX = root.width - panelWidth - Style.marginL;
+          let panelX = root.buttonPosition.x + root.buttonWidth / 2 - panelWidth / 2;
+          const minX = Style.marginL;
+          const maxX = root.width - panelWidth - Style.marginL;
 
           // Account for vertical bar taking up space
           if (root.barPosition === "left") {
@@ -313,11 +313,11 @@ Item {
         }
       } else {
         // For horizontal bars, center panel on button X position
-        var panelX = root.buttonPosition.x + root.buttonWidth / 2 - panelWidth / 2;
-        if (panelContent.allowAttach) {
-          var cornerInset = root.barFloating ? Style.radiusL * 2 : 0;
-          var barLeftEdge = root.barMarginH + cornerInset;
-          var barRightEdge = root.width - root.barMarginH - cornerInset;
+        let panelX = root.buttonPosition.x + root.buttonWidth / 2 - panelWidth / 2;
+        if (panelContainer.allowAttach) {
+          const cornerInset = root.barFloating ? Style.radiusL * 2 : 0;
+          const barLeftEdge = root.barMarginH + cornerInset;
+          const barRightEdge = root.width - root.barMarginH - cornerInset;
           panelX = Math.max(barLeftEdge, Math.min(panelX, barRightEdge - panelWidth));
         } else {
           panelX = Math.max(Style.marginL, Math.min(panelX, root.width - panelWidth - Style.marginL));
@@ -329,11 +329,11 @@ Item {
       if (root.panelAnchorHorizontalCenter) {
         if (root.barIsVertical) {
           if (root.barPosition === "left") {
-            var availableStart = root.barMarginH + Style.barHeight;
-            var availableWidth = root.width - availableStart;
+            const availableStart = root.barMarginH + Style.barHeight;
+            const availableWidth = root.width - availableStart;
             calculatedX = availableStart + (availableWidth - panelWidth) / 2;
           } else if (root.barPosition === "right") {
-            var availableWidth = root.width - root.barMarginH - Style.barHeight;
+            const availableWidth = root.width - root.barMarginH - Style.barHeight;
             calculatedX = (availableWidth - panelWidth) / 2;
           } else {
             calculatedX = (root.width - panelWidth) / 2;
@@ -342,14 +342,14 @@ Item {
           calculatedX = (root.width - panelWidth) / 2;
         }
       } else if (root.effectivePanelAnchorRight) {
-        if (panelContent.allowAttach && root.barIsVertical && root.barPosition === "right") {
-          var rightBarEdge = root.width - root.barMarginH - Style.barHeight;
+        if (panelContainer.allowAttach && root.barIsVertical && root.barPosition === "right") {
+          const rightBarEdge = root.width - root.barMarginH - Style.barHeight;
           calculatedX = rightBarEdge - panelWidth;
-        } else if (panelContent.allowAttach) {
+        } else if (panelContainer.allowAttach) {
           // Account for corner inset when bar is floating, horizontal, AND panel is on same edge as bar
-          var panelOnSameEdgeAsBar = (root.barPosition === "top" && root.effectivePanelAnchorTop) || (root.barPosition === "bottom" && root.effectivePanelAnchorBottom);
+          const panelOnSameEdgeAsBar = (root.barPosition === "top" && root.effectivePanelAnchorTop) || (root.barPosition === "bottom" && root.effectivePanelAnchorBottom);
           if (!root.barIsVertical && root.barFloating && panelOnSameEdgeAsBar) {
-            var rightCornerInset = Style.radiusL * 2;
+            const rightCornerInset = Style.radiusL * 2;
             calculatedX = root.width - root.barMarginH - rightCornerInset - panelWidth;
           } else {
             calculatedX = root.width - panelWidth;
@@ -358,14 +358,14 @@ Item {
           calculatedX = root.width - panelWidth - Style.marginL;
         }
       } else if (root.effectivePanelAnchorLeft) {
-        if (panelContent.allowAttach && root.barIsVertical && root.barPosition === "left") {
-          var leftBarEdge = root.barMarginH + Style.barHeight;
+        if (panelContainer.allowAttach && root.barIsVertical && root.barPosition === "left") {
+          const leftBarEdge = root.barMarginH + Style.barHeight;
           calculatedX = leftBarEdge;
-        } else if (panelContent.allowAttach) {
+        } else if (panelContainer.allowAttach) {
           // Account for corner inset when bar is floating, horizontal, AND panel is on same edge as bar
-          var panelOnSameEdgeAsBar = (root.barPosition === "top" && root.effectivePanelAnchorTop) || (root.barPosition === "bottom" && root.effectivePanelAnchorBottom);
+          const panelOnSameEdgeAsBar = (root.barPosition === "top" && root.effectivePanelAnchorTop) || (root.barPosition === "bottom" && root.effectivePanelAnchorBottom);
           if (!root.barIsVertical && root.barFloating && panelOnSameEdgeAsBar) {
-            var leftCornerInset = Style.radiusL * 2;
+            const leftCornerInset = Style.radiusL * 2;
             calculatedX = root.barMarginH + leftCornerInset;
           } else {
             calculatedX = 0;
@@ -377,19 +377,19 @@ Item {
         // No explicit anchor: default to centering on bar
         if (root.barIsVertical) {
           if (root.barPosition === "left") {
-            var availableStart = root.barMarginH + Style.barHeight;
-            var availableWidth = root.width - availableStart - Style.marginL;
+            const availableStart = root.barMarginH + Style.barHeight;
+            const availableWidth = root.width - availableStart - Style.marginL;
             calculatedX = availableStart + (availableWidth - panelWidth) / 2;
           } else {
-            var availableWidth = root.width - root.barMarginH - Style.barHeight - Style.marginL;
+            const availableWidth = root.width - root.barMarginH - Style.barHeight - Style.marginL;
             calculatedX = Style.marginL + (availableWidth - panelWidth) / 2;
           }
         } else {
-          if (panelContent.allowAttach) {
-            var cornerInset = Style.radiusL + (root.barFloating ? Style.radiusL : 0);
-            var barLeftEdge = root.barMarginH + cornerInset;
-            var barRightEdge = root.width - root.barMarginH - cornerInset;
-            var centeredX = (root.width - panelWidth) / 2;
+          if (panelContainer.allowAttach) {
+            const cornerInset = Style.radiusL + (root.barFloating ? Style.radiusL : 0);
+            const barLeftEdge = root.barMarginH + cornerInset;
+            const barRightEdge = root.width - root.barMarginH - cornerInset;
+            const centeredX = (root.width - panelWidth) / 2;
             calculatedX = Math.max(barLeftEdge, Math.min(centeredX, barRightEdge - panelWidth));
           } else {
             calculatedX = (root.width - panelWidth) / 2;
@@ -399,21 +399,21 @@ Item {
     }
 
     // Edge snapping for X
-    if (panelContent.allowAttach && !root.barFloating && root.width > 0 && panelWidth > 0) {
-      var leftEdgePos = root.barMarginH;
+    if (panelContainer.allowAttach && !root.barFloating && root.width > 0 && panelWidth > 0) {
+      let leftEdgePos = root.barMarginH;
       if (root.barPosition === "left") {
         leftEdgePos = root.barMarginH + Style.barHeight;
       }
 
-      var rightEdgePos = root.width - root.barMarginH - panelWidth;
+      let rightEdgePos = root.width - root.barMarginH - panelWidth;
       if (root.barPosition === "right") {
         rightEdgePos = root.width - root.barMarginH - Style.barHeight - panelWidth;
       }
 
       // Only snap to left edge if panel is actually meant to be at left (or no explicit anchor)
-      var shouldSnapToLeft = root.effectivePanelAnchorLeft || (!root.hasExplicitHorizontalAnchor && root.barPosition === "left");
+      const shouldSnapToLeft = root.effectivePanelAnchorLeft || (!root.hasExplicitHorizontalAnchor && root.barPosition === "left");
       // Only snap to right edge if panel is actually meant to be at right (or no explicit anchor)
-      var shouldSnapToRight = root.effectivePanelAnchorRight || (!root.hasExplicitHorizontalAnchor && root.barPosition === "right");
+      const shouldSnapToRight = root.effectivePanelAnchorRight || (!root.hasExplicitHorizontalAnchor && root.barPosition === "right");
 
       if (shouldSnapToLeft && Math.abs(calculatedX - leftEdgePos) <= root.edgeSnapDistance) {
         calculatedX = leftEdgePos;
@@ -425,26 +425,26 @@ Item {
     // ===== Y POSITIONING =====
     if (root.useButtonPosition && root.height > 0 && panelHeight > 0) {
       if (root.barPosition === "top") {
-        var topBarEdge = root.barMarginV + Style.barHeight;
-        if (panelContent.allowAttach) {
+        const topBarEdge = root.barMarginV + Style.barHeight;
+        if (panelContainer.allowAttach) {
           calculatedY = topBarEdge;
         } else {
           calculatedY = topBarEdge + Style.marginM;
         }
       } else if (root.barPosition === "bottom") {
-        var bottomBarEdge = root.height - root.barMarginV - Style.barHeight;
-        if (panelContent.allowAttach) {
+        const bottomBarEdge = root.height - root.barMarginV - Style.barHeight;
+        if (panelContainer.allowAttach) {
           calculatedY = bottomBarEdge - panelHeight;
         } else {
           calculatedY = bottomBarEdge - panelHeight - Style.marginM;
         }
       } else if (root.barIsVertical) {
-        var panelY = root.buttonPosition.y + root.buttonHeight / 2 - panelHeight / 2;
-        var extraPadding = (panelContent.allowAttach && root.barFloating) ? Style.radiusL : 0;
-        if (panelContent.allowAttach) {
-          var cornerInset = extraPadding + (root.barFloating ? Style.radiusL : 0);
-          var barTopEdge = root.barMarginV + cornerInset;
-          var barBottomEdge = root.height - root.barMarginV - cornerInset;
+        let panelY = root.buttonPosition.y + root.buttonHeight / 2 - panelHeight / 2;
+        const extraPadding = (panelContainer.allowAttach && root.barFloating) ? Style.radiusL : 0;
+        if (panelContainer.allowAttach) {
+          const cornerInset = extraPadding + (root.barFloating ? Style.radiusL : 0);
+          const barTopEdge = root.barMarginV + cornerInset;
+          const barBottomEdge = root.height - root.barMarginV - cornerInset;
           panelY = Math.max(barTopEdge, Math.min(panelY, barBottomEdge - panelHeight));
         } else {
           panelY = Math.max(Style.marginL + extraPadding, Math.min(panelY, root.height - panelHeight - Style.marginL - extraPadding));
@@ -453,8 +453,8 @@ Item {
       }
     } else {
       // Standard anchor positioning
-      var barOffset = 0;
-      if (!panelContent.allowAttach) {
+      let barOffset = 0;
+      if (!panelContainer.allowAttach) {
         if (root.barPosition === "top") {
           barOffset = root.barMarginV + Style.barHeight + Style.marginM;
         } else if (root.barPosition === "bottom") {
@@ -478,11 +478,11 @@ Item {
         if (root.panelAnchorVerticalCenter) {
           if (!root.barIsVertical) {
             if (root.barPosition === "top") {
-              var availableStart = root.barMarginV + Style.barHeight;
-              var availableHeight = root.height - availableStart;
+              const availableStart = root.barMarginV + Style.barHeight;
+              const availableHeight = root.height - availableStart;
               calculatedY = availableStart + (availableHeight - panelHeight) / 2;
             } else if (root.barPosition === "bottom") {
-              var availableHeight = root.height - root.barMarginV - Style.barHeight;
+              const availableHeight = root.height - root.barMarginV - Style.barHeight;
               calculatedY = (availableHeight - panelHeight) / 2;
             } else {
               calculatedY = (root.height - panelHeight) / 2;
@@ -491,32 +491,32 @@ Item {
             calculatedY = (root.height - panelHeight) / 2;
           }
         } else if (root.effectivePanelAnchorTop) {
-          if (panelContent.allowAttach) {
+          if (panelContainer.allowAttach) {
             calculatedY = 0;
           } else {
-            var topBarOffset = (root.barPosition === "top") ? barOffset : 0;
+            const topBarOffset = (root.barPosition === "top") ? barOffset : 0;
             calculatedY = topBarOffset + Style.marginL;
           }
         } else if (root.effectivePanelAnchorBottom) {
-          if (panelContent.allowAttach) {
+          if (panelContainer.allowAttach) {
             calculatedY = root.height - panelHeight;
           } else {
-            var bottomBarOffset = (root.barPosition === "bottom") ? barOffset : 0;
+            const bottomBarOffset = (root.barPosition === "bottom") ? barOffset : 0;
             calculatedY = root.height - panelHeight - bottomBarOffset - Style.marginL;
           }
         } else {
           if (root.barIsVertical) {
-            if (panelContent.allowAttach) {
-              var cornerInset = root.barFloating ? Style.radiusL * 2 : 0;
-              var barTopEdge = root.barMarginV + cornerInset;
-              var barBottomEdge = root.height - root.barMarginV - cornerInset;
-              var centeredY = (root.height - panelHeight) / 2;
+            if (panelContainer.allowAttach) {
+              const cornerInset = root.barFloating ? Style.radiusL * 2 : 0;
+              const barTopEdge = root.barMarginV + cornerInset;
+              const barBottomEdge = root.height - root.barMarginV - cornerInset;
+              const centeredY = (root.height - panelHeight) / 2;
               calculatedY = Math.max(barTopEdge, Math.min(centeredY, barBottomEdge - panelHeight));
             } else {
               calculatedY = (root.height - panelHeight) / 2;
             }
           } else {
-            if (panelContent.allowAttach && !root.barIsVertical) {
+            if (panelContainer.allowAttach && !root.barIsVertical) {
               if (root.barPosition === "top") {
                 calculatedY = root.barMarginV + Style.barHeight;
               } else if (root.barPosition === "bottom") {
@@ -537,21 +537,21 @@ Item {
     }
 
     // Edge snapping for Y
-    if (panelContent.allowAttach && !root.barFloating && root.height > 0 && panelHeight > 0) {
-      var topEdgePos = root.barMarginV;
+    if (panelContainer.allowAttach && !root.barFloating && root.height > 0 && panelHeight > 0) {
+      let topEdgePos = root.barMarginV;
       if (root.barPosition === "top") {
         topEdgePos = root.barMarginV + Style.barHeight;
       }
 
-      var bottomEdgePos = root.height - root.barMarginV - panelHeight;
+      let bottomEdgePos = root.height - root.barMarginV - panelHeight;
       if (root.barPosition === "bottom") {
         bottomEdgePos = root.height - root.barMarginV - Style.barHeight - panelHeight;
       }
 
       // Only snap to top edge if panel is actually meant to be at top (or no explicit anchor)
-      var shouldSnapToTop = root.effectivePanelAnchorTop || (!root.hasExplicitVerticalAnchor && root.barPosition === "top");
+      const shouldSnapToTop = root.effectivePanelAnchorTop || (!root.hasExplicitVerticalAnchor && root.barPosition === "top");
       // Only snap to bottom edge if panel is actually meant to be at bottom (or no explicit anchor)
-      var shouldSnapToBottom = root.effectivePanelAnchorBottom || (!root.hasExplicitVerticalAnchor && root.barPosition === "bottom");
+      const shouldSnapToBottom = root.effectivePanelAnchorBottom || (!root.hasExplicitVerticalAnchor && root.barPosition === "bottom");
 
       if (shouldSnapToTop && Math.abs(calculatedY - topEdgePos) <= root.edgeSnapDistance) {
         calculatedY = topEdgePos;
@@ -609,7 +609,7 @@ Item {
         if (!running && duration === 0) {
           if (root.isClosing && root.opacity === 0.0) {
             root.opacityFadeComplete = true;
-            var shouldFinalizeNow = panelContent.maskRegion && !panelContent.maskRegion.shouldAnimateWidth && !panelContent.maskRegion.shouldAnimateHeight;
+            const shouldFinalizeNow = panelContainer.maskRegion && !panelContainer.maskRegion.shouldAnimateWidth && !panelContainer.maskRegion.shouldAnimateHeight;
             if (shouldFinalizeNow) {
               Logger.d("SmartPanel", "Zero-duration opacity + no size animation - finalizing", root.objectName);
               Qt.callLater(root.finalizeClose);
@@ -627,12 +627,12 @@ Item {
           root.opacityFadeComplete = true;
           // If no size animation will run (centered attached panels only), finalize immediately
           // Detached panels (allowAttach === false) should always animate from top
-          var shouldFinalizeNow = panelContent.maskRegion && !panelContent.maskRegion.shouldAnimateWidth && !panelContent.maskRegion.shouldAnimateHeight;
+          const shouldFinalizeNow = panelContainer.maskRegion && !panelContainer.maskRegion.shouldAnimateWidth && !panelContainer.maskRegion.shouldAnimateHeight;
           if (shouldFinalizeNow) {
             Logger.d("SmartPanel", "No animation - finalizing immediately", root.objectName);
             Qt.callLater(root.finalizeClose);
           } else {
-            Logger.d("SmartPanel", "Animation will run - waiting for size animation", root.objectName, "shouldAnimateHeight:", panelContent.maskRegion.shouldAnimateHeight, "shouldAnimateWidth:", panelContent.maskRegion.shouldAnimateWidth);
+            Logger.d("SmartPanel", "Animation will run - waiting for size animation", root.objectName, "shouldAnimateHeight:", panelContainer.maskRegion.shouldAnimateHeight, "shouldAnimateWidth:", panelContainer.maskRegion.shouldAnimateWidth);
           }
         } // When opacity fade completes during open, stop watchdog
         else if (!running && root.isPanelVisible && root.opacity === 1.0) {
@@ -690,7 +690,7 @@ Item {
   // ------------------------------------------------
   // Panel Content
   Item {
-    id: panelContent
+    id: panelContainer
     anchors.fill: parent
 
     // Screen-dependent attachment properties
@@ -743,33 +743,33 @@ Item {
       // Determine which edges the panel is closest to for animation direction
       // Use target position (not animated position) to avoid binding loops
       readonly property bool willTouchTopBar: {
-        if (!panelContent.allowAttachToBar || root.barPosition !== "top" || root.barIsVertical)
+        if (!panelContainer.allowAttachToBar || root.barPosition !== "top" || root.barIsVertical)
           return false;
         var targetTopBarY = root.barMarginV + Style.barHeight;
         return Math.abs(panelBackground.targetY - targetTopBarY) <= 1;
       }
       readonly property bool willTouchBottomBar: {
-        if (!panelContent.allowAttachToBar || root.barPosition !== "bottom" || root.barIsVertical)
+        if (!panelContainer.allowAttachToBar || root.barPosition !== "bottom" || root.barIsVertical)
           return false;
         var targetBottomBarY = root.height - root.barMarginV - Style.barHeight - panelBackground.targetHeight;
         return Math.abs(panelBackground.targetY - targetBottomBarY) <= 1;
       }
       readonly property bool willTouchLeftBar: {
-        if (!panelContent.allowAttachToBar || root.barPosition !== "left" || !root.barIsVertical)
+        if (!panelContainer.allowAttachToBar || root.barPosition !== "left" || !root.barIsVertical)
           return false;
         var targetLeftBarX = root.barMarginH + Style.barHeight;
         return Math.abs(panelBackground.targetX - targetLeftBarX) <= 1;
       }
       readonly property bool willTouchRightBar: {
-        if (!panelContent.allowAttachToBar || root.barPosition !== "right" || !root.barIsVertical)
+        if (!panelContainer.allowAttachToBar || root.barPosition !== "right" || !root.barIsVertical)
           return false;
         var targetRightBarX = root.width - root.barMarginH - Style.barHeight - panelBackground.targetWidth;
         return Math.abs(panelBackground.targetX - targetRightBarX) <= 1;
       }
-      readonly property bool willTouchTopEdge: panelContent.allowAttach && panelBackground.targetY <= 1
-      readonly property bool willTouchBottomEdge: panelContent.allowAttach && (panelBackground.targetY + panelBackground.targetHeight) >= (root.height - 1)
-      readonly property bool willTouchLeftEdge: panelContent.allowAttach && panelBackground.targetX <= 1
-      readonly property bool willTouchRightEdge: panelContent.allowAttach && (panelBackground.targetX + panelBackground.targetWidth) >= (root.width - 1)
+      readonly property bool willTouchTopEdge: panelContainer.allowAttach && panelBackground.targetY <= 1
+      readonly property bool willTouchBottomEdge: panelContainer.allowAttach && (panelBackground.targetY + panelBackground.targetHeight) >= (root.height - 1)
+      readonly property bool willTouchLeftEdge: panelContainer.allowAttach && panelBackground.targetX <= 1
+      readonly property bool willTouchRightEdge: panelContainer.allowAttach && (panelBackground.targetX + panelBackground.targetWidth) >= (root.width - 1)
 
       readonly property bool isActuallyAttachedToAnyEdge: {
         return willTouchTopBar || willTouchBottomBar || willTouchLeftBar || willTouchRightBar || willTouchTopEdge || willTouchBottomEdge || willTouchLeftEdge || willTouchRightEdge;
@@ -779,11 +779,11 @@ Item {
         // When panel is opening, use effective anchors (known before position is calculated)
         if (!root.isPanelVisible) {
           // Attached to horizontal bar at top
-          if (panelContent.allowAttachToBar && root.effectivePanelAnchorTop && !root.barIsVertical) {
+          if (panelContainer.allowAttachToBar && root.effectivePanelAnchorTop && !root.barIsVertical) {
             return true;
           }
           // Attached to vertical bar (left/right) - don't animate from top
-          if (panelContent.allowAttachToBar && root.barIsVertical && (root.effectivePanelAnchorLeft || root.effectivePanelAnchorRight)) {
+          if (panelContainer.allowAttachToBar && root.barIsVertical && (root.effectivePanelAnchorLeft || root.effectivePanelAnchorRight)) {
             return false;
           }
           // Default: animate from top
@@ -803,7 +803,7 @@ Item {
       }
       readonly property bool animateFromBottom: {
         if (!root.isPanelVisible) {
-          if (panelContent.allowAttachToBar && root.effectivePanelAnchorBottom && !root.barIsVertical) {
+          if (panelContainer.allowAttachToBar && root.effectivePanelAnchorBottom && !root.barIsVertical) {
             return true;
           }
           return false;
@@ -818,7 +818,7 @@ Item {
       }
       readonly property bool animateFromLeft: {
         if (!root.isPanelVisible) {
-          if (panelContent.allowAttachToBar && root.effectivePanelAnchorLeft && root.barIsVertical) {
+          if (panelContainer.allowAttachToBar && root.effectivePanelAnchorLeft && root.barIsVertical) {
             return true;
           }
           return false;
@@ -839,7 +839,7 @@ Item {
       }
       readonly property bool animateFromRight: {
         if (!root.isPanelVisible) {
-          if (panelContent.allowAttachToBar && root.effectivePanelAnchorRight && root.barIsVertical) {
+          if (panelContainer.allowAttachToBar && root.effectivePanelAnchorRight && root.barIsVertical) {
             return true;
           }
           return false;
@@ -867,18 +867,18 @@ Item {
 
       // Current animated width/height (referenced by x/y for right/bottom positioning)
       readonly property real currentWidth: {
-        if (isClosing && opacityFadeComplete && shouldAnimateWidth)
+        if (root.isClosing && root.opacityFadeComplete && shouldAnimateWidth)
           return 0;
-        if (isClosing || isPanelVisible)
+        if (root.isClosing || root.isPanelVisible)
           return targetWidth;
         // If not animating width, start at target (no visual change)
         // If animating width, start at 0 (will animate to target)
         return shouldAnimateWidth ? 0 : targetWidth;
       }
       readonly property real currentHeight: {
-        if (isClosing && opacityFadeComplete && shouldAnimateHeight)
+        if (root.isClosing && root.opacityFadeComplete && shouldAnimateHeight)
           return 0;
-        if (isClosing || isPanelVisible)
+        if (root.isClosing || root.isPanelVisible)
           return targetHeight;
         // If not animating height, start at target (no visual change)
         // If animating height, start at 0 (will animate to target)
@@ -892,8 +892,8 @@ Item {
         // Offset x to make panel grow/shrink from the appropriate edge
         if (animateFromRight) {
           // Keep the RIGHT edge fixed at its target position
-          if (isPanelVisible || isClosing) {
-            var targetRightEdge = targetX + targetWidth;
+          if (root.isPanelVisible || root.isClosing) {
+            const targetRightEdge = targetX + targetWidth;
             return targetRightEdge - width;
           }
         }
@@ -903,8 +903,8 @@ Item {
         // Offset y to make panel grow/shrink from the appropriate edge
         if (animateFromBottom) {
           // Keep the BOTTOM edge fixed at its target position
-          if (isPanelVisible || isClosing) {
-            var targetBottomEdge = targetY + targetHeight;
+          if (root.isPanelVisible || root.isClosing) {
+            const targetBottomEdge = targetY + targetHeight;
             return targetBottomEdge - height;
           }
         }
@@ -977,19 +977,19 @@ Item {
 
       // Smart corner state calculation based on bar attachment and edge touching
       property int topLeftCornerState: {
-        var barInverted = panelContent.allowAttachToBar && ((root.barPosition === "top" && !root.barIsVertical && root.effectivePanelAnchorTop) || (root.barPosition === "left" && root.barIsVertical && root.effectivePanelAnchorLeft));
-        var barTouchInverted = panelContent.touchingTopBar || panelContent.touchingLeftBar;
+        var barInverted = panelContainer.allowAttachToBar && ((root.barPosition === "top" && !root.barIsVertical && root.effectivePanelAnchorTop) || (root.barPosition === "left" && root.barIsVertical && root.effectivePanelAnchorLeft));
+        var barTouchInverted = panelContainer.touchingTopBar || panelContainer.touchingLeftBar;
         // Invert if touching either edge that forms this corner (left OR top), regardless of bar position
-        var edgeInverted = panelContent.allowAttach && (panelContent.touchingLeftEdge || panelContent.touchingTopEdge);
-        var oppositeEdgeInverted = panelContent.allowAttach && (panelContent.touchingTopEdge && !root.barIsVertical && root.barPosition !== "top");
+        var edgeInverted = panelContainer.allowAttach && (panelContainer.touchingLeftEdge || panelContainer.touchingTopEdge);
+        var oppositeEdgeInverted = panelContainer.allowAttach && (panelContainer.touchingTopEdge && !root.barIsVertical && root.barPosition !== "top");
 
         if (barInverted || barTouchInverted || edgeInverted || oppositeEdgeInverted) {
           // Determine inversion direction based on which edge is touched
-          if (panelContent.touchingLeftEdge && panelContent.touchingTopEdge)
+          if (panelContainer.touchingLeftEdge && panelContainer.touchingTopEdge)
             return 0; // Both edges: no inversion (normal rounded corner)
-          if (panelContent.touchingLeftEdge)
+          if (panelContainer.touchingLeftEdge)
             return 2; // Left edge: vertical inversion
-          if (panelContent.touchingTopEdge)
+          if (panelContainer.touchingTopEdge)
             return 1; // Top edge: horizontal inversion
           return root.barIsVertical ? 2 : 1;
         }
@@ -997,19 +997,19 @@ Item {
       }
 
       property int topRightCornerState: {
-        var barInverted = panelContent.allowAttachToBar && ((root.barPosition === "top" && !root.barIsVertical && root.effectivePanelAnchorTop) || (root.barPosition === "right" && root.barIsVertical && root.effectivePanelAnchorRight));
-        var barTouchInverted = panelContent.touchingTopBar || panelContent.touchingRightBar;
+        var barInverted = panelContainer.allowAttachToBar && ((root.barPosition === "top" && !root.barIsVertical && root.effectivePanelAnchorTop) || (root.barPosition === "right" && root.barIsVertical && root.effectivePanelAnchorRight));
+        var barTouchInverted = panelContainer.touchingTopBar || panelContainer.touchingRightBar;
         // Invert if touching either edge that forms this corner (right OR top), regardless of bar position
-        var edgeInverted = panelContent.allowAttach && (panelContent.touchingRightEdge || panelContent.touchingTopEdge);
-        var oppositeEdgeInverted = panelContent.allowAttach && (panelContent.touchingTopEdge && !root.barIsVertical && root.barPosition !== "top");
+        var edgeInverted = panelContainer.allowAttach && (panelContainer.touchingRightEdge || panelContainer.touchingTopEdge);
+        var oppositeEdgeInverted = panelContainer.allowAttach && (panelContainer.touchingTopEdge && !root.barIsVertical && root.barPosition !== "top");
 
         if (barInverted || barTouchInverted || edgeInverted || oppositeEdgeInverted) {
           // Determine inversion direction based on which edge is touched
-          if (panelContent.touchingRightEdge && panelContent.touchingTopEdge)
+          if (panelContainer.touchingRightEdge && panelContainer.touchingTopEdge)
             return 0; // Both edges: no inversion (normal rounded corner)
-          if (panelContent.touchingRightEdge)
+          if (panelContainer.touchingRightEdge)
             return 2; // Right edge: vertical inversion
-          if (panelContent.touchingTopEdge)
+          if (panelContainer.touchingTopEdge)
             return 1; // Top edge: horizontal inversion
           return root.barIsVertical ? 2 : 1;
         }
@@ -1017,19 +1017,19 @@ Item {
       }
 
       property int bottomLeftCornerState: {
-        var barInverted = panelContent.allowAttachToBar && ((root.barPosition === "bottom" && !root.barIsVertical && root.effectivePanelAnchorBottom) || (root.barPosition === "left" && root.barIsVertical && root.effectivePanelAnchorLeft));
-        var barTouchInverted = panelContent.touchingBottomBar || panelContent.touchingLeftBar;
+        var barInverted = panelContainer.allowAttachToBar && ((root.barPosition === "bottom" && !root.barIsVertical && root.effectivePanelAnchorBottom) || (root.barPosition === "left" && root.barIsVertical && root.effectivePanelAnchorLeft));
+        var barTouchInverted = panelContainer.touchingBottomBar || panelContainer.touchingLeftBar;
         // Invert if touching either edge that forms this corner (left OR bottom), regardless of bar position
-        var edgeInverted = panelContent.allowAttach && (panelContent.touchingLeftEdge || panelContent.touchingBottomEdge);
-        var oppositeEdgeInverted = panelContent.allowAttach && (panelContent.touchingBottomEdge && !root.barIsVertical && root.barPosition !== "bottom");
+        var edgeInverted = panelContainer.allowAttach && (panelContainer.touchingLeftEdge || panelContainer.touchingBottomEdge);
+        var oppositeEdgeInverted = panelContainer.allowAttach && (panelContainer.touchingBottomEdge && !root.barIsVertical && root.barPosition !== "bottom");
 
         if (barInverted || barTouchInverted || edgeInverted || oppositeEdgeInverted) {
           // Determine inversion direction based on which edge is touched
-          if (panelContent.touchingLeftEdge && panelContent.touchingBottomEdge)
+          if (panelContainer.touchingLeftEdge && panelContainer.touchingBottomEdge)
             return 0; // Both edges: no inversion (normal rounded corner)
-          if (panelContent.touchingLeftEdge)
+          if (panelContainer.touchingLeftEdge)
             return 2; // Left edge: vertical inversion
-          if (panelContent.touchingBottomEdge)
+          if (panelContainer.touchingBottomEdge)
             return 1; // Bottom edge: horizontal inversion
           return root.barIsVertical ? 2 : 1;
         }
@@ -1037,19 +1037,19 @@ Item {
       }
 
       property int bottomRightCornerState: {
-        var barInverted = panelContent.allowAttachToBar && ((root.barPosition === "bottom" && !root.barIsVertical && root.effectivePanelAnchorBottom) || (root.barPosition === "right" && root.barIsVertical && root.effectivePanelAnchorRight));
-        var barTouchInverted = panelContent.touchingBottomBar || panelContent.touchingRightBar;
+        var barInverted = panelContainer.allowAttachToBar && ((root.barPosition === "bottom" && !root.barIsVertical && root.effectivePanelAnchorBottom) || (root.barPosition === "right" && root.barIsVertical && root.effectivePanelAnchorRight));
+        var barTouchInverted = panelContainer.touchingBottomBar || panelContainer.touchingRightBar;
         // Invert if touching either edge that forms this corner (right OR bottom), regardless of bar position
-        var edgeInverted = panelContent.allowAttach && (panelContent.touchingRightEdge || panelContent.touchingBottomEdge);
-        var oppositeEdgeInverted = panelContent.allowAttach && (panelContent.touchingBottomEdge && !root.barIsVertical && root.barPosition !== "bottom");
+        var edgeInverted = panelContainer.allowAttach && (panelContainer.touchingRightEdge || panelContainer.touchingBottomEdge);
+        var oppositeEdgeInverted = panelContainer.allowAttach && (panelContainer.touchingBottomEdge && !root.barIsVertical && root.barPosition !== "bottom");
 
         if (barInverted || barTouchInverted || edgeInverted || oppositeEdgeInverted) {
           // Determine inversion direction based on which edge is touched
-          if (panelContent.touchingRightEdge && panelContent.touchingBottomEdge)
+          if (panelContainer.touchingRightEdge && panelContainer.touchingBottomEdge)
             return 0; // Both edges: no inversion (normal rounded corner)
-          if (panelContent.touchingRightEdge)
+          if (panelContainer.touchingRightEdge)
             return 2; // Right edge: vertical inversion
-          if (panelContent.touchingBottomEdge)
+          if (panelContainer.touchingBottomEdge)
             return 1; // Bottom edge: horizontal inversion
           return root.barIsVertical ? 2 : 1;
         }
@@ -1063,15 +1063,15 @@ Item {
         acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
         z: -1 // Behind content, but on the panel background
         onClicked: mouse => {
-                     mouse.accepted = true; // Accept and ignore - prevents propagation to background
-                   }
+          mouse.accepted = true; // Accept and ignore - prevents propagation to background
+        }
       }
     }
 
     // Panel top content: Text, icons, etc...
     Loader {
       id: contentLoader
-      active: isPanelOpen
+      active: root.isPanelOpen
       x: panelBackground.x
       y: panelBackground.y
       width: panelBackground.width
@@ -1082,7 +1082,7 @@ Item {
         // Wait for contentPreferredWidth/Height to be available before making visible
         Qt.callLater(function () {
           // Calculate position with stable contentPreferredWidth/Height values
-          setPosition();
+          root.setPosition();
 
           // Mark dimensions as initialized to enable animations
           panelBackground.dimensionsInitialized = true;
@@ -1095,7 +1095,7 @@ Item {
           root.openWatchdogActive = true;
           openWatchdogTimer.start();
 
-          opened();
+          root.opened();
         });
       }
     }

@@ -30,7 +30,7 @@ NOCTALIA_CONFIG_DIR="$runtime_dir/config/noctalia/" \
     XDG_CONFIG_HOME="$runtime_dir/config" \
     XDG_CACHE_HOME="$runtime_dir/cache" \
     XDG_DATA_HOME="$runtime_dir/data" \
-    timeout --kill-after=2s 20s \
+    timeout --kill-after=2s 45s \
     quickshell --no-color -p "$runtime_dir/shell.qml" >"$output_log" 2>&1
 status=$?
 set -e

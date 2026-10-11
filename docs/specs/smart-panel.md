@@ -26,6 +26,15 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 - [x] Positioning applies preferred width and height as target panel size when no content or ratio override applies.
 - [x] Button-positioned attached panels under a top bar are centered on the button and placed below the bar.
 - [x] Detached standard placement centers the panel and offsets it below the top bar.
+- [x] At 800×600 and 1920×1080, centered detached, button-attached, and floating edge-anchored panels preserve placement for all four bar edges as content dimensions change.
+
+### Content lifecycle and animations
+
+- [x] Panel content stays unloaded while closed, loads once on open, and retains its caller Component context.
+- [x] Content dimension changes update panel geometry without recreating content.
+- [x] Nonzero opening and closing animations settle with matching signals and cleared watchdog state.
+- [x] Closing before opacity fade-in completes skips the opacity fade and unloads content after size animation.
+- [x] Output teardown destroys loaded content and clears the opened-panel reference while unregistering the original key.
 
 ### Typed panel references
 
@@ -56,8 +65,8 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for open lifecycle, open watchdog, and size/opacity animation finalization.
-- [ ] Add executable coverage for vertical bar placement and explicit anchor combinations.
+- [ ] Add executable coverage for watchdog timeout recovery and zero-duration animation paths.
+- [ ] Add executable coverage for remaining anchor combinations and constrained/oversized content.
 - [ ] Add executable coverage for keyboard shortcut forwarding and escape-to-close behavior.
 
 ## Out of scope
