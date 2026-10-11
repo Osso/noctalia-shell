@@ -88,11 +88,11 @@ Item {
     id: visualizerLoader
     anchors.fill: parent
     anchors.margins: Style.marginS
-    active: shouldShow
+    active: root.shouldShow
     asynchronous: true
 
     sourceComponent: {
-      switch (currentVisualizerType) {
+      switch (root.currentVisualizerType) {
       case "linear":
         return linearComponent;
       case "mirrored":
@@ -122,20 +122,20 @@ Item {
     ]
 
     onTriggered: action => {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.close();
-                   }
+      var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+      if (popupMenuWindow) {
+        popupMenuWindow.close();
+      }
 
-                   if (action === "cycle-visualizer") {
-                     const types = ["linear", "mirrored", "wave"];
-                     const currentIndex = types.indexOf(currentVisualizerType);
-                     const nextIndex = (currentIndex + 1) % types.length;
-                     Settings.data.audio.visualizerType = types[nextIndex];
-                   } else if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                   }
-                 }
+      if (action === "cycle-visualizer") {
+        const types = ["linear", "mirrored", "wave"];
+        const currentIndex = types.indexOf(root.currentVisualizerType);
+        const nextIndex = (currentIndex + 1) % types.length;
+        Settings.data.audio.visualizerType = types[nextIndex];
+      } else if (action === "widget-settings") {
+        BarService.openWidgetSettings(screen, root.section, root.sectionWidgetIndex, root.widgetId, root.widgetSettings);
+      }
+    }
   }
 
   // Click to cycle through visualizer types
@@ -147,20 +147,20 @@ Item {
     acceptedButtons: Qt.LeftButton | Qt.RightButton
 
     onClicked: mouse => {
-                 if (mouse.button === Qt.RightButton) {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.showContextMenu(contextMenu);
-                     const pos = BarService.getContextMenuPosition(root, contextMenu.implicitWidth, contextMenu.implicitHeight);
-                     contextMenu.openAtItem(root, pos.x, pos.y);
-                   }
-                 } else {
-                   const types = ["linear", "mirrored", "wave"];
-                   const currentIndex = types.indexOf(currentVisualizerType);
-                   const nextIndex = (currentIndex + 1) % types.length;
-                   Settings.data.audio.visualizerType = types[nextIndex];
-                 }
-               }
+      if (mouse.button === Qt.RightButton) {
+        var popupMenuWindow = PanelService.getPopupMenuWindow(root.screen);
+        if (popupMenuWindow) {
+          popupMenuWindow.showContextMenu(contextMenu);
+          const pos = BarService.getContextMenuPosition(root, contextMenu.implicitWidth, contextMenu.implicitHeight);
+          contextMenu.openAtItem(root, pos.x, pos.y);
+        }
+      } else {
+        const types = ["linear", "mirrored", "wave"];
+        const currentIndex = types.indexOf(root.currentVisualizerType);
+        const nextIndex = (currentIndex + 1) % types.length;
+        Settings.data.audio.visualizerType = types[nextIndex];
+      }
+    }
   }
 
   Component {

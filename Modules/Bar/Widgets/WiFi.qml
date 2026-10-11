@@ -52,17 +52,17 @@ Item {
     ]
 
     onTriggered: action => {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.close();
-                   }
+      var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+      if (popupMenuWindow) {
+        popupMenuWindow.close();
+      }
 
-                   if (action === "toggle-wifi") {
-                     NetworkService.setWifiEnabled(!Settings.data.network.wifiEnabled);
-                   } else if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                   }
-                 }
+      if (action === "toggle-wifi") {
+        NetworkService.setWifiEnabled(!Settings.data.network.wifiEnabled);
+      } else if (action === "widget-settings") {
+        BarService.openWidgetSettings(screen, root.section, root.sectionWidgetIndex, root.widgetId, root.widgetSettings);
+      }
+    }
   }
 
   BarPill {
@@ -108,8 +108,8 @@ Item {
       }
     }
     autoHide: false
-    forceOpen: !isBarVertical && root.displayMode === "alwaysShow"
-    forceClose: isBarVertical || root.displayMode === "alwaysHide" || text === ""
+    forceOpen: !root.isBarVertical && root.displayMode === "alwaysShow"
+    forceClose: root.isBarVertical || root.displayMode === "alwaysHide" || text === ""
     onClicked: {
       const panel = PanelService.getPanel("wifiPanel", screen);
       if (panel)

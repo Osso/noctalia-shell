@@ -72,7 +72,7 @@ NIconButton {
       }
     }
     applyUiScale: root.applyUiScale
-    color: root.enabled && root.hovering ? colorFgHover : colorFg
+    color: root.enabled && root.hovering ? root.colorFgHover : root.colorFg
     anchors.centerIn: parent
     transformOrigin: Item.Center
 

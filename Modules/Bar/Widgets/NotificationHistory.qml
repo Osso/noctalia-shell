@@ -79,19 +79,19 @@ NIconButton {
     ]
 
     onTriggered: action => {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.close();
-                   }
+      var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
+      if (popupMenuWindow) {
+        popupMenuWindow.close();
+      }
 
-                   if (action === "toggle-dnd") {
-                     NotificationService.doNotDisturb = !NotificationService.doNotDisturb;
-                   } else if (action === "clear-history") {
-                     NotificationService.clearHistory();
-                   } else if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                   }
-                 }
+      if (action === "toggle-dnd") {
+        NotificationService.doNotDisturb = !NotificationService.doNotDisturb;
+      } else if (action === "clear-history") {
+        NotificationService.clearHistory();
+      } else if (action === "widget-settings") {
+        BarService.openWidgetSettings(screen, root.section, root.sectionWidgetIndex, root.widgetId, root.widgetSettings);
+      }
+    }
   }
 
   onClicked: {
@@ -115,7 +115,7 @@ NIconButton {
     anchors.rightMargin: 2
     anchors.topMargin: 1
     z: 2
-    active: showUnreadBadge && (!hideWhenZero || computeUnreadCount() > 0)
+    active: root.showUnreadBadge && (!root.hideWhenZero || computeUnreadCount() > 0)
     sourceComponent: Rectangle {
       id: badge
       readonly property int count: computeUnreadCount()
