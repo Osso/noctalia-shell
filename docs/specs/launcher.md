@@ -38,6 +38,7 @@ Launcher covers launcher panel search state, plugin registration, command routin
 - [x] Clipboard plugin image metadata parsing and image entry formatting keep image results structured.
 - [x] Clipboard plugin text entry formatting keeps text results structured.
 - [x] Clipboard result activation delegates to clipboard service operations and closes the launcher.
+- [x] Clipboard preview text/image rendering, loading/reset lifecycle, and themed outer border follow [clipboard.md](clipboard.md#launcher-preview).
 
 ### Emoji plugin
 
@@ -71,6 +72,7 @@ Launcher covers launcher panel search state, plugin registration, command routin
 - `Tests/applications-plugin-guards.test.js`
 - `Tests/calculator-plugin-guards.test.js`
 - `Tests/clipboard-plugin-guards.test.js`
+- `Tests/clipboard-preview-warnings.test.py` - isolated production-preview runtime and component lint; coverage and limits: [clipboard](clipboard.md#tests-asserting-this-spec).
 - `Tests/emoji-plugin-guards.test.js`
 - `Tests/qml-runtime-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
@@ -78,7 +80,7 @@ Launcher covers launcher panel search state, plugin registration, command routin
 ## Known gaps (current cycle)
 
 - [ ] Add executable tests for plugin result activation paths that currently only have structural coverage.
-- [ ] Add executable tests for launcher preview rendering and clipboard preview loading.
+- [ ] Add executable tests for launcher-level preview integration; isolated clipboard preview rendering/loading is covered in [clipboard](clipboard.md#launcher-preview).
 - [ ] Add concrete fixtures for desktop-entry application discovery and terminal launch fallbacks.
 
 ## Out of scope

@@ -30,6 +30,13 @@ Clipboard covers cliphist availability, wl-paste watcher lifecycle, history list
 - [x] Base64 decode completion calls the current callback with a data URL, writes the cache by id, bumps revision, clears current decode state, and continues queued work.
 - [x] Image lookup returns `null` for undefined ids and cached data for known ids.
 
+### Launcher preview
+
+- [x] Text previews preserve decoded text, escape markup, and display decoded file paths as text.
+- [x] Image previews load pending cache revisions and use refreshed cached data on reassignment.
+- [x] Clearing a pending image resets content/loading state, ignores later cache publication, and permits text reassignment; Loader recreation can display a cached image.
+- [x] Text and image previews show a one-pixel outer border using themed `NColor.mOutline`, not gray from a missing palette member.
+
 ### Mutations
 
 - [x] Copy fails closed when cliphist is unavailable.
@@ -46,6 +53,7 @@ Clipboard covers cliphist availability, wl-paste watcher lifecycle, history list
 ## Implementation inventory
 
 - `Services/Keyboard/ClipboardService.qml` - cliphist wrapper, watchers, list/decode commands, image data cache, and mutation commands.
+- `Modules/Panels/Launcher/ClipboardPreview.qml` - text/image preview and themed outer border.
 - `Modules/Panels/Launcher/Plugins/ClipboardPlugin.qml` - launcher plugin UI for clipboard search, copy, image previews, and clear action.
 - `Modules/Panels/Settings/Tabs/LauncherTab.qml` - clipboard-history settings toggle.
 - `Services/Control/IPCService.qml` - launcher IPC mode for clipboard search.
@@ -54,6 +62,8 @@ Clipboard covers cliphist availability, wl-paste watcher lifecycle, history list
 
 - `Tests/clipboard-service-guards.test.js`
 - `Tests/clipboard-plugin-guards.test.js`
+- `Tests/clipboard-preview-warnings.test.py --mode runtime` - four offscreen production-preview cases plus QtTest init/cleanup (six reported passes), with an inert clipboard boundary; no real clipboard integration.
+- `Tests/clipboard-preview-warnings.test.py --mode lint` - component-only zero-warning qmllint gate.
 - `Tests/qml-runtime-guards.test.js`
 
 ## Known gaps (current cycle)
