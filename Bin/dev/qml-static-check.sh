@@ -106,6 +106,12 @@ for file in "${qml_files[@]}"; do
     Tests/Qml/RootServiceHarness.qml)
         python3 "$repo_root/Tests/root-service-warnings.test.py" lint-harness
         ;;
+    Tests/Qml/ServiceCohortHarness.qml)
+        python3 "$repo_root/Tests/service-cohort-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/BrightnessPanelWarningsHarness.qml)
+        python3 "$repo_root/Tests/brightness-panel-warnings.test.py" lint-harness
+        ;;
     Tests/Qml/ActiveWindowWarningsHarness.qml)
         python3 "$repo_root/Tests/active-window-warnings.test.py" lint-harness
         ;;
