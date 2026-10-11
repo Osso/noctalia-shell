@@ -77,16 +77,16 @@ ColumnLayout {
 
     // Return visible defaults while loading
     if (colorKey === "mSurface")
-      return Color.mSurfaceVariant;
+      return NColor.mSurfaceVariant;
     if (colorKey === "mPrimary")
-      return Color.mPrimary;
+      return NColor.mPrimary;
     if (colorKey === "mSecondary")
-      return Color.mSecondary;
+      return NColor.mSecondary;
     if (colorKey === "mTertiary")
-      return Color.mTertiary;
+      return NColor.mTertiary;
     if (colorKey === "mError")
-      return Color.mError;
-    return Color.mOnSurfaceVariant;
+      return NColor.mError;
+    return NColor.mOnSurfaceVariant;
   }
 
   // This function is called by the FileView Repeater when a scheme file is loaded
@@ -221,7 +221,7 @@ ColumnLayout {
       NText {
         text: I18n.tr("settings.display.night-light.manual-schedule.sunrise")
         pointSize: Style.fontSizeM
-        color: Color.mOnSurfaceVariant
+        color: NColor.mOnSurfaceVariant
       }
 
       NComboBox {
@@ -239,7 +239,7 @@ ColumnLayout {
       NText {
         text: I18n.tr("settings.display.night-light.manual-schedule.sunset")
         pointSize: Style.fontSizeM
-        color: Color.mOnSurfaceVariant
+        color: NColor.mOnSurfaceVariant
       }
 
       NComboBox {
@@ -402,12 +402,12 @@ ColumnLayout {
           border.width: Style.borderL
           border.color: {
             if (Settings.data.colorSchemes.predefinedScheme === schemeName) {
-              return Color.mSecondary;
+              return NColor.mSecondary;
             }
             if (itemMouseArea.containsMouse) {
-              return Color.mHover;
+              return NColor.mHover;
             }
-            return Color.mOutline;
+            return NColor.mOutline;
           }
 
           RowLayout {
@@ -419,7 +419,7 @@ ColumnLayout {
             NText {
               text: schemeItem.schemeName
               pointSize: Style.fontSizeS
-              color: Color.mOnSurface
+              color: NColor.mOnSurface
               Layout.fillWidth: true
               elide: Text.ElideRight
               verticalAlignment: Text.AlignVCenter
@@ -482,14 +482,14 @@ ColumnLayout {
             width: 20
             height: 20
             radius: Math.min(Style.radiusL, width / 2)
-            color: Color.mSecondary
+            color: NColor.mSecondary
             border.width: Style.borderS
-            border.color: Color.mOnSecondary
+            border.color: NColor.mOnSecondary
 
             NIcon {
               icon: "check"
               pointSize: Style.fontSizeXS
-              color: Color.mOnSecondary
+              color: NColor.mOnSecondary
               anchors.centerIn: parent
             }
           }

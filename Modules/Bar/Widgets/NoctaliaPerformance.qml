@@ -17,10 +17,10 @@ NIconButton {
   density: Settings.data.bar.density
   baseSize: Style.capsuleHeight
   applyUiScale: false
-  colorBg: PowerProfileService.noctaliaPerformanceMode ? Color.mPrimary : Style.capsuleColor
-  colorFg: PowerProfileService.noctaliaPerformanceMode ? Color.mOnPrimary : Color.mOnSurface
-  colorBorder: Color.transparent
-  colorBorderHover: Color.transparent
+  colorBg: PowerProfileService.noctaliaPerformanceMode ? NColor.mPrimary : Style.capsuleColor
+  colorFg: PowerProfileService.noctaliaPerformanceMode ? NColor.mOnPrimary : NColor.mOnSurface
+  colorBorder: NColor.transparent
+  colorBorderHover: NColor.transparent
 
   icon: PowerProfileService.noctaliaPerformanceMode ? "rocket" : "rocket-off"
   tooltipText: PowerProfileService.noctaliaPerformanceMode ? I18n.tr("tooltips.noctalia-performance-enabled") : I18n.tr("tooltips.noctalia-performance-disabled")

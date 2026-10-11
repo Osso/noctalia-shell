@@ -57,8 +57,8 @@ Rectangle {
   readonly property real pillHeight: Style.capsuleHeight * pillBaseRatio
 
   // Highlight colors
-  readonly property color warningColor: Settings.data.systemMonitor.useCustomColors ? (Settings.data.systemMonitor.warningColor || Color.mTertiary) : Color.mTertiary
-  readonly property color criticalColor: Settings.data.systemMonitor.useCustomColors ? (Settings.data.systemMonitor.criticalColor || Color.mError) : Color.mError
+  readonly property color warningColor: Settings.data.systemMonitor.useCustomColors ? (Settings.data.systemMonitor.warningColor || NColor.mTertiary) : NColor.mTertiary
+  readonly property color criticalColor: Settings.data.systemMonitor.useCustomColors ? (Settings.data.systemMonitor.criticalColor || NColor.mError) : NColor.mError
 
   readonly property int percentTextWidth: Math.ceil(percentMetrics.boundingRect.width + 3)
   readonly property int tempTextWidth: Math.ceil(tempMetrics.boundingRect.width + 3)
@@ -66,8 +66,8 @@ Rectangle {
   readonly property bool diskHovered: diskHoverArea ? diskHoverArea.containsMouse : false
   readonly property bool fanHovered: fanHoverArea ? fanHoverArea.containsMouse : false
   readonly property bool isHovered: mainMouseArea.containsMouse || diskHovered || fanHovered
-  readonly property color textColor: isHovered ? Color.mOnHover : (usePrimaryColor ? Color.mPrimary : Color.mOnSurface)
-  readonly property color iconColor: isHovered ? Color.mOnHover : Color.mOnSurface
+  readonly property color textColor: isHovered ? NColor.mOnHover : (usePrimaryColor ? NColor.mPrimary : NColor.mOnSurface)
+  readonly property color iconColor: isHovered ? NColor.mOnHover : NColor.mOnSurface
 
   // Threshold settings from global configuration
   readonly property int cpuWarningThreshold: Settings.data.systemMonitor.cpuWarningThreshold
@@ -202,7 +202,7 @@ Rectangle {
   implicitWidth: isVertical ? Style.capsuleHeight : Math.round(mainGrid.implicitWidth + Style.marginM * 2)
   implicitHeight: isVertical ? Math.round(mainGrid.implicitHeight + Style.marginM * 2) : Style.capsuleHeight
   radius: Style.radiusM
-  color: isHovered ? Color.mHover : Style.capsuleColor
+  color: isHovered ? NColor.mHover : Style.capsuleColor
 
   NPopupContextMenu {
     id: contextMenu
@@ -260,8 +260,8 @@ Rectangle {
       property bool warning: false
       property bool critical: false
       property int indicatorWidth: Style.capsuleHeight
-      property color warningColor: Color.mTertiary
-      property color criticalColor: Color.mError
+      property color warningColor: NColor.mTertiary
+      property color criticalColor: NColor.mError
 
       width: isVertical ? Math.max(0, indicatorWidth - Style.marginS * 2) : Math.max(0, indicatorWidth + Style.marginXS * 2)
       height: isVertical ? Math.max(0, Style.capsuleHeight + Style.marginXS * 2) : pillHeight
@@ -350,7 +350,7 @@ Rectangle {
             applyUiScale: false
             anchors.centerIn: parent
             // Invert color to bar background when indicator active
-            color: isVertical ? (cpuCritical ? criticalColor : (cpuWarning ? warningColor : iconColor)) : ((cpuWarning || cpuCritical) ? Color.mSurfaceVariant : iconColor)
+            color: isVertical ? (cpuCritical ? criticalColor : (cpuWarning ? warningColor : iconColor)) : ((cpuWarning || cpuCritical) ? NColor.mSurfaceVariant : iconColor)
           }
         }
 
@@ -372,7 +372,7 @@ Rectangle {
           horizontalAlignment: isVertical ? Text.AlignHCenter : Text.AlignRight
           verticalAlignment: Text.AlignVCenter
           // Use highlight colors in vertical bar; otherwise invert text color to bar background when indicator active
-          color: isVertical ? (cpuCritical ? criticalColor : (cpuWarning ? warningColor : textColor)) : ((cpuWarning || cpuCritical) ? Color.mSurfaceVariant : textColor)
+          color: isVertical ? (cpuCritical ? criticalColor : (cpuWarning ? warningColor : textColor)) : ((cpuWarning || cpuCritical) ? NColor.mSurfaceVariant : textColor)
           Layout.row: isVertical ? 0 : 0
           Layout.column: isVertical ? 0 : 1
           scale: isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
@@ -425,7 +425,7 @@ Rectangle {
             applyUiScale: false
             anchors.centerIn: parent
             // Invert color when temp indicator active
-            color: isVertical ? (tempCritical ? criticalColor : (tempWarning ? warningColor : iconColor)) : ((tempWarning || tempCritical) ? Color.mSurfaceVariant : iconColor)
+            color: isVertical ? (tempCritical ? criticalColor : (tempWarning ? warningColor : iconColor)) : ((tempWarning || tempCritical) ? NColor.mSurfaceVariant : iconColor)
           }
         }
 
@@ -440,7 +440,7 @@ Rectangle {
           horizontalAlignment: isVertical ? Text.AlignHCenter : Text.AlignRight
           verticalAlignment: Text.AlignVCenter
           // Use highlight colors in vertical bar; otherwise invert text color to bar background when temp indicator active
-          color: isVertical ? (tempCritical ? criticalColor : (tempWarning ? warningColor : textColor)) : ((tempWarning || tempCritical) ? Color.mSurfaceVariant : textColor)
+          color: isVertical ? (tempCritical ? criticalColor : (tempWarning ? warningColor : textColor)) : ((tempWarning || tempCritical) ? NColor.mSurfaceVariant : textColor)
           Layout.row: isVertical ? 0 : 0
           Layout.column: isVertical ? 0 : 1
           scale: isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
@@ -493,7 +493,7 @@ Rectangle {
             applyUiScale: false
             anchors.centerIn: parent
             // Invert color when memory indicator active
-            color: isVertical ? (memCritical ? criticalColor : (memWarning ? warningColor : iconColor)) : ((memWarning || memCritical) ? Color.mSurfaceVariant : iconColor)
+            color: isVertical ? (memCritical ? criticalColor : (memWarning ? warningColor : iconColor)) : ((memWarning || memCritical) ? NColor.mSurfaceVariant : iconColor)
           }
         }
 
@@ -508,7 +508,7 @@ Rectangle {
           horizontalAlignment: isVertical ? Text.AlignHCenter : Text.AlignRight
           verticalAlignment: Text.AlignVCenter
           // Use highlight colors in vertical bar; otherwise invert text color to bar background when memory indicator active
-          color: isVertical ? (memCritical ? criticalColor : (memWarning ? warningColor : textColor)) : ((memWarning || memCritical) ? Color.mSurfaceVariant : textColor)
+          color: isVertical ? (memCritical ? criticalColor : (memWarning ? warningColor : textColor)) : ((memWarning || memCritical) ? NColor.mSurfaceVariant : textColor)
           Layout.row: isVertical ? 0 : 0
           Layout.column: isVertical ? 0 : 1
           scale: isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0
@@ -663,7 +663,7 @@ Rectangle {
             applyUiScale: false
             anchors.centerIn: parent
             // Invert color when disk indicator active (vertical uses highlight colors)
-            color: isVertical ? (diskCritical ? criticalColor : (diskWarning ? warningColor : iconColor)) : ((diskWarning || diskCritical) ? Color.mSurfaceVariant : iconColor)
+            color: isVertical ? (diskCritical ? criticalColor : (diskWarning ? warningColor : iconColor)) : ((diskWarning || diskCritical) ? NColor.mSurfaceVariant : iconColor)
           }
         }
 
@@ -679,7 +679,7 @@ Rectangle {
           horizontalAlignment: isVertical ? Text.AlignHCenter : Text.AlignRight
           verticalAlignment: Text.AlignVCenter
           // Use highlight colors in vertical bar; otherwise invert text color to bar background when disk indicator active
-          color: isVertical ? (diskCritical ? criticalColor : (diskWarning ? warningColor : textColor)) : ((diskWarning || diskCritical) ? Color.mSurfaceVariant : textColor)
+          color: isVertical ? (diskCritical ? criticalColor : (diskWarning ? warningColor : textColor)) : ((diskWarning || diskCritical) ? NColor.mSurfaceVariant : textColor)
           Layout.row: isVertical ? 0 : 0
           Layout.column: isVertical ? 0 : 1
           scale: isVertical ? Math.min(1.0, root.width / implicitWidth) : 1.0

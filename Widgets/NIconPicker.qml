@@ -38,9 +38,9 @@ Popup {
   }
 
   background: Rectangle {
-    color: Color.mSurface
+    color: NColor.mSurface
     radius: Style.radiusL
-    border.color: Color.mPrimary
+    border.color: NColor.mPrimary
     border.width: Style.borderM
   }
 
@@ -55,7 +55,7 @@ Popup {
         text: I18n.tr("widgets.icon-picker.title")
         pointSize: Style.fontSizeL
         font.weight: Style.fontWeightBold
-        color: Color.mPrimary
+        color: NColor.mPrimary
         Layout.fillWidth: true
       }
       NIconButton {
@@ -96,8 +96,8 @@ Popup {
         height: grid.cellHeight
         radius: Style.radiusS
 
-        color: (root.selectedIcon === modelData) ? Qt.alpha(Color.mPrimary, 0.15) : Color.transparent
-        border.color: (root.selectedIcon === modelData) ? Color.mPrimary : Color.transparent
+        color: (root.selectedIcon === modelData) ? Qt.alpha(NColor.mPrimary, 0.15) : NColor.transparent
+        border.color: (root.selectedIcon === modelData) ? NColor.mPrimary : NColor.transparent
         border.width: (root.selectedIcon === modelData) ? Style.borderS : 0
 
         MouseArea {
@@ -131,7 +131,7 @@ Popup {
             wrapMode: Text.NoWrap
             maximumLineCount: 1
             horizontalAlignment: Text.AlignHCenter
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             pointSize: Style.fontSizeXS
             text: modelData
           }

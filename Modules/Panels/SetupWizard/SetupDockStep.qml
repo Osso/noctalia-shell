@@ -21,13 +21,13 @@ ColumnLayout {
       width: 40
       height: 40
       radius: Style.radiusL
-      color: Color.mSurfaceVariant
+      color: NColor.mSurfaceVariant
       opacity: 0.6
 
       NIcon {
         icon: "device-desktop"
         pointSize: Style.fontSizeL
-        color: Color.mPrimary
+        color: NColor.mPrimary
         anchors.centerIn: parent
       }
     }
@@ -40,13 +40,13 @@ ColumnLayout {
         text: I18n.tr("settings.dock.title") || "Dock"
         pointSize: Style.fontSizeXL
         font.weight: Style.fontWeightBold
-        color: Color.mPrimary
+        color: NColor.mPrimary
       }
 
       NText {
         text: I18n.tr("settings.dock.monitors.section.description")
         pointSize: Style.fontSizeM
-        color: Color.mOnSurfaceVariant
+        color: NColor.mOnSurfaceVariant
       }
     }
   }

@@ -37,7 +37,7 @@ Singleton {
   PanelWindow {
     implicitHeight: 1
     implicitWidth: 1
-    color: Color.transparent
+    color: NColor.transparent
     mask: Region {}
 
     Image {

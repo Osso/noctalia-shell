@@ -412,7 +412,7 @@ SmartPanel {
   }
 
   panelContent: Rectangle {
-    color: Color.transparent
+    color: NColor.transparent
 
     // Main layout container that fills the panel
     ColumnLayout {
@@ -434,8 +434,8 @@ SmartPanel {
           Layout.preferredWidth: 220 * Style.uiScaleRatio
           Layout.fillHeight: true
           Layout.alignment: Qt.AlignTop
-          color: Color.mSurfaceVariant
-          border.color: Color.mOutline
+          color: NColor.mSurfaceVariant
+          border.color: NColor.mOutline
           border.width: Style.borderS
           radius: Style.radiusM
 
@@ -457,10 +457,10 @@ SmartPanel {
               width: sidebarList.verticalScrollBarActive ? sidebarList.width - sidebarList.scrollBarWidth - Style.marginXS : sidebarList.width
               height: tabEntryRow.implicitHeight + Style.marginS * 2
               radius: Style.radiusS
-              color: selected ? Color.mPrimary : (tabItem.hovering ? Color.mHover : Color.transparent)
+              color: selected ? NColor.mPrimary : (tabItem.hovering ? NColor.mHover : NColor.transparent)
               readonly property bool selected: index === root.currentTabIndex
               property bool hovering: false
-              property color tabTextColor: selected ? Color.mOnPrimary : (tabItem.hovering ? Color.mOnHover : Color.mOnSurface)
+              property color tabTextColor: selected ? NColor.mOnPrimary : (tabItem.hovering ? NColor.mOnHover : NColor.mOnSurface)
 
               Behavior on width {
                 NumberAnimation {
@@ -541,8 +541,8 @@ SmartPanel {
           Layout.fillHeight: true
           Layout.alignment: Qt.AlignTop
           radius: Style.radiusM
-          color: Color.mSurfaceVariant
-          border.color: Color.mOutline
+          color: NColor.mSurfaceVariant
+          border.color: NColor.mOutline
           border.width: Style.borderS
 
           ColumnLayout {
@@ -560,7 +560,7 @@ SmartPanel {
               // Main icon
               NIcon {
                 icon: root.tabsModel[currentTabIndex] ? root.tabsModel[currentTabIndex].icon : ""
-                color: Color.mPrimary
+                color: NColor.mPrimary
                 pointSize: Style.fontSizeXXL
               }
 
@@ -569,7 +569,7 @@ SmartPanel {
                 text: root.tabsModel[currentTabIndex] ? I18n.tr(root.tabsModel[currentTabIndex].label) || "" : ""
                 pointSize: Style.fontSizeXL
                 font.weight: Style.fontWeightBold
-                color: Color.mPrimary
+                color: NColor.mPrimary
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
               }
@@ -592,7 +592,7 @@ SmartPanel {
             Rectangle {
               Layout.fillWidth: true
               Layout.fillHeight: true
-              color: Color.transparent
+              color: NColor.transparent
 
               Repeater {
                 model: root.tabsModel

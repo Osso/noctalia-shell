@@ -6,8 +6,8 @@ import qs.Commons
 Rectangle {
   id: root
 
-  color: Color.mSurfaceVariant
+  color: NColor.mSurfaceVariant
   radius: Style.radiusM
-  border.color: Color.mOutline
+  border.color: NColor.mOutline
   border.width: Style.borderS
 }

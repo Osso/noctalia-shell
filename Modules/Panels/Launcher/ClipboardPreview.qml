@@ -67,8 +67,8 @@ Item {
 
   Rectangle {
     anchors.fill: parent
-    color: Color.mSurface || "#f5f5f5"
-    border.color: Color.mOutlineVariant || "#cccccc"
+    color: NColor.mSurface || "#f5f5f5"
+    border.color: NColor.mOutlineVariant || "#cccccc"
     border.width: 1
     radius: Style.radiusM
 
@@ -81,8 +81,8 @@ Item {
       Rectangle {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        color: Color.mSurfaceVariant || "#e0e0e0"
-        border.color: Color.mOutline || "#aaaaaa"
+        color: NColor.mSurfaceVariant || "#e0e0e0"
+        border.color: NColor.mOutline || "#aaaaaa"
         border.width: 1
         radius: Style.radiusS
 
@@ -117,7 +117,7 @@ Item {
               wrapMode: Text.Wrap
               textFormat: TextArea.RichText // Enable HTML rendering
               font.pointSize: Style.fontSizeM // Adjust font size for readability
-              color: Color.mOnSurface // Consistent text color
+              color: NColor.mOnSurface // Consistent text color
             }
           }
         }

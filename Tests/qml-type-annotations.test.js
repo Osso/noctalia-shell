@@ -351,8 +351,8 @@ function testSetupCustomizeOptionDelegatesAreTyped() {
 
 function testColorPickerSwatchDelegatesAreTyped() {
   const source = readQml("Widgets/NColorPickerDialog.qml");
-  const themeSwatchDelegate = /model:\s*\[[\s\S]*?name:\s*"mPrimary"[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+swatchName:\s*modelData\s*\?\s*\(modelData\.name\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+color\s+swatchColor:\s*modelData\s*\?\s*\(modelData\.color\s*\|\|\s*Color\.transparent\)\s*:\s*Color\.transparent[\s\S]*?color:\s*swatchColor/;
-  const paletteSwatchDelegate = /Repeater\s*\{[\s\S]*?model:\s*ColorList\.colors[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+swatchName:\s*modelData\s*\?\s*\(modelData\.name\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+color\s+swatchColor:\s*modelData\s*\?\s*\(modelData\.color\s*\|\|\s*Color\.transparent\)\s*:\s*Color\.transparent[\s\S]*?color:\s*swatchColor/;
+  const themeSwatchDelegate = /model:\s*\[[\s\S]*?name:\s*"mPrimary"[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+swatchName:\s*modelData\s*\?\s*\(modelData\.name\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+color\s+swatchColor:\s*modelData\s*\?\s*\(modelData\.color\s*\|\|\s*NColor\.transparent\)\s*:\s*NColor\.transparent[\s\S]*?color:\s*swatchColor/;
+  const paletteSwatchDelegate = /Repeater\s*\{[\s\S]*?model:\s*ColorList\.colors[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+swatchName:\s*modelData\s*\?\s*\(modelData\.name\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+color\s+swatchColor:\s*modelData\s*\?\s*\(modelData\.color\s*\|\|\s*NColor\.transparent\)\s*:\s*NColor\.transparent[\s\S]*?color:\s*swatchColor/;
 
   assert.match(source, themeSwatchDelegate, "NColorPickerDialog theme swatch delegate must declare typed swatch aliases");
   assert.match(source, paletteSwatchDelegate, "NColorPickerDialog palette swatch delegate must declare typed swatch aliases");
@@ -481,7 +481,7 @@ function testReorderCheckboxDelegateRolesAreTyped() {
 
 function testSessionMenuTabEntryDelegateRolesAreTyped() {
   const source = readQml("Modules/Panels/Settings/Tabs/SessionMenuTab.qml");
-  const entryDelegate = /ListView\s*\{[\s\S]*?model:\s*entriesModel[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?id:\s*delegateItem[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+id[\s\S]*?required\s+property\s+string\s+text[\s\S]*?required\s+property\s+bool\s+countdownEnabled[\s\S]*?readonly\s+property\s+bool\s+entryEnabled:\s*modelData\s*\?\s*modelData\.enabled\s*===\s*true\s*:\s*false[\s\S]*?color:\s*delegateItem\.entryEnabled\s*\?\s*Color\.mPrimary[\s\S]*?text:\s*delegateItem\.text[\s\S]*?checked:\s*delegateItem\.countdownEnabled/;
+  const entryDelegate = /ListView\s*\{[\s\S]*?model:\s*entriesModel[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?id:\s*delegateItem[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+id[\s\S]*?required\s+property\s+string\s+text[\s\S]*?required\s+property\s+bool\s+countdownEnabled[\s\S]*?readonly\s+property\s+bool\s+entryEnabled:\s*modelData\s*\?\s*modelData\.enabled\s*===\s*true\s*:\s*false[\s\S]*?color:\s*delegateItem\.entryEnabled\s*\?\s*NColor\.mPrimary[\s\S]*?text:\s*delegateItem\.text[\s\S]*?checked:\s*delegateItem\.countdownEnabled/;
 
   assert.match(source, entryDelegate, "SessionMenuTab entry delegate must type scalar roles and expose a strict readonly enabled alias");
   assert.doesNotMatch(source, /required\s+property\s+bool\s+enabled/, "SessionMenuTab must not bind the enabled role to Item.enabled");

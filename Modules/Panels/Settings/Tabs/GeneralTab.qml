@@ -27,7 +27,7 @@ ColumnLayout {
       radius: Math.min(Style.radiusL, Layout.preferredWidth / 2)
       imagePath: Settings.preprocessPath(Settings.data.general.avatarImage)
       fallbackIcon: "person"
-      borderColor: Color.mPrimary
+      borderColor: NColor.mPrimary
       borderWidth: Style.borderM
       Layout.alignment: Qt.AlignTop
     }

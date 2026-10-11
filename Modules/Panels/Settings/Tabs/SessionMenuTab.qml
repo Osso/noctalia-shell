@@ -248,8 +248,8 @@ ColumnLayout {
           Rectangle {
             anchors.fill: parent
             radius: Style.radiusM
-            color: delegateItem.dragging ? Color.mSurfaceVariant : Color.transparent
-            border.color: delegateItem.dragging ? Color.mOutline : Color.transparent
+            color: delegateItem.dragging ? NColor.mSurfaceVariant : NColor.transparent
+            border.color: delegateItem.dragging ? NColor.mOutline : NColor.transparent
             border.width: Style.borderS
 
             Behavior on color {
@@ -270,7 +270,7 @@ ColumnLayout {
               Layout.preferredHeight: Style.baseWidgetSize * 0.7
               Layout.alignment: Qt.AlignVCenter
               radius: Style.radiusXS
-              color: dragHandleMouseArea.containsMouse ? Color.mSurfaceVariant : Color.transparent
+              color: dragHandleMouseArea.containsMouse ? NColor.mSurfaceVariant : NColor.transparent
 
               Behavior on color {
                 ColorAnimation {
@@ -288,7 +288,7 @@ ColumnLayout {
                     Layout.preferredWidth: Style.baseWidgetSize * 0.28
                     Layout.preferredHeight: 2
                     radius: 1
-                    color: Color.mOutline
+                    color: NColor.mOutline
                   }
                 }
               }
@@ -349,8 +349,8 @@ ColumnLayout {
               Layout.preferredHeight: Style.baseWidgetSize * 0.7
               Layout.alignment: Qt.AlignVCenter
               radius: Style.radiusXS
-              color: delegateItem.entryEnabled ? Color.mPrimary : Color.mSurface
-              border.color: Color.mOutline
+              color: delegateItem.entryEnabled ? NColor.mPrimary : NColor.mSurface
+              border.color: NColor.mOutline
               border.width: Style.borderS
 
               Behavior on color {
@@ -364,7 +364,7 @@ ColumnLayout {
                 anchors.centerIn: parent
                 anchors.horizontalCenterOffset: -1
                 icon: "check"
-                color: Color.mOnPrimary
+                color: NColor.mOnPrimary
                 pointSize: Math.max(Style.fontSizeXS, Style.baseWidgetSize * 0.35)
               }
 
@@ -383,7 +383,7 @@ ColumnLayout {
             NText {
               Layout.fillWidth: true
               text: delegateItem.text
-              color: Color.mOnSurface
+              color: NColor.mOnSurface
               verticalAlignment: Text.AlignVCenter
               elide: Text.ElideRight
             }
@@ -396,7 +396,7 @@ ColumnLayout {
 
               NIcon {
                 icon: "clock"
-                color: Color.mOnSurfaceVariant
+                color: NColor.mOnSurfaceVariant
                 pointSize: Style.fontSizeS
               }
 

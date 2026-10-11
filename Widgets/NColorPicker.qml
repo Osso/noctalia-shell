@@ -7,7 +7,7 @@ import qs.Widgets
 Rectangle {
   id: root
 
-  property color selectedColor: Color.black
+  property color selectedColor: NColor.black
 
   signal colorSelected(color color)
 
@@ -15,8 +15,8 @@ Rectangle {
   implicitHeight: Math.round(Style.baseWidgetSize * 1.1)
 
   radius: Style.radiusM
-  color: Color.mSurface
-  border.color: Color.mOutline
+  color: NColor.mSurface
+  border.color: NColor.mOutline
   border.width: Style.borderS
 
   // Minimized Look
@@ -51,7 +51,7 @@ Rectangle {
         Layout.preferredHeight: root.height * 0.6
         radius: Math.min(Style.radiusL, Layout.preferredWidth / 2)
         color: root.selectedColor
-        border.color: Color.mOutline
+        border.color: NColor.mOutline
         border.width: Style.borderS
       }
 
@@ -64,7 +64,7 @@ Rectangle {
 
       NIcon {
         icon: "color-picker"
-        color: Color.mOnSurfaceVariant
+        color: NColor.mOnSurfaceVariant
         Layout.fillWidth: true
         Layout.alignment: Qt.AlignVCenter
       }

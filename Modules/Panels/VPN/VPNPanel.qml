@@ -20,7 +20,7 @@ SmartPanel {
   onClosed: VPNService.endPolling()
 
   panelContent: Rectangle {
-    color: Color.transparent
+    color: NColor.transparent
 
     // Calculate content height based on header + connections list (or minimum for empty state)
     property real headerHeight: headerRow.implicitHeight + Style.marginM * 2
@@ -48,14 +48,14 @@ SmartPanel {
           NIcon {
             icon: "shield-lock"
             pointSize: Style.fontSizeXXL
-            color: Color.mPrimary
+            color: NColor.mPrimary
           }
 
           NText {
             text: I18n.tr("vpn.panel.title")
             pointSize: Style.fontSizeL
             font.weight: Style.fontWeightBold
-            color: Color.mOnSurface
+            color: NColor.mOnSurface
             Layout.fillWidth: true
           }
 
@@ -93,21 +93,21 @@ SmartPanel {
           NIcon {
             icon: "shield"
             pointSize: 48
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             Layout.alignment: Qt.AlignHCenter
           }
 
           NText {
             text: I18n.tr("vpn.panel.no-connections")
             pointSize: Style.fontSizeL
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             Layout.alignment: Qt.AlignHCenter
           }
 
           NText {
             text: I18n.tr("vpn.panel.configure-message")
             pointSize: Style.fontSizeS
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             horizontalAlignment: Text.AlignHCenter
             Layout.fillWidth: true
             wrapMode: Text.WordWrap

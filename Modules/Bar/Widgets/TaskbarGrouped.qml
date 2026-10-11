@@ -45,7 +45,7 @@ Item {
   property ListModel localWorkspaces: ListModel {}
   property real masterProgress: 0.0
   property bool effectsActive: false
-  property color effectColor: Color.mPrimary
+  property color effectColor: NColor.mPrimary
 
   // Wheel scroll handling
   property int wheelAccumulatedDelta: 0
@@ -110,7 +110,7 @@ Item {
   }
 
   function triggerUnifiedWave() {
-    effectColor = Color.mPrimary;
+    effectColor = NColor.mPrimary;
     masterAnimation.restart();
   }
 
@@ -302,7 +302,7 @@ Item {
       property bool displayedBadgeUrgent: root.displayedUrgentForWorkspace(workspaceModel)
 
       radius: Style.radiusS
-      border.color: workspaceModel.isFocused ? Color.mPrimary : Color.mOutline
+      border.color: workspaceModel.isFocused ? NColor.mPrimary : NColor.mOutline
       border.width: Style.borderS
       width: (hasWindows ? iconsFlow.implicitWidth : root.itemSize * 0.8) + (root.isVerticalBar ? Style.marginXS : Style.marginL)
       height: (hasWindows ? iconsFlow.implicitHeight : root.itemSize * 0.8) + (root.isVerticalBar ? Style.marginL : Style.marginXS)
@@ -409,12 +409,12 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: model.isFocused ? 4 : 0
                 height: model.isFocused ? 4 : 0
-                color: model.isFocused ? Color.mPrimary : Color.transparent
+                color: model.isFocused ? NColor.mPrimary : NColor.transparent
                 radius: Math.min(Style.radiusXXS, width / 2)
               }
 
               layer.effect: ShaderEffect {
-                property color targetColor: Settings.data.colorSchemes.darkMode ? Color.mOnSurface : Color.mSurfaceVariant
+                property color targetColor: Settings.data.colorSchemes.darkMode ? NColor.mOnSurface : NColor.mSurfaceVariant
                 property real colorizeMode: 0
                 fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/appicon_colorize.frag.qsb")
               }
@@ -494,16 +494,16 @@ Item {
 
           color: {
             if (workspaceModel.isFocused)
-              return Color.mPrimary;
+              return NColor.mPrimary;
             if (container.displayedBadgeUrgent)
-              return Color.mError;
+              return NColor.mError;
             if (hasWindows)
-              return Color.mSecondary;
+              return NColor.mSecondary;
 
             if (Settings.data.colorSchemes.darkMode) {
-              return Qt.darker(Color.mSecondary, 1.5);
+              return Qt.darker(NColor.mSecondary, 1.5);
             } else {
-              return Qt.lighter(Color.mSecondary, 1.5);
+              return Qt.lighter(NColor.mSecondary, 1.5);
             }
           }
 
@@ -531,7 +531,7 @@ Item {
           width: workspaceNumberContainer.width + 12 * root.masterProgress
           height: workspaceNumberContainer.height + 12 * root.masterProgress
           radius: width / 2
-          color: Color.transparent
+          color: NColor.transparent
           border.color: root.effectColor
           border.width: Math.max(1, Math.round((2 + 4 * (1.0 - root.masterProgress))))
           opacity: root.effectsActive && workspaceModel.isFocused ? (1.0 - root.masterProgress) * 0.7 : 0
@@ -566,13 +566,13 @@ Item {
 
           color: {
             if (workspaceModel.isFocused)
-              return Color.mOnPrimary;
+              return NColor.mOnPrimary;
             if (container.displayedBadgeUrgent)
-              return Color.mOnError;
+              return NColor.mOnError;
             // if (hasWindows)
-            //   return Color.mOnSecondary;
+            //   return NColor.mOnSecondary;
 
-            return Color.mOnSecondary;
+            return NColor.mOnSecondary;
           }
 
           Behavior on opacity {

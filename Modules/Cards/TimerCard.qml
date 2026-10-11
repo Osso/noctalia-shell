@@ -29,14 +29,14 @@ NBox {
       NIcon {
         icon: isStopwatchMode ? "clock" : "hourglass"
         pointSize: Style.fontSizeL
-        color: Color.mPrimary
+        color: NColor.mPrimary
       }
 
       NText {
         text: I18n.tr("calendar.timer.title")
         pointSize: Style.fontSizeL
         font.weight: Style.fontWeightBold
-        color: Color.mOnSurface
+        color: NColor.mOnSurface
         Layout.fillWidth: true
       }
     }
@@ -85,7 +85,7 @@ NBox {
           ctx.beginPath();
           ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
           ctx.lineWidth = 4;
-          ctx.strokeStyle = Qt.alpha(Color.mOnSurface, 0.2);
+          ctx.strokeStyle = Qt.alpha(NColor.mOnSurface, 0.2);
           ctx.stroke();
 
           // Progress arc (elapsed portion)
@@ -93,7 +93,7 @@ NBox {
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + progressRatio * 2 * Math.PI);
             ctx.lineWidth = 4;
-            ctx.strokeStyle = Color.mPrimary;
+            ctx.strokeStyle = NColor.mPrimary;
             ctx.lineCap = "round";
             ctx.stroke();
           }
@@ -137,12 +137,12 @@ NBox {
         font.weight: Style.fontWeightBold
         color: {
           if (isRunning) {
-            return Color.mPrimary;
+            return NColor.mPrimary;
           }
           if (timerDisplayItem.isEditing) {
-            return Color.mPrimary;
+            return NColor.mPrimary;
           }
-          return Color.mOnSurface;
+          return NColor.mOnSurface;
         }
 
         // Display formatted time, but show input buffer when editing
@@ -280,7 +280,7 @@ NBox {
         Layout.fillWidth: true
         Layout.preferredWidth: 0
         implicitHeight: startButton.implicitHeight
-        color: Color.transparent
+        color: NColor.transparent
 
         NButton {
           id: startButton
@@ -302,7 +302,7 @@ NBox {
         Layout.fillWidth: true
         Layout.preferredWidth: 0
         implicitHeight: resetButton.implicitHeight
-        color: Color.transparent
+        color: NColor.transparent
 
         NButton {
           id: resetButton

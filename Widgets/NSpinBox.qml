@@ -86,8 +86,8 @@ RowLayout {
     implicitWidth: 120
     implicitHeight: Math.round((root.baseSize - 4) / 2) * 2
     radius: Style.radiusS
-    color: Color.mSurfaceVariant
-    border.color: (root.hovering || decreaseArea.containsMouse || increaseArea.containsMouse) ? Color.mHover : Color.mOutline
+    color: NColor.mSurfaceVariant
+    border.color: (root.hovering || decreaseArea.containsMouse || increaseArea.containsMouse) ? NColor.mHover : NColor.mOutline
     border.width: Style.borderS
 
     Behavior on border.color {
@@ -142,7 +142,7 @@ RowLayout {
           height: parent.height
           radius: Math.min(Style.radiusL, width / 2)
           anchors.left: parent.left
-          color: decreaseArea.containsMouse ? Color.mHover : Color.transparent
+          color: decreaseArea.containsMouse ? NColor.mHover : NColor.transparent
           Behavior on color {
             ColorAnimation {
               duration: Style.animationFast
@@ -165,7 +165,7 @@ RowLayout {
           height: 100
           radius: width / 4
 
-          color: decreaseArea.containsMouse ? Color.mHover : Color.transparent
+          color: decreaseArea.containsMouse ? NColor.mHover : NColor.transparent
           Behavior on color {
             ColorAnimation {
               duration: Style.animationFast
@@ -200,7 +200,7 @@ RowLayout {
         anchors.verticalCenter: parent.verticalCenter
         icon: "chevron-left"
         pointSize: Style.fontSizeS
-        color: decreaseArea.containsMouse ? Color.mOnHover : Color.mPrimary
+        color: decreaseArea.containsMouse ? NColor.mOnHover : NColor.mPrimary
       }
 
       MouseArea {
@@ -241,7 +241,7 @@ RowLayout {
           height: parent.height
           radius: Math.min(Style.radiusL, width / 2)
           anchors.right: parent.right
-          color: increaseArea.containsMouse ? Color.mHover : Color.transparent
+          color: increaseArea.containsMouse ? NColor.mHover : NColor.transparent
           Behavior on color {
             ColorAnimation {
               duration: Style.animationFast
@@ -264,7 +264,7 @@ RowLayout {
           height: 100
           radius: width / 4
 
-          color: increaseArea.containsMouse ? Color.mHover : Color.transparent
+          color: increaseArea.containsMouse ? NColor.mHover : NColor.transparent
           Behavior on color {
             ColorAnimation {
               duration: Style.animationFast
@@ -299,7 +299,7 @@ RowLayout {
         anchors.verticalCenter: parent.verticalCenter
         icon: "chevron-right"
         pointSize: Style.fontSizeS
-        color: increaseArea.containsMouse ? Color.mOnHover : Color.mPrimary
+        color: increaseArea.containsMouse ? NColor.mOnHover : NColor.mPrimary
       }
 
       MouseArea {
@@ -326,7 +326,7 @@ RowLayout {
       anchors.verticalCenter: parent.verticalCenter
       anchors.margins: 4
       height: parent.height
-      color: Color.transparent
+      color: NColor.transparent
 
       RowLayout {
         anchors.centerIn: parent
@@ -338,7 +338,7 @@ RowLayout {
           family: Settings.data.ui.fontFixed
           pointSize: Style.fontSizeM
           font.weight: Style.fontWeightMedium
-          color: Color.mOnSurface
+          color: NColor.mOnSurface
           verticalAlignment: Text.AlignVCenter
           Layout.alignment: Qt.AlignVCenter
           visible: root.prefix !== ""
@@ -351,7 +351,7 @@ RowLayout {
           font.family: Settings.data.ui.fontFixed
           font.pointSize: Style.fontSizeM
           font.weight: Style.fontWeightMedium
-          color: Color.mOnSurface
+          color: NColor.mOnSurface
           verticalAlignment: Text.AlignVCenter
           Layout.alignment: Qt.AlignVCenter
           selectByMouse: true
@@ -397,7 +397,7 @@ RowLayout {
           family: Settings.data.ui.fontFixed
           pointSize: Style.fontSizeM
           font.weight: Style.fontWeightMedium
-          color: Color.mOnSurface
+          color: NColor.mOnSurface
           verticalAlignment: Text.AlignVCenter
           Layout.alignment: Qt.AlignVCenter
           visible: root.suffix !== ""

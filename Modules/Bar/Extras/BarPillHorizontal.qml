@@ -20,8 +20,8 @@ Item {
   property bool forceClose: false
   property bool oppositeDirection: false
   property bool hovered: false
-  property color customBackgroundColor: Color.transparent
-  property color customTextIconColor: Color.transparent
+  property color customBackgroundColor: NColor.transparent
+  property color customTextIconColor: NColor.transparent
 
   readonly property bool collapseToIcon: forceClose && !forceOpen
 
@@ -47,8 +47,8 @@ Item {
   readonly property int pillMaxWidth: Math.max(1, Math.round(textItem.implicitWidth + pillPaddingHorizontal * 2 + pillOverlap))
 
   // Always prioritize hover color, then the custom one and finally the fallback color
-  readonly property color bgColor: hovered ? Color.mHover : (customBackgroundColor.a > 0) ? customBackgroundColor : Style.capsuleColor
-  readonly property color fgColor: hovered ? Color.mOnHover : (customTextIconColor.a > 0) ? customTextIconColor : Color.mOnSurface
+  readonly property color bgColor: hovered ? NColor.mHover : (customBackgroundColor.a > 0) ? customBackgroundColor : Style.capsuleColor
+  readonly property color fgColor: hovered ? NColor.mOnHover : (customTextIconColor.a > 0) ? customTextIconColor : NColor.mOnSurface
 
   readonly property real iconSize: {
     switch (root.density) {
@@ -107,7 +107,7 @@ Item {
                            (iconCircle.x + iconCircle.width / 2) - width // Opens left
 
     opacity: revealed ? Style.opacityFull : Style.opacityNone
-    color: Color.transparent // Make pill background transparent to avoid double opacity
+    color: NColor.transparent // Make pill background transparent to avoid double opacity
 
     topLeftRadius: oppositeDirection ? 0 : Style.radiusM
     bottomLeftRadius: oppositeDirection ? 0 : Style.radiusM
@@ -158,7 +158,7 @@ Item {
     width: pillHeight
     height: pillHeight
     radius: Math.min(Style.radiusL, width / 2)
-    color: Color.transparent // Make icon background transparent to avoid double opacity
+    color: NColor.transparent // Make icon background transparent to avoid double opacity
     anchors.verticalCenter: parent.verticalCenter
 
     x: oppositeDirection ? 0 : (parent.width - width)

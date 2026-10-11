@@ -268,7 +268,7 @@ Item {
             // Apply dock shader to active window icon (always themed)
             layer.enabled: widgetSettings.colorizeIcons !== false
             layer.effect: ShaderEffect {
-              property color targetColor: Settings.data.colorSchemes.darkMode ? Color.mOnSurface : Color.mSurfaceVariant
+              property color targetColor: Settings.data.colorSchemes.darkMode ? NColor.mOnSurface : NColor.mSurfaceVariant
               property real colorizeMode: 0.0 // Dock mode (grayscale)
 
               fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/appicon_colorize.frag.qsb")
@@ -372,7 +372,7 @@ Item {
                 applyUiScale: false
                 font.weight: Style.fontWeightMedium
                 verticalAlignment: Text.AlignVCenter
-                color: Color.mOnSurface
+                color: NColor.mOnSurface
                 onTextChanged: {
                   if (root.scrollingMode === "always") {
                     titleContainer.isScrolling = false;
@@ -390,7 +390,7 @@ Item {
                 pointSize: Style.fontSizeS * scaling
                 applyUiScale: false
                 verticalAlignment: Text.AlignVCenter
-                color: Color.mOnSurface
+                color: NColor.mOnSurface
                 visible: titleContainer.needsScrolling && titleContainer.isScrolling
               }
             }
@@ -447,7 +447,7 @@ Item {
             // Apply dock shader to active window icon (always themed)
             layer.enabled: widgetSettings.colorizeIcons !== false
             layer.effect: ShaderEffect {
-              property color targetColor: Color.mOnSurface
+              property color targetColor: NColor.mOnSurface
               property real colorizeMode: 0.0 // Dock mode (grayscale)
 
               fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/appicon_colorize.frag.qsb")

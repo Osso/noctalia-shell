@@ -76,7 +76,7 @@ SmartPanel {
   }
 
   panelContent: Rectangle {
-    color: Color.transparent
+    color: NColor.transparent
 
     // Calculate content height based on header + networks list (or minimum for empty states)
     property real headerHeight: headerRow.implicitHeight + Style.marginM * 2
@@ -104,14 +104,14 @@ SmartPanel {
           NIcon {
             icon: Settings.data.network.wifiEnabled ? "wifi" : "wifi-off"
             pointSize: Style.fontSizeXXL
-            color: Settings.data.network.wifiEnabled ? Color.mPrimary : Color.mOnSurfaceVariant
+            color: Settings.data.network.wifiEnabled ? NColor.mPrimary : NColor.mOnSurfaceVariant
           }
 
           NText {
             text: I18n.tr("wifi.panel.title")
             pointSize: Style.fontSizeL
             font.weight: Style.fontWeightBold
-            color: Color.mOnSurface
+            color: NColor.mOnSurface
             Layout.fillWidth: true
           }
 
@@ -143,10 +143,10 @@ SmartPanel {
         visible: NetworkService.lastError.length > 0
         Layout.fillWidth: true
         Layout.preferredHeight: errorRow.implicitHeight + (Style.marginM * 2)
-        color: Qt.alpha(Color.mError, 0.1)
+        color: Qt.alpha(NColor.mError, 0.1)
         radius: Style.radiusS
         border.width: Style.borderS
-        border.color: Color.mError
+        border.color: NColor.mError
 
         RowLayout {
           id: errorRow
@@ -157,12 +157,12 @@ SmartPanel {
           NIcon {
             icon: "warning"
             pointSize: Style.fontSizeL
-            color: Color.mError
+            color: NColor.mError
           }
 
           NText {
             text: NetworkService.lastError
-            color: Color.mError
+            color: NColor.mError
             pointSize: Style.fontSizeS
             wrapMode: Text.Wrap
             Layout.fillWidth: true
@@ -193,21 +193,21 @@ SmartPanel {
           NIcon {
             icon: "wifi-off"
             pointSize: 48
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             Layout.alignment: Qt.AlignHCenter
           }
 
           NText {
             text: I18n.tr("wifi.panel.disabled")
             pointSize: Style.fontSizeL
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             Layout.alignment: Qt.AlignHCenter
           }
 
           NText {
             text: I18n.tr("wifi.panel.enable-message")
             pointSize: Style.fontSizeS
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             horizontalAlignment: Text.AlignHCenter
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
@@ -236,7 +236,7 @@ SmartPanel {
 
           NBusyIndicator {
             running: true
-            color: Color.mPrimary
+            color: NColor.mPrimary
             size: Style.baseWidgetSize
             Layout.alignment: Qt.AlignHCenter
           }
@@ -244,7 +244,7 @@ SmartPanel {
           NText {
             text: I18n.tr("wifi.panel.searching")
             pointSize: Style.fontSizeM
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             Layout.alignment: Qt.AlignHCenter
           }
 
@@ -271,14 +271,14 @@ SmartPanel {
           NIcon {
             icon: "search"
             pointSize: 64
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             Layout.alignment: Qt.AlignHCenter
           }
 
           NText {
             text: I18n.tr("wifi.panel.no-networks")
             pointSize: Style.fontSizeL
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             Layout.alignment: Qt.AlignHCenter
           }
 

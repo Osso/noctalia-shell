@@ -57,7 +57,7 @@ SmartPanel {
 
           NIcon {
             pointSize: Style.fontSizeXXL
-            color: Color.mPrimary
+            color: NColor.mPrimary
             icon: "process"
           }
 
@@ -69,14 +69,14 @@ SmartPanel {
               text: I18n.tr("process.panel-title")
               pointSize: Style.fontSizeL
               font.weight: Style.fontWeightBold
-              color: Color.mOnSurface
+              color: NColor.mOnSurface
               Layout.fillWidth: true
             }
 
             NText {
               text: I18n.tr("process.process-count", { count: ProcessService.processCount })
               pointSize: Style.fontSizeS
-              color: Color.mOnSurfaceVariant
+              color: NColor.mOnSurfaceVariant
               wrapMode: Text.Wrap
               Layout.fillWidth: true
             }
@@ -108,13 +108,13 @@ SmartPanel {
             Layout.preferredHeight: 60
             radius: Style.radiusS
             color: ProcessService.sortBy === "cpu"
-                   ? Qt.rgba(Color.mPrimary.r, Color.mPrimary.g, Color.mPrimary.b, 0.16)
+                   ? Qt.rgba(NColor.mPrimary.r, NColor.mPrimary.g, NColor.mPrimary.b, 0.16)
                    : cpuMouseArea.containsMouse
-                     ? Qt.rgba(Color.mPrimary.r, Color.mPrimary.g, Color.mPrimary.b, 0.12)
-                     : Qt.rgba(Color.mPrimary.r, Color.mPrimary.g, Color.mPrimary.b, 0.08)
+                     ? Qt.rgba(NColor.mPrimary.r, NColor.mPrimary.g, NColor.mPrimary.b, 0.12)
+                     : Qt.rgba(NColor.mPrimary.r, NColor.mPrimary.g, NColor.mPrimary.b, 0.08)
             border.color: ProcessService.sortBy === "cpu"
-                          ? Qt.rgba(Color.mPrimary.r, Color.mPrimary.g, Color.mPrimary.b, 0.4)
-                          : Qt.rgba(Color.mPrimary.r, Color.mPrimary.g, Color.mPrimary.b, 0.2)
+                          ? Qt.rgba(NColor.mPrimary.r, NColor.mPrimary.g, NColor.mPrimary.b, 0.4)
+                          : Qt.rgba(NColor.mPrimary.r, NColor.mPrimary.g, NColor.mPrimary.b, 0.2)
             border.width: ProcessService.sortBy === "cpu" ? 2 : 1
 
             MouseArea {
@@ -135,7 +135,7 @@ SmartPanel {
                 text: "CPU"
                 pointSize: Style.fontSizeXS
                 font.weight: Style.fontWeightMedium
-                color: ProcessService.sortBy === "cpu" ? Color.mPrimary : Color.mOnSurfaceVariant
+                color: ProcessService.sortBy === "cpu" ? NColor.mPrimary : NColor.mOnSurfaceVariant
               }
 
               NText {
@@ -143,7 +143,7 @@ SmartPanel {
                 pointSize: Style.fontSizeL
                 family: Settings.data.ui.fontFixed
                 font.weight: Style.fontWeightBold
-                color: Color.mOnSurface
+                color: NColor.mOnSurface
               }
             }
 
@@ -157,13 +157,13 @@ SmartPanel {
             Layout.preferredHeight: 60
             radius: Style.radiusS
             color: ProcessService.sortBy === "memory"
-                   ? Qt.rgba(Color.mSecondary.r, Color.mSecondary.g, Color.mSecondary.b, 0.16)
+                   ? Qt.rgba(NColor.mSecondary.r, NColor.mSecondary.g, NColor.mSecondary.b, 0.16)
                    : memMouseArea.containsMouse
-                     ? Qt.rgba(Color.mSecondary.r, Color.mSecondary.g, Color.mSecondary.b, 0.12)
-                     : Qt.rgba(Color.mSecondary.r, Color.mSecondary.g, Color.mSecondary.b, 0.08)
+                     ? Qt.rgba(NColor.mSecondary.r, NColor.mSecondary.g, NColor.mSecondary.b, 0.12)
+                     : Qt.rgba(NColor.mSecondary.r, NColor.mSecondary.g, NColor.mSecondary.b, 0.08)
             border.color: ProcessService.sortBy === "memory"
-                          ? Qt.rgba(Color.mSecondary.r, Color.mSecondary.g, Color.mSecondary.b, 0.4)
-                          : Qt.rgba(Color.mSecondary.r, Color.mSecondary.g, Color.mSecondary.b, 0.2)
+                          ? Qt.rgba(NColor.mSecondary.r, NColor.mSecondary.g, NColor.mSecondary.b, 0.4)
+                          : Qt.rgba(NColor.mSecondary.r, NColor.mSecondary.g, NColor.mSecondary.b, 0.2)
             border.width: ProcessService.sortBy === "memory" ? 2 : 1
 
             MouseArea {
@@ -184,7 +184,7 @@ SmartPanel {
                 text: I18n.tr("process.memory")
                 pointSize: Style.fontSizeXS
                 font.weight: Style.fontWeightMedium
-                color: ProcessService.sortBy === "memory" ? Color.mSecondary : Color.mOnSurfaceVariant
+                color: ProcessService.sortBy === "memory" ? NColor.mSecondary : NColor.mOnSurfaceVariant
               }
 
               NText {
@@ -192,7 +192,7 @@ SmartPanel {
                 pointSize: Style.fontSizeL
                 family: Settings.data.ui.fontFixed
                 font.weight: Style.fontWeightBold
-                color: Color.mOnSurface
+                color: NColor.mOnSurface
               }
             }
 
@@ -206,13 +206,13 @@ SmartPanel {
             Layout.preferredHeight: 60
             radius: Style.radiusS
             color: ProcessService.sortBy === "pid"
-                   ? Qt.rgba(Color.mTertiary.r, Color.mTertiary.g, Color.mTertiary.b, 0.16)
+                   ? Qt.rgba(NColor.mTertiary.r, NColor.mTertiary.g, NColor.mTertiary.b, 0.16)
                    : pidMouseArea.containsMouse
-                     ? Qt.rgba(Color.mTertiary.r, Color.mTertiary.g, Color.mTertiary.b, 0.12)
-                     : Qt.rgba(Color.mTertiary.r, Color.mTertiary.g, Color.mTertiary.b, 0.08)
+                     ? Qt.rgba(NColor.mTertiary.r, NColor.mTertiary.g, NColor.mTertiary.b, 0.12)
+                     : Qt.rgba(NColor.mTertiary.r, NColor.mTertiary.g, NColor.mTertiary.b, 0.08)
             border.color: ProcessService.sortBy === "pid"
-                          ? Qt.rgba(Color.mTertiary.r, Color.mTertiary.g, Color.mTertiary.b, 0.4)
-                          : Qt.rgba(Color.mTertiary.r, Color.mTertiary.g, Color.mTertiary.b, 0.2)
+                          ? Qt.rgba(NColor.mTertiary.r, NColor.mTertiary.g, NColor.mTertiary.b, 0.4)
+                          : Qt.rgba(NColor.mTertiary.r, NColor.mTertiary.g, NColor.mTertiary.b, 0.2)
             border.width: ProcessService.sortBy === "pid" ? 2 : 1
 
             MouseArea {
@@ -233,7 +233,7 @@ SmartPanel {
                 text: I18n.tr("process.processes")
                 pointSize: Style.fontSizeXS
                 font.weight: Style.fontWeightMedium
-                color: ProcessService.sortBy === "pid" ? Color.mTertiary : Color.mOnSurfaceVariant
+                color: ProcessService.sortBy === "pid" ? NColor.mTertiary : NColor.mOnSurfaceVariant
               }
 
               NText {
@@ -241,7 +241,7 @@ SmartPanel {
                 pointSize: Style.fontSizeL
                 family: Settings.data.ui.fontFixed
                 font.weight: Style.fontWeightBold
-                color: Color.mOnSurface
+                color: NColor.mOnSurface
               }
             }
 
@@ -274,9 +274,9 @@ SmartPanel {
             Layout.preferredHeight: 24
             radius: Style.radiusXS
             color: ProcessService.sortBy === "name"
-                   ? Qt.rgba(Color.mPrimary.r, Color.mPrimary.g, Color.mPrimary.b, 0.2)
+                   ? Qt.rgba(NColor.mPrimary.r, NColor.mPrimary.g, NColor.mPrimary.b, 0.2)
                    : nameHeaderMouse.containsMouse
-                     ? Qt.rgba(Color.mOnSurface.r, Color.mOnSurface.g, Color.mOnSurface.b, 0.08)
+                     ? Qt.rgba(NColor.mOnSurface.r, NColor.mOnSurface.g, NColor.mOnSurface.b, 0.08)
                      : "transparent"
 
             MouseArea {
@@ -294,7 +294,7 @@ SmartPanel {
               text: I18n.tr("process.header-process")
               pointSize: Style.fontSizeXS
               font.weight: Style.fontWeightMedium
-              color: ProcessService.sortBy === "name" ? Color.mPrimary : Color.mOnSurfaceVariant
+              color: ProcessService.sortBy === "name" ? NColor.mPrimary : NColor.mOnSurfaceVariant
             }
           }
 
@@ -304,9 +304,9 @@ SmartPanel {
             Layout.preferredHeight: 24
             radius: Style.radiusXS
             color: ProcessService.sortBy === "cpu"
-                   ? Qt.rgba(Color.mPrimary.r, Color.mPrimary.g, Color.mPrimary.b, 0.2)
+                   ? Qt.rgba(NColor.mPrimary.r, NColor.mPrimary.g, NColor.mPrimary.b, 0.2)
                    : cpuHeaderMouse.containsMouse
-                     ? Qt.rgba(Color.mOnSurface.r, Color.mOnSurface.g, Color.mOnSurface.b, 0.08)
+                     ? Qt.rgba(NColor.mOnSurface.r, NColor.mOnSurface.g, NColor.mOnSurface.b, 0.08)
                      : "transparent"
 
             MouseArea {
@@ -322,7 +322,7 @@ SmartPanel {
               text: "CPU"
               pointSize: Style.fontSizeXS
               font.weight: Style.fontWeightMedium
-              color: ProcessService.sortBy === "cpu" ? Color.mPrimary : Color.mOnSurfaceVariant
+              color: ProcessService.sortBy === "cpu" ? NColor.mPrimary : NColor.mOnSurfaceVariant
             }
           }
 
@@ -332,9 +332,9 @@ SmartPanel {
             Layout.preferredHeight: 24
             radius: Style.radiusXS
             color: ProcessService.sortBy === "memory"
-                   ? Qt.rgba(Color.mPrimary.r, Color.mPrimary.g, Color.mPrimary.b, 0.2)
+                   ? Qt.rgba(NColor.mPrimary.r, NColor.mPrimary.g, NColor.mPrimary.b, 0.2)
                    : memHeaderMouse.containsMouse
-                     ? Qt.rgba(Color.mOnSurface.r, Color.mOnSurface.g, Color.mOnSurface.b, 0.08)
+                     ? Qt.rgba(NColor.mOnSurface.r, NColor.mOnSurface.g, NColor.mOnSurface.b, 0.08)
                      : "transparent"
 
             MouseArea {
@@ -350,7 +350,7 @@ SmartPanel {
               text: I18n.tr("process.header-memory")
               pointSize: Style.fontSizeXS
               font.weight: Style.fontWeightMedium
-              color: ProcessService.sortBy === "memory" ? Color.mPrimary : Color.mOnSurfaceVariant
+              color: ProcessService.sortBy === "memory" ? NColor.mPrimary : NColor.mOnSurfaceVariant
             }
           }
 
@@ -360,9 +360,9 @@ SmartPanel {
             Layout.preferredHeight: 24
             radius: Style.radiusXS
             color: ProcessService.sortBy === "pid"
-                   ? Qt.rgba(Color.mPrimary.r, Color.mPrimary.g, Color.mPrimary.b, 0.2)
+                   ? Qt.rgba(NColor.mPrimary.r, NColor.mPrimary.g, NColor.mPrimary.b, 0.2)
                    : pidHeaderMouse.containsMouse
-                     ? Qt.rgba(Color.mOnSurface.r, Color.mOnSurface.g, Color.mOnSurface.b, 0.08)
+                     ? Qt.rgba(NColor.mOnSurface.r, NColor.mOnSurface.g, NColor.mOnSurface.b, 0.08)
                      : "transparent"
 
             MouseArea {
@@ -378,7 +378,7 @@ SmartPanel {
               text: "PID"
               pointSize: Style.fontSizeXS
               font.weight: Style.fontWeightMedium
-              color: ProcessService.sortBy === "pid" ? Color.mPrimary : Color.mOnSurfaceVariant
+              color: ProcessService.sortBy === "pid" ? NColor.mPrimary : NColor.mOnSurfaceVariant
             }
           }
 
@@ -408,10 +408,10 @@ SmartPanel {
           readonly property int processPid: modelData ? (modelData.pid || 0) : 0
           readonly property color processCpuColor: {
             if (processCpu > 50)
-              return Color.mError;
+              return NColor.mError;
             if (processCpu > 20)
-              return Color.mTertiary;
-            return Color.mOnSurfaceVariant;
+              return NColor.mTertiary;
+            return NColor.mOnSurfaceVariant;
           }
 
           Layout.fillWidth: true
@@ -419,8 +419,8 @@ SmartPanel {
           Layout.topMargin: index === 0 ? 0 : -2
           radius: Style.radiusS
           color: delegateMouseArea.containsMouse
-                 ? Qt.rgba(Color.mOnSurface.r, Color.mOnSurface.g, Color.mOnSurface.b, 0.12)
-                 : Color.mSurfaceVariant
+                 ? Qt.rgba(NColor.mOnSurface.r, NColor.mOnSurface.g, NColor.mOnSurface.b, 0.12)
+                 : NColor.mSurfaceVariant
 
           MouseArea {
             id: delegateMouseArea
@@ -446,7 +446,7 @@ SmartPanel {
             NIcon {
               icon: ProcessService.getProcessIcon(processCommand)
               pointSize: Style.fontSizeM
-              color: Color.mOnSurfaceVariant
+              color: NColor.mOnSurfaceVariant
             }
 
             // Process name
@@ -454,7 +454,7 @@ SmartPanel {
               Layout.fillWidth: true
               text: processName
               pointSize: Style.fontSizeS
-              color: Color.mOnSurface
+              color: NColor.mOnSurface
               elide: Text.ElideRight
             }
 
@@ -474,7 +474,7 @@ SmartPanel {
               text: ProcessService.formatMemory(processMemoryKb)
               pointSize: Style.fontSizeS
               family: Settings.data.ui.fontFixed
-              color: Color.mOnSurfaceVariant
+              color: NColor.mOnSurfaceVariant
               horizontalAlignment: Text.AlignRight
             }
 
@@ -484,7 +484,7 @@ SmartPanel {
               text: processPid.toString()
               pointSize: Style.fontSizeXS
               family: Settings.data.ui.fontFixed
-              color: Color.mOnSurfaceVariant
+              color: NColor.mOnSurfaceVariant
               horizontalAlignment: Text.AlignRight
             }
 

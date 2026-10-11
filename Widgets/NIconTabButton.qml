@@ -26,7 +26,7 @@ Rectangle {
 
   // Styling
   radius: Style.radiusXS
-  color: root.checked ? Color.mPrimary : (root.isHovered ? Color.mHover : Color.mSurface)
+  color: root.checked ? NColor.mPrimary : (root.isHovered ? NColor.mHover : NColor.mSurface)
 
   Behavior on color {
     ColorAnimation {
@@ -40,7 +40,7 @@ Rectangle {
     anchors.centerIn: parent
     icon: root.icon
     pointSize: Style.fontSizeL
-    color: root.checked ? Color.mOnPrimary : root.isHovered ? Color.mOnHover : Color.mOnSurface
+    color: root.checked ? NColor.mOnPrimary : root.isHovered ? NColor.mOnHover : NColor.mOnSurface
 
     Behavior on color {
       ColorAnimation {

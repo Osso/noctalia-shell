@@ -31,7 +31,7 @@ Item {
     anchors.fill: parent
     anchors.margins: Style.marginM
     radius: Style.radiusL
-    color: Qt.alpha(Color.mSurface, Settings.data.notifications.backgroundOpacity || 1.0)
+    color: Qt.alpha(NColor.mSurface, Settings.data.notifications.backgroundOpacity || 1.0)
 
     // Colored border based on type
     border.width: Math.max(2, Style.borderM)
@@ -39,13 +39,13 @@ Item {
       var baseColor;
       switch (root.type) {
       case "warning":
-        baseColor = Color.mPrimary;
+        baseColor = NColor.mPrimary;
         break;
       case "error":
-        baseColor = Color.mError;
+        baseColor = NColor.mError;
         break;
       default:
-        baseColor = Color.mOutline;
+        baseColor = NColor.mOutline;
         break;
       }
       return Qt.alpha(baseColor, Settings.data.notifications.backgroundOpacity || 1.0);
@@ -119,11 +119,11 @@ Item {
       color: {
         switch (type) {
         case "warning":
-          return Color.mPrimary;
+          return NColor.mPrimary;
         case "error":
-          return Color.mError;
+          return NColor.mError;
         default:
-          return Color.mOnSurface;
+          return NColor.mOnSurface;
         }
       }
       pointSize: Style.fontSizeXXL * 1.5
@@ -139,7 +139,7 @@ Item {
       NText {
         Layout.fillWidth: true
         text: root.message
-        color: Color.mOnSurface
+        color: NColor.mOnSurface
         pointSize: Style.fontSizeL
         font.weight: Style.fontWeightBold
         wrapMode: Text.WordWrap
@@ -149,7 +149,7 @@ Item {
       NText {
         Layout.fillWidth: true
         text: root.description
-        color: Color.mOnSurface
+        color: NColor.mOnSurface
         pointSize: Style.fontSizeM
         wrapMode: Text.WordWrap
         visible: text.length > 0

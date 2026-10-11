@@ -104,17 +104,17 @@ Rectangle {
       NIcon {
         visible: root.showCaps
         icon: root.capsIcon
-        color: LockKeysService.capsLockOn ? Color.mTertiary : Qt.alpha(Color.mOnSurfaceVariant, 0.3)
+        color: LockKeysService.capsLockOn ? NColor.mTertiary : Qt.alpha(NColor.mOnSurfaceVariant, 0.3)
       }
       NIcon {
         visible: root.showNum
         icon: root.numIcon
-        color: LockKeysService.numLockOn ? Color.mTertiary : Qt.alpha(Color.mOnSurfaceVariant, 0.3)
+        color: LockKeysService.numLockOn ? NColor.mTertiary : Qt.alpha(NColor.mOnSurfaceVariant, 0.3)
       }
       NIcon {
         visible: root.showScroll
         icon: root.scrollIcon
-        color: LockKeysService.scrollLockOn ? Color.mTertiary : Qt.alpha(Color.mOnSurfaceVariant, 0.3)
+        color: LockKeysService.scrollLockOn ? NColor.mTertiary : Qt.alpha(NColor.mOnSurfaceVariant, 0.3)
       }
     }
 
@@ -126,17 +126,17 @@ Rectangle {
       NIcon {
         visible: root.showCaps
         icon: root.capsIcon
-        color: LockKeysService.capsLockOn ? Color.mTertiary : Qt.alpha(Color.mOnSurfaceVariant, 0.3)
+        color: LockKeysService.capsLockOn ? NColor.mTertiary : Qt.alpha(NColor.mOnSurfaceVariant, 0.3)
       }
       NIcon {
         visible: root.showNum
         icon: root.numIcon
-        color: LockKeysService.numLockOn ? Color.mTertiary : Qt.alpha(Color.mOnSurfaceVariant, 0.3)
+        color: LockKeysService.numLockOn ? NColor.mTertiary : Qt.alpha(NColor.mOnSurfaceVariant, 0.3)
       }
       NIcon {
         visible: root.showScroll
         icon: root.scrollIcon
-        color: LockKeysService.scrollLockOn ? Color.mTertiary : Qt.alpha(Color.mOnSurfaceVariant, 0.3)
+        color: LockKeysService.scrollLockOn ? NColor.mTertiary : Qt.alpha(NColor.mOnSurfaceVariant, 0.3)
       }
     }
   }

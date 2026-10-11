@@ -25,7 +25,7 @@ PopupWindow {
   implicitWidth: calculatedWidth
   implicitHeight: Math.min(600, flickable.contentHeight + (Style.marginS * 2))
   visible: false
-  color: Color.transparent
+  color: NColor.transparent
 
   NText {
     id: textMeasure
@@ -92,8 +92,8 @@ PopupWindow {
   Rectangle {
     id: menuBackground
     anchors.fill: parent
-    color: Color.mSurface
-    border.color: Color.mOutline
+    color: NColor.mSurface
+    border.color: NColor.mOutline
     border.width: Style.borderS
     radius: Style.radiusM
     opacity: root.visible ? 1.0 : 0.0
@@ -143,12 +143,12 @@ PopupWindow {
           Layout.preferredWidth: parent.width
           Layout.preferredHeight: itemVisible ? root.itemHeight : 0
           visible: itemVisible
-          color: Color.transparent
+          color: NColor.transparent
 
           Rectangle {
             id: innerRect
             anchors.fill: parent
-            color: mouseArea.containsMouse ? Color.mHover : Color.transparent
+            color: mouseArea.containsMouse ? NColor.mHover : NColor.transparent
             radius: Style.radiusS
             opacity: menuItem.itemEnabled ? 1.0 : 0.5
 
@@ -169,7 +169,7 @@ PopupWindow {
                 icon: menuItem.itemIcon
                 pointSize: Style.fontSizeS
                 applyUiScale: false
-                color: mouseArea.containsMouse ? Color.mOnHover : Color.mOnSurface
+                color: mouseArea.containsMouse ? NColor.mOnHover : NColor.mOnSurface
                 verticalAlignment: Text.AlignVCenter
 
                 Behavior on color {
@@ -182,7 +182,7 @@ PopupWindow {
               NText {
                 text: menuItem.itemText
                 pointSize: Style.fontSizeS
-                color: mouseArea.containsMouse ? Color.mOnHover : Color.mOnSurface
+                color: mouseArea.containsMouse ? NColor.mOnHover : NColor.mOnSurface
                 verticalAlignment: Text.AlignVCenter
                 Layout.fillWidth: true
 

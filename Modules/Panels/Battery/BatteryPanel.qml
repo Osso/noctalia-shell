@@ -179,7 +179,7 @@ SmartPanel {
 
           NIcon {
             pointSize: Style.fontSizeXXL
-            color: root.charging ? Color.mPrimary : Color.mOnSurface
+            color: root.charging ? NColor.mPrimary : NColor.mOnSurface
             icon: iconName
           }
 
@@ -191,7 +191,7 @@ SmartPanel {
               text: root.panelTitle
               pointSize: Style.fontSizeL
               font.weight: Style.fontWeightBold
-              color: Color.mOnSurface
+              color: NColor.mOnSurface
               Layout.fillWidth: true
               elide: Text.ElideRight
             }
@@ -199,7 +199,7 @@ SmartPanel {
             NText {
               text: timeText
               pointSize: Style.fontSizeS
-              color: Color.mOnSurfaceVariant
+              color: NColor.mOnSurfaceVariant
               wrapMode: Text.Wrap
               Layout.fillWidth: true
             }
@@ -233,7 +233,7 @@ SmartPanel {
             ColumnLayout {
               NText {
                 text: I18n.tr("battery.battery-level")
-                color: Color.mOnSurface
+                color: NColor.mOnSurface
                 pointSize: Style.fontSizeS
               }
 
@@ -241,7 +241,7 @@ SmartPanel {
                 Layout.fillWidth: true
                 height: Math.round(8 * Style.uiScaleRatio)
                 radius: Math.min(Style.radiusL, height / 2)
-                color: Color.mSurfaceVariant
+                color: NColor.mSurfaceVariant
 
                 Rectangle {
                   anchors.verticalCenter: parent.verticalCenter
@@ -251,14 +251,14 @@ SmartPanel {
                     var ratio = Math.max(0, Math.min(1, percent / 100));
                     return parent.width * ratio;
                   }
-                  color: Color.mPrimary
+                  color: NColor.mPrimary
                 }
               }
             }
 
             NText {
               text: percent >= 0 ? `${percent}%` : "--"
-              color: Color.mOnSurface
+              color: NColor.mOnSurface
               pointSize: Style.fontSizeS
               font.weight: Style.fontWeightBold
             }
@@ -273,7 +273,7 @@ SmartPanel {
               text: I18n.tr("battery.health", {
                               "percent": healthPercent
                             })
-              color: Color.mOnSurface
+              color: NColor.mOnSurface
               pointSize: Style.fontSizeS
               font.weight: Style.fontWeightMedium
               Layout.fillWidth: true

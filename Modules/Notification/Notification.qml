@@ -52,7 +52,7 @@ Variants {
       WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
       WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-      color: Color.transparent
+      color: NColor.transparent
 
       // Parse location setting
       readonly property string location: notificationSettings.location || "top_right"
@@ -235,9 +235,9 @@ Variants {
               anchors.fill: parent
               anchors.margins: Style.marginM
               radius: Style.radiusL
-              border.color: Qt.alpha(Color.mOutline, Settings.data.notifications.backgroundOpacity || 1.0)
+              border.color: Qt.alpha(NColor.mOutline, Settings.data.notifications.backgroundOpacity || 1.0)
               border.width: Style.borderS
-              color: Qt.alpha(Color.mSurface, Settings.data.notifications.backgroundOpacity || 1.0)
+              color: Qt.alpha(NColor.mSurface, Settings.data.notifications.backgroundOpacity || 1.0)
 
               // Progress bar
               Rectangle {
@@ -245,7 +245,7 @@ Variants {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 height: 2
-                color: Color.transparent
+                color: NColor.transparent
 
                 readonly property real availableWidth: parent.width - (2 * parent.radius)
 
@@ -256,7 +256,7 @@ Variants {
                   width: parent.availableWidth * progress
 
                   color: {
-                    var baseColor = urgency === 2 ? Color.mError : urgency === 0 ? Color.mOnSurface : Color.mPrimary;
+                    var baseColor = urgency === 2 ? NColor.mError : urgency === 0 ? NColor.mOnSurface : NColor.mPrimary;
                     return Qt.alpha(baseColor, Settings.data.notifications.backgroundOpacity || 1.0);
                   }
 
@@ -437,7 +437,7 @@ Variants {
                   Layout.alignment: Qt.AlignVCenter
                   radius: Math.min(Style.radiusL, Layout.preferredWidth / 2)
                   imagePath: originalImage || ""
-                  borderColor: Color.transparent
+                  borderColor: NColor.transparent
                   borderWidth: 0
                   fallbackIcon: "bell"
                   fallbackIconSize: 24
@@ -457,21 +457,21 @@ Variants {
                       Layout.preferredHeight: 6
                       Layout.alignment: Qt.AlignVCenter
                       radius: Style.radiusXS
-                      color: urgency === 2 ? Color.mError : urgency === 0 ? Color.mOnSurface : Color.mPrimary
+                      color: urgency === 2 ? NColor.mError : urgency === 0 ? NColor.mOnSurface : NColor.mPrimary
                     }
 
                     NText {
                       text: appName || "Unknown App"
                       pointSize: Style.fontSizeXS
                       font.weight: Style.fontWeightBold
-                      color: Color.mSecondary
+                      color: NColor.mSecondary
                     }
 
                     NText {
                       textFormat: Text.PlainText
                       text: " " + Time.formatRelativeTime(timestamp)
                       pointSize: Style.fontSizeXXS
-                      color: Color.mOnSurfaceVariant
+                      color: NColor.mOnSurfaceVariant
                       Layout.alignment: Qt.AlignBottom
                     }
 
@@ -484,7 +484,7 @@ Variants {
                     text: summary || I18n.tr("general.no-summary")
                     pointSize: Style.fontSizeM
                     font.weight: Style.fontWeightMedium
-                    color: Color.mOnSurface
+                    color: NColor.mOnSurface
                     textFormat: Text.PlainText
                     wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                     maximumLineCount: 3
@@ -497,7 +497,7 @@ Variants {
                   NText {
                     text: body || ""
                     pointSize: Style.fontSizeM
-                    color: Color.mOnSurface
+                    color: NColor.mOnSurface
                     textFormat: Text.PlainText
                     wrapMode: Text.WrapAtWordBoundaryOrAnywhere
 
@@ -542,9 +542,9 @@ Variants {
                           return actionText;
                         }
                         fontSize: Style.fontSizeS
-                        backgroundColor: Color.mPrimary
-                        textColor: hovered ? Color.mOnHover : Color.mOnPrimary
-                        hoverColor: Color.mHover
+                        backgroundColor: NColor.mPrimary
+                        textColor: hovered ? NColor.mOnHover : NColor.mOnPrimary
+                        hoverColor: NColor.mHover
                         outlined: false
                         implicitHeight: 24
                         onClicked: {

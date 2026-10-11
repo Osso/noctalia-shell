@@ -19,10 +19,10 @@ NIconButton {
   density: Settings.data.bar.density
   baseSize: Style.capsuleHeight
   applyUiScale: false
-  colorBg: ScreenRecorderService.isRecording ? Color.mPrimary : Style.capsuleColor
-  colorFg: ScreenRecorderService.isRecording ? Color.mOnPrimary : Color.mOnSurface
-  colorBorder: Color.transparent
-  colorBorderHover: Color.transparent
+  colorBg: ScreenRecorderService.isRecording ? NColor.mPrimary : Style.capsuleColor
+  colorFg: ScreenRecorderService.isRecording ? NColor.mOnPrimary : NColor.mOnSurface
+  colorBorder: NColor.transparent
+  colorBorderHover: NColor.transparent
 
   function handleClick() {
     if (!ScreenRecorderService.isAvailable) {

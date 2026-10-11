@@ -129,7 +129,7 @@ ColumnLayout {
                       "coordinates": LocationService.displayCoordinates
                     })
       pointSize: Style.fontSizeS
-      color: Color.mOnSurfaceVariant
+      color: NColor.mOnSurfaceVariant
       verticalAlignment: Text.AlignVCenter
       horizontalAlignment: Text.AlignRight
       Layout.alignment: Qt.AlignBottom

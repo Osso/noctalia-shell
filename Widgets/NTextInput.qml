@@ -11,8 +11,8 @@ ColumnLayout {
   property string inputIconName: ""
   property bool readOnly: false
   property bool enabled: true
-  property color labelColor: Color.mOnSurface
-  property color descriptionColor: Color.mOnSurfaceVariant
+  property color labelColor: NColor.mOnSurface
+  property color descriptionColor: NColor.mOnSurfaceVariant
   property string fontFamily: Settings.data.ui.fontDefault
   property real fontSize: Style.fontSizeS
   property int fontWeight: Style.fontWeightRegular
@@ -51,8 +51,8 @@ ColumnLayout {
       id: frame
 
       radius: Style.radiusM
-      color: Color.mSurface
-      border.color: input.activeFocus ? Color.mSecondary : Color.mOutline
+      color: NColor.mSurface
+      border.color: input.activeFocus ? NColor.mSecondary : NColor.mOutline
       border.width: Style.borderS
 
       Behavior on border.color {
@@ -136,8 +136,8 @@ ColumnLayout {
             echoMode: TextInput.Normal
             readOnly: root.readOnly
             enabled: root.enabled
-            color: Color.mOnSurface
-            placeholderTextColor: Qt.alpha(Color.mOnSurfaceVariant, 0.6)
+            color: NColor.mOnSurface
+            placeholderTextColor: Qt.alpha(NColor.mOnSurfaceVariant, 0.6)
 
             selectByMouse: true
 
@@ -202,10 +202,10 @@ ColumnLayout {
             Layout.alignment: Qt.AlignVCenter
             border.width: 0
 
-            colorBg: Color.transparent
-            colorBgHover: Color.transparent
-            colorFg: Color.mOnSurface
-            colorFgHover: Color.mError
+            colorBg: NColor.transparent
+            colorBgHover: NColor.transparent
+            colorFg: NColor.mOnSurface
+            colorFgHover: NColor.mError
 
             visible: input.text.length > 0 && !root.readOnly
             enabled: input.text.length > 0 && !root.readOnly

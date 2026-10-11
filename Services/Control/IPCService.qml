@@ -464,7 +464,7 @@ Item {
     sourceComponent: PanelWindow {
       implicitWidth: 0
       implicitHeight: 0
-      color: Color.transparent
+      color: NColor.transparent
       WlrLayershell.exclusionMode: ExclusionMode.Ignore
       mask: Region {}
 

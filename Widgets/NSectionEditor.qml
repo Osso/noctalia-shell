@@ -29,7 +29,7 @@ NBox {
   signal dragPotentialStarted
   signal dragPotentialEnded
 
-  color: Color.mSurface
+  color: NColor.mSurface
   Layout.fillWidth: true
   Layout.minimumHeight: {
     // header + minimal content area
@@ -61,17 +61,17 @@ NBox {
                                                              }, 0);
     switch (totalSum % 6) {
     case 0:
-      return [Color.mPrimary, Color.mOnPrimary];
+      return [NColor.mPrimary, NColor.mOnPrimary];
     case 1:
-      return [Color.mSecondary, Color.mOnSecondary];
+      return [NColor.mSecondary, NColor.mOnSecondary];
     case 2:
-      return [Color.mTertiary, Color.mOnTertiary];
+      return [NColor.mTertiary, NColor.mOnTertiary];
     case 3:
-      return [Color.mError, Color.mOnError];
+      return [NColor.mError, NColor.mOnError];
     case 4:
-      return [Color.mOnSurface, Color.mSurface];
+      return [NColor.mOnSurface, NColor.mSurface];
     case 5:
-      return [Color.mOnSurfaceVariant, Color.mSurfaceVariant];
+      return [NColor.mOnSurfaceVariant, NColor.mSurfaceVariant];
     }
   }
 
@@ -87,7 +87,7 @@ NBox {
         text: sectionName
         pointSize: Style.fontSizeL
         font.weight: Style.fontWeightBold
-        color: Color.mOnSurface
+        color: NColor.mOnSurface
         Layout.alignment: Qt.AlignVCenter
       }
 
@@ -96,7 +96,7 @@ NBox {
         visible: root.maxWidgets >= 0
         text: root.maxWidgets === 0 ? "(LOCKED)" : "(" + widgetModel.length + "/" + root.maxWidgets + ")"
         pointSize: Style.fontSizeS
-        color: root.isAtMaxCapacity ? Color.mError : Color.mOnSurfaceVariant
+        color: root.isAtMaxCapacity ? NColor.mError : NColor.mOnSurfaceVariant
         Layout.alignment: Qt.AlignVCenter
         Layout.leftMargin: Style.marginXS
       }
@@ -133,10 +133,10 @@ NBox {
 
       NIconButton {
         icon: "add"
-        colorBg: Color.mPrimary
-        colorFg: Color.mOnPrimary
-        colorBgHover: Color.mSecondary
-        colorFgHover: Color.mOnSecondary
+        colorBg: NColor.mPrimary
+        colorFg: NColor.mOnPrimary
+        colorBgHover: NColor.mSecondary
+        colorFgHover: NColor.mOnSecondary
         enabled: comboBox.currentKey !== "" && !root.isAtMaxCapacity
         tooltipText: root.isAtMaxCapacity ? I18n.tr("tooltips.max-widgets-reached") : I18n.tr("tooltips.add-widget")
         Layout.alignment: Qt.AlignVCenter
@@ -177,7 +177,7 @@ NBox {
             height: Style.baseWidgetSize * 1.15 * Style.uiScaleRatio
             radius: Style.radiusL
             color: root.getWidgetColor(modelData)[0]
-            border.color: Color.mOutline
+            border.color: NColor.mOutline
             border.width: Style.borderS
 
             // Store the widget index for drag operations
@@ -273,11 +273,11 @@ NBox {
                     icon: "settings"
                     tooltipText: I18n.tr("tooltips.widget-settings")
                     baseSize: miniButtonSize
-                    colorBorder: Qt.alpha(Color.mOutline, Style.opacityLight)
-                    colorBg: Color.mOnSurface
-                    colorFg: Color.mOnPrimary
-                    colorBgHover: Qt.alpha(Color.mOnPrimary, Style.opacityLight)
-                    colorFgHover: Color.mOnPrimary
+                    colorBorder: Qt.alpha(NColor.mOutline, Style.opacityLight)
+                    colorBg: NColor.mOnSurface
+                    colorFg: NColor.mOnPrimary
+                    colorBgHover: Qt.alpha(NColor.mOnPrimary, Style.opacityLight)
+                    colorFgHover: NColor.mOnPrimary
                     onClicked: {
                       var component = Qt.createComponent(Qt.resolvedUrl(root.settingsDialogComponent));
                       function instantiateAndOpen() {
@@ -315,11 +315,11 @@ NBox {
                   icon: "close"
                   tooltipText: I18n.tr("tooltips.remove-widget")
                   baseSize: miniButtonSize
-                  colorBorder: Qt.alpha(Color.mOutline, Style.opacityLight)
-                  colorBg: Color.mOnSurface
-                  colorFg: Color.mOnPrimary
-                  colorBgHover: Qt.alpha(Color.mOnPrimary, Style.opacityLight)
-                  colorFgHover: Color.mOnPrimary
+                  colorBorder: Qt.alpha(NColor.mOutline, Style.opacityLight)
+                  colorBg: NColor.mOnSurface
+                  colorFg: NColor.mOnPrimary
+                  colorBgHover: Qt.alpha(NColor.mOnPrimary, Style.opacityLight)
+                  colorFgHover: NColor.mOnPrimary
                   onClicked: {
                     removeWidget(sectionId, index);
                   }
@@ -336,8 +336,8 @@ NBox {
         width: 0
         height: Style.baseWidgetSize * 1.15
         radius: Style.radiusL
-        color: Color.transparent
-        border.color: Color.mOutline
+        color: NColor.transparent
+        border.color: NColor.mOutline
         border.width: Style.borderS
         opacity: 0.7
         visible: flowDragArea.dragStarted
@@ -348,7 +348,7 @@ NBox {
           id: ghostText
           anchors.centerIn: parent
           pointSize: Style.fontSizeS
-          color: Color.mOnPrimary
+          color: NColor.mOnPrimary
         }
       }
 
@@ -358,7 +358,7 @@ NBox {
         width: 3
         height: Style.baseWidgetSize * 1.15
         radius: Style.radiusXXS
-        color: Color.mPrimary
+        color: NColor.mPrimary
         opacity: 0
         visible: opacity > 0
         z: 1999

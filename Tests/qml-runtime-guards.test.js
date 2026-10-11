@@ -34,8 +34,8 @@ function testTaskbarGroupedUrgentBadgeHasCooldown() {
   assert.match(source, /id:\s*badgeUrgencyCooldown/, "TaskbarGrouped badge must define a cooldown timer");
   assert.match(source, /interval:\s*5000/, "TaskbarGrouped badge cooldown must be 5 seconds");
   assert.match(source, /root\.setDisplayedUrgency\(workspaceModel,\s*container\.badgeUrgent\)/, "TaskbarGrouped badge cooldown must settle persistent urgency state");
-  assert.doesNotMatch(source, /if \(workspaceModel\.isUrgent\)\s+return Color\.mError/, "TaskbarGrouped badge color must use the cooled urgent state");
-  assert.doesNotMatch(source, /if \(workspaceModel\.isUrgent\)\s+return Color\.mOnError/, "TaskbarGrouped badge text color must use the cooled urgent state");
+  assert.doesNotMatch(source, /if \(workspaceModel\.isUrgent\)\s+return NColor\.mError/, "TaskbarGrouped badge color must use the cooled urgent state");
+  assert.doesNotMatch(source, /if \(workspaceModel\.isUrgent\)\s+return NColor\.mOnError/, "TaskbarGrouped badge text color must use the cooled urgent state");
 }
 
 function testWorkspaceUrgentBadgeHasCooldown() {
@@ -49,8 +49,8 @@ function testWorkspaceUrgentBadgeHasCooldown() {
   assert.match(source, /interval:\s*5000/, "Workspace badge cooldown must be 5 seconds");
   assert.match(source, /root\.setDisplayedUrgency\(model,\s*workspacePillContainer\.urgent\)/, "Workspace horizontal badge cooldown must settle persistent urgency state");
   assert.match(source, /root\.setDisplayedUrgency\(model,\s*workspacePillContainerVertical\.urgent\)/, "Workspace vertical badge cooldown must settle persistent urgency state");
-  assert.doesNotMatch(source, /if \(model\.isUrgent\)\s+return Color\.mError/, "Workspace badge color must use the cooled urgent state");
-  assert.doesNotMatch(source, /if \(model\.isUrgent\)\s+return Color\.mOnError/, "Workspace badge text color must use the cooled urgent state");
+  assert.doesNotMatch(source, /if \(model\.isUrgent\)\s+return NColor\.mError/, "Workspace badge color must use the cooled urgent state");
+  assert.doesNotMatch(source, /if \(model\.isUrgent\)\s+return NColor\.mOnError/, "Workspace badge text color must use the cooled urgent state");
 }
 
 function testFocusedWorkspaceBurstOnlyRunsOnFocusChange() {

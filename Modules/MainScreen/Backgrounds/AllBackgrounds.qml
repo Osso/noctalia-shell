@@ -22,7 +22,7 @@ Item {
   // Reference to MainScreen (for panel access)
   required property var windowRoot
 
-  readonly property color panelBackgroundColor: Qt.alpha(Color.mSurface, Settings.data.ui.panelBackgroundOpacity)
+  readonly property color panelBackgroundColor: Qt.alpha(NColor.mSurface, Settings.data.ui.panelBackgroundOpacity)
 
   anchors.fill: parent
 
@@ -56,7 +56,7 @@ Item {
         bar: root.bar
         shapeContainer: backgroundsShape
         windowRoot: root.windowRoot
-        backgroundColor: Qt.alpha(Color.mSurface, Settings.data.bar.backgroundOpacity)
+        backgroundColor: Qt.alpha(NColor.mSurface, Settings.data.bar.backgroundOpacity)
       }
 
       /**

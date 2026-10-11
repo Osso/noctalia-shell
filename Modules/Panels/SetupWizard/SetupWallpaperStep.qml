@@ -33,13 +33,13 @@ ColumnLayout {
         width: 40
         height: 40
         radius: Style.radiusL
-        color: Color.mSurfaceVariant
+        color: NColor.mSurfaceVariant
         opacity: 0.6
 
         NIcon {
           icon: "image"
           pointSize: Style.fontSizeL
-          color: Color.mPrimary
+          color: NColor.mPrimary
           anchors.centerIn: parent
         }
       }
@@ -51,13 +51,13 @@ ColumnLayout {
           text: I18n.tr("setup.wallpaper.header")
           pointSize: Style.fontSizeXL
           font.weight: Style.fontWeightBold
-          color: Color.mPrimary
+          color: NColor.mPrimary
         }
 
         NText {
           text: I18n.tr("setup.wallpaper.subheader")
           pointSize: Style.fontSizeM
-          color: Color.mOnSurfaceVariant
+          color: NColor.mOnSurfaceVariant
         }
       }
     }
@@ -68,7 +68,7 @@ ColumnLayout {
     Layout.fillWidth: true
     Layout.fillHeight: true
     Layout.minimumHeight: 180
-    color: Color.mSurfaceVariant
+    color: NColor.mSurfaceVariant
     radius: Style.radiusL
 
     // Image with rounded corners
@@ -77,7 +77,7 @@ ColumnLayout {
       visible: selectedWallpaper !== ""
       imagePath: selectedWallpaper !== "" ? "file://" + selectedWallpaper : ""
       radius: Style.radiusL
-      borderColor: selectedWallpaper !== "" ? Color.mPrimary : Color.mOutline
+      borderColor: selectedWallpaper !== "" ? NColor.mPrimary : NColor.mOutline
       borderWidth: selectedWallpaper !== "" ? 2 : 1
     }
 
@@ -91,12 +91,12 @@ ColumnLayout {
         width: 64
         height: 64
         radius: width / 2
-        color: Color.mPrimary
+        color: NColor.mPrimary
 
         NIcon {
           icon: "sparkles"
           pointSize: Style.fontSizeXXL
-          color: Color.mOnPrimary
+          color: NColor.mOnPrimary
           anchors.centerIn: parent
         }
       }
@@ -104,7 +104,7 @@ ColumnLayout {
       NText {
         text: I18n.tr("setup.wallpaper.select-prompt")
         pointSize: Style.fontSizeL
-        color: Color.mOnSurfaceVariant
+        color: NColor.mOnSurfaceVariant
         Layout.alignment: Qt.AlignHCenter
         font.weight: Style.fontWeightMedium
       }
@@ -171,8 +171,8 @@ ColumnLayout {
             Rectangle {
               anchors.fill: parent
               anchors.margins: imageMargin
-              color: Color.transparent
-              border.color: selectedWallpaper === modelData ? Color.mPrimary : Color.mOutline
+              color: NColor.transparent
+              border.color: selectedWallpaper === modelData ? NColor.mPrimary : NColor.mOutline
               border.width: borderWidth
 
               // Cached thumbnail
@@ -187,13 +187,13 @@ ColumnLayout {
             // Loading state
             Rectangle {
               anchors.fill: parent
-              color: Color.mSurfaceVariant
+              color: NColor.mSurfaceVariant
               visible: thumbCached.status === Image.Loading
 
               NIcon {
                 icon: "image"
                 pointSize: Style.fontSizeL
-                color: Color.mOnSurfaceVariant
+                color: NColor.mOnSurfaceVariant
                 anchors.centerIn: parent
               }
             }
@@ -201,14 +201,14 @@ ColumnLayout {
             // Error state
             Rectangle {
               anchors.fill: parent
-              color: Color.mSurfaceVariant
+              color: NColor.mSurfaceVariant
               radius: Style.radiusM
               visible: thumbCached.status === Image.Error
 
               NIcon {
                 icon: "image"
                 pointSize: Style.fontSizeL
-                color: Color.mOnSurfaceVariant
+                color: NColor.mOnSurfaceVariant
                 anchors.centerIn: parent
               }
             }
@@ -222,7 +222,7 @@ ColumnLayout {
 
             Rectangle {
               anchors.fill: parent
-              color: Color.mPrimary
+              color: NColor.mPrimary
               opacity: hoverHandler.hovered ? 0.1 : 0
               Behavior on opacity {
                 NumberAnimation {
@@ -239,12 +239,12 @@ ColumnLayout {
               width: 24
               height: 24
               radius: width / 2
-              color: Color.mPrimary
+              color: NColor.mPrimary
 
               NIcon {
                 icon: "check"
                 pointSize: Style.fontSizeS
-                color: Color.mOnPrimary
+                color: NColor.mOnPrimary
                 anchors.centerIn: parent
               }
             }
@@ -269,7 +269,7 @@ ColumnLayout {
   Rectangle {
     Layout.fillWidth: true
     Layout.preferredHeight: 80
-    color: Color.mSurfaceVariant
+    color: NColor.mSurfaceVariant
     radius: Style.radiusM
     opacity: 0.4
     visible: filteredWallpapers.length === 0
@@ -282,7 +282,7 @@ ColumnLayout {
       NIcon {
         icon: "folder-open"
         pointSize: Style.fontSizeL
-        color: Color.mOnSurfaceVariant
+        color: NColor.mOnSurfaceVariant
       }
 
       ColumnLayout {
@@ -292,14 +292,14 @@ ColumnLayout {
           text: filteredWallpapers.length === 0 && selectedDirectory !== "" ? I18n.tr("setup.wallpaper.none-in-dir") : I18n.tr("setup.wallpaper.no-dir")
           pointSize: Style.fontSizeM
           font.weight: Style.fontWeightBold
-          color: Color.mOnSurfaceVariant
+          color: NColor.mOnSurfaceVariant
         }
         NText {
           text: selectedDirectory !== "" ? I18n.tr("setup.wallpaper.no-valid", {
                                                      "dir": selectedDirectory
                                                    }) : I18n.tr("setup.wallpaper.choose-dir")
           pointSize: Style.fontSizeS
-          color: Color.mOnSurfaceVariant
+          color: NColor.mOnSurfaceVariant
           wrapMode: Text.WordWrap
           Layout.fillWidth: true
           opacity: 0.8

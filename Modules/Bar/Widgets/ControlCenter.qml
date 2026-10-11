@@ -46,34 +46,34 @@ NIconButton {
 
   readonly property color iconColor: {
     if (!isColorizing)
-      return Color.mOnSurface;
+      return NColor.mOnSurface;
     switch (colorizeSystemIcon) {
     case "primary":
-      return Color.mPrimary;
+      return NColor.mPrimary;
     case "secondary":
-      return Color.mSecondary;
+      return NColor.mSecondary;
     case "tertiary":
-      return Color.mTertiary;
+      return NColor.mTertiary;
     case "error":
-      return Color.mError;
+      return NColor.mError;
     default:
-      return Color.mOnSurface;
+      return NColor.mOnSurface;
     }
   }
   readonly property color iconHoverColor: {
     if (!isColorizing)
-      return Color.mOnHover;
+      return NColor.mOnHover;
     switch (colorizeSystemIcon) {
     case "primary":
-      return Qt.darker(Color.mPrimary, 1.2);
+      return Qt.darker(NColor.mPrimary, 1.2);
     case "secondary":
-      return Qt.darker(Color.mSecondary, 1.2);
+      return Qt.darker(NColor.mSecondary, 1.2);
     case "tertiary":
-      return Qt.darker(Color.mTertiary, 1.2);
+      return Qt.darker(NColor.mTertiary, 1.2);
     case "error":
-      return Qt.darker(Color.mError, 1.2);
+      return Qt.darker(NColor.mError, 1.2);
     default:
-      return Color.mOnHover;
+      return NColor.mOnHover;
     }
   }
 
@@ -87,10 +87,10 @@ NIconButton {
   density: Settings.data.bar.density
   colorBg: Style.capsuleColor
   colorFg: iconColor
-  colorBgHover: useDistroLogo ? Color.mSurfaceVariant : Color.mHover
+  colorBgHover: useDistroLogo ? NColor.mSurfaceVariant : NColor.mHover
   colorFgHover: iconHoverColor
-  colorBorder: Color.transparent
-  colorBorderHover: useDistroLogo ? Color.mHover : Color.transparent
+  colorBorder: NColor.transparent
+  colorBorderHover: useDistroLogo ? NColor.mHover : NColor.transparent
 
   NPopupContextMenu {
     id: contextMenu
@@ -174,7 +174,7 @@ NIconButton {
     asynchronous: true
     layer.enabled: isColorizing && (useDistroLogo || customIconPath !== "")
     layer.effect: ShaderEffect {
-      property color targetColor: isColorizing ? iconColor : (Settings.data.colorSchemes.darkMode ? Color.mOnSurface : Color.mSurfaceVariant)
+      property color targetColor: isColorizing ? iconColor : (Settings.data.colorSchemes.darkMode ? NColor.mOnSurface : NColor.mSurfaceVariant)
       property real colorizeMode: 2.0
 
       fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/appicon_colorize.frag.qsb")

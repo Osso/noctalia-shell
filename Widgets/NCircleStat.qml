@@ -16,14 +16,14 @@ Rectangle {
   // outer width/height footprint of the component
   property real contentScale: 1.0
 
-  property color fillColor: Color.mPrimary
-  property color textColor: Color.mOnSurface
+  property color fillColor: NColor.mPrimary
+  property color textColor: NColor.mOnSurface
 
   width: 68
   height: 92
-  color: flat ? Color.transparent : Color.mSurface
+  color: flat ? NColor.transparent : NColor.mSurface
   radius: Style.radiusS
-  border.color: flat ? Color.transparent : Color.mSurfaceVariant
+  border.color: flat ? NColor.transparent : NColor.mSurfaceVariant
   border.width: flat ? 0 : Style.borderS
 
   // Animated value for smooth transitions - reduces repaint frequency
@@ -95,7 +95,7 @@ Rectangle {
           ctx.lineWidth = 6 * contentScale;
 
           // Track uses surface for stronger contrast
-          ctx.strokeStyle = Color.mSurface;
+          ctx.strokeStyle = NColor.mSurface;
           ctx.beginPath();
           ctx.arc(cx, cy, r, start, endBg);
           ctx.stroke();

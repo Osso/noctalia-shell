@@ -50,7 +50,7 @@ PopupWindow {
   // Use the content height of the Flickable for implicit height
   implicitHeight: Math.min(maxMenuHeight, flickable.contentHeight + (Style.marginS * 2))
   visible: false
-  color: Color.transparent
+  color: NColor.transparent
   anchor.item: anchorItem
   anchor.rect.x: anchorX
   anchor.rect.y: {
@@ -111,8 +111,8 @@ PopupWindow {
 
   Rectangle {
     anchors.fill: parent
-    color: Color.mSurface
-    border.color: Color.mOutline
+    color: NColor.mSurface
+    border.color: NColor.mOutline
     border.width: Math.max(1, Style.borderS)
     radius: Style.radiusM
 
@@ -174,7 +174,7 @@ PopupWindow {
             }
           }
 
-          color: Color.transparent
+          color: NColor.transparent
           property TrayMenu subMenu: null
 
           NDivider {
@@ -186,7 +186,7 @@ PopupWindow {
           Rectangle {
             id: innerRect
             anchors.fill: parent
-            color: mouseArea.containsMouse ? Color.mHover : Color.transparent
+            color: mouseArea.containsMouse ? NColor.mHover : NColor.transparent
             radius: Style.radiusS
             visible: !entry.isSeparator
 
@@ -199,7 +199,7 @@ PopupWindow {
               NText {
                 id: text
                 Layout.fillWidth: true
-                color: entry.isEnabled ? (mouseArea.containsMouse ? Color.mOnHover : Color.mOnSurface) : Color.mOnSurfaceVariant
+                color: entry.isEnabled ? (mouseArea.containsMouse ? NColor.mOnHover : NColor.mOnSurface) : NColor.mOnSurfaceVariant
                 text: entry.menuText
                 pointSize: Style.fontSizeS
                 verticalAlignment: Text.AlignVCenter
@@ -220,7 +220,7 @@ PopupWindow {
                 applyUiScale: false
                 verticalAlignment: Text.AlignVCenter
                 visible: entry.hasChildren
-                color: (mouseArea.containsMouse ? Color.mOnTertiary : Color.mOnSurface)
+                color: (mouseArea.containsMouse ? NColor.mOnTertiary : NColor.mOnSurface)
               }
             }
 
@@ -314,9 +314,9 @@ PopupWindow {
       Rectangle {
         Layout.preferredWidth: parent.width
         Layout.preferredHeight: 28
-        color: pinUnpinMouseArea.containsMouse ? Qt.alpha(Color.mPrimary, 0.2) : Qt.alpha(Color.mPrimary, 0.08)
+        color: pinUnpinMouseArea.containsMouse ? Qt.alpha(NColor.mPrimary, 0.2) : Qt.alpha(NColor.mPrimary, 0.08)
         radius: Style.radiusS
-        border.color: Qt.alpha(Color.mPrimary, pinUnpinMouseArea.containsMouse ? 0.4 : 0.2)
+        border.color: Qt.alpha(NColor.mPrimary, pinUnpinMouseArea.containsMouse ? 0.4 : 0.2)
         border.width: Style.borderS
 
         RowLayout {
@@ -330,12 +330,12 @@ PopupWindow {
             pointSize: Style.fontSizeS
             applyUiScale: false
             verticalAlignment: Text.AlignVCenter
-            color: Color.mPrimary
+            color: NColor.mPrimary
           }
 
           NText {
             Layout.fillWidth: true
-            color: Color.mPrimary
+            color: NColor.mPrimary
             text: root.isPinned ? I18n.tr("settings.bar.tray.unpin-application") : I18n.tr("settings.bar.tray.pin-application")
             pointSize: Style.fontSizeS
             font.weight: Font.Medium

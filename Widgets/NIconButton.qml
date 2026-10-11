@@ -18,12 +18,12 @@ Rectangle {
   property bool allowClickWhenDisabled: false
   property bool hovering: false
 
-  property color colorBg: Color.mSurfaceVariant
-  property color colorFg: Color.mPrimary
-  property color colorBgHover: Color.mHover
-  property color colorFgHover: Color.mOnHover
-  property color colorBorder: Color.mOutline
-  property color colorBorderHover: Color.mOutline
+  property color colorBg: NColor.mSurfaceVariant
+  property color colorFg: NColor.mPrimary
+  property color colorBgHover: NColor.mHover
+  property color colorFgHover: NColor.mOnHover
+  property color colorBorder: NColor.mOutline
+  property color colorBorderHover: NColor.mOutline
 
   signal entered
   signal exited

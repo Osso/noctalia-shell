@@ -90,7 +90,7 @@ SmartPanel {
                     width: 120
                     height: 120
                     radius: width / 2
-                    color: Color.mPrimary
+                    color: NColor.mPrimary
                     opacity: 0.08
                     scale: 1.3
                   }
@@ -105,16 +105,16 @@ SmartPanel {
 
                     Rectangle {
                       anchors.fill: parent
-                      color: Color.mSurfaceVariant
+                      color: NColor.mSurfaceVariant
                       radius: width / 2
-                      border.color: Color.mOutline
+                      border.color: NColor.mOutline
                       border.width: Style.borderM
                       visible: parent.status === Image.Error
 
                       NIcon {
                         icon: "sparkles"
                         pointSize: Style.fontSizeXXL * 1.5
-                        color: Color.mPrimary
+                        color: NColor.mPrimary
                         anchors.centerIn: parent
                       }
                     }
@@ -149,7 +149,7 @@ SmartPanel {
                     text: "Welcome to Noctalia! ✨"
                     pointSize: Style.fontSizeXXL * 1.4
                     font.weight: Style.fontWeightBold
-                    color: Color.mOnSurface
+                    color: NColor.mOnSurface
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
                   }
@@ -157,7 +157,7 @@ SmartPanel {
                   NText {
                     text: "Let's make your desktop uniquely yours"
                     pointSize: Style.fontSizeL
-                    color: Color.mOnSurfaceVariant
+                    color: NColor.mOnSurfaceVariant
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.WordWrap
@@ -168,7 +168,7 @@ SmartPanel {
                     Layout.fillWidth: true
                     Layout.topMargin: Style.marginL
                     Layout.preferredHeight: childrenRect.height + Style.marginM * 2
-                    color: Color.mSurfaceVariant
+                    color: NColor.mSurfaceVariant
                     radius: Style.radiusL
                     opacity: 0.4
 
@@ -177,7 +177,7 @@ SmartPanel {
                       width: parent.width - Style.marginL * 2
                       text: I18n.tr("setup.welcome.note")
                       pointSize: Style.fontSizeM
-                      color: Color.mOnSurfaceVariant
+                      color: NColor.mOnSurfaceVariant
                       horizontalAlignment: Text.AlignHCenter
                       wrapMode: Text.WordWrap
                     }
@@ -232,7 +232,7 @@ SmartPanel {
         Rectangle {
           Layout.fillWidth: true
           Layout.preferredHeight: 1
-          color: Color.mOutline
+          color: NColor.mOutline
           opacity: 0.2
         }
 
@@ -280,14 +280,14 @@ SmartPanel {
                   width: 24
                   height: 24
                   radius: width / 2
-                  color: index <= currentStep ? Color.mPrimary : Color.mSurfaceVariant
-                  border.color: index === currentStep ? Color.mPrimary : "transparent"
+                  color: index <= currentStep ? NColor.mPrimary : NColor.mSurfaceVariant
+                  border.color: index === currentStep ? NColor.mPrimary : "transparent"
                   border.width: index === currentStep ? 2 : 0
 
                   NIcon {
                     icon: stepIcon
                     pointSize: Style.fontSizeS
-                    color: index <= currentStep ? Color.mOnPrimary : Color.mOnSurfaceVariant
+                    color: index <= currentStep ? NColor.mOnPrimary : NColor.mOnSurfaceVariant
                     anchors.centerIn: parent
                   }
 
@@ -301,7 +301,7 @@ SmartPanel {
                 NText {
                   text: stepLabel
                   pointSize: Style.fontSizeS
-                  color: index <= currentStep ? Color.mPrimary : Color.mOnSurfaceVariant
+                  color: index <= currentStep ? NColor.mPrimary : NColor.mOnSurfaceVariant
                   font.weight: index === currentStep ? Style.fontWeightBold : Style.fontWeightRegular
 
                   Behavior on color {
@@ -316,7 +316,7 @@ SmartPanel {
                   width: 40
                   height: 2
                   radius: 1
-                  color: index < currentStep ? Color.mPrimary : Color.mSurfaceVariant
+                  color: index < currentStep ? NColor.mPrimary : NColor.mSurfaceVariant
                   visible: index < totalSteps - 1
 
                   Behavior on color {

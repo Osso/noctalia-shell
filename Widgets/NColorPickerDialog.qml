@@ -10,7 +10,7 @@ import qs.Widgets
 Popup {
   id: root
 
-  property color selectedColor: Color.black
+  property color selectedColor: NColor.black
 
   enum EditMode {
     R,
@@ -48,9 +48,9 @@ Popup {
   modal: true
 
   background: Rectangle {
-    color: Color.mSurface
+    color: NColor.mSurface
     radius: Style.radiusS
-    border.color: Color.mPrimary
+    border.color: NColor.mPrimary
     border.width: Style.borderM
   }
 
@@ -75,14 +75,14 @@ Popup {
           NIcon {
             icon: "color-picker"
             pointSize: Style.fontSizeXXL
-            color: Color.mPrimary
+            color: NColor.mPrimary
           }
 
           NText {
             text: I18n.tr("widgets.color-picker.title")
             pointSize: Style.fontSizeXL
             font.weight: Style.fontWeightBold
-            color: Color.mPrimary
+            color: NColor.mPrimary
           }
         }
 
@@ -102,7 +102,7 @@ Popup {
         Layout.preferredHeight: 80
         radius: Style.radiusS
         color: root.selectedColor
-        border.color: Color.mOutline
+        border.color: NColor.mOutline
         border.width: Style.borderS
 
         ColumnLayout {
@@ -118,7 +118,7 @@ Popup {
             family: Settings.data.ui.fontFixed
             pointSize: Style.fontSizeL
             font.weight: Font.Bold
-            color: root.selectedColor.r + root.selectedColor.g + root.selectedColor.b > 1.5 ? Color.black : Color.white
+            color: root.selectedColor.r + root.selectedColor.g + root.selectedColor.b > 1.5 ? NColor.black : NColor.white
             Layout.alignment: Qt.AlignHCenter
           }
 
@@ -126,7 +126,7 @@ Popup {
             text: "RGB(" + Math.round(root.selectedColor.r * 255) + ", " + Math.round(root.selectedColor.g * 255) + ", " + Math.round(root.selectedColor.b * 255) + ")"
             family: Settings.data.ui.fontFixed
             pointSize: Style.fontSizeM
-            color: root.selectedColor.r + root.selectedColor.g + root.selectedColor.b > 1.5 ? Color.black : Color.white
+            color: root.selectedColor.r + root.selectedColor.g + root.selectedColor.b > 1.5 ? NColor.black : NColor.white
             Layout.alignment: Qt.AlignHCenter
           }
 
@@ -476,7 +476,7 @@ Popup {
                 Layout.alignment: Qt.AlignTop
 
                 radius: 0
-                border.color: Color.mOutline
+                border.color: NColor.mOutline
                 border.width: Style.borderS
                 clip: true
 
@@ -599,7 +599,7 @@ Popup {
                 Rectangle {
                   anchors.fill: parent
                   color: "transparent"
-                  border.color: Color.mOutline
+                  border.color: NColor.mOutline
                   border.width: Style.borderS
                   antialiasing: false
                 }
@@ -631,31 +631,31 @@ Popup {
                 model: [
                   {
                     name: "mPrimary",
-                    color: Color.mPrimary
+                    color: NColor.mPrimary
                   },
                   {
                     name: "mSecondary",
-                    color: Color.mSecondary
+                    color: NColor.mSecondary
                   },
                   {
                     name: "mTertiary",
-                    color: Color.mTertiary
+                    color: NColor.mTertiary
                   },
                   {
                     name: "mError",
-                    color: Color.mError
+                    color: NColor.mError
                   },
                   {
                     name: "mSurface",
-                    color: Color.mSurface
+                    color: NColor.mSurface
                   },
                   {
                     name: "mSurfaceVariant",
-                    color: Color.mSurfaceVariant
+                    color: NColor.mSurfaceVariant
                   },
                   {
                     name: "mOutline",
-                    color: Color.mOutline
+                    color: NColor.mOutline
                   }
                 ]
 
@@ -663,13 +663,13 @@ Popup {
                   required property var modelData
                   required property int index
                   readonly property string swatchName: modelData ? (modelData.name || "") : ""
-                  readonly property color swatchColor: modelData ? (modelData.color || Color.transparent) : Color.transparent
+                  readonly property color swatchColor: modelData ? (modelData.color || NColor.transparent) : NColor.transparent
 
                   width: 24
                   height: 24
                   radius: Style.radiusXXS
                   color: swatchColor
-                  border.color: root.selectedColor.toString() === swatchColor.toString() ? Color.mPrimary : Color.mOutline
+                  border.color: root.selectedColor.toString() === swatchColor.toString() ? NColor.mPrimary : NColor.mOutline
                   border.width: Math.max(1, root.selectedColor.toString() === swatchColor.toString() ? Style.borderM : Style.borderS)
 
                   MouseArea {
@@ -705,13 +705,13 @@ Popup {
                   required property var modelData
                   required property int index
                   readonly property string swatchName: modelData ? (modelData.name || "") : ""
-                  readonly property color swatchColor: modelData ? (modelData.color || Color.transparent) : Color.transparent
+                  readonly property color swatchColor: modelData ? (modelData.color || NColor.transparent) : NColor.transparent
 
                   width: 24
                   height: 24
                   radius: Math.min(Style.radiusXS, width / 2)
                   color: swatchColor
-                  border.color: root.selectedColor.toString() === swatchColor.toString() ? Color.mPrimary : Color.mOutline
+                  border.color: root.selectedColor.toString() === swatchColor.toString() ? NColor.mPrimary : NColor.mOutline
                   border.width: root.selectedColor.toString() === swatchColor.toString() ? 2 : 1
 
                   MouseArea {

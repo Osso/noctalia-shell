@@ -19,9 +19,9 @@ NIconButton {
   tooltipText: I18n.tr("tooltips.open-wallpaper-selector")
   tooltipDirection: BarService.getTooltipDirection()
   colorBg: Style.capsuleColor
-  colorFg: Color.mOnSurface
-  colorBorder: Color.transparent
-  colorBorderHover: Color.transparent
+  colorFg: NColor.mOnSurface
+  colorBorder: NColor.transparent
+  colorBorderHover: NColor.transparent
 
   NPopupContextMenu {
     id: contextMenu

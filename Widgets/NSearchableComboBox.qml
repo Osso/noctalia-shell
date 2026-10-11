@@ -147,8 +147,8 @@ RowLayout {
     background: Rectangle {
       implicitWidth: Style.baseWidgetSize * 3.75 * Style.uiScaleRatio
       implicitHeight: preferredHeight
-      color: Color.mSurface
-      border.color: combo.activeFocus ? Color.mSecondary : Color.mOutline
+      color: NColor.mSurface
+      border.color: combo.activeFocus ? NColor.mSecondary : NColor.mOutline
       border.width: Style.borderS
       radius: Style.radiusM
 
@@ -165,7 +165,7 @@ RowLayout {
       pointSize: Style.fontSizeM
       verticalAlignment: Text.AlignVCenter
       elide: Text.ElideRight
-      color: (combo.currentIndex >= 0 && combo.currentIndex < filteredModel.count) ? Color.mOnSurface : Color.mOnSurfaceVariant
+      color: (combo.currentIndex >= 0 && combo.currentIndex < filteredModel.count) ? NColor.mOnSurface : NColor.mOnSurfaceVariant
       text: (combo.currentIndex >= 0 && combo.currentIndex < filteredModel.count) ? filteredModel.get(combo.currentIndex).name : root.placeholder
     }
 
@@ -237,7 +237,7 @@ RowLayout {
                 NText {
                   text: delegateRoot.name
                   pointSize: Style.fontSizeM
-                  color: highlighted ? Color.mOnHover : Color.mOnSurface
+                  color: highlighted ? NColor.mOnHover : NColor.mOnSurface
                   verticalAlignment: Text.AlignVCenter
                   elide: Text.ElideRight
                   Layout.fillWidth: true
@@ -266,7 +266,7 @@ RowLayout {
                         text: modelData
                         pointSize: Style.fontSizeXXS
                         font.weight: Style.fontWeightBold
-                        color: highlighted ? Color.mOnHover : Color.mOnSurface
+                        color: highlighted ? NColor.mOnHover : NColor.mOnSurface
                       }
                     }
                   }
@@ -274,7 +274,7 @@ RowLayout {
               }
               background: Rectangle {
                 width: listView.width
-                color: highlighted ? Color.mHover : Color.transparent
+                color: highlighted ? NColor.mHover : NColor.transparent
                 radius: Style.radiusS
                 Behavior on color {
                   ColorAnimation {
@@ -288,8 +288,8 @@ RowLayout {
       }
 
       background: Rectangle {
-        color: Color.mSurfaceVariant
-        border.color: Color.mOutline
+        color: NColor.mSurfaceVariant
+        border.color: NColor.mOutline
         border.width: Style.borderS
         radius: Style.radiusM
       }

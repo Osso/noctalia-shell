@@ -27,7 +27,7 @@ PopupWindow {
   property int screenHeight: 1080
 
   visible: false
-  color: Color.transparent
+  color: NColor.transparent
 
   anchor.item: targetItem
   anchor.rect.x: anchorX
@@ -422,8 +422,8 @@ PopupWindow {
 
     Rectangle {
       anchors.fill: parent
-      color: Color.mSurface
-      border.color: Color.mOutline
+      color: NColor.mSurface
+      border.color: NColor.mOutline
       border.width: Style.borderS
       radius: Style.radiusS
 
@@ -437,7 +437,7 @@ PopupWindow {
         text: root.text
         pointSize: Style.fontSizeS
         family: Settings.data.ui.fontFixed
-        color: Color.mOnSurfaceVariant
+        color: NColor.mOnSurfaceVariant
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         wrapMode: Text.WordWrap

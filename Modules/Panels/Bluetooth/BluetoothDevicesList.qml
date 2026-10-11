@@ -28,7 +28,7 @@ NBox {
     NText {
       text: root.label
       pointSize: Style.fontSizeS
-      color: Color.mSecondary
+      color: NColor.mSecondary
       font.weight: Style.fontWeightBold
       visible: root.model.length > 0
       Layout.fillWidth: true
@@ -60,20 +60,20 @@ NBox {
         readonly property bool canDisconnect: BluetoothService.canDisconnect(modelData)
         readonly property bool isBusy: BluetoothService.isDeviceBusy(modelData)
 
-        function getContentColor(defaultColor = Color.mOnSurface) {
+        function getContentColor(defaultColor = NColor.mOnSurface) {
           if (devicePairing || deviceConnecting)
-            return Color.mPrimary;
+            return NColor.mPrimary;
           if (deviceBlocked)
-            return Color.mError;
+            return NColor.mError;
           return defaultColor;
         }
 
         Layout.fillWidth: true
         Layout.preferredHeight: deviceLayout.implicitHeight + (Style.marginM * 2)
         radius: Style.radiusM
-        color: Color.mSurface
+        color: NColor.mSurface
         border.width: Style.borderS
-        border.color: getContentColor(Color.mOutline)
+        border.color: getContentColor(NColor.mOutline)
 
         RowLayout {
           id: deviceLayout
@@ -86,7 +86,7 @@ NBox {
           NIcon {
             icon: BluetoothService.getDeviceIcon(modelData)
             pointSize: Style.fontSizeXXL
-            color: getContentColor(Color.mOnSurface)
+            color: getContentColor(NColor.mOnSurface)
             Layout.alignment: Qt.AlignVCenter
           }
 
@@ -100,7 +100,7 @@ NBox {
               pointSize: Style.fontSizeM
               font.weight: deviceConnected ? Style.fontWeightBold : Style.fontWeightMedium
               elide: Text.ElideRight
-              color: getContentColor(Color.mOnSurface)
+              color: getContentColor(NColor.mOnSurface)
               Layout.fillWidth: true
             }
 
@@ -109,7 +109,7 @@ NBox {
               text: BluetoothService.getStatusString(modelData)
               visible: text !== ""
               pointSize: Style.fontSizeXS
-              color: getContentColor(Color.mOnSurfaceVariant)
+              color: getContentColor(NColor.mOnSurfaceVariant)
             }
 
             // Signal Strength
@@ -122,21 +122,21 @@ NBox {
               NText {
                 text: BluetoothService.getSignalStrength(modelData)
                 pointSize: Style.fontSizeXS
-                color: getContentColor(Color.mOnSurfaceVariant)
+                color: getContentColor(NColor.mOnSurfaceVariant)
               }
 
               NIcon {
                 visible: showSignalStrength
                 icon: BluetoothService.getSignalIcon(modelData)
                 pointSize: Style.fontSizeXS
-                color: getContentColor(Color.mOnSurface)
+                color: getContentColor(NColor.mOnSurface)
               }
 
               NText {
                 visible: showSignalStrength
                 text: showSignalStrength ? deviceSignalStrength + "%" : ""
                 pointSize: Style.fontSizeXS
-                color: getContentColor(Color.mOnSurface)
+                color: getContentColor(NColor.mOnSurface)
               }
             }
 
@@ -145,7 +145,7 @@ NBox {
               visible: hasBattery
               text: BluetoothService.getBattery(modelData)
               pointSize: Style.fontSizeXS
-              color: getContentColor(Color.mOnSurfaceVariant)
+              color: getContentColor(NColor.mOnSurfaceVariant)
             }
           }
 
@@ -164,9 +164,9 @@ NBox {
             fontWeight: Style.fontWeightMedium
             backgroundColor: {
               if (device.canDisconnect && !isBusy) {
-                return Color.mError;
+                return NColor.mError;
               }
-              return Color.mPrimary;
+              return NColor.mPrimary;
             }
             tooltipText: root.tooltipText
             text: {

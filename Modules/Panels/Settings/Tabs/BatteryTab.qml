@@ -157,7 +157,7 @@ ColumnLayout {
         NIcon {
           icon: BatteryService.getIcon(percent, charging, isReady)
           pointSize: Style.fontSizeXXL
-          color: charging ? Color.mPrimary : Color.mOnSurface
+          color: charging ? NColor.mPrimary : NColor.mOnSurface
         }
 
         ColumnLayout {
@@ -169,7 +169,7 @@ ColumnLayout {
 
             NText {
               text: I18n.tr("battery.battery-level")
-              color: Color.mOnSurface
+              color: NColor.mOnSurface
               pointSize: Style.fontSizeM
             }
 
@@ -177,7 +177,7 @@ ColumnLayout {
 
             NText {
               text: percent >= 0 ? `${percent}%` : "--"
-              color: Color.mOnSurface
+              color: NColor.mOnSurface
               pointSize: Style.fontSizeM
               font.weight: Style.fontWeightBold
             }
@@ -187,14 +187,14 @@ ColumnLayout {
             Layout.fillWidth: true
             height: Math.round(8 * Style.uiScaleRatio)
             radius: Math.min(Style.radiusL, height / 2)
-            color: Color.mSurfaceVariant
+            color: NColor.mSurfaceVariant
 
             Rectangle {
               anchors.verticalCenter: parent.verticalCenter
               height: parent.height
               radius: parent.radius
               width: parent.width * Math.max(0, Math.min(1, percent / 100))
-              color: charging ? Color.mPrimary : (percent <= 20 ? Color.mError : Color.mSecondary)
+              color: charging ? NColor.mPrimary : (percent <= 20 ? NColor.mError : NColor.mSecondary)
 
               Behavior on width {
                 NumberAnimation { duration: Style.animationMedium }
@@ -214,14 +214,14 @@ ColumnLayout {
         // Status
         NText {
           text: I18n.tr("settings.battery.status.state")
-          color: Color.mOnSurfaceVariant
+          color: NColor.mOnSurfaceVariant
           pointSize: Style.fontSizeS
         }
         NText {
           text: charging ? I18n.tr("battery.charging") :
                 (battery.state === UPowerDeviceState.FullyCharged ? I18n.tr("battery.plugged-in") :
                 I18n.tr("battery.discharging"))
-          color: Color.mOnSurface
+          color: NColor.mOnSurface
           pointSize: Style.fontSizeS
           font.weight: Style.fontWeightMedium
         }
@@ -229,7 +229,7 @@ ColumnLayout {
         // Time remaining
         NText {
           text: I18n.tr("settings.battery.status.time-remaining")
-          color: Color.mOnSurfaceVariant
+          color: NColor.mOnSurfaceVariant
           pointSize: Style.fontSizeS
           visible: (charging && battery.timeToFull > 0) || (!charging && battery.timeToEmpty > 0)
         }
@@ -242,7 +242,7 @@ ColumnLayout {
             }
             return "";
           }
-          color: Color.mOnSurface
+          color: NColor.mOnSurface
           pointSize: Style.fontSizeS
           font.weight: Style.fontWeightMedium
           visible: (charging && battery.timeToFull > 0) || (!charging && battery.timeToEmpty > 0)
@@ -251,14 +251,14 @@ ColumnLayout {
         // Health (if available)
         NText {
           text: I18n.tr("settings.battery.status.health")
-          color: Color.mOnSurfaceVariant
+          color: NColor.mOnSurfaceVariant
           pointSize: Style.fontSizeS
           visible: healthAvailable
         }
         NText {
           text: healthPercent >= 0 ? `${healthPercent}%` : "--"
-          color: healthPercent >= 80 ? Color.mOnSurface :
-                 (healthPercent >= 50 ? Color.mWarning : Color.mError)
+          color: healthPercent >= 80 ? NColor.mOnSurface :
+                 (healthPercent >= 50 ? NColor.mWarning : NColor.mError)
           pointSize: Style.fontSizeS
           font.weight: Style.fontWeightMedium
           visible: healthAvailable
@@ -267,13 +267,13 @@ ColumnLayout {
         // Energy rate (power consumption)
         NText {
           text: I18n.tr("settings.battery.status.power")
-          color: Color.mOnSurfaceVariant
+          color: NColor.mOnSurfaceVariant
           pointSize: Style.fontSizeS
           visible: battery.energyRate !== undefined && battery.energyRate > 0
         }
         NText {
           text: battery.energyRate !== undefined ? `${battery.energyRate.toFixed(1)} W` : "--"
-          color: Color.mOnSurface
+          color: NColor.mOnSurface
           pointSize: Style.fontSizeS
           font.weight: Style.fontWeightMedium
           visible: battery.energyRate !== undefined && battery.energyRate > 0
@@ -282,13 +282,13 @@ ColumnLayout {
         // Cycle count
         NText {
           text: I18n.tr("settings.battery.status.cycles")
-          color: Color.mOnSurfaceVariant
+          color: NColor.mOnSurfaceVariant
           pointSize: Style.fontSizeS
           visible: cycleCountSupported
         }
         NText {
           text: cycleCount >= 0 ? cycleCount.toString() : "--"
-          color: Color.mOnSurface
+          color: NColor.mOnSurface
           pointSize: Style.fontSizeS
           font.weight: Style.fontWeightMedium
           visible: cycleCountSupported
@@ -307,7 +307,7 @@ ColumnLayout {
       id: noBatteryText
       anchors.centerIn: parent
       text: I18n.tr("battery.no-battery-detected")
-      color: Color.mOnSurfaceVariant
+      color: NColor.mOnSurfaceVariant
       pointSize: Style.fontSizeM
     }
   }
@@ -343,12 +343,12 @@ ColumnLayout {
       NIcon {
         icon: "info-circle"
         pointSize: Style.fontSizeL
-        color: Color.mPrimary
+        color: NColor.mPrimary
       }
 
       NText {
         text: I18n.tr("settings.battery.thresholds.info")
-        color: Color.mOnSurfaceVariant
+        color: NColor.mOnSurfaceVariant
         pointSize: Style.fontSizeS
         wrapMode: Text.Wrap
         Layout.fillWidth: true
@@ -438,7 +438,7 @@ ColumnLayout {
 
       NText {
         text: I18n.tr("settings.battery.thresholds.current")
-        color: Color.mOnSurfaceVariant
+        color: NColor.mOnSurfaceVariant
         pointSize: Style.fontSizeS
       }
 
@@ -446,7 +446,7 @@ ColumnLayout {
 
       NText {
         text: `${chargeStartThreshold}% - ${chargeStopThreshold}%`
-        color: Color.mOnSurface
+        color: NColor.mOnSurface
         pointSize: Style.fontSizeM
         font.weight: Style.fontWeightBold
       }
@@ -463,7 +463,7 @@ ColumnLayout {
       id: notSupportedText
       anchors.centerIn: parent
       text: I18n.tr("settings.battery.thresholds.not-supported")
-      color: Color.mOnSurfaceVariant
+      color: NColor.mOnSurfaceVariant
       pointSize: Style.fontSizeM
     }
   }

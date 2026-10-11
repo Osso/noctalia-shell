@@ -53,9 +53,9 @@ NIconButton {
   tooltipText: NotificationService.doNotDisturb ? I18n.tr("tooltips.open-notification-history-disable-dnd") : I18n.tr("tooltips.open-notification-history-enable-dnd")
   tooltipDirection: BarService.getTooltipDirection()
   colorBg: Style.capsuleColor
-  colorFg: Color.mOnSurface
-  colorBorder: Color.transparent
-  colorBorderHover: Color.transparent
+  colorFg: NColor.mOnSurface
+  colorBorder: NColor.transparent
+  colorBorderHover: NColor.transparent
 
   NPopupContextMenu {
     id: contextMenu
@@ -122,8 +122,8 @@ NIconButton {
       height: 8
       width: height
       radius: Style.radiusXS
-      color: Color.mError
-      border.color: Color.mSurface
+      color: NColor.mError
+      border.color: NColor.mSurface
       border.width: Style.borderS
       visible: count > 0 || !hideWhenZero
     }

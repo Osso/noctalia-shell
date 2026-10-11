@@ -256,7 +256,7 @@ Loader {
           anchors.left: true
           anchors.right: true
           focusable: false
-          color: Color.transparent
+          color: NColor.transparent
 
           WlrLayershell.namespace: "noctalia-dock-peek-" + (screen ? screen.name : "unknown")
           WlrLayershell.exclusionMode: ExclusionMode.Ignore
@@ -295,7 +295,7 @@ Loader {
           screen: modelData
 
           focusable: false
-          color: Color.transparent
+          color: NColor.transparent
 
           WlrLayershell.namespace: "noctalia-dock-" + (screen ? screen.name : "unknown")
           WlrLayershell.exclusionMode: exclusive ? ExclusionMode.Auto : ExclusionMode.Ignore
@@ -347,11 +347,11 @@ Loader {
               id: dockContainer
               width: dockLayout.implicitWidth + Style.marginM * 2
               height: Math.round(iconSize * 1.5)
-              color: Qt.alpha(Color.mSurface, Settings.data.dock.backgroundOpacity)
+              color: Qt.alpha(NColor.mSurface, Settings.data.dock.backgroundOpacity)
               anchors.centerIn: parent
               radius: Style.radiusL
               border.width: Style.borderS
-              border.color: Qt.alpha(Color.mOutline, Settings.data.dock.backgroundOpacity)
+              border.color: Qt.alpha(NColor.mOutline, Settings.data.dock.backgroundOpacity)
 
               // Enable layer caching to reduce GPU usage from continuous animations
               // (pulse animations on active indicators run infinitely)
@@ -462,7 +462,7 @@ Loader {
                         // Apply dock-specific colorization shader only to non-focused apps
                         layer.enabled: !appButton.isActive && Settings.data.dock.colorizeIcons
                         layer.effect: ShaderEffect {
-                          property color targetColor: Settings.data.colorSchemes.darkMode ? Color.mOnSurface : Color.mSurfaceVariant
+                          property color targetColor: Settings.data.colorSchemes.darkMode ? NColor.mOnSurface : NColor.mSurfaceVariant
                           property real colorizeMode: 0.0 // Dock mode (grayscale)
 
                           fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/appicon_colorize.frag.qsb")
@@ -490,7 +490,7 @@ Loader {
                         visible: !appIcon.visible
                         icon: "question-mark"
                         pointSize: iconSize * 0.7
-                        color: appButton.isActive ? Color.mPrimary : Color.mOnSurfaceVariant
+                        color: appButton.isActive ? NColor.mPrimary : NColor.mOnSurfaceVariant
                         opacity: appButton.isRunning ? 1.0 : 0.6
                         scale: appButton.hovered ? 1.15 : 1.0
 
@@ -626,7 +626,7 @@ Loader {
                         visible: isActive
                         width: iconSize * 0.2
                         height: iconSize * 0.1
-                        color: Color.mPrimary
+                        color: NColor.mPrimary
                         radius: Style.radiusXS
                         anchors.top: parent.bottom
                         anchors.horizontalCenter: parent.horizontalCenter

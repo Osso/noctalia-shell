@@ -55,8 +55,8 @@ function testThemeIconsRejectUnsafeDesktopEntryIconPaths() {
 }
 
 function testProcessPanelUsesDefinedWarningColor() {
-  assert.doesNotMatch(processPanelSource, /Color\.mWarning/, "ProcessPanel must not reference undefined Color.mWarning");
-  assert.match(processPanelSource, /if \(processCpu > 20\)\s+return Color\.mTertiary;/, "ProcessPanel CPU warning state must use defined tertiary color");
+  assert.doesNotMatch(processPanelSource, /NColor\.mWarning/, "ProcessPanel must not reference undefined NColor.mWarning");
+  assert.match(processPanelSource, /if \(processCpu > 20\)\s+return NColor\.mTertiary;/, "ProcessPanel CPU warning state must use defined tertiary color");
 }
 
 const tests = [

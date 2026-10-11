@@ -32,7 +32,7 @@ Item {
         id: cornersPath
 
         // Corner configuration
-        readonly property color cornerColor: Settings.data.general.forceBlackScreenCorners ? Color.black : Color.mSurface
+        readonly property color cornerColor: Settings.data.general.forceBlackScreenCorners ? NColor.black : NColor.mSurface
         readonly property real cornerRadius: Style.screenRadius
         readonly property real cornerSize: Style.screenRadius
 
@@ -51,7 +51,7 @@ Item {
 
         // ShapePath configuration
         strokeWidth: -1 // No stroke, fill only
-        fillColor: shouldShow ? cornerColor : Color.transparent
+        fillColor: shouldShow ? cornerColor : NColor.transparent
 
         // Smooth color animation
         Behavior on fillColor {

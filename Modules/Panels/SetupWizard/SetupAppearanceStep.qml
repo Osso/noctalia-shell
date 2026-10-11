@@ -27,7 +27,7 @@ ColumnLayout {
       if (data && data[mode] && data[mode][key])
         return data[mode][key];
     } catch (e) {}
-    return Color.mSurfaceVariant;
+    return NColor.mSurfaceVariant;
   }
 
   // Match ColorSchemeTab helpers
@@ -57,13 +57,13 @@ ColumnLayout {
       width: 40
       height: 40
       radius: Style.radiusL
-      color: Color.mSurfaceVariant
+      color: NColor.mSurfaceVariant
       opacity: 0.6
 
       NIcon {
         icon: "palette"
         pointSize: Style.fontSizeL
-        color: Color.mPrimary
+        color: NColor.mPrimary
         anchors.centerIn: parent
       }
     }
@@ -76,13 +76,13 @@ ColumnLayout {
         text: I18n.tr("setup.appearance.header")
         pointSize: Style.fontSizeXL
         font.weight: Style.fontWeightBold
-        color: Color.mPrimary
+        color: NColor.mPrimary
       }
 
       NText {
         text: I18n.tr("setup.appearance.subheader")
         pointSize: Style.fontSizeM
-        color: Color.mOnSurfaceVariant
+        color: NColor.mOnSurfaceVariant
       }
     }
   }
@@ -108,12 +108,12 @@ ColumnLayout {
           width: 28
           height: 28
           radius: Style.radiusM
-          color: Color.mSurface
+          color: NColor.mSurface
 
           NIcon {
             icon: "moon"
             pointSize: Style.fontSizeL
-            color: Color.mPrimary
+            color: NColor.mPrimary
             anchors.centerIn: parent
           }
         }
@@ -126,13 +126,13 @@ ColumnLayout {
             text: I18n.tr("settings.color-scheme.dark-mode.switch.label")
             pointSize: Style.fontSizeL
             font.weight: Style.fontWeightBold
-            color: Color.mOnSurface
+            color: NColor.mOnSurface
           }
 
           NText {
             text: I18n.tr("settings.color-scheme.dark-mode.switch.description")
             pointSize: Style.fontSizeS
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
           }
@@ -148,7 +148,7 @@ ColumnLayout {
       Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: 1
-        color: Color.mOutline
+        color: NColor.mOutline
         opacity: 0.2
         Layout.topMargin: Style.marginS
         Layout.bottomMargin: Style.marginS
@@ -163,12 +163,12 @@ ColumnLayout {
           width: 28
           height: 28
           radius: Style.radiusM
-          color: Color.mSurface
+          color: NColor.mSurface
 
           NIcon {
             icon: ProgramCheckerService.matugenAvailable ? "color-picker" : "alert-triangle"
             pointSize: Style.fontSizeL
-            color: Color.mPrimary
+            color: NColor.mPrimary
             anchors.centerIn: parent
           }
         }
@@ -181,13 +181,13 @@ ColumnLayout {
             text: I18n.tr("settings.color-scheme.color-source.use-wallpaper-colors.label")
             pointSize: Style.fontSizeL
             font.weight: Style.fontWeightBold
-            color: Color.mOnSurface
+            color: NColor.mOnSurface
           }
 
           NText {
             text: I18n.tr("settings.color-scheme.color-source.use-wallpaper-colors.description")
             pointSize: Style.fontSizeS
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
           }
@@ -226,12 +226,12 @@ ColumnLayout {
             width: 28
             height: 28
             radius: Style.radiusM
-            color: Color.mSurface
+            color: NColor.mSurface
 
             NIcon {
               icon: "wand"
               pointSize: Style.fontSizeL
-              color: Color.mPrimary
+              color: NColor.mPrimary
               anchors.centerIn: parent
             }
           }
@@ -244,13 +244,13 @@ ColumnLayout {
               text: I18n.tr("settings.color-scheme.color-source.matugen-scheme-type.label")
               pointSize: Style.fontSizeL
               font.weight: Style.fontWeightBold
-              color: Color.mOnSurface
+              color: NColor.mOnSurface
             }
 
             NText {
               text: I18n.tr("settings.color-scheme.color-source.use-wallpaper-colors.description")
               pointSize: Style.fontSizeS
-              color: Color.mOnSurfaceVariant
+              color: NColor.mOnSurfaceVariant
             }
           }
         }
@@ -308,15 +308,15 @@ ColumnLayout {
 
               property bool isActive: Settings.data.colorSchemes.matugenSchemeType === key
 
-              color: (hoverHandler.hovered || isActive) ? Color.mPrimary : Color.mSurfaceVariant
-              border.color: (hoverHandler.hovered || isActive) ? Color.mPrimary : Color.mOutline
+              color: (hoverHandler.hovered || isActive) ? NColor.mPrimary : NColor.mSurfaceVariant
+              border.color: (hoverHandler.hovered || isActive) ? NColor.mPrimary : NColor.mOutline
               opacity: (hoverHandler.hovered || isActive) ? 1.0 : 0.8
 
               NText {
                 text: name
                 pointSize: Style.fontSizeM
                 font.weight: (hoverHandler.hovered || parent.isActive) ? Style.fontWeightBold : Style.fontWeightMedium
-                color: (hoverHandler.hovered || parent.isActive) ? Color.mOnPrimary : Color.mOnSurface
+                color: (hoverHandler.hovered || parent.isActive) ? NColor.mOnPrimary : NColor.mOnSurface
                 anchors.centerIn: parent
               }
 
@@ -356,7 +356,7 @@ ColumnLayout {
       Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: 1
-        color: Color.mOutline
+        color: NColor.mOutline
         opacity: 0.2
         Layout.topMargin: Style.marginS
         Layout.bottomMargin: Style.marginS
@@ -377,12 +377,12 @@ ColumnLayout {
             width: 28
             height: 28
             radius: Style.radiusM
-            color: Color.mSurface
+            color: NColor.mSurface
 
             NIcon {
               icon: "palette"
               pointSize: Style.fontSizeL
-              color: Color.mPrimary
+              color: NColor.mPrimary
               anchors.centerIn: parent
             }
           }
@@ -395,13 +395,13 @@ ColumnLayout {
               text: I18n.tr("settings.color-scheme.predefined.section.label")
               pointSize: Style.fontSizeL
               font.weight: Style.fontWeightBold
-              color: Color.mOnSurface
+              color: NColor.mOnSurface
             }
 
             NText {
               text: I18n.tr("settings.color-scheme.predefined.section.description")
               pointSize: Style.fontSizeS
-              color: Color.mOnSurfaceVariant
+              color: NColor.mOnSurfaceVariant
             }
           }
         }
@@ -429,7 +429,7 @@ ColumnLayout {
               radius: Style.radiusS
               color: root.cacheVersion >= 0 ? root.getSchemeColor(schemeName, "mSurface") : root.getSchemeColor(schemeName, "mSurface")
               border.width: Style.borderL
-              border.color: itemMouseArea.containsMouse ? Color.mHover : (Settings.data.colorSchemes.predefinedScheme === schemeName ? Color.mSecondary : Color.mOutline)
+              border.color: itemMouseArea.containsMouse ? NColor.mHover : (Settings.data.colorSchemes.predefinedScheme === schemeName ? NColor.mSecondary : NColor.mOutline)
 
               RowLayout {
                 anchors.fill: parent
@@ -440,7 +440,7 @@ ColumnLayout {
                   text: schemeItem.schemeName
                   pointSize: Style.fontSizeS
                   font.weight: Style.fontWeightMedium
-                  color: Color.mOnSurface
+                  color: NColor.mOnSurface
                   Layout.fillWidth: true
                   elide: Text.ElideRight
                   verticalAlignment: Text.AlignVCenter
@@ -456,7 +456,7 @@ ColumnLayout {
                     var mode = Settings.data.colorSchemes.darkMode ? "dark" : "light";
                     var cached = root.schemeColorsCache[schemeItem.schemeName];
                     return (cached && cached[mode] && cached[mode].mPrimary) || root.getSchemeColor(schemeItem.schemeName, "mPrimary");
-                  })() : Color.mPrimary
+                  })() : NColor.mPrimary
                 }
                 Rectangle {
                   width: 14
@@ -466,7 +466,7 @@ ColumnLayout {
                     var mode = Settings.data.colorSchemes.darkMode ? "dark" : "light";
                     var cached = root.schemeColorsCache[schemeItem.schemeName];
                     return (cached && cached[mode] && cached[mode].mSecondary) || root.getSchemeColor(schemeItem.schemeName, "mSecondary");
-                  })() : Color.mSecondary
+                  })() : NColor.mSecondary
                 }
                 Rectangle {
                   width: 14
@@ -476,7 +476,7 @@ ColumnLayout {
                     var mode = Settings.data.colorSchemes.darkMode ? "dark" : "light";
                     var cached = root.schemeColorsCache[schemeItem.schemeName];
                     return (cached && cached[mode] && cached[mode].mTertiary) || root.getSchemeColor(schemeItem.schemeName, "mTertiary");
-                  })() : Color.mTertiary
+                  })() : NColor.mTertiary
                 }
                 Rectangle {
                   width: 14
@@ -486,7 +486,7 @@ ColumnLayout {
                     var mode = Settings.data.colorSchemes.darkMode ? "dark" : "light";
                     var cached = root.schemeColorsCache[schemeItem.schemeName];
                     return (cached && cached[mode] && cached[mode].mError) || root.getSchemeColor(schemeItem.schemeName, "mError");
-                  })() : Color.mError
+                  })() : NColor.mError
                 }
               }
 

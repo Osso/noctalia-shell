@@ -11,7 +11,7 @@ RowLayout {
   property real to: 1
   property real value: 0
   property real stepSize: 0.01
-  property color cutoutColor: Color.mSurface
+  property color cutoutColor: NColor.mSurface
   property bool snapAlways: true
   property real heightRatio: 0.7
   property string text: ""

@@ -169,9 +169,9 @@ Popup {
   anchors.centerIn: Overlay.overlay
 
   background: Rectangle {
-    color: Color.mSurfaceVariant
+    color: NColor.mSurfaceVariant
     radius: Style.radiusL
-    border.color: Color.mOutline
+    border.color: NColor.mOutline
     border.width: Style.borderS
   }
 
@@ -179,7 +179,7 @@ Popup {
     id: filePickerPanel
     anchors.fill: parent
     anchors.margins: Style.marginL
-    color: Color.transparent
+    color: NColor.transparent
 
     property string filterText: ""
     property var currentSelection: []
@@ -210,14 +210,14 @@ Popup {
 
         NIcon {
           icon: "filepicker-folder"
-          color: Color.mPrimary
+          color: NColor.mPrimary
           pointSize: Style.fontSizeXXL
         }
         NText {
           text: root.title
           pointSize: Style.fontSizeXL
           font.weight: Style.fontWeightBold
-          color: Color.mPrimary
+          color: NColor.mPrimary
           Layout.fillWidth: true
         }
 
@@ -261,9 +261,9 @@ Popup {
       Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: 45
-        color: Color.mSurfaceVariant
+        color: NColor.mSurfaceVariant
         radius: Style.radiusS
-        border.color: Color.mOutline
+        border.color: NColor.mOutline
         border.width: Style.borderS
 
         RowLayout {
@@ -379,9 +379,9 @@ Popup {
       Rectangle {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        color: Color.mSurface
+        color: NColor.mSurface
         radius: Style.radiusM
-        border.color: Color.mOutline
+        border.color: NColor.mOutline
         border.width: Style.borderS
 
         FolderListModel {
@@ -434,7 +434,7 @@ Popup {
               implicitWidth: 6
               implicitHeight: 100
               radius: Style.radiusM
-              color: Qt.alpha(Color.mHover, 0.8)
+              color: Qt.alpha(NColor.mHover, 0.8)
               opacity: parent.policy === ScrollBar.AlwaysOn || parent.active ? 1.0 : 0.0
               Behavior on opacity {
                 NumberAnimation {
@@ -450,7 +450,7 @@ Popup {
             background: Rectangle {
               implicitWidth: 6
               implicitHeight: 100
-              color: Color.transparent
+              color: NColor.transparent
               opacity: parent.policy === ScrollBar.AlwaysOn || parent.active ? 0.3 : 0.0
               radius: (Style.radiusM) / 2
               Behavior on opacity {
@@ -499,16 +499,16 @@ Popup {
 
             width: gridView.itemSize
             height: gridView.cellHeight
-            color: Color.transparent
+            color: NColor.transparent
             radius: Style.radiusM
 
             property bool isSelected: filePickerPanel.currentSelection.includes(filePath)
 
             Rectangle {
               anchors.fill: parent
-              color: Color.transparent
+              color: NColor.transparent
               radius: parent.radius
-              border.color: isSelected ? Color.mSecondary : Color.mSurface
+              border.color: isSelected ? NColor.mSecondary : NColor.mSurface
               border.width: Style.borderL
               Behavior on color {
                 ColorAnimation {
@@ -519,9 +519,9 @@ Popup {
 
             Rectangle {
               anchors.fill: parent
-              color: (mouseArea.containsMouse && !isSelected) ? Color.mHover : Color.transparent
+              color: (mouseArea.containsMouse && !isSelected) ? NColor.mHover : NColor.transparent
               radius: parent.radius
-              border.color: (mouseArea.containsMouse && !isSelected) ? Color.mHover : Color.transparent
+              border.color: (mouseArea.containsMouse && !isSelected) ? NColor.mHover : NColor.transparent
               border.width: Style.borderS
               Behavior on color {
                 ColorAnimation {
@@ -544,7 +544,7 @@ Popup {
                 id: iconContainer
                 Layout.fillWidth: true
                 Layout.preferredHeight: Math.round(gridView.itemSize * 0.67)
-                color: Color.transparent
+                color: NColor.transparent
 
                 property bool isImage: {
                   if (fileIsDir)
@@ -572,13 +572,13 @@ Popup {
 
                   Rectangle {
                     anchors.fill: parent
-                    color: Color.mSurfaceVariant
+                    color: NColor.mSurfaceVariant
                     radius: Style.radiusS
                     visible: thumbnail.status === Image.Loading
                     NIcon {
                       icon: "filepicker-photo"
                       pointSize: Style.fontSizeL
-                      color: Color.mOnSurfaceVariant
+                      color: NColor.mOnSurfaceVariant
                       anchors.centerIn: parent
                     }
                   }
@@ -589,11 +589,11 @@ Popup {
                   pointSize: Style.fontSizeXXL * 2
                   color: {
                     if (isSelected)
-                      return Color.mSecondary;
+                      return NColor.mSecondary;
                     else if (mouseArea.containsMouse)
-                      return Color.mOnHover;
+                      return NColor.mOnHover;
                     else
-                      return fileIsDir ? Color.mPrimary : Color.mOnSurfaceVariant;
+                      return fileIsDir ? NColor.mPrimary : NColor.mOnSurfaceVariant;
                   }
                   anchors.centerIn: parent
                   visible: !iconContainer.isImage || thumbnail.status !== Image.Ready
@@ -606,14 +606,14 @@ Popup {
                   width: 24
                   height: 24
                   radius: Math.min(Style.radiusL, width / 2)
-                  color: Color.mSecondary
-                  border.color: Color.mOutline
+                  color: NColor.mSecondary
+                  border.color: NColor.mOutline
                   border.width: Style.borderS
                   visible: isSelected
                   NIcon {
                     icon: "filepicker-check"
                     pointSize: Style.fontSizeS
-                    color: Color.mOnSecondary
+                    color: NColor.mOnSecondary
                     anchors.centerIn: parent
                   }
                 }
@@ -623,11 +623,11 @@ Popup {
                 text: fileName
                 color: {
                   if (isSelected)
-                    return Color.mSecondary;
+                    return NColor.mSecondary;
                   else if (mouseArea.containsMouse)
-                    return Color.mOnHover;
+                    return NColor.mOnHover;
                   else
-                    return Color.mOnSurfaceVariant;
+                    return NColor.mOnSurfaceVariant;
                 }
                 pointSize: Style.fontSizeS
                 font.weight: isSelected ? Style.fontWeightBold : Style.fontWeightRegular
@@ -679,10 +679,10 @@ Popup {
             height: 40
             color: {
               if (filePickerPanel.currentSelection.includes(filePath))
-                return Color.mSecondary;
+                return NColor.mSecondary;
               if (listMouseArea.containsMouse)
-                return Color.mHover;
-              return Color.transparent;
+                return NColor.mHover;
+              return NColor.transparent;
             }
             radius: Style.radiusS
             Behavior on color {
@@ -700,12 +700,12 @@ Popup {
               NIcon {
                 icon: fileIsDir ? "filepicker-folder" : root.getFileIcon(fileName)
                 pointSize: Style.fontSizeL
-                color: fileIsDir ? (filePickerPanel.currentSelection.includes(filePath) ? Color.mOnSecondary : Color.mPrimary) : Color.mOnSurfaceVariant
+                color: fileIsDir ? (filePickerPanel.currentSelection.includes(filePath) ? NColor.mOnSecondary : NColor.mPrimary) : NColor.mOnSurfaceVariant
               }
 
               NText {
                 text: fileName
-                color: filePickerPanel.currentSelection.includes(filePath) ? Color.mOnSecondary : Color.mOnSurface
+                color: filePickerPanel.currentSelection.includes(filePath) ? NColor.mOnSecondary : NColor.mOnSurface
                 pointSize: Style.fontSizeM
                 font.weight: filePickerPanel.currentSelection.includes(filePath) ? Style.fontWeightBold : Style.fontWeightRegular
                 Layout.fillWidth: true
@@ -714,7 +714,7 @@ Popup {
 
               NText {
                 text: fileIsDir ? "" : root.formatFileSize(fileSize)
-                color: filePickerPanel.currentSelection.includes(filePath) ? Color.mOnSecondary : Color.mOnSurfaceVariant
+                color: filePickerPanel.currentSelection.includes(filePath) ? NColor.mOnSecondary : NColor.mOnSurfaceVariant
                 pointSize: Style.fontSizeS
                 visible: !fileIsDir
                 Layout.preferredWidth: implicitWidth
@@ -781,7 +781,7 @@ Popup {
               return filteredModel.count + " items";
             }
           }
-          color: filePickerPanel.searchText.length > 0 ? Color.mPrimary : Color.mOnSurfaceVariant
+          color: filePickerPanel.searchText.length > 0 ? NColor.mPrimary : NColor.mOnSurfaceVariant
           pointSize: Style.fontSizeS
           Layout.fillWidth: true
         }

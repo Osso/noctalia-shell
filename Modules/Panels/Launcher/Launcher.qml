@@ -479,7 +479,7 @@ SmartPanel {
 
   panelContent: Rectangle {
     id: ui
-    color: Color.transparent
+    color: NColor.transparent
     opacity: resultsReady ? 1.0 : 0.0
 
     // Preview Panel (external)
@@ -781,7 +781,7 @@ SmartPanel {
               width: resultsList.width - Style.marginS
               implicitHeight: entryHeight
               radius: Style.radiusM
-              color: entry.isSelected ? Color.mHover : Color.mSurface
+              color: entry.isSelected ? NColor.mHover : NColor.mSurface
 
               Behavior on color {
                 ColorAnimation {
@@ -806,7 +806,7 @@ SmartPanel {
                     Layout.preferredWidth: badgeSize
                     Layout.preferredHeight: badgeSize
                     radius: Style.radiusM
-                    color: Color.mSurfaceVariant
+                    color: NColor.mSurfaceVariant
 
                     // Image preview for clipboard images
                     NImageRounded {
@@ -828,7 +828,7 @@ SmartPanel {
                       Rectangle {
                         anchors.fill: parent
                         visible: parent.status === Image.Loading
-                        color: Color.mSurfaceVariant
+                        color: NColor.mSurfaceVariant
 
                         BusyIndicator {
                           anchors.centerIn: parent
@@ -872,7 +872,7 @@ SmartPanel {
                       text: resultEmojiChar ? resultEmojiChar : resultName.charAt(0).toUpperCase()
                       pointSize: resultEmojiChar ? Style.fontSizeXXXL : Style.fontSizeXXL  // Larger font for emojis
                       font.weight: Style.fontWeightBold
-                      color: resultEmojiChar ? Color.mOnSurface : Color.mOnPrimary  // Different color for emojis
+                      color: resultEmojiChar ? NColor.mOnSurface : NColor.mOnPrimary  // Different color for emojis
                     }
 
                     // Image type indicator overlay
@@ -884,7 +884,7 @@ SmartPanel {
                       width: formatLabel.width + 6
                       height: formatLabel.height + 2
                       radius: Style.radiusM
-                      color: Color.mSurfaceVariant
+                      color: NColor.mSurfaceVariant
 
                       NText {
                         id: formatLabel
@@ -897,7 +897,7 @@ SmartPanel {
                           return parts[0] || "IMG";
                         }
                         pointSize: Style.fontSizeXXS
-                        color: Color.mPrimary
+                        color: NColor.mPrimary
                       }
                     }
                   }
@@ -911,7 +911,7 @@ SmartPanel {
                       text: resultName || "Unknown"
                       pointSize: Style.fontSizeL
                       font.weight: Style.fontWeightBold
-                      color: entry.isSelected ? Color.mOnHover : Color.mOnSurface
+                      color: entry.isSelected ? NColor.mOnHover : NColor.mOnSurface
                       elide: Text.ElideRight
                       Layout.fillWidth: true
                     }
@@ -919,7 +919,7 @@ SmartPanel {
                     NText {
                       text: resultDescription
                       pointSize: Style.fontSizeS
-                      color: entry.isSelected ? Color.mOnHover : Color.mOnSurfaceVariant
+                      color: entry.isSelected ? NColor.mOnHover : NColor.mOnSurfaceVariant
                       elide: Text.ElideRight
                       Layout.fillWidth: true
                       visible: text !== ""
@@ -1120,7 +1120,7 @@ SmartPanel {
                 return resultsGrid.cellHeight;
               }
               radius: Style.radiusM
-              color: gridEntry.isSelected ? Color.mHover : Color.mSurface
+              color: gridEntry.isSelected ? NColor.mHover : NColor.mSurface
 
               Behavior on color {
                 ColorAnimation {
@@ -1155,7 +1155,7 @@ SmartPanel {
                   }
                   Layout.alignment: Qt.AlignHCenter
                   radius: Style.radiusM
-                  color: Color.mSurfaceVariant
+                  color: NColor.mSurfaceVariant
 
                   // Image preview for clipboard images
                   NImageRounded {
@@ -1174,7 +1174,7 @@ SmartPanel {
                     Rectangle {
                       anchors.fill: parent
                       visible: parent.status === Image.Loading
-                      color: Color.mSurfaceVariant
+                      color: NColor.mSurfaceVariant
 
                       BusyIndicator {
                         anchors.centerIn: parent
@@ -1226,7 +1226,7 @@ SmartPanel {
                       return Style.fontSizeXL;
                     }
                     font.weight: Style.fontWeightBold
-                    color: resultEmojiChar ? Color.mOnSurface : Color.mOnPrimary
+                    color: resultEmojiChar ? NColor.mOnSurface : NColor.mOnPrimary
                   }
                 }
 
@@ -1240,7 +1240,7 @@ SmartPanel {
                     return Style.fontSizeS;
                   }
                   font.weight: Style.fontWeightSemiBold
-                  color: gridEntry.isSelected ? Color.mOnHover : Color.mOnSurface
+                  color: gridEntry.isSelected ? NColor.mOnHover : NColor.mOnSurface
                   elide: Text.ElideRight
                   Layout.fillWidth: true
                   Layout.maximumWidth: gridEntry.width - 8
@@ -1305,7 +1305,7 @@ SmartPanel {
             return prefix + results.length + " result" + (results.length !== 1 ? 's' : '');
           }
           pointSize: Style.fontSizeXS
-          color: Color.mOnSurfaceVariant
+          color: NColor.mOnSurfaceVariant
           horizontalAlignment: Text.AlignCenter
         }
       }

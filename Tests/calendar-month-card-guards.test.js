@@ -69,7 +69,7 @@ function testCalendarMonthEventsForDateFiltersOverlaps() {
 function testCalendarMonthEventColorByEventKindAndToday() {
   const getEventColor = qmlFunction("getEventColor", "event", "isToday");
   const ctx = {
-    Color: {
+    NColor: {
       mOnSecondary: "on-secondary",
       mTertiary: "tertiary",
       mSecondary: "secondary",

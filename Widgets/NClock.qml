@@ -14,14 +14,14 @@ Item {
   property string clockStyle: "analog"
 
   // Color properties
-  property color backgroundColor: Color.mPrimary
-  property color clockColor: Color.mOnPrimary
+  property color backgroundColor: NColor.mPrimary
+  property color clockColor: NColor.mOnPrimary
 
   property color secondHandColor: {
-    var defaultColor = Color.mError;
+    var defaultColor = NColor.mError;
     var bestContrast = 1.0; // 1.0 is "no contrast"
     var bestColor = defaultColor;
-    var candidates = [Color.mSecondary, Color.mTertiary, Color.mError];
+    var candidates = [NColor.mSecondary, NColor.mTertiary, NColor.mError];
 
     const minContrast = 1.149;
 
@@ -118,9 +118,9 @@ Item {
   // Analog Clock Component
   component NClockAnalog: Item {
     property date now
-    property color backgroundColor: Color.mPrimary
-    property color clockColor: Color.mOnPrimary
-    property color secondHandColor: Color.mError
+    property color backgroundColor: NColor.mPrimary
+    property color clockColor: NColor.mOnPrimary
+    property color secondHandColor: NColor.mError
     anchors.fill: parent
 
     Canvas {
@@ -218,9 +218,9 @@ Item {
   // Digital Clock Component
   component NClockDigital: Item {
     property date now
-    property color backgroundColor: Color.mPrimary
-    property color clockColor: Color.mOnPrimary
-    property color progressColor: Color.mError
+    property color backgroundColor: NColor.mPrimary
+    property color clockColor: NColor.mOnPrimary
+    property color progressColor: NColor.mError
     property real hoursFontSize: Style.fontSizeXS
     property real minutesFontSize: Style.fontSizeXXS
 

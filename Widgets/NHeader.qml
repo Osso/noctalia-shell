@@ -17,14 +17,14 @@ ColumnLayout {
     text: root.label
     pointSize: Style.fontSizeXL
     font.weight: Style.fontWeightSemiBold
-    color: Color.mSecondary
+    color: NColor.mSecondary
     visible: root.label !== ""
   }
 
   NText {
     text: root.description
     pointSize: Style.fontSizeM
-    color: Color.mOnSurfaceVariant
+    color: NColor.mOnSurfaceVariant
     wrapMode: Text.WordWrap
     Layout.fillWidth: true
     visible: root.description !== ""

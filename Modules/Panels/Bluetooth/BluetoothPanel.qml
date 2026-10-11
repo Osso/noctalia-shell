@@ -16,7 +16,7 @@ SmartPanel {
   preferredHeight: Math.round(500 * Style.uiScaleRatio)
 
   panelContent: Rectangle {
-    color: Color.transparent
+    color: NColor.transparent
 
     // Calculate content height based on header + devices list (or minimum for empty states)
     property real headerHeight: headerRow.implicitHeight + Style.marginM * 2
@@ -44,14 +44,14 @@ SmartPanel {
           NIcon {
             icon: "bluetooth"
             pointSize: Style.fontSizeXXL
-            color: Color.mPrimary
+            color: NColor.mPrimary
           }
 
           NText {
             text: I18n.tr("bluetooth.panel.title")
             pointSize: Style.fontSizeL
             font.weight: Style.fontWeightBold
-            color: Color.mOnSurface
+            color: NColor.mOnSurface
             Layout.fillWidth: true
           }
 
@@ -104,21 +104,21 @@ SmartPanel {
           NIcon {
             icon: "bluetooth-off"
             pointSize: 48
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             Layout.alignment: Qt.AlignHCenter
           }
 
           NText {
             text: I18n.tr("bluetooth.panel.disabled")
             pointSize: Style.fontSizeL
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             Layout.alignment: Qt.AlignHCenter
           }
 
           NText {
             text: I18n.tr("bluetooth.panel.enable-message")
             pointSize: Style.fontSizeS
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             horizontalAlignment: Text.AlignHCenter
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
@@ -216,7 +216,7 @@ SmartPanel {
                 NIcon {
                   icon: "refresh"
                   pointSize: Style.fontSizeXXL * 1.5
-                  color: Color.mPrimary
+                  color: NColor.mPrimary
 
                   RotationAnimation on rotation {
                     running: true
@@ -230,14 +230,14 @@ SmartPanel {
                 NText {
                   text: I18n.tr("bluetooth.panel.scanning")
                   pointSize: Style.fontSizeL
-                  color: Color.mOnSurface
+                  color: NColor.mOnSurface
                 }
               }
 
               NText {
                 text: I18n.tr("bluetooth.panel.pairing-mode")
                 pointSize: Style.fontSizeM
-                color: Color.mOnSurfaceVariant
+                color: NColor.mOnSurfaceVariant
                 horizontalAlignment: Text.AlignHCenter
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap

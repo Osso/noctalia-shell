@@ -2,6 +2,12 @@ Theming covers color scheme discovery/application, wallpaper and predefined them
 
 ## What it must do
 
+### Project palette namespace
+
+- [x] Project palette bindings resolve to `NColor`, distinct from QtQuick's `Color` singleton, including on Qt 6.12.
+- [x] Transparent window bindings retain zero alpha and palette bindings retain their configured colors.
+- [x] The namespace regression runs offscreen with isolated writable paths and stubbed settings, without accessing the user's configuration or desktop.
+
 ### Color scheme service
 
 - [x] Service initialization logs startup and triggers color scheme discovery.
@@ -59,6 +65,7 @@ Theming covers color scheme discovery/application, wallpaper and predefined them
 
 ## Implementation inventory
 
+- `Commons/NColor.qml` - project palette singleton, distinct from QtQuick's `Color`.
 - `Services/Theming/ColorSchemeService.qml` - scheme discovery, selection, palette writing, and template triggering.
 - `Services/Theming/AppThemeService.qml` - wallpaper/predefined theme generation coordinator.
 - `Services/Theming/TemplateProcessor.qml` - Matugen config/script generation, terminal theme handling, user templates, and error reporting.
@@ -71,6 +78,7 @@ Theming covers color scheme discovery/application, wallpaper and predefined them
 
 ## Tests asserting this spec
 
+- `Tests/color-namespace-runtime.test.py` - offscreen production palette/QColor binding regression, using `Tests/Qml/ColorNamespaceHarness.qml`.
 - `Tests/color-scheme-service-guards.test.js`
 - `Tests/app-theme-service-guards.test.js`
 - `Tests/template-processor-guards.test.js`

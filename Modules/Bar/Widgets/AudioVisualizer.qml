@@ -40,16 +40,16 @@ Item {
   readonly property color fillColor: {
     switch (colorName) {
     case "primary":
-      return Color.mPrimary;
+      return NColor.mPrimary;
     case "secondary":
-      return Color.mSecondary;
+      return NColor.mSecondary;
     case "tertiary":
-      return Color.mTertiary;
+      return NColor.mTertiary;
     case "error":
-      return Color.mError;
+      return NColor.mError;
     case "onSurface":
     default:
-      return Color.mOnSurface;
+      return NColor.mOnSurface;
     }
   }
 

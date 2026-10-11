@@ -73,8 +73,8 @@ ColumnLayout {
         Layout.fillWidth: true
         implicitHeight: contentCol.implicitHeight + Style.marginL * 2
         radius: Style.radiusM
-        color: Color.mSurfaceVariant
-        border.color: Color.mOutline
+        color: NColor.mSurfaceVariant
+        border.color: NColor.mOutline
         border.width: Style.borderS
 
         property QtObject brightnessMonitor: BrightnessService.getMonitorForScreen(modelData)
@@ -159,7 +159,7 @@ ColumnLayout {
               visible: brightnessMonitor && !brightnessMonitor.brightnessControlAvailable
               text: !Settings.data.brightness.enableDdcSupport ? I18n.tr("settings.display.monitors.brightness-unavailable.ddc-disabled") : I18n.tr("settings.display.monitors.brightness-unavailable.generic")
               pointSize: Style.fontSizeS
-              color: Color.mOnSurfaceVariant
+              color: NColor.mOnSurfaceVariant
               Layout.fillWidth: true
               wrapMode: Text.WordWrap
             }
@@ -298,7 +298,7 @@ ColumnLayout {
       NText {
         text: nightSlider.value + "K"
         pointSize: Style.fontSizeM
-        color: Color.mOnSurfaceVariant
+        color: NColor.mOnSurfaceVariant
         Layout.alignment: Qt.AlignVCenter
       }
     }
@@ -359,7 +359,7 @@ ColumnLayout {
       NText {
         text: daySlider.value + "K"
         pointSize: Style.fontSizeM
-        color: Color.mOnSurfaceVariant
+        color: NColor.mOnSurfaceVariant
         Layout.alignment: Qt.AlignVCenter
       }
     }
@@ -392,7 +392,7 @@ ColumnLayout {
       NText {
         text: I18n.tr("settings.display.night-light.manual-schedule.sunrise")
         pointSize: Style.fontSizeM
-        color: Color.mOnSurfaceVariant
+        color: NColor.mOnSurfaceVariant
       }
 
       NComboBox {
@@ -410,7 +410,7 @@ ColumnLayout {
       NText {
         text: I18n.tr("settings.display.night-light.manual-schedule.sunset")
         pointSize: Style.fontSizeM
-        color: Color.mOnSurfaceVariant
+        color: NColor.mOnSurfaceVariant
       }
 
       NComboBox {

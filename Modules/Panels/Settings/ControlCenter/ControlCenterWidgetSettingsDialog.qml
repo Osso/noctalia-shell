@@ -29,9 +29,9 @@ Popup {
   }
 
   background: Rectangle {
-    color: Color.mSurface
+    color: NColor.mSurface
     radius: Style.radiusL
-    border.color: Color.mPrimary
+    border.color: NColor.mPrimary
     border.width: Style.borderM
   }
 
@@ -50,7 +50,7 @@ Popup {
                       })
         pointSize: Style.fontSizeL
         font.weight: Style.fontWeightBold
-        color: Color.mPrimary
+        color: NColor.mPrimary
         Layout.fillWidth: true
       }
 
@@ -65,7 +65,7 @@ Popup {
     Rectangle {
       Layout.fillWidth: true
       Layout.preferredHeight: 1
-      color: Color.mOutline
+      color: NColor.mOutline
     }
 
     Loader {

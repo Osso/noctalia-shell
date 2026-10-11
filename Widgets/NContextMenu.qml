@@ -18,8 +18,8 @@ Popup {
   padding: Style.marginS
 
   background: Rectangle {
-    color: Color.mSurfaceVariant
-    border.color: Color.mOutline
+    color: NColor.mSurfaceVariant
+    border.color: NColor.mOutline
     border.width: Style.borderS
     radius: Style.radiusM
   }
@@ -53,7 +53,7 @@ Popup {
       property Popup popup: root
 
       background: Rectangle {
-        color: menuItem.hovered && menuItem.enabled ? Color.mHover : Color.transparent
+        color: menuItem.hovered && menuItem.enabled ? NColor.mHover : NColor.transparent
         radius: Style.radiusS
 
         Behavior on color {
@@ -71,7 +71,7 @@ Popup {
           visible: hasIcon
           icon: itemIcon
           pointSize: Style.fontSizeM
-          color: menuItem.hovered && menuItem.enabled ? Color.mOnHover : Color.mOnSurface
+          color: menuItem.hovered && menuItem.enabled ? NColor.mOnHover : NColor.mOnSurface
           Layout.leftMargin: root.itemPadding
 
           Behavior on color {
@@ -84,7 +84,7 @@ Popup {
         NText {
           text: itemText
           pointSize: Style.fontSizeM
-          color: menuItem.hovered && menuItem.enabled ? Color.mOnHover : Color.mOnSurface
+          color: menuItem.hovered && menuItem.enabled ? NColor.mOnHover : NColor.mOnSurface
           verticalAlignment: Text.AlignVCenter
           Layout.fillWidth: true
           Layout.leftMargin: hasIcon ? 0 : root.itemPadding

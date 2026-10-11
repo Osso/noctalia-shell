@@ -42,14 +42,14 @@ SmartPanel {
           NIcon {
             icon: "settings-display"
             pointSize: Style.fontSizeXXL
-            color: Color.mPrimary
+            color: NColor.mPrimary
           }
 
           NText {
             text: I18n.tr("settings.display.title")
             pointSize: Style.fontSizeL
             font.weight: Style.fontWeightBold
-            color: Color.mOnSurface
+            color: NColor.mOnSurface
             Layout.fillWidth: true
           }
 
@@ -101,7 +101,7 @@ SmartPanel {
 
                 NLabel {
                   label: monitorName || "Unknown"
-                  labelColor: Color.mPrimary
+                  labelColor: NColor.mPrimary
                   description: {
                     const compositorScale = CompositorService.getDisplayScale(monitorName);
                     I18n.tr("system.monitor-description", {
@@ -120,7 +120,7 @@ SmartPanel {
                   NIcon {
                     icon: getIcon(brightnessMonitor ? brightnessMonitor.brightness : 0)
                     pointSize: Style.fontSizeXL
-                    color: Color.mOnSurface
+                    color: NColor.mOnSurface
                   }
 
                   NValueSlider {

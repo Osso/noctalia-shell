@@ -7,8 +7,8 @@ import qs.Services.UI
 Slider {
   id: root
 
-  property color fillColor: Color.mPrimary
-  property color cutoutColor: Color.mSurface
+  property color fillColor: NColor.mPrimary
+  property color cutoutColor: NColor.mSurface
   property bool snapAlways: true
   property real heightRatio: 0.7
   property string tooltipText
@@ -32,8 +32,8 @@ Slider {
     width: root.availableWidth
     height: implicitHeight
     radius: Math.min(Style.radiusL, height / 2)
-    color: Qt.alpha(Color.mSurface, 0.5)
-    border.color: Qt.alpha(Color.mOutline, 0.5)
+    color: Qt.alpha(NColor.mSurface, 0.5)
+    border.color: Qt.alpha(NColor.mOutline, 0.5)
     border.width: Style.borderS
 
     // A container composite shape that puts a semicircle on the end
@@ -77,7 +77,7 @@ Slider {
       implicitWidth: knobDiameter + cutoutExtra
       implicitHeight: knobDiameter + cutoutExtra
       radius: Math.min(Style.radiusL, width / 2)
-      color: root.cutoutColor !== undefined ? root.cutoutColor : Color.mSurface
+      color: root.cutoutColor !== undefined ? root.cutoutColor : NColor.mSurface
       x: root.leftPadding + root.visualPosition * (root.availableWidth - root.knobDiameter) - cutoutExtra
       anchors.verticalCenter: parent.verticalCenter
     }
@@ -94,7 +94,7 @@ Slider {
       implicitWidth: knobDiameter
       implicitHeight: knobDiameter
       radius: Math.min(Style.radiusL, width / 2)
-      color: root.pressed ? Color.mHover : Color.mSurface
+      color: root.pressed ? NColor.mHover : NColor.mSurface
       border.color: fillColor
       border.width: Style.borderL
       anchors.centerIn: parent

@@ -34,7 +34,7 @@ NBox {
     NText {
       text: root.label
       pointSize: Style.fontSizeS
-      color: Color.mSecondary
+      color: NColor.mSecondary
       font.weight: Style.fontWeightBold
       visible: root.model.length > 0
       Layout.fillWidth: true
@@ -77,11 +77,11 @@ NBox {
         implicitHeight: netColumn.implicitHeight + (Style.marginM * 2)
         radius: Style.radiusM
         border.width: Style.borderS
-        border.color: networkConnected ? Color.mPrimary : Color.mOutline
+        border.color: networkConnected ? NColor.mPrimary : NColor.mOutline
 
         opacity: (disconnectingFromNetwork || forgettingNetwork) ? 0.6 : 1.0
 
-        color: networkConnected ? Qt.rgba(Color.mPrimary.r, Color.mPrimary.g, Color.mPrimary.b, 0.05) : Color.mSurface
+        color: networkConnected ? Qt.rgba(NColor.mPrimary.r, NColor.mPrimary.g, NColor.mPrimary.b, 0.05) : NColor.mSurface
 
         Behavior on opacity {
           NumberAnimation {
@@ -104,7 +104,7 @@ NBox {
             NIcon {
               icon: NetworkService.signalIcon(networkSignal, networkConnected)
               pointSize: Style.fontSizeXXL
-              color: networkConnected ? Color.mPrimary : Color.mOnSurface
+              color: networkConnected ? NColor.mPrimary : NColor.mOnSurface
             }
 
             ColumnLayout {
@@ -115,7 +115,7 @@ NBox {
                 text: networkSsid
                 pointSize: Style.fontSizeM
                 font.weight: networkConnected ? Style.fontWeightBold : Style.fontWeightMedium
-                color: Color.mOnSurface
+                color: NColor.mOnSurface
                 elide: Text.ElideRight
                 Layout.fillWidth: true
               }
@@ -128,19 +128,19 @@ NBox {
                                   "signal": networkSignal
                                 })
                   pointSize: Style.fontSizeXXS
-                  color: Color.mOnSurfaceVariant
+                  color: NColor.mOnSurfaceVariant
                 }
 
                 NText {
                   text: "•"
                   pointSize: Style.fontSizeXXS
-                  color: Color.mOnSurfaceVariant
+                  color: NColor.mOnSurfaceVariant
                 }
 
                 NText {
                   text: NetworkService.isSecured(networkSecurity) ? networkSecurity : "Open"
                   pointSize: Style.fontSizeXXS
-                  color: Color.mOnSurfaceVariant
+                  color: NColor.mOnSurfaceVariant
                 }
 
                 Item {
@@ -150,7 +150,7 @@ NBox {
                 // Status badges
                 Rectangle {
                   visible: networkConnected && !disconnectingFromNetwork
-                  color: Color.mPrimary
+                  color: NColor.mPrimary
                   radius: height * 0.5
                   width: connectedText.implicitWidth + (Style.marginS * 2)
                   height: connectedText.implicitHeight + (Style.marginXXS * 2)
@@ -160,13 +160,13 @@ NBox {
                     anchors.centerIn: parent
                     text: I18n.tr("wifi.panel.connected")
                     pointSize: Style.fontSizeXXS
-                    color: Color.mOnPrimary
+                    color: NColor.mOnPrimary
                   }
                 }
 
                 Rectangle {
                   visible: disconnectingFromNetwork
-                  color: Color.mError
+                  color: NColor.mError
                   radius: height * 0.5
                   width: disconnectingText.implicitWidth + (Style.marginS * 2)
                   height: disconnectingText.implicitHeight + (Style.marginXXS * 2)
@@ -176,13 +176,13 @@ NBox {
                     anchors.centerIn: parent
                     text: I18n.tr("wifi.panel.disconnecting")
                     pointSize: Style.fontSizeXXS
-                    color: Color.mOnPrimary
+                    color: NColor.mOnPrimary
                   }
                 }
 
                 Rectangle {
                   visible: forgettingNetwork
-                  color: Color.mError
+                  color: NColor.mError
                   radius: height * 0.5
                   width: forgettingText.implicitWidth + (Style.marginS * 2)
                   height: forgettingText.implicitHeight + (Style.marginXXS * 2)
@@ -192,14 +192,14 @@ NBox {
                     anchors.centerIn: parent
                     text: I18n.tr("wifi.panel.forgetting")
                     pointSize: Style.fontSizeXXS
-                    color: Color.mOnPrimary
+                    color: NColor.mOnPrimary
                   }
                 }
 
                 Rectangle {
                   visible: networkCached && !networkConnected && !forgettingNetwork && !disconnectingFromNetwork
-                  color: Color.transparent
-                  border.color: Color.mOutline
+                  color: NColor.transparent
+                  border.color: NColor.mOutline
                   border.width: Style.borderS
                   radius: height * 0.5
                   width: savedText.implicitWidth + (Style.marginS * 2)
@@ -210,7 +210,7 @@ NBox {
                     anchors.centerIn: parent
                     text: I18n.tr("wifi.panel.saved")
                     pointSize: Style.fontSizeXXS
-                    color: Color.mOnSurfaceVariant
+                    color: NColor.mOnSurfaceVariant
                   }
                 }
               }
@@ -223,7 +223,7 @@ NBox {
               NBusyIndicator {
                 visible: networkBusy
                 running: visible
-                color: Color.mPrimary
+                color: NColor.mPrimary
                 size: Style.baseWidgetSize * 0.5
               }
 
@@ -261,7 +261,7 @@ NBox {
                 text: I18n.tr("wifi.panel.disconnect")
                 outlined: !hovered
                 fontSize: Style.fontSizeXS
-                backgroundColor: Color.mError
+                backgroundColor: NColor.mError
                 onClicked: NetworkService.disconnect(networkSsid)
               }
             }
@@ -272,8 +272,8 @@ NBox {
             visible: root.passwordSsid === networkSsid && !disconnectingFromNetwork && !forgettingNetwork
             Layout.fillWidth: true
             height: passwordRow.implicitHeight + Style.marginS * 2
-            color: Color.mSurfaceVariant
-            border.color: Color.mOutline
+            color: NColor.mSurfaceVariant
+            border.color: NColor.mOutline
             border.width: Style.borderS
             radius: Style.radiusS
 
@@ -287,8 +287,8 @@ NBox {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: Style.radiusXS
-                color: Color.mSurface
-                border.color: pwdInput.activeFocus ? Color.mSecondary : Color.mOutline
+                color: NColor.mSurface
+                border.color: pwdInput.activeFocus ? NColor.mSecondary : NColor.mOutline
                 border.width: Style.borderS
 
                 TextInput {
@@ -299,7 +299,7 @@ NBox {
                   anchors.margins: Style.marginS
                   font.family: Settings.data.ui.fontFixed
                   font.pointSize: Style.fontSizeS
-                  color: Color.mOnSurface
+                  color: NColor.mOnSurface
                   echoMode: TextInput.Password
                   selectByMouse: true
                   focus: visible
@@ -320,7 +320,7 @@ NBox {
                     visible: parent.text.length === 0
                     anchors.verticalCenter: parent.verticalCenter
                     text: I18n.tr("wifi.panel.enter-password")
-                    color: Color.mOnSurfaceVariant
+                    color: NColor.mOnSurfaceVariant
                     pointSize: Style.fontSizeS
                   }
                 }
@@ -347,10 +347,10 @@ NBox {
             visible: root.expandedSsid === networkSsid && !disconnectingFromNetwork && !forgettingNetwork
             Layout.fillWidth: true
             height: forgetRow.implicitHeight + Style.marginS * 2
-            color: Color.mSurfaceVariant
+            color: NColor.mSurfaceVariant
             radius: Style.radiusS
             border.width: Style.borderS
-            border.color: Color.mOutline
+            border.color: NColor.mOutline
 
             RowLayout {
               id: forgetRow
@@ -362,13 +362,13 @@ NBox {
                 NIcon {
                   icon: "trash"
                   pointSize: Style.fontSizeL
-                  color: Color.mError
+                  color: NColor.mError
                 }
 
                 NText {
                   text: I18n.tr("wifi.panel.forget-network")
                   pointSize: Style.fontSizeS
-                  color: Color.mError
+                  color: NColor.mError
                   Layout.fillWidth: true
                 }
               }
@@ -377,7 +377,7 @@ NBox {
                 id: forgetButton
                 text: I18n.tr("wifi.panel.forget")
                 fontSize: Style.fontSizeXXS
-                backgroundColor: Color.mError
+                backgroundColor: NColor.mError
                 outlined: forgetButton.hovered ? false : true
                 onClicked: root.forgetConfirmed(networkSsid)
               }

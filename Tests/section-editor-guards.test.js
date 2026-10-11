@@ -11,7 +11,7 @@ function qmlFunction(functionName, ...argNames) {
 }
 
 const colorContext = {
-  Color: {
+  NColor: {
     mPrimary: "primary",
     mOnPrimary: "on-primary",
     mSecondary: "secondary",

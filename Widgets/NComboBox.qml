@@ -114,8 +114,8 @@ RowLayout {
     background: Rectangle {
       implicitWidth: Style.baseWidgetSize * 3.75
       implicitHeight: preferredHeight
-      color: Color.mSurface
-      border.color: combo.activeFocus ? Color.mSecondary : Color.mOutline
+      color: NColor.mSurface
+      border.color: combo.activeFocus ? NColor.mSecondary : NColor.mOutline
       border.width: Style.borderS
       radius: Style.radiusM
 
@@ -132,7 +132,7 @@ RowLayout {
       pointSize: Style.fontSizeM
       verticalAlignment: Text.AlignVCenter
       elide: Text.ElideRight
-      color: (combo.currentIndex >= 0 && combo.currentIndex < itemCount()) ? Color.mOnSurface : Color.mOnSurfaceVariant
+      color: (combo.currentIndex >= 0 && combo.currentIndex < itemCount()) ? NColor.mOnSurface : NColor.mOnSurfaceVariant
       text: (combo.currentIndex >= 0 && combo.currentIndex < itemCount()) ? (getItem(combo.currentIndex) ? getItem(combo.currentIndex).name : root.placeholder) : root.placeholder
     }
 
@@ -182,7 +182,7 @@ RowLayout {
 
           background: Rectangle {
             anchors.fill: parent
-            color: highlighted ? Color.mHover : Color.transparent
+            color: highlighted ? NColor.mHover : NColor.transparent
             radius: Style.radiusS
             Behavior on color {
               ColorAnimation {
@@ -197,7 +197,7 @@ RowLayout {
               return item && item.name ? item.name : "";
             }
             pointSize: Style.fontSizeM
-            color: highlighted ? Color.mOnHover : Color.mOnSurface
+            color: highlighted ? NColor.mOnHover : NColor.mOnSurface
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
             Behavior on color {
@@ -210,8 +210,8 @@ RowLayout {
       }
 
       background: Rectangle {
-        color: Color.mSurfaceVariant
-        border.color: Color.mOutline
+        color: NColor.mSurfaceVariant
+        border.color: NColor.mOutline
         border.width: Style.borderS
         radius: Style.radiusM
       }

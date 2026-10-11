@@ -128,9 +128,9 @@ PanelWindow {
 
   color: {
     if (dimmerOpacity > 0 && isPanelOpen && !isPanelClosing) {
-      return Qt.alpha(Color.mShadow, dimmerOpacity);
+      return Qt.alpha(NColor.mShadow, dimmerOpacity);
     }
-    return Color.transparent;
+    return NColor.transparent;
   }
 
   Behavior on color {

@@ -126,19 +126,19 @@ Loader {
             gradient: Gradient {
               GradientStop {
                 position: 0.0
-                color: Qt.alpha(Color.mShadow, 0.8)
+                color: Qt.alpha(NColor.mShadow, 0.8)
               }
               GradientStop {
                 position: 0.3
-                color: Qt.alpha(Color.mShadow, 0.4)
+                color: Qt.alpha(NColor.mShadow, 0.4)
               }
               GradientStop {
                 position: 0.7
-                color: Qt.alpha(Color.mShadow, 0.5)
+                color: Qt.alpha(NColor.mShadow, 0.5)
               }
               GradientStop {
                 position: 1.0
-                color: Qt.alpha(Color.mShadow, 0.9)
+                color: Qt.alpha(NColor.mShadow, 0.9)
               }
             }
           }
@@ -148,7 +148,7 @@ Loader {
             anchors.fill: parent
             visible: Settings.data.general.showScreenCorners
 
-            property color cornerColor: Settings.data.general.forceBlackScreenCorners ? Color.black : Qt.alpha(Color.mSurface, Settings.data.bar.backgroundOpacity)
+            property color cornerColor: Settings.data.general.forceBlackScreenCorners ? NColor.black : Qt.alpha(NColor.mSurface, Settings.data.bar.backgroundOpacity)
             property real cornerRadius: Style.screenRadius
             property real cornerSize: Style.screenRadius
 
@@ -296,8 +296,8 @@ Loader {
               anchors.top: parent.top
               anchors.topMargin: 100
               radius: Style.radiusL
-              color: Color.mSurface
-              border.color: Qt.alpha(Color.mOutline, 0.2)
+              color: NColor.mSurface
+              border.color: Qt.alpha(NColor.mOutline, 0.2)
               border.width: 1
 
               RowLayout {
@@ -312,24 +312,24 @@ Loader {
                   Layout.preferredHeight: 70
                   Layout.alignment: Qt.AlignVCenter
                   radius: Math.min(Style.radiusL, width / 2)
-                  color: Color.transparent
+                  color: NColor.transparent
 
                   Rectangle {
                     anchors.fill: parent
                     radius: parent.radius
-                    color: Color.transparent
-                    border.color: Qt.alpha(Color.mPrimary, 0.8)
+                    color: NColor.transparent
+                    border.color: Qt.alpha(NColor.mPrimary, 0.8)
                     border.width: 2
 
                     SequentialAnimation on border.color {
                       loops: Animation.Infinite
                       ColorAnimation {
-                        to: Qt.alpha(Color.mPrimary, 1.0)
+                        to: Qt.alpha(NColor.mPrimary, 1.0)
                         duration: 2000
                         easing.type: Easing.InOutQuad
                       }
                       ColorAnimation {
-                        to: Qt.alpha(Color.mPrimary, 0.8)
+                        to: Qt.alpha(NColor.mPrimary, 0.8)
                         duration: 2000
                         easing.type: Easing.InOutQuad
                       }
@@ -370,7 +370,7 @@ Loader {
                     text: I18n.tr("lock-screen.welcome-back") + " " + HostService.displayName + "!"
                     pointSize: Style.fontSizeXXL
                     font.weight: Font.Medium
-                    color: Color.mOnSurface
+                    color: NColor.mOnSurface
                     horizontalAlignment: Text.AlignLeft
                   }
 
@@ -391,7 +391,7 @@ Loader {
                     }
                     pointSize: Style.fontSizeXL
                     font.weight: Font.Medium
-                    color: Color.mOnSurfaceVariant
+                    color: NColor.mOnSurfaceVariant
                     horizontalAlignment: Text.AlignLeft
                   }
                 }
@@ -408,9 +408,9 @@ Loader {
                   Layout.preferredWidth: 70
                   Layout.preferredHeight: 70
                   Layout.alignment: Qt.AlignVCenter
-                  backgroundColor: Color.mSurface
-                  clockColor: Color.mOnSurface
-                  secondHandColor: Color.mPrimary
+                  backgroundColor: NColor.mSurface
+                  clockColor: NColor.mOnSurface
+                  secondHandColor: NColor.mPrimary
                   hoursFontSize: Style.fontSizeL
                   minutesFontSize: Style.fontSizeL
                 }
@@ -425,8 +425,8 @@ Loader {
               anchors.bottom: parent.bottom
               anchors.bottomMargin: (Settings.data.general.compactLockScreen ? 280 : 360) * Style.uiScaleRatio
               radius: Style.radiusL
-              color: Color.mError
-              border.color: Color.mError
+              color: NColor.mError
+              border.color: NColor.mError
               border.width: 1
               visible: lockContext.showFailure && lockContext.errorMessage
               opacity: visible ? 1.0 : 0.0
@@ -439,12 +439,12 @@ Loader {
                 NIcon {
                   icon: "alert-circle"
                   pointSize: Style.fontSizeL
-                  color: Color.mOnError
+                  color: NColor.mOnError
                 }
 
                 NText {
                   text: lockContext.errorMessage || "Authentication failed"
-                  color: Color.mOnError
+                  color: NColor.mOnError
                   pointSize: Style.fontSizeL
                   font.weight: Font.Medium
                   horizontalAlignment: Text.AlignHCenter
@@ -479,7 +479,7 @@ Loader {
               anchors.bottomMargin: 96 + (Settings.data.general.compactLockScreen ? 116 : 220)
               topLeftRadius: Style.radiusL
               topRightRadius: Style.radiusL
-              color: Color.mSurface
+              color: NColor.mSurface
               visible: Settings.data.general.compactLockScreen && (batteryIndicator.isReady || keyboardLayout.currentLayout !== "Unknown")
 
               RowLayout {
@@ -494,12 +494,12 @@ Loader {
                   NIcon {
                     icon: BatteryService.getIcon(Math.round(batteryIndicator.percent), batteryIndicator.charging, batteryIndicator.isReady)
                     pointSize: Style.fontSizeM
-                    color: batteryIndicator.charging ? Color.mPrimary : Color.mOnSurfaceVariant
+                    color: batteryIndicator.charging ? NColor.mPrimary : NColor.mOnSurfaceVariant
                   }
 
                   NText {
                     text: Math.round(batteryIndicator.percent) + "%"
-                    color: Color.mOnSurfaceVariant
+                    color: NColor.mOnSurfaceVariant
                     pointSize: Style.fontSizeM
                     font.weight: Font.Medium
                   }
@@ -513,12 +513,12 @@ Loader {
                   NIcon {
                     icon: "keyboard"
                     pointSize: Style.fontSizeM
-                    color: Color.mOnSurfaceVariant
+                    color: NColor.mOnSurfaceVariant
                   }
 
                   NText {
                     text: keyboardLayout.currentLayout
-                    color: Color.mOnSurfaceVariant
+                    color: NColor.mOnSurfaceVariant
                     pointSize: Style.fontSizeM
                     font.weight: Font.Medium
                     elide: Text.ElideRight
@@ -535,7 +535,7 @@ Loader {
               anchors.bottom: parent.bottom
               anchors.bottomMargin: 100
               radius: Style.radiusL
-              color: Color.mSurface
+              color: NColor.mSurface
 
               // Measure text widths to determine minimum button width (for container width calculation)
               Item {
@@ -611,7 +611,7 @@ Loader {
                     Layout.fillWidth: !(Settings.data.location.weatherEnabled && LocationService.data.weather !== null)
                     Layout.preferredHeight: 50
                     radius: Style.radiusL
-                    color: Color.transparent
+                    color: NColor.transparent
                     clip: true
                     visible: MediaService.currentPlayer && MediaService.canPlay
 
@@ -623,7 +623,7 @@ Loader {
                       sourceComponent: NLinearSpectrum {
                         anchors.fill: parent
                         values: CavaService.values
-                        fillColor: Color.mPrimary
+                        fillColor: NColor.mPrimary
                         opacity: 0.4
                       }
                     }
@@ -636,7 +636,7 @@ Loader {
                       sourceComponent: NMirroredSpectrum {
                         anchors.fill: parent
                         values: CavaService.values
-                        fillColor: Color.mPrimary
+                        fillColor: NColor.mPrimary
                         opacity: 0.4
                       }
                     }
@@ -649,7 +649,7 @@ Loader {
                       sourceComponent: NWaveSpectrum {
                         anchors.fill: parent
                         values: CavaService.values
-                        fillColor: Color.mPrimary
+                        fillColor: NColor.mPrimary
                         opacity: 0.4
                       }
                     }
@@ -664,7 +664,7 @@ Loader {
                         Layout.preferredWidth: 34
                         Layout.preferredHeight: 34
                         radius: Math.min(Style.radiusL, width / 2)
-                        color: Color.transparent
+                        color: NColor.transparent
                         clip: true
 
                         NImageRounded {
@@ -674,7 +674,7 @@ Loader {
                           imagePath: MediaService.trackArtUrl
                           fallbackIcon: "disc"
                           fallbackIconSize: Style.fontSizeM
-                          borderColor: Color.mOutline
+                          borderColor: NColor.mOutline
                           borderWidth: Style.borderS
                         }
                       }
@@ -687,7 +687,7 @@ Loader {
                           text: MediaService.trackTitle || "No media"
                           pointSize: Style.fontSizeM
                           font.weight: Style.fontWeightMedium
-                          color: Color.mOnSurface
+                          color: NColor.mOnSurface
                           Layout.fillWidth: true
                           elide: Text.ElideRight
                         }
@@ -695,7 +695,7 @@ Loader {
                         NText {
                           text: MediaService.trackArtist || ""
                           pointSize: Style.fontSizeM
-                          color: Color.mOnSurfaceVariant
+                          color: NColor.mOnSurfaceVariant
                           Layout.fillWidth: true
                           elide: Text.ElideRight
                         }
@@ -707,7 +707,7 @@ Loader {
                     Layout.preferredWidth: 1
                     Layout.fillHeight: true
                     Layout.rightMargin: 4
-                    color: Qt.alpha(Color.mOutline, 0.3)
+                    color: Qt.alpha(NColor.mOutline, 0.3)
                     visible: MediaService.currentPlayer && MediaService.canPlay
                   }
 
@@ -726,7 +726,7 @@ Loader {
                       Layout.alignment: Qt.AlignVCenter
                       icon: LocationService.weatherSymbolFromCode(LocationService.data.weather.current_weather.weathercode)
                       pointSize: Style.fontSizeXXXL
-                      color: Color.mPrimary
+                      color: NColor.mPrimary
                     }
 
                     ColumnLayout {
@@ -750,7 +750,7 @@ Loader {
                           }
                           pointSize: Style.fontSizeXL
                           font.weight: Style.fontWeightBold
-                          color: Color.mOnSurface
+                          color: NColor.mOnSurface
                         }
 
                         NText {
@@ -765,7 +765,7 @@ Loader {
                             return wind + " " + unit;
                           }
                           pointSize: Style.fontSizeM
-                          color: Color.mOnSurfaceVariant
+                          color: NColor.mOnSurfaceVariant
                           font.weight: Font.Normal
                         }
                       }
@@ -777,13 +777,13 @@ Loader {
                         NText {
                           text: Settings.data.location.name.split(",")[0]
                           pointSize: Style.fontSizeM
-                          color: Color.mOnSurfaceVariant
+                          color: NColor.mOnSurfaceVariant
                         }
 
                         NText {
                           text: (LocationService.data.weather.current && LocationService.data.weather.current.relativehumidity_2m) ? LocationService.data.weather.current.relativehumidity_2m + "% humidity" : ""
                           pointSize: Style.fontSizeM
-                          color: Color.mOnSurfaceVariant
+                          color: NColor.mOnSurfaceVariant
                         }
                       }
                     }
@@ -810,7 +810,7 @@ Loader {
                             return I18n.locale.toString(weatherDate, "ddd");
                           }
                           pointSize: Style.fontSizeM
-                          color: Color.mOnSurfaceVariant
+                          color: NColor.mOnSurfaceVariant
                           horizontalAlignment: Text.AlignHCenter
                           Layout.fillWidth: true
                         }
@@ -819,7 +819,7 @@ Loader {
                           Layout.alignment: Qt.AlignHCenter
                           icon: LocationService.weatherSymbolFromCode(LocationService.data.weather.daily.weathercode[index])
                           pointSize: Style.fontSizeXL
-                          color: Color.mOnSurfaceVariant
+                          color: NColor.mOnSurfaceVariant
                         }
 
                         NText {
@@ -836,7 +836,7 @@ Loader {
                           }
                           pointSize: Style.fontSizeM
                           font.weight: Style.fontWeightMedium
-                          color: Color.mOnSurfaceVariant
+                          color: NColor.mOnSurfaceVariant
                           horizontalAlignment: Text.AlignHCenter
                           Layout.fillWidth: true
                         }
@@ -861,12 +861,12 @@ Loader {
                       NIcon {
                         icon: BatteryService.getIcon(Math.round(batteryIndicator.percent), batteryIndicator.charging, batteryIndicator.isReady)
                         pointSize: Style.fontSizeM
-                        color: batteryIndicator.charging ? Color.mPrimary : Color.mOnSurfaceVariant
+                        color: batteryIndicator.charging ? NColor.mPrimary : NColor.mOnSurfaceVariant
                       }
 
                       NText {
                         text: Math.round(batteryIndicator.percent) + "%"
-                        color: Color.mOnSurfaceVariant
+                        color: NColor.mOnSurfaceVariant
                         pointSize: Style.fontSizeM
                         font.weight: Font.Medium
                       }
@@ -880,12 +880,12 @@ Loader {
                       NIcon {
                         icon: "keyboard"
                         pointSize: Style.fontSizeM
-                        color: Color.mOnSurfaceVariant
+                        color: NColor.mOnSurfaceVariant
                       }
 
                       NText {
                         text: keyboardLayout.currentLayout
-                        color: Color.mOnSurfaceVariant
+                        color: NColor.mOnSurfaceVariant
                         pointSize: Style.fontSizeM
                         font.weight: Font.Medium
                         elide: Text.ElideRight
@@ -908,8 +908,8 @@ Loader {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 48
                     radius: Style.radiusL
-                    color: Color.mSurface
-                    border.color: passwordInput.activeFocus ? Color.mPrimary : Qt.alpha(Color.mOutline, 0.3)
+                    color: NColor.mSurface
+                    border.color: passwordInput.activeFocus ? NColor.mPrimary : Qt.alpha(NColor.mOutline, 0.3)
                     border.width: passwordInput.activeFocus ? 2 : 1
 
                     property bool passwordVisible: false
@@ -923,7 +923,7 @@ Loader {
                       NIcon {
                         icon: "lock"
                         pointSize: Style.fontSizeL
-                        color: passwordInput.activeFocus ? Color.mPrimary : Color.mOnSurfaceVariant
+                        color: passwordInput.activeFocus ? NColor.mPrimary : NColor.mOnSurfaceVariant
                         anchors.verticalCenter: parent.verticalCenter
                       }
 
@@ -935,7 +935,7 @@ Loader {
                         visible: false
                         enabled: !lockContext.unlockInProgress
                         font.pointSize: Style.fontSizeM
-                        color: Color.mPrimary
+                        color: NColor.mPrimary
                         echoMode: parent.parent.passwordVisible ? TextInput.Normal : TextInput.Password
                         passwordCharacter: "•"
                         passwordMaskDelay: 0
@@ -957,7 +957,7 @@ Loader {
                         Rectangle {
                           width: 2
                           height: 20
-                          color: Color.mPrimary
+                          color: NColor.mPrimary
                           visible: passwordInput.activeFocus && passwordInput.text.length === 0
                           anchors.verticalCenter: parent.verticalCenter
 
@@ -994,7 +994,7 @@ Loader {
                               NIcon {
                                 icon: "circle-filled"
                                 pointSize: Style.fontSizeS
-                                color: Color.mPrimary
+                                color: NColor.mPrimary
                                 opacity: 1.0
                               }
                             }
@@ -1003,7 +1003,7 @@ Loader {
 
                         NText {
                           text: passwordInput.text
-                          color: Color.mPrimary
+                          color: NColor.mPrimary
                           pointSize: Style.fontSizeM
                           font.weight: Font.Medium
                           visible: passwordInput.text.length > 0 && parent.parent.parent.passwordVisible
@@ -1015,7 +1015,7 @@ Loader {
                         Rectangle {
                           width: 2
                           height: 20
-                          color: Color.mPrimary
+                          color: NColor.mPrimary
                           visible: passwordInput.activeFocus && passwordInput.text.length > 0
                           anchors.verticalCenter: parent.verticalCenter
 
@@ -1043,7 +1043,7 @@ Loader {
                       width: 36
                       height: 36
                       radius: Math.min(Style.radiusL, width / 2)
-                      color: eyeButtonArea.containsMouse ? Qt.alpha(Color.mOnSurface, 0.1) : "transparent"
+                      color: eyeButtonArea.containsMouse ? Qt.alpha(NColor.mOnSurface, 0.1) : "transparent"
                       visible: passwordInput.text.length > 0
                       enabled: !lockContext.unlockInProgress
 
@@ -1051,7 +1051,7 @@ Loader {
                         anchors.centerIn: parent
                         icon: parent.parent.passwordVisible ? "eye-off" : "eye"
                         pointSize: Style.fontSizeM
-                        color: Color.mOnSurfaceVariant
+                        color: NColor.mOnSurfaceVariant
                       }
 
                       MouseArea {
@@ -1079,8 +1079,8 @@ Loader {
                       width: 36
                       height: 36
                       radius: Math.min(Style.radiusL, width / 2)
-                      color: submitButtonArea.containsMouse ? Color.mPrimary : Qt.alpha(Color.mPrimary, 0.8)
-                      border.color: Color.mPrimary
+                      color: submitButtonArea.containsMouse ? NColor.mPrimary : Qt.alpha(NColor.mPrimary, 0.8)
+                      border.color: NColor.mPrimary
                       border.width: 1
                       enabled: !lockContext.unlockInProgress
 
@@ -1088,7 +1088,7 @@ Loader {
                         anchors.centerIn: parent
                         icon: "arrow-forward"
                         pointSize: Style.fontSizeM
-                        color: Color.mOnPrimary
+                        color: NColor.mOnPrimary
                       }
 
                       MouseArea {
@@ -1129,9 +1129,9 @@ Loader {
                     icon: "logout"
                     text: I18n.tr("session-menu.logout")
                     outlined: true
-                    backgroundColor: Color.mOnSurfaceVariant
-                    textColor: Color.mOnSurfaceVariant
-                    hoverColor: Color.mHover
+                    backgroundColor: NColor.mOnSurfaceVariant
+                    textColor: NColor.mOnSurfaceVariant
+                    hoverColor: NColor.mHover
                     fontSize: Settings.data.general.compactLockScreen ? Style.fontSizeS : Style.fontSizeM
                     iconSize: Settings.data.general.compactLockScreen ? Style.fontSizeM : Style.fontSizeL
                     fontWeight: Style.fontWeightMedium
@@ -1150,9 +1150,9 @@ Loader {
                     icon: "suspend"
                     text: I18n.tr("session-menu.suspend")
                     outlined: true
-                    backgroundColor: Color.mOnSurfaceVariant
-                    textColor: Color.mOnSurfaceVariant
-                    hoverColor: Color.mHover
+                    backgroundColor: NColor.mOnSurfaceVariant
+                    textColor: NColor.mOnSurfaceVariant
+                    hoverColor: NColor.mHover
                     fontSize: Settings.data.general.compactLockScreen ? Style.fontSizeS : Style.fontSizeM
                     iconSize: Settings.data.general.compactLockScreen ? Style.fontSizeM : Style.fontSizeL
                     fontWeight: Style.fontWeightMedium
@@ -1172,9 +1172,9 @@ Loader {
                     icon: "hibernate"
                     text: I18n.tr("session-menu.hibernate")
                     outlined: true
-                    backgroundColor: Color.mOnSurfaceVariant
-                    textColor: Color.mOnSurfaceVariant
-                    hoverColor: Color.mHover
+                    backgroundColor: NColor.mOnSurfaceVariant
+                    textColor: NColor.mOnSurfaceVariant
+                    hoverColor: NColor.mHover
                     fontSize: Settings.data.general.compactLockScreen ? Style.fontSizeS : Style.fontSizeM
                     iconSize: Settings.data.general.compactLockScreen ? Style.fontSizeM : Style.fontSizeL
                     fontWeight: Style.fontWeightMedium
@@ -1195,9 +1195,9 @@ Loader {
                     icon: "reboot"
                     text: I18n.tr("session-menu.reboot")
                     outlined: true
-                    backgroundColor: Color.mOnSurfaceVariant
-                    textColor: Color.mOnSurfaceVariant
-                    hoverColor: Color.mHover
+                    backgroundColor: NColor.mOnSurfaceVariant
+                    textColor: NColor.mOnSurfaceVariant
+                    hoverColor: NColor.mHover
                     fontSize: Settings.data.general.compactLockScreen ? Style.fontSizeS : Style.fontSizeM
                     iconSize: Settings.data.general.compactLockScreen ? Style.fontSizeM : Style.fontSizeL
                     fontWeight: Style.fontWeightMedium
@@ -1216,9 +1216,9 @@ Loader {
                     icon: "shutdown"
                     text: I18n.tr("session-menu.shutdown")
                     outlined: true
-                    backgroundColor: Color.mError
-                    textColor: Color.mOnSurfaceVariant
-                    hoverColor: Color.mError
+                    backgroundColor: NColor.mError
+                    textColor: NColor.mOnSurfaceVariant
+                    hoverColor: NColor.mError
                     fontSize: Settings.data.general.compactLockScreen ? Style.fontSizeS : Style.fontSizeM
                     iconSize: Settings.data.general.compactLockScreen ? Style.fontSizeM : Style.fontSizeL
                     fontWeight: Style.fontWeightMedium

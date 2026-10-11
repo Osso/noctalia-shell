@@ -54,7 +54,7 @@ Loader {
         }
       }
 
-      color: Color.transparent
+      color: NColor.transparent
       screen: modelData
       WlrLayershell.layer: WlrLayer.Background
       WlrLayershell.exclusionMode: ExclusionMode.Ignore
@@ -90,7 +90,7 @@ Loader {
 
         Rectangle {
           anchors.fill: parent
-          color: Settings.data.colorSchemes.darkMode ? Color.mSurface : Color.mOnSurface
+          color: Settings.data.colorSchemes.darkMode ? NColor.mSurface : NColor.mOnSurface
           opacity: 0.8
         }
       }

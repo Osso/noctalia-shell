@@ -291,7 +291,7 @@ Item {
           width: mainContainer.width - Style.marginS
           height: 20
           values: CavaService.values
-          fillColor: Color.mPrimary
+          fillColor: NColor.mPrimary
           opacity: 0.4
         }
       }
@@ -306,7 +306,7 @@ Item {
           width: mainContainer.width - Style.marginS
           height: mainContainer.height - Style.marginS
           values: CavaService.values
-          fillColor: Color.mPrimary
+          fillColor: NColor.mPrimary
           opacity: 0.4
         }
       }
@@ -321,7 +321,7 @@ Item {
           width: mainContainer.width - Style.marginS
           height: mainContainer.height - Style.marginS
           values: CavaService.values
-          fillColor: Color.mPrimary
+          fillColor: NColor.mPrimary
           opacity: 0.4
         }
       }
@@ -338,7 +338,7 @@ Item {
         NIcon {
           id: windowIcon
           icon: hasActivePlayer ? (MediaService.isPlaying ? "media-pause" : "media-play") : "disc"
-          color: hasActivePlayer ? Color.mOnSurface : Color.mOnSurfaceVariant
+          color: hasActivePlayer ? NColor.mOnSurface : NColor.mOnSurfaceVariant
           pointSize: Style.fontSizeL * scaling
           verticalAlignment: Text.AlignVCenter
           horizontalAlignment: Text.AlignHCenter
@@ -401,14 +401,14 @@ Item {
                 ctx.beginPath();
                 ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
                 ctx.lineWidth = 2.5 * scaling; // Thicker line width based on scaling property
-                ctx.strokeStyle = Qt.alpha(Color.mOnSurface, 0.4); // More opaque for better visibility
+                ctx.strokeStyle = Qt.alpha(NColor.mOnSurface, 0.4); // More opaque for better visibility
                 ctx.stroke();
 
                 // Progress arc (played portion)
                 ctx.beginPath();
                 ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + progressRatio * 2 * Math.PI);
                 ctx.lineWidth = 2.5 * scaling; // Thicker line width based on scaling property
-                ctx.strokeStyle = Color.mPrimary; // Use primary color for progress
+                ctx.strokeStyle = NColor.mPrimary; // Use primary color for progress
                 ctx.lineCap = "round";
                 ctx.stroke();
               }
@@ -428,7 +428,7 @@ Item {
             // Property to track mPrimary color changes and trigger repaint
             Item {
               id: colorTrackerHorizontal
-              property color currentColor: Color.mPrimary
+              property color currentColor: NColor.mPrimary
               onCurrentColorChanged: progressCanvas.requestPaint()
             }
 
@@ -447,7 +447,7 @@ Item {
                 fallbackIcon: MediaService.isPlaying ? "media-pause" : "media-play"
                 fallbackIconSize: showProgressRing ? 10 : 12 // Larger fallback icon when no progress ring
                 borderWidth: 0
-                borderColor: Color.transparent
+                borderColor: NColor.transparent
                 z: 1 // In front of the progress circle
               }
 
@@ -457,7 +457,7 @@ Item {
                 width: parent.width
                 height: parent.height
                 icon: hasActivePlayer ? (MediaService.isPlaying ? "media-pause" : "media-play") : "disc"
-                color: hasActivePlayer ? Color.mOnSurface : Color.mOnSurfaceVariant
+                color: hasActivePlayer ? NColor.mOnSurface : NColor.mOnSurfaceVariant
                 pointSize: (showAlbumArt || showProgressRing) ? 8 * scaling : 12 * scaling  // Smaller when inside album art circle or progress ring, larger when alone
                 verticalAlignment: Text.AlignVCenter
                 horizontalAlignment: Text.AlignHCenter
@@ -571,7 +571,7 @@ Item {
                 font.weight: Style.fontWeightMedium
                 verticalAlignment: Text.AlignVCenter
                 horizontalAlignment: hasActivePlayer ? Text.AlignLeft : Text.AlignHCenter
-                color: hasActivePlayer ? Color.mOnSurface : Color.mOnSurfaceVariant
+                color: hasActivePlayer ? NColor.mOnSurface : NColor.mOnSurfaceVariant
                 onTextChanged: {
                   titleContainer.isScrolling = false;
                   titleContainer.isResetting = false;
@@ -589,7 +589,7 @@ Item {
                 pointSize: Style.fontSizeS * scaling
                 verticalAlignment: Text.AlignVCenter
                 horizontalAlignment: hasActivePlayer ? Text.AlignLeft : Text.AlignHCenter
-                color: hasActivePlayer ? Color.mOnSurface : Color.mOnSurfaceVariant
+                color: hasActivePlayer ? NColor.mOnSurface : NColor.mOnSurfaceVariant
                 visible: hasActivePlayer && titleContainer.needsScrolling && titleContainer.isScrolling
               }
             }
@@ -657,14 +657,14 @@ Item {
           ctx.beginPath();
           ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
           ctx.lineWidth = 2.5 * scaling; // Line width based on scaling property, thinner for vertical layout
-          ctx.strokeStyle = Qt.alpha(Color.mOnSurface, 0.4); // More opaque for better visibility
+          ctx.strokeStyle = Qt.alpha(NColor.mOnSurface, 0.4); // More opaque for better visibility
           ctx.stroke();
 
           // Progress arc (played portion)
           ctx.beginPath();
           ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + progressRatio * 2 * Math.PI);
           ctx.lineWidth = 2.5 * scaling; // Line width based on scaling property, thinner for vertical layout
-          ctx.strokeStyle = Color.mPrimary; // Use primary color for progress
+          ctx.strokeStyle = NColor.mPrimary; // Use primary color for progress
           ctx.lineCap = "round";
           ctx.stroke();
         }
@@ -698,7 +698,7 @@ Item {
           height: parent.height
           visible: !showAlbumArt || !hasActivePlayer
           icon: hasActivePlayer ? (MediaService.isPlaying ? "media-pause" : "media-play") : "disc"
-          color: hasActivePlayer ? Color.mOnSurface : Color.mOnSurfaceVariant
+          color: hasActivePlayer ? NColor.mOnSurface : NColor.mOnSurfaceVariant
           pointSize: Style.fontSizeM * scaling
           verticalAlignment: Text.AlignVCenter
           horizontalAlignment: Text.AlignHCenter
@@ -719,7 +719,7 @@ Item {
       // Property to track mPrimary color changes and trigger repaint for vertical canvas
       Item {
         id: colorTrackerVertical
-        property color currentColor: Color.mPrimary
+        property color currentColor: NColor.mPrimary
         onCurrentColorChanged: progressCanvasVertical.requestPaint()
       }
 

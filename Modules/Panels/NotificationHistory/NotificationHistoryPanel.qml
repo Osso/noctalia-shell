@@ -87,7 +87,7 @@ SmartPanel {
 
   panelContent: Rectangle {
     id: notificationRect
-    color: Color.transparent
+    color: NColor.transparent
 
     ColumnLayout {
       id: mainColumn
@@ -109,14 +109,14 @@ SmartPanel {
           NIcon {
             icon: "bell"
             pointSize: Style.fontSizeXXL
-            color: Color.mPrimary
+            color: NColor.mPrimary
           }
 
           NText {
             text: I18n.tr("notifications.panel.title")
             pointSize: Style.fontSizeL
             font.weight: Style.fontWeightBold
-            color: Color.mOnSurface
+            color: NColor.mOnSurface
             Layout.fillWidth: true
           }
 
@@ -184,8 +184,8 @@ SmartPanel {
               fontSize: Style.fontSizeXS
               outlined: false
 
-              backgroundColor: isActive ? Color.mPrimary : (hovered ? Color.mHover : Color.transparent)
-              textColor: isActive ? Color.mOnPrimary : (hovered ? Color.mOnHover : Color.mOnSurface)
+              backgroundColor: isActive ? NColor.mPrimary : (hovered ? NColor.mHover : NColor.transparent)
+              textColor: isActive ? NColor.mOnPrimary : (hovered ? NColor.mOnHover : NColor.mOnSurface)
               hoverColor: backgroundColor
 
               Behavior on backgroundColor {
@@ -216,21 +216,21 @@ SmartPanel {
         NIcon {
           icon: "bell-off"
           pointSize: 48
-          color: Color.mOnSurfaceVariant
+          color: NColor.mOnSurfaceVariant
           Layout.alignment: Qt.AlignHCenter
         }
 
         NText {
           text: I18n.tr("notifications.panel.no-notifications")
           pointSize: Style.fontSizeL
-          color: Color.mOnSurfaceVariant
+          color: NColor.mOnSurfaceVariant
           Layout.alignment: Qt.AlignHCenter
         }
 
         NText {
           text: I18n.tr("notifications.panel.description")
           pointSize: Style.fontSizeS
-          color: Color.mOnSurfaceVariant
+          color: NColor.mOnSurfaceVariant
           Layout.alignment: Qt.AlignHCenter
           Layout.fillWidth: true
           wrapMode: Text.Wrap
@@ -277,8 +277,8 @@ SmartPanel {
               Rectangle {
                 anchors.fill: parent
                 radius: Style.radiusM
-                color: Color.mSurfaceVariant
-                border.color: Qt.alpha(Color.mOutline, Style.opacityMedium)
+                color: NColor.mSurfaceVariant
+                border.color: Qt.alpha(NColor.mOutline, Style.opacityMedium)
                 border.width: Style.borderS
 
                 Behavior on color {
@@ -323,7 +323,7 @@ SmartPanel {
                     height: Math.round(40 * Style.uiScaleRatio)
                     radius: Math.min(Style.radiusL, width / 2)
                     imagePath: model.cachedImage || model.originalImage || ""
-                    borderColor: Color.transparent
+                    borderColor: NColor.transparent
                     borderWidth: 0
                     fallbackIcon: "bell"
                     fallbackIconSize: 24
@@ -348,11 +348,11 @@ SmartPanel {
                         visible: model.urgency !== 1
                         color: {
                           if (model.urgency === 2)
-                            return Color.mError;
+                            return NColor.mError;
                           else if (model.urgency === 0)
-                            return Color.mOnSurfaceVariant;
+                            return NColor.mOnSurfaceVariant;
                           else
-                            return Color.transparent;
+                            return NColor.transparent;
                         }
                       }
 
@@ -360,14 +360,14 @@ SmartPanel {
                         text: model.appName || "Unknown App"
                         pointSize: Style.fontSizeXS
                         font.weight: Style.fontWeightBold
-                        color: Color.mSecondary
+                        color: NColor.mSecondary
                       }
 
                       NText {
                         textFormat: Text.PlainText
                         text: " " + Time.formatRelativeTime(model.timestamp)
                         pointSize: Style.fontSizeXXS
-                        color: Color.mOnSurfaceVariant
+                        color: NColor.mOnSurfaceVariant
                         anchors.bottom: parent.bottom
                       }
                     }
@@ -379,7 +379,7 @@ SmartPanel {
                       text: model.summary || I18n.tr("general.no-summary")
                       pointSize: Style.fontSizeM
                       font.weight: Font.Medium
-                      color: Color.mOnSurface
+                      color: NColor.mOnSurface
                       textFormat: Text.PlainText
                       wrapMode: Text.Wrap
                       maximumLineCount: notificationDelegate.isExpanded ? 999 : 2
@@ -392,7 +392,7 @@ SmartPanel {
                       width: parent.width
                       text: model.body || ""
                       pointSize: Style.fontSizeS
-                      color: Color.mOnSurfaceVariant
+                      color: NColor.mOnSurfaceVariant
                       textFormat: Text.PlainText
                       wrapMode: Text.Wrap
                       maximumLineCount: notificationDelegate.isExpanded ? 999 : 3
@@ -415,7 +415,7 @@ SmartPanel {
                         id: expandText
                         text: I18n.tr("notifications.panel.click-to-expand") || "Click to expand"
                         pointSize: Style.fontSizeXS
-                        color: Color.mPrimary
+                        color: NColor.mPrimary
                         font.weight: Font.Medium
                       }
 
@@ -423,7 +423,7 @@ SmartPanel {
                         id: expandIcon
                         icon: "chevron-down"
                         pointSize: Style.fontSizeS
-                        color: Color.mPrimary
+                        color: NColor.mPrimary
                       }
                     }
                   }

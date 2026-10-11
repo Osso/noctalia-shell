@@ -136,7 +136,7 @@ Rectangle {
             }
             applyUiScale: false
             font.weight: Style.fontWeightBold
-            color: usePrimaryColor ? Color.mPrimary : Color.mOnSurface
+            color: usePrimaryColor ? NColor.mPrimary : NColor.mOnSurface
             wrapMode: Text.WordWrap
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
           }
@@ -164,7 +164,7 @@ Rectangle {
             applyUiScale: false
 
             font.weight: Style.fontWeightBold
-            color: usePrimaryColor ? Color.mPrimary : Color.mOnSurface
+            color: usePrimaryColor ? NColor.mPrimary : NColor.mOnSurface
             wrapMode: Text.WordWrap
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
           }

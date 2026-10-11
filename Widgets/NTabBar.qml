@@ -15,7 +15,7 @@ Rectangle {
   // Styling
   Layout.fillWidth: true
   implicitHeight: Style.baseWidgetSize + Style.marginXS * 2
-  color: Color.mSurfaceVariant
+  color: NColor.mSurfaceVariant
   radius: Style.radiusS
 
   RowLayout {

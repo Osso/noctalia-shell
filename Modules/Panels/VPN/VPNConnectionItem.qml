@@ -21,9 +21,9 @@ Rectangle {
   Layout.fillWidth: true
   Layout.preferredHeight: itemLayout.implicitHeight + (Style.marginM * 2)
   radius: Style.radiusM
-  color: Color.mSurface
+  color: NColor.mSurface
   border.width: Style.borderS
-  border.color: isActive ? Color.mPrimary : Color.mOutline
+  border.color: isActive ? NColor.mPrimary : NColor.mOutline
 
   RowLayout {
     id: itemLayout
@@ -34,7 +34,7 @@ Rectangle {
     NIcon {
       icon: isActive ? "shield-lock" : "shield"
       pointSize: Style.fontSizeXXL
-      color: isActive ? Color.mPrimary : Color.mOnSurface
+      color: isActive ? NColor.mPrimary : NColor.mOnSurface
       Layout.alignment: Qt.AlignVCenter
     }
 
@@ -47,7 +47,7 @@ Rectangle {
         pointSize: Style.fontSizeM
         font.weight: isActive ? Style.fontWeightBold : Style.fontWeightMedium
         elide: Text.ElideRight
-        color: isActive ? Color.mPrimary : Color.mOnSurface
+        color: isActive ? NColor.mPrimary : NColor.mOnSurface
         Layout.fillWidth: true
       }
 
@@ -59,7 +59,7 @@ Rectangle {
           return I18n.tr("vpn.panel.disconnected");
         }
         pointSize: Style.fontSizeXS
-        color: isActive ? Color.mPrimary : Color.mOnSurfaceVariant
+        color: isActive ? NColor.mPrimary : NColor.mOnSurfaceVariant
       }
     }
 
@@ -72,7 +72,7 @@ Rectangle {
       outlined: !hovered
       fontSize: Style.fontSizeXS
       fontWeight: Style.fontWeightMedium
-      backgroundColor: isActive ? Color.mError : Color.mPrimary
+      backgroundColor: isActive ? NColor.mError : NColor.mPrimary
       text: {
         if (isConnecting) return I18n.tr("vpn.panel.connecting");
         if (isDisconnecting) return I18n.tr("vpn.panel.disconnecting");

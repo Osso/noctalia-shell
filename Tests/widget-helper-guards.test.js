@@ -244,31 +244,31 @@ function testComboBoxPendingClickRetrySelectsAndClearsPendingFlag() {
 
 function testBluetoothDeviceContentColorReflectsTransientAndBlockedState() {
   const getContentColor = qmlFunction(bluetoothDevicesSource, "getContentColor", "defaultColor");
-  const Color = {
+  const NColor = {
     mPrimary: "primary",
     mError: "error",
   };
 
   assert.equal(getContentColor({
-    Color,
+    NColor,
     devicePairing: true,
     deviceConnecting: false,
     deviceBlocked: true,
   }, "default"), "primary");
   assert.equal(getContentColor({
-    Color,
+    NColor,
     devicePairing: false,
     deviceConnecting: true,
     deviceBlocked: false,
   }, "default"), "primary");
   assert.equal(getContentColor({
-    Color,
+    NColor,
     devicePairing: false,
     deviceConnecting: false,
     deviceBlocked: true,
   }, "default"), "error");
   assert.equal(getContentColor({
-    Color,
+    NColor,
     devicePairing: false,
     deviceConnecting: false,
     deviceBlocked: false,

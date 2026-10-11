@@ -55,7 +55,7 @@ Item {
   property ListModel localWorkspaces: ListModel {}
   property real masterProgress: 0.0
   property bool effectsActive: false
-  property color effectColor: Color.mPrimary
+  property color effectColor: NColor.mPrimary
 
   property int horizontalPadding: Style.marginS
   property int spacingBetweenPills: Style.marginXS
@@ -219,7 +219,7 @@ Item {
   }
 
   function triggerUnifiedWave() {
-    effectColor = Color.mPrimary;
+    effectColor = NColor.mPrimary;
     masterAnimation.restart();
   }
 
@@ -232,7 +232,7 @@ Item {
           return;
         focusedWorkspaceKey = key;
         root.triggerUnifiedWave();
-        root.workspaceChanged(ws.id, Color.mPrimary);
+        root.workspaceChanged(ws.id, NColor.mPrimary);
         break;
       }
     }
@@ -422,13 +422,13 @@ Item {
                 wrapMode: Text.Wrap
                 color: {
                   if (model.isFocused)
-                    return Color.mOnPrimary;
+                    return NColor.mOnPrimary;
                   if (workspacePillContainer.displayedUrgent)
-                    return Color.mOnError;
+                    return NColor.mOnError;
                   if (model.isOccupied)
-                    return Color.mOnSecondary;
+                    return NColor.mOnSecondary;
 
-                  return Color.mOnSecondary;
+                  return NColor.mOnSecondary;
                 }
               }
             }
@@ -437,13 +437,13 @@ Item {
           radius: Style.radiusM
           color: {
             if (model.isFocused)
-              return Color.mPrimary;
+              return NColor.mPrimary;
             if (workspacePillContainer.displayedUrgent)
-              return Color.mError;
+              return NColor.mError;
             if (model.isOccupied)
-              return Color.mSecondary;
+              return NColor.mSecondary;
 
-            return Qt.alpha(Color.mSecondary, 0.3);
+            return Qt.alpha(NColor.mSecondary, 0.3);
           }
           scale: model.isActive ? 1.0 : 0.9
           z: 0
@@ -515,7 +515,7 @@ Item {
           width: workspacePillContainer.width + 18 * root.masterProgress * scale
           height: workspacePillContainer.height + 18 * root.masterProgress * scale
           radius: width / 2
-          color: Color.transparent
+          color: NColor.transparent
           border.color: root.effectColor
           border.width: Math.max(1, Math.round((2 + 6 * (1.0 - root.masterProgress))))
           opacity: root.effectsActive && model.isFocused ? (1.0 - root.masterProgress) * 0.7 : 0
@@ -594,13 +594,13 @@ Item {
                 wrapMode: Text.Wrap
                 color: {
                   if (model.isFocused)
-                    return Color.mOnPrimary;
+                    return NColor.mOnPrimary;
                   if (workspacePillContainerVertical.displayedUrgent)
-                    return Color.mOnError;
+                    return NColor.mOnError;
                   if (model.isOccupied)
-                    return Color.mOnSecondary;
+                    return NColor.mOnSecondary;
 
-                  return Color.mOnSurface;
+                  return NColor.mOnSurface;
                 }
               }
             }
@@ -609,13 +609,13 @@ Item {
           radius: Style.radiusM
           color: {
             if (model.isFocused)
-              return Color.mPrimary;
+              return NColor.mPrimary;
             if (workspacePillContainerVertical.displayedUrgent)
-              return Color.mError;
+              return NColor.mError;
             if (model.isOccupied)
-              return Color.mSecondary;
+              return NColor.mSecondary;
 
-            return Color.mOutline;
+            return NColor.mOutline;
           }
           scale: model.isActive ? 1.0 : 0.9
           z: 0
@@ -687,7 +687,7 @@ Item {
           width: workspacePillContainerVertical.width + 18 * root.masterProgress * scale
           height: workspacePillContainerVertical.height + 18 * root.masterProgress * scale
           radius: width / 2
-          color: Color.transparent
+          color: NColor.transparent
           border.color: root.effectColor
           border.width: Math.max(1, Math.round((2 + 6 * (1.0 - root.masterProgress))))
           opacity: root.effectsActive && model.isFocused ? (1.0 - root.masterProgress) * 0.7 : 0

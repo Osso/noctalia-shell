@@ -320,7 +320,7 @@ SmartPanel {
 
   panelContent: Rectangle {
     id: ui
-    color: Color.transparent
+    color: NColor.transparent
 
     // Navigation functions
     function selectFirst() {
@@ -365,7 +365,7 @@ SmartPanel {
                                         }) : I18n.tr("session-menu.title")
             font.weight: Style.fontWeightBold
             pointSize: Style.fontSizeL
-            color: timerActive ? Color.mPrimary : Color.mOnSurface
+            color: timerActive ? NColor.mPrimary : NColor.mOnSurface
             Layout.alignment: Qt.AlignVCenter
             verticalAlignment: Text.AlignVCenter
           }
@@ -379,8 +379,8 @@ SmartPanel {
             tooltipText: timerActive ? I18n.tr("tooltips.cancel-timer") : I18n.tr("tooltips.close")
             Layout.alignment: Qt.AlignVCenter
             baseSize: Style.baseWidgetSize * 0.7
-            colorBg: timerActive ? Qt.alpha(Color.mError, 0.08) : Color.transparent
-            colorFg: timerActive ? Color.mError : Color.mOnSurface
+            colorBg: timerActive ? Qt.alpha(NColor.mError, 0.08) : NColor.transparent
+            colorFg: timerActive ? NColor.mError : NColor.mOnSurface
             onClicked: {
               if (timerActive) {
                 cancelTimer();
@@ -443,16 +443,16 @@ SmartPanel {
     radius: Style.radiusS
     color: {
       if (pending) {
-        return Qt.alpha(Color.mPrimary, 0.08);
+        return Qt.alpha(NColor.mPrimary, 0.08);
       }
       if (isSelected || mouseArea.containsMouse) {
-        return Color.mHover;
+        return NColor.mHover;
       }
-      return Color.transparent;
+      return NColor.transparent;
     }
 
     border.width: pending ? Math.max(Style.borderM) : 0
-    border.color: pending ? Color.mPrimary : Color.mOutline
+    border.color: pending ? NColor.mPrimary : NColor.mOutline
 
     Behavior on color {
       ColorAnimation {
@@ -473,12 +473,12 @@ SmartPanel {
         icon: buttonRoot.icon
         color: {
           if (buttonRoot.pending)
-            return Color.mPrimary;
+            return NColor.mPrimary;
           if (buttonRoot.isShutdown && !buttonRoot.isSelected && !mouseArea.containsMouse)
-            return Color.mError;
+            return NColor.mError;
           if (buttonRoot.isSelected || mouseArea.containsMouse)
-            return Color.mOnHover;
-          return Color.mOnSurface;
+            return NColor.mOnHover;
+          return NColor.mOnSurface;
         }
         pointSize: Style.fontSizeXXL
         width: Style.baseWidgetSize * 0.5
@@ -508,12 +508,12 @@ SmartPanel {
           pointSize: Style.fontSizeM
           color: {
             if (buttonRoot.pending)
-              return Color.mPrimary;
+              return NColor.mPrimary;
             if (buttonRoot.isShutdown && !buttonRoot.isSelected && !mouseArea.containsMouse)
-              return Color.mError;
+              return NColor.mError;
             if (buttonRoot.isSelected || mouseArea.containsMouse)
-              return Color.mOnHover;
-            return Color.mOnSurface;
+              return NColor.mOnHover;
+            return NColor.mOnSurface;
           }
 
           Behavior on color {
@@ -533,7 +533,7 @@ SmartPanel {
         width: 20
         height: 20
         radius: Math.min(Style.radiusL, width / 2)
-        color: Color.mPrimary
+        color: NColor.mPrimary
         visible: buttonRoot.pending
 
         NText {
@@ -541,7 +541,7 @@ SmartPanel {
           text: Math.ceil(timeRemaining / 1000)
           pointSize: Style.fontSizeS
           font.weight: Style.fontWeightBold
-          color: Color.mOnPrimary
+          color: NColor.mOnPrimary
         }
       }
     }

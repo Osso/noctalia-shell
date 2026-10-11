@@ -8,7 +8,7 @@ Slider {
   id: root
 
   property color fillColor: "transparent"
-  property color cutoutColor: Color.mSurface
+  property color cutoutColor: NColor.mSurface
   property bool snapAlways: true
   property real widthRatio: 0.7
   property string tooltipText
@@ -39,8 +39,8 @@ Slider {
     width: root.trackWidth
 
     radius: Math.min(Style.radiusL, width / 2)
-    color: Qt.alpha(Color.mSurface, 0.5)
-    border.color: Qt.alpha(Color.mOutline, 0.5)
+    color: Qt.alpha(NColor.mSurface, 0.5)
+    border.color: Qt.alpha(NColor.mOutline, 0.5)
     border.width: Style.borderS
 
     // Gradients
@@ -96,7 +96,7 @@ Slider {
       implicitWidth: root.knobDiameter + root.cutoutExtra
       implicitHeight: root.knobDiameter + root.cutoutExtra
       radius: Math.min(Style.radiusL, width / 2)
-      color: root.cutoutColor !== undefined ? root.cutoutColor : Color.mSurface
+      color: root.cutoutColor !== undefined ? root.cutoutColor : NColor.mSurface
 
       y: root.visualPosition * (root.availableHeight - root.knobDiameter) - ((root.knobDiameter + root.cutoutExtra) / 2)
       anchors.horizontalCenter: parent.horizontalCenter
@@ -129,7 +129,7 @@ Slider {
         }
       }
 
-      border.color: root.pressed ? Color.mHover : Color.mPrimary
+      border.color: root.pressed ? NColor.mHover : NColor.mPrimary
       border.width: Style.borderL
       anchors.centerIn: parent
 

@@ -7,8 +7,8 @@ ColumnLayout {
 
   property string label: ""
   property string description: ""
-  property color labelColor: Color.mOnSurface
-  property color descriptionColor: Color.mOnSurfaceVariant
+  property color labelColor: NColor.mOnSurface
+  property color descriptionColor: NColor.mOnSurfaceVariant
 
   spacing: Style.marginXXS
   Layout.fillWidth: true

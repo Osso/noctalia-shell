@@ -157,7 +157,7 @@ SmartPanel {
       }
     }
 
-    color: Color.transparent
+    color: NColor.transparent
 
     // Wallhaven settings popup
     Loader {
@@ -216,14 +216,14 @@ SmartPanel {
         NIcon {
           icon: "settings-wallpaper-selector"
           pointSize: Style.fontSizeXXL
-          color: Color.mPrimary
+          color: NColor.mPrimary
         }
 
         NText {
           text: I18n.tr("wallpaper.panel.title")
           pointSize: Style.fontSizeL
           font.weight: Style.fontWeightBold
-          color: Color.mOnSurface
+          color: NColor.mOnSurface
           Layout.fillWidth: true
         }
 
@@ -643,7 +643,7 @@ SmartPanel {
           y: 0
           height: wallpaperGridView.height
 
-          property color handleColor: Qt.alpha(Color.mHover, 0.8)
+          property color handleColor: Qt.alpha(NColor.mHover, 0.8)
           property color handleHoverColor: handleColor
           property color handlePressedColor: handleColor
           property real handleWidth: 6
@@ -672,7 +672,7 @@ SmartPanel {
           background: Rectangle {
             implicitWidth: parent.handleWidth
             implicitHeight: 100
-            color: Color.transparent
+            color: NColor.transparent
             opacity: parent.policy === ScrollBar.AlwaysOn || parent.active ? 0.3 : 0.0
             radius: parent.handleRadius / 2
 
@@ -698,7 +698,7 @@ SmartPanel {
             id: imageContainer
             Layout.fillWidth: true
             Layout.preferredHeight: Math.round(wallpaperGridView.itemSize * 0.67)
-            color: Color.transparent
+            color: NColor.transparent
 
             NImageCached {
               id: img
@@ -709,15 +709,15 @@ SmartPanel {
 
             Rectangle {
               anchors.fill: parent
-              color: Color.transparent
+              color: NColor.transparent
               border.color: {
                 if (isSelected) {
-                  return Color.mSecondary;
+                  return NColor.mSecondary;
                 }
                 if (wallpaperGridView.currentIndex === index) {
-                  return Color.mHover;
+                  return NColor.mHover;
                 }
-                return Color.mSurface;
+                return NColor.mSurface;
               }
               border.width: Math.max(1, Style.borderL * 1.5)
             }
@@ -729,22 +729,22 @@ SmartPanel {
               width: 28
               height: 28
               radius: width / 2
-              color: Color.mSecondary
-              border.color: Color.mOutline
+              color: NColor.mSecondary
+              border.color: NColor.mOutline
               border.width: Style.borderS
               visible: isSelected
 
               NIcon {
                 icon: "check"
                 pointSize: Style.fontSizeM
-                color: Color.mOnSecondary
+                color: NColor.mOnSecondary
                 anchors.centerIn: parent
               }
             }
 
             Rectangle {
               anchors.fill: parent
-              color: Color.mSurface
+              color: NColor.mSurface
               opacity: (hoverHandler.hovered || isSelected || wallpaperGridView.currentIndex === index) ? 0 : 0.3
               radius: parent.radius
               Behavior on opacity {
@@ -775,7 +775,7 @@ SmartPanel {
           NText {
             text: filename
             visible: !Settings.data.wallpaper.hideWallpaperFilenames
-            color: (hoverHandler.hovered || isSelected || wallpaperGridView.currentIndex === index) ? Color.mOnSurface : Color.mOnSurfaceVariant
+            color: (hoverHandler.hovered || isSelected || wallpaperGridView.currentIndex === index) ? NColor.mOnSurface : NColor.mOnSurfaceVariant
             pointSize: Style.fontSizeXS
             Layout.fillWidth: true
             Layout.leftMargin: Style.marginS
@@ -789,9 +789,9 @@ SmartPanel {
 
       // Empty / scanning state
       Rectangle {
-        color: Color.mSurface
+        color: NColor.mSurface
         radius: Style.radiusM
-        border.color: Color.mOutline
+        border.color: NColor.mOutline
         border.width: Style.borderS
         visible: (filteredWallpapers.length === 0 && !WallpaperService.scanning) || WallpaperService.scanning
         Layout.fillWidth: true
@@ -814,18 +814,18 @@ SmartPanel {
           NIcon {
             icon: "folder-open"
             pointSize: Style.fontSizeXXL
-            color: Color.mOnSurface
+            color: NColor.mOnSurface
             Layout.alignment: Qt.AlignHCenter
           }
           NText {
             text: (wallpaperPanel.filterText && wallpaperPanel.filterText.length > 0) ? I18n.tr("wallpaper.no-match") : I18n.tr("wallpaper.no-wallpaper")
-            color: Color.mOnSurface
+            color: NColor.mOnSurface
             font.weight: Style.fontWeightBold
             Layout.alignment: Qt.AlignHCenter
           }
           NText {
             text: (wallpaperPanel.filterText && wallpaperPanel.filterText.length > 0) ? I18n.tr("wallpaper.try-different-search") : I18n.tr("wallpaper.configure-directory")
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             wrapMode: Text.WordWrap
             Layout.alignment: Qt.AlignHCenter
           }
@@ -970,7 +970,7 @@ SmartPanel {
             y: 0
             height: wallhavenGridView.height
 
-            property color handleColor: Qt.alpha(Color.mHover, 0.8)
+            property color handleColor: Qt.alpha(NColor.mHover, 0.8)
             property color handleHoverColor: handleColor
             property color handlePressedColor: handleColor
             property real handleWidth: 6
@@ -999,7 +999,7 @@ SmartPanel {
             background: Rectangle {
               implicitWidth: parent.handleWidth
               implicitHeight: 100
-              color: Color.transparent
+              color: NColor.transparent
               opacity: parent.policy === ScrollBar.AlwaysOn || parent.active ? 0.3 : 0.0
               radius: parent.handleRadius / 2
 
@@ -1026,7 +1026,7 @@ SmartPanel {
               id: imageContainer
               Layout.fillWidth: true
               Layout.preferredHeight: Math.round(wallhavenGridView.itemSize * 0.67)
-              color: Color.transparent
+              color: NColor.transparent
 
               Image {
                 id: img
@@ -1042,14 +1042,14 @@ SmartPanel {
 
               Rectangle {
                 anchors.fill: parent
-                color: Color.transparent
-                border.color: wallhavenGridView.currentIndex === index ? Color.mHover : Color.mSurface
+                color: NColor.transparent
+                border.color: wallhavenGridView.currentIndex === index ? NColor.mHover : NColor.mSurface
                 border.width: Math.max(1, Style.borderL * 1.5)
               }
 
               Rectangle {
                 anchors.fill: parent
-                color: Color.mSurface
+                color: NColor.mSurface
                 opacity: hoverHandler.hovered || wallhavenGridView.currentIndex === index ? 0 : 0.3
                 Behavior on opacity {
                   NumberAnimation {
@@ -1073,7 +1073,7 @@ SmartPanel {
             NText {
               text: wallpaperId || I18n.tr("wallpaper.unknown")
               visible: !Settings.data.wallpaper.hideWallpaperFilenames
-              color: hoverHandler.hovered || wallhavenGridView.currentIndex === index ? Color.mOnSurface : Color.mOnSurfaceVariant
+              color: hoverHandler.hovered || wallhavenGridView.currentIndex === index ? NColor.mOnSurface : NColor.mOnSurfaceVariant
               pointSize: Style.fontSizeXS
               Layout.fillWidth: true
               Layout.leftMargin: Style.marginS
@@ -1088,9 +1088,9 @@ SmartPanel {
         // Loading overlay - fills same space as GridView to prevent jumping
         Rectangle {
           anchors.fill: parent
-          color: Color.mSurface
+          color: NColor.mSurface
           radius: Style.radiusM
-          border.color: Color.mOutline
+          border.color: NColor.mOutline
           border.width: Style.borderS
           visible: loading
           z: 10
@@ -1106,13 +1106,13 @@ SmartPanel {
 
             NBusyIndicator {
               size: Style.baseWidgetSize * 1.5
-              color: Color.mPrimary
+              color: NColor.mPrimary
               Layout.alignment: Qt.AlignHCenter
             }
 
             NText {
               text: I18n.tr("wallpaper.wallhaven.loading")
-              color: Color.mOnSurfaceVariant
+              color: NColor.mOnSurfaceVariant
               pointSize: Style.fontSizeM
               Layout.alignment: Qt.AlignHCenter
             }
@@ -1126,9 +1126,9 @@ SmartPanel {
         // Error overlay
         Rectangle {
           anchors.fill: parent
-          color: Color.mSurface
+          color: NColor.mSurface
           radius: Style.radiusM
-          border.color: Color.mOutline
+          border.color: NColor.mOutline
           border.width: Style.borderS
           visible: errorMessage !== "" && !loading
           z: 10
@@ -1145,13 +1145,13 @@ SmartPanel {
             NIcon {
               icon: "alert-circle"
               pointSize: Style.fontSizeXXL
-              color: Color.mError
+              color: NColor.mError
               Layout.alignment: Qt.AlignHCenter
             }
 
             NText {
               text: errorMessage
-              color: Color.mOnSurface
+              color: NColor.mOnSurface
               wrapMode: Text.WordWrap
               Layout.alignment: Qt.AlignHCenter
               Layout.fillWidth: true
@@ -1167,9 +1167,9 @@ SmartPanel {
         // Empty state overlay
         Rectangle {
           anchors.fill: parent
-          color: Color.mSurface
+          color: NColor.mSurface
           radius: Style.radiusM
-          border.color: Color.mOutline
+          border.color: NColor.mOutline
           border.width: Style.borderS
           visible: (!wallpapers || wallpapers.length === 0) && !loading && errorMessage === ""
           z: 10
@@ -1186,13 +1186,13 @@ SmartPanel {
             NIcon {
               icon: "image"
               pointSize: Style.fontSizeXXL
-              color: Color.mOnSurfaceVariant
+              color: NColor.mOnSurfaceVariant
               Layout.alignment: Qt.AlignHCenter
             }
 
             NText {
               text: I18n.tr("wallpaper.wallhaven.no-results")
-              color: Color.mOnSurface
+              color: NColor.mOnSurface
               wrapMode: Text.WordWrap
               Layout.alignment: Qt.AlignHCenter
               Layout.fillWidth: true
@@ -1224,7 +1224,7 @@ SmartPanel {
 
         NText {
           text: I18n.tr("wallpaper.wallhaven.page").replace("{current}", WallhavenService.currentPage).replace("{total}", WallhavenService.lastPage)
-          color: Color.mOnSurface
+          color: NColor.mOnSurface
           horizontalAlignment: Text.AlignHCenter
         }
 

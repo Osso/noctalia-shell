@@ -3,8 +3,8 @@ import qs.Commons
 
 Item {
   id: root
-  property color fillColor: Color.mPrimary
-  property color strokeColor: Color.mOnSurface
+  property color fillColor: NColor.mPrimary
+  property color strokeColor: NColor.mOnSurface
   property int strokeWidth: 0
   property var values: []
   property bool vertical: false

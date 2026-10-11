@@ -28,7 +28,7 @@ PopupWindow {
 
   implicitWidth: Math.max(160, menuContentWidth + (Style.marginM * 2))
   implicitHeight: contextMenuColumn.implicitHeight + (Style.marginM * 2)
-  color: Color.transparent
+  color: NColor.transparent
   visible: false
 
   // Hidden text element for measuring text width
@@ -296,9 +296,9 @@ PopupWindow {
 
   Rectangle {
     anchors.fill: parent
-    color: Color.mSurfaceVariant
+    color: NColor.mSurfaceVariant
     radius: Style.radiusS
-    border.color: Color.mOutline
+    border.color: NColor.mOutline
     border.width: Style.borderS
 
     // Single MouseArea to handle both auto-close and menu interactions
@@ -350,7 +350,7 @@ PopupWindow {
 
           Layout.fillWidth: true
           height: 32
-          color: root.hoveredItem === index ? Color.mHover : Color.transparent
+          color: root.hoveredItem === index ? NColor.mHover : NColor.transparent
           radius: Style.radiusXS
 
           Row {
@@ -365,7 +365,7 @@ PopupWindow {
             NIcon {
               icon: menuIcon
               pointSize: Style.fontSizeL
-              color: root.hoveredItem === index ? Color.mOnHover : Color.mOnSurfaceVariant
+              color: root.hoveredItem === index ? NColor.mOnHover : NColor.mOnSurfaceVariant
               visible: icon !== ""
               anchors.verticalCenter: parent.verticalCenter
             }
@@ -373,7 +373,7 @@ PopupWindow {
             NText {
               text: menuText
               pointSize: Style.fontSizeS
-              color: root.hoveredItem === index ? Color.mOnHover : Color.mOnSurfaceVariant
+              color: root.hoveredItem === index ? NColor.mOnHover : NColor.mOnSurfaceVariant
               anchors.verticalCenter: parent.verticalCenter
             }
           }

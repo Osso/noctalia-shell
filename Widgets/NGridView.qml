@@ -16,10 +16,10 @@ Item {
                      event.accepted = false;
                    }
 
-  property color handleColor: Qt.alpha(Color.mHover, 0.8)
+  property color handleColor: Qt.alpha(NColor.mHover, 0.8)
   property color handleHoverColor: handleColor
   property color handlePressedColor: handleColor
-  property color trackColor: Color.transparent
+  property color trackColor: NColor.transparent
   property real handleWidth: 6
   property real handleRadius: Style.radiusM
   property int verticalPolicy: ScrollBar.AsNeeded

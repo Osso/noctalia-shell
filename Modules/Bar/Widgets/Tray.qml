@@ -245,10 +245,10 @@ Rectangle {
       density: Settings.data.bar.density
       baseSize: Style.capsuleHeight
       applyUiScale: false
-      colorBg: Color.transparent
-      colorFg: Settings.data.colorSchemes.darkMode ? Color.mOnSurface : Color.mOnPrimary
-      colorBorder: Color.transparent
-      colorBorderHover: Color.transparent
+      colorBg: NColor.transparent
+      colorFg: Settings.data.colorSchemes.darkMode ? NColor.mOnSurface : NColor.mOnPrimary
+      colorBorder: NColor.transparent
+      colorBorderHover: NColor.transparent
       icon: {
         switch (barPosition) {
         case "bottom":
@@ -306,7 +306,7 @@ Rectangle {
 
           layer.enabled: widgetSettings.colorizeIcons !== false
           layer.effect: ShaderEffect {
-            property color targetColor: Settings.data.colorSchemes.darkMode ? Color.mOnSurface : Color.mSurfaceVariant
+            property color targetColor: Settings.data.colorSchemes.darkMode ? NColor.mOnSurface : NColor.mSurfaceVariant
             property real colorizeMode: 1.0
 
             fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/appicon_colorize.frag.qsb")
@@ -400,10 +400,10 @@ Rectangle {
       density: Settings.data.bar.density
       baseSize: Style.capsuleHeight
       applyUiScale: false
-      colorBg: Color.transparent
-      colorFg: Color.mOnSurface
-      colorBorder: Color.transparent
-      colorBorderHover: Color.transparent
+      colorBg: NColor.transparent
+      colorFg: NColor.mOnSurface
+      colorBorder: NColor.transparent
+      colorBorderHover: NColor.transparent
       icon: {
         switch (barPosition) {
         case "bottom":

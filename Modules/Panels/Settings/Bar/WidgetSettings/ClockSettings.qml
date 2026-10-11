@@ -178,9 +178,9 @@ ColumnLayout {
         Layout.preferredWidth: 320
         Layout.preferredHeight: 160 // Fixed height instead of fillHeight
 
-        color: Color.mSurfaceVariant
+        color: NColor.mSurfaceVariant
         radius: Style.radiusM
-        border.color: Color.mSecondary
+        border.color: NColor.mSecondary
         border.width: Style.borderS
 
         Behavior on border.color {
@@ -209,7 +209,7 @@ ColumnLayout {
                 family: valueUseCustomFont && valueCustomFont ? valueCustomFont : Settings.data.ui.fontDefault
                 pointSize: Style.fontSizeM
                 font.weight: Style.fontWeightBold
-                color: valueUsePrimaryColor ? Color.mPrimary : Color.mOnSurface
+                color: valueUsePrimaryColor ? NColor.mPrimary : NColor.mOnSurface
                 wrapMode: Text.WordWrap
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 
@@ -242,7 +242,7 @@ ColumnLayout {
                 family: valueUseCustomFont && valueCustomFont ? valueCustomFont : Settings.data.ui.fontDefault
                 pointSize: Style.fontSizeM
                 font.weight: Style.fontWeightBold
-                color: valueUsePrimaryColor ? Color.mPrimary : Color.mOnSurface
+                color: valueUsePrimaryColor ? NColor.mPrimary : NColor.mOnSurface
                 wrapMode: Text.WordWrap
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 

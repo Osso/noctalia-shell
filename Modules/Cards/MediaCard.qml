@@ -91,7 +91,7 @@ NBox {
     // Dark overlay for readability
     Rectangle {
       anchors.fill: parent
-      color: Color.mSurface
+      color: NColor.mSurface
       opacity: 0.65
       radius: Style.radiusM
     }
@@ -99,8 +99,8 @@ NBox {
     // Border
     Rectangle {
       anchors.fill: parent
-      color: Color.transparent
-      border.color: Color.mOutline
+      color: NColor.transparent
+      border.color: NColor.mOutline
       border.width: Style.borderS
       radius: Style.radiusM
     }
@@ -128,7 +128,7 @@ NBox {
         NLinearSpectrum {
           anchors.fill: parent
           values: CavaService.values
-          fillColor: Color.mPrimary
+          fillColor: NColor.mPrimary
           opacity: 0.8
         }
       }
@@ -138,7 +138,7 @@ NBox {
         NMirroredSpectrum {
           anchors.fill: parent
           values: CavaService.values
-          fillColor: Color.mPrimary
+          fillColor: NColor.mPrimary
           opacity: 0.8
         }
       }
@@ -148,7 +148,7 @@ NBox {
         NWaveSpectrum {
           anchors.fill: parent
           values: CavaService.values
-          fillColor: Color.mPrimary
+          fillColor: NColor.mPrimary
           opacity: 0.8
         }
       }
@@ -167,7 +167,7 @@ NBox {
     height: Style.barHeight
     visible: MediaService.getAvailablePlayers().length > 1
     radius: Style.radiusM
-    color: Color.transparent
+    color: NColor.transparent
 
     property var currentPlayer: MediaService.getAvailablePlayers()[MediaService.selectedPlayerIndex]
 
@@ -178,13 +178,13 @@ NBox {
       NIcon {
         icon: "caret-down"
         pointSize: Style.fontSizeXXL
-        color: Color.mOnSurfaceVariant
+        color: NColor.mOnSurfaceVariant
       }
 
       NText {
         text: playerSelectorButton.currentPlayer ? playerSelectorButton.currentPlayer.identity : ""
         pointSize: Style.fontSizeXS
-        color: Color.mOnSurfaceVariant
+        color: NColor.mOnSurfaceVariant
         Layout.fillWidth: true
       }
     }
@@ -241,7 +241,7 @@ NBox {
       visible: !root.hasActivePlayer && CavaService.isIdle
       icon: "disc"
       pointSize: Style.fontSizeXXXL * 3
-      color: Color.mOnSurfaceVariant
+      color: NColor.mOnSurfaceVariant
       opacity: 1.0
     }
 
@@ -297,7 +297,7 @@ NBox {
             NText {
               visible: MediaService.trackArtist !== ""
               text: MediaService.trackArtist
-              color: Color.mSecondary
+              color: NColor.mSecondary
               pointSize: Style.fontSizeS
               elide: Text.ElideRight
               Layout.fillWidth: true
@@ -306,7 +306,7 @@ NBox {
             NText {
               visible: MediaService.trackAlbum !== ""
               text: MediaService.trackAlbum
-              color: Color.mOnSurfaceVariant
+              color: NColor.mOnSurfaceVariant
               pointSize: Style.fontSizeM
               elide: Text.ElideRight
               Layout.fillWidth: true

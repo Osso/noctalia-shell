@@ -157,7 +157,7 @@ ColumnLayout {
         NText {
           text: I18n.tr("settings.bar.appearance.margins.vertical")
           pointSize: Style.fontSizeXS
-          color: Color.mOnSurfaceVariant
+          color: NColor.mOnSurfaceVariant
         }
 
         NValueSlider {
@@ -177,7 +177,7 @@ ColumnLayout {
         NText {
           text: I18n.tr("settings.bar.appearance.margins.horizontal")
           pointSize: Style.fontSizeXS
-          color: Color.mOnSurfaceVariant
+          color: NColor.mOnSurfaceVariant
         }
 
         NValueSlider {

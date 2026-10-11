@@ -21,8 +21,8 @@ Item {
   property bool oppositeDirection: false
   property bool hovered: false
   property bool rotateText: false
-  property color customBackgroundColor: Color.transparent
-  property color customTextIconColor: Color.transparent
+  property color customBackgroundColor: NColor.transparent
+  property color customTextIconColor: NColor.transparent
 
   readonly property bool collapseToIcon: forceClose && !forceOpen
 
@@ -54,8 +54,8 @@ Item {
   readonly property bool revealed: !forceClose && (forceOpen || showPill)
 
   // Always prioritize hover color, then the custom one and finally the fallback color
-  readonly property color bgColor: hovered ? Color.mHover : (customBackgroundColor.a > 0) ? customBackgroundColor : Style.capsuleColor
-  readonly property color fgColor: hovered ? Color.mOnHover : (customTextIconColor.a > 0) ? customTextIconColor : Color.mOnSurface
+  readonly property color bgColor: hovered ? NColor.mHover : (customBackgroundColor.a > 0) ? customBackgroundColor : Style.capsuleColor
+  readonly property color fgColor: hovered ? NColor.mOnHover : (customTextIconColor.a > 0) ? customTextIconColor : NColor.mOnSurface
 
   readonly property real iconSize: {
     switch (root.density) {
@@ -115,7 +115,7 @@ Item {
     y: openUpward ? (iconCircle.y + iconCircle.height / 2 - height) : (iconCircle.y + iconCircle.height / 2)
 
     opacity: revealed ? Style.opacityFull : Style.opacityNone
-    color: Color.transparent // Make pill background transparent to avoid double opacity
+    color: NColor.transparent // Make pill background transparent to avoid double opacity
 
     // Radius logic for vertical expansion - rounded on the side that connects to icon
     topLeftRadius: openUpward ? Style.radiusM : 0
@@ -174,7 +174,7 @@ Item {
     width: buttonSize
     height: buttonSize
     radius: Math.min(Style.radiusL, width / 2)
-    color: Color.transparent // Make icon background transparent to avoid double opacity
+    color: NColor.transparent // Make icon background transparent to avoid double opacity
 
     // Icon positioning based on direction
     x: 0

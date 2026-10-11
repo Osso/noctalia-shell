@@ -91,7 +91,7 @@ Variants {
         }
       }
 
-      color: Color.transparent
+      color: NColor.transparent
       screen: modelData
       WlrLayershell.layer: WlrLayer.Background
       WlrLayershell.exclusionMode: ExclusionMode.Ignore

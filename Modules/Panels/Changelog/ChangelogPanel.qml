@@ -25,9 +25,9 @@ SmartPanel {
                                                                       }) : I18n.tr("changelog.panel.subtitle.fresh")
 
   panelContent: Rectangle {
-    color: Color.mSurfaceVariant
+    color: NColor.mSurfaceVariant
     radius: Style.radiusM
-    border.color: Color.mOutline
+    border.color: NColor.mOutline
     border.width: Style.borderS
 
     ColumnLayout {
@@ -41,7 +41,7 @@ SmartPanel {
 
         NIcon {
           icon: "sparkles"
-          color: Color.mPrimary
+          color: NColor.mPrimary
           pointSize: Style.fontSizeXXL
         }
 
@@ -55,13 +55,13 @@ SmartPanel {
                           })
             pointSize: Style.fontSizeXL
             font.weight: Style.fontWeightBold
-            color: Color.mPrimary
+            color: NColor.mPrimary
             wrapMode: Text.WordWrap
           }
 
           NText {
             text: subtitleText
-            color: Color.mOnSurface
+            color: NColor.mOnSurface
             opacity: Style.opacityMedium
             wrapMode: Text.WordWrap
           }
@@ -84,9 +84,9 @@ SmartPanel {
       Rectangle {
         clip: true
         Layout.fillWidth: true
-        color: Qt.alpha(Color.mPrimary, 0.08)
+        color: Qt.alpha(NColor.mPrimary, 0.08)
         radius: Style.radiusS
-        border.color: Color.mPrimary
+        border.color: NColor.mPrimary
         border.width: Style.borderS
 
         RowLayout {
@@ -97,18 +97,18 @@ SmartPanel {
           NText {
             text: hasPreviousVersion ? previousVersion : I18n.tr("changelog.panel.version.new-user")
             font.weight: Style.fontWeightSemiBold
-            color: Color.mPrimary
+            color: NColor.mPrimary
           }
 
           NIcon {
             icon: "arrow-right"
-            color: Color.mPrimary
+            color: NColor.mPrimary
           }
 
           NText {
             text: currentVersion || UpdateService.currentVersion
             font.weight: Style.fontWeightSemiBold
-            color: Color.mPrimary
+            color: NColor.mPrimary
           }
         }
       }
@@ -131,7 +131,7 @@ SmartPanel {
           NText {
             visible: UpdateService.fetchError !== ""
             text: UpdateService.fetchError
-            color: Color.mError
+            color: NColor.mError
             wrapMode: Text.WordWrap
           }
 
@@ -163,7 +163,7 @@ SmartPanel {
                     wrapMode: Text.WordWrap
                     elide: Text.ElideNone
                     textFormat: Text.PlainText
-                    color: headingLevel > 0 ? Color.mPrimary : Color.mOnSurface
+                    color: headingLevel > 0 ? NColor.mPrimary : NColor.mOnSurface
                     font.weight: headingLevel > 0 ? Style.fontWeightBold : Style.fontWeightMedium
                     pointSize: headingLevel === 1 ? Style.fontSizeXXL : headingLevel === 2 ? Style.fontSizeXL : Style.fontSizeM
                     Layout.fillWidth: true
@@ -176,7 +176,7 @@ SmartPanel {
           NText {
             visible: releaseHighlights.length === 0
             text: I18n.tr("changelog.panel.empty")
-            color: Color.mOnSurfaceVariant
+            color: NColor.mOnSurfaceVariant
             wrapMode: Text.WordWrap
           }
         }
