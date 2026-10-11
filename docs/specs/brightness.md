@@ -40,6 +40,12 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 - [x] Brightness widget display text uses the current monitor brightness percentage.
 - [x] Brightness widget icon maps missing/zero brightness to off, low brightness to low, and higher brightness to high.
 
+### Display settings tab
+
+- [x] DisplayTab shows monitor names and scaled descriptions, brightness percentages, unavailable-control state, and hides brightness controls when no monitor is found.
+- [x] Brightness slider move/release routes values to the matching monitor; screen reorder/repopulation preserves monitor ownership.
+- [x] Brightness-step and enforce-minimum edits update settings immediately; DisplayTab has no Save/Cancel transaction or rollback on close.
+
 ## How it works
 
 - [docs/wiki/systems/brightness.md](../wiki/systems/brightness.md)
@@ -56,6 +62,13 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 
 - `Tests/bar-controls-warnings.test.py` — isolated production bar-widget panel/display-settings routing, wheel adjustment and unavailable-monitor guard, first-update suppression/subsequent pill reveal, and display modes. Cohort evidence: [bar](bar.md#bar-control-cohort); no direct widget OSD dispatch or real monitor changes: [testing](testing.md#bar-control-cohort).
 
+### DisplayTab coverage
+
+- `Tests/display-tab-warnings.test.py` — standalone production DisplayTab and controls under isolated offscreen `qmltestrunner`; settings, screens, compositor scale, brightness/night-light services, Process, and toasts are fixtures. DisplayTab lint requires zero warnings and exit status zero (29→0 through `9d3ebd292`, `758202d4d`).
+- Six behavioral rows plus init/cleanup yield eight reported passes: monitor rendering at UI scales 1/1.5; brightness move/release and screen repopulation; selection/immediate-edit/destroy-reopen; synthetic night-light availability/toasts; temperature release and schedule visibility. Rendering covers four fixture monitors, scaled descriptions, percentages, unavailable and missing brightness controls, and card geometry. The schedule row checks 48 half-hour options, fake JSON serialization, and retained fixture edits after reopening, not Save/Cancel or disk persistence.
+- Reported before/after rendered PNG bytes match at both scales. The standalone runner captures PNGs and checks their signature/dimensions; it does not enforce pre-change byte equality itself. This is bounded fixture rendering, not live desktop pixel acceptance.
+- Direct control signals and synthetic Process exits do not prove physical input, installed `wlsunset`, actual night-light application, hardware mode/DDC writes, real persistence, or whole-shell behavior. Safety and pass gates: [testing](testing.md#display-settings-tab).
+
 - `Tests/brightness-service-guards.test.js`
 - `Tests/brightness-widget-guards.test.js`
 - `Tests/helpers.test.js`
@@ -64,7 +77,8 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 ## Known gaps (current cycle)
 
 - [x] Add executable tests for individual monitor `setBrightness`, debounce, and command routing.
-- [ ] Add spec coverage for brightness panel and display settings UI contracts.
+- [x] Add bounded DisplayTab UI contract coverage with inert monitor/settings/service boundaries.
+- [ ] Add brightness panel UI coverage and live display-settings integration proof; fixture DisplayTab coverage does not establish hardware mode/DDC writes or real persistence.
 
 ## Out of scope
 
