@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import Quickshell
@@ -42,7 +44,7 @@ Item {
   // Loader to switch between vertical and horizontal pill implementations
   Loader {
     id: pillLoader
-    sourceComponent: isVerticalBar ? verticalPillComponent : horizontalPillComponent
+    sourceComponent: root.isVerticalBar ? verticalPillComponent : horizontalPillComponent
 
     Component {
       id: verticalPillComponent
