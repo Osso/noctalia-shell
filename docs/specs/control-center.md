@@ -59,6 +59,8 @@ Control Center covers the panel card loader, shortcut widget registry, shortcut/
 
 ## Tests asserting this spec
 
+- Production Control Center `WidgetSettings/CustomButtonSettings.qml` editor coverage through `bb8611429`/`b0cc0dc20`: targeted lint 20→0 and four isolated command/icon/state-list/serialization-discard cases. This is not the bar ControlCenterSettings editor or outer settings dialog. Exact coverage and limits: [custom button](custom-button.md#control-center-settings-editor); diagnostic/isolation contract: [testing](testing.md#control-center-custom-button-settings-editor).
+
 - `Tests/bar-controls-warnings.test.py` — production bar-button toggle/anchor, launcher/settings/context routing, and shader target-color bindings under colorization and dark-mode changes. This is not rendered shader pixel or panel-placement proof. Cohort evidence and limits: [bar](bar.md#bar-control-cohort), [testing](testing.md#bar-control-cohort).
 
 - `Tests/widget-settings-cohort-warnings.test.py` / `Tests/Qml/WidgetSettingsCohortHarness.qml` — ControlCenterSettings (bar widget editor, not ControlCenterTab): distro-logo and colorization toggles, conditional color selection, and browse-button enablement. No real file-picker or image-selection proof. Each editor also exercises fixture defaults, save-copy isolation, cancel/reopen, and apply-close. Completed isolated assertions do not close the RED shared-control runtime warning gate. Cohort counts/lint evidence: [bar](bar.md#tests-asserting-this-spec); isolation and limits: [testing](testing.md#widget-settings-cohort).

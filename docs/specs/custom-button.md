@@ -46,6 +46,12 @@ Settings and typed contracts:
 
 ## Tests asserting this spec
 
+### Control Center settings editor
+
+- `Tests/custom-button-control-settings-warnings.test.py` / `Tests/Qml/CustomButtonControlSettingsHarness.qml` exercise the production Control Center editor and shared controls offscreen. Through `bb8611429` and `b0cc0dc20`, targeted editor lint drops 20→0; ownership cleanup is not a new feature claim.
+- Four behavioral cases cover command/tooltip serialization, saved empty command versus metadata defaults, unchanged input data and discard/reopen with original or serialized data; state-command edits, per-row icon selection/preview, add/remove and shifted-row edits; primary-icon apply/cancel and state-logic visibility; and empty/object/malformed JSON plus null-entry filtering. Save means `saveSettings()` returning data, not dialog apply or disk persistence.
+- Malformed JSON produces one expected parse diagnostic; null-entry warning is explicitly expected. Commands remain inert strings. No real commands/config writes, physical input, outer-dialog save/cancel, widget reorder, or live-shell acceptance are proved. Runner safety and diagnostic gate: [testing](testing.md#control-center-custom-button-settings-editor).
+
 - `Tests/custom-button-bar-settings-warnings.test.py behavior` runs the production bar settings editor and controls offscreen with fixture settings/services: four behavior cases plus QtTest init/cleanup yield six reported passes. Covers initial serialization/metadata defaults, command edits and stream/JSON/wheel toggles, length bounds and interval conversion, and copy isolation plus destroy/reopen with original or serialized data. Commands are inert strings; direct property/signal changes do not prove physical input. Empty left-click text currently resolves to its metadata command; falsey helper assertions do not establish empty-command preservation through every control.
 - Its standalone `lint` requires zero qmllint warnings and exit status zero after `1a1c35375` (41→0). Owner qualification is warning cleanup, not a feature change. Neither mode establishes dialog save/cancel, widget reorder, persistence, or live-shell acceptance; runner/safety contract: [testing](testing.md).
 
