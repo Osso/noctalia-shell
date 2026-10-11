@@ -9,6 +9,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - [x] **QML lifecycle integration** means instantiating real QML/Quickshell objects and exercising signals, bindings, loaders, processes, and destruction ordering; current coverage is feature-specific and incomplete.
 - [x] Headless QML lifecycle suites run with `qmltestrunner` on `QT_QPA_PLATFORM=offscreen` and isolated temporary XDG config/cache/data directories.
 - [x] Production QML lifecycle harnesses run non-visibly with isolated temporary config/cache/data paths and explicit process cleanup. Night-light gamma tests use a private Wayland server, never the active display.
+- [x] `Tests/panel-service-lifecycle.test.sh` and `Tests/audio-panel-regression.test.sh` isolate both Noctalia-specific and XDG paths, seed a temporary palette, and reject any logged `WARN`, `ERROR`, or `FATAL` even when behavioral assertions succeed. Panel lifecycle success requires exit status zero and `PASS PanelServiceLifecycle`; audio success requires its dedicated exit status 42. The panel harness waits for isolated settings bootstrap before creating SmartPanel and fails on setup timeout.
 - [x] **Live host probes** inspect the active machine or shell and must be reported separately from deterministic unit/static results.
 - [x] Runner output labels `deterministic-unit`, `structural-reference`, `qml-static`, `host-probes`, `live-log`, and `visible-notifications` evidence independently.
 
