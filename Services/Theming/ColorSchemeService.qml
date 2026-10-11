@@ -22,7 +22,7 @@ Singleton {
       Logger.d("ColorScheme", "Detected dark mode change");
       if (!Settings.data.colorSchemes.useWallpaperColors && Settings.data.colorSchemes.predefinedScheme) {
         // Re-apply current scheme to pick the right variant
-        applyScheme(Settings.data.colorSchemes.predefinedScheme);
+        root.applyScheme(Settings.data.colorSchemes.predefinedScheme);
       }
       // Toast: dark/light mode switched
       const enabled = !!Settings.data.colorSchemes.darkMode;
@@ -145,28 +145,28 @@ Singleton {
           return line.length > 0;
         });
         files.sort(function (a, b) {
-          var nameA = getBasename(a).toLowerCase();
-          var nameB = getBasename(b).toLowerCase();
+          var nameA = root.getBasename(a).toLowerCase();
+          var nameB = root.getBasename(b).toLowerCase();
           return nameA.localeCompare(nameB);
         });
-        schemes = files;
-        scanning = false;
-        Logger.d("ColorScheme", "Listed", schemes.length, "schemes");
+        root.schemes = files;
+        root.scanning = false;
+        Logger.d("ColorScheme", "Listed", root.schemes.length, "schemes");
         // Normalize stored scheme to basename and re-apply if necessary
         var stored = Settings.data.colorSchemes.predefinedScheme;
         if (stored) {
-          var basename = getBasename(stored);
+          var basename = root.getBasename(stored);
           if (basename !== stored) {
             Settings.data.colorSchemes.predefinedScheme = basename;
           }
           if (!Settings.data.colorSchemes.useWallpaperColors) {
-            applyScheme(basename);
+            root.applyScheme(basename);
           }
         }
       } else {
         Logger.e("ColorScheme", "Failed to find color scheme files");
-        schemes = [];
-        scanning = false;
+        root.schemes = [];
+        root.scanning = false;
       }
     }
 
@@ -189,11 +189,11 @@ Singleton {
             variant = data.light || data.dark;
           }
         }
-        writeColorsToDisk(variant);
-        Logger.i("ColorScheme", "Applying color scheme:", getBasename(path));
+        root.writeColorsToDisk(variant);
+        Logger.i("ColorScheme", "Applying color scheme:", root.getBasename(path));
 
         // Generate Matugen templates if any are enabled and setting allows it
-        if (Settings.data.colorSchemes.generateTemplatesForPredefined && hasEnabledTemplates()) {
+        if (Settings.data.colorSchemes.generateTemplatesForPredefined && root.hasEnabledTemplates()) {
           AppThemeService.generateFromPredefinedScheme(data);
         }
       } catch (e) {
@@ -216,11 +216,11 @@ Singleton {
   // Writer to colors.json using a JsonAdapter for safety
   FileView {
     id: colorsWriter
-    path: colorsJsonFilePath
+    path: root.colorsJsonFilePath
     printErrors: false
     onSaved:
 
-    // Logger.i("ColorScheme", "Colors saved")
+      // Logger.i("ColorScheme", "Colors saved")
     {}
     JsonAdapter {
       id: out
