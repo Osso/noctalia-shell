@@ -80,6 +80,7 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 
 ## Tests asserting this spec
 
+- `Tests/layer-bar-owner-warnings.test.py backgrounds` covers unified bar/panel backgrounds, not wallpaper rendering: after `ead749abf`, AllBackgrounds owner warnings drop 17→0 with zero target lint warnings. Two offscreen behavioral cases assert panel/bar color and geometry updates, canvas sizing, uncovered transparent-canvas samples revealing a changed underlay, and synthetic pointer pass-through. The input-region assertion checks only an inert fixture property; no compositor pixel/input-region or wallpaper resource proof. Invocation and safety: [testing](testing.md#background-and-widget-loader-owners).
 - `Tests/background-resource-guards.test.js`
 - `Tests/background-warnings.test.py` — standalone `lint` retains exactly 46 diagnostics (42 unqualified Component captures, four missing-property), down from 58 at `6c7c733ca`; rejects known-owner unqualified accesses and block-scoped `var`. Five isolated offscreen `runtime` cases cover size/fill-mode calculations, decode-size assignment before source, shader Component context, transition completion without decoding, and settings/random-selection helpers. Production layer-shell declarations are removed and PanelWindow is an invisible fixture Window; services/settings are inert and writable paths isolated. Requires exit status zero, `0 failed`, no logged `QWARN`, `QFATAL`, `ReferenceError`, `TypeError`, or `Binding loop`, and unchanged real settings after a permission-locked, hash-verified backup. No shader-pixel, actual image-decode, output-routing, or live memory proof. Idle shader unload remains unproved: the existing empty URL/string strict comparison keeps the shader active; the harness reports this blocker rather than failing or fixing it.
 - `Tests/wallpaper-service-guards.test.js`
@@ -95,7 +96,7 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 
 - [ ] Add executable tests for actual wallpaper file acceptance/rejection and image-extension filtering.
 - [ ] Extend isolated background helper/transition coverage to actual image decoding, shader pixels, and output routing; transition completion with empty sources is not rendered-transition proof.
-- [ ] Prove idle shader unloading; current isolated case is blocked by the existing empty URL/string strict comparison. Wallpaper memory testing remains closed without new evidence reopening it; this warning cleanup supplies none.
+- [ ] Prove idle shader unloading; current isolated case is blocked by the existing empty URL/string strict comparison. Wallpaper memory testing remains closed without new evidence reopening it; neither wallpaper warning cleanup nor unified-background owner cleanup supplies such evidence.
 - [ ] Extend wallpaper panel action coverage to real styled-control interaction and asynchronous download completion after disposal; current isolated coverage uses fixture controls and synchronous fake downloads.
 
 ## Out of scope
