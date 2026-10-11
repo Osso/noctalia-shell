@@ -129,8 +129,8 @@ ShellRoot {
                 }, "top");
                 break;
             case 2:
-                harness.require(active.implicitWidth > 0 && active.implicitWidth === Math.min(active.calculateContentWidth(), 90), "ActiveWindow adaptive width cap");
-                harness.require(media.implicitWidth > 0 && media.implicitWidth === Math.min(media.calculateContentWidth() + 8, 85), "MediaMini adaptive width cap");
+                harness.require(active.implicitWidth === 90, "ActiveWindow long title capped at 90");
+                harness.require(media.implicitWidth === 85, "MediaMini long title capped at 85");
                 harness.setWidgets({
                     "id": "ActiveWindow",
                     "hideMode": "visible"
