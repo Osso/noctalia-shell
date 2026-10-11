@@ -46,6 +46,9 @@ Settings and typed contracts:
 
 ## Tests asserting this spec
 
+- `Tests/custom-button-bar-settings-warnings.test.py behavior` runs the production bar settings editor and controls offscreen with fixture settings/services: four behavior cases plus QtTest init/cleanup yield six reported passes. Covers initial serialization/metadata defaults, command edits and stream/JSON/wheel toggles, length bounds and interval conversion, and copy isolation plus destroy/reopen with original or serialized data. Commands are inert strings; direct property/signal changes do not prove physical input. Empty left-click text currently resolves to its metadata command; falsey helper assertions do not establish empty-command preservation through every control.
+- Its standalone `lint` requires zero qmllint warnings and exit status zero after `1a1c35375` (41→0). Owner qualification is warning cleanup, not a feature change. Neither mode establishes dialog save/cancel, widget reorder, persistence, or live-shell acceptance; runner/safety contract: [testing](testing.md).
+
 - `Tests/custom-button-warnings.test.py behavior` runs the production Control Center button offscreen with synthetic Process/Quickshell and button fixtures: settings/click commands/tooltip/missing settings, ordered skips and failure-to-success traversal, all-fail and missing-icon results, disable-during-run, replacement before/after debounce, latest-settings debounce, and malformed/null/object JSON rejection. Ten behavior rows plus init/cleanup produce 12 reported passes. No real commands or desktop input are exercised.
 - `Tests/custom-button-warnings.test.py lint` requires zero qmllint warnings and exit status zero. The final block-scoped `var` warning was removed at `f58175c90` (1→0); reported verification recorded six JS tests and 12 QML passes. Synthetic Process coverage does not establish real command execution or live-shell behavior.
 
@@ -58,6 +61,7 @@ Settings and typed contracts:
 ## Known gaps (current cycle)
 
 - [ ] Add executable coverage for bar custom button click, wheel, JSON text parsing, and scrolling behavior.
+- [ ] Add bar settings dialog save/cancel, widget reorder, and real persistence coverage; isolated editor discard/reopen only reconstructs the component with supplied data.
 - [ ] Add real Process integration coverage for Control Center custom button exits; current ordering/exit coverage uses synthetic processes.
 
 ## Out of scope
