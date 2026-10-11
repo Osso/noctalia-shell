@@ -82,6 +82,7 @@ Theming covers color scheme discovery/application, wallpaper and predefined them
 
 - `Tests/color-namespace-runtime.test.py` - offscreen production palette/QColor binding regression, using `Tests/Qml/ColorNamespaceHarness.qml`.
 - `Tests/color-scheme-service-guards.test.js`
+- `Tests/color-scheme-service-behavior.test.js` - executes production service JavaScript with isolated QML boundary objects: sorted discovery and failure state, stored-name normalization, selection toasts, dark-mode reapplication, variant selection, palette writes, and template eligibility. No real settings, disk writes, processes, or desktop surfaces; not a QML runtime test.
 - `Tests/app-theme-service-guards.test.js`
 - `Tests/template-processor-guards.test.js`
 - `Tests/template-registry-guards.test.js`
