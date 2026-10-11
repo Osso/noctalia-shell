@@ -1,0 +1,299 @@
+#!/usr/bin/env python3
+"""Focused DisplayTab lint and offscreen UI proof with inert monitor boundaries."""
+
+import argparse
+import hashlib
+import importlib.util
+import json
+import os
+import re
+import subprocess
+import struct
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+TARGET = Path("Modules/Panels/Settings/Tabs/DisplayTab.qml")
+SETTINGS = Path.home() / ".config/noctalia/settings.json"
+
+
+def load_helper(filename):
+    spec = importlib.util.spec_from_file_location(filename, ROOT / "Tests" / filename)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def stage_behavior(directory):
+    helper = load_helper("about-tab-warnings.test.py")
+    helper.stage_behavior(directory)
+    (directory / "tst_about.qml").unlink()
+    write = helper.write_module
+    singleton = helper.singleton
+    controls = (
+        "NHeader",
+        "NText",
+        "NIcon",
+        "NLabel",
+        "NValueSlider",
+        "NSlider",
+        "NDivider",
+        "NSpinBox",
+        "NToggle",
+        "NComboBox",
+        "NListView",
+    )
+    write(
+        directory,
+        "qs.Widgets",
+        {name: (ROOT / f"Widgets/{name}.qml").read_text() for name in controls},
+    )
+    write(directory, "qs.Tabs", {"DisplayTab": (ROOT / TARGET).read_text()})
+    write(
+        directory,
+        "Quickshell",
+        {
+            "ShellScreen": """import QtQuick
+QtObject {
+  property string name
+  property string model
+  property int width
+  property int height
+}""",
+            "Quickshell": singleton("""
+  property ShellScreen laptop: ShellScreen { name: 'eDP-1'; model: 'Laptop'; width: 1920; height: 1080 }
+  property ShellScreen external: ShellScreen { name: 'DP-1'; model: 'External'; width: 2560; height: 1440 }
+  property ShellScreen unavailable: ShellScreen { name: 'HDMI-1'; model: 'ReadOnly'; width: 1280; height: 720 }
+  property ShellScreen missing: ShellScreen { name: 'DP-2'; model: 'NoBrightness'; width: 800; height: 600 }
+  property var screens: [laptop, external, unavailable, missing]
+"""),
+        },
+    )
+    write(
+        directory,
+        "Quickshell.Io",
+        {
+            "StdioCollector": "import QtQuick\nQtObject {}",
+            "Process": """import QtQuick
+QtObject {
+  property var command
+  property bool running: false
+  property StdioCollector stdout
+  property StdioCollector stderr
+  signal exited(int exitCode)
+}""",
+        },
+    )
+    write(
+        directory,
+        "qs.Services.Compositor",
+        {
+            "CompositorService": singleton("""
+  function getDisplayScale(name) { return name === 'DP-1' ? 1.5 : 1; }
+"""),
+        },
+    )
+    write(
+        directory,
+        "qs.Services.Hardware",
+        {
+            "BrightnessService": singleton("""
+  property QtObject laptop: QtObject {
+    property real brightness: 0.4
+    property bool brightnessControlAvailable: true
+    property string method: 'internal'
+    property var writes: []
+    function setBrightness(value) { brightness = value; writes = writes.concat([value]); }
+  }
+  property QtObject external: QtObject {
+    property real brightness: 0.7
+    property bool brightnessControlAvailable: true
+    property string method: 'ddc'
+    property var writes: []
+    function setBrightness(value) { brightness = value; writes = writes.concat([value]); }
+  }
+  property QtObject unavailable: QtObject {
+    property real brightness: 0.6
+    property bool brightnessControlAvailable: false
+    property string method: 'ddc'
+    property var writes: []
+    function setBrightness(value) { throw new Error('Unavailable brightness write'); }
+  }
+  function getMonitorForScreen(screen) {
+    if (screen.name === 'eDP-1') return laptop;
+    if (screen.name === 'DP-1') return external;
+    if (screen.name === 'HDMI-1') return unavailable;
+    return null;
+  }
+"""),
+        },
+    )
+    write(
+        directory,
+        "qs.Services.Location",
+        {
+            "LocationService": singleton("property string stableName: 'FixtureCity'"),
+            "NightLightService": singleton(
+                "property int applies: 0\nfunction apply() { applies++; }"
+            ),
+        },
+    )
+    write(
+        directory,
+        "qs.Services.UI",
+        {
+            "TooltipService": singleton(
+                "function show(...args) {}\nfunction hide() {}"
+            ),
+            "ToastService": singleton("""
+  property var notices: []
+  property var warnings: []
+  function showNotice(title, body, icon) { notices = notices.concat([body]); }
+  function showWarning(title, body) { warnings = warnings.concat([body]); }
+"""),
+        },
+    )
+    commons = directory / "qs/Commons"
+    defaults = json.loads((ROOT / "Assets/settings-default.json").read_text())
+    bodies = []
+    for section in ("ui", "brightness", "nightLight"):
+        fields = []
+        for key, value in defaults[section].items():
+            if section == "ui" and key in ("fontDefault", "fontFixed"):
+                value = "Sans Serif"
+            kind = (
+                "bool"
+                if isinstance(value, bool)
+                else "real"
+                if isinstance(value, (int, float))
+                else "var"
+            )
+            fields.append(f"property {kind} {key}: {json.dumps(value)}")
+        bodies.append(
+            f"property QtObject {section}: QtObject {{\n" + "\n".join(fields) + "\n}"
+        )
+    (commons / "Settings.qml").write_text(
+        singleton("property QtObject data: QtObject {\n" + "\n".join(bodies) + "\n}")
+    )
+    # Preserve production monitor-description interpolation, using deterministic locale text.
+    (commons / "I18n.qml").write_text(
+        singleton("""
+  function tr(key, values) {
+    if (key === 'system.monitor-description')
+      return values.model + ':' + values.width + 'x' + values.height + '@' + values.scale;
+    return key;
+  }
+""")
+    )
+    with (commons / "Style.qml").open("r+") as stream:
+        text = stream.read().replace(
+            "QtObject {",
+            "QtObject {\nproperty real sliderWidth: 200\nproperty real fontSizeXXL: 20\nproperty real borderL: 2",
+            1,
+        )
+        stream.seek(0)
+        stream.write(text)
+        stream.truncate()
+    colors = commons / "NColor.qml"
+    colors.write_text(
+        colors.read_text().replace(
+            "QtObject {", "QtObject {\nproperty color mSurface: '#202020'", 1
+        )
+    )
+    (directory / "tst_display.qml").write_text(
+        (ROOT / "Tests/Qml/DisplayTabWarningsHarness.qml").read_text()
+    )
+
+
+def isolated_environment(directory):
+    environment = {"PATH": os.environ["PATH"], "LANG": "C.UTF-8"}
+    for name in (
+        "HOME",
+        "XDG_CONFIG_HOME",
+        "XDG_CACHE_HOME",
+        "XDG_DATA_HOME",
+        "XDG_STATE_HOME",
+        "XDG_RUNTIME_DIR",
+    ):
+        path = directory / name
+        path.mkdir(mode=0o700)
+        environment[name] = str(path)
+    environment.update(
+        QT_QPA_PLATFORM="offscreen",
+        QT_QUICK_BACKEND="software",
+        DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent/display-tab-session",
+        DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent/display-tab-system",
+    )
+    return environment
+
+
+def execute(mode, directory, environment):
+    if mode == "lint":
+        staging = load_helper("media-mini-warnings.test.py")
+        staging.stage_modules(directory)
+        argv = [
+            "/usr/lib/qt6/bin/qmllint",
+            "-I",
+            str(directory),
+            str(directory / "qs" / TARGET),
+        ]
+    else:
+        stage_behavior(directory)
+        argv = [
+            "/usr/lib/qt6/bin/qmltestrunner",
+            "-input",
+            str(directory / "tst_display.qml"),
+            "-import",
+            str(directory),
+        ]
+    result = subprocess.run(
+        argv, cwd=ROOT, env=environment, capture_output=True, text=True, timeout=60
+    )
+    output = result.stdout + result.stderr
+    (directory / f"{mode}.log").write_text(output)
+    print(output, end="")
+    if mode == "lint":
+        warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
+        print("DISPLAY_TAB_WARNING_COUNT", len(warnings))
+        assert not warnings, "DisplayTab warnings remain"
+    else:
+        assert "0 failed" in output, "Missing QtTest completion"
+        assert not re.search(
+            r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|qt\.qml\.|Warning:",
+            output,
+        ), output
+        for scale in ("1", "1.5"):
+            image = (directory / f"display-scale-{scale}.png").read_bytes()
+            assert image[:8] == b"\x89PNG\r\n\x1a\n"
+            width, height = struct.unpack(">II", image[16:24])
+            assert width == 900 and height > 500, (width, height)
+            print("DISPLAY_RENDER_PNG", scale, width, height, len(image))
+    assert result.returncode == 0, result.returncode
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("--artifacts", type=Path, required=True)
+    args = parser.parse_args()
+    directory = args.artifacts.resolve()
+    directory.mkdir(mode=0o700, parents=True, exist_ok=False)
+    before = SETTINGS.read_bytes()
+    digest = hashlib.sha256(before).hexdigest()
+    backup = directory / "settings-backup.json"
+    descriptor = os.open(backup, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(descriptor, "wb") as stream:
+        stream.write(before)
+    assert backup.stat().st_mode & 0o777 == 0o600
+    assert backup.read_bytes() == before
+    assert hashlib.sha256(backup.read_bytes()).hexdigest() == digest
+    print("SETTINGS_BACKUP_VERIFIED", backup, digest)
+    try:
+        execute(args.mode, directory, isolated_environment(directory))
+    finally:
+        assert SETTINGS.read_bytes() == before, "Real settings changed"
+        assert backup.read_bytes() == before, "Backup changed"
+        print("SETTINGS_SHA_UNCHANGED", digest)
+
+
+if __name__ == "__main__":
+    main()

@@ -7,6 +7,7 @@ import qs.Commons
 import qs.Services.Compositor
 import qs.Services.Hardware
 import qs.Services.Location
+import qs.Services.UI
 import qs.Widgets
 
 ColumnLayout {
@@ -23,9 +24,9 @@ ColumnLayout {
         var mm = ("0" + m).slice(-2);
         var key = hh + ":" + mm;
         timeOptions.append({
-                             "key": key,
-                             "name": key
-                           });
+          "key": key,
+          "name": key
+        });
       }
     }
   }
@@ -64,6 +65,7 @@ ColumnLayout {
     Repeater {
       model: Quickshell.screens || []
       delegate: Rectangle {
+        id: monitorCard
         required property ShellScreen modelData
         readonly property string monitorName: modelData ? modelData.name : ""
         readonly property string monitorModel: modelData ? modelData.model : ""
@@ -81,21 +83,21 @@ ColumnLayout {
 
         ColumnLayout {
           id: contentCol
-          width: parent.width - 2 * Style.marginL
+          width: monitorCard.width - 2 * Style.marginL
           x: Style.marginL
           y: Style.marginL
           spacing: Style.marginXXS
 
           NLabel {
-            label: monitorName || "Unknown"
+            label: monitorCard.monitorName || "Unknown"
             description: {
-              const compositorScale = CompositorService.getDisplayScale(monitorName);
+              const compositorScale = CompositorService.getDisplayScale(monitorCard.monitorName);
               I18n.tr("system.monitor-description", {
-                        "model": monitorModel,
-                        "width": monitorWidth * compositorScale,
-                        "height": monitorHeight * compositorScale,
-                        "scale": compositorScale
-                      });
+                "model": monitorCard.monitorModel,
+                "width": monitorCard.monitorWidth * compositorScale,
+                "height": monitorCard.monitorHeight * compositorScale,
+                "scale": compositorScale
+              });
             }
           }
 
@@ -103,7 +105,7 @@ ColumnLayout {
           ColumnLayout {
             spacing: Style.marginS
             Layout.fillWidth: true
-            visible: brightnessMonitor !== undefined && brightnessMonitor !== null
+            visible: monitorCard.brightnessMonitor !== undefined && monitorCard.brightnessMonitor !== null
 
             RowLayout {
               Layout.fillWidth: true
@@ -119,44 +121,44 @@ ColumnLayout {
                 id: brightnessSlider
                 from: 0
                 to: 1
-                value: brightnessMonitor ? brightnessMonitor.brightness : 0.5
+                value: monitorCard.brightnessMonitor ? monitorCard.brightnessMonitor.brightness : 0.5
                 stepSize: 0.01
-                enabled: brightnessMonitor ? brightnessMonitor.brightnessControlAvailable : false
+                enabled: monitorCard.brightnessMonitor ? monitorCard.brightnessMonitor.brightnessControlAvailable : false
                 onMoved: value => {
-                           if (brightnessMonitor && brightnessMonitor.brightnessControlAvailable) {
-                             brightnessMonitor.setBrightness(value);
-                           }
-                         }
+                  if (monitorCard.brightnessMonitor && monitorCard.brightnessMonitor.brightnessControlAvailable) {
+                    monitorCard.brightnessMonitor.setBrightness(value);
+                  }
+                }
                 onPressedChanged: (pressed, value) => {
-                                    if (brightnessMonitor && brightnessMonitor.brightnessControlAvailable) {
-                                      brightnessMonitor.setBrightness(value);
-                                    }
-                                  }
+                  if (monitorCard.brightnessMonitor && monitorCard.brightnessMonitor.brightnessControlAvailable) {
+                    monitorCard.brightnessMonitor.setBrightness(value);
+                  }
+                }
                 Layout.fillWidth: true
               }
 
               NText {
-                text: brightnessMonitor ? Math.round(brightnessSlider.value * 100) + "%" : "N/A"
+                text: monitorCard.brightnessMonitor ? Math.round(brightnessSlider.value * 100) + "%" : "N/A"
                 Layout.preferredWidth: 55
                 horizontalAlignment: Text.AlignRight
                 Layout.alignment: Qt.AlignVCenter
-                opacity: brightnessMonitor && !brightnessMonitor.brightnessControlAvailable ? 0.5 : 1.0
+                opacity: monitorCard.brightnessMonitor && !monitorCard.brightnessMonitor.brightnessControlAvailable ? 0.5 : 1.0
               }
 
               Item {
                 Layout.preferredWidth: 30
                 Layout.fillHeight: true
                 NIcon {
-                  icon: brightnessMonitor && brightnessMonitor.method == "internal" ? "device-laptop" : "device-desktop"
+                  icon: monitorCard.brightnessMonitor && monitorCard.brightnessMonitor.method == "internal" ? "device-laptop" : "device-desktop"
                   anchors.centerIn: parent
-                  opacity: brightnessMonitor && !brightnessMonitor.brightnessControlAvailable ? 0.5 : 1.0
+                  opacity: monitorCard.brightnessMonitor && !monitorCard.brightnessMonitor.brightnessControlAvailable ? 0.5 : 1.0
                 }
               }
             }
 
             // Show message when brightness control is not available
             NText {
-              visible: brightnessMonitor && !brightnessMonitor.brightnessControlAvailable
+              visible: monitorCard.brightnessMonitor && !monitorCard.brightnessMonitor.brightnessControlAvailable
               text: !Settings.data.brightness.enableDdcSupport ? I18n.tr("settings.display.monitors.brightness-unavailable.ddc-disabled") : I18n.tr("settings.display.monitors.brightness-unavailable.generic")
               pointSize: Style.fontSizeS
               color: NColor.mOnSurfaceVariant
@@ -195,10 +197,10 @@ ColumnLayout {
       description: I18n.tr("settings.display.monitors.external-brightness.description")
       checked: Settings.data.brightness.enableDdcSupport
       onToggled: checked => {
-                   Settings.data.brightness.enableDdcSupport = checked;
-                   // DDC detection will run on next monitor change when enabled
-                   // Monitors will stop using DDC immediately when disabled
-                 }
+        Settings.data.brightness.enableDdcSupport = checked;
+      // DDC detection will run on next monitor change when enabled
+      // Monitors will stop using DDC immediately when disabled
+      }
     }
   }
 
@@ -224,16 +226,16 @@ ColumnLayout {
     description: I18n.tr("settings.display.night-light.enable.description")
     checked: Settings.data.nightLight.enabled
     onToggled: checked => {
-                 if (checked) {
-                   // Verify wlsunset exists before enabling
-                   wlsunsetCheck.running = true;
-                 } else {
-                   Settings.data.nightLight.enabled = false;
-                   Settings.data.nightLight.forced = false;
-                   NightLightService.apply();
-                   ToastService.showNotice(I18n.tr("settings.display.night-light.section.label"), I18n.tr("toast.night-light.disabled"), "nightlight-off");
-                 }
-               }
+      if (checked) {
+        // Verify wlsunset exists before enabling
+        wlsunsetCheck.running = true;
+      } else {
+        Settings.data.nightLight.enabled = false;
+        Settings.data.nightLight.forced = false;
+        NightLightService.apply();
+        ToastService.showNotice(I18n.tr("settings.display.night-light.section.label"), I18n.tr("toast.night-light.disabled"), "nightlight-off");
+      }
+    }
   }
 
   // Temperature
@@ -368,8 +370,8 @@ ColumnLayout {
   NToggle {
     label: I18n.tr("settings.display.night-light.auto-schedule.label")
     description: I18n.tr("settings.display.night-light.auto-schedule.description", {
-                           "location": LocationService.stableName
-                         })
+      "location": LocationService.stableName
+    })
     checked: Settings.data.nightLight.autoSchedule
     onToggled: checked => Settings.data.nightLight.autoSchedule = checked
     visible: Settings.data.nightLight.enabled
@@ -429,14 +431,14 @@ ColumnLayout {
     description: I18n.tr("settings.display.night-light.force-activation.description")
     checked: Settings.data.nightLight.forced
     onToggled: checked => {
-                 Settings.data.nightLight.forced = checked;
-                 if (checked && !Settings.data.nightLight.enabled) {
-                   // Ensure enabled when forcing
-                   wlsunsetCheck.running = true;
-                 } else {
-                   NightLightService.apply();
-                 }
-               }
+      Settings.data.nightLight.forced = checked;
+      if (checked && !Settings.data.nightLight.enabled) {
+        // Ensure enabled when forcing
+        wlsunsetCheck.running = true;
+      } else {
+        NightLightService.apply();
+      }
+    }
     visible: Settings.data.nightLight.enabled
   }
 
