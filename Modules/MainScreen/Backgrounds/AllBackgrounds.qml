@@ -67,119 +67,119 @@ Item {
       PanelBackground {
         panel: root.windowRoot.audioPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
 
       // Battery
       PanelBackground {
         panel: root.windowRoot.batteryPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
 
       // Bluetooth
       PanelBackground {
         panel: root.windowRoot.bluetoothPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
 
       // Brightness
       PanelBackground {
         panel: root.windowRoot.brightnessPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
 
       // Clock
       PanelBackground {
         panel: root.windowRoot.clockPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
 
       // Control Center
       PanelBackground {
         panel: root.windowRoot.controlCenterPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
 
       // Changelog
       PanelBackground {
         panel: root.windowRoot.changelogPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
 
       // Launcher
       PanelBackground {
         panel: root.windowRoot.launcherPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
 
       // Notification History
       PanelBackground {
         panel: root.windowRoot.notificationHistoryPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
 
       // Session Menu
       PanelBackground {
         panel: root.windowRoot.sessionMenuPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
 
       // Settings
       PanelBackground {
         panel: root.windowRoot.settingsPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
 
       // Setup Wizard
       PanelBackground {
         panel: root.windowRoot.setupWizardPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
 
       // TrayDrawer
       PanelBackground {
         panel: root.windowRoot.trayDrawerPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
 
       // Wallpaper
       PanelBackground {
         panel: root.windowRoot.wallpaperPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
 
       // WiFi
       PanelBackground {
         panel: root.windowRoot.wifiPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
 
       // VPN
       PanelBackground {
         panel: root.windowRoot.vpnPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
 
       // Process
       PanelBackground {
         panel: root.windowRoot.processPanelPlaceholder
         shapeContainer: backgroundsShape
-        backgroundColor: panelBackgroundColor
+        backgroundColor: root.panelBackgroundColor
       }
     }
 
