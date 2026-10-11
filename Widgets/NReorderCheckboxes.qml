@@ -16,6 +16,7 @@ Item {
   property color dragHandleColor: NColor.mOutline
   property int baseSize: Style.baseWidgetSize * 0.7
   property int spacing: Style.marginM
+  property ChecklistItem draggedItem: null
 
   signal itemToggled(int index, bool enabled)
   signal itemsReordered(int fromIndex, int toIndex)
@@ -157,6 +158,7 @@ Item {
             delegateItem.dragTargetIndex = delegateItem.index;
             delegateItem.dragStartY = delegateItem.y;
             delegateItem.dragging = true;
+            delegateItem.widgetOwner.draggedItem = delegateItem;
             delegateItem.z = 999;
 
             // Signal that interaction started (prevents panel close)
@@ -183,6 +185,7 @@ Item {
 
           onReleased: {
             // Always signal end of interaction
+            delegateItem.widgetOwner.draggedItem = null;
             dragHandleMouseArea.preventStealing = false;
             delegateItem.widgetOwner.dragPotentialEnded();
 
@@ -199,6 +202,7 @@ Item {
 
           onCanceled: {
             // Handle cancel (e.g., ESC key pressed during drag)
+            delegateItem.widgetOwner.draggedItem = null;
             dragHandleMouseArea.preventStealing = false;
             delegateItem.widgetOwner.dragPotentialEnded();
 
@@ -280,17 +284,9 @@ Item {
         return delegateItem.y;
       }
 
-      // Check if any item is being dragged
-      var draggedIndex = -1;
-      var targetIndex = -1;
-      for (var i = 0; i < delegateItem.ownerView.count; i++) {
-        var item = delegateItem.ownerView.itemAtIndex(i);
-        if (item && item.dragging) {
-          draggedIndex = item.dragStartIndex;
-          targetIndex = item.dragTargetIndex;
-          break;
-        }
-      }
+      const draggedItem = delegateItem.widgetOwner.draggedItem;
+      const draggedIndex = draggedItem ? draggedItem.dragStartIndex : -1;
+      const targetIndex = draggedItem ? draggedItem.dragTargetIndex : -1;
 
       // If an item is being dragged, adjust positions
       if (draggedIndex !== -1 && targetIndex !== -1 && draggedIndex !== targetIndex) {

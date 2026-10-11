@@ -277,6 +277,83 @@ Item {
       compare(widget.filteredKeyAt(99), "");
     }
 
+    function test_reorder_drag_visual_positions_clear_reassign() {
+      const entries = [
+        {
+          id: "a",
+          text: "Alpha",
+          enabled: true,
+          required: false
+        },
+        {
+          id: "b",
+          text: "Beta",
+          enabled: true,
+          required: false
+        },
+        {
+          id: "c",
+          text: "Gamma",
+          enabled: false,
+          required: false
+        }
+      ];
+      const widget = create(reorderFactory, {
+        width: 500,
+        model: entries
+      });
+      const list = widget.children[0];
+      reordered.target = widget;
+      reordered.clear();
+      list.forceLayout();
+      const first = list.itemAtIndex(0);
+      const second = list.itemAtIndex(1);
+      const third = list.itemAtIndex(2);
+      const stride = first.height + widget.spacing;
+      const restingZ = first.z;
+      const handle = descendants(first, item => item instanceof MouseArea)[0];
+      mousePress(handle, handle.width / 2, handle.height / 2);
+      mouseMove(handle, handle.width / 2, handle.height / 2 + 2 * stride, 50);
+      compare(first.dragging, true);
+      compare(first.dragTargetIndex, 2);
+      tryCompare(first, "y", 2 * stride);
+      tryCompare(second, "y", 0);
+      tryCompare(third, "y", stride);
+      compare(first.z, 999);
+      compare(widget.model.map(item => item.id).join(","), "a,b,c");
+      compare(reordered.count, 0);
+
+      // Destroy the grabbed delegate before release, then populate a fresh list.
+      widget.model = [];
+      tryCompare(list, "count", 0);
+      wait(30);
+      mouseRelease(scene, 750, 600, Qt.LeftButton);
+      widget.model = entries.slice();
+      tryCompare(list, "count", 3);
+      list.forceLayout();
+      for (let i = 0; i < 3; i++) {
+        const restored = list.itemAtIndex(i);
+        verify(restored !== null);
+        tryCompare(restored, "y", i * stride);
+        compare(restored.dragging, false);
+        compare(restored.z, restingZ);
+      }
+      const last = list.itemAtIndex(2);
+      const lastHandle = descendants(last, item => item instanceof MouseArea)[0];
+      mousePress(lastHandle, lastHandle.width / 2, lastHandle.height / 2);
+      mouseMove(lastHandle, lastHandle.width / 2, lastHandle.height / 2 - 2 * stride, 50);
+      tryCompare(list.itemAtIndex(0), "y", stride);
+      tryCompare(list.itemAtIndex(1), "y", 2 * stride);
+      mouseRelease(lastHandle, lastHandle.width / 2, lastHandle.height / 2, Qt.LeftButton);
+      tryCompare(reordered, "count", 1);
+      compare(reordered.signalArguments[0][0], 2);
+      compare(reordered.signalArguments[0][1], 0);
+      compare(widget.model.map(item => item.id).join(","), "c,a,b");
+      list.forceLayout();
+      for (let i = 0; i < 3; i++)
+        tryCompare(list.itemAtIndex(i), "y", i * stride);
+    }
+
     function test_reorder_toggle_drag_clear_reassign_guards() {
       const original = [
         {
