@@ -22,8 +22,8 @@ ColumnLayout {
 
   function getSchemeColor(schemeName, key) {
     try {
-      var mode = Settings.data.colorSchemes.darkMode ? "dark" : "light";
-      var data = schemeColorsCache[schemeName];
+      const mode = Settings.data.colorSchemes.darkMode ? "dark" : "light";
+      const data = schemeColorsCache[schemeName];
       if (data && data[mode] && data[mode][key])
         return data[mode][key];
     } catch (e) {}
@@ -42,8 +42,8 @@ ColumnLayout {
     target: ColorSchemeService
     function onSchemesChanged() {
       Logger.i("SetupAppearanceStep", `Color schemes changed: ${ColorSchemeService.schemes.length}`);
-      schemeColorsCache = {};
-      cacheVersion++;
+      root.schemeColorsCache = {};
+      root.cacheVersion++;
     }
   }
 
@@ -197,18 +197,18 @@ ColumnLayout {
           enabled: ProgramCheckerService.matugenAvailable
           checked: Settings.data.colorSchemes.useWallpaperColors && ProgramCheckerService.matugenAvailable
           onToggled: checked => {
-                       if (!ProgramCheckerService.matugenAvailable)
-                       return;
-                       if (checked) {
-                         Settings.data.colorSchemes.useWallpaperColors = true;
-                         AppThemeService.generate();
-                       } else {
-                         Settings.data.colorSchemes.useWallpaperColors = false;
-                         if (Settings.data.colorSchemes.predefinedScheme) {
-                           ColorSchemeService.applyScheme(Settings.data.colorSchemes.predefinedScheme);
-                         }
-                       }
-                     }
+            if (!ProgramCheckerService.matugenAvailable)
+              return;
+            if (checked) {
+              Settings.data.colorSchemes.useWallpaperColors = true;
+              AppThemeService.generate();
+            } else {
+              Settings.data.colorSchemes.useWallpaperColors = false;
+              if (Settings.data.colorSchemes.predefinedScheme) {
+                ColorSchemeService.applyScheme(Settings.data.colorSchemes.predefinedScheme);
+              }
+            }
+          }
         }
       }
 
@@ -298,6 +298,7 @@ ColumnLayout {
               }
             ]
             delegate: Rectangle {
+              id: matugenOption
               required property string key
               required property string name
 
@@ -313,7 +314,7 @@ ColumnLayout {
               opacity: (hoverHandler.hovered || isActive) ? 1.0 : 0.8
 
               NText {
-                text: name
+                text: matugenOption.name
                 pointSize: Style.fontSizeM
                 font.weight: (hoverHandler.hovered || parent.isActive) ? Style.fontWeightBold : Style.fontWeightMedium
                 color: (hoverHandler.hovered || parent.isActive) ? NColor.mOnPrimary : NColor.mOnSurface
@@ -327,7 +328,7 @@ ColumnLayout {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  Settings.data.colorSchemes.matugenSchemeType = key;
+                  Settings.data.colorSchemes.matugenSchemeType = matugenOption.key;
                   AppThemeService.generate();
                 }
               }
@@ -415,19 +416,23 @@ ColumnLayout {
           Layout.fillWidth: true
 
           Repeater {
-            model: ColorSchemeService.schemes
+            model: ColorSchemeService.schemes.map(path => ({
+              schemePath: path,
+              appearanceOwner: root
+            }))
 
             delegate: Rectangle {
               id: schemeItem
 
-              property string schemePath: modelData
-              property string schemeName: root.extractSchemeName(modelData)
+              required property string schemePath
+              required property var appearanceOwner
+              property string schemeName: schemeItem.appearanceOwner.extractSchemeName(schemeItem.schemePath)
 
               Layout.fillWidth: true
               Layout.alignment: Qt.AlignHCenter
               height: 50
               radius: Style.radiusS
-              color: root.cacheVersion >= 0 ? root.getSchemeColor(schemeName, "mSurface") : root.getSchemeColor(schemeName, "mSurface")
+              color: schemeItem.appearanceOwner.cacheVersion >= 0 ? schemeItem.appearanceOwner.getSchemeColor(schemeName, "mSurface") : schemeItem.appearanceOwner.getSchemeColor(schemeName, "mSurface")
               border.width: Style.borderL
               border.color: itemMouseArea.containsMouse ? NColor.mHover : (Settings.data.colorSchemes.predefinedScheme === schemeName ? NColor.mSecondary : NColor.mOutline)
 
@@ -452,40 +457,40 @@ ColumnLayout {
                   Layout.preferredWidth: 14
                   Layout.preferredHeight: 14
                   radius: width * 0.5
-                  color: root.cacheVersion >= 0 ? (function () {
+                  color: schemeItem.appearanceOwner.cacheVersion >= 0 ? (function () {
                     var mode = Settings.data.colorSchemes.darkMode ? "dark" : "light";
-                    var cached = root.schemeColorsCache[schemeItem.schemeName];
-                    return (cached && cached[mode] && cached[mode].mPrimary) || root.getSchemeColor(schemeItem.schemeName, "mPrimary");
+                    var cached = schemeItem.appearanceOwner.schemeColorsCache[schemeItem.schemeName];
+                    return (cached && cached[mode] && cached[mode].mPrimary) || schemeItem.appearanceOwner.getSchemeColor(schemeItem.schemeName, "mPrimary");
                   })() : NColor.mPrimary
                 }
                 Rectangle {
                   Layout.preferredWidth: 14
                   Layout.preferredHeight: 14
                   radius: width * 0.5
-                  color: root.cacheVersion >= 0 ? (function () {
+                  color: schemeItem.appearanceOwner.cacheVersion >= 0 ? (function () {
                     var mode = Settings.data.colorSchemes.darkMode ? "dark" : "light";
-                    var cached = root.schemeColorsCache[schemeItem.schemeName];
-                    return (cached && cached[mode] && cached[mode].mSecondary) || root.getSchemeColor(schemeItem.schemeName, "mSecondary");
+                    var cached = schemeItem.appearanceOwner.schemeColorsCache[schemeItem.schemeName];
+                    return (cached && cached[mode] && cached[mode].mSecondary) || schemeItem.appearanceOwner.getSchemeColor(schemeItem.schemeName, "mSecondary");
                   })() : NColor.mSecondary
                 }
                 Rectangle {
                   Layout.preferredWidth: 14
                   Layout.preferredHeight: 14
                   radius: width * 0.5
-                  color: root.cacheVersion >= 0 ? (function () {
+                  color: schemeItem.appearanceOwner.cacheVersion >= 0 ? (function () {
                     var mode = Settings.data.colorSchemes.darkMode ? "dark" : "light";
-                    var cached = root.schemeColorsCache[schemeItem.schemeName];
-                    return (cached && cached[mode] && cached[mode].mTertiary) || root.getSchemeColor(schemeItem.schemeName, "mTertiary");
+                    var cached = schemeItem.appearanceOwner.schemeColorsCache[schemeItem.schemeName];
+                    return (cached && cached[mode] && cached[mode].mTertiary) || schemeItem.appearanceOwner.getSchemeColor(schemeItem.schemeName, "mTertiary");
                   })() : NColor.mTertiary
                 }
                 Rectangle {
                   Layout.preferredWidth: 14
                   Layout.preferredHeight: 14
                   radius: width * 0.5
-                  color: root.cacheVersion >= 0 ? (function () {
+                  color: schemeItem.appearanceOwner.cacheVersion >= 0 ? (function () {
                     var mode = Settings.data.colorSchemes.darkMode ? "dark" : "light";
-                    var cached = root.schemeColorsCache[schemeItem.schemeName];
-                    return (cached && cached[mode] && cached[mode].mError) || root.getSchemeColor(schemeItem.schemeName, "mError");
+                    var cached = schemeItem.appearanceOwner.schemeColorsCache[schemeItem.schemeName];
+                    return (cached && cached[mode] && cached[mode].mError) || schemeItem.appearanceOwner.getSchemeColor(schemeItem.schemeName, "mError");
                   })() : NColor.mError
                 }
               }
@@ -518,20 +523,26 @@ ColumnLayout {
   Item {
     visible: false
     Repeater {
-      model: ColorSchemeService.schemes
+      model: ColorSchemeService.schemes.map(path => ({
+        schemePath: path,
+        appearanceOwner: root
+      }))
       delegate: Item {
-        required property string modelData
+        id: schemeLoader
+        required property string schemePath
+        required property var appearanceOwner
 
         FileView {
-          path: modelData
+          id: schemeFile
+          path: schemeLoader.schemePath
           blockLoading: false
           onLoaded: {
-            var schemeName = root.extractSchemeName(path);
+            const schemeName = schemeLoader.appearanceOwner.extractSchemeName(schemeFile.path);
             try {
-              var jsonData = JSON.parse(text());
-              root.schemeLoaded(schemeName, jsonData);
+              const jsonData = JSON.parse(schemeFile.text());
+              schemeLoader.appearanceOwner.schemeLoaded(schemeName, jsonData);
             } catch (e) {
-              root.schemeLoaded(schemeName, null);
+              schemeLoader.appearanceOwner.schemeLoaded(schemeName, null);
             }
           }
         }
