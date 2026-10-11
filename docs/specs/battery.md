@@ -65,7 +65,7 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 - `Tests/battery-panel-guards.test.js`
 - `Tests/battery-service-guards.test.js`
 - `Tests/battery-tab-guards.test.js`
-- `Tests/battery-tab-warnings.test.py` (`lint` checks only BatteryTab, retaining eight reported missing-property diagnostics: `animationMedium`, `mWarning`, and six `energyRate` accesses; `behavior --snapshot <path>` checks the production tab/controls with unchanged real-settings SHA).
+- `Tests/battery-tab-warnings.test.py` (`lint` checks only BatteryTab, requires qmllint exit status zero and exactly eight `missing-property` warnings, and rejects unqualified/layout warnings; `behavior --snapshot <path>` checks the production tab/controls with unchanged real-settings SHA).
 - `Tests/qml-runtime-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`
@@ -75,7 +75,8 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 - [ ] Add executable tests for `Services/Hardware/BatteryService.qml` charging-mode cycling and command routing.
 - [ ] Add executable tests for battery panel health/time display text.
 - [ ] Add executable tests for per-widget battery settings device list filtering.
-- [ ] Add runtime/probe coverage for actual threshold write command construction.
+- [ ] BatteryTab still reports eight `missing-property` warnings: `animationMedium`, `mWarning`, and six `energyRate` accesses. Removing 75 unqualified warnings and one layout warning does not make the tab warning-free.
+- [ ] Add host integration coverage for privileged threshold writes; the isolated production-tab test checks command construction, drag/release timing, threshold bounds, and successful-write reload using inert process/sysfs fixtures, not actual writes.
 
 ## Out of scope
 
