@@ -23,7 +23,13 @@ def stage_service(directory):
     shutil.copyfile(
         ROOT / "Services/System/SoundService.qml", services / "SoundService.qml"
     )
-    shutil.copyfile(ROOT / "Tests/Qml/SoundServiceHarness.qml", directory / "shell.qml")
+    shutil.copyfile(
+        ROOT / "Tests/Qml/SoundServiceHarness.qml",
+        directory / "SoundServiceHarness.qml",
+    )
+    (directory / "shell.qml").write_text(
+        "import qs.Commons\nSoundServiceHarness { logger: Logger }\n"
+    )
     (commons / "Logger.qml").write_text(
         """pragma Singleton
 import QtQuick

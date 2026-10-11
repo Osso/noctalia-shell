@@ -2,12 +2,12 @@ pragma ComponentBehavior: Bound
 import QtMultimedia
 import QtQuick
 import Quickshell
-import qs.Commons
 import qs.Services.System
 
 Scope {
   id: harness
 
+  required property var logger
   property QtObject firstPlayer
   property QtObject fallbackPlayer
   property QtObject stoppedPlayer
@@ -91,8 +91,8 @@ Scope {
   }
 
   Component.onCompleted: {
-    Logger.observe = path => harness.observePlayer(path);
-    Logger.observeError = path => harness.errors.push(path.toString());
+    harness.logger.observe = path => harness.observePlayer(path);
+    harness.logger.observeError = path => harness.errors.push(path.toString());
     SoundService.playSound("missing.wav", {
                              volume: 0.4,
                              fallback: true
