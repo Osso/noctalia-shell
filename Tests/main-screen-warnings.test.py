@@ -55,8 +55,18 @@ def lint(directory):
         if line.startswith("Warning:")
     )
     print("MAIN_SCREEN_LINT_COUNTS", dict(counts))
-    # Installed screen metadata (5) and optional SmartPanel key handlers (6).
-    assert counts == {"missing-property": 11}, dict(counts)
+    # _Window exports QuickshellScreenInfo as opaque despite core ShellScreen metadata.
+    assert counts == {"missing-property": 5}, dict(counts)
+    missing = Counter(
+        re.findall(
+            r'^Warning: .*: Member "([^"]+)" not found on type "([^"]+)" \[missing-property\]$',
+            output,
+            re.M,
+        )
+    )
+    assert missing == Counter(
+        (name, "QuickshellScreenInfo") for name in ("name", "width", "height", "x", "y")
+    ), dict(missing)
     assert result.returncode == 0, result.returncode
 
 
@@ -90,7 +100,11 @@ def stage_runtime(directory):
         "Style",
         "property int animationNormal: 0\nproperty int animationFaster: 0\nproperty int barHeight: 32\nproperty int marginXL: 16",
     )
-    write(directory / "Commons", "Logger", "function d(...args) {}")
+    write(
+        directory / "Commons",
+        "Logger",
+        "property var entries: []\nfunction d(...args) { entries.push(args); }",
+    )
     write(directory / "Services/UI", "BarService", "property bool isVisible: false")
     write(
         directory / "Services/UI",
@@ -149,7 +163,15 @@ Item {
     for module, name in panels.items():
         path = directory / "Modules/Panels" / module
         path.mkdir(parents=True)
-        (path / f"{name}.qml").write_text(panel_source)
+        navigation = "\nproperty int selectedIndex: 2\n"
+        if name in ("Launcher", "SessionMenu", "SettingsPanel"):
+            navigation += "function onBackTabPressed() { selectedIndex--; }\n"
+        if name == "Launcher":
+            navigation += "function onCtrlNPressed() { selectedIndex++; }\n"
+            navigation += "function onCtrlPPressed() { selectedIndex--; }\n"
+        (path / f"{name}.qml").write_text(
+            panel_source.rsplit("}", 1)[0] + navigation + "}\n"
+        )
     shutil.copyfile(
         ROOT / "Tests/Qml/MainScreenWarningsHarness.qml", directory / "shell.qml"
     )

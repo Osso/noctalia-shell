@@ -41,6 +41,28 @@ ShellRoot {
     checkEmptyInputMask();
   }
 
+  function activateShortcut(sequence) {
+    for (const child of window.data) {
+      if (child.sequence === sequence) {
+        check(child.enabled, sequence + " enabled for open panel");
+        child.activated();
+        return;
+      }
+    }
+    throw new Error("missing shortcut " + sequence);
+  }
+
+  function checkOptionalNavigation(name, panel) {
+    const backTabPanel = ["launcherPanel", "sessionMenuPanel", "settingsPanel"].includes(name);
+    activateShortcut("Backtab");
+    check(panel.selectedIndex === (backTabPanel ? 1 : 2), name + " backward tab selection");
+    panel.selectedIndex = 2;
+    activateShortcut("Ctrl+N");
+    check(panel.selectedIndex === (name === "launcherPanel" ? 3 : 2), name + " next selection");
+    activateShortcut("Ctrl+P");
+    check(panel.selectedIndex === 2, name + " previous selection or unsupported no-op");
+  }
+
   function exercisePanel(name) {
     const key = name + "-" + window.screenName;
     const placeholder = window[name + "Placeholder"];
@@ -56,6 +78,7 @@ ShellRoot {
     check(window.color.r === 0 && window.color.g === 0 && window.color.b === 0, name + " not white");
     check(window.mask.regions[1].width === window.width && window.mask.regions[1].height === window.height, name + " click-to-close region");
     check(window.WlrLayershell.keyboardFocus === WlrKeyboardFocus.OnDemand, name + " keyboard focus");
+    checkOptionalNavigation(name, panel);
     panel.exclusiveKeyboard = true;
     check(window.WlrLayershell.keyboardFocus === WlrKeyboardFocus.Exclusive, name + " exclusive keyboard focus");
     panel.close();
@@ -75,6 +98,13 @@ ShellRoot {
     window = factory.createObject(harness);
     check(window !== null, "actual MainScreen created");
     check(window.width > 0 && window.height > 0, "nonzero window geometry");
+    const screen = window.screen;
+    check(typeof screen.name === "string" && screen.name.length > 0, "actual ShellScreen name");
+    check(screen.width > 0 && screen.height > 0, "actual ShellScreen dimensions");
+    check(Number.isInteger(screen.x) && Number.isInteger(screen.y), "actual ShellScreen position");
+    check(window.screenName === screen.name, "screen name binding");
+    const expectedLog = ["MainScreen", "Initialized for screen:", screen.name, "- Dimensions:", screen.width, "x", screen.height, "- Position:", screen.x, ",", screen.y];
+    check(Logger.entries.length === 1 && JSON.stringify(Logger.entries[0]) === JSON.stringify(expectedLog), "screen metadata initialization log");
     check(Object.keys(PanelService.loaders).length === panelNames.length, "17 registered loaders");
     checkClosed();
     for (const name of panelNames)
@@ -83,7 +113,7 @@ ShellRoot {
     Qt.callLater(() => {
       check(Object.keys(PanelService.loaders).length === 0, "destroy unregisters all loaders");
       check(PanelService.removed === panelNames.length, "each loader removed once");
-      console.log("MAIN_SCREEN_RUNTIME_PASS 17 register/open/close/reopen/destroy cases");
+      console.log("MAIN_SCREEN_RUNTIME_PASS 17 register/open/navigation/close/reopen/destroy cases");
       Qt.quit();
     });
   }

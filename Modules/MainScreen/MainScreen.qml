@@ -795,8 +795,15 @@ PanelWindow {
     sequence: "Backtab"
     enabled: root.isPanelOpen
     onActivated: {
-      if (PanelService.openedPanel && PanelService.openedPanel.onBackTabPressed) {
-        PanelService.openedPanel.onBackTabPressed();
+      const launcher = PanelService.openedPanel as Launcher;
+      const settingsPanel = PanelService.openedPanel as SettingsPanel;
+      const sessionMenu = PanelService.openedPanel as SessionMenu;
+      if (launcher) {
+        launcher.onBackTabPressed();
+      } else if (settingsPanel) {
+        settingsPanel.onBackTabPressed();
+      } else if (sessionMenu) {
+        sessionMenu.onBackTabPressed();
       }
     }
   }
@@ -825,8 +832,9 @@ PanelWindow {
     sequence: "Ctrl+N"
     enabled: root.isPanelOpen
     onActivated: {
-      if (PanelService.openedPanel && PanelService.openedPanel.onCtrlNPressed) {
-        PanelService.openedPanel.onCtrlNPressed();
+      const launcher = PanelService.openedPanel as Launcher;
+      if (launcher) {
+        launcher.onCtrlNPressed();
       }
     }
   }
@@ -835,8 +843,9 @@ PanelWindow {
     sequence: "Ctrl+P"
     enabled: root.isPanelOpen
     onActivated: {
-      if (PanelService.openedPanel && PanelService.openedPanel.onCtrlPPressed) {
-        PanelService.openedPanel.onCtrlPPressed();
+      const launcher = PanelService.openedPanel as Launcher;
+      if (launcher) {
+        launcher.onCtrlPPressed();
       }
     }
   }
