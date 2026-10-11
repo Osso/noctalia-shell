@@ -83,6 +83,7 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 
 ## Tests asserting this spec
 
+- `Tests/bar-warnings.test.py` - standalone `behavior` runs production Bar/BarWidgetLoader offscreen with fixture screens, widgets, services, and style: seven behavior rows plus QtTest init/cleanup yield nine reported passes. Covers delayed screen assignment, monitor selection, registration/teardown, section order/spacing and hidden sizes on all four sides across two fixture screens, right-click routing, corner/orientation replacement, and Control Center modes. Isolated HOME/XDG paths, a permission-locked hash-verified real-settings backup, and unchanged-byte checks protect settings; success requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `ReferenceError`, `TypeError`, or `Binding loop`. Standalone `lint` accepts exactly two `missing-property` warnings (39→2 at `a83e8408d`), not zero. Neither mode is registered in `run-tests.sh`.
 - `Tests/bar-helpers-guards.test.js`
 - `Tests/bar-service-guards.test.js`
 - `Tests/bar-widget-registry-guards.test.js`
@@ -100,7 +101,8 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 
 - [ ] Extend isolated pill endpoint/delay coverage to intermediate animation frames and whole-shell integration; current fixtures use controlled style values and stub tooltip/bar services. Horizontal's eight geometry records were reported unchanged for `32d56b877`, but the harness has no tracked snapshot-equality comparator.
 - [ ] Eight BarPill Loader/QObject `missing-property` typing diagnostics remain after `705973eb2` reduced warnings from 52 to 8. Standalone lint expects exactly those eight, not warning-free analysis; owner qualification introduces no intended user-facing behavior change.
-- [ ] Add executable coverage for full bar rendering across top, bottom, left, and right positions.
+- [ ] Extend isolated four-side Bar geometry coverage to full-shell rendering and real output/input delivery; fixture screens share one offscreen window and do not prove compositor input regions or pixel rendering.
+- [ ] Two Bar `missing-property` static diagnostics remain after `a83e8408d`; isolated behavior success is not warning-free whole-shell acceptance.
 - [ ] Add executable coverage for widget settings dialog rendering and signal emission.
 - [ ] Split widget-specific behavior into dedicated specs for widgets that do not already have one.
 

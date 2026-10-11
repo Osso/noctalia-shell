@@ -39,15 +39,18 @@ Active Window covers the bar widget that displays the focused window title and a
 
 ## Tests asserting this spec
 
+- `Tests/active-window-warnings.test.py` - standalone `lint` requires exit status zero and zero ActiveWindow static warnings (48→0 at `381ab5330`). Standalone `behavior` exercises direct production widgets and the production registry/BarWidgetLoader before delayed fixture Settings hydration. Four startup variants cross empty/focused startup with fixture/production Style; two soft-reload variants use empty/focused startup with production Style and visible focused widgets at reload (`164f2a3d7`, `32aad541d`, `3da5b0cca`, `9d89b21b9`). Assertions cover pre-ready metadata/settled dimensions, title and width cap, fixed width, vertical density, visible/transparent/hidden modes, production fade timing, and close-before-settings context arguments. Reload uses `Quickshell.reload(false)`, persistent generation state, and two configuration-loaded markers. Success requires exit status zero, `ACTIVE_WINDOW_BEHAVIOR_PASS`, and no logged `WARN`, `ERROR`, or `FATAL` in either space- or colon-prefixed forms. Offscreen runs isolate writable paths, make a permission-locked hash-verified real-settings backup, and check original bytes unchanged. Neither mode is registered in `run-tests.sh`; fixture Settings/compositor/services do not prove canonical bootstrap or reload.
 - `Tests/active-window-widget-guards.test.js`
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
 
 - [x] Add executable coverage for active window title rendering and hide modes.
-- [ ] Add executable coverage for scrolling/fixed-width behavior.
+- [x] Add isolated executable coverage for fixed-width geometry and dynamic title width caps.
+- [ ] Add executable coverage for scrolling motion; selecting `scrollingMode: "always"` in the isolated harness does not prove motion.
 - [x] Add executable coverage for context-menu actions.
 - [ ] Add executable coverage for ActiveWindow settings persistence.
+- [ ] Canonical LIVE runtime still emits four undefined-assignment warnings before Settings loads. Root cause remains unproved; zero static warnings and six isolated startup/reload variants do not establish zero canonical runtime warnings or a live fix.
 
 ## Out of scope
 
