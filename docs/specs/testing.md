@@ -28,6 +28,8 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 - [x] `Tests/scheme-downloader-runtime.test.py runtime` runs the staged production downloader offscreen with synthetic transport, isolated writable paths, file-only download fixtures, and byte-verified unchanged real settings; no real network or configuration writes. Success requires exit status zero, `SCHEME_DOWNLOADER_PASS`, expected downloaded/deleted fixture files, and no logged `WARN`, `ERROR`, `ReferenceError`, or `TypeError`. Both `runtime` and `lint` run standalone with `python3`; neither is wired into `run-tests.sh`. Targeted lint accepts exactly one block-scope warning (35→1 at `a0581c0f9`), hence zero unqualified warnings, not warning-free acceptance. Coverage and the preserved shared-recursive-XHR failure belong in [theming](theming.md).
 
+- [x] `Tests/location-service-runtime.test.py` runs nine isolated production-singleton cases standalone with `python3`; it is not wired into `run-tests.sh`. Success requires all `LOCATION_PASS` markers, expected request counts/URLs and cache contents, unchanged real settings, and no logged `WARN`, `ERROR`, or `FATAL`. Fixture transport and a private network namespace prevent real provider access. Coverage, fixture/configuration limits, and residual installed FileViewAdapter lint metadata belong in [location/weather](location-weather.md).
+
 ### Structural reference guardrails
 
 - [x] The structural runner explicitly refreshes the incremental `code-index` graph before inventory or reference queries and fails without running them if indexing fails.

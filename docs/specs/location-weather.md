@@ -67,7 +67,9 @@ Lifecycle/uniform proof runs against the unchanged production card and widgets w
 ## Tests asserting this spec
 
 - `Tests/weather-card-effects.test.py` with `Tests/Qml/WeatherCardEffectsHarness.qml` — offscreen production-card precipitation lifecycle and animation.
-- `Tests/location-service-runtime.test.py` with `Tests/Qml/LocationServiceHarness.qml` and `Tests/Fixtures/LocationNetworkPlugin.cpp` — unchanged production singleton, real FileView and asynchronous XMLHttpRequest callbacks; fixture replies cover loaded/missing-cache startup callbacks, timer-driven coordinate reuse, success, unresolved locations, parse failures, HTTP failures, in-flight refresh exclusion, and actual cache writes. Runs non-visible with isolated config/cache paths and network namespace; verifies the real settings hash remains unchanged.
+- `Tests/location-service-runtime.test.py` with `Tests/Qml/LocationServiceHarness.qml` and `Tests/Fixtures/LocationNetworkPlugin.cpp` — nine isolated cases against the unchanged production singleton, real FileView and asynchronous XMLHttpRequest callbacks; fixture replies cover loaded/missing-cache startup callbacks, timer-driven coordinate reuse, success, unresolved locations, parse failures, HTTP failures, in-flight refresh exclusion, and actual cache writes. Runs non-visible with isolated config/cache paths and network namespace; verifies the real settings hash remains unchanged.
+- Runtime proof uses fixture Settings/Time/Logger singletons and synthetic provider replies, not live geocoding/Open-Meteo, real configuration integration, or whole-shell acceptance. The Python suite runs standalone; it is not wired into `run-tests.sh`.
+- Targeted LocationService lint after `1a3fbecea` retains an installed `FileViewAdapter` metadata diagnostic; owner qualification does not establish warning-free or type-complete analysis.
 - `Tests/location-service-guards.test.js`
 - `Tests/source-coverage.test.js`
 
