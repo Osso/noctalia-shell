@@ -51,6 +51,8 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 - [x] Shared pill preserves label/suffix, icon, density-dependent sizing, custom/hover colors, and expanded/collapsed geometry across horizontal and vertical orientations.
 - [x] Shared pill forwards hover, tooltip, three mouse buttons, wheel delta, and shown/hidden signals; delayed opening, auto-hide, and cancellation preserve visibility and opacity in both orientations.
 - [x] Orientation changes replace the loaded pill while retaining screen, label, open state, and size bindings; force-close, opposite direction, and rotated vertical text remain functional.
+- [x] Horizontal pill preserves expanded/collapsed geometry, both open directions, density-dependent label/icon sizing, delayed hover cancellation, release-only three-button callbacks, wheel forwarding, force-close, and auto-hide at UI scales 1 and 1.25.
+- [x] Vertical pill preserves expanded/collapsed geometry, both open directions, rotated text, default/compact sizing, custom/hover colors, tooltip/input forwarding, delayed auto-hide/cancellation, force-close, and locked-open behavior.
 - [x] Vertical bar pill center offset tracks open direction.
 - [x] Vertical bar pill delayed show ignores collapsed icon mode.
 - [x] Vertical bar pill delayed show starts the show timer when closed.
@@ -87,13 +89,15 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 - `Tests/bar-tab-guards.test.js`
 - `Tests/bar-pill-vertical-guards.test.js`
 - `Tests/bar-pill-warnings.test.py` - nine isolated production-widget behavior cases: four orientation/density geometry cases, two hover/input cases, two auto-hide cases, and one Loader replacement/force-close case. Exercises Bound component context; fixture services do not prove whole-shell behavior.
+- `Tests/bar-pill-vertical-warnings.test.py` - seven offscreen production-widget cases: four density/direction/rotation geometry rows, hover/input routing, delayed auto-hide/cancellation, and force-closed/locked-open behavior. Standalone lint requires zero warnings after `70f90a4bc` (46→0).
+- `Tests/bar-pill-horizontal-warnings.test.py` - 12 offscreen cases through production BarPill's horizontal Loader: geometry, hover/press-release/input, and auto-hide across default/compact density at scales 1/1.25. Geometry emits eight records spanning both open directions; standalone lint requires zero horizontal warnings after `32d56b877` (38→0).
 - `Tests/widget-registry.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`
 
 ## Known gaps (current cycle)
 
-- [ ] Extend isolated pill endpoint/delay coverage to intermediate animation frames and whole-shell integration; current fixtures use fixed style values and stub tooltip/bar services.
+- [ ] Extend isolated pill endpoint/delay coverage to intermediate animation frames and whole-shell integration; current fixtures use controlled style values and stub tooltip/bar services. Horizontal's eight geometry records were reported unchanged for `32d56b877`, but the harness has no tracked snapshot-equality comparator.
 - [ ] Eight BarPill Loader/QObject `missing-property` typing diagnostics remain after `705973eb2` reduced warnings from 52 to 8. Standalone lint expects exactly those eight, not warning-free analysis; owner qualification introduces no intended user-facing behavior change.
 - [ ] Add executable coverage for full bar rendering across top, bottom, left, and right positions.
 - [ ] Add executable coverage for widget settings dialog rendering and signal emission.
