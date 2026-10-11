@@ -75,6 +75,7 @@ ShellRoot {
         running: true
         repeat: true
         onTriggered: {
+            running = false;
             switch (step) {
             case 0:
                 harness.active = harness.constructWidget("ActiveWindow", 0);
@@ -161,6 +162,7 @@ ShellRoot {
                 break;
             }
             step++;
+            running = step < 5;
         }
     }
 

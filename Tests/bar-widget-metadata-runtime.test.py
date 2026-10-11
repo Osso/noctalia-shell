@@ -31,6 +31,7 @@ def stage_widgets(directory):
         directory / "Modules/Bar/Extras/BarWidgetLoader.qml",
     )
     registry_body = """property var snapshots: []
+property var constructed: ({})
 property Component activeComponent: Component {
     ActiveWindow { Component.onCompleted: BarWidgetRegistry.capture(this, "ActiveWindow") }
 }
@@ -39,7 +40,9 @@ property Component mediaComponent: Component {
 }
 function getWidget(key) { return key === "ActiveWindow" ? activeComponent : mediaComponent; }
 function hasWidget(key) { return key === "ActiveWindow" || key === "MediaMini"; }
-function capture(item, key) {
+function capture(item, key) { constructed[key] = item; }
+function snapshotBeforeAssignment(key) {
+    const item = constructed[key];
     const snapshot = {
         key: key, widgetId: item.widgetId,
         metadataReady: item.widgetMetadata !== undefined,
@@ -60,9 +63,15 @@ function capture(item, key) {
         + "}\n"
     )
     logger = directory / "Commons/Logger.qml"
+    # The production Loader logs before applying widgetProps. Observe that exact
+    # onLoaded boundary without modifying Loader or overriding widget bindings.
     logger.write_text(
-        logger.read_text().replace(
-            "function w(...args)", "function d(...args) {}\nfunction w(...args)"
+        logger.read_text()
+        .replace("import QtQuick", "import QtQuick\nimport qs.Services.UI")
+        .replace(
+            "function w(...args)",
+            "function d(category, message, key) { BarWidgetRegistry.snapshotBeforeAssignment(key); }\n"
+            "function w(...args)",
         )
     )
     bar_service = directory / "Services/UI/BarService.qml"
