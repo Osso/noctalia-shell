@@ -50,6 +50,7 @@ run_unit_tests() {
 
     run_qml_runtime_tests
 
+    python3 "$repo_root/Tests/color-namespace-runtime.test.py"
     python3 "$repo_root/Tests/calendar-events-safe-get-time.test.py"
     python3 "$repo_root/Tests/deploy-source.test.py"
     python3 "$repo_root/Tests/night-light-runtime.test.py"

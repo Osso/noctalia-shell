@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Resolve the production palette in Qt/Quickshell without desktop/config access."""
+import json
 import os
 from pathlib import Path
 import shutil
@@ -10,8 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SETTINGS = """pragma Singleton
 import QtQuick
 QtObject {
-  readonly property bool directoriesCreated: false
-  readonly property string configDir: ""
+  readonly property bool directoriesCreated: true
+  readonly property string configDir: CONFIG_PATH
 }
 """
 LOGGER = """pragma Singleton
@@ -28,7 +29,8 @@ def main():
         commons = directory / "Commons"
         commons.mkdir(mode=0o700)
         shutil.copyfile(ROOT / "Commons/NColor.qml", commons / "NColor.qml")
-        (commons / "Settings.qml").write_text(SETTINGS)
+        config_path = json.dumps(str(directory / "config") + "/")
+        (commons / "Settings.qml").write_text(SETTINGS.replace("CONFIG_PATH", config_path))
         (commons / "Logger.qml").write_text(LOGGER)
         shutil.copyfile(ROOT / "Tests/Qml/ColorNamespaceHarness.qml", directory / "shell.qml")
 
@@ -52,6 +54,8 @@ def main():
         )
         output = result.stdout + result.stderr
         print(output, end="")
+        if "Unable to assign [undefined] to QString" in output:
+            raise AssertionError("isolated palette config path must be a valid string")
         if result.returncode != 0 or "COLOR_NAMESPACE_PASS" not in output:
             raise AssertionError(f"offscreen palette/window test failed (exit {result.returncode})")
 

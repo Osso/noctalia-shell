@@ -58,6 +58,47 @@ if ! printf '%s\n' "$unknown_output" | rg -q 'Usage:'; then
     exit 1
 fi
 
+# Exercise the real unit runner, stopping before unrelated Python suites.
+mkdir -p "$tmp_dir/bin"
+printf '#!/bin/sh\nexit 0\n' >"$tmp_dir/bin/node"
+cat >"$tmp_dir/bin/python3" <<'PYTHON'
+#!/bin/sh
+printf '%s\n' "${1##*/}"
+if [ "${1##*/}" = color-namespace-runtime.test.py ]; then
+    exit "$COLOR_TEST_STATUS"
+fi
+exit 38
+PYTHON
+chmod +x "$tmp_dir/bin/node" "$tmp_dir/bin/python3"
+cat >"$tmp_dir/unit-driver.sh" <<'DRIVER'
+#!/usr/bin/env bash
+set -euo pipefail
+source "$RUNNER_UNDER_TEST"
+run_qml_runtime_tests() { :; }
+run_command unit
+DRIVER
+
+for color_status in 0 37; do
+    set +e
+    unit_output="$(PATH="$tmp_dir/bin:$PATH" RUNNER_UNDER_TEST="$runner" COLOR_TEST_STATUS="$color_status" \
+        bash "$tmp_dir/unit-driver.sh" 2>&1)"
+    unit_status="$?"
+    set -e
+    if ! printf '%s\n' "$unit_output" | rg -q '^color-namespace-runtime.test.py$'; then
+        echo "unit runner omitted offscreen color regression" >&2
+        exit 1
+    fi
+    if [ "$color_status" -eq 0 ]; then
+        if [ "$unit_status" -ne 38 ] || ! printf '%s\n' "$unit_output" | rg -q '^calendar-events-safe-get-time.test.py$'; then
+            echo "unit runner did not continue after successful color regression" >&2
+            exit 1
+        fi
+    elif [ "$unit_status" -ne 37 ] || printf '%s\n' "$unit_output" | rg -q '^calendar-events-safe-get-time.test.py$'; then
+        echo "unit runner did not stop with color regression failure status" >&2
+        exit 1
+    fi
+done
+
 source "$runner"
 run_unit_tests() { echo "unit-body"; }
 run_structural_tests() { echo "structural-body"; }

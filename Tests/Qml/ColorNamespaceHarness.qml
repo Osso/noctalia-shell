@@ -22,7 +22,10 @@ ShellRoot {
     running: true
     onTriggered: {
       console.log("COLOR_NAMESPACE_PROOF", "windowAlpha=" + window.color.a, "onSurface=" + NColor.mOnSurface, "transparentType=" + typeof NColor.transparent);
-      if (window.color.a !== 0 || !Qt.colorEqual(NColor.mOnSurface, "#e9e4f0") || typeof NColor.transparent === "function") {
+      const windowIsTransparent = window.color.a === 0;
+      const defaultPaletteIsCorrect = Qt.colorEqual(NColor.mOnSurface, "#e9e4f0");
+      const transparentIsNotFunction = typeof NColor.transparent !== "function";
+      if (!windowIsTransparent || !defaultPaletteIsCorrect || !transparentIsNotFunction) {
         console.error("COLOR_NAMESPACE_FAIL: project palette must resolve and window must remain transparent");
         Qt.exit(1);
       } else {
