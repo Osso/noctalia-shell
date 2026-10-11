@@ -9,6 +9,7 @@ ShellRoot {
   id: harness
 
   Window {
+    id: viewport
     width: 480
     height: 320
     visible: true // Offscreen backend; runner removes all desktop connections.
@@ -42,6 +43,17 @@ ShellRoot {
 
   function shader() {
     return harness.items(card, item => item.fragmentShader !== undefined)[0];
+  }
+
+  function requireGeometry(snowing) {
+    const effect = harness.shader();
+    const margin = snowing ? card.border.width : Style.marginXL;
+    harness.require(effect.x === margin && effect.y === margin, "effect inset follows condition");
+    harness.require(effect.width === card.width - 2 * margin && effect.height === card.height - 2 * margin, "effect size follows card geometry");
+    harness.require(effect.itemWidth === effect.width && effect.itemHeight === effect.height, "dimension uniforms match effect");
+    harness.require(effect.bgColor.toString() === card.color.toString(), "background uniform follows card color");
+    harness.require(effect.cornerRadius === (snowing ? card.radius - card.border.width : 0), "corner uniform follows condition and border");
+    harness.require(effect.source.sourceItem.width === card.width - 2 * Style.marginXL, "capture retains content geometry");
   }
 
   function setLocation(name, value) {
@@ -100,9 +112,16 @@ ShellRoot {
         harness.require(card.isRaining && !card.isSnowing, "rain condition code");
         harness.require(JSON.stringify(harness.items(card, item => item.icon !== undefined && item.visible).map(item => item.icon)) === JSON.stringify(["rain", "sun", "rain"]), "rain current icon updates independently of forecast");
         harness.require(harness.shader().fragmentShader.toString().endsWith("weather_rain.frag.qsb") && harness.shader().source.hideSource, "rain shader hides source");
+        harness.requireGeometry(false);
         steps.sampledTime = harness.shader().time;
+        viewport.width = 560;
+        viewport.height = 360;
+        card.color = "#123456";
+        card.radius = 20;
+        card.border.width = 4;
         break;
       case 3:
+        harness.requireGeometry(false);
         harness.require(harness.shader().time > steps.sampledTime, "rain uniform progresses");
         harness.publish(71);
         card.forecastDays = 6;
@@ -110,6 +129,10 @@ ShellRoot {
         break;
       case 4:
         harness.require(card.isSnowing && !card.isRaining, "snow condition code");
+        harness.requireGeometry(true);
+        card.radius = 28;
+        card.border.width = 6;
+        card.color = "#654321";
         harness.require(JSON.stringify(harness.items(card, item => item.icon !== undefined && item.visible).map(item => item.icon)) === JSON.stringify(["snow", "sun", "rain", "snow"]), "snow current and expanded forecast icons");
         harness.require(harness.shader().fragmentShader.toString().endsWith("weather_snow.frag.qsb") && !harness.shader().source.hideSource, "snow shader preserves source");
         harness.require(harness.texts().includes("Tue") && harness.texts().includes("30°/23°"), "forecast expands up to available days");
@@ -117,6 +140,7 @@ ShellRoot {
         steps.sampledTime = harness.shader().time;
         break;
       case 5:
+        harness.requireGeometry(true);
         harness.require(harness.shader().time > steps.sampledTime, "snow uniform progresses after switch");
         card.showEffects = false;
         break;
@@ -126,6 +150,7 @@ ShellRoot {
         break;
       case 7:
         harness.require(harness.shader() !== undefined, "effects reenabled reloads shader");
+        harness.requireGeometry(true);
         harness.publish(0);
         break;
       case 8:

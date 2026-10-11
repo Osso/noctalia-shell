@@ -50,22 +50,10 @@ def run_lint(directory):
         re.findall(r"\[([^]]+)\]", line)[-1] if "[" in line else "var-hoisting"
         for line in warnings
     )
-    # Shader Loader retains its creation context: Bound would alter that contract.
-    # Accept only Qt's explicit cross-component ID diagnostics, never ordinary
-    # unqualified member access or other warning categories.
-    blocks = re.split(r"(?=^Warning:)", output, flags=re.M)[1:]
-    residuals = [
-        block
-        for block in blocks
-        if "[unqualified]" in block.splitlines()[0]
-        and 'Info: Set "pragma ComponentBehavior: Bound"' in block
-    ]
-    print("WEATHER_CARD_LINT_COUNTS", dict(counts), "CONTEXT_BOUNDARY", len(residuals))
-    assert len(warnings) == len(residuals) == 9, (
-        "unexpected/actionable WeatherCard warnings"
-    )
+    print("WEATHER_CARD_LINT_COUNTS", dict(counts))
+    assert not warnings, f"WeatherCard warnings remain: {dict(counts)}"
     assert result.returncode == 0, f"qmllint failed: {result.returncode}"
-    print("WEATHER_CARD_ACTIONABLE_LINT_PASS")
+    print("WEATHER_CARD_LINT_PASS")
 
 
 def stage_runtime(directory):

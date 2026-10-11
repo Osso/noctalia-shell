@@ -27,13 +27,29 @@ NBox {
   implicitHeight: Math.max(100 * Style.uiScaleRatio, content.implicitHeight + (Style.marginXL * 2))
 
   // Weather effect layer (rain/snow)
-  Loader {
-    id: weatherEffectLoader
+  WeatherEffectLoader {
     anchors.fill: parent
     active: root.showEffects && (root.isRaining || root.isSnowing)
+    isRaining: root.isRaining
+    isSnowing: root.isSnowing
+    backgroundColor: root.color
+    snowMargin: root.border.width
+    snowRadius: root.radius - root.border.width
+    contentItem: content
+  }
+
+  component WeatherEffectLoader: Loader {
+    required property bool isRaining
+    required property bool isSnowing
+    required property color backgroundColor
+    required property real snowMargin
+    required property real snowRadius
+    required property Item contentItem
 
     sourceComponent: Item {
+      id: effectLayer
       anchors.fill: parent
+      readonly property WeatherEffectLoader effectLoader: parent
 
       // Animated time for shaders
       property real shaderTime
@@ -48,20 +64,20 @@ NBox {
         id: weatherEffect
         anchors.fill: parent
         // Snow fills the box, rain matches content margins
-        anchors.margins: root.isSnowing ? root.border.width : Style.marginXL
+        anchors.margins: effectLayer.effectLoader.isSnowing ? effectLayer.effectLoader.snowMargin : Style.marginXL
 
         property ShaderEffectSource source: ShaderEffectSource {
-          sourceItem: content
-          hideSource: root.isRaining // Only hide for rain (distortion), show for snow
+          sourceItem: effectLayer.effectLoader.contentItem
+          hideSource: effectLayer.effectLoader.isRaining // Only hide for rain (distortion), show for snow
         }
 
-        property real time: parent.shaderTime
+        property real time: effectLayer.shaderTime
         property real itemWidth: weatherEffect.width
         property real itemHeight: weatherEffect.height
-        property color bgColor: root.color
-        property real cornerRadius: root.isSnowing ? (root.radius - root.border.width) : 0
+        property color bgColor: effectLayer.effectLoader.backgroundColor
+        property real cornerRadius: effectLayer.effectLoader.isSnowing ? effectLayer.effectLoader.snowRadius : 0
 
-        fragmentShader: root.isSnowing ? Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/weather_snow.frag.qsb") : Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/weather_rain.frag.qsb")
+        fragmentShader: effectLayer.effectLoader.isSnowing ? Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/weather_snow.frag.qsb") : Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/weather_rain.frag.qsb")
       }
     }
   }
