@@ -46,8 +46,8 @@ Popup {
     var _ = cacheVersion; // Create dependency
 
     if (schemeColorsCache[schemeName]) {
-      var entry = schemeColorsCache[schemeName];
-      var variant = entry;
+      const entry = schemeColorsCache[schemeName];
+      let variant = entry;
 
       // Check if scheme has dark/light variants
       if (entry.dark || entry.light) {
@@ -83,7 +83,7 @@ Popup {
       if (xhr.readyState === XMLHttpRequest.DONE) {
         if (xhr.status === 200) {
           try {
-            var jsonData = JSON.parse(xhr.responseText);
+            const jsonData = JSON.parse(xhr.responseText);
             schemeColorsCache[scheme.name] = jsonData;
             cacheVersion++;
           } catch (e) {
@@ -209,11 +209,11 @@ Popup {
         fetching = false;
         if (xhr.status === 200) {
           try {
-            var response = JSON.parse(xhr.responseText);
+            const response = JSON.parse(xhr.responseText);
             if (Array.isArray(response)) {
               // Filter to only directories (type === "dir")
-              var schemes = [];
-              for (var i = 0; i < response.length; i++) {
+              const schemes = [];
+              for (let i = 0; i < response.length; i++) {
                 if (response[i].type === "dir") {
                   schemes.push({
                                  "name": response[i].name,
@@ -283,13 +283,13 @@ Popup {
       getSchemeTree(scheme, cachedBranch);
     } else {
       // Need to fetch branch info first
-      var xhr = new XMLHttpRequest();
+      const xhr = new XMLHttpRequest();
       xhr.onreadystatechange = function () {
         if (xhr.readyState === XMLHttpRequest.DONE) {
           if (xhr.status === 200) {
             try {
-              var repoInfo = JSON.parse(xhr.responseText);
-              var defaultBranch = repoInfo.default_branch || "main";
+              const repoInfo = JSON.parse(xhr.responseText);
+              const defaultBranch = repoInfo.default_branch || "main";
               cachedBranch = defaultBranch;
               // Now get the tree for the scheme directory
               getSchemeTree(scheme, defaultBranch);
@@ -315,8 +315,8 @@ Popup {
       if (xhr.readyState === XMLHttpRequest.DONE) {
         if (xhr.status === 200) {
           try {
-            var refResponse = JSON.parse(xhr.responseText);
-            var sha = refResponse.object ? refResponse.object.sha : null;
+            const refResponse = JSON.parse(xhr.responseText);
+            const sha = refResponse.object ? refResponse.object.sha : null;
             if (sha) {
               // Cache the SHA for future downloads
               cachedBranchSha = sha;
@@ -347,12 +347,12 @@ Popup {
       if (xhr.readyState === XMLHttpRequest.DONE) {
         if (xhr.status === 200) {
           try {
-            var response = JSON.parse(xhr.responseText);
+            const response = JSON.parse(xhr.responseText);
             if (response.tree && Array.isArray(response.tree)) {
               // Filter files that belong to this scheme
-              var files = [];
-              for (var i = 0; i < response.tree.length; i++) {
-                var item = response.tree[i];
+              const files = [];
+              for (let i = 0; i < response.tree.length; i++) {
+                const item = response.tree[i];
                 if (item.type === "blob" && item.path.startsWith(scheme.path + "/")) {
                   files.push({
                                "path": item.path,
@@ -391,7 +391,7 @@ Popup {
       if (xhr.readyState === XMLHttpRequest.DONE) {
         if (xhr.status === 200) {
           try {
-            var response = JSON.parse(xhr.responseText);
+            const response = JSON.parse(xhr.responseText);
             if (Array.isArray(response)) {
               // Recursively get all files
               getAllFilesRecursive(scheme, response, []);
@@ -445,8 +445,8 @@ Popup {
       }
     }
 
-    for (var i = 0; i < items.length; i++) {
-      var item = items[i];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
       if (item.type === "file") {
         allFiles.push({
                         "path": item.path,
@@ -463,7 +463,7 @@ Popup {
               pending--;
               if (xhr.status === 200) {
                 try {
-                  var dirResponse = JSON.parse(xhr.responseText);
+                  const dirResponse = JSON.parse(xhr.responseText);
                   if (Array.isArray(dirResponse)) {
                     getAllFilesRecursive(scheme, dirResponse, allFiles, function () {
                       checkComplete();
@@ -502,21 +502,21 @@ Popup {
     var downloadScript = "mkdir -p '" + targetDir + "'\n";
 
     // Build download script for all files
-    for (var i = 0; i < files.length; i++) {
-      var file = files[i];
-      var filePath = file.path;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const filePath = file.path;
       // Remove scheme name and leading / from path
-      var relativePath = filePath;
+      let relativePath = filePath;
       if (filePath.startsWith(schemeName + "/")) {
         relativePath = filePath.substring(schemeName.length + 1);
       } else if (filePath.startsWith("/" + schemeName + "/")) {
         relativePath = filePath.substring(schemeName.length + 2);
       }
-      var localPath = targetDir + "/" + relativePath;
-      var localDir = localPath.substring(0, localPath.lastIndexOf('/'));
+      const localPath = targetDir + "/" + relativePath;
+      const localDir = localPath.substring(0, localPath.lastIndexOf('/'));
 
       downloadScript += "mkdir -p '" + localDir + "'\n";
-      var downloadUrl = file.url || file.download_url;
+      const downloadUrl = file.url || file.download_url;
       if (downloadUrl) {
         downloadScript += "curl -L -s -o '" + localPath + "' '" + downloadUrl + "' || wget -q -O '" + localPath + "' '" + downloadUrl + "'\n";
       }
@@ -557,7 +557,7 @@ Popup {
         downloading = false;
         downloadingScheme = "";
       } else {
-        var errorDetails = "Exit code: " + exitCode;
+        let errorDetails = "Exit code: " + exitCode;
         if (root.lastStderrOutput) {
           errorDetails += " - " + root.lastStderrOutput;
         }
@@ -580,8 +580,8 @@ Popup {
 
   function isSchemeInstalled(schemeName) {
     // Check if scheme already exists in ColorSchemeService
-    for (var i = 0; i < ColorSchemeService.schemes.length; i++) {
-      var path = ColorSchemeService.schemes[i];
+    for (let i = 0; i < ColorSchemeService.schemes.length; i++) {
+      const path = ColorSchemeService.schemes[i];
       if (path.indexOf("/" + schemeName + "/") !== -1 || path.indexOf("/" + schemeName + ".json") !== -1) {
         return true;
       }
@@ -591,8 +591,8 @@ Popup {
 
   function isSchemeDownloaded(schemeName) {
     // Check if scheme is in the downloaded directory (not preinstalled)
-    for (var i = 0; i < ColorSchemeService.schemes.length; i++) {
-      var path = ColorSchemeService.schemes[i];
+    for (let i = 0; i < ColorSchemeService.schemes.length; i++) {
+      const path = ColorSchemeService.schemes[i];
       if ((path.indexOf("/" + schemeName + "/") !== -1 || path.indexOf("/" + schemeName + ".json") !== -1) && path.indexOf(ColorSchemeService.downloadedSchemesDirectory) !== -1) {
         return true;
       }
@@ -660,7 +660,7 @@ Popup {
     function onScanningChanged() {
       // When scanning completes and we have a pending scheme, apply it
       if (!ColorSchemeService.scanning && pendingApplyScheme !== "") {
-        var schemeToApply = pendingApplyScheme;
+        const schemeToApply = pendingApplyScheme;
         pendingApplyScheme = ""; // Clear pending before applying
 
         // Wait a tiny bit to ensure schemes array is updated
@@ -691,8 +691,8 @@ Popup {
   function preFetchSchemeColors() {
     if (availableSchemes.length > 0 && visible) {
       Qt.callLater(function () {
-        for (var i = 0; i < availableSchemes.length; i++) {
-          var scheme = availableSchemes[i];
+        for (let i = 0; i < availableSchemes.length; i++) {
+          const scheme = availableSchemes[i];
           if (!schemeColorsCache[scheme.name]) {
             fetchSchemeColors(scheme);
           }

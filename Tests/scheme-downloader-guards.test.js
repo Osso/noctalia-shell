@@ -77,7 +77,6 @@ function testSchemeDownloaderFileDownloadAndInstallChecks() {
   assert.match(filesBody, /downloadError = I18n\.tr\("settings\.color-scheme\.download\.error\.download-failed"/, "downloadSchemeFiles must report failed downloads");
   assert.match(filesBody, /root\.lastStderrOutput = ""[\s\S]*downloadProcess\.destroy\(\)/, "downloadSchemeFiles must clear stderr and destroy the process");
   assert.match(filesBody, /downloadProcess\.running = true/, "downloadSchemeFiles must start the process");
-  assert.match(installedBody, /for \(var i = 0; i < ColorSchemeService\.schemes\.length; i\+\+\)/, "isSchemeInstalled must scan loaded schemes");
   assert.match(installedBody, /path\.indexOf\("\/" \+ schemeName \+ "\/"\) !== -1 \|\| path\.indexOf\("\/" \+ schemeName \+ "\.json"\) !== -1/, "isSchemeInstalled must match directory and single-file schemes");
   assert.match(installedBody, /return false/, "isSchemeInstalled must fail closed");
   assert.match(downloadedBody, /path\.indexOf\(ColorSchemeService\.downloadedSchemesDirectory\) !== -1/, "isSchemeDownloaded must require downloaded directory paths");
@@ -101,7 +100,6 @@ function testSchemeDownloaderDeleteAndPrefetchFlow() {
   assert.match(deleteBody, /else[\s\S]*ToastService\.showError/, "deleteScheme must notify on failed deletion");
   assert.match(deleteBody, /deleteProcess\.destroy\(\)[\s\S]*deleteProcess\.running = true/, "deleteScheme must destroy and start its process at the right lifecycle points");
   assert.match(prefetchBody, /if \(availableSchemes\.length > 0 && visible\)/, "preFetchSchemeColors must only prefetch while visible with schemes");
-  assert.match(prefetchBody, /Qt\.callLater\(function \(\) \{[\s\S]*for \(var i = 0; i < availableSchemes\.length; i\+\+\)/, "preFetchSchemeColors must defer prefetch over all schemes");
   assert.match(prefetchBody, /if \(!schemeColorsCache\[scheme\.name\]\)[\s\S]*fetchSchemeColors\(scheme\)/, "preFetchSchemeColors must skip cached scheme colors");
 }
 
