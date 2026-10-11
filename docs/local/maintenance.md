@@ -108,13 +108,15 @@ The underlying scripts require `--run` when called directly to avoid accidental 
 
 Run `./deploy.sh` from this checkout after committing changes. It requests a normal QML reload, waits for a new successful configuration load on the same running instance, and checks IPC responsiveness. It does not restart Quickshell or change settings. Missing or ambiguous instances, load failures, and timeouts fail deployment.
 
-### Typed settings integration
+### Inline component reload caveat
 
 Verified: 2026-10-11
 
 Isolated `12e49754a` + `12d5902b1` passed exact JSON fixtures, but canonical merge `4c62f6ebf` failed hot auto-reload with `SettingsData.qml:213 AppLauncherSettings is not a type`. Revert `2726fccbe` followed by `./deploy.sh` restored the shell. User-approved reapply `19c55ee7d` then loaded settings and rendered on a fresh canonical `/home/osso/bin/start-quickshell` launch (PID 176660); config SHA remained unchanged.
 
-For inline typed settings changes, isolated harness success is not proof of canonical hot-reload compatibility. A controlled fresh launch requires explicit approval and settings preservation; ordinary QML edits still use auto-reload. Reload-time type resolution apparently differs from fresh launch here; a cache root cause is not proven. Retire this caveat when the failing transition passes a representative reload regression on the supported runtime. Harness coverage: [settings](../specs/settings.md#tests-asserting-this-spec), [testing](../specs/testing.md#evidence-categories).
+A second incident followed inline component commit `4fbb9a30f`: canonical auto-reload failed with `SystemMonitor.qml:257 StatusIndicator is not a type`, leaving the old generation running. After edits finished, a controlled canonical `/home/osso/bin/start-quickshell` launch on October 11 at 16:50:19 loaded PID 401960 with zero scene warnings/errors, unchanged settings SHA, and a nonwhite screenshot. This proves clean-start loading, not hot-reload compatibility.
+
+For inline component changes, isolated harness success is not proof of canonical hot-reload compatibility. A controlled fresh launch requires explicit approval and settings preservation; ordinary QML edits still use auto-reload. Reload-time type resolution apparently differs from fresh launch here; a Qt cache root cause is not proven. Retire this caveat when both failing transitions pass representative canonical reload regressions on the supported runtime. Harness coverage: [settings](../specs/settings.md#tests-asserting-this-spec), [testing](../specs/testing.md#evidence-categories).
 
 ## Update Workflow
 
