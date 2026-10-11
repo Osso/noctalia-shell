@@ -13,6 +13,8 @@ Session Menu covers the power/session action panel, countdown confirmation behav
 - [x] Starting a countdown sets pending action, remaining time, active state, and starts the countdown timer.
 - [x] Countdown timer ticks subtract the timer interval and execute the pending action when time expires.
 - [x] Canceling countdown clears active state, pending action, remaining time, and stops the timer.
+- [x] Selected and pending button state follows navigation/action selection; pending buttons display remaining countdown seconds.
+- [x] Closing cancels countdown and resets selection; destroying a menu with a pending countdown prevents dispatch past its deadline.
 
 ### Action dispatch
 
@@ -59,6 +61,7 @@ Session Menu covers the power/session action panel, countdown confirmation behav
 
 - `Tests/bar-controls-warnings.test.py` — isolated production bar-button panel toggle and context/settings routing, not session actions or IPC. Cohort evidence and limits: [bar](bar.md#bar-control-cohort), [testing](testing.md#bar-control-cohort).
 
+- `Tests/session-menu-warnings.test.py` / `Tests/Qml/SessionMenuWarningsHarness.qml` — `e59ef4d75` reduces SessionMenu-only lint 27→0; `25662be64` waits past the destroyed pending timer's deadline. Four behavioral cases cover option filtering/defaults, live fixture layout/anchors, navigation, selected/pending/countdown display, cancel/close/reopen reset, second-click confirmation, real timer expiry, and inert lock/power routing. Six QtTest cases include initialization/cleanup, not six behavioral scenarios. No physical keyboard/pointer, authorization, real power action, or settings persistence proof. Isolation and acceptance: [testing](testing.md#session-menu-isolated-runtime).
 - `Tests/session-menu-guards.test.js`
 - `Tests/session-menu-tab-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
@@ -67,7 +70,7 @@ Session Menu covers the power/session action panel, countdown confirmation behav
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for rendered pending/selected button state.
+- [ ] Verify physical desktop navigation/input and pending/selected rendering beyond isolated property/text assertions.
 - [ ] Add executable coverage for per-action compositor failure feedback.
 - [ ] Add executable coverage for Session Menu IPC open/toggle behavior.
 

@@ -2,6 +2,24 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 ## What it must do
 
+### WiFi panel isolated runtime
+
+- `Tests/wifi-panel-warnings.test.py` runs standalone `lint` or `behavior`, both requiring `--artifacts <new-directory>`; no runner integration is claimed. At `2fdc52c90`, WiFiPanel-only lint drops 27→0 and requires zero warnings/exit status zero. Actual panel/list interaction coverage: [network](network.md#tests-asserting-this-spec).
+- Behavior runs production WiFiPanel, lists, and controls in offscreen Quickshell with an inert SmartPanel host, networking, settings, and neighboring services. One phased scenario exercises real delegates and Loader recreation, not a QtTest case count. HOME/XDG/Noctalia paths are private and desktop connections removed. Both modes create a permission-locked, hash-verified real-settings backup before staging and check backup/real bytes unchanged afterward. Behavior timeout is 45 seconds; acceptance requires exit status zero, `WIFI_PANEL_BEHAVIOR_PASS`, and no `WARN`, `ERROR`, `FATAL`, `ReferenceError`, `TypeError`, or `Binding loop`.
+- Direct signals prove request routing, not physical input, backend authorization, NetworkManager/radio actions, real settings persistence, or whole-shell integration.
+
+### Session menu isolated runtime
+
+- `Tests/session-menu-warnings.test.py` runs standalone `lint` or `runtime`; no runner integration is claimed. SessionMenu-only lint drops 27→0 at `e59ef4d75` and requires zero warnings/exit status zero. Four behavioral cases plus QtTest initialization/cleanup yield six cases. Coverage through `25662be64`, including destruction past the pending countdown deadline: [session menu](session-menu.md#tests-asserting-this-spec).
+- Runtime uses production menu, Repeater, PowerButton, layouts, and timer under offscreen `qmltestrunner`; SmartPanel, leaf widgets, settings, lock screen, and compositor are inert fixtures. Process launches are forbidden. Private HOME/XDG/Noctalia paths replace desktop/compositor connections. Before staging, runtime creates a permission-locked byte-for-byte backup and verifies its hash; afterward it checks the real-settings hash. It does not separately recheck backup bytes afterward. Timeout is 45 seconds; acceptance requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `ReferenceError`, or `TypeError`.
+- Handler/signal invocation and recorded inert dispatch are not physical keyboard/pointer input, backend authorization, real lock/power actions, settings persistence, or whole-shell acceptance.
+
+### ControlCenterTab isolated runtime
+
+- `Tests/control-center-tab-warnings.test.py` runs standalone `lint` or `behavior`; no runner integration is claimed. At `e304d4747`, ControlCenterTab-only lint drops 22→0 and requires zero warnings/exit status zero. Six QtTest cases mean four behavioral cases plus initialization/cleanup. Exact coverage and unchanged initial zero-height card-row limitation: [control center](control-center.md#tests-asserting-this-spec).
+- Behavior runs production tab, shared controls, and settings dialog under offscreen `qmltestrunner`, with inert settings/save counter, registry, services, and CustomButton editor. Writable paths are isolated. Both modes create a permission-locked byte-for-byte real-settings backup before staging and verify its bytes; afterward they check real bytes and backup hash. Behavior timeout is 60 seconds; acceptance requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `QCRITICAL`, `ReferenceError`, `TypeError`, or `Binding loop`.
+- Direct control/helper/signal calls, fixture metadata, and save requests do not prove physical input, live registry/widget/backend authorization, real settings persistence, rendered panel card ordering, or whole-shell acceptance.
+
 ### Simple service cohort
 
 - `python3 Tests/simple-service-warnings.test.py lint` and `behavior` run standalone, optionally with `--artifacts <new-directory>`; no runner integration is claimed. Historical proof through `cbaf31bd0` reduced production GitHub/Network/VPN/Cava/ScreenRecorder/NightLight/BarService unqualified-access diagnostics 44→5. `e5f142928` closes the remaining five Network JsonAdapter-boundary warnings (5→0), superseding the gap recorded at `484030b62`. The simple-service lint script still expects those five removed warnings plus one Network `incompatible-type` and four recorder parser-metadata `missing-property`; that stale expectation remains an unresolved cohort-gate mismatch, not current Network warning evidence. The other five services require zero warnings and exit status zero. Current standalone Network lint retains one unsuppressed Process.environment QVariantMap→QVariantHash type warning; see [private runtime](#network-private-runtime).

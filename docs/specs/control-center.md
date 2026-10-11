@@ -28,6 +28,7 @@ Control Center covers the panel card loader, shortcut widget registry, shortcut/
 - [x] Reordering shortcuts validates index bounds and leaves invalid reorders unchanged.
 - [x] Moving shortcuts between sections validates bounds and appends to the target section.
 - [x] Updating shortcut settings replaces the indexed shortcut entry and saves immediately.
+- [x] Shortcut settings dialog cancel leaves the entry unchanged; apply updates the entry and requests an immediate save.
 - [x] `ShortcutsCard` left and right shortcut delegates type the shortcut id role and use it for widget loading/settings.
 
 ### IPC and placement
@@ -63,6 +64,7 @@ Control Center covers the panel card loader, shortcut widget registry, shortcut/
 - `Tests/widget-settings-cohort-warnings.test.py` / `Tests/Qml/WidgetSettingsCohortHarness.qml` — ControlCenterSettings (bar widget editor, not ControlCenterTab): distro-logo and colorization toggles, conditional color selection, and browse-button enablement. No real file-picker or image-selection proof. Each editor also exercises fixture defaults, save-copy isolation, cancel/reopen, and apply-close. Completed isolated assertions do not close the RED shared-control runtime warning gate. Cohort counts/lint evidence: [bar](bar.md#tests-asserting-this-spec); isolation and limits: [testing](testing.md#widget-settings-cohort).
 
 - `Tests/control-center-panel-guards.test.js`
+- `Tests/control-center-tab-warnings.test.py` / `Tests/Qml/ControlCenterTabWarningsHarness.qml` — `e304d4747` reduces ControlCenterTab-only lint 22→0. Four behavioral cases plus QtTest initialization/cleanup yield six cases: initial card completion/sorted registry/section geometry at widths 600/900, card toggle/reorder/weather notification, position selection and shortcut add/remove/reorder/move with invalid-index no-ops, and dialog cancel/apply with an inert editor/save counter. Initial card rows have zero height until model replacement; this is an asserted unchanged limitation, not new behavior or rendered card-order proof. Direct control/helper/signal calls do not establish physical input or real settings persistence. Isolation and acceptance: [testing](testing.md#controlcentertab-isolated-runtime).
 - `Tests/control-center-tab-guards.test.js`
 - `Tests/control-center-widget-registry-guards.test.js`
 - `Tests/widget-registry.test.js`
