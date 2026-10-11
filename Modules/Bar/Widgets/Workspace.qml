@@ -22,32 +22,32 @@ Item {
   property int sectionWidgetIndex: -1
   property int sectionWidgetsCount: 0
 
-  property var widgetMetadata: BarWidgetRegistry.widgetMetadata[widgetId]
+  property var widgetMetadata: BarWidgetRegistry.widgetMetadata[root.widgetId]
   property var widgetSettings: {
-    if (section && sectionWidgetIndex >= 0) {
-      var widgets = Settings.data.bar.widgets[section];
-      if (widgets && sectionWidgetIndex < widgets.length) {
-        return widgets[sectionWidgetIndex];
+    if (root.section && root.sectionWidgetIndex >= 0) {
+      var widgets = Settings.data.bar.widgets[root.section];
+      if (widgets && root.sectionWidgetIndex < widgets.length) {
+        return widgets[root.sectionWidgetIndex];
       }
     }
     return {};
   }
 
   readonly property string barPosition: Settings.data.bar.position
-  readonly property bool isVertical: barPosition === "left" || barPosition === "right"
+  readonly property bool isVertical: root.barPosition === "left" || root.barPosition === "right"
   readonly property bool density: Settings.data.bar.density
   readonly property real baseDimensionRatio: {
-    const b = (density === "compact") ? 0.85 : 0.65;
-    if (widgetSettings.labelMode === "none") {
+    const b = (root.density === "compact") ? 0.85 : 0.65;
+    if (root.widgetSettings.labelMode === "none") {
       return b * 0.75;
     }
     return b;
   }
 
-  readonly property string labelMode: (widgetSettings.labelMode !== undefined) ? widgetSettings.labelMode : widgetMetadata.labelMode
-  readonly property bool hideUnoccupied: (widgetSettings.hideUnoccupied !== undefined) ? widgetSettings.hideUnoccupied : widgetMetadata.hideUnoccupied
-  readonly property bool followFocusedScreen: (widgetSettings.followFocusedScreen !== undefined) ? widgetSettings.followFocusedScreen : widgetMetadata.followFocusedScreen
-  readonly property int characterCount: isVertical ? 2 : ((widgetSettings.characterCount !== undefined) ? widgetSettings.characterCount : widgetMetadata.characterCount)
+  readonly property string labelMode: (root.widgetSettings.labelMode !== undefined) ? root.widgetSettings.labelMode : root.widgetMetadata.labelMode
+  readonly property bool hideUnoccupied: (root.widgetSettings.hideUnoccupied !== undefined) ? root.widgetSettings.hideUnoccupied : root.widgetMetadata.hideUnoccupied
+  readonly property bool followFocusedScreen: (root.widgetSettings.followFocusedScreen !== undefined) ? root.widgetSettings.followFocusedScreen : root.widgetMetadata.followFocusedScreen
+  readonly property int characterCount: root.isVertical ? 2 : ((root.widgetSettings.characterCount !== undefined) ? root.widgetSettings.characterCount : root.widgetMetadata.characterCount)
 
   property bool isDestroying: false
   property bool hovered: false
@@ -73,37 +73,37 @@ Item {
       return "";
 
     const workspaceId = workspace.id !== undefined ? workspace.id : workspace.idx;
-    const output = workspace.output || (screen ? screen.name : "");
+    const output = workspace.output || (root.screen ? root.screen.name : "");
     return output + ":" + workspaceId;
   }
 
   function displayedUrgentForWorkspace(workspace) {
-    const key = workspaceUrgencyKey(workspace);
-    if (!key || displayedUrgencyByWorkspace[key] === undefined)
+    const key = root.workspaceUrgencyKey(workspace);
+    if (!key || root.displayedUrgencyByWorkspace[key] === undefined)
       return workspace && workspace.isUrgent === true;
 
-    return displayedUrgencyByWorkspace[key] === true;
+    return root.displayedUrgencyByWorkspace[key] === true;
   }
 
   function setDisplayedUrgency(workspace, urgent) {
-    const key = workspaceUrgencyKey(workspace);
+    const key = root.workspaceUrgencyKey(workspace);
     if (!key)
       return;
 
-    const nextUrgency = Object.assign({}, displayedUrgencyByWorkspace);
+    const nextUrgency = Object.assign({}, root.displayedUrgencyByWorkspace);
     nextUrgency[key] = urgent === true;
-    displayedUrgencyByWorkspace = nextUrgency;
+    root.displayedUrgencyByWorkspace = nextUrgency;
   }
 
-  implicitWidth: isVertical ? Style.barHeight : computeWidth()
-  implicitHeight: isVertical ? computeHeight() : Style.barHeight
+  implicitWidth: root.isVertical ? Style.barHeight : root.computeWidth()
+  implicitHeight: root.isVertical ? root.computeHeight() : Style.barHeight
 
   function getWorkspaceWidth(ws) {
     const d = Style.capsuleHeight * root.baseDimensionRatio;
     const factor = ws.isActive ? 2.2 : 1;
 
     // Don't calculate text width if labels are off
-    if (labelMode === "none") {
+    if (root.labelMode === "none") {
       return d * factor;
     }
 
@@ -111,9 +111,9 @@ Item {
 
     if (ws.name && ws.name.length > 0) {
       if (root.labelMode === "name") {
-        displayText = ws.name.substring(0, characterCount);
+        displayText = ws.name.substring(0, root.characterCount);
       } else if (root.labelMode === "index+name") {
-        displayText = ws.idx.toString() + " " + ws.name.substring(0, characterCount);
+        displayText = ws.idx.toString() + " " + ws.name.substring(0, root.characterCount);
       }
     }
 
@@ -130,71 +130,71 @@ Item {
 
   function computeWidth() {
     let total = 0;
-    for (var i = 0; i < localWorkspaces.count; i++) {
-      const ws = localWorkspaces.get(i);
-      total += getWorkspaceWidth(ws);
+    for (var i = 0; i < root.localWorkspaces.count; i++) {
+      const ws = root.localWorkspaces.get(i);
+      total += root.getWorkspaceWidth(ws);
     }
-    total += Math.max(localWorkspaces.count - 1, 0) * spacingBetweenPills;
-    total += horizontalPadding * 2;
+    total += Math.max(root.localWorkspaces.count - 1, 0) * root.spacingBetweenPills;
+    total += root.horizontalPadding * 2;
     return Math.round(total);
   }
 
   function computeHeight() {
     let total = 0;
-    for (var i = 0; i < localWorkspaces.count; i++) {
-      const ws = localWorkspaces.get(i);
-      total += getWorkspaceHeight(ws);
+    for (var i = 0; i < root.localWorkspaces.count; i++) {
+      const ws = root.localWorkspaces.get(i);
+      total += root.getWorkspaceHeight(ws);
     }
-    total += Math.max(localWorkspaces.count - 1, 0) * spacingBetweenPills;
-    total += horizontalPadding * 2;
+    total += Math.max(root.localWorkspaces.count - 1, 0) * root.spacingBetweenPills;
+    total += root.horizontalPadding * 2;
     return Math.round(total);
   }
 
   function getFocusedLocalIndex() {
-    for (var i = 0; i < localWorkspaces.count; i++) {
-      if (localWorkspaces.get(i).isFocused === true)
+    for (var i = 0; i < root.localWorkspaces.count; i++) {
+      if (root.localWorkspaces.get(i).isFocused === true)
         return i;
     }
     return -1;
   }
 
   function switchByOffset(offset) {
-    if (localWorkspaces.count === 0)
+    if (root.localWorkspaces.count === 0)
       return;
-    var current = getFocusedLocalIndex();
+    var current = root.getFocusedLocalIndex();
     if (current < 0)
       current = 0;
-    var next = (current + offset) % localWorkspaces.count;
+    var next = (current + offset) % root.localWorkspaces.count;
     if (next < 0)
-      next = localWorkspaces.count - 1;
-    const ws = localWorkspaces.get(next);
+      next = root.localWorkspaces.count - 1;
+    const ws = root.localWorkspaces.get(next);
     if (ws && ws.idx !== undefined)
       CompositorService.switchToWorkspace(ws);
   }
 
   Component.onCompleted: {
-    refreshWorkspaces();
+    root.refreshWorkspaces();
   }
 
   Component.onDestruction: {
     root.isDestroying = true;
   }
 
-  onScreenChanged: refreshWorkspaces()
-  onHideUnoccupiedChanged: refreshWorkspaces()
+  onScreenChanged: root.refreshWorkspaces()
+  onHideUnoccupiedChanged: root.refreshWorkspaces()
 
   Connections {
     target: CompositorService
     function onWorkspacesChanged() {
-      refreshWorkspaces();
+      root.refreshWorkspaces();
     }
   }
 
   function refreshWorkspaces() {
-    localWorkspaces.clear();
+    root.localWorkspaces.clear();
 
     var focusedOutput = null;
-    if (followFocusedScreen) {
+    if (root.followFocusedScreen) {
       for (var i = 0; i < CompositorService.workspaces.count; i++) {
         const ws = CompositorService.workspaces.get(i);
         if (ws.isFocused)
@@ -202,35 +202,35 @@ Item {
       }
     }
 
-    if (screen !== null) {
+    if (root.screen !== null) {
       for (var i = 0; i < CompositorService.workspaces.count; i++) {
         const ws = CompositorService.workspaces.get(i);
-        if ((followFocusedScreen && ws.output.toLowerCase() == focusedOutput) || (!followFocusedScreen && ws.output.toLowerCase() == screen.name.toLowerCase())) {
-          if (hideUnoccupied && !ws.isOccupied && !ws.isFocused) {
+        if ((root.followFocusedScreen && ws.output.toLowerCase() == focusedOutput) || (!root.followFocusedScreen && ws.output.toLowerCase() == root.screen.name.toLowerCase())) {
+          if (root.hideUnoccupied && !ws.isOccupied && !ws.isFocused) {
             continue;
           }
-          localWorkspaces.append(ws);
+          root.localWorkspaces.append(ws);
         }
       }
     }
-    workspaceRepeaterHorizontal.model = localWorkspaces;
-    workspaceRepeaterVertical.model = localWorkspaces;
-    updateWorkspaceFocus();
+    workspaceRepeaterHorizontal.model = root.localWorkspaces;
+    workspaceRepeaterVertical.model = root.localWorkspaces;
+    root.updateWorkspaceFocus();
   }
 
   function triggerUnifiedWave() {
-    effectColor = NColor.mPrimary;
+    root.effectColor = NColor.mPrimary;
     masterAnimation.restart();
   }
 
   function updateWorkspaceFocus() {
-    for (var i = 0; i < localWorkspaces.count; i++) {
-      const ws = localWorkspaces.get(i);
+    for (var i = 0; i < root.localWorkspaces.count; i++) {
+      const ws = root.localWorkspaces.get(i);
       if (ws.isFocused === true) {
-        const key = workspaceUrgencyKey(ws);
-        if (key === focusedWorkspaceKey)
+        const key = root.workspaceUrgencyKey(ws);
+        if (key === root.focusedWorkspaceKey)
           return;
-        focusedWorkspaceKey = key;
+        root.focusedWorkspaceKey = key;
         root.triggerUnifiedWave();
         root.workspaceChanged(ws.id, NColor.mPrimary);
         break;
@@ -277,21 +277,21 @@ Item {
     ]
 
     onTriggered: action => {
-                   var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                   if (popupMenuWindow) {
-                     popupMenuWindow.close();
-                   }
+      var popupMenuWindow = PanelService.getPopupMenuWindow(root.screen);
+      if (popupMenuWindow) {
+        popupMenuWindow.close();
+      }
 
-                   if (action === "widget-settings") {
-                     BarService.openWidgetSettings(screen, section, sectionWidgetIndex, widgetId, widgetSettings);
-                   }
-                 }
+      if (action === "widget-settings") {
+        BarService.openWidgetSettings(root.screen, root.section, root.sectionWidgetIndex, root.widgetId, root.widgetSettings);
+      }
+    }
   }
 
   Rectangle {
     id: workspaceBackground
-    width: isVertical ? Style.capsuleHeight : parent.width
-    height: isVertical ? parent.height : Style.capsuleHeight
+    width: root.isVertical ? Style.capsuleHeight : parent.width
+    height: root.isVertical ? parent.height : Style.capsuleHeight
     radius: Style.radiusM
     color: Style.capsuleColor
 
@@ -302,15 +302,15 @@ Item {
       anchors.fill: parent
       acceptedButtons: Qt.RightButton
       onClicked: mouse => {
-                   if (mouse.button === Qt.RightButton) {
-                     var popupMenuWindow = PanelService.getPopupMenuWindow(screen);
-                     if (popupMenuWindow) {
-                       popupMenuWindow.showContextMenu(contextMenu);
-                       const pos = BarService.getContextMenuPosition(workspaceBackground, contextMenu.implicitWidth, contextMenu.implicitHeight);
-                       contextMenu.openAtItem(workspaceBackground, pos.x, pos.y);
-                     }
-                   }
-                 }
+        if (mouse.button === Qt.RightButton) {
+          var popupMenuWindow = PanelService.getPopupMenuWindow(root.screen);
+          if (popupMenuWindow) {
+            popupMenuWindow.showContextMenu(contextMenu);
+            const pos = BarService.getContextMenuPosition(workspaceBackground, contextMenu.implicitWidth, contextMenu.implicitHeight);
+            contextMenu.openAtItem(workspaceBackground, pos.x, pos.y);
+          }
+        }
+      }
     }
   }
 
@@ -357,31 +357,32 @@ Item {
   // Horizontal layout for top/bottom bars
   Row {
     id: pillRow
-    spacing: spacingBetweenPills
+    spacing: root.spacingBetweenPills
     anchors.verticalCenter: workspaceBackground.verticalCenter
-    x: horizontalPadding
-    visible: !isVertical
+    x: root.horizontalPadding
+    visible: !root.isVertical
 
     Repeater {
       id: workspaceRepeaterHorizontal
-      model: localWorkspaces
+      model: root.localWorkspaces
       Item {
         id: workspacePillContainer
-        property bool urgent: model.isUrgent === true
-        property bool displayedUrgent: root.displayedUrgentForWorkspace(model)
+        required property var model
+        property bool urgent: workspacePillContainer.model.isUrgent === true
+        property bool displayedUrgent: root.displayedUrgentForWorkspace(workspacePillContainer.model)
 
-        width: root.getWorkspaceWidth(model)
+        width: root.getWorkspaceWidth(workspacePillContainer.model)
         height: Style.capsuleHeight * root.baseDimensionRatio
 
         onUrgentChanged: {
-          if (urgent) {
-            root.setDisplayedUrgency(model, true);
+          if (workspacePillContainer.urgent) {
+            root.setDisplayedUrgency(workspacePillContainer.model, true);
           }
           horizontalUrgencyCooldown.restart();
         }
 
         Component.onCompleted: {
-          if (displayedUrgent) {
+          if (workspacePillContainer.displayedUrgent) {
             horizontalUrgencyCooldown.restart();
           }
         }
@@ -390,7 +391,7 @@ Item {
           id: horizontalUrgencyCooldown
           interval: 5000
           repeat: false
-          onTriggered: root.setDisplayedUrgency(model, workspacePillContainer.urgent)
+          onTriggered: root.setDisplayedUrgency(workspacePillContainer.model, workspacePillContainer.urgent)
         }
 
         Rectangle {
@@ -398,7 +399,7 @@ Item {
           anchors.fill: parent
 
           Loader {
-            active: (labelMode !== "none")
+            active: (root.labelMode !== "none")
             sourceComponent: Component {
               NText {
                 x: (pill.width - width) / 2
@@ -406,10 +407,10 @@ Item {
                 text: {
                   if (model.name && model.name.length > 0) {
                     if (root.labelMode === "name") {
-                      return model.name.substring(0, characterCount);
+                      return model.name.substring(0, root.characterCount);
                     }
                     if (root.labelMode === "index+name") {
-                      return (model.idx.toString() + " " + model.name.substring(0, characterCount));
+                      return (model.idx.toString() + " " + model.name.substring(0, root.characterCount));
                     }
                   }
                   return model.idx.toString();
@@ -436,16 +437,16 @@ Item {
 
           radius: Style.radiusM
           color: {
-            if (model.isFocused)
+            if (workspacePillContainer.model.isFocused)
               return NColor.mPrimary;
             if (workspacePillContainer.displayedUrgent)
               return NColor.mError;
-            if (model.isOccupied)
+            if (workspacePillContainer.model.isOccupied)
               return NColor.mSecondary;
 
             return Qt.alpha(NColor.mSecondary, 0.3);
           }
-          scale: model.isActive ? 1.0 : 0.9
+          scale: workspacePillContainer.model.isActive ? 1.0 : 0.9
           z: 0
 
           MouseArea {
@@ -453,7 +454,7 @@ Item {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             onClicked: {
-              CompositorService.switchToWorkspace(model);
+              CompositorService.switchToWorkspace(workspacePillContainer.model);
             }
             hoverEnabled: true
           }
@@ -518,8 +519,8 @@ Item {
           color: NColor.transparent
           border.color: root.effectColor
           border.width: Math.max(1, Math.round((2 + 6 * (1.0 - root.masterProgress))))
-          opacity: root.effectsActive && model.isFocused ? (1.0 - root.masterProgress) * 0.7 : 0
-          visible: root.effectsActive && model.isFocused
+          opacity: root.effectsActive && workspacePillContainer.model.isFocused ? (1.0 - root.masterProgress) * 0.7 : 0
+          visible: root.effectsActive && workspacePillContainer.model.isFocused
           z: 1
         }
       }
@@ -529,31 +530,32 @@ Item {
   // Vertical layout for left/right bars
   Column {
     id: pillColumn
-    spacing: spacingBetweenPills
+    spacing: root.spacingBetweenPills
     anchors.horizontalCenter: workspaceBackground.horizontalCenter
-    y: horizontalPadding
-    visible: isVertical
+    y: root.horizontalPadding
+    visible: root.isVertical
 
     Repeater {
       id: workspaceRepeaterVertical
-      model: localWorkspaces
+      model: root.localWorkspaces
       Item {
         id: workspacePillContainerVertical
-        property bool urgent: model.isUrgent === true
-        property bool displayedUrgent: root.displayedUrgentForWorkspace(model)
+        required property var model
+        property bool urgent: workspacePillContainerVertical.model.isUrgent === true
+        property bool displayedUrgent: root.displayedUrgentForWorkspace(workspacePillContainerVertical.model)
 
         width: Style.capsuleHeight * root.baseDimensionRatio
-        height: root.getWorkspaceHeight(model)
+        height: root.getWorkspaceHeight(workspacePillContainerVertical.model)
 
         onUrgentChanged: {
-          if (urgent) {
-            root.setDisplayedUrgency(model, true);
+          if (workspacePillContainerVertical.urgent) {
+            root.setDisplayedUrgency(workspacePillContainerVertical.model, true);
           }
           verticalUrgencyCooldown.restart();
         }
 
         Component.onCompleted: {
-          if (displayedUrgent) {
+          if (workspacePillContainerVertical.displayedUrgent) {
             verticalUrgencyCooldown.restart();
           }
         }
@@ -562,7 +564,7 @@ Item {
           id: verticalUrgencyCooldown
           interval: 5000
           repeat: false
-          onTriggered: root.setDisplayedUrgency(model, workspacePillContainerVertical.urgent)
+          onTriggered: root.setDisplayedUrgency(workspacePillContainerVertical.model, workspacePillContainerVertical.urgent)
         }
 
         Rectangle {
@@ -570,7 +572,7 @@ Item {
           anchors.fill: parent
 
           Loader {
-            active: (labelMode !== "none")
+            active: (root.labelMode !== "none")
             sourceComponent: Component {
               NText {
                 x: (pillVertical.width - width) / 2
@@ -578,7 +580,7 @@ Item {
                 text: {
                   if (model.name && model.name.length > 0) {
                     if (root.labelMode === "name") {
-                      return model.name.substring(0, characterCount);
+                      return model.name.substring(0, root.characterCount);
                     }
                     if (root.labelMode === "index+name") {
                       return (model.idx.toString() + model.name.substring(0, 1));
@@ -608,16 +610,16 @@ Item {
 
           radius: Style.radiusM
           color: {
-            if (model.isFocused)
+            if (workspacePillContainerVertical.model.isFocused)
               return NColor.mPrimary;
             if (workspacePillContainerVertical.displayedUrgent)
               return NColor.mError;
-            if (model.isOccupied)
+            if (workspacePillContainerVertical.model.isOccupied)
               return NColor.mSecondary;
 
             return NColor.mOutline;
           }
-          scale: model.isActive ? 1.0 : 0.9
+          scale: workspacePillContainerVertical.model.isActive ? 1.0 : 0.9
           z: 0
 
           MouseArea {
@@ -625,7 +627,7 @@ Item {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             onClicked: {
-              CompositorService.switchToWorkspace(model);
+              CompositorService.switchToWorkspace(workspacePillContainerVertical.model);
             }
             hoverEnabled: true
           }
@@ -690,8 +692,8 @@ Item {
           color: NColor.transparent
           border.color: root.effectColor
           border.width: Math.max(1, Math.round((2 + 6 * (1.0 - root.masterProgress))))
-          opacity: root.effectsActive && model.isFocused ? (1.0 - root.masterProgress) * 0.7 : 0
-          visible: root.effectsActive && model.isFocused
+          opacity: root.effectsActive && workspacePillContainerVertical.model.isFocused ? (1.0 - root.masterProgress) * 0.7 : 0
+          visible: root.effectsActive && workspacePillContainerVertical.model.isFocused
           z: 1
         }
       }
