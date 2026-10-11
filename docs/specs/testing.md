@@ -43,6 +43,8 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - [x] Adding a JavaScript test suite requires no manual runner-list update; the deterministic runner-completeness test proves discovery and discovery-failure handling.
 - [x] The deterministic gate also runs isolated [deployment](deployment.md) and [night-light](night-light.md) process regressions. Night-light fixtures require a C compiler, `pkg-config`, Wayland server development files, `wayland-scanner`, Quickshell, and `wlsunset`; these are test-only dependencies beyond the shell's existing runtime programs.
 - [x] `./run-tests.sh qml` runs the focused QML static check using the installed Qt 6 `/usr/lib/qt6/bin/qmllint` for checked and documented-exclusion files; it does not fall back to a PATH-resolved Qt 5 tool.
+- [x] The static check resolves virtual `qs.*` imports through a temporary on-disk module tree with deterministic declarations, including nested types and singletons; it removes the tree on exit without changing repository sources.
+- [x] Import resolution must not suppress remaining warnings, including standalone singleton diagnostics; passing the static gate does not mean warning-free or type-complete analysis.
 - [x] `./run-tests.sh probes` runs read-only service probes, injects the deterministic Bluetooth CLI fixture rather than contacting host Bluetooth hardware, validates launch/IPC contracts against the canonical runtime shell path, and runs the isolated non-visible production QML lifecycle harness.
 - [x] `./run-tests.sh log` runs the active Quickshell log regression gate.
 - [x] `./run-tests.sh notifications` runs visible notification probes and is isolated from the default gates.
@@ -52,6 +54,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 ## How it works
 
 - Runtime behavior is implemented in `run-tests.sh` and the test/probe files listed below.
+- `qml-static-check.sh` requires `python3` and `rg`, sorts discovered QML paths, symlinks sources under a temporary `qs/` tree, and generates `qmldir` files for their directories and ancestors. Singleton declarations follow `pragma Singleton`; both normal checks and exclusion rechecks use this tree via `qmllint -I`.
 
 ## Implementation inventory
 
@@ -67,7 +70,8 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - `Tests/qml-test-utils.test.js` - lexical-decoy and alternate-brace-format coverage for shared QML extraction.
 - `Tests/quickshell-regression.test.sh` - current-reload log filtering fixture.
 - `Bin/dev/quickshell-regression.sh` - live Quickshell log regression gate.
-- `Bin/dev/qml-static-check.sh` - focused Qt 6 qmllint gate.
+- `Bin/dev/qml-static-check.sh` - focused Qt 6 qmllint gate with temporary `qs.*` import resolution.
+- `Tests/qml-static-imports.test.py` - real-runner/Qt 6 fixture for nested type and singleton imports, reduced import warnings, retained undefined-value diagnostics, and temporary-tree cleanup.
 - `Bin/dev/service-probes.sh` - read-only runtime/service probes; direct Bluetooth invocation remains a bounded host diagnostic.
 - `Tests/fixtures/bluetoothctl` - deterministic Bluetooth CLI fixture selected by automated probe runs.
 
@@ -80,12 +84,13 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - `Tests/runner-completeness.test.js`
 - `Tests/service-probes-parsing.test.sh`
 - `Tests/test-runner-categories.test.sh`
+- `Tests/qml-static-imports.test.py`
 
 ## Known gaps (current cycle)
 
 None for the current registry-selection contract.
 
-- [ ] Resolve virtual `qs.*` imports for type-complete Qt 6 static analysis. The static gate currently passes with import/type-context and other existing warnings; a passing exit status is not a warning-free audit.
+- [ ] Many Qt 6 static-analysis warnings remain after `qs.*` import resolution, including standalone singleton and other type-context diagnostics. These are not suppressed; the gate is not a warning-free audit.
 
 ## Out of scope
 
