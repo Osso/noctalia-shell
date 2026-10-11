@@ -47,6 +47,7 @@ def main():
             path = directory / name
             path.mkdir(mode=0o700)
             environment[variable] = str(path)
+        (directory / "config" / "colors.json").write_text("{}\n")
         environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
         result = subprocess.run(
             ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
@@ -54,8 +55,8 @@ def main():
         )
         output = result.stdout + result.stderr
         print(output, end="")
-        if "Unable to assign [undefined] to QString" in output:
-            raise AssertionError("isolated palette config path must be a valid string")
+        if " WARN " in output:
+            raise AssertionError("isolated palette harness must run without warnings")
         if result.returncode != 0 or "COLOR_NAMESPACE_PASS" not in output:
             raise AssertionError(f"offscreen palette/window test failed (exit {result.returncode})")
 
