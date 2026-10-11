@@ -1,7 +1,8 @@
+// The Repeater delegate uses the list owner and declares its injected modelData role.
+pragma ComponentBehavior: Bound
+
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
-import Quickshell
 import qs.Commons
 import qs.Services.Networking
 import qs.Widgets
@@ -49,21 +50,21 @@ NBox {
 
         required property var modelData
 
-        readonly property string networkSsid: modelData ? (modelData.ssid || "") : ""
-        readonly property bool networkConnected: modelData ? modelData.connected === true : false
-        readonly property int networkSignal: modelData ? (modelData.signal || 0) : 0
-        readonly property string networkSecurity: modelData ? (modelData.security || "Open") : "Open"
-        readonly property bool networkExisting: modelData ? modelData.existing === true : false
-        readonly property bool networkCached: modelData ? modelData.cached === true : false
-        readonly property bool connectingToNetwork: NetworkService.connectingTo === networkSsid
-        readonly property bool disconnectingFromNetwork: NetworkService.disconnectingFrom === networkSsid
-        readonly property bool forgettingNetwork: NetworkService.forgettingNetwork === networkSsid
-        readonly property bool networkBusy: connectingToNetwork || disconnectingFromNetwork || forgettingNetwork
-        readonly property bool savedNetwork: networkExisting || networkCached
+        readonly property string networkSsid: networkItem.modelData ? (networkItem.modelData.ssid || "") : ""
+        readonly property bool networkConnected: networkItem.modelData ? networkItem.modelData.connected === true : false
+        readonly property int networkSignal: networkItem.modelData ? (networkItem.modelData.signal || 0) : 0
+        readonly property string networkSecurity: networkItem.modelData ? (networkItem.modelData.security || "Open") : "Open"
+        readonly property bool networkExisting: networkItem.modelData ? networkItem.modelData.existing === true : false
+        readonly property bool networkCached: networkItem.modelData ? networkItem.modelData.cached === true : false
+        readonly property bool connectingToNetwork: NetworkService.connectingTo === networkItem.networkSsid
+        readonly property bool disconnectingFromNetwork: NetworkService.disconnectingFrom === networkItem.networkSsid
+        readonly property bool forgettingNetwork: NetworkService.forgettingNetwork === networkItem.networkSsid
+        readonly property bool networkBusy: networkItem.connectingToNetwork || networkItem.disconnectingFromNetwork || networkItem.forgettingNetwork
+        readonly property bool savedNetwork: networkItem.networkExisting || networkItem.networkCached
 
         function submitPassword(password) {
           pwdInput.text = "";
-          root.passwordSubmitted(networkSsid, password);
+          root.passwordSubmitted(networkItem.networkSsid, password);
         }
 
         function cancelPassword() {
@@ -77,11 +78,11 @@ NBox {
         implicitHeight: netColumn.implicitHeight + (Style.marginM * 2)
         radius: Style.radiusM
         border.width: Style.borderS
-        border.color: networkConnected ? NColor.mPrimary : NColor.mOutline
+        border.color: networkItem.networkConnected ? NColor.mPrimary : NColor.mOutline
 
-        opacity: (disconnectingFromNetwork || forgettingNetwork) ? 0.6 : 1.0
+        opacity: (networkItem.disconnectingFromNetwork || networkItem.forgettingNetwork) ? 0.6 : 1.0
 
-        color: networkConnected ? Qt.rgba(NColor.mPrimary.r, NColor.mPrimary.g, NColor.mPrimary.b, 0.05) : NColor.mSurface
+        color: networkItem.networkConnected ? Qt.rgba(NColor.mPrimary.r, NColor.mPrimary.g, NColor.mPrimary.b, 0.05) : NColor.mSurface
 
         Behavior on opacity {
           NumberAnimation {
@@ -102,9 +103,9 @@ NBox {
             spacing: Style.marginS
 
             NIcon {
-              icon: NetworkService.signalIcon(networkSignal, networkConnected)
+              icon: NetworkService.signalIcon(networkItem.networkSignal, networkItem.networkConnected)
               pointSize: Style.fontSizeXXL
-              color: networkConnected ? NColor.mPrimary : NColor.mOnSurface
+              color: networkItem.networkConnected ? NColor.mPrimary : NColor.mOnSurface
             }
 
             ColumnLayout {
@@ -112,9 +113,9 @@ NBox {
               spacing: 2
 
               NText {
-                text: networkSsid
+                text: networkItem.networkSsid
                 pointSize: Style.fontSizeM
-                font.weight: networkConnected ? Style.fontWeightBold : Style.fontWeightMedium
+                font.weight: networkItem.networkConnected ? Style.fontWeightBold : Style.fontWeightMedium
                 color: NColor.mOnSurface
                 elide: Text.ElideRight
                 Layout.fillWidth: true
@@ -125,8 +126,8 @@ NBox {
 
                 NText {
                   text: I18n.tr("system.signal-strength", {
-                                  "signal": networkSignal
-                                })
+                    "signal": networkItem.networkSignal
+                  })
                   pointSize: Style.fontSizeXXS
                   color: NColor.mOnSurfaceVariant
                 }
@@ -138,7 +139,7 @@ NBox {
                 }
 
                 NText {
-                  text: NetworkService.isSecured(networkSecurity) ? networkSecurity : "Open"
+                  text: NetworkService.isSecured(networkItem.networkSecurity) ? networkItem.networkSecurity : "Open"
                   pointSize: Style.fontSizeXXS
                   color: NColor.mOnSurfaceVariant
                 }
@@ -149,11 +150,11 @@ NBox {
 
                 // Status badges
                 Rectangle {
-                  visible: networkConnected && !disconnectingFromNetwork
+                  visible: networkItem.networkConnected && !networkItem.disconnectingFromNetwork
                   color: NColor.mPrimary
                   radius: height * 0.5
-                  width: connectedText.implicitWidth + (Style.marginS * 2)
-                  height: connectedText.implicitHeight + (Style.marginXXS * 2)
+                  Layout.preferredWidth: connectedText.implicitWidth + (Style.marginS * 2)
+                  Layout.preferredHeight: connectedText.implicitHeight + (Style.marginXXS * 2)
 
                   NText {
                     id: connectedText
@@ -165,11 +166,11 @@ NBox {
                 }
 
                 Rectangle {
-                  visible: disconnectingFromNetwork
+                  visible: networkItem.disconnectingFromNetwork
                   color: NColor.mError
                   radius: height * 0.5
-                  width: disconnectingText.implicitWidth + (Style.marginS * 2)
-                  height: disconnectingText.implicitHeight + (Style.marginXXS * 2)
+                  Layout.preferredWidth: disconnectingText.implicitWidth + (Style.marginS * 2)
+                  Layout.preferredHeight: disconnectingText.implicitHeight + (Style.marginXXS * 2)
 
                   NText {
                     id: disconnectingText
@@ -181,11 +182,11 @@ NBox {
                 }
 
                 Rectangle {
-                  visible: forgettingNetwork
+                  visible: networkItem.forgettingNetwork
                   color: NColor.mError
                   radius: height * 0.5
-                  width: forgettingText.implicitWidth + (Style.marginS * 2)
-                  height: forgettingText.implicitHeight + (Style.marginXXS * 2)
+                  Layout.preferredWidth: forgettingText.implicitWidth + (Style.marginS * 2)
+                  Layout.preferredHeight: forgettingText.implicitHeight + (Style.marginXXS * 2)
 
                   NText {
                     id: forgettingText
@@ -197,13 +198,13 @@ NBox {
                 }
 
                 Rectangle {
-                  visible: networkCached && !networkConnected && !forgettingNetwork && !disconnectingFromNetwork
+                  visible: networkItem.networkCached && !networkItem.networkConnected && !networkItem.forgettingNetwork && !networkItem.disconnectingFromNetwork
                   color: NColor.transparent
                   border.color: NColor.mOutline
                   border.width: Style.borderS
                   radius: height * 0.5
-                  width: savedText.implicitWidth + (Style.marginS * 2)
-                  height: savedText.implicitHeight + (Style.marginXXS * 2)
+                  Layout.preferredWidth: savedText.implicitWidth + (Style.marginS * 2)
+                  Layout.preferredHeight: savedText.implicitHeight + (Style.marginXXS * 2)
 
                   NText {
                     id: savedText
@@ -221,26 +222,26 @@ NBox {
               spacing: Style.marginS
 
               NBusyIndicator {
-                visible: networkBusy
+                visible: networkItem.networkBusy
                 running: visible
                 color: NColor.mPrimary
                 size: Style.baseWidgetSize * 0.5
               }
 
               NIconButton {
-                visible: savedNetwork && !networkConnected && !networkBusy
+                visible: networkItem.savedNetwork && !networkItem.networkConnected && !networkItem.networkBusy
                 icon: "trash"
                 tooltipText: I18n.tr("tooltips.forget-network")
                 baseSize: Style.baseWidgetSize * 0.8
-                onClicked: root.forgetRequested(networkSsid)
+                onClicked: root.forgetRequested(networkItem.networkSsid)
               }
 
               NButton {
-                visible: !networkConnected && !networkBusy && root.passwordSsid !== networkSsid
+                visible: !networkItem.networkConnected && !networkItem.networkBusy && root.passwordSsid !== networkItem.networkSsid
                 text: {
-                  if (savedNetwork)
+                  if (networkItem.savedNetwork)
                     return I18n.tr("wifi.panel.connect");
-                  if (!NetworkService.isSecured(networkSecurity))
+                  if (!NetworkService.isSecured(networkItem.networkSecurity))
                     return I18n.tr("wifi.panel.connect");
                   return I18n.tr("wifi.panel.password");
                 }
@@ -248,30 +249,30 @@ NBox {
                 fontSize: Style.fontSizeXS
                 enabled: !NetworkService.connecting
                 onClicked: {
-                  if (savedNetwork || !NetworkService.isSecured(networkSecurity)) {
-                    NetworkService.connect(networkSsid);
+                  if (networkItem.savedNetwork || !NetworkService.isSecured(networkItem.networkSecurity)) {
+                    NetworkService.connect(networkItem.networkSsid);
                   } else {
-                    root.passwordRequested(networkSsid);
+                    root.passwordRequested(networkItem.networkSsid);
                   }
                 }
               }
 
               NButton {
-                visible: networkConnected && !disconnectingFromNetwork
+                visible: networkItem.networkConnected && !networkItem.disconnectingFromNetwork
                 text: I18n.tr("wifi.panel.disconnect")
                 outlined: !hovered
                 fontSize: Style.fontSizeXS
                 backgroundColor: NColor.mError
-                onClicked: NetworkService.disconnect(networkSsid)
+                onClicked: NetworkService.disconnect(networkItem.networkSsid)
               }
             }
           }
 
           // Password input
           Rectangle {
-            visible: root.passwordSsid === networkSsid && !disconnectingFromNetwork && !forgettingNetwork
+            visible: root.passwordSsid === networkItem.networkSsid && !networkItem.disconnectingFromNetwork && !networkItem.forgettingNetwork
             Layout.fillWidth: true
-            height: passwordRow.implicitHeight + Style.marginS * 2
+            Layout.preferredHeight: passwordRow.implicitHeight + Style.marginS * 2
             color: NColor.mSurfaceVariant
             border.color: NColor.mOutline
             border.width: Style.borderS
@@ -344,9 +345,9 @@ NBox {
 
           // Forget network
           Rectangle {
-            visible: root.expandedSsid === networkSsid && !disconnectingFromNetwork && !forgettingNetwork
+            visible: root.expandedSsid === networkItem.networkSsid && !networkItem.disconnectingFromNetwork && !networkItem.forgettingNetwork
             Layout.fillWidth: true
-            height: forgetRow.implicitHeight + Style.marginS * 2
+            Layout.preferredHeight: forgetRow.implicitHeight + Style.marginS * 2
             color: NColor.mSurfaceVariant
             radius: Style.radiusS
             border.width: Style.borderS
@@ -379,7 +380,7 @@ NBox {
                 fontSize: Style.fontSizeXXS
                 backgroundColor: NColor.mError
                 outlined: forgetButton.hovered ? false : true
-                onClicked: root.forgetConfirmed(networkSsid)
+                onClicked: root.forgetConfirmed(networkItem.networkSsid)
               }
 
               NIconButton {
