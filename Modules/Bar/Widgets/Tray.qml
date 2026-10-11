@@ -271,7 +271,9 @@ Rectangle {
       id: repeater
       model: root.filteredItems
 
-      onItemAdded: function (index: int, item: TrayItem) {
+      onItemAdded: (index, item) => repeater.bindTrayItem(item)
+
+      function bindTrayItem(item: TrayItem): void {
         item.iconSize = Qt.binding(() => root.iconSize);
         item.colorizeIcons = Qt.binding(() => root.widgetSettings.colorizeIcons !== false);
         item.popupMenuWindow = Qt.binding(() => root.popupMenuWindow);
