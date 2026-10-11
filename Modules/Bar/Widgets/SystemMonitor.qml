@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -252,46 +254,42 @@ Rectangle {
   }
 
   // Status indicator component definition
-  Component {
-    id: statusIndicatorComponent
+  component StatusIndicator: Rectangle {
+    id: statusIndicator
+    property bool warning: false
+    property bool critical: false
+    property int indicatorWidth: Style.capsuleHeight
+    property color warningColor: NColor.mTertiary
+    property color criticalColor: NColor.mError
 
-    Rectangle {
-      id: statusIndicator
-      property bool warning: false
-      property bool critical: false
-      property int indicatorWidth: Style.capsuleHeight
-      property color warningColor: NColor.mTertiary
-      property color criticalColor: NColor.mError
+    width: root.isVertical ? Math.max(0, indicatorWidth - Style.marginS * 2) : Math.max(0, indicatorWidth + Style.marginXS * 2)
+    height: root.isVertical ? Math.max(0, Style.capsuleHeight + Style.marginXS * 2) : root.pillHeight
+    radius: Style.radiusM
+    // Hide the rectangular indicator when the bar is vertical; keep it available for horizontal layout
+    visible: !root.isVertical
+    color: critical ? criticalColor : warningColor
+    scale: (warning || critical) ? 1.0 : 0.0
+    opacity: (warning || critical) ? 1.0 : 0.0
 
-      width: root.isVertical ? Math.max(0, indicatorWidth - Style.marginS * 2) : Math.max(0, indicatorWidth + Style.marginXS * 2)
-      height: root.isVertical ? Math.max(0, Style.capsuleHeight + Style.marginXS * 2) : root.pillHeight
-      radius: Style.radiusM
-      // Hide the rectangular indicator when the bar is vertical; keep it available for horizontal layout
-      visible: !root.isVertical
-      color: critical ? criticalColor : warningColor
-      scale: (warning || critical) ? 1.0 : 0.0
-      opacity: (warning || critical) ? 1.0 : 0.0
-
-      // Smooth appearance/disappearance animation
-      Behavior on scale {
-        NumberAnimation {
-          duration: Style.animationNormal
-          easing.type: Easing.OutCubic
-        }
+    // Smooth appearance/disappearance animation
+    Behavior on scale {
+      NumberAnimation {
+        duration: Style.animationNormal
+        easing.type: Easing.OutCubic
       }
+    }
 
-      Behavior on opacity {
-        NumberAnimation {
-          duration: Style.animationNormal
-          easing.type: Easing.OutCubic
-        }
+    Behavior on opacity {
+      NumberAnimation {
+        duration: Style.animationNormal
+        easing.type: Easing.OutCubic
       }
+    }
 
-      Behavior on color {
-        ColorAnimation {
-          duration: Style.animationNormal
-          easing.type: Easing.OutCubic
-        }
+    Behavior on color {
+      ColorAnimation {
+        duration: Style.animationNormal
+        easing.type: Easing.OutCubic
       }
     }
   }
@@ -314,17 +312,13 @@ Rectangle {
       visible: root.showCpuUsage
 
       // Status indicator covering the entire component
-      Loader {
-        sourceComponent: statusIndicatorComponent
+      StatusIndicator {
         anchors.centerIn: parent
-
-        onLoaded: {
-          item.warning = Qt.binding(() => root.cpuWarning);
-          item.critical = Qt.binding(() => root.cpuCritical);
-          item.indicatorWidth = Qt.binding(() => cpuUsageContainer.width);
-          item.warningColor = Qt.binding(() => root.warningColor);
-          item.criticalColor = Qt.binding(() => root.criticalColor);
-        }
+        warning: root.cpuWarning
+        critical: root.cpuCritical
+        indicatorWidth: cpuUsageContainer.width
+        warningColor: root.warningColor
+        criticalColor: root.criticalColor
       }
 
       GridLayout {
@@ -389,17 +383,13 @@ Rectangle {
       visible: root.showCpuTemp
 
       // Status indicator covering the entire component
-      Loader {
-        sourceComponent: statusIndicatorComponent
+      StatusIndicator {
         anchors.centerIn: parent
-
-        onLoaded: {
-          item.warning = Qt.binding(() => root.tempWarning);
-          item.critical = Qt.binding(() => root.tempCritical);
-          item.indicatorWidth = Qt.binding(() => cpuTempContainer.width);
-          item.warningColor = Qt.binding(() => root.warningColor);
-          item.criticalColor = Qt.binding(() => root.criticalColor);
-        }
+        warning: root.tempWarning
+        critical: root.tempCritical
+        indicatorWidth: cpuTempContainer.width
+        warningColor: root.warningColor
+        criticalColor: root.criticalColor
       }
 
       GridLayout {
@@ -457,17 +447,13 @@ Rectangle {
       visible: root.showMemoryUsage
 
       // Status indicator covering the entire component
-      Loader {
-        sourceComponent: statusIndicatorComponent
+      StatusIndicator {
         anchors.centerIn: parent
-
-        onLoaded: {
-          item.warning = Qt.binding(() => root.memWarning);
-          item.critical = Qt.binding(() => root.memCritical);
-          item.indicatorWidth = Qt.binding(() => memoryContainer.width);
-          item.warningColor = Qt.binding(() => root.warningColor);
-          item.criticalColor = Qt.binding(() => root.criticalColor);
-        }
+        warning: root.memWarning
+        critical: root.memCritical
+        indicatorWidth: memoryContainer.width
+        warningColor: root.warningColor
+        criticalColor: root.criticalColor
       }
 
       GridLayout {
@@ -627,17 +613,13 @@ Rectangle {
       visible: root.showDiskUsage
 
       // Status indicator covering the entire component
-      Loader {
-        sourceComponent: statusIndicatorComponent
+      StatusIndicator {
         anchors.centerIn: parent
-
-        onLoaded: {
-          item.warning = Qt.binding(() => root.diskWarning);
-          item.critical = Qt.binding(() => root.diskCritical);
-          item.indicatorWidth = Qt.binding(() => diskContainer.width);
-          item.warningColor = Qt.binding(() => root.warningColor);
-          item.criticalColor = Qt.binding(() => root.criticalColor);
-        }
+        warning: root.diskWarning
+        critical: root.diskCritical
+        indicatorWidth: diskContainer.width
+        warningColor: root.warningColor
+        criticalColor: root.criticalColor
       }
 
       GridLayout {

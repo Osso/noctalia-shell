@@ -305,17 +305,56 @@ Item {
       wait(30);
       const indicators = objects(monitor, child => child.indicatorWidth !== undefined);
       compare(indicators.length, 4);
-      SystemStatService.cpuUsage = monitor.cpuCriticalThreshold + 1;
+      const metrics = ["cpu", "temp", "mem", "disk"];
+      for (const level of ["Warning", "Critical", "None"]) {
+        SystemStatService.cpuUsage = level === "None" ? 0 : monitor["cpu" + level + "Threshold"] + 1;
+        SystemStatService.cpuTemp = level === "None" ? 0 : monitor["temp" + level + "Threshold"] + 1;
+        SystemStatService.memPercent = level === "None" ? 0 : monitor["mem" + level + "Threshold"] + 1;
+        SystemStatService.diskPercents = {"/": level === "None" ? 0 : monitor["disk" + level + "Threshold"] + 1};
+        wait(10);
+        for (let index = 0; index < indicators.length; index++) {
+          const indicator = indicators[index];
+          compare(indicator.warning, monitor[metrics[index] + "Warning"]);
+          compare(indicator.critical, level === "Critical");
+          compare(indicator.scale, level === "None" ? 0 : 1);
+          compare(indicator.opacity, level === "None" ? 0 : 1);
+          compare(indicator.color, level === "Critical" ? monitor.criticalColor : monitor.warningColor);
+        }
+      }
+      const originalData = Settings.data;
+      const coloredData = JSON.parse(JSON.stringify(originalData));
+      coloredData.systemMonitor.useCustomColors = true;
+      coloredData.systemMonitor.warningColor = "#123456";
+      coloredData.systemMonitor.criticalColor = "#abcdef";
+      Settings.data = coloredData;
       wait(10);
-      compare(indicators[0].critical, true);
-      compare(indicators[0].scale, 1);
-      compare(indicators[0].color, monitor.criticalColor);
-      SystemStatService.cpuUsage = 0;
+      for (const indicator of indicators) {
+        compare(indicator.warningColor, "#123456");
+        compare(indicator.criticalColor, "#abcdef");
+      }
+      configure("top", "compact");
       wait(10);
-      compare(indicators[0].scale, 0);
+      for (const indicator of indicators) {
+        compare(indicator.height, 34);
+        compare(indicator.width, indicator.indicatorWidth + 6);
+      }
       configure("right", "comfortable");
+      monitor.width = 30;
       wait(10);
-      for (const indicator of indicators) compare(indicator.visible, false);
+      for (const indicator of indicators) {
+        compare(indicator.visible, false);
+        compare(indicator.height, 46);
+        compare(indicator.width, 22);
+      }
+      monitor.width = 400;
+      configure("top", "comfortable");
+      wait(10);
+      for (const indicator of indicators) {
+        compare(indicator.visible, true);
+        compare(indicator.height, monitor.pillHeight);
+        compare(indicator.width, indicator.indicatorWidth + 6);
+      }
+      Settings.data = originalData;
       monitor.visible = false;
       compare(FanService.refs, 0);
       for (const metric of ["cpu", "temp", "memory", "disk", "network"])
