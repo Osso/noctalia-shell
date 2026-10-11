@@ -85,7 +85,7 @@ Singleton {
   Process {
     id: directoryCreationProcess
     running: false
-    command: ["mkdir", "-p", configDir, cacheDir, cacheDirImagesWallpapers, cacheDirImagesNotifications]
+    command: ["mkdir", "-p", root.configDir, root.cacheDir, root.cacheDirImagesWallpapers, root.cacheDirImagesNotifications]
     onExited: function (exitCode) {
       root.handleDirectoryCreationExit(exitCode);
     }
@@ -104,13 +104,13 @@ Singleton {
 
     sourceComponent: FileView {
       property int generation: 0
-      path: root.settingsFile
+      path: Settings.settingsFile
       printErrors: false
       watchChanges: false
-      Component.onCompleted: generation = root.loadGeneration
-      onLoaded: root.handleValidationLoaded(generation, text(), data())
+      Component.onCompleted: generation = Settings.loadGeneration
+      onLoaded: Settings.handleValidationLoaded(generation, text(), data())
       onLoadFailed: function (error) {
-        root.handleValidationLoadFailure(generation, error);
+        Settings.handleValidationLoadFailure(generation, error);
       }
     }
   }
@@ -121,18 +121,18 @@ Singleton {
 
     sourceComponent: FileView {
       property int generation: 0
-      path: root.settingsFile
-      adapter: root.data
+      path: Settings.settingsFile
+      adapter: Settings.data
       preload: false
       printErrors: false
       watchChanges: false
       Component.onCompleted: {
-        generation = root.loadGeneration;
+        generation = Settings.loadGeneration;
         writeAdapter();
       }
-      onSaved: root.handleDefaultsSaved(generation)
+      onSaved: Settings.handleDefaultsSaved(generation)
       onSaveFailed: function (error) {
-        root.handleBootstrapFailure(generation, `Failed to create settings: ${error}`);
+        Settings.handleBootstrapFailure(generation, `Failed to create settings: ${error}`);
       }
     }
   }
@@ -143,17 +143,17 @@ Singleton {
 
     sourceComponent: FileView {
       property int generation: 0
-      path: root.settingsSnapshotFile
+      path: Settings.settingsSnapshotFile
       preload: false
       printErrors: false
       watchChanges: false
       Component.onCompleted: {
-        generation = root.loadGeneration;
-        setData(root.validatedSettingsData);
+        generation = Settings.loadGeneration;
+        setData(Settings.validatedSettingsData);
       }
-      onSaved: root.handleSnapshotSaved(generation)
+      onSaved: Settings.handleSnapshotSaved(generation)
       onSaveFailed: function (error) {
-        root.handleBootstrapFailure(generation, `Failed to snapshot settings: ${error}`);
+        Settings.handleBootstrapFailure(generation, `Failed to snapshot settings: ${error}`);
       }
     }
   }
@@ -164,13 +164,13 @@ Singleton {
 
     sourceComponent: FileView {
       property int generation: 0
-      path: root.settingsSnapshotFile
+      path: Settings.settingsSnapshotFile
       printErrors: false
       watchChanges: false
-      Component.onCompleted: generation = root.loadGeneration
-      onLoaded: root.handleSnapshotVerificationLoaded(generation, data())
+      Component.onCompleted: generation = Settings.loadGeneration
+      onLoaded: Settings.handleSnapshotVerificationLoaded(generation, data())
       onLoadFailed: function (error) {
-        root.handleBootstrapFailure(generation, `Failed to verify settings snapshot: ${error}`);
+        Settings.handleBootstrapFailure(generation, `Failed to verify settings snapshot: ${error}`);
       }
     }
   }
@@ -181,14 +181,14 @@ Singleton {
 
     sourceComponent: FileView {
       property int generation: 0
-      path: root.settingsSnapshotFile
-      adapter: root.data
+      path: Settings.settingsSnapshotFile
+      adapter: Settings.data
       printErrors: false
       watchChanges: false
-      Component.onCompleted: generation = root.loadGeneration
-      onLoaded: root.handleHydrationLoaded(generation)
+      Component.onCompleted: generation = Settings.loadGeneration
+      onLoaded: Settings.handleHydrationLoaded(generation)
       onLoadFailed: function (error) {
-        root.handleBootstrapFailure(generation, `Failed to hydrate settings: ${error}`);
+        Settings.handleBootstrapFailure(generation, `Failed to hydrate settings: ${error}`);
       }
     }
   }
@@ -199,27 +199,27 @@ Singleton {
 
     sourceComponent: FileView {
       property int generation: 0
-      path: root.settingsFile
+      path: Settings.settingsFile
       preload: false
       blockLoading: true
       blockAllReads: true
       printErrors: false
       watchChanges: true
-      Component.onCompleted: generation = root.loadGeneration
+      Component.onCompleted: generation = Settings.loadGeneration
       onFileChanged: {
-        if (root.saveInProgress) {
-          root.watcherChangeQueued = true;
+        if (Settings.saveInProgress) {
+          Settings.watcherChangeQueued = true;
           return;
         }
         reload();
-        root.handleReadyFileLoaded(generation, text());
+        Settings.handleReadyFileLoaded(generation, text());
       }
       onLoadFailed: function (error) {
-        if (root.saveInProgress) {
-          root.watcherChangeQueued = true;
+        if (Settings.saveInProgress) {
+          Settings.watcherChangeQueued = true;
           return;
         }
-        root.handleBootstrapFailure(generation, `Failed to read changed settings: ${error}`);
+        Settings.handleBootstrapFailure(generation, `Failed to read changed settings: ${error}`);
       }
     }
   }
@@ -230,13 +230,13 @@ Singleton {
 
     sourceComponent: FileView {
       property int generation: 0
-      path: root.settingsFile
+      path: Settings.settingsFile
       printErrors: false
       watchChanges: false
-      Component.onCompleted: generation = root.loadGeneration
-      onLoaded: root.handleSaveVerificationLoaded(generation, text())
+      Component.onCompleted: generation = Settings.loadGeneration
+      onLoaded: Settings.handleSaveVerificationLoaded(generation, text())
       onLoadFailed: function (error) {
-        root.handleBootstrapFailure(generation, `Failed to verify settings save: ${error}`);
+        Settings.handleBootstrapFailure(generation, `Failed to verify settings save: ${error}`);
       }
     }
   }
@@ -247,16 +247,16 @@ Singleton {
 
     sourceComponent: FileView {
       property int generation: 0
-      path: root.settingsFile
-      adapter: root.data
+      path: Settings.settingsFile
+      adapter: Settings.data
       preload: false
       printErrors: false
       watchChanges: false
-      Component.onCompleted: generation = root.loadGeneration
+      Component.onCompleted: generation = Settings.loadGeneration
       onAdapterUpdated: saveTimer.start()
-      onSaved: root.handleSettingsSaved(generation, text())
+      onSaved: Settings.handleSettingsSaved(generation, text())
       onSaveFailed: function (error) {
-        root.handleBootstrapFailure(generation, `Failed to save settings: ${error}`);
+        Settings.handleBootstrapFailure(generation, `Failed to save settings: ${error}`);
       }
     }
   }
