@@ -18,21 +18,21 @@ Item {
 
   // Redraw when necessary - only if rendering is active
   onWidthChanged: if (renderingActive)
-                    canvas.requestPaint()
+    canvas.requestPaint()
   onHeightChanged: if (renderingActive)
-                     canvas.requestPaint()
+    canvas.requestPaint()
   onValuesChanged: if (renderingActive)
-                     canvas.requestPaint()
+    canvas.requestPaint()
   onFillColorChanged: if (renderingActive)
-                        canvas.requestPaint()
+    canvas.requestPaint()
   onStrokeColorChanged: if (renderingActive)
-                          canvas.requestPaint()
+    canvas.requestPaint()
   onShowMinimumSignalChanged: if (renderingActive)
-                                canvas.requestPaint()
+    canvas.requestPaint()
   onMinimumSignalValueChanged: if (renderingActive)
-                                 canvas.requestPaint()
+    canvas.requestPaint()
   onVerticalChanged: if (renderingActive)
-                       canvas.requestPaint()
+    canvas.requestPaint()
 
   // Clear canvas when not rendering
   onRenderingActiveChanged: {
@@ -40,8 +40,8 @@ Item {
       var ctx = canvas.getContext("2d");
       if (ctx)
         ctx.reset();
-      canvas.requestPaint();
     }
+    canvas.requestPaint();
   }
 
   Canvas {
@@ -55,12 +55,12 @@ Item {
       var ctx = getContext("2d");
       ctx.reset();
 
-      if (!values || !Array.isArray(values) || values.length === 0) {
+      if (!root.values || !Array.isArray(root.values) || root.values.length === 0) {
         return;
       }
 
       // Apply minimum signal if enabled
-      var processedValues = values.map(function (v) {
+      var processedValues = root.values.map(function (v) {
         return (root.showMinimumSignal && v === 0) ? root.minimumSignalValue : v;
       });
 

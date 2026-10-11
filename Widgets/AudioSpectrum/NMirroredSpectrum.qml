@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import qs.Commons
 
@@ -25,29 +27,32 @@ Item {
     model: root.totalBars
 
     Rectangle {
+      id: bar
+      required property int index
+      readonly property NMirroredSpectrum spectrum: root
       // The first half of bars are a mirror image (reversed values array).
       // The second half of bars are in normal order.
-      property int valueIndex: index < root.valuesCount ? root.valuesCount - 1 - index // Mirrored half
-                                                        : index - root.valuesCount // Normal half
+      property int valueIndex: bar.index < bar.spectrum.valuesCount ? bar.spectrum.valuesCount - 1 - bar.index // Mirrored half
+      : bar.index - bar.spectrum.valuesCount // Normal half
 
-      property real rawAmp: (root.values && root.values[valueIndex] !== undefined) ? root.values[valueIndex] : 0
-      property real amp: (root.showMinimumSignal && rawAmp === 0) ? root.minimumSignalValue : rawAmp
+      property real rawAmp: (bar.spectrum.values && bar.spectrum.values[bar.valueIndex] !== undefined) ? bar.spectrum.values[bar.valueIndex] : 0
+      property real amp: (bar.spectrum.showMinimumSignal && bar.rawAmp === 0) ? bar.spectrum.minimumSignalValue : bar.rawAmp
 
-      property real barSize: (vertical ? root.width : root.height) * amp
+      property real barSize: (bar.spectrum.vertical ? bar.spectrum.width : bar.spectrum.height) * bar.amp
 
-      color: root.fillColor
-      border.color: root.strokeColor
-      border.width: root.strokeWidth
-      antialiasing: root.highQuality
-      smooth: root.highQuality
+      color: bar.spectrum.fillColor
+      border.color: bar.spectrum.strokeColor
+      border.width: bar.spectrum.strokeWidth
+      antialiasing: bar.spectrum.highQuality
+      smooth: bar.spectrum.highQuality
 
-      width: vertical ? barSize : root.barSlotSize * 0.8
-      height: vertical ? root.barSlotSize * 0.8 : barSize
-      x: vertical ? root.centerX - (barSize / 2) : index * root.barSlotSize + (root.barSlotSize * 0.25)
-      y: vertical ? index * root.barSlotSize + (root.barSlotSize * 0.25) : root.centerY - (barSize / 2)
+      width: bar.spectrum.vertical ? bar.barSize : bar.spectrum.barSlotSize * 0.8
+      height: bar.spectrum.vertical ? bar.spectrum.barSlotSize * 0.8 : bar.barSize
+      x: bar.spectrum.vertical ? bar.spectrum.centerX - (bar.barSize / 2) : bar.index * bar.spectrum.barSlotSize + (bar.spectrum.barSlotSize * 0.25)
+      y: bar.spectrum.vertical ? bar.index * bar.spectrum.barSlotSize + (bar.spectrum.barSlotSize * 0.25) : bar.spectrum.centerY - (bar.barSize / 2)
 
       // Disable updates when invisible to save GPU
-      visible: root.visible
+      visible: bar.spectrum.visible
     }
   }
 }
