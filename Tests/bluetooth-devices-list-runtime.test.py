@@ -4,11 +4,17 @@
 Presentation/service fixtures isolate bootstrap; Qt's layouts, Repeater and
 Quickshell's BluetoothDevice type remain real. Null device slots exercise the
 production delegate's null handling without contacting Bluetooth hardware.
+Concrete devices redirect only the Bluetooth import to an inert QML module:
+real device objects are uncreatable and obtaining them would require a BlueZ bus.
+Both modes retain the production component body; null slots use the installed type.
 """
 
+import argparse
 import hashlib
+import importlib.util
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -63,6 +69,86 @@ ShellRoot {
 }
 """
 
+DEVICE_HARNESS = """import QtQuick
+import Quickshell
+import Quickshell.Bluetooth
+import qs.Modules.Panels.Bluetooth
+import qs.Services.Networking
+
+ShellRoot {
+  BluetoothDevice { id: headphones; name: "Studio Headphones"; paired: true; connected: true; state: BluetoothDeviceState.Connected; batteryAvailable: true; battery: 0.75 }
+  BluetoothDevice { id: keyboard; name: "Desk Keyboard"; paired: true }
+  BluetoothDevice { id: phone; name: "Pocket Phone" }
+  property var callerModel: [headphones, keyboard, phone]
+  BluetoothDevicesList { id: supplied; model: callerModel; tooltipText: "Device action" }
+
+  function require(condition, message) {
+    if (!condition) throw new Error(message);
+  }
+
+  function rowAt(index) {
+    const column = supplied.children[0];
+    const repeater = column.children[column.children.length - 1];
+    require(repeater.count === callerModel.length, "wrong row count after replacement");
+    return repeater.itemAt(index);
+  }
+
+  function assertRow(index, expected, label) {
+    const row = rowAt(index);
+    const layout = row.children[0];
+    const name = layout.children[1].children[0];
+    const button = layout.children[3];
+    require(row.modelData === expected, "wrong device at row " + index);
+    require(name.text === expected.name, "wrong visible device name");
+    require(button.text === "bluetooth.panel." + label, "wrong action label");
+    require(button.enabled && button.visible, "idle device action unavailable");
+    require(button.tooltipText === supplied.tooltipText, "owner tooltip lost");
+    return button;
+  }
+
+  function assertRequest(index, action, expected) {
+    const request = BluetoothService.requests[index];
+    require(request.action === action && request.device === expected, "action targeted wrong device");
+  }
+
+  Timer {
+    interval: 100
+    running: true
+    onTriggered: {
+      try {
+        const disconnect = assertRow(0, headphones, "disconnect");
+        disconnect.clicked();
+        assertRequest(0, "disconnect", headphones);
+        assertRow(1, keyboard, "connect").clicked();
+        assertRequest(1, "connect", keyboard);
+        assertRow(2, phone, "connect").rightClicked();
+        assertRequest(2, "forget", phone);
+        callerModel = [phone, headphones, keyboard];
+        supplied.tooltipText = "Reordered device action";
+        assertRow(0, phone, "connect").clicked();
+        assertRequest(3, "connect", phone);
+        assertRow(1, headphones, "disconnect").rightClicked();
+        assertRequest(4, "forget", headphones);
+        assertRow(2, keyboard, "connect");
+        keyboard.connected = true;
+        keyboard.state = BluetoothDeviceState.Connected;
+        assertRow(2, keyboard, "disconnect").clicked();
+        assertRequest(5, "disconnect", keyboard);
+        require(BluetoothService.requests.length === 6, "unexpected action dispatch");
+        callerModel = [];
+        const column = supplied.children[0];
+        require(column.children[column.children.length - 1].count === 0, "rows survived model clear");
+        console.log("BLUETOOTH_DEVICES_LIST_PASS");
+        Qt.quit();
+      } catch (error) {
+        console.error("BLUETOOTH_DEVICES_LIST_FAIL: " + error.message);
+        Qt.exit(1);
+      }
+    }
+  }
+}
+"""
+
 WIDGETS = {
     "NBox": "import QtQuick\nRectangle {}\n",
     "NText": "import QtQuick\nText { property real pointSize: 12; font.pointSize: pointSize }\n",
@@ -90,7 +176,7 @@ def write_singleton(directory, name, body):
     )
 
 
-def stage_list(directory):
+def stage_list(directory, concrete=False):
     commons = directory / "Commons"
     widgets = directory / "Widgets"
     bluetooth = directory / "Modules/Panels/Bluetooth"
@@ -141,8 +227,12 @@ def stage_list(directory):
         networking,
         "BluetoothService",
         """  readonly property var adapter: ({enabled: true})
-  function canConnect(device) { return false; }
-  function canDisconnect(device) { return false; }
+  property var requests: []
+  function canConnect(device) { return device !== null && !device.connected; }
+  function canDisconnect(device) { return device !== null && device.connected; }
+  function connectDeviceWithTrust(device) { requests = requests.concat([{action: "connect", device: device}]); }
+  function disconnectDevice(device) { requests = requests.concat([{action: "disconnect", device: device}]); }
+  function forgetDevice(device) { requests = requests.concat([{action: "forget", device: device}]); }
   function isDeviceBusy(device) { return false; }
   function getDeviceIcon(device) { return "bluetooth"; }
   function getStatusString(device) { return ""; }
@@ -150,7 +240,45 @@ def stage_list(directory):
   function getSignalIcon(device) { return ""; }
   function getBattery(device) { return ""; }""",
     )
-    (directory / "shell.qml").write_text(HARNESS)
+    if concrete:
+        staged = bluetooth / TARGET.name
+        staged.write_text(
+            staged.read_text().replace(
+                "import Quickshell.Bluetooth", "import TestBluetooth"
+            )
+        )
+        module = directory / "imports/TestBluetooth"
+        module.mkdir(parents=True)
+        (module / "qmldir").write_text(
+            "module TestBluetooth\nBluetoothDevice 1.0 BluetoothDevice.qml\n"
+            "singleton BluetoothDeviceState 1.0 BluetoothDeviceState.qml\n"
+        )
+        (module / "BluetoothDevice.qml").write_text("""import QtQuick
+QtObject {
+  property string name: ""
+  property string deviceName: ""
+  property bool pairing: false
+  property bool blocked: false
+  property bool paired: false
+  property bool connected: false
+  property int state: 0
+  property bool batteryAvailable: false
+  property real battery: 0
+}
+""")
+        write_singleton(
+            module,
+            "BluetoothDeviceState",
+            """enum Enum {
+    Disconnected, Connected, Disconnecting, Connecting
+  }""",
+        )
+    harness = (
+        DEVICE_HARNESS.replace("import Quickshell.Bluetooth", "import TestBluetooth")
+        if concrete
+        else HARNESS
+    )
+    (directory / "shell.qml").write_text(harness)
 
 
 def isolate_environment(directory):
@@ -188,7 +316,42 @@ def isolate_environment(directory):
     return environment
 
 
+def lint(directory):
+    spec = importlib.util.spec_from_file_location(
+        "bluetooth_lint_staging", ROOT / "Tests/media-mini-warnings.test.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.stage_modules(directory)
+    target = directory / "qs" / TARGET.relative_to(ROOT)
+    result = subprocess.run(
+        ["/usr/lib/qt6/bin/qmllint", "-I", str(directory), str(target)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    output = result.stdout + result.stderr
+    print(output, end="")
+    diagnostics = re.findall(r"^Warning:.*\[([^]]+)\]$", output, re.M)
+    print("BLUETOOTH_LIST_LINT_DIAGNOSTICS", diagnostics)
+    # Keep installed API gaps visible; no warning options or suppression applied.
+    assert sorted(diagnostics) == [
+        "missing-property",
+        "missing-property",
+        "unresolved-type",
+    ], diagnostics
+    assert output.count('Member "signalStrength" not found') == 2, output
+    assert 'Type "BluetoothDeviceState::Enum"' in output, output
+    assert result.returncode == 0, result.returncode
+
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "mode", choices=("runtime", "devices", "lint"), nargs="?", default="runtime"
+    )
+    args = parser.parse_args()
     settings = Path.home() / ".config/noctalia/settings.json"
     original = settings.read_bytes() if settings.exists() else None
     with tempfile.TemporaryDirectory(prefix="noctalia-bluetooth-list-") as temporary:
@@ -201,11 +364,21 @@ def main():
                 hashlib.sha256(backup.read_bytes()).digest()
                 == hashlib.sha256(original).digest()
             )
-        stage_list(directory)
+        if args.mode == "lint":
+            try:
+                lint(directory)
+            finally:
+                if original is not None:
+                    assert settings.read_bytes() == original, "real settings changed"
+            return
+        stage_list(directory, concrete=args.mode == "devices")
+        environment = isolate_environment(directory)
+        if args.mode == "devices":
+            environment["QML_IMPORT_PATH"] = str(directory / "imports")
         try:
             result = subprocess.run(
                 ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
-                env=isolate_environment(directory),
+                env=environment,
                 capture_output=True,
                 text=True,
                 timeout=15,

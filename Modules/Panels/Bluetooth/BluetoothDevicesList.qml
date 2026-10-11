@@ -1,9 +1,6 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
-import Quickshell
 import Quickshell.Bluetooth
-import Quickshell.Wayland
 import qs.Commons
 import qs.Services.Networking
 import qs.Widgets
@@ -46,6 +43,7 @@ NBox {
 
         required property BluetoothDevice modelData
         required property int index
+        property alias listTooltipText: root.tooltipText
 
         readonly property bool devicePairing: modelData ? modelData.pairing === true : false
         readonly property bool deviceBlocked: modelData ? modelData.blocked === true : false
@@ -84,9 +82,9 @@ NBox {
 
           // One device BT icon
           NIcon {
-            icon: BluetoothService.getDeviceIcon(modelData)
+            icon: BluetoothService.getDeviceIcon(device.modelData)
             pointSize: Style.fontSizeXXL
-            color: getContentColor(NColor.mOnSurface)
+            color: device.getContentColor(NColor.mOnSurface)
             Layout.alignment: Qt.AlignVCenter
           }
 
@@ -96,56 +94,56 @@ NBox {
 
             // Device name
             NText {
-              text: deviceDisplayName
+              text: device.deviceDisplayName
               pointSize: Style.fontSizeM
-              font.weight: deviceConnected ? Style.fontWeightBold : Style.fontWeightMedium
+              font.weight: device.deviceConnected ? Style.fontWeightBold : Style.fontWeightMedium
               elide: Text.ElideRight
-              color: getContentColor(NColor.mOnSurface)
+              color: device.getContentColor(NColor.mOnSurface)
               Layout.fillWidth: true
             }
 
             // Status
             NText {
-              text: BluetoothService.getStatusString(modelData)
+              text: BluetoothService.getStatusString(device.modelData)
               visible: text !== ""
               pointSize: Style.fontSizeXS
-              color: getContentColor(NColor.mOnSurfaceVariant)
+              color: device.getContentColor(NColor.mOnSurfaceVariant)
             }
 
             // Signal Strength
             RowLayout {
-              visible: hasSignalStrength
+              visible: device.hasSignalStrength
               Layout.fillWidth: true
               spacing: Style.marginXS
 
               // Device signal strength - "Unknown" when not connected
               NText {
-                text: BluetoothService.getSignalStrength(modelData)
+                text: BluetoothService.getSignalStrength(device.modelData)
                 pointSize: Style.fontSizeXS
-                color: getContentColor(NColor.mOnSurfaceVariant)
+                color: device.getContentColor(NColor.mOnSurfaceVariant)
               }
 
               NIcon {
-                visible: showSignalStrength
-                icon: BluetoothService.getSignalIcon(modelData)
+                visible: device.showSignalStrength
+                icon: BluetoothService.getSignalIcon(device.modelData)
                 pointSize: Style.fontSizeXS
-                color: getContentColor(NColor.mOnSurface)
+                color: device.getContentColor(NColor.mOnSurface)
               }
 
               NText {
-                visible: showSignalStrength
-                text: showSignalStrength ? deviceSignalStrength + "%" : ""
+                visible: device.showSignalStrength
+                text: device.showSignalStrength ? device.deviceSignalStrength + "%" : ""
                 pointSize: Style.fontSizeXS
-                color: getContentColor(NColor.mOnSurface)
+                color: device.getContentColor(NColor.mOnSurface)
               }
             }
 
             // Battery
             NText {
-              visible: hasBattery
-              text: BluetoothService.getBattery(modelData)
+              visible: device.hasBattery
+              text: BluetoothService.getBattery(device.modelData)
               pointSize: Style.fontSizeXS
-              color: getContentColor(NColor.mOnSurfaceVariant)
+              color: device.getContentColor(NColor.mOnSurfaceVariant)
             }
           }
 
@@ -157,40 +155,40 @@ NBox {
           // Call to action
           NButton {
             id: button
-            visible: !deviceConnecting
-            enabled: (canConnect || canDisconnect) && !isBusy
+            visible: !device.deviceConnecting
+            enabled: (device.canConnect || device.canDisconnect) && !device.isBusy
             outlined: !button.hovered
             fontSize: Style.fontSizeXS
             fontWeight: Style.fontWeightMedium
             backgroundColor: {
-              if (device.canDisconnect && !isBusy) {
+              if (device.canDisconnect && !device.isBusy) {
                 return NColor.mError;
               }
               return NColor.mPrimary;
             }
-            tooltipText: root.tooltipText
+            tooltipText: device.listTooltipText
             text: {
-              if (devicePairing) {
+              if (device.devicePairing) {
                 return I18n.tr("bluetooth.panel.pairing");
               }
-              if (deviceBlocked) {
+              if (device.deviceBlocked) {
                 return I18n.tr("bluetooth.panel.blocked");
               }
-              if (deviceConnected) {
+              if (device.deviceConnected) {
                 return I18n.tr("bluetooth.panel.disconnect");
               }
               return I18n.tr("bluetooth.panel.connect");
             }
-            icon: (isBusy ? "busy" : null)
+            icon: (device.isBusy ? "busy" : null)
             onClicked: {
-              if (deviceConnected) {
-                BluetoothService.disconnectDevice(modelData);
+              if (device.deviceConnected) {
+                BluetoothService.disconnectDevice(device.modelData);
               } else {
-                BluetoothService.connectDeviceWithTrust(modelData);
+                BluetoothService.connectDeviceWithTrust(device.modelData);
               }
             }
             onRightClicked: {
-              BluetoothService.forgetDevice(modelData);
+              BluetoothService.forgetDevice(device.modelData);
             }
           }
         }
