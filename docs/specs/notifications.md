@@ -65,6 +65,19 @@ This is isolated component coverage, not production service expiry/deduplication
 
 Targeted static analysis after `c8a930bac` and harness timing correction `58a71a208` is **42→10 warnings**: six `unqualified` and four `missing-property` diagnostics remain. Standalone lint accepts exactly these counts and exit status zero, not warning-free analysis.
 
+### Isolated history panel coverage
+
+After `98d946beb`, targeted NotificationHistoryPanel static analysis is **30→0 warnings**; standalone lint requires no warnings and exit status zero, not project-wide warning-free acceptance.
+
+`Tests/notification-history-warnings.test.py runtime` instantiates production `NotificationHistoryPanel.qml` under offscreen `qmltestrunner`. Two behavioral cases plus QtTest initialization/cleanup yield four reported cases:
+
+- Preserve newest-first fixture order; bind notification ids, app/summary/body and cached-image paths; reflect summary role updates.
+- Switch all/today/yesterday/older tabs, assert counts and active state, and hide excluded rows with zero height.
+- Forward open/read-state and DND callbacks; dismiss the selected id, update remaining order/counts, clear history, show empty state, and count close callbacks.
+- Repopulate after clear; destroy the panel, mutate the model after disposal, and recreate it in the next case.
+
+The history ListModel and Qt Repeaters/layout are real; NotificationService, SmartPanel, settings, and display/button/image controls are fixtures. Actions invoke signals directly; this does not prove real persistence, production service integration, SmartPanel lifecycle, full widget/image rendering, desktop input, toast behavior, or whole-shell acceptance. Post-disposal mutation is bounded teardown coverage, not proof of all live-shell connection lifetimes. Firefox/grouped-taskbar cursor flicker remains unproven and unfixed.
+
 ## How it works
 
 - [docs/wiki/systems/notifications.md](../wiki/systems/notifications.md)
@@ -82,6 +95,7 @@ Targeted static analysis after `c8a930bac` and harness timing correction `58a71a
 ## Tests asserting this spec
 
 - `Tests/notification-warnings.test.py` (`lint` and `behavior`, standalone).
+- `Tests/notification-history-warnings.test.py` (`lint` and `runtime`, standalone).
 - `Tests/notification-service-gap-guards.test.js`
 - `Tests/shell-state-consumer-roundtrip.test.js`
 - `Tests/notification-history-panel-guards.test.js`
