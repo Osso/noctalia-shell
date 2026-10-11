@@ -387,7 +387,7 @@ Item {
     // Returns all settings and shell state as JSON
     function all(): string {
       try {
-        var snapshot = ShellState.buildStateSnapshot();
+        const snapshot = ShellState.buildStateSnapshot();
         if (!snapshot) {
           throw new Error("State snapshot unavailable");
         }
@@ -439,7 +439,7 @@ Item {
         if (!Settings.data.general.allowPanelsOnScreenWithoutBar) {
           // If we explicitely disabled panels on screen without bar, check if bar is configured
           // for this screen, and fallback to primary screen if necessary
-          var monitors = Settings.data.bar.monitors || [];
+          const monitors = Settings.data.bar.monitors || [];
           const hasBar = monitors.length === 0 || (detectedScreen && monitors.includes(detectedScreen.name));
           if (!hasBar) {
             detectedScreen = Quickshell.screens[0];

@@ -137,7 +137,38 @@ function testChangeTimeoutExecutesStateTransitions() {
   assert.equal(ctx.timeout, 25);
 }
 
+function testDetectStrategyExecutesProbeBranches() {
+  const detectStrategy = qmlFunction("detectStrategy");
+  for (const failures of [0, 1, 2]) {
+    const probes = [];
+    const warnings = [];
+    const ctx = {
+      strategy: "auto",
+      Quickshell: {
+        execDetached(command) {
+          probes.push(command);
+          if (probes.length <= failures) throw new Error("probe unavailable");
+          return undefined;
+        },
+      },
+      Logger: { d() {}, w(...args) { warnings.push(args); } },
+    };
+    detectStrategy(ctx);
+    assert.deepEqual(probes, failures === 0
+      ? [["which", "systemd-inhibit"]]
+      : [["which", "systemd-inhibit"], ["which", "wayhibitor"]]);
+    assert.equal(ctx.strategy, failures === 1 ? "wayland" : "systemd");
+    assert.equal(warnings.length, failures === 2 ? 1 : 0);
+  }
+  for (const strategy of ["systemd", "wayland"]) {
+    const ctx = { strategy };
+    detectStrategy(ctx);
+    assert.equal(ctx.strategy, strategy);
+  }
+}
+
 const tests = [
+  testDetectStrategyExecutesProbeBranches,
   testIdleInhibitorInitializationAndStrategyDetection,
   testIdleInhibitorRegistryAndStateTransitions,
   testIdleInhibitorScalarInputsAreTyped,

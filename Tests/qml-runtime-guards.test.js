@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const assert = require("assert/strict");
-const { extractFunctionBody, extractIpcHandlerBlock, readQml } = require("./qml-test-utils");
+const { extractFunctionBody, extractHandlerBlock, extractIpcHandlerBlock, readQml } = require("./qml-test-utils");
 
 function testOsdBrightnessHandlerRejectsInvalidValues() {
   const source = readQml("Modules/OSD/OSD.qml");
@@ -411,7 +411,69 @@ function testOsdDisconnectsBrightnessMonitorsOnDestruction() {
   assert.match(source, /Component\.onDestruction:\s*disconnectBrightnessMonitors\(\)/, "OSD must disconnect brightness monitors when its delegate is destroyed");
 }
 
+function testIpcStateSerializationExecutesSuccessAndFailures() {
+  const source = readQml("Services/Control/IPCService.qml");
+  const body = extractFunctionBody(extractIpcHandlerBlock(source, "state"), "all");
+  const serialize = new Function("ctx", `with (ctx) ${body}`);
+  const snapshot = { screens: ["primary"], inhibited: false };
+  const errors = [];
+  const ctx = {
+    ShellState: { buildStateSnapshot() { return snapshot; } },
+    Logger: { e(...args) { errors.push(args); } },
+  };
+  assert.equal(serialize(ctx), JSON.stringify(snapshot, null, 2));
+  assert.deepEqual(errors, []);
+  ctx.ShellState.buildStateSnapshot = () => null;
+  assert.deepEqual(JSON.parse(serialize(ctx)), {
+    error: "Failed to serialize state: Error: State snapshot unavailable",
+  });
+  const circular = {};
+  circular.self = circular;
+  ctx.ShellState.buildStateSnapshot = () => circular;
+  assert.match(JSON.parse(serialize(ctx)).error, /^Failed to serialize state: TypeError:/);
+  ctx.ShellState.buildStateSnapshot = () => { throw new Error("snapshot failed"); };
+  assert.deepEqual(JSON.parse(serialize(ctx)), {
+    error: "Failed to serialize state: Error: snapshot failed",
+  });
+  assert.equal(errors.length, 3);
+}
+
+function testIpcScreenDebounceExecutesBarPolicyAndCleanup() {
+  const source = readQml("Services/Control/IPCService.qml");
+  const handler = extractHandlerBlock(source, "onTriggered");
+  const debounce = new Function("ctx", `with (ctx) ${handler.slice(handler.indexOf("{"))}`);
+  const primary = { name: "primary" };
+  const secondary = { name: "secondary" };
+  for (const [allow, monitors, expected] of [
+    [true, ["primary"], secondary],
+    [false, ["primary"], primary],
+    [false, ["secondary"], secondary],
+    [false, [], secondary],
+    [false, undefined, secondary],
+  ]) {
+    const called = [];
+    const ctx = {
+      detectedScreen: secondary,
+      pendingCallback(screen) { called.push(screen); },
+      Settings: { data: { general: { allowPanelsOnScreenWithoutBar: allow }, bar: { monitors } } },
+      Quickshell: { screens: [primary, secondary] },
+      Logger: { d() {} },
+      screenDetectorLoader: { active: true },
+    };
+    debounce(ctx);
+    assert.deepEqual(called, [expected]);
+    assert.equal(ctx.pendingCallback, null);
+    assert.equal(ctx.screenDetectorLoader.active, false);
+    ctx.screenDetectorLoader.active = true;
+    debounce(ctx);
+    assert.deepEqual(called, [expected]);
+    assert.equal(ctx.screenDetectorLoader.active, false);
+  }
+}
+
 const tests = [
+  testIpcStateSerializationExecutesSuccessAndFailures,
+  testIpcScreenDebounceExecutesBarPolicyAndCleanup,
   testOsdBrightnessHandlerRejectsInvalidValues,
   testOsdShowRequiresScreenBeforeActivatingLoader,
   testTaskbarGroupedUrgentBadgeHasCooldown,
