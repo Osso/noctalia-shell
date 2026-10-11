@@ -21,7 +21,7 @@ SmartPanel {
 
   Component.onCompleted: {
     if (AudioService.sink) {
-      lastSinkId = AudioService.sink.id;
+      root.lastSinkId = AudioService.sink.id;
     }
   }
 
@@ -34,14 +34,14 @@ SmartPanel {
     function onSinkChanged() {
       if (AudioService.sink) {
         const newSinkId = AudioService.sink.id;
-        if (newSinkId !== lastSinkId) {
-          lastSinkId = newSinkId;
+        if (newSinkId !== root.lastSinkId) {
+          root.lastSinkId = newSinkId;
           // Immediately set local volume to current device's volume
-          localOutputVolume = AudioService.volume;
+          root.localOutputVolume = AudioService.volume;
         }
       } else {
-        lastSinkId = -1;
-        localOutputVolume = 0;
+        root.lastSinkId = -1;
+        root.localOutputVolume = 0;
       }
     }
   }
@@ -51,14 +51,14 @@ SmartPanel {
     function onSourceChanged() {
       if (AudioService.source) {
         const newSourceId = AudioService.source.id;
-        if (newSourceId !== lastSourceId) {
-          lastSourceId = newSourceId;
+        if (newSourceId !== root.lastSourceId) {
+          root.lastSourceId = newSourceId;
           // Immediately set local volume to current device's volume
-          localInputVolume = AudioService.inputVolume;
+          root.localInputVolume = AudioService.inputVolume;
         }
       } else {
-        lastSourceId = -1;
-        localInputVolume = 0;
+        root.lastSourceId = -1;
+        root.localInputVolume = 0;
       }
     }
   }
@@ -67,8 +67,8 @@ SmartPanel {
   Connections {
     target: AudioService
     function onVolumeChanged() {
-      if (!localOutputVolumeChanging && AudioService.sink && AudioService.sink.id === lastSinkId) {
-        localOutputVolume = AudioService.volume;
+      if (!root.localOutputVolumeChanging && AudioService.sink && AudioService.sink.id === root.lastSinkId) {
+        root.localOutputVolume = AudioService.volume;
       }
     }
   }
@@ -76,8 +76,8 @@ SmartPanel {
   Connections {
     target: AudioService.sink && AudioService.sink.audio ? AudioService.sink.audio : null
     function onVolumeChanged() {
-      if (!localOutputVolumeChanging && AudioService.sink && AudioService.sink.id === lastSinkId) {
-        localOutputVolume = AudioService.volume;
+      if (!root.localOutputVolumeChanging && AudioService.sink && AudioService.sink.id === root.lastSinkId) {
+        root.localOutputVolume = AudioService.volume;
       }
     }
   }
@@ -85,8 +85,8 @@ SmartPanel {
   Connections {
     target: AudioService
     function onInputVolumeChanged() {
-      if (!localInputVolumeChanging && AudioService.source && AudioService.source.id === lastSourceId) {
-        localInputVolume = AudioService.inputVolume;
+      if (!root.localInputVolumeChanging && AudioService.source && AudioService.source.id === root.lastSourceId) {
+        root.localInputVolume = AudioService.inputVolume;
       }
     }
   }
@@ -94,8 +94,8 @@ SmartPanel {
   Connections {
     target: AudioService.source && AudioService.source.audio ? AudioService.source.audio : null
     function onVolumeChanged() {
-      if (!localInputVolumeChanging && AudioService.source && AudioService.source.id === lastSourceId) {
-        localInputVolume = AudioService.inputVolume;
+      if (!root.localInputVolumeChanging && AudioService.source && AudioService.source.id === root.lastSourceId) {
+        root.localInputVolume = AudioService.inputVolume;
       }
     }
   }
@@ -105,7 +105,7 @@ SmartPanel {
     interval: 100
     running: false
     repeat: false
-    onTriggered: syncPendingVolumeChanges()
+    onTriggered: root.syncPendingVolumeChanges()
   }
 
   function scheduleVolumeSync() {
@@ -113,15 +113,15 @@ SmartPanel {
   }
 
   function syncPendingVolumeChanges() {
-    if (AudioService.sink && AudioService.sink.id === lastSinkId) {
-      if (Math.abs(localOutputVolume - AudioService.volume) >= 0.01) {
-        AudioService.setVolume(localOutputVolume);
+    if (AudioService.sink && AudioService.sink.id === root.lastSinkId) {
+      if (Math.abs(root.localOutputVolume - AudioService.volume) >= 0.01) {
+        AudioService.setVolume(root.localOutputVolume);
       }
     }
 
-    if (AudioService.source && AudioService.source.id === lastSourceId) {
-      if (Math.abs(localInputVolume - AudioService.inputVolume) >= 0.01) {
-        AudioService.setInputVolume(localInputVolume);
+    if (AudioService.source && AudioService.source.id === root.lastSourceId) {
+      if (Math.abs(root.localInputVolume - AudioService.inputVolume) >= 0.01) {
+        AudioService.setInputVolume(root.localInputVolume);
       }
     }
   }
@@ -235,20 +235,20 @@ SmartPanel {
                 Layout.fillWidth: true
                 from: 0
                 to: Settings.data.audio.volumeOverdrive ? 1.5 : 1.0
-                value: localOutputVolume
+                value: root.localOutputVolume
                 stepSize: 0.01
                 heightRatio: 0.5
                 onMoved: value => {
-                           localOutputVolume = value;
-                           scheduleVolumeSync();
-                         }
+                  root.localOutputVolume = value;
+                  root.scheduleVolumeSync();
+                }
                 onPressedChanged: (pressed, value) => {
-                                    localOutputVolumeChanging = pressed;
-                                    if (!pressed) {
-                                      scheduleVolumeSync();
-                                    }
-                                  }
-                text: Math.round(localOutputVolume * 100) + "%"
+                  root.localOutputVolumeChanging = pressed;
+                  if (!pressed) {
+                    root.scheduleVolumeSync();
+                  }
+                }
+                text: Math.round(root.localOutputVolume * 100) + "%"
                 Layout.bottomMargin: Style.marginM
               }
 
@@ -267,7 +267,7 @@ SmartPanel {
                   checked: AudioService.sink ? String(AudioService.sink.id) === deviceId : false
                   onClicked: {
                     AudioService.setAudioSink(modelData);
-                    localOutputVolume = AudioService.volume;
+                    root.localOutputVolume = AudioService.volume;
                   }
                   Layout.fillWidth: true
                 }
@@ -305,20 +305,20 @@ SmartPanel {
                 Layout.fillWidth: true
                 from: 0
                 to: Settings.data.audio.volumeOverdrive ? 1.5 : 1.0
-                value: localInputVolume
+                value: root.localInputVolume
                 stepSize: 0.01
                 heightRatio: 0.5
                 onMoved: value => {
-                           localInputVolume = value;
-                           scheduleVolumeSync();
-                         }
+                  root.localInputVolume = value;
+                  root.scheduleVolumeSync();
+                }
                 onPressedChanged: (pressed, value) => {
-                                    localInputVolumeChanging = pressed;
-                                    if (!pressed) {
-                                      scheduleVolumeSync();
-                                    }
-                                  }
-                text: Math.round(localInputVolume * 100) + "%"
+                  root.localInputVolumeChanging = pressed;
+                  if (!pressed) {
+                    root.scheduleVolumeSync();
+                  }
+                }
+                text: Math.round(root.localInputVolume * 100) + "%"
                 Layout.bottomMargin: Style.marginM
               }
 

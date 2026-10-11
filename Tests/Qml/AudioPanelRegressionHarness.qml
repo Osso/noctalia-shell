@@ -88,23 +88,19 @@ ShellRoot {
     const liveVolume = AudioService.volume;
     const staleVolume = liveVolume < 0.5 ? 0.9 : 0.1;
     panel.localOutputVolume = staleVolume;
-    verify(approximatelyEqual(panel.localOutputVolume, staleVolume),
-           "setup could not assign a guaranteed-different stale panel volume");
+    verify(approximatelyEqual(panel.localOutputVolume, staleVolume), "setup could not assign a guaranteed-different stale panel volume");
 
     const sinkVolumeConnection = findSinkVolumeConnection(panel);
-    verify(sinkVolumeConnection !== null,
-           "setup could not find the production sink-audio volume connection");
+    verify(sinkVolumeConnection !== null, "setup could not find the production sink-audio volume connection");
     if (sinkVolumeConnection) {
       sinkVolumeConnection.onVolumeChanged();
-      verify(approximatelyEqual(panel.localOutputVolume, liveVolume),
-             `stale output volume remained ${panel.localOutputVolume}; expected live service value ${liveVolume}`);
+      verify(approximatelyEqual(panel.localOutputVolume, liveVolume), `stale output volume remained ${panel.localOutputVolume}; expected live service value ${liveVolume}`);
     }
   }
 
   function verifyActiveOutputSelector() {
     const outputRadio = findActiveOutputRadio(panel);
-    verify(outputRadio !== null,
-           `output radio for active sink ${AudioService.sink.description} (${AudioService.sink.id}) was not created`);
+    verify(outputRadio !== null, `output radio for active sink ${AudioService.sink.description} (${AudioService.sink.id}) was not created`);
     if (!outputRadio) {
       return;
     }
@@ -113,17 +109,54 @@ ShellRoot {
     verify(indicator !== null, "active output radio has no indicator item");
     if (indicator) {
       verify(indicator.visible, "active output radio indicator is not visible");
-      verify(indicator.width > 0 && indicator.height > 0,
-             `active output radio indicator has invalid geometry ${indicator.width}x${indicator.height}`);
+      verify(indicator.width > 0 && indicator.height > 0, `active output radio indicator has invalid geometry ${indicator.width}x${indicator.height}`);
     }
-    verify(outputRadio.checked,
-           `active output radio is unchecked: sink id ${AudioService.sink.id}, delegate id ${outputRadio.deviceId}`);
+    verify(outputRadio.checked, `active output radio is unchecked: sink id ${AudioService.sink.id}, delegate id ${outputRadio.deviceId}`);
+  }
+
+  function collectVolumeSliders(item, sliders) {
+    if (!item) {
+      return;
+    }
+    if (item.textSize !== undefined && typeof item.moved === "function" && typeof item.pressedChanged === "function") {
+      sliders.push(item);
+    }
+    const children = item.children || [];
+    for (let index = 0; index < children.length; index++) {
+      collectVolumeSliders(children[index], sliders);
+    }
+  }
+
+  function verifyVolumeDrag() {
+    const sliders = [];
+    collectVolumeSliders(panel, sliders);
+    verify(sliders.length === 2, `expected output/input sliders, found ${sliders.length}`);
+    if (sliders.length !== 2) {
+      finish();
+      return;
+    }
+
+    // Invalidate both device guards before scheduling: never write host audio.
+    panel.lastSinkId = -1;
+    panel.lastSourceId = -1;
+    sliders[0].pressedChanged(true, sliders[0].value);
+    sliders[1].pressedChanged(true, sliders[1].value);
+    verify(panel.localOutputVolumeChanging && panel.localInputVolumeChanging, "slider presses did not set panel drag state");
+    sliders[0].moved(0.37);
+    sliders[1].moved(0.63);
+    verify(approximatelyEqual(panel.localOutputVolume, 0.37), "output drag lost its local volume");
+    verify(approximatelyEqual(panel.localInputVolume, 0.63), "input drag lost its local volume");
+    verify(sliders[0].text === "37%" && sliders[1].text === "63%", "drag percentage labels are stale");
+    sliders[0].pressedChanged(false, sliders[0].value);
+    sliders[1].pressedChanged(false, sliders[1].value);
+    verify(!panel.localOutputVolumeChanging && !panel.localInputVolumeChanging, "slider releases did not clear panel drag state");
+    dragSyncTimer.start();
   }
 
   function verifyPanelState() {
     verifyLiveVolumeSync();
     verifyActiveOutputSelector();
-    finish();
+    verifyVolumeDrag();
   }
 
   function createPanelAfterStableSink() {
@@ -203,6 +236,16 @@ ShellRoot {
     interval: 50
     repeat: true
     onTriggered: waitForPanelContent()
+  }
+
+  Timer {
+    id: dragSyncTimer
+    interval: 250
+    onTriggered: {
+      verify(approximatelyEqual(panel.localOutputVolume, 0.37), "guarded output debounce lost drag value");
+      verify(approximatelyEqual(panel.localInputVolume, 0.63), "guarded input debounce lost drag value");
+      finish();
+    }
   }
 
   Timer {
