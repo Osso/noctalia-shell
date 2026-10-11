@@ -13,7 +13,7 @@ NBox {
 
   property string label: ""
   property string tooltipText: ""
-  property var model: {}
+  property var model: []
 
   Layout.fillWidth: true
   Layout.preferredHeight: column.implicitHeight + Style.marginM * 2
