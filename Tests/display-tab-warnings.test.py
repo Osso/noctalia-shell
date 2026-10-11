@@ -97,27 +97,20 @@ QtObject {
         "qs.Services.Hardware",
         {
             "BrightnessService": singleton("""
-  property QtObject laptop: QtObject {
+  component Monitor: QtObject {
     property real brightness: 0.4
     property bool brightnessControlAvailable: true
     property string method: 'internal'
     property var writes: []
-    function setBrightness(value) { brightness = value; writes = writes.concat([value]); }
+    function setBrightness(value) {
+      if (!brightnessControlAvailable) throw new Error('Unavailable brightness write');
+      brightness = value;
+      writes = writes.concat([value]);
+    }
   }
-  property QtObject external: QtObject {
-    property real brightness: 0.7
-    property bool brightnessControlAvailable: true
-    property string method: 'ddc'
-    property var writes: []
-    function setBrightness(value) { brightness = value; writes = writes.concat([value]); }
-  }
-  property QtObject unavailable: QtObject {
-    property real brightness: 0.6
-    property bool brightnessControlAvailable: false
-    property string method: 'ddc'
-    property var writes: []
-    function setBrightness(value) { throw new Error('Unavailable brightness write'); }
-  }
+  property Monitor laptop: Monitor {}
+  property Monitor external: Monitor { brightness: 0.7; method: 'ddcutil' }
+  property Monitor unavailable: Monitor { brightness: 0.6; brightnessControlAvailable: false; method: 'ddcutil' }
   function getMonitorForScreen(screen) {
     if (screen.name === 'eDP-1') return laptop;
     if (screen.name === 'DP-1') return external;
