@@ -74,7 +74,7 @@ Item {
   Connections {
     target: root
     function onTooltipTextChanged() {
-      if (hovered) {
+      if (root.hovered) {
         TooltipService.updateText(root.tooltipText);
       }
     }
@@ -83,8 +83,8 @@ Item {
   // Unified background for the entire pill area to avoid overlapping opacity
   Rectangle {
     id: pillBackground
-    width: collapseToIcon ? pillHeight : root.width
-    height: pillHeight
+    width: root.collapseToIcon ? root.pillHeight : root.width
+    height: root.pillHeight
     radius: Style.radiusM
     color: root.bgColor
     anchors.verticalCenter: parent.verticalCenter
@@ -100,19 +100,19 @@ Item {
   Rectangle {
     id: pill
 
-    width: revealed ? pillMaxWidth : 1
-    height: pillHeight
+    width: root.revealed ? root.pillMaxWidth : 1
+    height: root.pillHeight
 
-    x: oppositeDirection ? (iconCircle.x + iconCircle.width / 2) : // Opens right
-                           (iconCircle.x + iconCircle.width / 2) - width // Opens left
+    x: root.oppositeDirection ? (iconCircle.x + iconCircle.width / 2) : // Opens right
+    (iconCircle.x + iconCircle.width / 2) - width // Opens left
 
-    opacity: revealed ? Style.opacityFull : Style.opacityNone
+    opacity: root.revealed ? Style.opacityFull : Style.opacityNone
     color: NColor.transparent // Make pill background transparent to avoid double opacity
 
-    topLeftRadius: oppositeDirection ? 0 : Style.radiusM
-    bottomLeftRadius: oppositeDirection ? 0 : Style.radiusM
-    topRightRadius: oppositeDirection ? Style.radiusM : 0
-    bottomRightRadius: oppositeDirection ? Style.radiusM : 0
+    topLeftRadius: root.oppositeDirection ? 0 : Style.radiusM
+    bottomLeftRadius: root.oppositeDirection ? 0 : Style.radiusM
+    topRightRadius: root.oppositeDirection ? Style.radiusM : 0
+    bottomRightRadius: root.oppositeDirection ? Style.radiusM : 0
     anchors.verticalCenter: parent.verticalCenter
 
     NText {
@@ -120,21 +120,21 @@ Item {
       anchors.verticalCenter: parent.verticalCenter
       x: {
         // Better text horizontal centering
-        var centerX = (parent.width - width) / 2;
-        var offset = oppositeDirection ? Style.marginXS : -Style.marginXS;
-        if (forceOpen) {
+        var centerX = (pill.width - textItem.width) / 2;
+        var offset = root.oppositeDirection ? Style.marginXS : -Style.marginXS;
+        if (root.forceOpen) {
           // If its force open, the icon disc background is the same color as the bg pill move text slightly
-          offset += oppositeDirection ? -Style.marginXXS : Style.marginXXS;
+          offset += root.oppositeDirection ? -Style.marginXXS : Style.marginXXS;
         }
         return centerX + offset;
       }
       text: root.text + root.suffix
       family: Settings.data.ui.fontFixed
-      pointSize: textSize
+      pointSize: root.textSize
       applyUiScale: false
       font.weight: Style.fontWeightBold
       color: root.fgColor
-      visible: revealed
+      visible: root.revealed
     }
 
     Behavior on width {
@@ -155,23 +155,24 @@ Item {
 
   Rectangle {
     id: iconCircle
-    width: pillHeight
-    height: pillHeight
-    radius: Math.min(Style.radiusL, width / 2)
+    width: root.pillHeight
+    height: root.pillHeight
+    radius: Math.min(Style.radiusL, iconCircle.width / 2)
     color: NColor.transparent // Make icon background transparent to avoid double opacity
     anchors.verticalCenter: parent.verticalCenter
 
-    x: oppositeDirection ? 0 : (parent.width - width)
+    x: root.oppositeDirection ? 0 : (root.width - iconCircle.width)
 
     NIcon {
+      id: iconGlyph
       icon: root.icon
-      pointSize: iconSize
+      pointSize: root.iconSize
       applyUiScale: false
       color: root.fgColor
       // Center horizontally
-      x: (iconCircle.width - width) / 2
+      x: (iconCircle.width - iconGlyph.width) / 2
       // Center vertically accounting for font metrics
-      y: (iconCircle.height - height) / 2 + (height - contentHeight) / 2
+      y: (iconCircle.height - iconGlyph.height) / 2 + (iconGlyph.height - iconGlyph.contentHeight) / 2
     }
   }
 
@@ -182,7 +183,7 @@ Item {
       target: pill
       property: "width"
       from: 1
-      to: pillMaxWidth
+      to: root.pillMaxWidth
       duration: Style.animationNormal
       easing.type: Easing.OutCubic
     }
@@ -195,7 +196,7 @@ Item {
       easing.type: Easing.OutCubic
     }
     onStarted: {
-      showPill = true;
+      root.showPill = true;
     }
     onStopped: {
       delayedHideAnim.start();
@@ -210,9 +211,9 @@ Item {
       duration: 2500
     }
     ScriptAction {
-      script: if (shouldAnimateHide) {
-                hideAnim.start();
-              }
+      script: if (root.shouldAnimateHide) {
+        hideAnim.start();
+      }
     }
   }
 
@@ -222,7 +223,7 @@ Item {
     NumberAnimation {
       target: pill
       property: "width"
-      from: pillMaxWidth
+      from: root.pillMaxWidth
       to: 1
       duration: Style.animationNormal
       easing.type: Easing.InCubic
@@ -236,8 +237,8 @@ Item {
       easing.type: Easing.InCubic
     }
     onStopped: {
-      showPill = false;
-      shouldAnimateHide = false;
+      root.showPill = false;
+      root.shouldAnimateHide = false;
       root.hidden();
     }
   }
@@ -246,7 +247,7 @@ Item {
     id: showTimer
     interval: Style.pillDelay
     onTriggered: {
-      if (!showPill) {
+      if (!root.showPill) {
         showAnim.start();
       }
     }
@@ -257,21 +258,21 @@ Item {
     hoverEnabled: true
     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
     onEntered: {
-      hovered = true;
+      root.hovered = true;
       root.entered();
-      TooltipService.show(pill, root.tooltipText, BarService.getTooltipDirection(), (forceOpen || forceClose) ? Style.tooltipDelay : Style.tooltipDelayLong);
-      if (forceClose) {
+      TooltipService.show(pill, root.tooltipText, BarService.getTooltipDirection(), (root.forceOpen || root.forceClose) ? Style.tooltipDelay : Style.tooltipDelayLong);
+      if (root.forceClose) {
         return;
       }
-      if (!forceOpen) {
-        showDelayed();
+      if (!root.forceOpen) {
+        root.showDelayed();
       }
     }
     onExited: {
-      hovered = false;
+      root.hovered = false;
       root.exited();
-      if (!forceOpen && !forceClose) {
-        hide();
+      if (!root.forceOpen && !root.forceClose) {
+        root.hide();
       }
       TooltipService.hide();
     }
