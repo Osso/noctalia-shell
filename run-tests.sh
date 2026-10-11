@@ -41,9 +41,9 @@ run_unit_tests() {
 
     while IFS= read -r test_file; do
         case "$test_file" in
-        Tests/qml-function-inventory.test.js | Tests/source-coverage.test.js)
-            continue
-            ;;
+            Tests/qml-function-inventory.test.js | Tests/source-coverage.test.js)
+                continue
+                ;;
         esac
         node "$repo_root/$test_file"
     done <<<"$javascript_tests"
@@ -172,55 +172,55 @@ run_category() {
 run_command() {
     local command="${1:-all}"
     case "$command" in
-    all | regression)
-        echo "=== EVIDENCE EXCLUDED visible-notifications (explicit opt-in) ==="
-        run_category "deterministic-unit" run_unit_tests
-        local status="$?"
-        [ "$status" -eq 0 ] || return "$status"
-        run_category "structural-reference" run_structural_tests
-        status="$?"
-        [ "$status" -eq 0 ] || return "$status"
-        run_category "qml-static" run_qml_static_check
-        status="$?"
-        [ "$status" -eq 0 ] || return "$status"
-        run_category "host-probes" run_service_probes
-        status="$?"
-        [ "$status" -eq 0 ] || return "$status"
-        run_category "live-log" run_log_gate
-        status="$?"
-        [ "$status" -eq 0 ] || return "$status"
-        echo "=== REGRESSION PASS ==="
-        ;;
-    log)
-        run_category "live-log" run_log_gate
-        ;;
-    unit)
-        run_category "deterministic-unit" run_unit_tests
-        local status="$?"
-        [ "$status" -eq 0 ] || return "$status"
-        run_category "structural-reference" run_structural_tests
-        status="$?"
-        [ "$status" -eq 0 ] || return "$status"
-        ;;
-    structural)
-        run_category "structural-reference" run_structural_tests
-        ;;
-    qml)
-        run_category "qml-static" run_qml_static_check
-        ;;
-    probes)
-        run_category "host-probes" run_service_probes
-        ;;
-    notifications)
-        run_category "visible-notifications" run_notifications
-        ;;
-    -h | --help | help)
-        usage
-        ;;
-    *)
-        usage >&2
-        return 2
-        ;;
+        all | regression)
+            echo "=== EVIDENCE EXCLUDED visible-notifications (explicit opt-in) ==="
+            run_category "deterministic-unit" run_unit_tests
+            local status="$?"
+            [ "$status" -eq 0 ] || return "$status"
+            run_category "structural-reference" run_structural_tests
+            status="$?"
+            [ "$status" -eq 0 ] || return "$status"
+            run_category "qml-static" run_qml_static_check
+            status="$?"
+            [ "$status" -eq 0 ] || return "$status"
+            run_category "host-probes" run_service_probes
+            status="$?"
+            [ "$status" -eq 0 ] || return "$status"
+            run_category "live-log" run_log_gate
+            status="$?"
+            [ "$status" -eq 0 ] || return "$status"
+            echo "=== REGRESSION PASS ==="
+            ;;
+        log)
+            run_category "live-log" run_log_gate
+            ;;
+        unit)
+            run_category "deterministic-unit" run_unit_tests
+            local status="$?"
+            [ "$status" -eq 0 ] || return "$status"
+            run_category "structural-reference" run_structural_tests
+            status="$?"
+            [ "$status" -eq 0 ] || return "$status"
+            ;;
+        structural)
+            run_category "structural-reference" run_structural_tests
+            ;;
+        qml)
+            run_category "qml-static" run_qml_static_check
+            ;;
+        probes)
+            run_category "host-probes" run_service_probes
+            ;;
+        notifications)
+            run_category "visible-notifications" run_notifications
+            ;;
+        -h | --help | help)
+            usage
+            ;;
+        *)
+            usage >&2
+            return 2
+            ;;
     esac
 }
 
