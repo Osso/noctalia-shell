@@ -4,6 +4,7 @@ import Quickshell
 import qs.Modules.Cards
 
 ShellRoot {
+  id: root
   Window {
     width: 400
     height: 300
@@ -55,42 +56,42 @@ ShellRoot {
       switch (step) {
       case 0:
         card.testEffects = condition;
-        require(effect() === null, "disabled effects must not load");
+        root.require(root.effect() === null, "disabled effects must not load");
         card.showEffects = true;
         break;
       case 1:
-        const shader = effect();
-        require(shader !== null, condition + " effect must load");
-        require(shader.fragmentShader.toString().endsWith("weather_" + condition + ".frag.qsb"), "wrong shader");
-        require(shader.source.hideSource === (condition === "rain"), "wrong content hiding");
-        require(shader.source.sourceItem !== null, "content source must exist");
-        require(shader.width > 0 && shader.height > 0, "effect must have dimensions");
-        require(isFinite(shader.time), "uniform must be finite");
+        const shader = root.effect();
+        root.require(shader !== null, condition + " effect must load");
+        root.require(shader.fragmentShader.toString().endsWith("weather_" + condition + ".frag.qsb"), "wrong shader");
+        root.require(shader.source.hideSource === (condition === "rain"), "wrong content hiding");
+        root.require(shader.source.sourceItem !== null, "content source must exist");
+        root.require(shader.width > 0 && shader.height > 0, "effect must have dimensions");
+        root.require(isFinite(shader.time), "uniform must be finite");
         sampledTime = shader.time;
         break;
       case 2:
       case 3:
-        require(effect().time > sampledTime, condition + " shader uniform must keep advancing");
-        console.log("WEATHER_EFFECT_PROOF", condition, sampledTime, effect().time);
-        sampledTime = effect().time;
+        root.require(root.effect().time > sampledTime, condition + " shader uniform must keep advancing");
+        console.log("WEATHER_EFFECT_PROOF", condition, sampledTime, root.effect().time);
+        sampledTime = root.effect().time;
         if (step === 3) {
           card.showEffects = false;
         }
         break;
       case 4:
-        require(effect() === null, "disabling effects must unload");
+        root.require(root.effect() === null, "disabling effects must unload");
         card.showEffects = true;
         break;
       case 5:
-        require(effect() !== null, "effect must reload");
-        sampledTime = effect().time;
+        root.require(root.effect() !== null, "effect must reload");
+        sampledTime = root.effect().time;
         break;
       case 6:
-        require(effect().time > sampledTime, "reloaded effect must animate");
+        root.require(root.effect().time > sampledTime, "reloaded effect must animate");
         card.testEffects = "";
         break;
       case 7:
-        require(effect() === null, "clear weather must unload");
+        root.require(root.effect() === null, "clear weather must unload");
         if (conditionIndex === 0) {
           card.showEffects = false;
           conditionIndex = 1;
@@ -100,16 +101,16 @@ ShellRoot {
         }
         break;
       case 8:
-        require(effect() !== null, "rain must load before switching to snow");
+        root.require(root.effect() !== null, "rain must load before switching to snow");
         card.testEffects = "snow";
         break;
       case 9:
-        require(effect().fragmentShader.toString().endsWith("weather_snow.frag.qsb"), "rain-to-snow must update shader");
-        require(effect().source.hideSource === false, "snow must not hide content");
-        sampledTime = effect().time;
+        root.require(root.effect().fragmentShader.toString().endsWith("weather_snow.frag.qsb"), "rain-to-snow must update shader");
+        root.require(root.effect().source.hideSource === false, "snow must not hide content");
+        sampledTime = root.effect().time;
         break;
       case 10:
-        require(effect().time > sampledTime, "switched effect must animate");
+        root.require(root.effect().time > sampledTime, "switched effect must animate");
         console.log("WEATHER_EFFECTS_PASS");
         Qt.quit();
         break;
