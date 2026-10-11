@@ -14,7 +14,8 @@ Singleton {
   property int weatherTimerIntervalMs: 1000
   property bool isFetchingWeather: false
 
-  readonly property alias data: adapter // Used to access via LocationService.data.xxx from outside, best to use "adapter" inside the service.
+  readonly property alias data: adapter // Public cached weather data.
+  readonly property alias cacheData: adapter
 
   // Stable UI properties - only updated when location is fully resolved
   property bool coordinatesReady: false
@@ -30,10 +31,10 @@ Singleton {
     onLoaded: {
       Logger.d("Location", "Loaded cached data");
       // Initialize stable properties on load
-      if (adapter.latitude !== "" && adapter.longitude !== "" && adapter.weatherLastFetch > 0) {
-        root.stableLatitude = adapter.latitude;
-        root.stableLongitude = adapter.longitude;
-        root.stableName = adapter.name;
+      if (root.cacheData.latitude !== "" && root.cacheData.longitude !== "" && root.cacheData.weatherLastFetch > 0) {
+        root.stableLatitude = root.cacheData.latitude;
+        root.stableLongitude = root.cacheData.longitude;
+        root.stableName = root.cacheData.name;
         root.coordinatesReady = true;
         Logger.i("Location", "Coordinates ready");
       }
@@ -110,11 +111,11 @@ Singleton {
     root.stableName = "";
 
     // Reset core data
-    adapter.latitude = "";
-    adapter.longitude = "";
-    adapter.name = "";
-    adapter.weatherLastFetch = 0;
-    adapter.weather = null;
+    root.cacheData.latitude = "";
+    root.cacheData.longitude = "";
+    root.cacheData.name = "";
+    root.cacheData.weatherLastFetch = 0;
+    root.cacheData.weather = null;
 
     // Try to fetch immediately
     updateWeather();
@@ -137,7 +138,7 @@ Singleton {
   }
 
   function shouldRefreshWeather() {
-    return (adapter.weatherLastFetch === "") || (adapter.weather === null) || (adapter.latitude === "") || (adapter.longitude === "") || (adapter.name !== Settings.data.location.name) || (Time.timestamp >= adapter.weatherLastFetch + weatherUpdateFrequency);
+    return (root.cacheData.weatherLastFetch === "") || (root.cacheData.weather === null) || (root.cacheData.latitude === "") || (root.cacheData.longitude === "") || (root.cacheData.name !== Settings.data.location.name) || (Time.timestamp >= root.cacheData.weatherLastFetch + weatherUpdateFrequency);
   }
 
   function nextWeatherUpdateIntervalMs() {
@@ -149,7 +150,7 @@ Singleton {
       return 1000;
     }
 
-    const nextFetchTimestamp = adapter.weatherLastFetch + weatherUpdateFrequency;
+    const nextFetchTimestamp = root.cacheData.weatherLastFetch + weatherUpdateFrequency;
     return Math.max(1000, (nextFetchTimestamp - Time.timestamp) * 1000);
   }
 
@@ -165,26 +166,26 @@ Singleton {
     const locationChanged = data.name !== Settings.data.location.name;
     if (locationChanged) {
       root.coordinatesReady = false;
-      Logger.d("Location", "Location changed from", adapter.name, "to", Settings.data.location.name);
+      Logger.d("Location", "Location changed from", root.cacheData.name, "to", Settings.data.location.name);
     }
 
-    if ((adapter.latitude === "") || (adapter.longitude === "") || locationChanged) {
+    if ((root.cacheData.latitude === "") || (root.cacheData.longitude === "") || locationChanged) {
       _geocodeLocation(Settings.data.location.name, function (latitude, longitude, name, country) {
         Logger.d("Location", "Geocoded", Settings.data.location.name, "to:", latitude, "/", longitude);
 
         // Save location name
-        adapter.name = Settings.data.location.name;
+        root.cacheData.name = Settings.data.location.name;
 
         // Save GPS coordinates
-        adapter.latitude = latitude.toString();
-        adapter.longitude = longitude.toString();
+        root.cacheData.latitude = latitude.toString();
+        root.cacheData.longitude = longitude.toString();
 
         root.stableName = `${name}, ${country}`;
 
         _fetchWeather(latitude, longitude, errorCallback);
       }, errorCallback);
     } else {
-      _fetchWeather(adapter.latitude, adapter.longitude, errorCallback);
+      _fetchWeather(root.cacheData.latitude, root.cacheData.longitude, errorCallback);
     }
   }
 
@@ -197,7 +198,7 @@ Singleton {
       if (xhr.readyState === XMLHttpRequest.DONE) {
         if (xhr.status === 200) {
           try {
-            var geoData = JSON.parse(xhr.responseText);
+            const geoData = JSON.parse(xhr.responseText);
             if (geoData.lat != null) {
               callback(geoData.lat, geoData.lng, geoData.name, geoData.country);
             } else {
@@ -224,7 +225,7 @@ Singleton {
       if (xhr.readyState === XMLHttpRequest.DONE) {
         if (xhr.status === 200) {
           try {
-            var weatherData = JSON.parse(xhr.responseText);
+            const weatherData = JSON.parse(xhr.responseText);
             //console.log(JSON.stringify(weatherData))
 
             // Save core data
