@@ -13,6 +13,8 @@ import shutil
 import subprocess
 import tempfile
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 SERVICES = [
     Path(f"Services/{name}.qml")
@@ -167,18 +169,20 @@ Item {
     defaults = json.loads((ROOT / "Assets/settings-default.json").read_text())
     defaults["brightness"]["enableDdcSupport"] = False
     defaults["notifications"]["enabled"] = False
-    settings = "property QtObject data: QtObject {\n"
+    settings = "component FixtureData: QtObject {\n"
     settings += (
-        "property QtObject brightness: QtObject {\n"
+        "component BrightnessSettings: QtObject {\n"
         + "\n".join(
             f"property {'bool' if isinstance(v, bool) else 'real'} {k}: {json.dumps(v)}"
             for k, v in defaults["brightness"].items()
         )
-        + "\n}\n"
+        + "\n}\nproperty BrightnessSettings brightness: BrightnessSettings {}\n"
     )
     for name in ("notifications", "general", "bar"):
         settings += f"property var {name}: {json.dumps(defaults[name])}\n"
-    settings += "}\nproperty bool isLoaded: false\n"
+    settings += (
+        "}\nproperty FixtureData data: FixtureData {}\nproperty bool isLoaded: false\n"
+    )
     settings += 'property string cacheDir: "/fixture/"\nproperty string cacheDirImagesNotifications: "/fixture/images/"\n'
     settings += "signal settingsLoaded()\nsignal settingsSaved()"
     extend_module(
@@ -211,10 +215,12 @@ Item {
         "qs.Services.Compositor",
         {
             "CompositorService": (ROOT / SERVICES[0]).read_text(),
-            **{
-                name + "Service": backend
-                for name in ("Niri", "Sway", "Hyprland", "Mango")
-            },
+            "FixtureCompositor": singleton("property NiriService backend"),
+            "NiriService": backend.replace(
+                "Item {",
+                "Item {\n  id: backend\n  Component.onCompleted: FixtureCompositor.backend = backend",
+            ),
+            **{name + "Service": backend for name in ("Sway", "Hyprland", "Mango")},
         },
     )
     extend_module(
@@ -252,7 +258,8 @@ Item {
         "qs.Services.UI",
         {
             "PanelService": singleton(
-                "property QtObject lockScreen: QtObject { property bool active: false; property var item: null }"
+                "component LockScreen: QtObject { property bool active: false; property var item: null }\n"
+                "property LockScreen lockScreen: LockScreen {}"
             ),
         },
     )
@@ -298,6 +305,11 @@ property bool discovering: false; property ObjectModel devices: ObjectModel {} }
     shutil.copyfile(
         ROOT / "Tests/Qml/RootServiceHarness.qml", directory / "tst_root.qml"
     )
+
+
+def lint_harness(directory):
+    stage_runtime(directory)
+    return check_harness(directory, directory / "tst_root.qml")
 
 
 def behavior(directory):
@@ -361,7 +373,7 @@ def behavior(directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
     parser.add_argument("--artifacts", type=Path)
     args = parser.parse_args()
     settings = Path.home() / ".config/noctalia/settings.json"
@@ -379,7 +391,10 @@ def main():
         == hashlib.sha256(original).digest()
     )
     try:
+        if args.mode == "lint-harness":
+            return lint_harness(directory)
         globals()[args.mode](directory)
+        return 0
     finally:
         assert settings.read_bytes() == original, "real settings changed"
         if not args.artifacts:
@@ -387,4 +402,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

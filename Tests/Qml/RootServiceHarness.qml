@@ -12,8 +12,9 @@ import qs.Services.System
 import qs.Services.UI
 
 TestCase {
+  id: root
   name: "RootServices"
-  when: windowShown
+  when: root.windowShown
 
   IPCService {
     id: ipc
@@ -35,7 +36,8 @@ TestCase {
 
   function test_compositor_events_and_suspend_timer() {
     verify(CompositorService.isNiri);
-    const backend = CompositorService.backend;
+    const backend = FixtureCompositor.backend;
+    compare(backend, CompositorService.backend);
     verify(backend.initialized);
     backend.workspaces.append({
       id: 7,
@@ -64,7 +66,7 @@ TestCase {
     tryVerify(() => Quickshell.commands.length === before + 1);
     compare(CompositorService.lockAndSuspendCheckCount, 0);
     compare(Quickshell.commands[before][2], "systemctl suspend || loginctl suspend");
-    verify(!timer(CompositorService, 100).running);
+    verify(!root.timer(CompositorService, 100).running);
   }
 
   function test_ipc_screen_callback_and_debounce() {
@@ -165,7 +167,7 @@ TestCase {
       id: "fixture",
       progress: 1
     });
-    const progressTimer = timer(NotificationService, 50);
+    const progressTimer = root.timer(NotificationService, 50);
     verify(progressTimer.running);
     tryVerify(() => NotificationService.activeList.get(0).progress < 0.6);
     const progress = NotificationService.activeList.get(0).progress;
