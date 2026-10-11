@@ -17,7 +17,7 @@ Typed settings delegates:
 - [x] OSD monitor labels, scale lookup, descriptions, selection checks, and add/remove actions must use the typed monitor aliases.
 
 Bounded runtime regression:
-- [x] Production OSD must suppress startup events, react to fixture audio/brightness/lock signals, restart auto-hide after updates, and unload/reset state after timeout in horizontal and vertical layouts.
+- [x] Production OSD must suppress startup events, react to fixture audio/brightness/lock signals and device/monitor changes, restart auto-hide after updates, and unload/reset state after timeout in horizontal and vertical layouts.
 - [x] Private headless Cage tests must isolate HOME/XDG/Noctalia paths, preserve real settings, clean up experimental processes, and retain all platform warnings. Content/state assertions are not pixel rendering or layer-shell placement proof.
 
 ## How it works
@@ -39,7 +39,7 @@ Bounded runtime regression:
 
 ## Known gaps (current cycle)
 
-- [ ] Real layer-shell placement/pixels, multi-output independent timers, enabled-type rejection, suppression consumption, and device-change refresh remain outside the private Cage regression.
+- [ ] Real layer-shell placement/pixels, multi-output independent timers, enabled-type rejection and suppression consumption remain outside the private Cage regression.
 - [ ] Add executable coverage for monitor add/remove helper behavior.
 
 ## Out of scope

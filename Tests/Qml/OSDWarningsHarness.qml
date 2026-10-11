@@ -56,6 +56,7 @@ ShellRoot {
 
   function assertDisplays(icon, label) {
     clock.wait(20);
+    harness.require(osd.instances.length === 1, "one OSD instance for content assertion");
     for (const loader of osd.instances) {
       harness.assertDisplay(loader, icon, label);
     }
@@ -79,6 +80,8 @@ ShellRoot {
     harness.setLocation(location);
     AudioService.volume = 0.75;
     harness.assertDisplays("volume-high", "75%");
+    AudioService.sinkChanged();
+    harness.assertDisplays("volume-high", "75%");
     clock.wait(120);
     AudioService.volume = 0.003;
     harness.assertDisplays("volume-x", "0%");
@@ -96,6 +99,8 @@ ShellRoot {
     harness.assertDisplays("volume-high", "125%");
     AudioService.inputVolume = 0.65;
     harness.assertDisplays("microphone", "65%");
+    AudioService.sourceChanged();
+    harness.assertDisplays("microphone", "65%");
     AudioService.inputMuted = true;
     harness.assertDisplays("microphone-off", "0%");
     AudioService.inputMuted = false;
@@ -110,6 +115,7 @@ ShellRoot {
   }
 
   function exerciseBrightnessAndLocks() {
+    BrightnessService.monitors = [BrightnessService.monitor];
     for (const sample of [
       {
         value: 0.003,

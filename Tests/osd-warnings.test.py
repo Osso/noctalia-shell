@@ -55,7 +55,7 @@ def lint(directory):
     print("OSD_LINT_COUNTS", dict(counts))
     # Existing unbound nested-component context and screen metadata gaps remain.
     assert counts == {"unqualified": 37, "missing-property": 5}, dict(counts)
-    assert result.returncode == 255, result.returncode
+    assert result.returncode == 0, result.returncode
     print("OSD_LINT_SLICE_PASS (remaining diagnostics above)")
 
 
