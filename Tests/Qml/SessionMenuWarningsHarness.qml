@@ -212,9 +212,9 @@ Item {
       compare(CompositorService.events, ["reboot"]);
       compare(menu.closeCount, 3);
       CompositorService.events = [];
-      Settings.data.sessionMenu.countdownDuration = 60000;
+      Settings.data.sessionMenu.countdownDuration = 100;
       menu.startTimer("logout");
-      // cleanup destroys an active timer and verifies no later dispatch.
+      // cleanup waits past the destroyed timer's deadline; no dispatch may survive.
     }
 
     function test_inert_action_routing() {
