@@ -7,7 +7,14 @@ const source = readQml("Modules/Panels/ControlCenter/Widgets/CustomButton.qml");
 
 function qmlFunction(functionName, ...argNames) {
   const body = extractFunctionBody(source, functionName);
-  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+  return new Function(
+    "ctx",
+    ...argNames,
+    `with (ctx) {
+      const root = ctx;
+      return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")});
+    }`,
+  );
 }
 
 function testCustomButtonWidgetUpdatesPropertiesFromSettings() {
@@ -94,6 +101,7 @@ function testCustomButtonWidgetCheckNextStateSkipsInvalidChecksAndStartsProcess(
   const checkNextState = qmlFunction("_checkNextState");
   const ctx = {
     _currentStateCheckIndex: 0,
+    _stateGeneration: 3,
     _parsedStateChecks: [
       null,
       {},
@@ -116,6 +124,13 @@ function testCustomButtonWidgetCheckNextStateSkipsInvalidChecksAndStartsProcess(
 
   assert.equal(ctx._currentStateCheckIndex, 2);
   assert.equal(ctx.stateCheckProcessExecutor.running, true);
+  assert.deepEqual(ctx.stateCheckProcessExecutor.command, [
+    "sh",
+    "-c",
+    "pgrep app",
+  ]);
+  assert.equal(ctx.stateCheckProcessExecutor.generation, 3);
+  assert.equal(ctx.stateCheckProcessExecutor.stateIcon, "app-icon");
   assert.equal(ctx._isHot, true);
 }
 
@@ -144,7 +159,10 @@ function testCustomButtonWidgetCheckNextStateFallsBackWhenNoChecksMatch() {
 function testCustomButtonWidgetUpdateStateRestartsOnlyWhenLogicEnabled() {
   const updateState = qmlFunction("updateState");
   let restarts = 0;
+  let stops = 0;
   const ctx = {
+    _stateGeneration: 3,
+    _currentStateCheckIndex: 2,
     enableOnStateLogic: false,
     _parsedStateChecks: [{ command: "pgrep app" }],
     _isHot: true,
@@ -153,6 +171,9 @@ function testCustomButtonWidgetUpdateStateRestartsOnlyWhenLogicEnabled() {
       icon: "default-icon",
     },
     stateUpdateTimer: {
+      stop() {
+        stops += 1;
+      },
       restart() {
         restarts += 1;
       },
@@ -164,12 +185,18 @@ function testCustomButtonWidgetUpdateStateRestartsOnlyWhenLogicEnabled() {
   assert.equal(ctx._isHot, false);
   assert.equal(ctx._activeStateIcon, "default-icon");
   assert.equal(restarts, 0);
+  assert.equal(stops, 1);
+  assert.equal(ctx._stateGeneration, 4);
+  assert.equal(ctx._currentStateCheckIndex, -1);
 
   ctx.enableOnStateLogic = true;
   ctx._parsedStateChecks = [{ command: "pgrep app" }];
   updateState(ctx);
 
   assert.equal(restarts, 1);
+  assert.equal(stops, 2);
+  assert.equal(ctx._stateGeneration, 5);
+  assert.equal(ctx._currentStateCheckIndex, -1);
 }
 
 function testCustomButtonWidgetBuildTooltipTextIncludesConfiguredCommands() {
