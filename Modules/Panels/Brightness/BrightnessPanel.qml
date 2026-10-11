@@ -1,8 +1,9 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Io
 import qs.Commons
 import qs.Modules.MainScreen
 import qs.Services.Compositor
@@ -80,6 +81,7 @@ SmartPanel {
           Repeater {
             model: Quickshell.screens || []
             delegate: NBox {
+              id: monitorBox
               required property ShellScreen modelData
               readonly property string monitorName: modelData ? modelData.name : ""
               readonly property string monitorModel: modelData ? modelData.model : ""
@@ -100,16 +102,16 @@ SmartPanel {
                 spacing: Style.marginS
 
                 NLabel {
-                  label: monitorName || "Unknown"
+                  label: monitorBox.monitorName || "Unknown"
                   labelColor: NColor.mPrimary
                   description: {
-                    const compositorScale = CompositorService.getDisplayScale(monitorName);
+                    const compositorScale = CompositorService.getDisplayScale(monitorBox.monitorName);
                     I18n.tr("system.monitor-description", {
-                              "model": monitorModel,
-                              "width": monitorWidth * compositorScale,
-                              "height": monitorHeight * compositorScale,
-                              "scale": compositorScale
-                            });
+                      "model": monitorBox.monitorModel,
+                      "width": monitorBox.monitorWidth * compositorScale,
+                      "height": monitorBox.monitorHeight * compositorScale,
+                      "scale": compositorScale
+                    });
                   }
                 }
 
@@ -118,7 +120,7 @@ SmartPanel {
                   Layout.fillWidth: true
                   spacing: Style.marginS
                   NIcon {
-                    icon: getIcon(brightnessMonitor ? brightnessMonitor.brightness : 0)
+                    icon: root.getIcon(monitorBox.brightnessMonitor ? monitorBox.brightnessMonitor.brightness : 0)
                     pointSize: Style.fontSizeXL
                     color: NColor.mOnSurface
                   }
@@ -127,21 +129,21 @@ SmartPanel {
                     id: brightnessSlider
                     from: 0
                     to: 1
-                    value: brightnessMonitor ? brightnessMonitor.brightness : 0.5
+                    value: monitorBox.brightnessMonitor ? monitorBox.brightnessMonitor.brightness : 0.5
                     stepSize: 0.01
-                    enabled: brightnessMonitor ? brightnessMonitor.brightnessControlAvailable : false
+                    enabled: monitorBox.brightnessMonitor ? monitorBox.brightnessMonitor.brightnessControlAvailable : false
                     onMoved: value => {
-                               if (brightnessMonitor && brightnessMonitor.brightnessControlAvailable) {
-                                 brightnessMonitor.setBrightness(value);
-                               }
-                             }
+                      if (monitorBox.brightnessMonitor && monitorBox.brightnessMonitor.brightnessControlAvailable) {
+                        monitorBox.brightnessMonitor.setBrightness(value);
+                      }
+                    }
                     onPressedChanged: (pressed, value) => {
-                                        if (brightnessMonitor && brightnessMonitor.brightnessControlAvailable) {
-                                          brightnessMonitor.setBrightness(value);
-                                        }
-                                      }
+                      if (monitorBox.brightnessMonitor && monitorBox.brightnessMonitor.brightnessControlAvailable) {
+                        monitorBox.brightnessMonitor.setBrightness(value);
+                      }
+                    }
                     Layout.fillWidth: true
-                    text: brightnessMonitor ? Math.round(brightnessSlider.value * 100) + "%" : "N/A"
+                    text: monitorBox.brightnessMonitor ? Math.round(brightnessSlider.value * 100) + "%" : "N/A"
                   }
                 }
               }
