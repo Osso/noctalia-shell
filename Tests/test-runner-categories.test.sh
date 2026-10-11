@@ -63,7 +63,19 @@ mkdir -p "$tmp_dir/bin"
 printf '#!/bin/sh\nexit 0\n' >"$tmp_dir/bin/node"
 cat >"$tmp_dir/bin/python3" <<'PYTHON'
 #!/bin/sh
-printf '%s\n' "${1##*/}"
+printf '%s\n' "${1##*/}${2:+ $2}"
+case "${1##*/}" in
+    settings-types.test.py | system-monitor-runtime.test.py)
+        exit 0
+        ;;
+    media-mini-warnings.test.py)
+        [ "${2:-}" = behavior ] || exit 40
+        exit 0
+        ;;
+    sound-service-runtime.test.py)
+        exit "$SOUND_TEST_STATUS"
+        ;;
+esac
 if [ "${1##*/}" = color-namespace-runtime.test.py ]; then
     exit "$COLOR_TEST_STATUS"
 fi
@@ -81,12 +93,36 @@ run_qml_runtime_tests() { :; }
 run_command unit
 DRIVER
 
-for color_status in 0 37; do
+for test_statuses in 0:0 37:0 0:39; do
+    color_status="${test_statuses%:*}"
+    sound_status="${test_statuses#*:}"
     set +e
-    unit_output="$(PATH="$tmp_dir/bin:$PATH" RUNNER_UNDER_TEST="$runner" COLOR_TEST_STATUS="$color_status" \
+    unit_output="$(PATH="$tmp_dir/bin:$PATH" RUNNER_UNDER_TEST="$runner" COLOR_TEST_STATUS="$color_status" SOUND_TEST_STATUS="$sound_status" \
         bash "$tmp_dir/unit-driver.sh" 2>&1)"
     unit_status="$?"
     set -e
+    for runtime_test in \
+        'settings-types.test.py' \
+        'system-monitor-runtime.test.py' \
+        'media-mini-warnings.test.py behavior' \
+        'sound-service-runtime.test.py'; do
+        if [ "$(printf '%s\n' "$unit_output" | rg -F -x -c "$runtime_test" || true)" != 1 ]; then
+            echo "unit runner omitted or repeated runtime regression: $runtime_test" >&2
+            exit 1
+        fi
+    done
+    runtime_order='settings-types.test.py.*system-monitor-runtime.test.py.*media-mini-warnings.test.py behavior.*sound-service-runtime.test.py'
+    if ! printf '%s\n' "$unit_output" | tr '\n' ' ' | rg -q "$runtime_order"; then
+        echo "unit runner runtime regression order is incoherent" >&2
+        exit 1
+    fi
+    if [ "$sound_status" -ne 0 ]; then
+        if [ "$unit_status" -ne 39 ] || ! printf '%s\n' "$unit_output" | rg -q 'EVIDENCE FAIL deterministic-unit \(exit 39\)' || printf '%s\n' "$unit_output" | rg -q '^color-namespace-runtime.test.py$|^weather-card-effects.test.py$|^calendar-events-safe-get-time.test.py$|EVIDENCE PASS|EVIDENCE START structural-reference'; then
+            echo "unit runner did not stop with sound runtime regression failure status" >&2
+            exit 1
+        fi
+        continue
+    fi
     if ! printf '%s\n' "$unit_output" | rg -q '^color-namespace-runtime.test.py$'; then
         echo "unit runner omitted offscreen color regression" >&2
         exit 1
@@ -217,7 +253,10 @@ if [ "$caller_errexit_after_failure" = true ]; then
 fi
 
 set +e
-errexit_output="$(set -e; run_command all 2>&1)"
+errexit_output="$(
+    set -e
+    run_command all 2>&1
+)"
 errexit_status="$?"
 set -e
 if [ "$errexit_status" -ne 1 ]; then
