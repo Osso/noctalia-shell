@@ -68,7 +68,7 @@ Item {
   Rectangle {
     anchors.fill: parent
     color: NColor.mSurface || "#f5f5f5"
-    border.color: NColor.mOutlineVariant || "#cccccc"
+    border.color: NColor.mOutline
     border.width: 1
     radius: Style.radiusM
 

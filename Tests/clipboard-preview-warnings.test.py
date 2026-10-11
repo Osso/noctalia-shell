@@ -48,8 +48,7 @@ def lint(directory):
     warnings = re.findall(r"^Warning:.*$", output, re.M)
     counts = Counter(re.findall(r"\[([^]]+)\]", line)[-1] for line in warnings)
     print("CLIPBOARD_PREVIEW_LINT_COUNTS", dict(counts))
-    assert counts == {"missing-property": 1}, dict(counts)
-    assert 'Member "mOutlineVariant" not found on type "NColor"' in output
+    assert not counts, dict(counts)
     assert result.returncode == 0, result.returncode
     print("CLIPBOARD_PREVIEW_LINT_PASS")
 
@@ -82,7 +81,6 @@ property real fontSizeXXL: 24"""),
                         "mSurface": "#202020",
                         "mSurfaceVariant": "#303030",
                         "mOutline": "#505050",
-                        "mOutlineVariant": "#606060",
                         "mOnSurface": "white",
                         "transparent": "transparent",
                     }.items()

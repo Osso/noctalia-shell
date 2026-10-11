@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtTest
+import qs.Commons
 import qs.Services.Keyboard
 
 Item {
@@ -69,6 +70,10 @@ Item {
       compare(textView().getText(0, textView().length).replace(/\u2029/g, "\n").trim(), "Alpha <tag> & beta\nsecond line");
       verify(textView().visible);
       verify(!imageView().visible);
+      const outerBorder = descendants(preview, child => child.border !== undefined);
+      verify(outerBorder.visible);
+      compare(outerBorder.border.width, 1);
+      compare(outerBorder.border.color, NColor.mOutline);
       select("path", false);
       compare(preview.fullContent, "");
       ClipboardService.finishText("path", harness.imagePath);
@@ -87,6 +92,10 @@ Item {
       verify(!preview.loadingFullContent);
       verify(imageView().visible);
       verify(!textView().visible);
+      const outerBorder = descendants(preview, child => child.border !== undefined);
+      verify(outerBorder.visible);
+      compare(outerBorder.border.width, 1);
+      compare(outerBorder.border.color, NColor.mOutline);
       const source = descendants(imageView(), child => child.sourceSize !== undefined);
       tryCompare(source, "status", Image.Ready);
       verify(source.sourceSize.width > 0);
