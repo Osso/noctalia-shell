@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
 """Service cohort fixture lint acceptance and real diagnostic rejection."""
 
-import contextlib
-import importlib.util
-import io
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
-
-from qml_fixture_lint import check_harness
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "Tests/service-cohort-warnings.test.py"
@@ -33,16 +29,23 @@ class ServiceCohortHarnessLintTest(unittest.TestCase):
             self.assertEqual(file["warnings"], [], file)
 
     def test_injected_warning_is_reported_and_rejected(self):
-        spec = importlib.util.spec_from_file_location("service_cohort", RUNNER)
-        runner = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(runner)
         with tempfile.TemporaryDirectory(
             prefix="noctalia-cohort-injection-"
         ) as temporary:
             directory = Path(temporary)
-            runner.stage_runtime(directory)
-            harness = directory / "tst_services.qml"
-            source = harness.read_text()
+            tests = directory / "Tests"
+            (tests / "Qml").mkdir(parents=True)
+            for name in (
+                RUNNER.name,
+                "workspace-runtime.test.py",
+                "qml_fixture_lint.py",
+            ):
+                shutil.copyfile(ROOT / "Tests" / name, tests / name)
+            (directory / "Services").symlink_to(
+                ROOT / "Services", target_is_directory=True
+            )
+            harness = tests / "Qml/ServiceCohortHarness.qml"
+            source = (ROOT / "Tests/Qml/ServiceCohortHarness.qml").read_text()
             harness.write_text(
                 source.replace(
                     "id: testCase",
@@ -50,11 +53,15 @@ class ServiceCohortHarnessLintTest(unittest.TestCase):
                     1,
                 )
             )
-            output = io.StringIO()
-            with contextlib.redirect_stdout(output):
-                status = check_harness(directory, harness)
-            self.assertNotEqual(status, 0, output.getvalue())
-            diagnostics = json.loads(output.getvalue())["files"][0]["warnings"]
+            result = subprocess.run(
+                [sys.executable, str(tests / RUNNER.name), "lint-harness"],
+                capture_output=True,
+                text=True,
+                timeout=60,
+                cwd=directory,
+            )
+            self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+            diagnostics = json.loads(result.stdout)["files"][0]["warnings"]
             self.assertTrue(
                 any(
                     warning["type"] == "warning"
