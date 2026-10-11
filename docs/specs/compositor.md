@@ -84,6 +84,7 @@ Compositor covers backend detection, shared workspace/window state, display-scal
 - `Tests/sway-service-guards.test.js`
 - `Tests/mango-service-guards.test.js`
 - `Tests/workspace-guards.test.js`
+- `Tests/workspace-runtime.test.py` with `Tests/Qml/WorkspaceHarness.qml` — isolated offscreen production Workspace/Niri normalization coverage for initial horizontal geometry, output reassignment and click-command order, vertical labels and active sizing, offset switching, occupied/focused-output filtering, and Loader model context. Desktop/process/settings boundaries are fixtures; activation commands are recorded, not sent to Niri. Rejects runtime warnings/errors and verifies real settings remain unchanged.
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`
 
@@ -92,7 +93,7 @@ Compositor covers backend detection, shared workspace/window state, display-scal
 - [ ] Add executable coverage for active window widget display behavior.
 - [ ] Add executable coverage for taskbar compositor actions beyond typed delegate roles.
 - [ ] Add executable coverage for backend process failure output parsing.
-- [ ] Add live-smoke coverage for one active compositor backend when a shell instance is running.
+- [ ] Add live-smoke coverage for one active compositor backend when a shell instance is running; the isolated Workspace/Niri harness does not exercise live IPC or compositor activation.
 
 ## Out of scope
 
