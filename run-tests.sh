@@ -57,6 +57,8 @@ run_unit_tests() {
     python3 "$repo_root/Tests/datetime-tokens-layout-runtime.test.py"
     python3 "$repo_root/Tests/setup-layout-geometry.test.py"
     python3 "$repo_root/Tests/calendar-service-runtime.test.py"
+    python3 "$repo_root/Tests/timer-card-runtime.test.py" behavior
+    python3 "$repo_root/Tests/file-picker-warnings.test.py" --mode runtime
     python3 "$repo_root/Tests/color-namespace-runtime.test.py"
     python3 "$repo_root/Tests/weather-card-effects.test.py"
     python3 "$repo_root/Tests/calendar-events-safe-get-time.test.py"

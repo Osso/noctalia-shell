@@ -38,7 +38,7 @@ mkdir -p "$tmp_dir/bin"
 printf '#!/bin/sh\nexit 0\n' >"$tmp_dir/bin/node"
 cat >"$tmp_dir/bin/python3" <<'PYTHON'
 #!/bin/sh
-printf '%s\n' "${1##*/}${2:+ $2}"
+printf '%s\n' "${1##*/}${2:+ $2}${3:+ $3}"
 case "${1##*/}" in
     settings-types.test.py | system-monitor-runtime.test.py)
         exit 0
@@ -59,6 +59,14 @@ case "${1##*/}" in
     calendar-service-runtime.test.py)
         exit "$CALENDAR_TEST_STATUS"
         ;;
+    timer-card-runtime.test.py)
+        [ "${2:-}" = behavior ] && [ "$#" -eq 2 ] || exit 40
+        exit "$TIMER_TEST_STATUS"
+        ;;
+    file-picker-warnings.test.py)
+        [ "${2:-}" = --mode ] && [ "${3:-}" = runtime ] && [ "$#" -eq 3 ] || exit 40
+        exit "$PICKER_TEST_STATUS"
+        ;;
 esac
 if [ "${1##*/}" = color-namespace-runtime.test.py ]; then
     exit "$COLOR_TEST_STATUS"
@@ -77,10 +85,10 @@ run_qml_runtime_tests() { :; }
 run_command unit
 DRIVER
 
-for test_statuses in 0:0:0:0:0 37:0:0:0:0 0:39:0:0:0 0:0:41:0:0 0:0:0:42:0 0:0:0:0:43; do
-    IFS=: read -r color_status sound_status datetime_status setup_status calendar_status <<<"$test_statuses"
+for test_statuses in 0:0:0:0:0:0:0 37:0:0:0:0:0:0 0:39:0:0:0:0:0 0:0:41:0:0:0:0 0:0:0:42:0:0:0 0:0:0:0:43:0:0 0:0:0:0:0:44:0 0:0:0:0:0:0:45; do
+    IFS=: read -r color_status sound_status datetime_status setup_status calendar_status timer_status picker_status <<<"$test_statuses"
     set +e
-    unit_output="$(PATH="$tmp_dir/bin:$PATH" RUNNER_UNDER_TEST="$runner" COLOR_TEST_STATUS="$color_status" SOUND_TEST_STATUS="$sound_status" DATETIME_TEST_STATUS="$datetime_status" SETUP_TEST_STATUS="$setup_status" CALENDAR_TEST_STATUS="$calendar_status" \
+    unit_output="$(PATH="$tmp_dir/bin:$PATH" RUNNER_UNDER_TEST="$runner" COLOR_TEST_STATUS="$color_status" SOUND_TEST_STATUS="$sound_status" DATETIME_TEST_STATUS="$datetime_status" SETUP_TEST_STATUS="$setup_status" CALENDAR_TEST_STATUS="$calendar_status" TIMER_TEST_STATUS="$timer_status" PICKER_TEST_STATUS="$picker_status" \
         bash "$tmp_dir/unit-driver.sh" 2>&1)"
     unit_status="$?"
     set -e
@@ -100,7 +108,7 @@ for test_statuses in 0:0:0:0:0 37:0:0:0:0 0:39:0:0:0 0:0:41:0:0 0:0:0:42:0 0:0:0
         exit 1
     fi
     if [ "$sound_status" -ne 0 ]; then
-        if [ "$unit_status" -ne 39 ] || ! printf '%s\n' "$unit_output" | rg -q 'EVIDENCE FAIL deterministic-unit \(exit 39\)' || printf '%s\n' "$unit_output" | rg -q '^datetime-tokens-layout-runtime.test.py$|^setup-layout-geometry.test.py$|^calendar-service-runtime.test.py$|^color-namespace-runtime.test.py$|^weather-card-effects.test.py$|^calendar-events-safe-get-time.test.py$|EVIDENCE PASS|EVIDENCE START structural-reference'; then
+        if [ "$unit_status" -ne 39 ] || ! printf '%s\n' "$unit_output" | rg -q 'EVIDENCE FAIL deterministic-unit \(exit 39\)' || printf '%s\n' "$unit_output" | rg -q '^datetime-tokens-layout-runtime.test.py$|^setup-layout-geometry.test.py$|^calendar-service-runtime.test.py$|^timer-card-runtime.test.py behavior$|^file-picker-warnings.test.py --mode runtime$|^color-namespace-runtime.test.py$|^weather-card-effects.test.py$|^calendar-events-safe-get-time.test.py$|EVIDENCE PASS|EVIDENCE START structural-reference'; then
             echo "unit runner did not stop with sound runtime regression failure status" >&2
             exit 1
         fi
@@ -109,7 +117,9 @@ for test_statuses in 0:0:0:0:0 37:0:0:0:0 0:39:0:0:0 0:0:41:0:0 0:0:0:42:0 0:0:0
     for runtime_case in \
         "datetime-tokens-layout-runtime.test.py:$datetime_status" \
         "setup-layout-geometry.test.py:$setup_status" \
-        "calendar-service-runtime.test.py:$calendar_status"; do
+        "calendar-service-runtime.test.py:$calendar_status" \
+        "timer-card-runtime.test.py behavior:$timer_status" \
+        "file-picker-warnings.test.py --mode runtime:$picker_status"; do
         runtime_test="${runtime_case%:*}"
         runtime_status="${runtime_case#*:}"
         if [ "$(printf '%s\n' "$unit_output" | rg -F -x -c "$runtime_test" || true)" != 1 ]; then
@@ -118,12 +128,18 @@ for test_statuses in 0:0:0:0:0 37:0:0:0:0 0:39:0:0:0 0:0:41:0:0 0:0:0:42:0 0:0:0
         fi
         case "$runtime_test" in
             datetime-tokens-layout-runtime.test.py)
-                later_tests='^setup-layout-geometry.test.py$|^calendar-service-runtime.test.py$'
+                later_tests='^setup-layout-geometry.test.py$|^calendar-service-runtime.test.py$|^timer-card-runtime.test.py behavior$|^file-picker-warnings.test.py --mode runtime$'
                 ;;
             setup-layout-geometry.test.py)
-                later_tests='^calendar-service-runtime.test.py$'
+                later_tests='^calendar-service-runtime.test.py$|^timer-card-runtime.test.py behavior$|^file-picker-warnings.test.py --mode runtime$'
                 ;;
             calendar-service-runtime.test.py)
+                later_tests='^timer-card-runtime.test.py behavior$|^file-picker-warnings.test.py --mode runtime$'
+                ;;
+            'timer-card-runtime.test.py behavior')
+                later_tests='^file-picker-warnings.test.py --mode runtime$'
+                ;;
+            'file-picker-warnings.test.py --mode runtime')
                 later_tests=''
                 ;;
         esac
@@ -136,7 +152,7 @@ for test_statuses in 0:0:0:0:0 37:0:0:0:0 0:39:0:0:0 0:0:41:0:0 0:0:0:42:0 0:0:0
             continue 2
         fi
     done
-    runtime_order='sound-service-runtime.test.py.*datetime-tokens-layout-runtime.test.py.*setup-layout-geometry.test.py.*calendar-service-runtime.test.py.*color-namespace-runtime.test.py'
+    runtime_order='sound-service-runtime.test.py.*datetime-tokens-layout-runtime.test.py.*setup-layout-geometry.test.py.*calendar-service-runtime.test.py.*timer-card-runtime.test.py behavior.*file-picker-warnings.test.py --mode runtime.*color-namespace-runtime.test.py'
     if ! printf '%s\n' "$unit_output" | tr '\n' ' ' | rg -q "$runtime_order"; then
         echo "unit runner runtime regression order or continuation is incoherent" >&2
         exit 1
