@@ -252,18 +252,18 @@ Singleton {
       } else {
         currentIndex++;
         Qt.callLater(() => {
-                       // Qt.callLater is mandatory
-                       checkNext();
-                     });
+          // Qt.callLater is mandatory
+          checkNext();
+        });
       }
     }
 
     onLoadFailed: function (error) {
       currentIndex++;
       Qt.callLater(() => {
-                     // Qt.callLater is mandatory
-                     checkNext();
-                   });
+        // Qt.callLater is mandatory
+        checkNext();
+      });
     }
   }
 
@@ -281,9 +281,9 @@ Singleton {
         //console.log(temp, cpuTempReader.path)
         root.intelTempValues.push(temp);
         Qt.callLater(() => {
-                       // Qt.callLater is mandatory
-                       checkNextIntelTemp();
-                     });
+          // Qt.callLater is mandatory
+          root.checkNextIntelTemp();
+        });
       } else {
         // For AMD sensors (k10temp and zenpower), directly set the temperature
         root.cpuTemp = Math.round(parseInt(data) / 1000.0);
@@ -291,9 +291,9 @@ Singleton {
     }
     onLoadFailed: function (error) {
       Qt.callLater(() => {
-                     // Qt.callLater is mandatory
-                     checkNextIntelTemp();
-                   });
+        // Qt.callLater is mandatory
+        root.checkNextIntelTemp();
+      });
     }
   }
 

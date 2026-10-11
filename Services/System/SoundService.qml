@@ -26,7 +26,7 @@ Singleton {
       property real soundVolume: 1.0
 
       audioOutput: AudioOutput {
-        volume: soundVolume
+        volume: mediaPlayer.soundVolume
       }
 
       onErrorOccurred: {

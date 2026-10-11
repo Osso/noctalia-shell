@@ -102,20 +102,20 @@ Singleton {
     running: false
 
     onExited: function (exitCode) {
-      availableDiscordClients = [];
+      root.availableDiscordClients = [];
 
       if (exitCode === 0) {
-        var detectedClients = parseDetectedClients(stdout.text, TemplateRegistry.discordClients);
+        var detectedClients = root.parseDetectedClients(stdout.text, TemplateRegistry.discordClients);
 
         if (detectedClients.length > 0) {
-          availableDiscordClients = detectedClients;
+          root.availableDiscordClients = detectedClients;
           Logger.d("ProgramChecker", "Detected Discord clients:", detectedClients.map(function (client) {
             return client.name;
           }).join(", "));
         }
       }
 
-      if (availableDiscordClients.length === 0) {
+      if (root.availableDiscordClients.length === 0) {
         Logger.d("ProgramChecker", "No Discord clients detected");
       }
     }
@@ -137,20 +137,20 @@ Singleton {
     running: false
 
     onExited: function (exitCode) {
-      availableCodeClients = [];
+      root.availableCodeClients = [];
 
       if (exitCode === 0) {
-        var detectedClients = parseDetectedClients(stdout.text, TemplateRegistry.codeClients);
+        var detectedClients = root.parseDetectedClients(stdout.text, TemplateRegistry.codeClients);
 
         if (detectedClients.length > 0) {
-          availableCodeClients = detectedClients;
+          root.availableCodeClients = detectedClients;
           Logger.d("ProgramChecker", "Detected Code clients:", detectedClients.map(function (client) {
             return client.name;
           }).join(", "));
         }
       }
 
-      if (availableCodeClients.length === 0) {
+      if (root.availableCodeClients.length === 0) {
         Logger.d("ProgramChecker", "No Code clients detected");
       }
     }

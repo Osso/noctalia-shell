@@ -254,17 +254,17 @@ Singleton {
     stdout: StdioCollector {
       onStreamFinished: {
         if (this.text !== "") {
-          fontconfigMonospaceFonts = parseFontconfigMonospaceOutput(this.text);
+          root.fontconfigMonospaceFonts = root.parseFontconfigMonospaceOutput(this.text);
         }
-        loadSystemFonts();
+        root.loadSystemFonts();
       }
     }
 
     onExited: function (exitCode, exitStatus) {
       if (exitCode !== 0) {
-        fontconfigMonospaceFonts = {};
+        root.fontconfigMonospaceFonts = {};
       }
-      loadSystemFonts();
+      root.loadSystemFonts();
     }
   }
 }
