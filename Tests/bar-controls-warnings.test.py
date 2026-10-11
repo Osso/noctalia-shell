@@ -442,6 +442,24 @@ Item {
         compare(Quickshell.commands, [["sh", "-c", Settings.data.audio.externalMixer], ["sh", "-c", Settings.data.audio.externalMixer]]);
       }
     }
+    function test_control_center_shader_binding() {
+      make(rows()[0]);
+      const image = widget.children.find(child => child.source !== undefined);
+      verify(image !== undefined);
+      const effect = createTemporaryObject(image.layer.effect, null);
+      verify(effect !== null);
+      widget.widgetSettings = {enableColorization: true, colorizeSystemIcon: "primary"};
+      compare(effect.targetColor, NColor.mPrimary);
+      widget.widgetSettings = {enableColorization: true, colorizeSystemIcon: "error"};
+      compare(effect.targetColor, NColor.mError);
+      widget.widgetSettings = {enableColorization: false};
+      Settings.data.colorSchemes.darkMode = true;
+      Settings.dataChanged();
+      compare(effect.targetColor, NColor.mOnSurface);
+      Settings.data.colorSchemes.darkMode = false;
+      Settings.dataChanged();
+      compare(effect.targetColor, NColor.mSurfaceVariant);
+    }
     function test_wheel_and_update_data() { return rows().filter(row => ["Brightness", "Volume", "Microphone"].includes(row.tag)); }
     function test_wheel_and_update(row) {
       const button = make(row);
