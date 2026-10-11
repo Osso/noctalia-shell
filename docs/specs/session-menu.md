@@ -57,6 +57,8 @@ Session Menu covers the power/session action panel, countdown confirmation behav
 
 ## Tests asserting this spec
 
+- `Tests/bar-controls-warnings.test.py` — isolated production bar-button panel toggle and context/settings routing, not session actions or IPC. Cohort evidence and limits: [bar](bar.md#bar-control-cohort), [testing](testing.md#bar-control-cohort).
+
 - `Tests/session-menu-guards.test.js`
 - `Tests/session-menu-tab-guards.test.js`
 - `Tests/qml-type-annotations.test.js`

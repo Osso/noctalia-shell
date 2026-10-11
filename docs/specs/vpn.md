@@ -76,6 +76,8 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 
 ## Tests asserting this spec
 
+- `Tests/bar-controls-warnings.test.py` — isolated production bar-widget context/settings routing, connect/disconnect dispatch, visibility polling references, display modes, and vertical collapse. Cohort evidence and limits: [bar](bar.md#bar-control-cohort), [testing](testing.md#bar-control-cohort).
+
 - `Tests/vpn-service-guards.test.js`
 - `Tests/vpn-ui-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
@@ -84,7 +86,7 @@ VPN covers NetworkManager VPN discovery, connection state, connect/disconnect co
 
 ## Known gaps (current cycle)
 
-None.
+- [ ] Verify bar-widget actions and polling lifecycle against live NetworkManager; isolated dispatch and reference counts use a fake VPN service.
 
 ## Out of scope
 

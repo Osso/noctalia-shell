@@ -54,6 +54,8 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 
 ## Tests asserting this spec
 
+- `Tests/bar-controls-warnings.test.py` — isolated production bar-widget panel/display-settings routing, wheel adjustment and unavailable-monitor guard, first-update suppression/subsequent pill reveal, and display modes. Cohort evidence: [bar](bar.md#bar-control-cohort); no direct widget OSD dispatch or real monitor changes: [testing](testing.md#bar-control-cohort).
+
 - `Tests/brightness-service-guards.test.js`
 - `Tests/brightness-widget-guards.test.js`
 - `Tests/helpers.test.js`

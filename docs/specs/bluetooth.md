@@ -73,6 +73,8 @@ Bluetooth covers adapter state helpers, device ordering, device icons, connectio
 
 ## Tests asserting this spec
 
+- `Tests/bar-controls-warnings.test.py` — isolated production bar-widget toggle dispatch, panel/context/settings routing, display modes, and vertical collapse. Cohort evidence: [bar](bar.md#bar-control-cohort); fixture limits: [testing](testing.md#bar-control-cohort).
+
 - `Tests/bluetooth-service-guards.test.js`
 - `Tests/bluetooth-devices-list-runtime.test.py` — nonvisible production-list default/empty models, caller array replacement, concrete device actions/state/battery, no-signal layout geometry, installed device metadata contract, and targeted lint (only the installed state-enum metadata warning remains).
 - `Tests/qml-type-annotations.test.js`
@@ -82,7 +84,7 @@ Bluetooth covers adapter state helpers, device ordering, device icons, connectio
 ## Known gaps (current cycle)
 
 - [ ] Add executable tests for Bluetooth panel row interactions and action dispatch.
-- [ ] Add executable tests for bar/control-center Bluetooth widget behavior.
+- [ ] Add executable tests for control-center Bluetooth shortcut behavior and live adapter effects; isolated bar-widget dispatch does not exercise hardware.
 - [ ] Add probe coverage for adapter/device discovery output beyond the deterministic controller fixture if a stable read-only probe is available.
 
 ## Out of scope
