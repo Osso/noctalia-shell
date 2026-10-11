@@ -89,11 +89,11 @@ Singleton {
 
     // Initialize cache file path
     Qt.callLater(() => {
-                   if (typeof Settings !== 'undefined' && Settings.cacheDir) {
-                     wallpaperCacheFile = Settings.cacheDir + "wallpapers.json";
-                     wallpaperCacheView.path = wallpaperCacheFile;
-                   }
-                 });
+      if (typeof Settings !== 'undefined' && Settings.cacheDir) {
+        wallpaperCacheFile = Settings.cacheDir + "wallpapers.json";
+        wallpaperCacheView.path = wallpaperCacheFile;
+      }
+    });
 
     // Note: isInitialized will be set to true in wallpaperCacheView.onLoaded
     Logger.d("Wallpaper", "Triggering initial wallpaper scan");
@@ -452,7 +452,7 @@ Singleton {
     interval: Settings.data.wallpaper.randomIntervalSec * 1000
     running: Settings.data.wallpaper.randomEnabled
     repeat: true
-    onTriggered: setRandomWallpaper()
+    onTriggered: root.setRandomWallpaper()
     triggeredOnStart: false
   }
 
@@ -461,6 +461,7 @@ Singleton {
     id: wallpaperScanners
     model: Quickshell.screens
     delegate: FolderListModel {
+      id: wallpaperScanner
       required property ShellScreen modelData
 
       readonly property string screenName: modelData ? modelData.name : ""
@@ -479,8 +480,8 @@ Singleton {
       Component.onCompleted: {
         // Connect to directory change signal
         root.wallpaperDirectoryChanged.connect(function (screen, directory) {
-          if (screen === screenName) {
-            currentDirectory = directory;
+          if (screen === wallpaperScanner.screenName) {
+            wallpaperScanner.currentDirectory = directory;
           }
         });
       }
@@ -493,7 +494,7 @@ Singleton {
         } else if (status === FolderListModel.Loading) {
           // Flush the list
           root.wallpaperLists[screenName] = [];
-          scanningCount++;
+          root.scanningCount++;
         } else if (status === FolderListModel.Ready) {
           var files = [];
           for (var i = 0; i < count; i++) {
@@ -505,7 +506,7 @@ Singleton {
           // Update the list
           root.wallpaperLists[screenName] = files;
 
-          scanningCount--;
+          root.scanningCount--;
           Logger.d("Wallpaper", "List refreshed for", screenName, "count:", files.length);
           root.wallpaperListChanged(screenName, files.length);
         }
