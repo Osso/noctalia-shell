@@ -59,6 +59,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - [x] The deterministic gate also runs isolated [deployment](deployment.md) and [night-light](night-light.md) process regressions. Night-light fixtures require a C compiler, `pkg-config`, Wayland server development files, `wayland-scanner`, Quickshell, and `wlsunset`; these are test-only dependencies beyond the shell's existing runtime programs.
 - [x] `./run-tests.sh qml` runs the focused QML static check using the installed Qt 6 `/usr/lib/qt6/bin/qmllint` for checked and documented-exclusion files; it does not fall back to a PATH-resolved Qt 5 tool.
 - [x] The static check resolves virtual `qs.*` imports through a temporary on-disk module tree with deterministic declarations, including nested types and singletons; it removes the tree on exit without changing repository sources.
+- [x] The static checker lints `Tests/Qml/BatteryTabWarningsHarness.qml`, `BatteryWidgetWarningsHarness.qml`, and `MediaMiniWarningsHarness.qml` through their Python `lint-harness` modes in the same writable-singleton module staging used by behavior tests, not production singleton context. Each discovered QML file counts once; these cases require `--max-warnings 0`, retain diagnostics, and propagate injected-warning failure without exclusions or suppression. BatteryWidget's Bluetooth headphones fixture exposes a named inline component's members to lint.
 - [x] Copied QML sources preserve singleton module metadata, resolving the standalone singleton declaration warnings caused by symlink resolution. Copied JavaScript helpers preserve relative imports. Import resolution must not suppress remaining warnings; passing the static gate does not mean warning-free or type-complete analysis.
 - [x] `./run-tests.sh probes` runs read-only service probes, injects the deterministic Bluetooth CLI fixture rather than contacting host Bluetooth hardware, validates launch/IPC contracts against the canonical runtime shell path, and runs the isolated non-visible production QML lifecycle harness.
 - [x] `./run-tests.sh log` runs the active Quickshell log regression gate.
@@ -69,7 +70,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 ## How it works
 
 - Runtime behavior is implemented in `run-tests.sh` and the test/probe files listed below.
-- `qml-static-check.sh` requires `python3` and `rg`, sorts discovered QML and JavaScript paths, copies sources under a temporary `qs/` tree preserving repository-relative paths, and generates `qmldir` files for QML directories and ancestors. JavaScript copies resolve adjacent and parent-directory helper imports without adding module declarations. Singleton declarations follow `pragma Singleton`; both normal checks and exclusion rechecks lint copied QML via `qmllint -I`. Each invocation rebuilds the tree from current sources and removes it on exit.
+- `qml-static-check.sh` requires `python3` and `rg`, sorts discovered QML and JavaScript paths, copies sources under a temporary `qs/` tree preserving repository-relative paths, and generates `qmldir` files for QML directories and ancestors. JavaScript copies resolve adjacent and parent-directory helper imports without adding module declarations. Singleton declarations follow `pragma Singleton`; ordinary checks and exclusion rechecks lint copied QML via `qmllint -I`. The three fixture-aware cases additionally depend on their Python staging scripts and `Tests/qml_fixture_lint.py`; staged modules are temporary and cleaned on exit. Each invocation rebuilds the tree from current sources and removes it on exit.
 
 ## Implementation inventory
 
@@ -86,6 +87,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - `Tests/quickshell-regression.test.sh` - current-reload log filtering fixture.
 - `Bin/dev/quickshell-regression.sh` - live Quickshell log regression gate.
 - `Bin/dev/qml-static-check.sh` - focused Qt 6 qmllint gate with temporary `qs.*` import resolution.
+- `Tests/qml-static-fixtures.test.py` - bounded real-runner/Qt 6 coverage for three warning-free fixture harnesses, once-only counts, and visible injected-warning failure propagation.
 - `Tests/qml-static-imports.test.py` - real-runner/Qt 6 fixtures for nested type imports, warning-free singleton imports and next-run source freshness, adjacent and parent-directory JavaScript imports, retained undefined-value diagnostics, unchanged source bytes, and temporary-tree cleanup.
 - `Bin/dev/service-probes.sh` - read-only runtime/service probes; direct Bluetooth invocation remains a bounded host diagnostic.
 - `Tests/fixtures/bluetoothctl` - deterministic Bluetooth CLI fixture selected by automated probe runs.
@@ -100,13 +102,14 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - `Tests/service-probes-parsing.test.sh`
 - `Tests/test-runner-categories.test.sh`
 - `Tests/qml-static-imports.test.py`
+- `Tests/qml-static-fixtures.test.py`
 - `Tests/settings-types.test.py`
 
 ## Known gaps (current cycle)
 
 None for the current registry-selection contract.
 
-- [ ] Qt 6 static-analysis warnings remain after `qs.*` and relative JavaScript import resolution, including type-context diagnostics. These are not suppressed; resolved singleton declaration warnings do not make the gate a warning-free audit.
+- [ ] Qt 6 static-analysis warnings remain outside the three warning-free fixture harness checks, including production type-context diagnostics. Fixture-aware lint does not establish warning-free production analysis or whole-shell runtime acceptance; remaining diagnostics are not suppressed.
 
 ## Out of scope
 
