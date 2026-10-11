@@ -31,22 +31,22 @@ Singleton {
 
   FileView {
     id: githubDataFileView
-    path: githubDataFile
+    path: root.githubDataFile
     watchChanges: true
     onFileChanged: reload()
     onAdapterUpdated: writeAdapter()
     Component.onCompleted: {
-      loadCacheMetadata();
+      root.loadCacheMetadata();
       reload();
     }
     onLoaded: {
-      loadFromCache();
+      root.loadFromCache();
     }
     onLoadFailed: function (error) {
       if (error.toString().includes("No such file") || error === 2) {
         // Fetch data after a short delay to ensure file is created
         Qt.callLater(() => {
-                       fetchFromGitHub();
+                       root.fetchFromGitHub();
                      });
       }
     }
@@ -457,9 +457,9 @@ Singleton {
     interval: 100
     repeat: true
     onTriggered: {
-      if (metadataLoaded && contributors.length > 0 && !avatarsCached) {
+      if (root.metadataLoaded && root.contributors.length > 0 && !root.avatarsCached) {
         stop();
-        Qt.callLater(cacheTopContributorAvatars);
+        Qt.callLater(root.cacheTopContributorAvatars);
       }
     }
   }
@@ -472,7 +472,7 @@ Singleton {
     stdout: StdioCollector {
       onStreamFinished: {
         try {
-          const parsed = parseVersionResponse(text);
+          const parsed = root.parseVersionResponse(text);
           if (parsed.version) {
             root.data.version = parsed.version;
             root.latestVersion = parsed.version;
@@ -485,7 +485,7 @@ Singleton {
         }
 
         // Check if both processes are done
-        checkAndSaveData();
+        root.checkAndSaveData();
       }
     }
   }
@@ -500,7 +500,7 @@ Singleton {
         try {
           const response = text;
           Logger.d("GitHub", "Raw contributors response length:", response ? response.length : 0);
-          const parsed = parseContributorsResponse(response);
+          const parsed = root.parseContributorsResponse(response);
           if (!parsed.warning) {
             Logger.d("GitHub", "Parsed contributors data type:", typeof parsed.contributors, "length:", parsed.contributors.length);
             root.data.contributors = parsed.contributors;
@@ -518,7 +518,7 @@ Singleton {
         }
 
         // Check if both processes are done
-        checkAndSaveData();
+        root.checkAndSaveData();
       }
     }
   }

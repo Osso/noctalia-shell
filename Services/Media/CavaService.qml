@@ -75,19 +75,19 @@ Singleton {
     }
     onStarted: {
       Logger.d("Cava", "Process started");
-      for (const k in config) {
-        if (typeof config[k] !== "object") {
-          write(k + "=" + config[k] + "\n");
+      for (const k in root.config) {
+        if (typeof root.config[k] !== "object") {
+          write(k + "=" + root.config[k] + "\n");
           continue;
         }
         write("[" + k + "]\n");
-        const obj = config[k];
+        const obj = root.config[k];
         for (const k2 in obj) {
           write(k2 + "=" + obj[k2] + "\n");
         }
       }
       stdinEnabled = false;
-      values = Array(barsCount).fill(0);
+      root.values = Array(root.barsCount).fill(0);
     }
     stdout: SplitParser {
       onRead: data => {
@@ -119,7 +119,7 @@ Singleton {
         }
 
         // Update values only if there's a significant change
-        if (!isIdle) {
+        if (!root.isIdle) {
           root.values = newValues;
         }
       }

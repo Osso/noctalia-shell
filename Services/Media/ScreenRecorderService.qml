@@ -32,7 +32,7 @@ Singleton {
     target: ProgramCheckerService
     function onChecksCompleted() {
       if (ProgramCheckerService.gpuScreenRecorderAvailable)
-        refreshCaptureSources();
+        root.refreshCaptureSources();
     }
   }
 
@@ -331,10 +331,10 @@ Singleton {
     onExited: function (exitCode, exitStatus) {
       if (exitCode === 0) {
         // Portals available, proceed to launch
-        launchRecorder();
+        root.launchRecorder();
       } else {
-        isPending = false;
-        hasActiveRecording = false;
+        root.isPending = false;
+        root.hasActiveRecording = false;
         ToastService.showError(I18n.tr("toast.recording.no-portals"), I18n.tr("toast.recording.no-portals-desc"));
       }
     }
