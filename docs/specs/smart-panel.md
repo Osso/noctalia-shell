@@ -59,6 +59,7 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 - `Tests/panel-service-guards.test.js`
 - `Tests/Qml/PanelServiceLifecycleHarness.qml`
 - `Tests/panel-service-lifecycle.test.sh` runs production SmartPanel/PanelService non-visibly: 24 geometry cases (two viewport sizes × four bar edges × three placement modes), one close-before-fade case, and one teardown-while-open case. Assertions cover nonzero animations, content resizing without recreation, Loader unloading, caller Component context, signal counts, and stable registry cleanup after output-name changes. Settings bootstrap is real but isolated; panel content is a fixture, not each consumer panel.
+- `Tests/Qml/MainScreenWarningsHarness.qml` and `Tests/main-screen-warnings.test.py runtime` run production MainScreen non-visibly on private headless Cage. Seventeen fixture-panel cases cover loader registration, unloaded placeholders, caller context/name and screen routing, loaded region handoff, open/close/reopen reuse, keyboard-focus properties, and destruction unregistering every loader once. Closed/closing color is transparent; open color is black with configured dim alpha. With the bar hidden, closed/closing mask construction has zero-sized subtract regions. Panels, backgrounds, and services are inert fixtures; animations are disabled. These are QML color/Region/layer-shell property assertions, not compositor pixels, input delivery, real SmartPanel animations, or consumer-panel acceptance.
 - `Tests/smart-panel-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
@@ -66,6 +67,7 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 ## Known gaps (current cycle)
 
 - [ ] Four dynamic Loader member diagnostics remain after the `05772415d` SmartPanel warning reduction (76 → 4); runtime lifecycle coverage is not zero-warning static-analysis acceptance.
+- [ ] MainScreen retains 11 `missing-property` diagnostics after `8a689c0bc` (48 → 11): five installed screen-metadata diagnostics and six optional SmartPanel key-handler diagnostics. Its standalone lint gate accepts exactly that count with exit status zero; no compositor pixel or desktop input-delivery proof is provided by its nonvisible fixture suite.
 
 - [ ] Add executable coverage for watchdog timeout recovery and zero-duration animation paths.
 - [ ] Add executable coverage for remaining anchor combinations and constrained/oversized content.

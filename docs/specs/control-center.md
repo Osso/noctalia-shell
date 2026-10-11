@@ -65,6 +65,8 @@ Control Center covers the panel card loader, shortcut widget registry, shortcut/
 - `Tests/qml-type-annotations.test.js`
 - `Tests/qml-runtime-guards.test.js`
 - `Tests/source-coverage.test.js`
+- AudioCard isolated volume/mute/device-switch/disposal coverage and fixture limits: [audio](audio.md#tests-asserting-this-spec).
+- `Tests/main-screen-warnings.test.py runtime` includes the Control Center loader among 17 production MainScreen lifecycle cases: registration, unloaded placeholder, caller context/name and screen routing, region handoff, open/closing state, keyboard focus, reopen reuse, and destruction cleanup. Panel content and PanelService are fixtures; this does not test Control Center cards or placement. Shared host coverage and residual diagnostics: [smart panel](smart-panel.md#tests-asserting-this-spec).
 
 ## Known gaps (current cycle)
 

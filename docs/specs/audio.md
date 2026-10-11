@@ -73,12 +73,13 @@ Audio covers PipeWire-backed output/input volume state, device selection, OSD su
 - `Tests/qml-runtime-guards.test.js`
 - `Tests/Qml/AudioPanelRegressionHarness.qml`
 - `Tests/audio-panel-regression.test.sh`
+- `Tests/Qml/AudioCardHarness.qml` and `Tests/audio-card-warnings.test.py behavior` exercise production AudioCard, AudioService, and supporting controls under isolated offscreen `qmltestrunner`: initial/external output and input volume, drag/debounce/release, mute and volume-driven unmute, device switching during pending sync, disconnect before sync, and destruction/recreation with pending sync. Six behavioral cases plus QtTest init/cleanup yield eight reported passes. PipeWire nodes and bootstrap/UI services are fixtures; actions invoke signals directly, not physical input. Standalone `lint` requires zero AudioCard warnings and exit status zero (41 → 0 at `755150f52`); neither mode claims runner integration or whole-shell acceptance.
 
 ## Known gaps (current cycle)
 
 - [ ] Extract separate specs for media playback, screen recording, and Cava visualization so this audio spec stays focused on core audio control.
 - [ ] Add behavior tests for UI consumers that call `AudioService.suppressOutputOSD` and `AudioService.suppressInputOSD`.
-- [ ] Add executable tests for volume setter command paths with mocked PipeWire node objects.
+- [ ] Real PipeWire integration and physical slider/button input remain untested by the AudioCard fixture suite; mocked node volume/mute setter paths are covered there.
 
 ## Out of scope
 
