@@ -67,9 +67,9 @@ def lint(directory):
         if "[unqualified]" in block and "ComponentBehavior: Bound" not in block
     ]
     assert not actionable, "Known-owner accesses remain:\n" + "".join(actionable)
-    assert counts.keys() <= {"unqualified", "missing-property", "incompatible-type"}
+    assert counts == {"unqualified": 6}, dict(counts)
     assert result.returncode in (0, 255)
-    print("WALLPAPER_PANEL_LINT_PASS (unbound outer IDs retained)")
+    print("WALLPAPER_PANEL_LINT_PASS (6 unbound creation-site captures retained)")
 
 
 def stage_runtime(directory):
@@ -93,7 +93,14 @@ def stage_runtime(directory):
         + chunk(b"IDAT", zlib.compress(b"\x00\x80\x80\x80"))
         + chunk(b"IEND", b"")
     )
-    for name in ("forest.png", "desert.png", "ocean.png"):
+    for name in (
+        "forest.png",
+        "desert.png",
+        "ocean.png",
+        "meadow.png",
+        "sky.png",
+        "city.png",
+    ):
         (files / name).write_bytes(image)
     write_module(
         directory,

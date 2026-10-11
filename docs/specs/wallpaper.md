@@ -37,6 +37,8 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 - [x] Current wallpaper view lookup returns `null` without panel content.
 - [x] Current wallpaper view lookup returns the current screen repeater item.
 - [x] Current grid lookup returns the current wallpaper view grid and fails closed to `null` without a current grid.
+- [x] Local and Wallhaven grids recreate delegates after model clearing and reassignment, preserving model paths/IDs, selection, navigation, and monitor options.
+- [x] Local and Wallhaven vertical scrollbars follow their grid's effective layout mirroring, moving left when mirrored and right when restored.
 - [x] Wallpaper interval preset selection persists the selected interval, restarts the random wallpaper timer, and hides the custom interval control.
 - [x] Wallpaper interval selection reports selected state only for the current interval.
 
@@ -82,7 +84,7 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 - `Tests/wallpaper-service-guards.test.js`
 - `Tests/wallhaven-service-guards.test.js`
 - `Tests/wallpaper-panel-guards.test.js`
-- `Tests/wallpaper-panel-warnings.test.py` — standalone `--mode lint` checks only the panel, rejecting known-owner unqualified accesses while retaining unbound outer-ID diagnostics; `--mode runtime` runs the production panel offscreen with temporary image paths and fake desktop/settings/services. Covers fuzzy filtering, refresh/screen roles, local keyboard/tap selection, monitor/filename options, Wallhaven search/resolution/download/pagination/error state, and disposal with pending debounce. Requires warning-free runtime output and unchanged real settings. Does not test actual wallpaper application, network, visible surfaces, or resource use.
+- `Tests/wallpaper-panel-warnings.test.py` — standalone `--mode lint` checks only the panel, rejecting missing-property and known-owner unqualified accesses while retaining six unbound creation-site captures; `--mode runtime` runs the production panel offscreen with temporary image paths and fake desktop/settings/services. Covers fuzzy filtering, refresh/screen roles, model clear/reassignment, local keyboard/tap selection, grid navigation, monitor/filename options, scrollbar mirroring transitions, Wallhaven search/resolution/download/pagination/error state, and disposal with pending debounce. Requires warning-free runtime output and unchanged real settings. Does not test actual wallpaper application, network, visible surfaces, or resource use.
 - `Tests/wallpaper-tab-guards.test.js`
 - `Tests/qml-runtime-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
