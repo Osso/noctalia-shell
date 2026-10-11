@@ -127,9 +127,6 @@ ShellRoot {
     }
     if (wizard.currentStep === 3) {
       const customizeStep = findItem(step, item => item.selectedBarPosition !== undefined);
-      customizeStep.scaleRatioChanged(1.1);
-      assertValue(wizard.selectedScaleRatio, 1.1, "changed scale handoff");
-      assertValue(Settings.data.general.scaleRatio, 1.1, "changed scale applied");
       customizeStep.scaleRatioChanged(cases[caseIndex].scale);
       customizeStep.barPositionChanged("bottom");
       assertValue(wizard.selectedScaleRatio, cases[caseIndex].scale, "scale handoff");
@@ -140,6 +137,12 @@ ShellRoot {
   }
 
   function exerciseCompletion() {
+    // Exercise a changed scale after stable preview snapshots, not mid-layout polish.
+    const customizeStep = findItem(step, item => item.selectedBarPosition !== undefined);
+    customizeStep.scaleRatioChanged(1.1);
+    assertValue(wizard.selectedScaleRatio, 1.1, "changed scale handoff");
+    assertValue(Settings.data.general.scaleRatio, 1.1, "changed scale applied");
+    customizeStep.scaleRatioChanged(cases[caseIndex].scale);
     const saves = Settings.saveRequests;
     const warnings = Logger.warnings.length;
     assertValue(wizard.isClosing, false, "navigation remains open");
