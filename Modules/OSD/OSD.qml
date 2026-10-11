@@ -332,7 +332,6 @@ Variants {
           PanelWindow {
             id: panel
 
-            readonly property alias owner: root
             readonly property ShellScreen sourceScreen: root.modelData
 
             Connections {
@@ -358,7 +357,7 @@ Variants {
             readonly property bool verticalMode: location === "left" || location === "right"
 
             // Dimensions
-            readonly property bool isShortMode: panel.owner.currentOSDType === OSD.Type.LockKey
+            readonly property bool isShortMode: root.currentOSDType === OSD.Type.LockKey
             readonly property int longHWidth: Math.round(320 * Style.uiScaleRatio)
             readonly property int longHHeight: Math.round(72 * Style.uiScaleRatio)
             readonly property int shortHWidth: Math.round(180 * Style.uiScaleRatio)
@@ -435,9 +434,9 @@ Variants {
                 interval: Style.animationNormal + 50
                 onTriggered: {
                   osdItem.visible = false;
-                  panel.owner.currentOSDType = -1;
-                  panel.owner.lastLockKeyChanged = ""; // Reset the lock key change indicator
-                  panel.owner.active = false;
+                  root.currentOSDType = -1;
+                  root.lastLockKeyChanged = ""; // Reset the lock key change indicator
+                  root.active = false;
                 }
               }
 
@@ -472,7 +471,6 @@ Variants {
                 id: horizontalContent
                 RowLayout {
                   id: horizontalLayout
-                  readonly property alias owner: root
                   property int barThickness: panel.barThickness
                   anchors.fill: parent
                   anchors.leftMargin: Style.marginL
@@ -491,8 +489,8 @@ Variants {
 
                   // Common Icon for all types
                   NIcon {
-                    icon: horizontalLayout.owner.getIcon()
-                    color: horizontalLayout.owner.getIconColor()
+                    icon: root.getIcon()
+                    color: root.getIconColor()
                     pointSize: Style.fontSizeXL
                     Layout.alignment: Qt.AlignVCenter
 
@@ -506,9 +504,9 @@ Variants {
 
                   // Lock Key Status Text (replaces progress bar)
                   NText {
-                    visible: horizontalLayout.owner.currentOSDType === OSD.Type.LockKey
-                    text: horizontalLayout.owner.getDisplayPercentage()
-                    color: horizontalLayout.owner.getProgressColor()
+                    visible: root.currentOSDType === OSD.Type.LockKey
+                    text: root.getDisplayPercentage()
+                    color: root.getProgressColor()
                     pointSize: Style.fontSizeM
                     family: Settings.data.ui.fontFixed
                     font.weight: Style.fontWeightMedium
@@ -519,7 +517,7 @@ Variants {
 
                   // Progress Bar for Volume/Brightness
                   Rectangle {
-                    visible: horizontalLayout.owner.currentOSDType !== OSD.Type.LockKey
+                    visible: root.currentOSDType !== OSD.Type.LockKey
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
                     height: horizontalLayout.barThickness
@@ -530,9 +528,9 @@ Variants {
                       anchors.left: parent.left
                       anchors.top: parent.top
                       anchors.bottom: parent.bottom
-                      width: parent.width * Math.min(1.0, horizontalLayout.owner.getCurrentValue() / horizontalLayout.owner.getMaxValue())
+                      width: parent.width * Math.min(1.0, root.getCurrentValue() / root.getMaxValue())
                       radius: parent.radius
-                      color: horizontalLayout.owner.getProgressColor()
+                      color: root.getProgressColor()
 
                       Behavior on width {
                         NumberAnimation {
@@ -551,8 +549,8 @@ Variants {
 
                   // Percentage Text for Volume/Brightness
                   NText {
-                    visible: horizontalLayout.owner.currentOSDType !== OSD.Type.LockKey
-                    text: horizontalLayout.owner.getDisplayPercentage()
+                    visible: root.currentOSDType !== OSD.Type.LockKey
+                    text: root.getDisplayPercentage()
                     color: NColor.mOnSurface
                     pointSize: Style.fontSizeS
                     family: Settings.data.ui.fontFixed
@@ -571,32 +569,31 @@ Variants {
                 id: verticalContent
                 ColumnLayout {
                   id: verticalLayout
-                  readonly property alias owner: root
                   property int barThickness: panel.barThickness
                   anchors.fill: parent
                   anchors.topMargin: Style.marginL
                   anchors.bottomMargin: Style.marginL
-                  spacing: verticalLayout.owner.currentOSDType === OSD.Type.LockKey ? Style.marginM : Style.marginS
+                  spacing: root.currentOSDType === OSD.Type.LockKey ? Style.marginM : Style.marginS
                   clip: true
 
                   // Unified Text display for Percentage or Lock Status
                   NText {
-                    text: verticalLayout.owner.getDisplayPercentage()
-                    color: verticalLayout.owner.currentOSDType === OSD.Type.LockKey ? verticalLayout.owner.getProgressColor() : NColor.mOnSurface
-                    pointSize: verticalLayout.owner.currentOSDType === OSD.Type.LockKey ? Style.fontSizeM : Style.fontSizeS
+                    text: root.getDisplayPercentage()
+                    color: root.currentOSDType === OSD.Type.LockKey ? root.getProgressColor() : NColor.mOnSurface
+                    pointSize: root.currentOSDType === OSD.Type.LockKey ? Style.fontSizeM : Style.fontSizeS
                     family: Settings.data.ui.fontFixed
-                    font.weight: verticalLayout.owner.currentOSDType === OSD.Type.LockKey ? Style.fontWeightMedium : Style.fontWeightRegular
+                    font.weight: root.currentOSDType === OSD.Type.LockKey ? Style.fontWeightMedium : Style.fontWeightRegular
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignHCenter
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     // Only set preferredHeight for the standard case to maintain layout
-                    Layout.preferredHeight: verticalLayout.owner.currentOSDType === OSD.Type.LockKey ? -1 : Math.round(20 * Style.uiScaleRatio)
+                    Layout.preferredHeight: root.currentOSDType === OSD.Type.LockKey ? -1 : Math.round(20 * Style.uiScaleRatio)
                   }
 
                   // Progress Bar for Volume/Brightness
                   Item {
-                    visible: verticalLayout.owner.currentOSDType !== OSD.Type.LockKey
+                    visible: root.currentOSDType !== OSD.Type.LockKey
                     Layout.fillWidth: true
                     Layout.fillHeight: true
 
@@ -612,9 +609,9 @@ Variants {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.bottom: parent.bottom
-                        height: parent.height * Math.min(1.0, verticalLayout.owner.getCurrentValue() / verticalLayout.owner.getMaxValue())
+                        height: parent.height * Math.min(1.0, root.getCurrentValue() / root.getMaxValue())
                         radius: parent.radius
-                        color: verticalLayout.owner.getProgressColor()
+                        color: root.getProgressColor()
 
                         Behavior on height {
                           NumberAnimation {
@@ -634,10 +631,10 @@ Variants {
 
                   // Unified Icon display
                   NIcon {
-                    icon: verticalLayout.owner.getIcon()
-                    color: verticalLayout.owner.getIconColor()
-                    pointSize: verticalLayout.owner.currentOSDType === OSD.Type.LockKey ? Style.fontSizeXL : Style.fontSizeL
-                    Layout.alignment: verticalLayout.owner.currentOSDType === OSD.Type.LockKey ? Qt.AlignHCenter : (Qt.AlignHCenter | Qt.AlignBottom)
+                    icon: root.getIcon()
+                    color: root.getIconColor()
+                    pointSize: root.currentOSDType === OSD.Type.LockKey ? Style.fontSizeXL : Style.fontSizeL
+                    Layout.alignment: root.currentOSDType === OSD.Type.LockKey ? Qt.AlignHCenter : (Qt.AlignHCenter | Qt.AlignBottom)
 
                     Behavior on color {
                       ColorAnimation {
@@ -676,8 +673,8 @@ Variants {
                 osdItem.opacity = 0;
                 osdItem.scale = 0.85;
                 osdItem.visible = false;
-                panel.owner.currentOSDType = -1;
-                panel.owner.active = false;
+                root.currentOSDType = -1;
+                root.active = false;
               }
             }
 
