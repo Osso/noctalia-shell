@@ -153,9 +153,7 @@ def behavior(directory, focused_start, production_style, reload_lifecycle):
         assert output.count("INFO: Configuration Loaded") == 2, (
             "both generations must load"
         )
-    assert not any(level in output for level in (" WARN ", " ERROR ", " FATAL ")), (
-        output
-    )
+    assert not re.search(r"^\s*(?:WARN|ERROR|FATAL)(?:\s|:)", output, re.M), output
     print("SETTINGS_SHA_UNCHANGED", hashlib.sha256(original).hexdigest())
 
 

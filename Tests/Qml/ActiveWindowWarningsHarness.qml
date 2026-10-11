@@ -19,6 +19,14 @@ ShellRoot {
     property int generation: 0
   }
 
+  // Match shell.qml: reload confirmation UI has no offscreen PanelWindow backend.
+  Connections {
+    target: Quickshell
+    function onReloadCompleted() {
+      Quickshell.inhibitReloadPopup();
+    }
+  }
+
   function require(condition, message) {
     if (!condition) {
       console.error("ACTIVE_WINDOW_BEHAVIOR_FAIL", message);
