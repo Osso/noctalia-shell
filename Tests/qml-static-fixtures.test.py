@@ -2,8 +2,8 @@
 """Bounded real-qmllint regression for the three behavioral fixture contexts."""
 
 from pathlib import Path
+import json
 import os
-import re
 import shutil
 import subprocess
 import tempfile
@@ -65,8 +65,16 @@ class FixtureLintTest(unittest.TestCase):
             root = Path(temp)
             runner = self.stage_repository(root)
             result = self.run_checker(runner, root)
-            self.assertNotIn("[read-only-property]", result.stderr)
-            self.assertEqual(re.findall(r"^Warning:.*$", result.stderr, re.M), [])
+            warnings = [
+                warning
+                for line in result.stdout.splitlines()
+                if line.startswith('{"files":')
+                for file in json.loads(line)["files"]
+                for warning in file["warnings"]
+                if warning["type"] in ("warning", "error")
+            ]
+            self.assertFalse(any(w["id"] == "read-only-property" for w in warnings))
+            self.assertEqual(warnings, [])
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("Checked 3 QML files", result.stdout)
             self.assertIn("skipped 0", result.stdout)
@@ -89,14 +97,13 @@ class FixtureLintTest(unittest.TestCase):
                     )
                 )
                 # Earlier genuine warnings must not mask this injected failure.
-                with (root / ".ignore").open("a") as ignored:
-                    for other in HARNESS_SCRIPTS:
-                        if other != name:
-                            ignored.write(f"Tests/Qml/{other}\n")
+                for other in HARNESS_SCRIPTS:
+                    if other != name:
+                        (root / "Tests/Qml" / other).unlink()
                 result = self.run_checker(runner, root)
                 self.assertNotEqual(result.returncode, 0)
-                self.assertIn("missingFixtureValue", result.stderr)
-                self.assertIn("[missing-property]", result.stderr)
+                self.assertIn("missingFixtureValue", result.stdout)
+                self.assertIn('"id":"missing-property"', result.stdout)
                 self.assertNotIn("ok qmlStaticCheck", result.stdout)
                 self.assertNotIn("Checked 3 QML files", result.stdout)
 

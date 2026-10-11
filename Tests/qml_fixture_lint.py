@@ -16,6 +16,8 @@ def check_harness(module_root, harness):
             "/usr/lib/qt6/qml",
             "--max-warnings",
             "0",
+            "--json",
+            "-",
             str(harness),
         ],
         cwd=Path(__file__).resolve().parents[1],
