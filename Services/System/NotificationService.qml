@@ -51,11 +51,11 @@ Singleton {
       antialiasing: true
 
       onStatusChanged: {
-        if (imageQueue.length === 0) {
+        if (root.imageQueue.length === 0) {
           return;
         }
 
-        const req = imageQueue[0];
+        const req = root.imageQueue[0];
 
         if (status === Image.Ready) {
           Quickshell.execDetached(["mkdir", "-p", Settings.cacheDirImagesNotifications]);
@@ -70,9 +70,9 @@ Singleton {
       }
 
       function processNextImage() {
-        imageQueue.shift();
-        if (imageQueue.length > 0) {
-          source = imageQueue[0].src;
+        root.imageQueue.shift();
+        if (root.imageQueue.length > 0) {
+          source = root.imageQueue[0].src;
         } else {
           source = "";
         }
@@ -517,7 +517,7 @@ Singleton {
   Timer {
     interval: 50
     repeat: true
-    running: activeList.count > 0
+    running: root.activeList.count > 0
     onTriggered: updateAllProgress()
   }
 
@@ -602,7 +602,7 @@ Singleton {
   // Persistence - History
   FileView {
     id: historyFileView
-    path: historyFile
+    path: root.historyFile
     printErrors: false
     onLoaded: loadHistory()
     onLoadFailed: error => {

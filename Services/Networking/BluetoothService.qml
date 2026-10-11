@@ -51,29 +51,29 @@ Singleton {
     id: discoveryTimer
     interval: 1000
     repeat: false
-    onTriggered: adapter.discovering = true
+    onTriggered: root.adapter.discovering = true
   }
 
   Connections {
-    target: adapter
+    target: root.adapter
     function onStateChanged() {
-      if (!adapter) {
+      if (!root.adapter) {
         Logger.w("Bluetooth", "onStateChanged", "No adapter available");
         return;
       }
-      if (adapter.state === BluetoothAdapterState.Enabling || adapter.state === BluetoothAdapterState.Disabling) {
+      if (root.adapter.state === BluetoothAdapterState.Enabling || root.adapter.state === BluetoothAdapterState.Disabling) {
         return;
       }
 
-      Logger.d("Bluetooth", "onStateChanged", adapter.state);
-      const bluetoothBlockedToggled = (root.blocked !== lastBluetoothBlocked);
+      Logger.d("Bluetooth", "onStateChanged", root.adapter.state);
+      const bluetoothBlockedToggled = (root.blocked !== root.lastBluetoothBlocked);
       root.lastBluetoothBlocked = root.blocked;
       if (bluetoothBlockedToggled) {
         root.startWifiBlockedCheck();
-      } else if (adapter.state === BluetoothAdapterState.Enabled) {
+      } else if (root.adapter.state === BluetoothAdapterState.Enabled) {
         ToastService.showNotice(I18n.tr("bluetooth.panel.title"), I18n.tr("toast.bluetooth.enabled"), "bluetooth");
         discoveryTimer.running = true;
-      } else if (adapter.state === BluetoothAdapterState.Disabled) {
+      } else if (root.adapter.state === BluetoothAdapterState.Disabled) {
         ToastService.showNotice(I18n.tr("bluetooth.panel.title"), I18n.tr("toast.bluetooth.disabled"), "bluetooth-off");
       }
     }

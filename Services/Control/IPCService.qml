@@ -432,23 +432,23 @@ Item {
     running: false
     interval: 20
     onTriggered: {
-      Logger.d("IPC", "Screen debounced to:", detectedScreen ? detectedScreen.name : "null");
+      Logger.d("IPC", "Screen debounced to:", root.detectedScreen ? root.detectedScreen.name : "null");
 
       // Execute pending callback if any
-      if (pendingCallback) {
+      if (root.pendingCallback) {
         if (!Settings.data.general.allowPanelsOnScreenWithoutBar) {
           // If we explicitely disabled panels on screen without bar, check if bar is configured
           // for this screen, and fallback to primary screen if necessary
           const monitors = Settings.data.bar.monitors || [];
-          const hasBar = monitors.length === 0 || (detectedScreen && monitors.includes(detectedScreen.name));
+          const hasBar = monitors.length === 0 || (root.detectedScreen && monitors.includes(root.detectedScreen.name));
           if (!hasBar) {
-            detectedScreen = Quickshell.screens[0];
+            root.detectedScreen = Quickshell.screens[0];
           }
         }
 
-        Logger.d("IPC", "Executing pending IPC callback on screen:", detectedScreen.name);
-        pendingCallback(detectedScreen);
-        pendingCallback = null;
+        Logger.d("IPC", "Executing pending IPC callback on screen:", root.detectedScreen.name);
+        root.pendingCallback(root.detectedScreen);
+        root.pendingCallback = null;
       }
 
       // Clean up

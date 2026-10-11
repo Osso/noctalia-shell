@@ -120,10 +120,10 @@ Singleton {
         requestDdcDetection();
       } else {
         // Clear DDC monitors when disabled
-        ddcDetectionGeneration += 1;
-        ddcDetectionPending = false;
+        root.ddcDetectionGeneration += 1;
+        root.ddcDetectionPending = false;
         ddcProc.running = false;
-        ddcMonitors = [];
+        root.ddcMonitors = [];
       }
     }
   }

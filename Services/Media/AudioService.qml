@@ -126,7 +126,7 @@ Singleton {
 
   // Watch output device changes for clamping
   Connections {
-    target: sinkAudio
+    target: root.sinkAudio
 
     function onVolumeChanged() {
       // Ignore volume changes if we're the one setting it (to prevent feedback loop)
@@ -160,7 +160,7 @@ Singleton {
 
   // Watch input device changes for clamping
   Connections {
-    target: sourceAudio
+    target: root.sourceAudio
 
     function onVolumeChanged() {
       // Ignore volume changes if we're the one setting it (to prevent feedback loop)

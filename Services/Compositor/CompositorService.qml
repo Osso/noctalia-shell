@@ -99,7 +99,7 @@ Singleton {
       if (item) {
         root.backend = item;
         setupBackendConnections();
-        backend.initialize();
+        root.backend.initialize();
       }
     }
   }
@@ -410,7 +410,7 @@ Singleton {
     running: false
 
     onTriggered: {
-      lockAndSuspendCheckCount++;
+      root.lockAndSuspendCheckCount++;
 
       // Check if lock screen is now active
       if (PanelService && PanelService.lockScreen && PanelService.lockScreen.active) {
@@ -418,25 +418,25 @@ Singleton {
         if (PanelService.lockScreen.item) {
           Logger.i("Compositor", "Lock screen confirmed active, suspending");
           stop();
-          lockAndSuspendCheckCount = 0;
+          root.lockAndSuspendCheckCount = 0;
           suspend();
         } else {
           // Lock screen is active but component not loaded yet, wait a bit more
-          if (lockAndSuspendCheckCount > 20) {
+          if (root.lockAndSuspendCheckCount > 20) {
             // Max 2 seconds wait
             Logger.w("Compositor", "Lock screen active but component not loaded, suspending anyway");
             stop();
-            lockAndSuspendCheckCount = 0;
+            root.lockAndSuspendCheckCount = 0;
             suspend();
           }
         }
       } else {
         // Lock screen not active yet, keep checking
-        if (lockAndSuspendCheckCount > 30) {
+        if (root.lockAndSuspendCheckCount > 30) {
           // Max 3 seconds wait
           Logger.w("Compositor", "Lock screen failed to activate, suspending anyway");
           stop();
-          lockAndSuspendCheckCount = 0;
+          root.lockAndSuspendCheckCount = 0;
           suspend();
         }
       }
