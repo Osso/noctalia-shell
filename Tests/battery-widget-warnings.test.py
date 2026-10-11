@@ -214,12 +214,13 @@ property var devices: ({values: [displayDevice, peripheral]})"""),
         directory,
         "qs.Services.Networking",
         {
-            "BluetoothService": singleton("""property QtObject headphones: QtObject {
+            "BluetoothService": singleton("""component Headphones: QtObject {
 property string address: "AA:BB:CC:DD:EE:FF"
 property bool batteryAvailable: true
 property real battery: 0.43
 property bool connected: true
 }
+property Headphones headphones: Headphones {}
 property var devices: ({values: [headphones]})"""),
         },
     )
