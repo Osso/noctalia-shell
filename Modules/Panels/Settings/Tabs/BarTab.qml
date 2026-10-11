@@ -11,19 +11,6 @@ ColumnLayout {
   id: root
   spacing: Style.marginL
 
-  // Helper functions to update arrays immutably
-  function addMonitor(list, name) {
-    const arr = (list || []).slice();
-    if (!arr.includes(name))
-      arr.push(name);
-    return arr;
-  }
-  function removeMonitor(list, name) {
-    return (list || []).filter(function (n) {
-      return n !== name;
-    });
-  }
-
   NHeader {
     label: I18n.tr("settings.bar.appearance.section.label")
     description: I18n.tr("settings.bar.appearance.section.description")
@@ -303,6 +290,20 @@ ColumnLayout {
       model: Quickshell.screens || []
       delegate: NCheckbox {
         id: monitorCheckbox
+
+        // Monitor-list helpers belong to the delegate that handles toggles.
+        function addMonitor(list, name) {
+          const arr = (list || []).slice();
+          if (!arr.includes(name))
+            arr.push(name);
+          return arr;
+        }
+        function removeMonitor(list, name) {
+          return (list || []).filter(function (n) {
+            return n !== name;
+          });
+        }
+
         required property ShellScreen modelData
         readonly property string monitorName: monitorCheckbox.modelData ? monitorCheckbox.modelData.name : ""
         readonly property string monitorModel: monitorCheckbox.modelData ? monitorCheckbox.modelData.model : ""
@@ -323,9 +324,9 @@ ColumnLayout {
         checked: (Settings.data.bar.monitors || []).indexOf(monitorCheckbox.monitorName) !== -1
         onToggled: checked => {
           if (checked) {
-            Settings.data.bar.monitors = root.addMonitor(Settings.data.bar.monitors, monitorCheckbox.monitorName);
+            Settings.data.bar.monitors = monitorCheckbox.addMonitor(Settings.data.bar.monitors, monitorCheckbox.monitorName);
           } else {
-            Settings.data.bar.monitors = root.removeMonitor(Settings.data.bar.monitors, monitorCheckbox.monitorName);
+            Settings.data.bar.monitors = monitorCheckbox.removeMonitor(Settings.data.bar.monitors, monitorCheckbox.monitorName);
           }
         }
       }
