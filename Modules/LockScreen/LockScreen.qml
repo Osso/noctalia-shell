@@ -61,6 +61,7 @@ Loader {
         locked: root.active
 
         WlSessionLockSurface {
+          id: lockSurface
           readonly property date now: Time.now
 
           Item {
@@ -114,7 +115,7 @@ Loader {
             id: lockBgImage
             anchors.fill: parent
             fillMode: Image.PreserveAspectCrop
-            source: screen ? WallpaperService.getWallpaper(screen.name) : ""
+            source: lockSurface.screen ? WallpaperService.getWallpaper(lockSurface.screen.name) : ""
             cache: true
             smooth: true
             mipmap: false
@@ -180,9 +181,9 @@ Loader {
               }
 
               onWidthChanged: if (available)
-                                requestPaint()
+                requestPaint()
               onHeightChanged: if (available)
-                                 requestPaint()
+                requestPaint()
             }
 
             // Top-right concave corner
@@ -213,9 +214,9 @@ Loader {
               }
 
               onWidthChanged: if (available)
-                                requestPaint()
+                requestPaint()
               onHeightChanged: if (available)
-                                 requestPaint()
+                requestPaint()
             }
 
             // Bottom-left concave corner
@@ -246,9 +247,9 @@ Loader {
               }
 
               onWidthChanged: if (available)
-                                requestPaint()
+                requestPaint()
               onHeightChanged: if (available)
-                                 requestPaint()
+                requestPaint()
             }
 
             // Bottom-right concave corner
@@ -279,9 +280,9 @@ Loader {
               }
 
               onWidthChanged: if (available)
-                                requestPaint()
+                requestPaint()
               onHeightChanged: if (available)
-                                 requestPaint()
+                requestPaint()
             }
           }
 
@@ -799,6 +800,7 @@ Loader {
                     Repeater {
                       model: MediaService.currentPlayer && MediaService.canPlay ? 3 : 4
                       delegate: ColumnLayout {
+                        id: forecastDay
                         required property int index
 
                         Layout.fillWidth: true
@@ -806,7 +808,7 @@ Loader {
 
                         NText {
                           text: {
-                            var weatherDate = new Date(LocationService.data.weather.daily.time[index].replace(/-/g, "/"));
+                            var weatherDate = new Date(LocationService.data.weather.daily.time[forecastDay.index].replace(/-/g, "/"));
                             return I18n.locale.toString(weatherDate, "ddd");
                           }
                           pointSize: Style.fontSizeM
@@ -817,15 +819,15 @@ Loader {
 
                         NIcon {
                           Layout.alignment: Qt.AlignHCenter
-                          icon: LocationService.weatherSymbolFromCode(LocationService.data.weather.daily.weathercode[index])
+                          icon: LocationService.weatherSymbolFromCode(LocationService.data.weather.daily.weathercode[forecastDay.index])
                           pointSize: Style.fontSizeXL
                           color: NColor.mOnSurfaceVariant
                         }
 
                         NText {
                           text: {
-                            var max = LocationService.data.weather.daily.temperature_2m_max[index];
-                            var min = LocationService.data.weather.daily.temperature_2m_min[index];
+                            var max = LocationService.data.weather.daily.temperature_2m_max[forecastDay.index];
+                            var min = LocationService.data.weather.daily.temperature_2m_min[forecastDay.index];
                             if (Settings.data.location.useFahrenheit) {
                               max = LocationService.celsiusToFahrenheit(max);
                               min = LocationService.celsiusToFahrenheit(min);
@@ -905,6 +907,7 @@ Loader {
                   }
 
                   Rectangle {
+                    id: passwordField
                     Layout.fillWidth: true
                     Layout.preferredHeight: 48
                     radius: Style.radiusL
@@ -936,7 +939,7 @@ Loader {
                         enabled: !lockContext.unlockInProgress
                         font.pointSize: Style.fontSizeM
                         color: NColor.mPrimary
-                        echoMode: parent.parent.passwordVisible ? TextInput.Normal : TextInput.Password
+                        echoMode: passwordField.passwordVisible ? TextInput.Normal : TextInput.Password
                         passwordCharacter: "•"
                         passwordMaskDelay: 0
                         text: lockContext.currentText
@@ -979,7 +982,7 @@ Loader {
                         Item {
                           width: Math.min(passwordDisplayContent.width, 550)
                           height: 20
-                          visible: passwordInput.text.length > 0 && !parent.parent.parent.passwordVisible
+                          visible: passwordInput.text.length > 0 && !passwordField.passwordVisible
                           anchors.verticalCenter: parent.verticalCenter
                           clip: true
 
@@ -1006,7 +1009,7 @@ Loader {
                           color: NColor.mPrimary
                           pointSize: Style.fontSizeM
                           font.weight: Font.Medium
-                          visible: passwordInput.text.length > 0 && parent.parent.parent.passwordVisible
+                          visible: passwordInput.text.length > 0 && passwordField.passwordVisible
                           anchors.verticalCenter: parent.verticalCenter
                           elide: Text.ElideRight
                           width: Math.min(implicitWidth, 550)
@@ -1049,7 +1052,7 @@ Loader {
 
                       NIcon {
                         anchors.centerIn: parent
-                        icon: parent.parent.passwordVisible ? "eye-off" : "eye"
+                        icon: passwordField.passwordVisible ? "eye-off" : "eye"
                         pointSize: Style.fontSizeM
                         color: NColor.mOnSurfaceVariant
                       }
@@ -1059,7 +1062,7 @@ Loader {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: parent.parent.passwordVisible = !parent.parent.passwordVisible
+                        onClicked: passwordField.passwordVisible = !passwordField.passwordVisible
                       }
 
                       Behavior on color {
