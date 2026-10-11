@@ -80,12 +80,19 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`
 
+### Per-widget battery settings isolated evidence
+
+- At `5be8b91b2`/`e24cf960f`, `Modules/Panels/Settings/Bar/WidgetSettings/BatterySettings.qml` diagnostics drop **14→6**: eight lexical-owner warnings removed; six UPower `UntypedObjectModel` metadata diagnostics remain. The ineffective Quickshell import was removed; this is not zero-warning production lint.
+- `Tests/battery-settings-warnings.test.py behavior --artifacts <new-directory>` runs `Tests/Qml/BatterySettingsWarningsHarness.qml` with production editor/controls and fixture UPower. Eight reported passes comprise six behavioral cases (including separate charging/discharging data rows) plus QtTest init/cleanup.
+- Coverage: defaults; save-copy/source immutability and unknown-field preservation; clearing the default device path; device/display-mode selection and threshold clamping to 5–50%; same-count hotplug, add/remove, line-power filtering, name fallbacks, manual refresh, and retained selection. Charging and discharging fixtures both use positive `changeRate = 12.5`; assertions cover device listing/selection/save, not watts rendering (this editor has no power row).
+- Real settings and the permission-locked, hash-verified backup remain unchanged. Offscreen fixture proof does not establish real UPower hotplug, hardware behavior, persistence, native input, or whole-shell acceptance. Runner/isolation details: [testing](testing.md#per-widget-battery-settings-isolated-runtime).
+
 ## Known gaps (current cycle)
 
 - [ ] Add hardware and desktop integration coverage for the battery widget; its offscreen regression does not cover real UPower/Bluetooth hardware, visible popup interaction, desktop notifications, settings persistence, or whole-shell acceptance.
 - [ ] Add executable tests for `Services/Hardware/BatteryService.qml` charging-mode cycling and command routing.
 - [ ] Add executable tests for battery panel health/time display text.
-- [ ] Add executable tests for per-widget battery settings device list filtering.
+- [ ] Resolve the six per-widget battery settings UPower `UntypedObjectModel` metadata diagnostics; the standalone `lint` mode still requires zero warnings and therefore remains failing.
 - [ ] Add host integration coverage for privileged threshold writes; the isolated production-tab test checks command construction, drag/release timing, threshold bounds, and successful-write reload using inert process/sysfs fixtures, not actual writes.
 
 ## Out of scope
