@@ -60,18 +60,9 @@ def lint(directory):
     warnings = re.findall(r"^Warning:.*$", output, re.M)
     counts = Counter(re.findall(r"\[([^]]+)\]", line)[-1] for line in warnings)
     print("FILE_PICKER_LINT_COUNTS", dict(counts))
-    blocks = re.split(r"(?=Warning:)", output)[1:]
-    actionable = [
-        block
-        for block in blocks
-        if "[unqualified]" in block and "ComponentBehavior: Bound" not in block
-    ]
-    assert not actionable, "Known-owner unqualified accesses remain:\n" + "".join(
-        actionable
-    )
-    assert counts.keys() <= {"unqualified", "missing-property", "incompatible-type"}
-    assert result.returncode in (0, 255)
-    print("FILE_PICKER_LINT_PASS (unbound outer IDs retained)")
+    assert not warnings, "Picker diagnostics remain:\n" + output
+    assert result.returncode == 0
+    print("FILE_PICKER_LINT_PASS")
 
 
 def runtime(directory):
@@ -172,6 +163,10 @@ def runtime(directory):
     )
     print(result.stdout + result.stderr, end="")
     assert result.returncode == 0, "Offscreen production picker failed"
+    assert not re.search(
+        r"(?:QWARN|ReferenceError|TypeError|Binding loop)",
+        result.stdout + result.stderr,
+    ), "Offscreen picker emitted runtime warnings"
     print("FILE_PICKER_RUNTIME_PASS")
 
 

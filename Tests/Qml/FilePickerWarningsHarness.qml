@@ -41,7 +41,7 @@ Item {
     }
 
     function entry(name, listMode) {
-      return findChild(picker.contentItem, item => item.fileName === name && item.height === (listMode ? 40 : grid().cellHeight));
+      return findChild(picker.contentItem, item => item.visible && item.fileName === name && item.height === (listMode ? 40 : grid().cellHeight));
     }
 
     function grid() {
@@ -58,6 +58,106 @@ Item {
       tryVerify(() => grid().count === 3);
       tryVerify(() => entry("alpha.txt", false) !== null);
       verify(entry(".hidden.txt", false) === null);
+    }
+
+    function init() {
+      acceptedSpy.clear();
+      cancelledSpy.clear();
+      picker.navigateToPath("@FILES@");
+      picker.selectedPaths = [];
+      picker.setSearchBarVisible(false);
+      picker.openFilePicker();
+      tryCompare(picker, "opened", true);
+      if (button("filepicker-layout-grid"))
+        mouseClick(button("filepicker-layout-grid"));
+    }
+
+    function cleanup() {
+      picker.close();
+      tryCompare(picker, "visible", false);
+      wait(50); // Allow Popup exit and scenegraph disposal before the next case.
+    }
+
+    function test_model_lifecycle_data() {
+      return [
+        {
+          tag: "grid",
+          listMode: false
+        },
+        {
+          tag: "list",
+          listMode: true
+        }
+      ];
+    }
+
+    function test_model_lifecycle(data) {
+      openPicker();
+      if (data.listMode)
+        mouseClick(button("filepicker-list"));
+      tryVerify(() => entry("alpha.txt", data.listMode) !== null);
+      const alpha = entry("alpha.txt", data.listMode);
+      mouseClick(alpha, alpha.width / 2, alpha.height / 2);
+      const select = button("widgets.file-picker.select-file");
+      tryCompare(select, "enabled", true);
+
+      picker.setSearchBarVisible(true);
+      const search = findChild(picker.contentItem, item => item.inputIconName === "search");
+      search.text = "no-matches";
+      tryCompare(grid(), "count", 0);
+      search.text = "beta";
+      tryCompare(grid(), "count", 1);
+      tryVerify(() => entry("beta.log", data.listMode) !== null);
+      picker.setSearchBarVisible(false);
+      tryCompare(grid(), "count", 3);
+
+      const child = entry("child", data.listMode);
+      mouseDoubleClickSequence(child, child.width / 2, child.height / 2);
+      tryCompare(picker, "currentPath", "@FILES@/child");
+      tryCompare(grid(), "count", 0);
+      tryCompare(select, "enabled", false);
+      picker.navigateToPath("@FILES@");
+      tryCompare(grid(), "count", 3);
+      tryVerify(() => entry("beta.log", data.listMode) !== null);
+      const beta = entry("beta.log", data.listMode);
+      compare(beta.filePath, "@FILES@/beta.log");
+      verify(waitForRendering(beta));
+      mouseClick(beta, beta.width / 2, beta.height / 2);
+      tryCompare(select, "enabled", true);
+      mouseClick(button("widgets.file-picker.cancel"));
+      tryCompare(cancelledSpy, "count", 1);
+      compare(acceptedSpy.count, 0);
+      compare(picker.selectedPaths.length, 0);
+      tryCompare(picker, "visible", false);
+
+      picker.openFilePicker();
+      tryCompare(picker, "opened", true);
+      tryCompare(select, "enabled", false);
+      tryVerify(() => entry("alpha.txt", data.listMode) !== null);
+      const reassignedAlpha = entry("alpha.txt", data.listMode);
+      mouseClick(reassignedAlpha, reassignedAlpha.width / 2, reassignedAlpha.height / 2);
+      mouseClick(select);
+      tryCompare(acceptedSpy, "count", 1);
+      compare(acceptedSpy.signalArguments[0][0][0], "@FILES@/alpha.txt");
+    }
+
+    function test_dispose_during_model_update() {
+      const component = Qt.createComponent("qs/Widgets/NFilePicker.qml");
+      compare(component.status, Component.Ready, component.errorString());
+      for (let i = 0; i < 3; i++) {
+        const temporaryPicker = component.createObject(picker.parent, {
+          initialPath: "@FILES@"
+        });
+        verify(temporaryPicker !== null);
+        temporaryPicker.openFilePicker();
+        tryCompare(temporaryPicker, "opened", true);
+        temporaryPicker.navigateToPath("@FILES@/child");
+        temporaryPicker.navigateToPath("@FILES@");
+        temporaryPicker.close();
+        temporaryPicker.destroy();
+        wait(20);
+      }
+      component.destroy();
     }
 
     function test_navigation_selection_cancel() {
