@@ -43,7 +43,7 @@ NBox {
 
         required property BluetoothDevice modelData
         required property int index
-        property alias listTooltipText: root.tooltipText
+        readonly property BluetoothDevicesList listOwner: device.parent.parent
 
         readonly property bool devicePairing: modelData ? modelData.pairing === true : false
         readonly property bool deviceBlocked: modelData ? modelData.blocked === true : false
@@ -166,7 +166,7 @@ NBox {
               }
               return NColor.mPrimary;
             }
-            tooltipText: device.listTooltipText
+            tooltipText: device.listOwner.tooltipText
             text: {
               if (device.devicePairing) {
                 return I18n.tr("bluetooth.panel.pairing");
