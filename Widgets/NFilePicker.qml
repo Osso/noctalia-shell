@@ -153,11 +153,11 @@ Popup {
         continue;
       if (searchText === "" || fileName.toLowerCase().includes(searchText)) {
         filteredModel.append({
-                               "fileName": fileName,
-                               "filePath": filePath,
-                               "fileIsDir": fileIsDir,
-                               "fileSize": fileSize
-                             });
+          "fileName": fileName,
+          "filePath": filePath,
+          "fileIsDir": fileIsDir,
+          "fileSize": fileSize
+        });
       }
     }
   }
@@ -484,11 +484,11 @@ Popup {
           bottomMargin: Style.marginS
 
           ScrollBar.vertical: scrollBarComponent.createObject(gridView, {
-                                                                "parent": gridView,
-                                                                "x": gridView.mirrored ? 0 : gridView.width - width,
-                                                                "y": 0,
-                                                                "height": gridView.height
-                                                              })
+            "parent": gridView,
+            "x": gridView.mirrored ? 0 : gridView.width - width,
+            "y": 0,
+            "height": gridView.height
+          })
 
           delegate: Rectangle {
             id: gridItem
@@ -502,13 +502,13 @@ Popup {
             color: NColor.transparent
             radius: Style.radiusM
 
-            property bool isSelected: filePickerPanel.currentSelection.includes(filePath)
+            property bool isSelected: filePickerPanel.currentSelection.includes(gridItem.filePath)
 
             Rectangle {
               anchors.fill: parent
               color: NColor.transparent
               radius: parent.radius
-              border.color: isSelected ? NColor.mSecondary : NColor.mSurface
+              border.color: gridItem.isSelected ? NColor.mSecondary : NColor.mSurface
               border.width: Style.borderL
               Behavior on color {
                 ColorAnimation {
@@ -519,9 +519,9 @@ Popup {
 
             Rectangle {
               anchors.fill: parent
-              color: (mouseArea.containsMouse && !isSelected) ? NColor.mHover : NColor.transparent
+              color: (mouseArea.containsMouse && !gridItem.isSelected) ? NColor.mHover : NColor.transparent
               radius: parent.radius
-              border.color: (mouseArea.containsMouse && !isSelected) ? NColor.mHover : NColor.transparent
+              border.color: (mouseArea.containsMouse && !gridItem.isSelected) ? NColor.mHover : NColor.transparent
               border.width: Style.borderS
               Behavior on color {
                 ColorAnimation {
@@ -547,9 +547,9 @@ Popup {
                 color: NColor.transparent
 
                 property bool isImage: {
-                  if (fileIsDir)
+                  if (gridItem.fileIsDir)
                     return false;
-                  const ext = fileName.split('.').pop().toLowerCase();
+                  const ext = gridItem.fileName.split('.').pop().toLowerCase();
                   return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'].includes(ext);
                 }
 
@@ -557,7 +557,7 @@ Popup {
                   id: thumbnail
                   anchors.fill: parent
                   anchors.margins: Style.marginXS
-                  source: iconContainer.isImage ? "file://" + filePath : ""
+                  source: iconContainer.isImage ? "file://" + gridItem.filePath : ""
                   fillMode: Image.PreserveAspectFit
                   visible: iconContainer.isImage && status === Image.Ready
                   smooth: false
@@ -585,15 +585,15 @@ Popup {
                 }
 
                 NIcon {
-                  icon: fileIsDir ? "filepicker-folder" : root.getFileIcon(fileName)
+                  icon: gridItem.fileIsDir ? "filepicker-folder" : root.getFileIcon(gridItem.fileName)
                   pointSize: Style.fontSizeXXL * 2
                   color: {
-                    if (isSelected)
+                    if (gridItem.isSelected)
                       return NColor.mSecondary;
                     else if (mouseArea.containsMouse)
                       return NColor.mOnHover;
                     else
-                      return fileIsDir ? NColor.mPrimary : NColor.mOnSurfaceVariant;
+                      return gridItem.fileIsDir ? NColor.mPrimary : NColor.mOnSurfaceVariant;
                   }
                   anchors.centerIn: parent
                   visible: !iconContainer.isImage || thumbnail.status !== Image.Ready
@@ -609,7 +609,7 @@ Popup {
                   color: NColor.mSecondary
                   border.color: NColor.mOutline
                   border.width: Style.borderS
-                  visible: isSelected
+                  visible: gridItem.isSelected
                   NIcon {
                     icon: "filepicker-check"
                     pointSize: Style.fontSizeS
@@ -620,9 +620,9 @@ Popup {
               }
 
               NText {
-                text: fileName
+                text: gridItem.fileName
                 color: {
-                  if (isSelected)
+                  if (gridItem.isSelected)
                     return NColor.mSecondary;
                   else if (mouseArea.containsMouse)
                     return NColor.mOnHover;
@@ -630,7 +630,7 @@ Popup {
                     return NColor.mOnSurfaceVariant;
                 }
                 pointSize: Style.fontSizeS
-                font.weight: isSelected ? Style.fontWeightBold : Style.fontWeightRegular
+                font.weight: gridItem.isSelected ? Style.fontWeightBold : Style.fontWeightRegular
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WrapAnywhere
@@ -647,13 +647,13 @@ Popup {
 
               onClicked: mouse => {
                 if (mouse.button === Qt.LeftButton) {
-                  root.handleFileEntryActivated(filePath, fileIsDir, false);
+                  root.handleFileEntryActivated(gridItem.filePath, gridItem.fileIsDir, false);
                 }
               }
 
               onDoubleClicked: mouse => {
                 if (mouse.button === Qt.LeftButton) {
-                  root.handleFileEntryActivated(filePath, fileIsDir, true);
+                  root.handleFileEntryActivated(gridItem.filePath, gridItem.fileIsDir, true);
                 }
               }
             }
@@ -678,7 +678,7 @@ Popup {
             width: listView.width
             height: 40
             color: {
-              if (filePickerPanel.currentSelection.includes(filePath))
+              if (filePickerPanel.currentSelection.includes(listItem.filePath))
                 return NColor.mSecondary;
               if (listMouseArea.containsMouse)
                 return NColor.mHover;
@@ -698,25 +698,25 @@ Popup {
               spacing: Style.marginM
 
               NIcon {
-                icon: fileIsDir ? "filepicker-folder" : root.getFileIcon(fileName)
+                icon: listItem.fileIsDir ? "filepicker-folder" : root.getFileIcon(listItem.fileName)
                 pointSize: Style.fontSizeL
-                color: fileIsDir ? (filePickerPanel.currentSelection.includes(filePath) ? NColor.mOnSecondary : NColor.mPrimary) : NColor.mOnSurfaceVariant
+                color: listItem.fileIsDir ? (filePickerPanel.currentSelection.includes(listItem.filePath) ? NColor.mOnSecondary : NColor.mPrimary) : NColor.mOnSurfaceVariant
               }
 
               NText {
-                text: fileName
-                color: filePickerPanel.currentSelection.includes(filePath) ? NColor.mOnSecondary : NColor.mOnSurface
+                text: listItem.fileName
+                color: filePickerPanel.currentSelection.includes(listItem.filePath) ? NColor.mOnSecondary : NColor.mOnSurface
                 pointSize: Style.fontSizeM
-                font.weight: filePickerPanel.currentSelection.includes(filePath) ? Style.fontWeightBold : Style.fontWeightRegular
+                font.weight: filePickerPanel.currentSelection.includes(listItem.filePath) ? Style.fontWeightBold : Style.fontWeightRegular
                 Layout.fillWidth: true
                 elide: Text.ElideRight
               }
 
               NText {
-                text: fileIsDir ? "" : root.formatFileSize(fileSize)
-                color: filePickerPanel.currentSelection.includes(filePath) ? NColor.mOnSecondary : NColor.mOnSurfaceVariant
+                text: listItem.fileIsDir ? "" : root.formatFileSize(listItem.fileSize)
+                color: filePickerPanel.currentSelection.includes(listItem.filePath) ? NColor.mOnSecondary : NColor.mOnSurfaceVariant
                 pointSize: Style.fontSizeS
-                visible: !fileIsDir
+                visible: !listItem.fileIsDir
                 Layout.preferredWidth: implicitWidth
               }
             }
@@ -730,16 +730,16 @@ Popup {
 
               onClicked: mouse => {
                 if (mouse.button === Qt.LeftButton) {
-                  if (fileIsDir) {
+                  if (listItem.fileIsDir) {
                     // In folder mode, single click selects the folder
                     if (root.selectionMode === "folders") {
-                      filePickerPanel.currentSelection = [filePath];
+                      filePickerPanel.currentSelection = [listItem.filePath];
                     }
                     // In file mode, single click on folder does nothing (must double-click to enter)
                   } else {
                     // Single click on file selects it (only in file mode)
                     if (root.selectionMode === "files") {
-                      filePickerPanel.currentSelection = [filePath];
+                      filePickerPanel.currentSelection = [listItem.filePath];
                     }
                   }
                 }
@@ -747,14 +747,14 @@ Popup {
 
               onDoubleClicked: mouse => {
                 if (mouse.button === Qt.LeftButton) {
-                  if (fileIsDir) {
+                  if (listItem.fileIsDir) {
                     // Double-click on folder always navigates into it
-                    folderModel.folder = "file://" + filePath;
-                    root.currentPath = filePath;
+                    folderModel.folder = "file://" + listItem.filePath;
+                    root.currentPath = listItem.filePath;
                   } else {
                     // Double-click on file selects and confirms (only in file mode)
                     if (root.selectionMode === "files") {
-                      filePickerPanel.currentSelection = [filePath];
+                      filePickerPanel.currentSelection = [listItem.filePath];
                       root.confirmSelection();
                     }
                   }
