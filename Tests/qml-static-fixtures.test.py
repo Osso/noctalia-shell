@@ -63,11 +63,16 @@ class FixtureLintTest(unittest.TestCase):
         return runner
 
     def run_checker(self, runner, root):
+        home = root / ".fixture-home"
+        settings = home / ".config/noctalia/settings.json"
+        settings.parent.mkdir(parents=True, mode=0o700)
+        settings.touch(mode=0o600)
+        settings.write_bytes((root / "Assets/settings-default.json").read_bytes())
         result = subprocess.run(
             [str(runner)],
             cwd=root,
             check=False,
-            env=dict(os.environ),
+            env=dict(os.environ, HOME=str(home)),
             capture_output=True,
             text=True,
             timeout=90,
