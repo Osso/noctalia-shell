@@ -204,41 +204,41 @@ ShellRoot {
     repeat: true
     onTriggered: {
       try {
-        if (transitions) {
-          assertValue(wizard.currentStep, route[routeIndex], "navigation step");
-          exerciseValues();
-          snapshots.push({
-            scenario: cases[caseIndex],
-            step: wizard.currentStep,
-            tree: measure(step)
+        if (harness.transitions) {
+          harness.assertValue(harness.wizard.currentStep, harness.route[harness.routeIndex], "navigation step");
+          harness.exerciseValues();
+          harness.snapshots.push({
+            scenario: harness.cases[harness.caseIndex],
+            step: harness.wizard.currentStep,
+            tree: harness.measure(harness.step)
           });
-          if (routeIndex < route.length - 1) {
-            const next = route[routeIndex + 1];
-            clickButton(next > wizard.currentStep ? "Continue →" : "← Back");
-            assertValue(wizard.currentStep, next, "button transition");
-            routeIndex++;
+          if (harness.routeIndex < harness.route.length - 1) {
+            const next = harness.route[harness.routeIndex + 1];
+            harness.clickButton(next > harness.wizard.currentStep ? "Continue →" : "← Back");
+            harness.assertValue(harness.wizard.currentStep, next, "button transition");
+            harness.routeIndex++;
             return;
           }
-          exerciseCompletion();
+          harness.exerciseCompletion();
         } else {
-          snapshots.push({
-            scenario: cases[caseIndex],
-            tree: measure(step)
+          harness.snapshots.push({
+            scenario: harness.cases[harness.caseIndex],
+            tree: harness.measure(harness.step)
           });
         }
-        step.destroy();
-        if (wizard) {
-          wizard.destroy();
-          wizard = null;
+        harness.step.destroy();
+        if (harness.wizard) {
+          harness.wizard.destroy();
+          harness.wizard = null;
         }
-        caseIndex++;
-        if (caseIndex === cases.length) {
-          if (!transitions)
-            assertValue(Settings.saveRequests, 0, "geometry must not request saves");
-          console.log("SETUP_GEOMETRY " + JSON.stringify(snapshots));
+        harness.caseIndex++;
+        if (harness.caseIndex === harness.cases.length) {
+          if (!harness.transitions)
+            harness.assertValue(Settings.saveRequests, 0, "geometry must not request saves");
+          console.log("SETUP_GEOMETRY " + JSON.stringify(harness.snapshots));
           Qt.quit();
         } else {
-          startCase();
+          harness.startCase();
         }
       } catch (error) {
         console.error("SETUP_GEOMETRY_FAIL " + error);

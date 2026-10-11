@@ -121,6 +121,44 @@ def prepare_sources(root):
     )
 
 
+def lint_harness():
+    with tempfile.TemporaryDirectory(prefix="noctalia-setup-qmllint-") as temporary:
+        root = Path(temporary)
+        sources = root / "qs"
+        sources.mkdir()
+        prepare_sources(sources)
+        modules = {}
+        for path in sorted(sources.rglob("*.qml")):
+            relative = path.relative_to(sources)
+            directory = relative.parent
+            for parent in (directory, *directory.parents):
+                modules.setdefault(parent, [])
+            singleton = bool(
+                re.search(r"^\s*pragma\s+Singleton\b", path.read_text(), re.MULTILINE)
+            )
+            prefix = "singleton " if singleton else ""
+            modules[directory].append(f"{prefix}{path.stem} 1.0 {path.name}\n")
+        for directory, declarations in modules.items():
+            module = ".".join(("qs", *directory.parts))
+            (sources / directory / "qmldir").write_text(
+                f"module {module}\n" + "".join(declarations)
+            )
+        result = subprocess.run(
+            ["/usr/lib/qt6/bin/qmllint", "-I", str(root), str(sources / "shell.qml")],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        output = result.stdout + result.stderr
+        print(output, end="")
+        print(
+            "SETUP_HARNESS_LINT_WARNINGS",
+            len(re.findall(r"^Warning:", output, re.MULTILINE)),
+        )
+        return result.returncode
+
+
 def isolated_environment(root):
     environment = {"PATH": os.environ["PATH"], "LANG": "C.UTF-8"}
     for variable in (
@@ -218,7 +256,8 @@ def assert_geometry(actual, expected, path="cases"):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--artifacts", type=Path, required=True)
+    parser.add_argument("mode", nargs="?", choices=("lint-harness",))
+    parser.add_argument("--artifacts", type=Path)
     parser.add_argument(
         "--capture-only",
         action="store_true",
@@ -231,6 +270,10 @@ def main():
         help="Compare transition geometry with pre-change capture",
     )
     args = parser.parse_args()
+    if args.mode == "lint-harness":
+        raise SystemExit(lint_harness())
+    if args.artifacts is None:
+        parser.error("runtime capture requires --artifacts")
     args.artifacts.mkdir(parents=True, exist_ok=True, mode=0o700)
     before = SETTINGS.read_bytes()
     backup = args.artifacts / "settings.backup.json"
