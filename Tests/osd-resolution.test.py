@@ -6,7 +6,6 @@ import importlib.util
 import os
 from pathlib import Path
 import selectors
-import shutil
 import subprocess
 import tempfile
 import time
@@ -37,6 +36,7 @@ ShellRoot {
   OSD { Component.onCompleted: console.log("OSD_RESOLUTION_READY") }
 }
 """)
+    return fixtures
 
 
 def private_environment(directory):
@@ -84,7 +84,7 @@ def wait_message(process, selector, output, marker, allow_failure=False):
 
 
 def resolution(directory, mode):
-    stage(directory)
+    fixtures = stage(directory)
     source = directory / TARGET
     production = source.read_bytes()
     if mode != "cold-start":
@@ -151,11 +151,6 @@ Variants {
                     mode == "reload-after-failure",
                 )
         finally:
-            spec = importlib.util.spec_from_file_location(
-                "osd_cleanup", ROOT / "Tests/osd-warnings.test.py"
-            )
-            fixtures = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(fixtures)
             fixtures.stop_process_group(process)
             tail, _ = process.communicate(timeout=5)
             output.append(tail)
