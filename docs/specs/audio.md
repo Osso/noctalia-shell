@@ -44,6 +44,11 @@ Audio covers PipeWire-backed output/input volume state, device selection, OSD su
 - [x] Pending sync preserves device-id guards before writing output/input volume.
 - [x] An audio panel opened after a default sink already exists immediately reflects that sink's volume and stays synchronized with later live volume changes.
 
+### Spectrum visualization
+
+- [x] Linear and mirrored spectra reflect normalized frame amplitudes in horizontal/vertical bar geometry, including minimum signal, reduced-quality settings, frame clearing/reassignment, and resizing.
+- [x] Wave pixels reflect horizontal/vertical frames and minimum signal; clearing removes the wave, and inactive→active transitions repaint reassigned data.
+
 ### Typed UI contracts
 
 - [x] Audio panel sink/source delegates expose typed `PwNode` model data and stable device id/description aliases.
@@ -75,9 +80,11 @@ Audio covers PipeWire-backed output/input volume state, device selection, OSD su
 - `Tests/audio-panel-regression.test.sh` delegates to `Tests/audio-panel-warnings.test.py behavior`. The standalone Python `behavior` mode runs production AudioPanel/AudioService and slider/radio controls under isolated offscreen `qmltestrunner`: initial/output external volume and selected-output indicator, sink/source selection during pending sync, guarded drag/debounce/release, reordered device models and content recreation, and destruction/recreation with pending sync. Five behavioral cases plus QtTest init/cleanup yield seven reported passes. PipeWire nodes, SmartPanel host, and bootstrap services are fixtures; signals are invoked directly. Standalone `lint` requires zero AudioPanel warnings and exit status zero (39 → 0 across `9f2f66140` and `5f7553f10`). This is bounded component evidence, not whole-shell acceptance.
 - `Tests/Qml/AudioCardHarness.qml` and `Tests/audio-card-warnings.test.py behavior` exercise production AudioCard, AudioService, and supporting controls under isolated offscreen `qmltestrunner`: initial/external output and input volume, drag/debounce/release, mute and volume-driven unmute, device switching during pending sync, disconnect before sync, and destruction/recreation with pending sync. Six behavioral cases plus QtTest init/cleanup yield eight reported passes. PipeWire nodes and bootstrap/UI services are fixtures; actions invoke signals directly, not physical input. Standalone `lint` requires zero AudioCard warnings and exit status zero (41 → 0 at `755150f52`); neither mode claims runner integration or whole-shell acceptance.
 
+- `Tests/audio-spectrum-warnings.test.py` / `Tests/Qml/AudioSpectrumHarness.qml` — five production-QML behavioral cases: horizontal bar amplitudes; vertical minimum/reduced-quality updates; clear/reassign/resize; Wave frame/orientation/clear/reassign pixels; Wave minimum/visibility. At `4ee4fb340`, Mirrored/Linear/Wave lint warnings drop 34+33+4→0 and the reproduced Wave inactive→active repaint gap is fixed. Isolation, acceptance, and proof limits: [testing](testing.md#audio-spectrum-isolated-runtime).
+
 ## Known gaps (current cycle)
 
-- [ ] Extract separate specs for media playback, screen recording, and Cava visualization so this audio spec stays focused on core audio control.
+- [ ] Live Cava/audio input and GPU rendering remain unverified by the isolated spectrum suite; media controls belong in [media playback](media-playback.md), recording in [screen recorder](screen-recorder.md).
 - [ ] Add behavior tests for UI consumers that call `AudioService.suppressOutputOSD` and `AudioService.suppressInputOSD`.
 - [ ] Real PipeWire integration and physical slider/button input remain untested by the AudioCard and AudioPanel fixture suites; mocked node setter paths are covered.
 - [ ] AudioPanel source-radio checked state remains unverified: the unchanged comparison uses integer source id `===` string `deviceId`; source-selection assertions do not verify its indicator.

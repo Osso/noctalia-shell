@@ -54,6 +54,7 @@ Media playback covers MPRIS player discovery, virtual player pairing, active-pla
 - [x] Left click and the menu toggle playback subject to capabilities; middle click selects the previous track and the menu can select the next track.
 - [x] Playback state and metadata changes update title, menu icons, artwork fallback, tooltips, and progress; progress clamps at the track duration.
 - [x] Album art and playback icons follow bar orientation; linear, mirrored, and wave visualizers receive spectrum data, have nonzero dimensions, and unload when disabled.
+- Spectrum rendering contracts and isolated component proof belong in [audio](audio.md#spectrum-visualization); those cases do not extend MediaMini integration coverage.
 - [x] Fixed width honors its configured limit; always-scroll mode advances overflowing titles after its delay.
 - [x] Idle hide mode hides paused playback and releases position updates; resuming playback shows the widget and registers updates again.
 

@@ -2,6 +2,13 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 ## What it must do
 
+### Audio spectrum isolated runtime
+
+- `Tests/audio-spectrum-warnings.test.py` runs standalone `lint` or `behavior`, optionally with `--artifacts <new-directory>`; no runner integration is claimed. At `4ee4fb340`, NMirroredSpectrum/NLinearSpectrum/NWaveSpectrum warnings drop 34+33+4→0; lint requires zero warnings and exit status zero per component.
+- `Tests/Qml/AudioSpectrumHarness.qml` runs actual spectrum QML under software/offscreen `qmltestrunner`: five behavioral cases plus init/cleanup yield seven reported passes. Bar geometry covers frames, orientation, minimum signal, reduced-quality updates, clearing/reassignment, and resizing; Wave pixel assertions cover orientation, clearing/reassignment, minimum signal, and visibility. The reproduced inactive→active repaint gap is fixed. Contract: [audio](audio.md#spectrum-visualization).
+- Cava, settings, and colors are fixtures. Writable HOME/XDG/Noctalia paths are private, desktop connections removed, and both buses inaccessible. Both modes create a permission-locked, hash-verified byte-for-byte real-settings backup before staging and check real/backup bytes unchanged afterward. Behavior timeout is 60 seconds; acceptance requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `QCRITICAL`, `ReferenceError`, `TypeError`, or `Binding loop`.
+- Software raster pixels and delegate geometry do not prove GPU rendering, live Cava/audio capture, timed animation, MediaMini integration, real settings persistence, or whole-shell acceptance.
+
 ### WiFi panel isolated runtime
 
 - `Tests/wifi-panel-warnings.test.py` runs standalone `lint` or `behavior`, both requiring `--artifacts <new-directory>`; no runner integration is claimed. At `2fdc52c90`, WiFiPanel-only lint drops 27→0 and requires zero warnings/exit status zero. Actual panel/list interaction coverage: [network](network.md#tests-asserting-this-spec).
