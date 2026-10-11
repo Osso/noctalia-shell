@@ -83,12 +83,13 @@ def stage_runtime(directory, mode):
             ("dark", "#123456"),
             ("light", "#abcdef"),
             ("updated", "#654321"),
+            ("switched", "#789abc"),
         )
     }
     rose = downloaded / "Rosepine.json"
     rose.write_text(json.dumps({"dark": palettes["dark"], "light": palettes["light"]}))
     zebra = bundled / "Zebra.json"
-    zebra.write_text(json.dumps(palettes["updated"]))
+    zebra.write_text(json.dumps(palettes["switched"]))
     (config / "colors.json").write_text(json.dumps(palettes["dark"]))
     write_module(
         directory,

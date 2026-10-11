@@ -12,7 +12,6 @@ Scope {
   property string zebra: "@ZEBRA@"
   property int phase: 0
   property int elapsed: 0
-  property int scans: 0
   property bool sawPendingExit: false
   property bool mutationDone: false
   property var service: ColorSchemeService
@@ -81,6 +80,7 @@ Scope {
               harness.equal(harness.service.schemes, [], "nonzero exit discards stdout");
               harness.equal(Settings.data.colorSchemes.predefinedScheme, harness.rose, "error leaves selection unchanged");
               harness.equal(AppThemeService.generations, 0, "error never applies stdout scheme");
+              harness.equal(harness.saved("#123456"), true, "error leaves disk palette unchanged");
               harness.equal(Logger.messages.filter(message => message.includes("Failed to find")).length, 1, "one discovery error");
               harness.pass();
               return;
@@ -122,7 +122,7 @@ Scope {
           harness.service.setPredefinedScheme("Zebra");
           harness.phase = 6;
         }
-        if (harness.phase === 6 && AppThemeService.generations === 5 && harness.saved("#654321")) {
+        if (harness.phase === 6 && AppThemeService.generations === 5 && harness.saved("#789abc")) {
           harness.equal(Settings.data.colorSchemes.predefinedScheme, "Zebra", "switch persists fixture selection");
           harness.equal(ToastService.notices, 3, "switch notice");
           harness.service.setPredefinedScheme("Missing");
