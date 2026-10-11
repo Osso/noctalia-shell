@@ -32,23 +32,23 @@ Item {
     id: loader
     anchors.fill: parent
     asynchronous: false
-    sourceComponent: BarWidgetRegistry.getWidget(widgetId)
+    sourceComponent: BarWidgetRegistry.getWidget(root.widgetId)
 
     onLoaded: {
       if (!item)
         return;
-      Logger.d("BarWidgetLoader", "Loading widget", widgetId, "on screen:", widgetScreen.name);
+      Logger.d("BarWidgetLoader", "Loading widget", root.widgetId, "on screen:", root.widgetScreen.name);
 
       // Apply properties to loaded widget
-      for (var prop in widgetProps) {
+      for (var prop in root.widgetProps) {
         if (item.hasOwnProperty(prop)) {
-          item[prop] = widgetProps[prop];
+          item[prop] = root.widgetProps[prop];
         }
       }
 
       // Set screen property
       if (item.hasOwnProperty("screen")) {
-        item.screen = widgetScreen;
+        item.screen = root.widgetScreen;
       }
 
       // Set scaling property
@@ -59,7 +59,7 @@ Item {
       }
 
       // Register this widget instance with BarService
-      BarService.registerWidget(widgetScreen.name, section, widgetId, sectionIndex, item);
+      BarService.registerWidget(root.widgetScreen.name, root.section, root.widgetId, root.sectionIndex, item);
 
       // Call custom onLoaded if it exists
       if (item.hasOwnProperty("onLoaded")) {
@@ -69,8 +69,8 @@ Item {
 
     Component.onDestruction: {
       // Unregister when destroyed
-      if (widgetScreen && section) {
-        BarService.unregisterWidget(widgetScreen.name, section, widgetId, sectionIndex);
+      if (root.widgetScreen && root.section) {
+        BarService.unregisterWidget(root.widgetScreen.name, root.section, root.widgetId, root.sectionIndex);
       }
     }
   }
