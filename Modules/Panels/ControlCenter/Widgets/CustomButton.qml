@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import qs.Commons
 import qs.Widgets
 
 Item {
@@ -24,37 +23,43 @@ Item {
 
   property int _currentStateCheckIndex: -1
   property string _activeStateIcon: ""
+  property int _stateGeneration: 0
 
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
   Connections {
+    id: settingsConnections
     target: root
 
     function _updatePropertiesFromSettings() {
-      if (!widgetSettings) {
+      if (!root.widgetSettings) {
         return;
       }
 
-      onClickedCommand = widgetSettings.onClicked || "";
-      onRightClickedCommand = widgetSettings.onRightClicked || "";
-      onMiddleClickedCommand = widgetSettings.onMiddleClicked || "";
-      stateChecksJson = widgetSettings.stateChecksJson || "[]"; // Populate from widgetSettings
+      root.onClickedCommand = root.widgetSettings.onClicked || "";
+      root.onRightClickedCommand = root.widgetSettings.onRightClicked || "";
+      root.onMiddleClickedCommand = root.widgetSettings.onMiddleClicked || "";
+      root.stateChecksJson = root.widgetSettings.stateChecksJson || "[]";
       try {
-        _parsedStateChecks = JSON.parse(stateChecksJson);
+        const checks = JSON.parse(root.stateChecksJson);
+        if (!Array.isArray(checks)) {
+          throw new Error("State checks must be an array");
+        }
+        root._parsedStateChecks = checks;
       } catch (e) {
         console.error("CustomButton: Failed to parse stateChecksJson:", e.message);
-        _parsedStateChecks = [];
+        root._parsedStateChecks = [];
       }
-      generalTooltipText = widgetSettings.generalTooltipText || "Custom Button";
-      enableOnStateLogic = widgetSettings.enableOnStateLogic || false;
+      root.generalTooltipText = root.widgetSettings.generalTooltipText || "Custom Button";
+      root.enableOnStateLogic = root.widgetSettings.enableOnStateLogic || false;
 
-      updateState();
+      root.updateState();
     }
 
     function onWidgetSettingsChanged() {
-      if (widgetSettings) {
-        _updatePropertiesFromSettings();
+      if (root.widgetSettings) {
+        settingsConnections._updatePropertiesFromSettings();
       }
     }
   }
@@ -62,18 +67,19 @@ Item {
   Process {
     id: stateCheckProcessExecutor
     running: false
-    command: _currentStateCheckIndex !== -1 && _parsedStateChecks.length > _currentStateCheckIndex ? ["sh", "-c", _parsedStateChecks[_currentStateCheckIndex].command] : []
+    property int generation: -1
+    property string stateIcon: ""
     onExited: function (exitCode) {
-      var currentCheckItem = _parsedStateChecks[_currentStateCheckIndex];
-      var currentCommand = currentCheckItem.command;
+      if (stateCheckProcessExecutor.generation !== root._stateGeneration) {
+        root._checkNextState();
+        return;
+      }
       if (exitCode === 0) {
-        // Command succeeded, this is the active state
-        _isHot = true;
-        _activeStateIcon = currentCheckItem.icon || widgetSettings.icon || "heart";
+        root._isHot = true;
+        root._activeStateIcon = stateCheckProcessExecutor.stateIcon;
       } else {
-        // Command failed, try next one
-        _currentStateCheckIndex++;
-        _checkNextState();
+        root._currentStateCheckIndex++;
+        root._checkNextState();
       }
     }
   }
@@ -84,20 +90,21 @@ Item {
     running: false
     repeat: false
     onTriggered: {
-      if (enableOnStateLogic && _parsedStateChecks.length > 0) {
-        _currentStateCheckIndex = 0;
-        _checkNextState();
-      } else {
-        _isHot = false;
-        _activeStateIcon = widgetSettings.icon || "heart";
-      }
+      root._currentStateCheckIndex = 0;
+      root._checkNextState();
     }
   }
 
   function _checkNextState() {
+    if (_currentStateCheckIndex < 0 || stateCheckProcessExecutor.running) {
+      return;
+    }
     if (_currentStateCheckIndex < _parsedStateChecks.length) {
       var currentCheckItem = _parsedStateChecks[_currentStateCheckIndex];
       if (currentCheckItem && currentCheckItem.command) {
+        stateCheckProcessExecutor.command = ["sh", "-c", currentCheckItem.command];
+        stateCheckProcessExecutor.generation = _stateGeneration;
+        stateCheckProcessExecutor.stateIcon = currentCheckItem.icon || widgetSettings.icon || "heart";
         stateCheckProcessExecutor.running = true;
       } else {
         _currentStateCheckIndex++;
@@ -111,6 +118,9 @@ Item {
   }
 
   function updateState() {
+    _stateGeneration++;
+    _currentStateCheckIndex = -1;
+    stateUpdateTimer.stop();
     if (!enableOnStateLogic || _parsedStateChecks.length === 0) {
       _isHot = false;
       _activeStateIcon = widgetSettings.icon || "heart";
@@ -136,25 +146,25 @@ Item {
 
   NIconButtonHot {
     id: button
-    icon: _activeStateIcon
-    hot: _isHot
-    tooltipText: _buildTooltipText()
+    icon: root._activeStateIcon
+    hot: root._isHot
+    tooltipText: root._buildTooltipText()
     onClicked: {
-      if (onClickedCommand) {
-        Quickshell.execDetached(["sh", "-c", onClickedCommand]);
-        updateState();
+      if (root.onClickedCommand) {
+        Quickshell.execDetached(["sh", "-c", root.onClickedCommand]);
+        root.updateState();
       }
     }
     onRightClicked: {
-      if (onRightClickedCommand) {
-        Quickshell.execDetached(["sh", "-c", onRightClickedCommand]);
-        updateState();
+      if (root.onRightClickedCommand) {
+        Quickshell.execDetached(["sh", "-c", root.onRightClickedCommand]);
+        root.updateState();
       }
     }
     onMiddleClicked: {
-      if (onMiddleClickedCommand) {
-        Quickshell.execDetached(["sh", "-c", onMiddleClickedCommand]);
-        updateState();
+      if (root.onMiddleClickedCommand) {
+        Quickshell.execDetached(["sh", "-c", root.onMiddleClickedCommand]);
+        root.updateState();
       }
     }
   }
