@@ -97,10 +97,10 @@ def run_behavior(directory):
         assert settings.read_bytes() == original, "real settings changed"
 
 
-def run_lint(directory):
+def run_lint(directory, names=NAMES):
     load("media-mini-warnings").stage_modules(directory)
     failures = []
-    for name in NAMES:
+    for name in names:
         result = subprocess.run(
             [
                 "/usr/lib/qt6/bin/qmllint",
@@ -130,10 +130,16 @@ def run_lint(directory):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("--widget", choices=NAMES, help="Limit lint to one widget")
     args = parser.parse_args()
+    if args.widget and args.mode != "lint":
+        parser.error("--widget applies only to lint; behavior runs all seven cases")
     with tempfile.TemporaryDirectory(prefix="noctalia-shared-ui-proof-") as temporary:
         directory = Path(temporary)
-        (run_lint if args.mode == "lint" else run_behavior)(directory)
+        if args.mode == "lint":
+            run_lint(directory, (args.widget,) if args.widget else NAMES)
+        else:
+            run_behavior(directory)
 
 
 if __name__ == "__main__":

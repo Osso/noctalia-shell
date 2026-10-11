@@ -168,15 +168,15 @@ Item {
 
           onPositionChanged: mouse => {
             if (delegateItem.dragging) {
-              var dy = mouse.y - dragHandle.height / 2;
-              var newY = delegateItem.y + dy;
+              const dy = mouse.y - dragHandle.height / 2;
+              let newY = delegateItem.y + dy;
 
               // Constrain within bounds
               newY = Math.max(0, Math.min(newY, delegateItem.ownerView.contentHeight - delegateItem.height));
               delegateItem.y = newY;
 
               // Calculate target index (but don't apply yet)
-              var targetIndex = Math.floor((newY + delegateItem.height / 2) / (delegateItem.height + delegateItem.itemSpacing));
+              let targetIndex = Math.floor((newY + delegateItem.height / 2) / (delegateItem.height + delegateItem.itemSpacing));
               targetIndex = Math.max(0, Math.min(targetIndex, delegateItem.ownerView.count - 1));
 
               delegateItem.dragTargetIndex = targetIndex;
@@ -290,7 +290,7 @@ Item {
 
       // If an item is being dragged, adjust positions
       if (draggedIndex !== -1 && targetIndex !== -1 && draggedIndex !== targetIndex) {
-        var currentIndex = delegateItem.index;
+        const currentIndex = delegateItem.index;
 
         if (draggedIndex < targetIndex) {
           // Dragging down: shift items up between draggedIndex and targetIndex
