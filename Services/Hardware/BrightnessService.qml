@@ -232,10 +232,10 @@ Singleton {
 
           var lines = dataText.split("\n");
           if (lines.length >= 2) {
-            var current = parseInt(lines[0].trim());
-            var max = parseInt(lines[1].trim());
+            const current = parseInt(lines[0].trim());
+            const max = parseInt(lines[1].trim());
             if (!isNaN(current) && !isNaN(max) && max > 0) {
-              var newBrightness = current / max;
+              const newBrightness = current / max;
               // Only update if it's actually different (avoid feedback loops)
               if (Math.abs(newBrightness - monitor.brightness) > 0.01) {
                 // Update internal value to match system state
@@ -292,20 +292,20 @@ Singleton {
 
           //Logger.i("Brightness", "Raw brightness data for", monitor.modelData.name + ":", dataText)
           if (monitor.isAppleDisplay) {
-            var appleBrightness = BrightnessParsing.parseAppleBrightness(dataText);
+            const appleBrightness = BrightnessParsing.parseAppleBrightness(dataText);
             if (appleBrightness) {
               monitor.brightness = appleBrightness.ratio;
               Logger.d("Brightness", "Apple display brightness:", monitor.brightness);
             }
           } else if (monitor.isDdc) {
-            var ddcBrightness = BrightnessParsing.parseDdcBrightness(dataText);
+            const ddcBrightness = BrightnessParsing.parseDdcBrightness(dataText);
             if (ddcBrightness) {
               monitor.brightness = ddcBrightness.ratio;
               Logger.d("Brightness", "DDC brightness:", ddcBrightness.current + "/" + ddcBrightness.max + " =", monitor.brightness);
             }
           } else {
             // Internal backlight - parse the response which includes device path
-            var internalBrightness = BrightnessParsing.parseInternalBacklight(dataText);
+            const internalBrightness = BrightnessParsing.parseInternalBacklight(dataText);
             if (internalBrightness) {
               monitor.backlightDevice = internalBrightness.devicePath;
               monitor.brightnessPath = internalBrightness.brightnessPath;

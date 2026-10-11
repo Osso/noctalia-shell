@@ -46,7 +46,7 @@ Singleton {
     // Separate players into specific and generic lists
     let specificPlayers = [];
     let genericPlayers = [];
-    for (var i = 0; i < allPlayers.length; i++) {
+    for (let i = 0; i < allPlayers.length; i++) {
       const identity = String(allPlayers[i].identity || "").toLowerCase();
       const match = blacklist.find(b => {
                                      const s = String(b || "").toLowerCase();
@@ -64,13 +64,13 @@ Singleton {
     let matchedGenericIndices = {};
 
     // For each specific player, try to find and pair it with a generic partner
-    for (var i = 0; i < specificPlayers.length; i++) {
+    for (let i = 0; i < specificPlayers.length; i++) {
       let specificPlayer = specificPlayers[i];
       let title1 = String(specificPlayer.trackTitle || "").trim();
       let wasMatched = false;
 
       if (title1) {
-        for (var j = 0; j < genericPlayers.length; j++) {
+        for (let j = 0; j < genericPlayers.length; j++) {
           if (matchedGenericIndices[j])
             continue;
           let genericPlayer = genericPlayers[j];
@@ -119,7 +119,7 @@ Singleton {
     }
 
     // Add any generic players that were not matched
-    for (var i = 0; i < genericPlayers.length; i++) {
+    for (let i = 0; i < genericPlayers.length; i++) {
       if (!matchedGenericIndices[i]) {
         finalPlayers.push(genericPlayers[i]);
       }
@@ -127,7 +127,7 @@ Singleton {
 
     // Filter for controllable players
     let controllablePlayers = [];
-    for (var i = 0; i < finalPlayers.length; i++) {
+    for (let i = 0; i < finalPlayers.length; i++) {
       let player = finalPlayers[i];
       if (player && player.canControl) {
         controllablePlayers.push(player);
@@ -144,7 +144,7 @@ Singleton {
     }
 
     // Prioritize the actively playing player ---
-    for (var i = 0; i < availablePlayers.length; i++) {
+    for (let i = 0; i < availablePlayers.length; i++) {
       if (availablePlayers[i] && availablePlayers[i].playbackState === MprisPlaybackState.Playing) {
         Logger.d("Media", "Found actively playing player: " + availablePlayers[i].identity);
         selectedPlayerIndex = i;
@@ -155,7 +155,7 @@ Singleton {
     // fallback if nothing is playing)
     const preferred = (Settings.data.audio.preferredPlayer || "");
     if (preferred !== "") {
-      for (var i = 0; i < availablePlayers.length; i++) {
+      for (let i = 0; i < availablePlayers.length; i++) {
         const p = availablePlayers[i];
         const identity = String(p.identity || "").toLowerCase();
         const pref = preferred.toLowerCase();
