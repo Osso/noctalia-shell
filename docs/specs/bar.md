@@ -48,6 +48,9 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 
 ### Bar pill
 
+- [x] Shared pill preserves label/suffix, icon, density-dependent sizing, custom/hover colors, and expanded/collapsed geometry across horizontal and vertical orientations.
+- [x] Shared pill forwards hover, tooltip, three mouse buttons, wheel delta, and shown/hidden signals; delayed opening, auto-hide, and cancellation preserve visibility and opacity in both orientations.
+- [x] Orientation changes replace the loaded pill while retaining screen, label, open state, and size bindings; force-close, opposite direction, and rotated vertical text remain functional.
 - [x] Vertical bar pill center offset tracks open direction.
 - [x] Vertical bar pill delayed show ignores collapsed icon mode.
 - [x] Vertical bar pill delayed show starts the show timer when closed.
@@ -67,6 +70,8 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 - `Modules/MainScreen/Backgrounds/AllBackgrounds.qml` - unified background container that receives the exposed bar item.
 - `Modules/MainScreen/Backgrounds/BarBackground.qml` - bar shape path consumer of the exposed bar item.
 - `Modules/Bar/Extras/BarWidgetLoader.qml` - widget component loading and implicit-size reporting.
+- `Modules/Bar/Extras/BarPill.qml` - shared pill bindings, input forwarding, and orientation-dependent loading.
+- `Modules/Bar/Extras/BarPillHorizontal.qml` - horizontal pill animation and geometry.
 - `Modules/Bar/Extras/BarPillVertical.qml` - vertical pill animation and offset behavior.
 - `Services/UI/BarService.qml` - bar readiness, widget instance registry, lookup helpers, context menu placement, and widget settings dialog wiring.
 - `Services/UI/BarWidgetRegistry.qml` - available widget components, widget settings mapping, and registry metadata.
@@ -81,13 +86,15 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 - `Tests/bar-widget-registry-guards.test.js`
 - `Tests/bar-tab-guards.test.js`
 - `Tests/bar-pill-vertical-guards.test.js`
+- `Tests/bar-pill-warnings.test.py` - nine isolated production-widget behavior cases: four orientation/density geometry cases, two hover/input cases, two auto-hide cases, and one Loader replacement/force-close case. Exercises Bound component context; fixture services do not prove whole-shell behavior.
 - `Tests/widget-registry.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for horizontal bar pill animation behavior.
+- [ ] Extend isolated pill endpoint/delay coverage to intermediate animation frames and whole-shell integration; current fixtures use fixed style values and stub tooltip/bar services.
+- [ ] Eight BarPill Loader/QObject `missing-property` typing diagnostics remain after `705973eb2` reduced warnings from 52 to 8. Standalone lint expects exactly those eight, not warning-free analysis; owner qualification introduces no intended user-facing behavior change.
 - [ ] Add executable coverage for full bar rendering across top, bottom, left, and right positions.
 - [ ] Add executable coverage for widget settings dialog rendering and signal emission.
 - [ ] Split widget-specific behavior into dedicated specs for widgets that do not already have one.
