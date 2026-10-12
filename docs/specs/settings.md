@@ -91,7 +91,7 @@ Settings covers persisted shell configuration, startup bootstrap and recovery, d
 
 ## Tests asserting this spec
 
-- `Tests/settings-types.test.py` — isolated offscreen production SettingsData contract: exact default/mutated/group JSON fixtures, load/save/fresh-process reload, unknown-key omission, nested arrays, and targeted qmllint alias probes; not canonical hot-reload coverage.
+- `Tests/settings-types.test.py` — isolated offscreen production SettingsData contract: exact default/mutated/group JSON fixtures, load/save/fresh-process reload, unknown-key omission, nested arrays, and targeted qmllint alias probes; not canonical hot-reload coverage. At `d21cd2d27`, synthetic HOME contains fixture-owned `0600` settings checked for unchanged bytes/mode, with a separate private serialization file and no canonical settings read. Isolation and tamper-rejection regression: [testing](testing.md).
 - `Tests/settings-singleton-warnings.test.py` — standalone `runtime` runs the actual Settings singleton offscreen: validated byte-preserving snapshots, overlapping immediate saves with verified read-back, external reload, malformed startup/watcher errors, explicit repaired retry, and first-run defaults. Logger/registry/OSD are fixtures; no full-shell or canonical hot-reload proof. Standalone `lint` accepts exactly two residual warnings (46→2 at `e212e6081`): `Qt.application.font` metadata (`missing-property`) and cross-component `saveTimer` (`unqualified`), not warning-free acceptance.
 - `Tests/settings-service-guards.test.js`
 - `Tests/shell-setup-wizard-guards.test.js`
