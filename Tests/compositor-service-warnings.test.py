@@ -196,13 +196,14 @@ def lint_harness(directory, inject_warning=False):
     harness = directory / "tst_service.qml"
     if inject_warning:
         source = harness.read_text()
-        harness.write_text(
-            source.replace(
-                "  id: root\n",
-                "  id: root\n  property int injectedWarning: missingFixtureOwner.value\n",
-                1,
-            )
+        source, count = re.subn(
+            r"(?m)^(\s*)id: root$",
+            r"\1id: root\n\1property int injectedWarning: missingFixtureOwner.value",
+            source,
+            count=1,
         )
+        assert count == 1, "fixture warning injection target missing"
+        harness.write_text(source)
     return check_harness(directory, harness)
 
 
