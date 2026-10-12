@@ -245,74 +245,76 @@ class FixtureLintTest(unittest.TestCase):
 
     def test_requested_routes_are_once_only_strict_and_isolated(self):
         for name in REQUESTED_HARNESSES:
-            for mode in ("present", "absent", "warning"):
-                with (
-                    self.subTest(harness=name, mode=mode),
-                    tempfile.TemporaryDirectory(
-                        prefix="noctalia-fixture-dispatch-"
-                    ) as temp,
-                ):
-                    root = Path(temp)
-                    runner = self.stage_repository(root, REQUESTED_HARNESSES)
-                    self.bound_discovery(root, name, REQUESTED_HARNESSES)
-                    diagnostic = f"fixture stderr: {name}\n"
-                    if mode == "warning":
-                        script = root / "Tests" / REQUESTED_HARNESSES[name]
-                        script.write_text(
-                            "import sys\nsys.stderr.write("
-                            + repr(diagnostic)
-                            + ")\n"
-                            + script.read_text()
+            modes = ("present", "absent", "warning")
+            if name == "IpcIdleServicesHarness.qml":
+                modes += ("syntax",)
+            for mode in modes:
+                with self.subTest(harness=name, mode=mode):
+                    self.check_requested_route(name, mode)
+
+    def check_requested_route(self, name, mode):
+        with tempfile.TemporaryDirectory(prefix="noctalia-fixture-dispatch-") as temp:
+            root = Path(temp)
+            runner = self.stage_repository(root, REQUESTED_HARNESSES)
+            self.bound_discovery(root, name, REQUESTED_HARNESSES)
+            diagnostic = f"fixture stderr: {name}\n"
+            failing = mode in ("warning", "syntax")
+            if failing:
+                script = root / "Tests" / REQUESTED_HARNESSES[name]
+                script.write_text(
+                    "import sys\nsys.stderr.write("
+                    + repr(diagnostic)
+                    + ")\n"
+                    + script.read_text()
+                )
+                harness = root / "Tests/Qml" / name
+                if mode == "syntax":
+                    # IPC's zero-warning CLI hides warnings, not parse errors.
+                    harness.write_text(harness.read_text() + "\n}\n")
+                else:
+                    harness.write_text(
+                        harness.read_text().replace(
+                            "{",
+                            "{\n  property int regressionWarning: Qt.application.missingFixtureValue",
+                            1,
                         )
-                        harness = root / "Tests/Qml" / name
-                        harness.write_text(
-                            harness.read_text().replace(
-                                "{",
-                                "{\n  property int regressionWarning: Qt.application.missingFixtureValue",
-                                1,
-                            )
-                        )
-                    result = self.run_checker(
-                        runner, root, settings_present=mode == "present"
                     )
-                    output = result.stdout + result.stderr
-                    reports = lint_reports(result.stdout)
-                    if mode == "warning":
-                        self.assertNotEqual(result.returncode, 0, output)
-                        self.assertTrue(
-                            result.stderr.startswith(diagnostic), result.stderr
-                        )
-                        if name != "IpcIdleServicesHarness.qml":
-                            self.assertIn("missingFixtureValue", output)
-                        self.assertNotIn("ok qmlStaticCheck", output)
-                        self.assertNotIn("Checked ", output)
-                    else:
-                        self.assertEqual(result.returncode, 0, output)
-                        self.assertEqual(output.count("ok qmlStaticCheck"), 1)
-                        self.assertIn("Checked 1 QML files", output)
-                        self.assertIn("skipped 0", output)
-                    if name == "IpcIdleServicesHarness.qml":
-                        self.assertEqual(reports, [])
-                        self.assertEqual(output.count("HARNESS_LINT_COUNTS"), 1)
-                        if mode != "warning":
-                            self.assertIn("HARNESS_LINT_COUNTS {} TOTAL 0", output)
-                    else:
-                        self.assertEqual(len(reports), 1, output)
-                        self.assertEqual(len(reports[0]["files"]), 1)
-                        file = reports[0]["files"][0]
-                        self.assertEqual(
-                            Path(file["filename"]).name, REQUESTED_REPORTS[name]
-                        )
-                        if mode == "warning":
-                            self.assertTrue(file["warnings"], output)
-                        else:
-                            self.assertEqual(file["warnings"], [])
-                        if name == "BrightnessKeyboardServicesHarness.qml":
-                            self.assertEqual(
-                                file["filename"], "/fixture/tst_services.qml"
-                            )
-                        else:
-                            self.assert_artifacts_are_isolated(file)
+            result = self.run_checker(runner, root, settings_present=mode == "present")
+            output = result.stdout + result.stderr
+            reports = lint_reports(result.stdout)
+            if failing:
+                self.assertNotEqual(result.returncode, 0, output)
+                self.assertTrue(result.stderr.startswith(diagnostic), result.stderr)
+                if mode == "syntax":
+                    self.assertIn("Error:", result.stdout)
+                    self.assertIn("tst_services.qml", result.stdout)
+                elif name != "IpcIdleServicesHarness.qml":
+                    self.assertIn("missingFixtureValue", output)
+                self.assertNotIn("ok qmlStaticCheck", output)
+                self.assertNotIn("Checked ", output)
+            else:
+                self.assertEqual(result.returncode, 0, output)
+                self.assertEqual(output.count("ok qmlStaticCheck"), 1)
+                self.assertIn("Checked 1 QML files", output)
+                self.assertIn("skipped 0", output)
+            if name == "IpcIdleServicesHarness.qml":
+                self.assertEqual(reports, [])
+                self.assertEqual(output.count("HARNESS_LINT_COUNTS"), 1)
+                if not failing:
+                    self.assertIn("HARNESS_LINT_COUNTS {} TOTAL 0", output)
+            else:
+                self.assertEqual(len(reports), 1, output)
+                self.assertEqual(len(reports[0]["files"]), 1)
+                file = reports[0]["files"][0]
+                self.assertEqual(Path(file["filename"]).name, REQUESTED_REPORTS[name])
+                if mode == "warning":
+                    self.assertTrue(file["warnings"], output)
+                else:
+                    self.assertEqual(file["warnings"], [])
+                if name == "BrightnessKeyboardServicesHarness.qml":
+                    self.assertEqual(file["filename"], "/fixture/tst_services.qml")
+                else:
+                    self.assert_artifacts_are_isolated(file)
 
     def test_all_harnesses_are_checked_without_fixture_type_warnings(self):
         with tempfile.TemporaryDirectory(prefix="noctalia-fixture-static-") as temp:
