@@ -110,6 +110,15 @@ done`;
     function onDayTempChanged() {
       root.apply();
     }
+    function onAutoScheduleChanged() {
+      root.apply();
+    }
+    function onManualSunsetChanged() {
+      root.apply();
+    }
+    function onManualSunriseChanged() {
+      root.apply();
+    }
   }
 
   Connections {
