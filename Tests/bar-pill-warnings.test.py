@@ -155,10 +155,14 @@ def run_lint(directory):
 
 
 def assert_lint_residual(counts, warnings):
-    assert counts == {"missing-property": 6}, dict(counts)
+    # Loader.item metadata remains QObject even though both pill roots are Items.
+    assert counts == {"incompatible-type": 1, "missing-property": 6}, dict(counts)
+    assignment = [warning for warning in warnings if "[incompatible-type]" in warning]
+    assert "Cannot assign binding of type QObject to QQuickItem" in assignment[0]
     members = Counter(
         re.search(r'Member "([^"]+)" not found', warning).group(1)
         for warning in warnings
+        if "[missing-property]" in warning
     )
     assert members == {"show": 2, "hide": 2, "showDelayed": 2}, dict(members)
 
