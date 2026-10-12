@@ -4,13 +4,11 @@
 import argparse
 from collections import Counter
 import importlib.util
-import os
+import json
 from pathlib import Path
 import re
 import shutil
 import subprocess
-
-from qml_fixture_lint import check_harness
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = (
@@ -176,8 +174,7 @@ function showNotice(message, body, icon, duration) {
     )
 
 
-def runtime(directory, mutation):
-    stage_runtime(directory, mutation)
+def run_isolated(directory, command, timeout):
     environment = {
         "PATH": "/usr/bin",
         "HOME": "/home/fixture",
@@ -224,16 +221,69 @@ def runtime(directory, mutation):
             "/fixture",
             "--chdir",
             "/fixture",
+            *command,
+        ],
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+    return result
+
+
+def lint_harness(directory, inject_warning):
+    stage_runtime(directory, None)
+    harness = directory / "tst_services.qml"
+    if inject_warning:
+        source = harness.read_text()
+        harness.write_text(
+            source.replace(
+                "  id: suite\n",
+                "  id: suite\n  property int injectedWarning: missingFixtureOwner.value\n",
+                1,
+            )
+        )
+    result = run_isolated(
+        directory,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            "/fixture",
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            "/fixture/tst_services.qml",
+        ],
+        60,
+    )
+    (directory / "harness.lint.json").write_text(result.stdout)
+    (directory / "harness.lint.stderr.log").write_text(result.stderr)
+    print(result.stdout, end="")
+    print(result.stderr, end="")
+    report = json.loads(result.stdout)
+    counts = Counter(
+        warning["type"] for entry in report["files"] for warning in entry["warnings"]
+    )
+    print("HARNESS_LINT_COUNTS", dict(counts), "exit", result.returncode)
+    return result.returncode
+
+
+def runtime(directory, mutation):
+    stage_runtime(directory, mutation)
+    result = run_isolated(
+        directory,
+        [
             "/usr/lib/qt6/bin/qmltestrunner",
             "-input",
             "/fixture/tst_services.qml",
             "-import",
             "/fixture",
         ],
-        env=environment,
-        capture_output=True,
-        text=True,
-        timeout=30,
+        30,
     )
     output = result.stdout + result.stderr
     (directory / "runtime.log").write_text(output)
@@ -259,17 +309,17 @@ def main():
     parser.add_argument("--artifacts", required=True, type=Path)
     parser.add_argument("--expected", type=int, nargs=2, default=[5, 0])
     parser.add_argument("--mutation", choices=("ddc-signal", "keyboard-timer"))
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     args.artifacts.mkdir(mode=0o700)
     if args.mode == "lint":
         assert args.mutation is None
         lint(args.artifacts, args.expected)
     elif args.mode == "lint-harness":
         assert args.mutation is None
-        stage_runtime(args.artifacts, None)
-        raise SystemExit(
-            check_harness(args.artifacts, args.artifacts / "tst_services.qml")
-        )
+        raise SystemExit(lint_harness(args.artifacts, args.inject_warning))
     else:
         runtime(args.artifacts, args.mutation)
 
