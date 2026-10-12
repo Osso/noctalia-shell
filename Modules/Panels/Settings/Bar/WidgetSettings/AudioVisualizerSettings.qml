@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
 import qs.Widgets
@@ -29,7 +28,7 @@ ColumnLayout {
     Layout.fillWidth: true
     label: I18n.tr("bar.widget-settings.audio-visualizer.width.label")
     description: I18n.tr("bar.widget-settings.audio-visualizer.width.description")
-    text: widgetData.width || widgetMetadata.width
+    text: root.widgetData.width || root.widgetMetadata.width
     placeholderText: I18n.tr("placeholders.enter-width-pixels")
   }
 
@@ -66,7 +65,7 @@ ColumnLayout {
   NToggle {
     label: I18n.tr("bar.widget-settings.audio-visualizer.hide-when-idle.label")
     description: I18n.tr("bar.widget-settings.audio-visualizer.hide-when-idle.description")
-    checked: valueHideWhenIdle
-    onToggled: checked => valueHideWhenIdle = checked
+    checked: root.valueHideWhenIdle
+    onToggled: checked => root.valueHideWhenIdle = checked
   }
 }
