@@ -119,6 +119,47 @@ def stage_runtime(directory, helpers, source_root):
     )
 
 
+def lint_harness(directory, source_root):
+    sources = directory / "qs"
+    sources.mkdir()
+    stage_runtime(sources, load_helpers(), source_root)
+    modules = {}
+    for path in sorted(sources.rglob("*.qml")):
+        relative = path.relative_to(sources)
+        for parent in (relative.parent, *relative.parent.parents):
+            modules.setdefault(parent, [])
+        singleton = bool(
+            re.search(r"^\s*pragma\s+Singleton\b", path.read_text(), re.MULTILINE)
+        )
+        prefix = "singleton " if singleton else ""
+        modules[relative.parent].append(f"{prefix}{path.stem} 1.0 {path.name}\n")
+    for parent, declarations in modules.items():
+        module = ".".join(("qs", *parent.parts))
+        (sources / parent / "qmldir").write_text(
+            f"module {module}\n" + "".join(declarations)
+        )
+    result = subprocess.run(
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--max-warnings",
+            "0",
+            "-I",
+            str(directory),
+            str(sources / "shell.qml"),
+        ],
+        cwd=directory,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    output = result.stdout + result.stderr
+    (directory / "harness-lint.log").write_text(output)
+    print(output, end="")
+    warning_count = len(re.findall(r"^Warning:", output, re.MULTILINE))
+    print("REMAINING_LAYOUT_HARNESS_LINT_WARNINGS", warning_count)
+    return result.returncode or int(warning_count > 0)
+
+
 def assert_content(snapshots, helpers):
     assert len(snapshots) == 12
     for snapshot in snapshots:
@@ -189,7 +230,7 @@ def behavior(directory, capture_only, source_root):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
     parser.add_argument("--artifacts", type=Path, required=True)
     parser.add_argument("--capture-only", action="store_true")
     parser.add_argument(
@@ -209,15 +250,19 @@ def main():
     assert (
         hashlib.sha256(backup.read_bytes()).digest() == hashlib.sha256(before).digest()
     )
+    exit_code = 0
     try:
-        if args.mode == "lint":
+        if args.mode == "lint-harness":
+            exit_code = lint_harness(args.artifacts, args.source_root)
+        elif args.mode == "lint":
             lint(args.artifacts, args.expected_layout)
         else:
             behavior(args.artifacts, args.capture_only, args.source_root)
     finally:
         assert SETTINGS.read_bytes() == before, "real settings changed"
     print("Real settings unchanged; bounded processes exited.")
+    return exit_code
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

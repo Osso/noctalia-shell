@@ -1,6 +1,6 @@
 import QtQuick
-import QtQuick.Window
 import QtQuick.Layouts
+import QtQuick.Window
 import Quickshell
 import qs.Commons
 import qs.Modules.Cards
@@ -27,12 +27,12 @@ ShellRoot {
     ClockSettings {
       widgetData: ({})
       widgetMetadata: ({
-          usePrimaryColor: true,
-          useCustomFont: false,
-          customFont: "",
-          formatHorizontal: "HH:mm ddd, MMM dd",
-          formatVertical: "HH mm dd MM"
-        })
+                         usePrimaryColor: true,
+                         useCustomFont: false,
+                         customFont: "",
+                         formatHorizontal: "HH:mm ddd, MMM dd",
+                         formatVertical: "HH mm dd MM"
+                       })
     }
   }
 
@@ -60,16 +60,16 @@ ShellRoot {
     previousGeometry = "";
     const scenario = cases[caseIndex];
     Settings.data = Object.assign({}, Settings.data, {
-      general: Object.assign({}, Settings.data.general, {
-        scaleRatio: scenario.scale
-      })
-    });
+                                    general: Object.assign({}, Settings.data.general, {
+                                                             scaleRatio: scenario.scale
+                                                           })
+                                  });
     window.width = scenario.width;
     const component = scenario.component === "calendar" ? calendar : scenario.component === "monitor" ? monitor : clock;
     const parentItem = scenario.component === "calendar" ? host : window.contentItem;
     componentItem = component.createObject(parentItem, {
-      "width": scenario.width
-    });
+                                             "width": scenario.width
+                                           });
     if (!componentItem)
       throw new Error("Production component failed: " + scenario.component);
     if (scenario.component === "monitor")
@@ -107,10 +107,10 @@ ShellRoot {
       for (const width of [480, 1000])
         for (const scale of [1, 1.25])
           cases.push({
-            component: component,
-            width: width,
-            scale: scale
-          });
+                       component: component,
+                       width: width,
+                       scale: scale
+                     });
     startCase();
   }
 
@@ -119,23 +119,23 @@ ShellRoot {
     running: true
     repeat: true
     onTriggered: {
-      const tree = measure(componentItem);
+      const tree = harness.measure(harness.componentItem);
       const currentGeometry = JSON.stringify(tree);
-      if (currentGeometry !== previousGeometry) {
-        previousGeometry = currentGeometry;
+      if (currentGeometry !== harness.previousGeometry) {
+        harness.previousGeometry = currentGeometry;
         return;
       }
-      snapshots.push({
-        scenario: cases[caseIndex],
-        tree: tree
-      });
-      componentItem.destroy();
-      caseIndex++;
-      if (caseIndex === cases.length) {
-        console.log("REMAINING_LAYOUT_GEOMETRY " + JSON.stringify(snapshots));
+      harness.snapshots.push({
+                               scenario: harness.cases[harness.caseIndex],
+                               tree: tree
+                             });
+      harness.componentItem.destroy();
+      harness.caseIndex++;
+      if (harness.caseIndex === harness.cases.length) {
+        console.log("REMAINING_LAYOUT_GEOMETRY " + JSON.stringify(harness.snapshots));
         Qt.quit();
       } else {
-        Qt.callLater(startCase);
+        Qt.callLater(harness.startCase);
       }
     }
   }
