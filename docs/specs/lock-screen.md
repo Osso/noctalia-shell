@@ -34,7 +34,7 @@ Typed contracts:
 
 - `Tests/lock-context-warnings.test.py` — production LockContext lint and sandboxed state/message/success/failure ordering with fake PAM and lock consumer; not native authentication or compositor security proof.
 
-- [Tests/panel-lock-palette-helper-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/panel-lock-palette-helper-guards.test.js)
+- [Tests/panel-lock-palette-helper-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/panel-lock-palette-helper-guards.test.js) — at `b14c991c0`, unload scheduling executes the owner-bound production function with a fake timer; PAM requests use fixtures, not native authentication or lock security proof.
 - [Tests/qml-type-annotations.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/qml-type-annotations.test.js)
 
 - `Tests/lock-screen-warnings.test.py` — standalone strict lint and isolated production-UI runtime coverage. Through `a53947eac`/`9d6fc1b56`/`292483753`, `Bound` removes ten implicit `lockContext` capture warnings and lexical bindings remove two block-scope `var` hoisting warnings: target zero warnings/errors, five unused-import infos remain. JSON diagnostics and `--max-warnings 0` enforce the strict target.

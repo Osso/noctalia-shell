@@ -129,7 +129,7 @@ The history ListModel and Qt Repeaters/layout are real; NotificationService, Sma
 - `Tests/notification-history-warnings.test.py` (`lint` and `runtime`, standalone).
 - `Tests/notification-service-warnings.test.py` (`lint` and `runtime`, standalone); [service lifecycle coverage](#isolated-service-lifecycle-coverage).
 - `Tests/root-service-warnings.test.py behavior` / `Tests/Qml/RootServiceHarness.qml` — production NotificationService saves/reloads a concrete history row through fixture FileView/JsonAdapter state, restores its Date timestamp, updates an active ListModel row through the real progress timer, stops that timer after clearing, and advances/clears the image queue. One of five behavioral cases at `8b1de9d34`; notification delivery, file writes, settings, and surfaces are fixtures. This does not prove expiry, deduplication, image rendering, real persistence, or input regions. Root-only lint retains seventeen `unqualified`, six `block-scope-var-declaration`, two `missing-property`, one `unresolved-type`, and one `uncreatable-type` warnings. Cohort gates: [testing](testing.md#root-service-cohort).
-- `Tests/notification-service-gap-guards.test.js`
+- `Tests/notification-service-gap-guards.test.js` — at `b14c991c0`, repaired suppression and terminal-bell cooldown assertions execute owner-bound production functions with fixture state/time; retained source checks are structural, not runtime delivery proof.
 - `Tests/shell-state-consumer-roundtrip.test.js`
 - `Tests/notification-history-panel-guards.test.js`
 - `Tests/widget-helper-guards.test.js`

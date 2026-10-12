@@ -61,7 +61,7 @@ Tray covers the bar tray widget, tray menu popup, tray drawer panel, pinned/blac
 - `Tests/tray-widget-warnings.test.py`, `Tests/Qml/TrayWidgetWarningsHarness.qml` and `Tests/tray-widget-reload.test.py`: [isolated Tray widget evidence](#tray-widget-isolated-evidence).
 - `Tests/tray-menu-guards.test.js`
 - `Tests/tray-menu-warnings.test.py` and `Tests/Qml/TrayMenuWarningsHarness.qml`: [isolated TrayMenu evidence](#tray-menu-isolated-evidence).
-- `Tests/bar-action-helper-guards.test.js`
+- `Tests/bar-action-helper-guards.test.js` — at `ce976459e`, drawer pin matching, pin/unpin, absent-owner and two-owner isolation execute the production helper with owner-bound fixture settings; not source-regex or live tray proof.
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
 

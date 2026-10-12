@@ -56,7 +56,7 @@ PanelService covers shared panel registration, popup-menu window lookup, panel l
 - `Tests/Qml/tst_panel_service_lifecycle.qml`
 - `Tests/Qml/PanelServiceLifecycleHarness.qml`
 - `Tests/panel-service-lifecycle.test.sh`
-- `Tests/main-screen-lazy-panels.test.js`
+- `Tests/main-screen-lazy-panels.test.js` — at `b14c991c0`, loader registration/unregistration executes production functions with fixture loader/PanelService owners; retained lazy-loader source checks remain structural, not QML lifecycle proof.
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)

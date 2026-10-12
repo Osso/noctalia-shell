@@ -50,7 +50,7 @@ Searchable Combo Box covers the shared searchable list selector used by settings
 
 ## Tests asserting this spec
 
-- `Tests/searchable-combo-box-guards.test.js`
+- `Tests/searchable-combo-box-guards.test.js` — through `ff8a3270a`, executable production helpers, delegate handlers/bindings, selection sync and popup filtering/focus use fixture models/owners; not source-regex proof or native popup/input integration.
 - `Tests/source-coverage.test.js`
 - `Tests/shared-ui-widgets-warnings.test.py behavior` / `Tests/Qml/SharedUiWidgetsWarningsHarness.qml`: actual offscreen search-input focus and typing, filtered keyboard selection, pointer selection and popup close/reopen, production `"LC"` badge characters, absent badges, no-match guards, source clear followed by popup refresh, model reassignment and null model (through `92726d66a`).
 
