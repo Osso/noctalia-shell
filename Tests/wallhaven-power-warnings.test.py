@@ -7,7 +7,7 @@ import importlib.util
 import json
 from pathlib import Path
 import re
-import subprocess
+import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -161,6 +161,52 @@ def stage(directory, mutation):
     )
 
 
+def lint_harness(directory, inject_warning):
+    stage(directory, None)
+    harness = directory / "tst_bounded.qml"
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                'name: "WallhavenPowerWarnings"',
+                'name: "WallhavenPowerWarnings"\n    property int injectedWarning: missingFixtureOwner.value',
+                1,
+            )
+        )
+    result = isolated(
+        directory,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            "/fixture",
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            "/fixture/tst_bounded.qml",
+        ],
+    )
+    print(result.stdout + result.stderr, end="")
+    report = json.loads(result.stdout)
+    counts = Counter(
+        diagnostic["type"]
+        for entry in report["files"]
+        for diagnostic in entry["warnings"]
+    )
+    print(
+        "WALLHAVEN_POWER_HARNESS_LINT_COUNTS", dict(counts), "EXIT", result.returncode
+    )
+    if inject_warning:
+        assert counts["warning"] > 0, "injected warning not detected"
+        assert result.returncode != 0, "injected warning accepted"
+    elif result.returncode == 0:
+        assert not counts["warning"] and not counts["error"], counts
+        assert all(entry["success"] for entry in report["files"]), report
+    return result.returncode
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -168,7 +214,12 @@ def main():
     )
     parser.add_argument("--mutation", choices=("selection", "resolution", "power"))
     parser.add_argument("--expected", nargs=2, type=int, default=[0, 0])
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
+    if args.mutation and args.mode != "runtime":
+        parser.error("--mutation requires runtime")
     with tempfile.TemporaryDirectory(prefix="noctalia-wallhaven-power-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
@@ -201,28 +252,17 @@ def main():
             result = isolated(directory, ["/usr/bin/python3", "-c", probe])
             print(result.stdout + result.stderr, end="")
             assert result.returncode == 0
+        elif args.mode == "lint-harness":
+            return lint_harness(directory, args.inject_warning)
         else:
             stage(directory, args.mutation)
-            if args.mode == "lint-harness":
-                argv = [
-                    "/usr/lib/qt6/bin/qmllint",
-                    "--bare",
-                    "-I",
-                    "/fixture",
-                    "-I",
-                    "/usr/lib/qt6/qml",
-                    "--max-warnings",
-                    "0",
-                    "/fixture/tst_bounded.qml",
-                ]
-            else:
-                argv = [
-                    "/usr/lib/qt6/bin/qmltestrunner",
-                    "-input",
-                    "/fixture/tst_bounded.qml",
-                    "-import",
-                    "/fixture",
-                ]
+            argv = [
+                "/usr/lib/qt6/bin/qmltestrunner",
+                "-input",
+                "/fixture/tst_bounded.qml",
+                "-import",
+                "/fixture",
+            ]
             result = isolated(directory, argv)
             output = result.stdout + result.stderr
             print(output, end="")
@@ -238,6 +278,7 @@ def main():
                 )
             else:
                 assert result.returncode == 0
+                assert "6 passed, 0 failed, 0 skipped" in output, output
             assert not re.search(
                 r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:",
                 output,
@@ -245,4 +286,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
