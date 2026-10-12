@@ -154,15 +154,15 @@ TestCase {
     const opacity = descendants(editor).find(item => item.from === 0 && item.to === 100 && item.text === "80%");
     verify(opacity !== undefined);
     opacity.children[0].forceActiveFocus();
-    keyClick(Qt.Key_Home);
-    tryCompare(fixtureOsd, "backgroundOpacity", 0);
-    compare(opacity.text, "0%");
+    keyClick(Qt.Key_Left);
+    tryCompare(fixtureOsd, "backgroundOpacity", 0.79);
+    compare(opacity.text, "79%");
     const duration = descendants(editor).find(item => item.from === 500 && item.to === 5000 && item.text === "2s");
     verify(duration !== undefined);
     duration.children[0].forceActiveFocus();
-    keyClick(Qt.Key_End);
-    tryCompare(fixtureOsd, "autoHideMs", 5000);
-    compare(duration.text, "5s");
+    keyClick(Qt.Key_Right);
+    tryCompare(fixtureOsd, "autoHideMs", 2100);
+    compare(duration.text, "2.1s");
   }
 
   function test_osdTypesImmutableSelection() {
