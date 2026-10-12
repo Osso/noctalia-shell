@@ -115,14 +115,23 @@ def run_harness_lint(directory, environment, inject_warning=False):
         "color-picker-harness-lint",
     )
     diagnostics = json.loads(output)
-    warnings = sum(
-        warning["type"] == "warning"
+    counts = Counter(
+        warning["id"]
         for file in diagnostics["files"]
         for warning in file["warnings"]
+        if warning["type"] == "warning"
     )
-    print("COLOR_PICKER_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
+    warnings = sum(counts.values())
+    print(
+        "COLOR_PICKER_HARNESS_LINT_COUNTS",
+        dict(counts),
+        "WARNINGS",
+        warnings,
+        "EXIT",
+        code,
+    )
     if inject_warning:
-        assert warnings > 0, "injected warning not diagnosed"
+        assert counts["missing-property"] > 0, "injected semantic warning not diagnosed"
         assert code != 0, "injected warning accepted"
     assert not warnings or code != 0, "qmllint accepted harness warnings"
     return code

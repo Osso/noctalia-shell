@@ -1,8 +1,8 @@
 import QtQuick
 import QtTest
 import qs.Commons
-import qs.Widgets
 import qs.Services.UI
+import qs.Widgets
 
 Item {
   id: scene
@@ -124,8 +124,8 @@ Item {
       picker.close();
       tryCompare(picker, "visible", false);
       const other = createTemporaryObject(pickerFactory, scene, {
-        selectedColor: "#654321"
-      });
+                                            selectedColor: "#654321"
+                                          });
       verify(other !== null);
       other.open();
       tryCompare(other, "opened", true);
@@ -140,9 +140,9 @@ Item {
         for (let row = 0; row < count; row++) {
           const swatch = repeater.itemAt(row);
           originalModel.push({
-            name: swatch.swatchName,
-            color: swatch.swatchColor
-          });
+                               name: swatch.swatchName,
+                               color: swatch.swatchColor
+                             });
         }
         repeater.model = [];
         tryCompare(repeater, "count", 0);

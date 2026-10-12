@@ -51,14 +51,14 @@ ShellRoot {
   function configure(horizontal, vertical) {
     const settings = JSON.parse(JSON.stringify(Settings.data));
     settings.bar.widgets.left = [
-      {
-        formatHorizontal: horizontal,
-        formatVertical: vertical,
-        usePrimaryColor: true,
-        useCustomFont: true,
-        customFont: "DejaVu Sans Mono"
-      }
-    ];
+          {
+            formatHorizontal: horizontal,
+            formatVertical: vertical,
+            usePrimaryColor: true,
+            useCustomFont: true,
+            customFont: "DejaVu Sans Mono"
+          }
+        ];
     Settings.data = settings;
   }
 
