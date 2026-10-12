@@ -113,16 +113,19 @@ Item {
         directory,
         "qs.Commons",
         {
-            "Settings": singleton("""property QtObject data: QtObject {
-  property QtObject brightness: QtObject {
-    property bool enableDdcSupport: false
-    property int brightnessStep: 10
-    property bool enforceMinimum: true
-  }
-  property QtObject notifications: QtObject {
-    property bool enableKeyboardLayoutToast: true
-  }
-}"""),
+            "Settings": singleton("""component BrightnessSettings: QtObject {
+  property bool enableDdcSupport: false
+  property int brightnessStep: 10
+  property bool enforceMinimum: true
+}
+component NotificationSettings: QtObject {
+  property bool enableKeyboardLayoutToast: true
+}
+component FixtureSettings: QtObject {
+  property BrightnessSettings brightness: BrightnessSettings {}
+  property NotificationSettings notifications: NotificationSettings {}
+}
+property FixtureSettings data: FixtureSettings {}"""),
             "Logger": singleton(
                 "function i(...args) {}\nfunction d(...args) {}\nfunction w(...args) {}"
             ),
