@@ -426,7 +426,7 @@ NBox {
           let minDistance = Infinity;
 
           // Check position relative to each widget
-          for (var i = 0; i < widgetModel.length; i++) {
+          for (var i = 0; i < root.widgetModel.length; i++) {
             if (i === draggedIndex)
               continue;
             const widget = widgetFlow.children[i];
@@ -453,7 +453,7 @@ NBox {
           }
 
           // Check if we should insert at position 0 (very beginning)
-          if (widgetModel.length > 0 && draggedIndex !== 0) {
+          if (root.widgetModel.length > 0 && draggedIndex !== 0) {
             const firstWidget = widgetFlow.children[0];
             if (firstWidget) {
               const dist = Math.sqrt(Math.pow(mouseX, 2) + Math.pow(mouseY - firstWidget.y, 2));

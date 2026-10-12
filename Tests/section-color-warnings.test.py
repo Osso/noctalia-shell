@@ -103,6 +103,8 @@ def run_sandboxed(args, directory):
                 "/usr/lib/qt6/qml",
                 "--max-warnings",
                 "0",
+                "--json",
+                "-",
                 str(harness),
             ]
         else:
