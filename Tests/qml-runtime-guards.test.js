@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 const assert = require("assert/strict");
+const { spawnSync } = require("node:child_process");
+const path = require("node:path");
 const { extractFunctionBody, extractHandlerBlock, extractIpcHandlerBlock, readQml } = require("./qml-test-utils");
 
 function testOsdBrightnessHandlerRejectsInvalidValues() {
@@ -298,15 +300,10 @@ function testIpcLauncherAndPanelTargetsUseTargetScreen() {
 
 function testIpcModeTargetsMapArgumentsToServices() {
   const source = readQml("Services/Control/IPCService.qml");
-  const batteryBlock = extractIpcHandlerBlock(source, "batteryManager");
   const powerBlock = extractIpcHandlerBlock(source, "powerProfile");
   const wallpaperBlock = extractIpcHandlerBlock(source, "wallpaper");
   const darkModeBlock = extractIpcHandlerBlock(source, "darkMode");
 
-  assert.match(batteryBlock, /BatteryService\.cycleModes\(\)/, "batteryManager cycle must delegate to BatteryService");
-  assert.match(batteryBlock, /case "full":[\s\S]*BatteryService\.ChargingMode\.Full/, "batteryManager full mode must map to full charging");
-  assert.match(batteryBlock, /case "balanced":[\s\S]*BatteryService\.ChargingMode\.Balanced/, "batteryManager balanced mode must map to balanced charging");
-  assert.match(batteryBlock, /case "lifespan":[\s\S]*BatteryService\.ChargingMode\.Lifespan/, "batteryManager lifespan mode must map to lifespan charging");
   assert.match(powerBlock, /PowerProfileService\.cycleProfile\(\)/, "powerProfile cycle must delegate to PowerProfileService");
   assert.match(powerBlock, /case "performance":[\s\S]*PowerProfileService\.setProfile\(2\)/, "powerProfile performance must map to profile 2");
   assert.match(powerBlock, /case "balanced":[\s\S]*PowerProfileService\.setProfile\(1\)/, "powerProfile balanced must map to profile 1");
@@ -471,7 +468,19 @@ function testIpcScreenDebounceExecutesBarPolicyAndCleanup() {
   }
 }
 
+function testRetiredBatteryIpcContract() {
+  const result = spawnSync(
+    "python3",
+    [path.join(__dirname, "battery-ipc-isolated.test.py"), "runtime"],
+    { encoding: "utf8", timeout: 60000 },
+  );
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  process.stdout.write(result.stdout);
+}
+
 const tests = [
+  testRetiredBatteryIpcContract,
   testIpcStateSerializationExecutesSuccessAndFailures,
   testIpcScreenDebounceExecutesBarPolicyAndCleanup,
   testOsdBrightnessHandlerRejectsInvalidValues,
