@@ -820,7 +820,7 @@ SmartPanel {
 
                       // Fetches from the service's cache.
                       // The dependency on `_rev` ensures this binding is re-evaluated when the cache is updated.
-                      imagePath: (imagePreview._rev, ClipboardService.getImageData(resultClipboardId) || "")
+                      imagePath: [imagePreview._rev, ClipboardService.getImageData(resultClipboardId) || ""][1]
 
                       Rectangle {
                         anchors.fill: parent
@@ -1163,7 +1163,7 @@ SmartPanel {
 
                     readonly property int _rev: ClipboardService.revision
 
-                    imagePath: (gridImagePreview._rev, ClipboardService.getImageData(resultClipboardId) || "")
+                    imagePath: [gridImagePreview._rev, ClipboardService.getImageData(resultClipboardId) || ""][1]
 
                     Rectangle {
                       anchors.fill: parent
