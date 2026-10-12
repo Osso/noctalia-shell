@@ -2,6 +2,12 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 ## What it must do
 
+### Control Center widget loader isolated runtime
+
+- `python3 Tests/control-center-widget-loader-warnings.test.py lint`, `lint-harness`, or `runtime` runs standalone; no runner integration is claimed. At `3325e0c65`, loader warnings drop 6→2; lint requires exit status zero and exactly two `missing-property` diagnostics for generic QObject `screen`/`onLoaded` metadata. Behavioral coverage: [control center](control-center.md#tests-asserting-this-spec).
+- Software/offscreen `qmltestrunner` stages the production loader with synthetic registry/widgets/screens and inert logging. Five behavioral tests plus QtTest init/cleanup yield seven reported passes for baseline and `runtime --owner-shadow`. `runtime --owner-shadow --mutation` reverses owner qualifications on the private copy and is a reported failing negative control, not acceptance. Child timeout is 60 seconds; runtime requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `QCRITICAL`, `ReferenceError`, `TypeError`, `Binding loop`, or `Warning:` output.
+- Bubblewrap unshares namespaces, masks real config parents with permission-denied tmpfs mounts, and supplies private HOME/XDG paths without desktop connections. Strace asserts real-settings open probes fail with `EACCES` and no IPv4/IPv6 connection attempt occurs. Real config is inaccessible, not read/backed up. No real network, widget backends, persistence, live panel, compositor interaction, or whole-shell acceptance is proven.
+
 ### Control Center panel isolated runtime
 
 - `Tests/control-center-panel-warnings.test.py` runs standalone `lint`, `lint-harness`, or `behavior`, requiring `--artifacts <new-directory>`; no runner integration is claimed. At `b55847897`, panel-only static warnings drop 12→0; production lint requires zero warnings and exit status zero. Exact four-case coverage: [control center](control-center.md#tests-asserting-this-spec).

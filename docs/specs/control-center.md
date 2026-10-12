@@ -59,6 +59,8 @@ Control Center covers the panel card loader, shortcut widget registry, shortcut/
 
 ## Tests asserting this spec
 
+- At `3325e0c65`, ControlCenterWidgetLoader lint drops 6→2; two `missing-property` warnings remain for `screen`/`onLoaded` on generic QObject metadata, not warning-free acceptance. `Tests/Qml/ControlCenterWidgetLoaderHarness.qml` covers property filtering and screen-before-callback order, current owner values on reload (existing widgets are not updated in place), section bindings, visibility/size geometry, optional members, missing-registry warning/zero size, and destruction clearing props. Five behavioral tests plus QtTest init/cleanup yield seven reported offscreen passes, including the owner-shadow run; reversing owner qualifications under shadow is a failing negative control. Synthetic widgets/screens do not prove real shortcut activation or live panel behavior. Isolation and acceptance: [testing](testing.md#control-center-widget-loader-isolated-runtime).
+
 - At `1e05e0ef7`, ProfileCard lint drops 6→4; four `unqualified` screen references retain caller-context lookup, not an explicit card screen contract or warning-free acceptance. `Tests/Qml/VisualizerProfileHarness.qml` asserts avatar fallback/geometry, changing display name, synthetic uptime completion and refresh, settings General-tab routing, session-menu open/control-center close ordering, close action, and resizing. The fixture supplies the caller screen; uptime Process and services are inert. No real uptime process, live desktop or persistence proof. Shared accounting and isolation: [testing](testing.md#visualizerprofile-isolated-runtime).
 
 - Production Control Center `WidgetSettings/CustomButtonSettings.qml` editor coverage through `bb8611429`/`b0cc0dc20`: targeted lint 20→0 and four isolated command/icon/state-list/serialization-discard cases. This is not the bar ControlCenterSettings editor or outer settings dialog. Exact coverage and limits: [custom button](custom-button.md#control-center-settings-editor); diagnostic/isolation contract: [testing](testing.md#control-center-custom-button-settings-editor).
@@ -82,7 +84,7 @@ Control Center covers the panel card loader, shortcut widget registry, shortcut/
 ## Known gaps (current cycle)
 
 - [ ] Add executable coverage for Control Center panel rendered card ordering.
-- [ ] Add executable coverage for Control Center widget loader failure states.
+- [ ] Add executable coverage for Control Center widget loader component-load failures beyond the covered missing-registry case.
 - [ ] Add executable coverage for individual Control Center shortcut widget activation paths not already covered by feature specs.
 - [ ] Add executable coverage for Control Center panel placement across bar positions.
 
