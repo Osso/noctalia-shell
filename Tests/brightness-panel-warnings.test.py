@@ -288,6 +288,8 @@ def main():
     parser.add_argument("--artifacts", type=Path, required=True)
     args = parser.parse_args()
     args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
+    if args.mode == "lint-harness":
+        raise SystemExit(lint_harness(args.artifacts))
     settings = Path.home() / ".config/noctalia/settings.json"
     original = settings.read_bytes()
     digest = hashlib.sha256(original).hexdigest()
@@ -299,8 +301,6 @@ def main():
     identity = runtime_identity()
     (args.artifacts / "canonical-runtime.txt").write_text("\n".join(identity))
     try:
-        if args.mode == "lint-harness":
-            raise SystemExit(lint_harness(args.artifacts))
         {"lint": lint, "behavior": behavior}[args.mode](args.artifacts)
     finally:
         assert settings.read_bytes() == original, "real settings changed"
