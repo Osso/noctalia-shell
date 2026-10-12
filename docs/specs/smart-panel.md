@@ -56,6 +56,7 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 
 - `Modules/MainScreen/SmartPanel.qml` - shared panel lifecycle, sizing, positioning, masking, close/open watchdogs, and typed panel references.
 - `Modules/MainScreen/MainScreen.qml` - SmartPanel host and panel placeholders.
+- `Modules/MainScreen/AllScreens.qml` - per-screen host and bar/popup loader routing.
 - `Modules/MainScreen/Backgrounds/PanelBackground.qml` - panel fill path and corner geometry.
 - `Services/UI/PanelService.qml` - panel registration and close notifications consumed by SmartPanel.
 - `Modules/Panels/**/*.qml` - panel implementations built on SmartPanel.
@@ -71,6 +72,12 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 - `Tests/smart-panel-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
+
+### AllScreens isolated routing evidence
+
+- At `ca9b9a618`, AllScreens warnings drop 5→0; one unused `Quickshell.Wayland` import informational notice remains. `Bound` delegates qualify screen ownership; this does not clear MainScreen's separate residual diagnostics.
+- `Tests/all-screens-warnings.test.py runtime` / `Tests/Qml/AllScreensWarningsHarness.qml` report nine routing/lifecycle passes: initial two-screen routing, removal, re-addition (Bound delegate recreation), monitor filtering, panels without a bar, bar hiding, bar restoration, clearing the monitor filter, and final destruction with balanced create/destroy events. Assertions compare exact screen identities for MainScreen, BarContentWindow, BarExclusionZone and PopupMenuWindow fixtures.
+- Reported `runtime --mutation` wrong-screen negative control forces first-screen routing on the private copy and fails; it is not an acceptance mode. Installed Variants and production Loader bindings remain real, while screens, services and window leaves are inert fixtures. No visible compositor, real config access, actual output hotplug or whole-shell acceptance is proven. Invocation/isolation: [testing](testing.md#allscreens-isolated-runtime).
 
 ## Known gaps (current cycle)
 
