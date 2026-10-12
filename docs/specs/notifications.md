@@ -65,6 +65,19 @@ This is isolated component coverage, not production service expiry/deduplication
 
 Targeted static analysis after `c8a930bac` and harness timing correction `58a71a208` is **42→10 warnings**: six `unqualified` and four `missing-property` diagnostics remain. Standalone lint accepts exactly these counts and exit status zero, not warning-free analysis.
 
+### Isolated service lifecycle coverage
+
+At `ef455de63`/`ddd0a4acf`, NotificationService midpoint subset warnings drop **15→8**; standalone production lint drops **27→14**. These are different scopes. Standalone lint accepts exactly ten unbound-owner `unqualified` accesses, two string-inference `missing-property` diagnostics, and two Quickshell metadata diagnostics (`unresolved-type`/`uncreatable-type`), with exit status zero; warnings remain unsuppressed.
+
+`Tests/notification-service-warnings.test.py runtime` exercises production NotificationService under offscreen/software `qmltestrunner`. Four behavioral passes cover:
+
+- Delivery ordering, duplicate/replacement identity and timestamps, live updates, stale sender/close rejection, and disposal.
+- DND history-only routing, visible/history overflow, action invocation, and individual/all dismissal.
+- Progress, pause/resume, expiry signal emission, and timer shutdown after explicit dismissal; expiry alone does not remove the row.
+- Server recreation/disable, state/history adapter callbacks, and image-queue advancement.
+
+Overflow cleanup retains an expected failure: removing the ListModel row loses its id before cleanup, leaving a stale quickshell-id mapping. Passing cases do not mean this bug is fixed. Delivery, storage, settings, images, and surfaces are inert fixtures. The harness checks an invisible 1×1 surface and empty mask through fixtures only. Production surface/input-region behavior is unchanged; compositor delivery and Firefox/grouped-taskbar cursor behavior remain unproven, unreproduced, and unfixed.
+
 ### Isolated history panel coverage
 
 After `98d946beb`, targeted NotificationHistoryPanel static analysis is **30→0 warnings**; standalone lint requires no warnings and exit status zero, not project-wide warning-free acceptance.
@@ -98,6 +111,7 @@ The history ListModel and Qt Repeaters/layout are real; NotificationService, Sma
 
 - `Tests/notification-warnings.test.py` (`lint` and `behavior`, standalone).
 - `Tests/notification-history-warnings.test.py` (`lint` and `runtime`, standalone).
+- `Tests/notification-service-warnings.test.py` (`lint` and `runtime`, standalone); [service lifecycle coverage](#isolated-service-lifecycle-coverage).
 - `Tests/root-service-warnings.test.py behavior` / `Tests/Qml/RootServiceHarness.qml` — production NotificationService saves/reloads a concrete history row through fixture FileView/JsonAdapter state, restores its Date timestamp, updates an active ListModel row through the real progress timer, stops that timer after clearing, and advances/clears the image queue. One of five behavioral cases at `8b1de9d34`; notification delivery, file writes, settings, and surfaces are fixtures. This does not prove expiry, deduplication, image rendering, real persistence, or input regions. Root-only lint retains seventeen `unqualified`, six `block-scope-var-declaration`, two `missing-property`, one `unresolved-type`, and one `uncreatable-type` warnings. Cohort gates: [testing](testing.md#root-service-cohort).
 - `Tests/notification-service-gap-guards.test.js`
 - `Tests/shell-state-consumer-roundtrip.test.js`
@@ -107,7 +121,7 @@ The history ListModel and Qt Repeaters/layout are real; NotificationService, Sma
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable tests for active-list replacement and progress expiry with a fake `ListModel`; the root-service harness covers mid-duration progress and timer shutdown after clearing, not expiry or replacement.
+- [ ] Fix retained overflow cleanup failure; isolated service coverage exercises replacement and expiry signaling, but not production delivery or popup-driven expiry removal.
 - [ ] Add spec coverage for notification settings UI contracts.
 - [ ] Resolve the ten remaining popup static diagnostics; this slice does not establish zero warnings.
 - [ ] Reproduce and fix Firefox/grouped-taskbar cursor flicker triggered per notification. It has **not been reproduced or fixed** by this slice; toast/notification layer input-region behavior is untouched, and the isolated test provides no desktop input-delivery proof.
