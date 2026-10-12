@@ -8,11 +8,9 @@ settings persistence. No desktop surfaces or service backends are available.
 
 import argparse
 import importlib.util
+import json
 from pathlib import Path
 import re
-import subprocess
-
-from qml_fixture_lint import check_harness
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/ControlCenter/ControlCenterPanel.qml")
@@ -25,26 +23,23 @@ def helper(filename):
     return module
 
 
-def lint(directory):
+def lint(directory, environment):
     helper("media-mini-warnings.test.py").stage_modules(directory)
-    result = subprocess.run(
+    code, output = helper("grid-list-warnings.test.py").run_audited(
+        directory,
+        environment,
         [
             "/usr/lib/qt6/bin/qmllint",
             "-I",
             str(directory),
             str(directory / "qs" / TARGET),
         ],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        timeout=60,
+        "control-center-panel-lint",
     )
-    output = result.stdout + result.stderr
     (directory / "lint.log").write_text(output)
-    print(output, end="")
     warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
     print("CONTROL_CENTER_PANEL_WARNINGS", len(warnings))
-    assert not warnings and result.returncode == 0, output
+    assert not warnings and code == 0, output
 
 
 def stage_behavior(directory):
@@ -55,13 +50,6 @@ def stage_behavior(directory):
         "qs.Modules.Panels.ControlCenter",
         {
             "ControlCenterPanel": (ROOT / TARGET).read_text(),
-        },
-    )
-    write(
-        directory,
-        "Quickshell",
-        {
-            "ShellScreen": "import QtQuick\nQtObject { property string name }",
         },
     )
     write(
@@ -102,10 +90,9 @@ function endPolling() { pollingRefs--; stops++; }"""),
         "qs.Modules.MainScreen",
         {
             "SmartPanel": """import QtQuick
-import Quickshell
 Item {
   id: host
-  property ShellScreen screen
+  property QtObject screen
   property Component panelContent
   property real preferredWidth
   property real preferredHeight
@@ -145,9 +132,59 @@ Item {{
     )
 
 
-def behavior(directory):
+def lint_harness(directory, environment, inject_warning):
     stage_behavior(directory)
-    result = subprocess.run(
+    harness = directory / "tst_control_center.qml"
+    if inject_warning:
+        source = harness.read_text()
+        marker = "id: testCase"
+        assert source.count(marker) == 1, "injection owner must be unique"
+        harness.write_text(
+            source.replace(
+                marker,
+                marker
+                + "\n    property int injectedWarning: testCase.missingLintProbe",
+                1,
+            )
+        )
+    code, output = helper("grid-list-warnings.test.py").run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        "control-center-harness-lint",
+    )
+    (directory / "lint-harness.json").write_text(output)
+    diagnostics = json.loads(output)
+    warnings = sum(
+        diagnostic["type"] == "warning"
+        for entry in diagnostics["files"]
+        for diagnostic in entry["warnings"]
+    )
+    print("CONTROL_CENTER_HARNESS_WARNINGS", warnings, "EXIT", code)
+    if inject_warning:
+        assert warnings > 0 and code != 0, "injected warning was accepted"
+    else:
+        assert warnings == 0 and code == 0, "strict harness lint failed"
+    return code
+
+
+def behavior(directory, environment):
+    stage_behavior(directory)
+    code, output = helper("grid-list-warnings.test.py").run_audited(
+        directory,
+        environment,
         [
             "/usr/lib/qt6/bin/qmltestrunner",
             "-input",
@@ -155,16 +192,10 @@ def behavior(directory):
             "-import",
             str(directory),
         ],
-        cwd=ROOT,
-        env=helper("brightness-panel-warnings.test.py").isolated_environment(directory),
-        capture_output=True,
-        text=True,
-        timeout=45,
+        "control-center-behavior",
     )
-    output = result.stdout + result.stderr
     (directory / "behavior.log").write_text(output)
-    print(output, end="")
-    assert result.returncode == 0 and "0 failed" in output, output
+    assert code == 0 and "6 passed, 0 failed" in output, output
     assert not re.search(
         r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:", output
     ), output
@@ -174,14 +205,18 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
     parser.add_argument("--artifacts", type=Path, required=True)
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
+    isolation = helper("grid-list-warnings.test.py")
+    isolation.install_settings_guard(args.artifacts)
+    environment = isolation.isolated_environment(args.artifacts)
     if args.mode == "lint-harness":
-        stage_behavior(args.artifacts)
-        raise SystemExit(
-            check_harness(args.artifacts, args.artifacts / "tst_control_center.qml")
-        )
-    {"lint": lint, "behavior": behavior}[args.mode](args.artifacts)
+        raise SystemExit(lint_harness(args.artifacts, environment, args.inject_warning))
+    {"lint": lint, "behavior": behavior}[args.mode](args.artifacts, environment)
 
 
 if __name__ == "__main__":
