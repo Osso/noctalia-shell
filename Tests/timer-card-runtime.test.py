@@ -203,8 +203,9 @@ def isolate_environment(directory):
 
 def run_behavior(directory):
     environment = isolate_environment(directory)
-    settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
-    settings.parent.mkdir(mode=0o700, parents=True)
+    # Parent-owned integrity fixtures are not the fake QML Settings singleton.
+    # Keep them outside the child's intentionally inaccessible config directories.
+    settings = directory / "settings.json"
     original = (ROOT / "Assets/settings-default.json").read_bytes()
     backup = directory / "settings.backup.json"
     for path in (settings, backup):
