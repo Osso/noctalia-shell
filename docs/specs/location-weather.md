@@ -80,7 +80,7 @@ Lifecycle/uniform proof runs against the unchanged production card and widgets w
 - Runtime proof uses fixture Settings/Time/Logger singletons and synthetic provider replies, not live geocoding/Open-Meteo, real configuration integration, or whole-shell acceptance. The Python suite runs standalone; it is not wired into `run-tests.sh`.
 - Targeted LocationService lint after `1a3fbecea` retains an installed `FileViewAdapter` metadata diagnostic; owner qualification does not establish warning-free or type-complete analysis.
 - `Tests/location-tab-warnings.test.py` (`lint` / `behavior`) with `Tests/Qml/LocationTabWarningsHarness.qml` — at `b4b11e15c`, targeted LocationTab diagnostics drop 10→0; nine reported offscreen passes comprise seven behavioral rows plus QtTest init/cleanup. Production tab and controls exercise the location settings requirements above against synthetic in-memory settings and LocationService. Reopening proves fixture state retention, not disk persistence. No geolocation, provider network requests, live settings, or live desktop acceptance. Standalone modes and isolation: [testing](testing.md#locationtab-isolated-runtime).
-- `Tests/location-service-guards.test.js`
+- `Tests/location-service-guards.test.js` — `64b6441d7`/`78bb2329f` execute production lifecycle, scheduling and request callbacks with mocked XMLHttpRequest, cache and clock state: coordinate reuse/reset, in-flight exclusion, request parameters, success/error replies, cache retention and rescheduling. Retained source checks are structural; this Node fixture is not offscreen asynchronous networking or live-provider proof.
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)

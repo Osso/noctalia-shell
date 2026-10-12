@@ -39,6 +39,7 @@ Sound Service covers resolving sound asset paths, playing sounds through media p
 ## Tests asserting this spec
 
 - `Tests/sound-service-guards.test.js`
+- `Tests/downloader-sound-monitor-taskbar-isolation.test.py` — parent fixture isolation and tamper rejection, not audio playback proof. At `835f4e503`, `Tests/sound-service-runtime.test.py` / `Tests/Qml/SoundServiceHarness.qml` verify explicit media-error logger parameters and reject implicit signal-parameter injection: one deprecation removed, nine expected isolated backend warnings remain. This is not warning-free runtime acceptance.
 - `Tests/sound-service-runtime.test.py` and `Tests/Qml/SoundServiceHarness.qml` - standalone offscreen production MediaPlayer coverage in a bubblewrap sandbox without host audio/devices or session sockets: missing-file asynchronous errors, bounded fallback, volume binding, repeat replacement, explicit stopped-state signals, and stop-one/stop-all destruction. Does not decode valid audio or prove natural end-of-media cleanup.
 - `Tests/source-coverage.test.js`
 
