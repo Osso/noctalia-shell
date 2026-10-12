@@ -308,6 +308,8 @@ class FixtureLintTest(unittest.TestCase):
                 fixtures / "LocationNetworkPlugin.cpp",
             )
         dependencies = {
+            "ButtonPopupWarningsHarness.qml": ("SimpleWidgetsWarningsHarness.qml",),
+            "LocationTabWarningsHarness.qml": ("AboutTabWarningsHarness.qml",),
             "ShortcutsClockWarningsHarness.qml": (
                 "CalendarMonthCardWarningsHarness.qml",
             ),
@@ -367,7 +369,7 @@ class FixtureLintTest(unittest.TestCase):
                     "python3",
                     "-c",
                     "import os, pathlib, sys; "
-                    "assert not pathlib.Path('/home/osso/.config').exists(); "
+                    "assert not any(pathlib.Path('/home/osso/.config').iterdir()); "
                     "assert pathlib.Path.home() == pathlib.Path(sys.argv[1]); "
                     "print('CHECKER_PRIVATE_HOME_CONFIG_MASKED', flush=True); "
                     "os.execv(sys.argv[2], sys.argv[2:])",
@@ -390,6 +392,8 @@ class FixtureLintTest(unittest.TestCase):
                     # Nested owner sandboxes mount over this empty directory.
                     "--dir",
                     "/home/osso",
+                    "--dir",
+                    "/home/osso/.config",
                     "--tmpfs",
                     "/tmp",
                     "--bind",
