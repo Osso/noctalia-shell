@@ -69,6 +69,8 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 
 ## Tests asserting this spec
 
+- `Tests/battery-panel-static.test.py` — BatteryPanel fixture-lint entrypoint isolation with absent settings and injected-warning rejection; no runtime proof.
+
 - `Tests/battery-widget-guards.test.js`
 - `Tests/battery-widget-warnings.test.py lint` checks only `Modules/Bar/Widgets/Battery.qml`, reports warning categories, and requires no warnings and qmllint exit status zero.
 - `Tests/battery-widget-warnings.test.py behavior` runs `Tests/Qml/BatteryWidgetWarningsHarness.qml` with production Battery, BarPill layouts, NText/NIcon, and BatteryService; asserts initialization, icons, text, colors, visibility, device selection, and warning threshold/hysteresis without runtime warnings. Runs standalone and directly in `run-tests.sh`'s `deterministic-unit` gate after BatteryTab; lint remains standalone. Warning rejection covers this fixture runtime, not the full shell. Inert service fixtures record toast calls without delivery and replace popup windows with a non-surface item. HOME/XDG/Noctalia paths and DBus are isolated; a permission-locked real-settings backup and unchanged SHA are verified, and the child exits before cleanup.

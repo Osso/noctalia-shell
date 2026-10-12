@@ -67,6 +67,9 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 
 ## Tests asserting this spec
 
+- `Tests/datetime-tokens-layout-runtime.test.py` — offscreen date/time token geometry against fixed fixtures.
+- `Tests/shortcuts-clock-warnings.test.py` — isolated ClockPanel display/month/card routing; also [ShortcutsCard](control-center.md).
+
 - `Tests/nclock-datetime-warnings.test.py` (`lint` / `behavior`) with `Tests/Qml/NClockDateTimeWarningsHarness.qml` — at `63f0158f2`/`2ffe8adac`, NClock/NDateTimeTokens warnings drop 17→0/13→0. Five offscreen behavioral cases plus init/cleanup yield seven reported passes: analog supplied-date repaint/pixels, digital supplied-date labels/progress after a shared Time update, 12h/locale/style/font/color and registration lifecycle, injected shared midnight, and token examples/click payloads/locale/model rebuild/recreation. Time/settings/style are fixtures; injected dates and software pixels do not prove natural scheduling or live integration. Standalone gates and isolation: [testing](testing.md#nclock-and-date-time-tokens-isolated-runtime).
 
 - `Tests/clock-warnings.test.py` (`lint` / `behavior`) with `Tests/Qml/ClockWarningsHarness.qml` — fifteen isolated production bar Clock transition rows at `1c6b00888`: 24h/12h and multiline/date formats, font/color and per-line sizing, injected second/midnight changes, horizontal/vertical active-format selection, seconds registration without duplication, hide/show, destruction, and recreation releasing all references. Time/settings/registry/UI services are fake; registration counters and injected dates do not prove real Time scheduling, natural cadence, desktop input/panels, persistence, or whole-shell integration. Clock-only lint drops 24→0 and requires zero warnings/exit status zero, not global warning-free acceptance. Standalone modes, isolation, and acceptance: [testing](testing.md#weathercard-and-bar-clock-isolated-runtime).

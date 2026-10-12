@@ -112,6 +112,9 @@ The history ListModel and Qt Repeaters/layout are real; NotificationService, Sma
 
 ## Tests asserting this spec
 
+- `Tests/history-simple-toast-warnings.test.py` — isolated history count/date/clear and [toast](toast.md) display, timeout/replacement and dismissal lifecycle.
+- `Tests/notifications-hooks-warnings.test.py` — isolated notification toggles/reopen and monitor ownership; also [hook editing without execution](hooks.md).
+
 - `Tests/notification-audit-isolation.test.py` — harmless imports, lexical settings denial before metadata, masked aliases/network denial, strict harness lint and injected-warning rejection, isolated behavior and public-entrypoint host masks.
 
 - At `18fed36d7`/`23790c6b2`, NotificationsTab warnings drop 2→0. `Tests/Qml/NotificationsHooksWarningsHarness.qml` checks enabled/overlay/expiry/keyboard-toast/DND toggles, synthetic state on reopen, monitor metadata, and monitor selection by replacement array without mutating the original. Colliding checkbox methods exercise editor ownership; `ComponentBehavior: Bound` follows reported private-copy proof. No real notification delivery, config access, disk persistence, or cursor/input-region proof. Shared accounting and isolation: [testing](testing.md#notifications-hooks-settings-isolated-runtime).

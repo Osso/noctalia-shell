@@ -67,6 +67,8 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 
 ## Tests asserting this spec
 
+- `Tests/remaining-layout-static.test.py` — CalendarHeaderCard, [system-monitor card](system-monitor.md) and [clock editor](time.md) fixture-lint isolation and injected-warning rejection; no geometry execution.
+
 - `Tests/remaining-layout-geometry.test.py behavior` - four offscreen production CalendarHeaderCard geometry/content cases at widths 480/1000 and scales 1/1.25, compared exactly with tracked pre-cleanup fixtures; fixed date, digital clock, Dallas location, and CST timezone. Shared isolation and lint limits: [testing](testing.md).
 - `Tests/calendar-service-guards.test.js`
 - `Tests/calendar-service-runtime.test.py`

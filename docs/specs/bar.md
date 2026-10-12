@@ -90,6 +90,10 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 
 ## Tests asserting this spec
 
+- `Tests/audio-notification-settings-warnings.test.py` — isolated defaults, toggle/save, copy ownership and cancel/apply for [audio](audio.md) and [notification](notifications.md) widget editors.
+- `Tests/bar-multiline-var-warnings.test.py` — isolated CustomButton, KeepAwake, KeyboardLayout and Spacer property, interaction and lifetime cases.
+- `Tests/low-count-widget-settings-warnings.test.py` — isolated Brightness, KeyboardLayout, Microphone, Spacer and Volume editor controls with synthetic settings.
+
 - `Tests/bar-widget-metadata-runtime.test.py` — offscreen Loader construction checks ActiveWindow/MediaMini metadata before instance IDs, late settings, width caps, vertical scaling and hidden dimensions.
 - `Tests/qml-static-bar-fixtures.test.py` — metadata/grouped-taskbar harnesses are counted once by the static checker; injected genuine warnings remain visible and fail.
 - `Tests/taskbar-fixture-lint.test.py` — actual Taskbar runtime fixture lint accepts clean diagnostics and rejects an injected missing property.

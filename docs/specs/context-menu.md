@@ -23,6 +23,8 @@ Reported offscreen passes at `a1b8afe27` back these requirements:
 
 ## Tests asserting this spec
 
+- `Tests/context-menu-isolation.test.py` — private context-menu runtime/behavior entrypoints, denied host settings, fixture integrity and cleanup.
+
 - `Tests/context-menu-warnings.test.py` — standalone `lint` and `runtime`; production NContextMenu warnings reported 10→0 at `a1b8afe27`.
 - `Tests/Qml/ContextMenuWarningsHarness.qml` — five behavioral tests plus QtTest init/cleanup: seven reported offscreen passes. Covers layout/items, pointer activation/close ordering, explicit focus/Space/Escape, position/reopen/model replacement, and independent owners with recreated delegates.
 - Runtime stages production NContextMenu/NListView with fixture settings/services under software/offscreen Qt. The child runs in bwrap with real config and its resolved destination masked; only the fixture directory is writable. The parent runner nevertheless reads real settings, creates a mode-0600 byte-for-byte hash-verified backup, and checks real bytes unchanged afterward. This docs audit does not execute that runner or read/hash real settings. Isolation and acceptance details: [testing](testing.md#context-menu-isolated-runtime).

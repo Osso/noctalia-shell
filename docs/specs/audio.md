@@ -72,6 +72,9 @@ Audio covers PipeWire-backed output/input volume state, device selection, OSD su
 
 ## Tests asserting this spec
 
+- `Tests/audio-dock-tabs-warnings.test.py` — isolated AudioTab volume/device/options, blacklist and save/cancel cases; also [DockTab](dock.md).
+- `Tests/visualizer-profile-warnings.test.py` — isolated visualizer sizing, frames, ownership/disposal and action routing; also [ProfileCard](control-center.md).
+
 - Through `7f8da8e4c`/`2cf87e998`, AudioTab warnings drop 3→0. `Tests/Qml/AudioDockTabsWarningsHarness.qml` covers initial/external output volume, debounced writes and sink-switch suppression, output/input device selection, mute/overdrive/options, and blacklist chip geometry/removal/addition/deduplication with fake audio. Synthetic snapshot and close/reopen retain immediate fixture edits; they do not prove save persistence or cancel rollback. Shared eight-pass accounting and isolation: [testing](testing.md#audiodock-tabs-isolated-runtime).
 
 - At `2a73a4c4f`, MicrophoneSettings and VolumeSettings warnings each drop 2→0. Two isolated editor rows check all display modes, metadata defaults, keyboard selection, copy-save retaining unrelated fields without source mutation, independent instances, and reopen from saved values. Shared accounting and limits: [testing](testing.md#small-widget-settings-isolated-runtime); no real audio changes or persistence proof.

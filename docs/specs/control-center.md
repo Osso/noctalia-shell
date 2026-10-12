@@ -59,6 +59,11 @@ Control Center covers the panel card loader, shortcut widget registry, shortcut/
 
 ## Tests asserting this spec
 
+- `Tests/card-context-warnings.test.py` — isolated production panel/ProfileCard/ShortcutsCard owner injection and lifecycle cases.
+- `Tests/control-center-widget-loader-warnings.test.py` — private loader property/callback ordering, owner-shadow and disposal cases; also [bar loader](bar.md).
+- `Tests/control-center-widget-loader-isolation.test.py` — loader entrypoint absent/read-only config isolation, runtime cases and injected-warning rejection; also [bar loader](bar.md).
+- `Tests/slider-text-dialog-warnings.test.py` — isolated settings-dialog edit/save/reopen and shared slider/text-control behavior.
+
 - `Tests/control-center-panel-static.test.py` — panel CLI lint rejects an injected warning; four offscreen cases use synthetic settings with host access denied.
 
 - At `985a57a53`, ControlCenterWidgetLoader lint remains 2→2 after the earlier 6→2 reduction at `3325e0c65`: generic QObject `screen`/`onLoaded` metadata retains two `missing-property` warnings. Production is unchanged; inspection of all 40 registered widget types across both registries found no truthful shared contract for optional screen/scaling/onLoaded members, not warning-free acceptance. `Tests/Qml/ControlCenterWidgetLoaderHarness.qml` covers property filtering and screen-before-callback order, current owner values on reload (existing widgets are not updated in place), independent owners and optional-member absence, section bindings, visibility/size geometry, missing-registry warning/zero size, and destruction clearing props. Six behavioral tests plus QtTest init/cleanup yield eight reported passes each in normal and owner-shadow offscreen runs. Synthetic widgets/screens do not prove real shortcut activation or live panel behavior. Dedicated-test accounting, nine negative controls, isolation and acceptance: [testing](testing.md#control-center-widget-loader-isolated-runtime).

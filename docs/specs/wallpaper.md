@@ -80,6 +80,8 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 
 ## Tests asserting this spec
 
+- `Tests/remaining-service-hoisting.test.py` — strict lint and extracted-JS Wallhaven behavior with fake I/O; also [emoji](emoji.md) and [update service](update-service.md).
+
 - `Tests/overview-isolation.test.py` — overview CLI strict lint with absent/read-only synthetic config, injected-warning rejection, private runtime and cover/visibility/geometry negative controls.
 - `Tests/timer-tray-wallpaper-isolation.test.py` — wallpaper-panel runtime/lint entrypoints deny host config and reject private fixture mutations.
 - `Tests/remaining-service-hoisting.test.js` — extracted Wallhaven functions exercise search/page/error state, URLs, download callbacks and cleanup with fake request/process boundaries.

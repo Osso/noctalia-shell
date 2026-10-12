@@ -25,6 +25,8 @@ Image widgets cover shared rounded-image and cached-thumbnail resource behavior.
 
 ## Tests asserting this spec
 
+- `Tests/image-shadow-warnings.test.py` — isolated rounded-image source/visibility/geometry and shadow owner/source lifecycle; no shader-pixel proof.
+
 - `Tests/image-widget-resource-guards.test.js`
 - `Tests/source-coverage.test.js`
 

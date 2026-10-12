@@ -32,6 +32,8 @@ Bounded runtime regression:
 
 ## Tests asserting this spec
 
+- `Tests/grouped-osd-settings-warnings.test.py` — isolated OSD options and immutable type/monitor selections; also [grouped taskbar editor](bar.md).
+
 - `Tests/osd-resolution.test.py` — private Quickshell resolver cold start, reload and recovery after failed reload, without desktop surfaces.
 
 - `Tests/osd-warnings.test.py behavior` with `Tests/Qml/OSDWarningsHarness.qml`: actual production component, inert services, one private Cage output; standalone, not added to the broad runner.

@@ -89,6 +89,8 @@ Compositor covers backend detection, shared workspace/window state, display-scal
 
 ## Tests asserting this spec
 
+- `Tests/root-service-static.test.py` — root-service lint/behavior entrypoint isolation and warning rejection with inert I/O; includes compositor/IPC, [brightness](brightness.md), [audio](audio.md), [Bluetooth](bluetooth.md) and [notifications](notifications.md).
+
 - `Tests/widget-settings-cohort-warnings.test.py` / `Tests/Qml/WidgetSettingsCohortHarness.qml` — WorkspaceSettings: two toggles, label-mode selection, character-count bounds 1–10, and count-control visibility for name versus index labels. No live workspace/compositor IPC proof. Each editor also exercises fixture defaults, save-copy isolation, cancel/reopen, and apply-close. Completed isolated assertions do not close the RED shared-control runtime warning gate. Cohort counts/lint evidence: [bar](bar.md#tests-asserting-this-spec); isolation and limits: [testing](testing.md#widget-settings-cohort).
 
 - `Tests/root-service-warnings.test.py behavior` / `Tests/Qml/RootServiceHarness.qml` — production CompositorService facade receives fixture backend workspace/window events, mirrors focused-window state, and completes the real lock/suspend polling timer with recorded suspend dispatch. One of five behavioral cases (seven passes including QtTest init/cleanup) at `8b1de9d34`; no real backend IPC, lock, or suspend occurs. Root-only lint leaves five `unqualified`, nineteen `missing-property`, and seven `block-scope-var-declaration` warnings in this service. Cohort gates and limits: [testing](testing.md#root-service-cohort).

@@ -64,6 +64,8 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 
 ## Tests asserting this spec
 
+- `Tests/background-region-reload.test.py` — private cold-start/hot-reload checks of production MainScreen, SmartPanel and background regions; leaf panels/services are fixtures.
+
 - `Tests/background-paths-warnings.test.py` / `Tests/Qml/BackgroundPathsHarness.qml` cover production panel/bar ShapePaths with fixture geometry, style, and visibility: 11 behavioral rows plus init/cleanup (13 reported passes) and four detected layout/rounding negative controls retained through `e8688d183`…`a5a892041`; PanelBackground lint drops 13→0 with the real shared region type. Private cold-start/source-reload evidence covers all 17 lazy callers per phase: [testing](testing.md#background-region-private-reload). This is offscreen containment/property evidence, not SmartPanel lifecycle or compositor visual proof. Invocation and isolation: [testing](testing.md#background-paths).
 
 - `Tests/panel-service-guards.test.js`
