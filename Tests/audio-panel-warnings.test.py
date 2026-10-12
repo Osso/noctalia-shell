@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 """Bounded AudioPanel lint and offscreen behavior; no host audio or settings writes."""
 
-import argparse
-import hashlib
 import importlib.util
 from pathlib import Path
 import re
 import shutil
 import subprocess
-import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 PANEL = Path("Modules/Panels/Audio/AudioPanel.qml")
@@ -99,54 +96,15 @@ readonly property real borderM: 1
     )
     with (commons / "qmldir").open("a") as declarations:
         declarations.write("singleton I18n 1.0 I18n.qml\n")
-    shutil.copyfile(
-        ROOT / "Tests/Qml/AudioPanelRegressionHarness.qml",
-        directory / "tst_audio_panel.qml",
-    )
-
-
-def run_behavior(directory):
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    backup = directory / "settings.backup.json"
-    backup.touch(mode=0o600)
-    backup.write_bytes(original)
-    assert (
-        hashlib.sha256(backup.read_bytes()).digest()
-        == hashlib.sha256(original).digest()
-    )
-    stage_runtime(directory)
-    try:
-        result = subprocess.run(
-            [
-                "/usr/lib/qt6/bin/qmltestrunner",
-                "-input",
-                str(directory),
-                "-import",
-                str(directory),
-            ],
-            cwd=ROOT,
-            env=card_fixture().fixture_helper().isolate_environment(directory),
-            capture_output=True,
-            text=True,
-            timeout=45,
-        )
-        output = result.stdout + result.stderr
-        print(output, end="")
-        assert result.returncode == 0 and "0 failed" in output, output
-        assert not re.search(
-            r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output
-        ), output
-    finally:
-        assert settings.read_bytes() == original, "real settings changed"
+    harness = directory / "tst_audio_panel.qml"
+    shutil.copyfile(ROOT / "Tests/Qml/AudioPanelRegressionHarness.qml", harness)
+    return harness
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
-    args = parser.parse_args()
-    with tempfile.TemporaryDirectory(prefix="noctalia-audio-panel-") as temporary:
-        (run_lint if args.mode == "lint" else run_behavior)(Path(temporary))
+    card_fixture().run_main(
+        stage_runtime, run_lint, "AUDIO_PANEL", 7, Path(__file__).absolute()
+    )
 
 
 if __name__ == "__main__":
