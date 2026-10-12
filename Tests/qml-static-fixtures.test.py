@@ -104,6 +104,27 @@ STRICT_MARKERS = {
     "SimpleWidgetsWarningsHarness.qml": "SIMPLE_WIDGETS_HARNESS_LINT_WARNINGS",
     "SetupWallpaperWarningsHarness.qml": "SETUP_WALLPAPER_HARNESS_LINT_WARNINGS",
 }
+PANEL_SERVICE_HARNESSES = {
+    "NotificationServiceHarness.qml": "notification-service-warnings.test.py",
+    "SettingsPanelWarningsHarness.qml": "settings-panel-warnings.test.py",
+    "WiFiPanelWarningsHarness.qml": "wifi-panel-warnings.test.py",
+    "BarWarningsHarness.qml": "bar-warnings.test.py",
+    "ChangelogPanelWarningsHarness.qml": "changelog-panel-warnings.test.py",
+}
+PANEL_SERVICE_REPORTS = {
+    "NotificationServiceHarness.qml": "tst_service.qml",
+    "SettingsPanelWarningsHarness.qml": "shell.qml",
+    "WiFiPanelWarningsHarness.qml": "tst_wifi.qml",
+    "BarWarningsHarness.qml": "tst_bar.qml",
+    "ChangelogPanelWarningsHarness.qml": "tst_history.qml",
+}
+PANEL_SERVICE_MARKERS = {
+    "NotificationServiceHarness.qml": "NOTIFICATION_SERVICE_HARNESS_LINT_COUNTS",
+    "SettingsPanelWarningsHarness.qml": "SETTINGS_PANEL_HARNESS_WARNINGS",
+    "WiFiPanelWarningsHarness.qml": "WIFI_PANEL_HARNESS_LINT_COUNTS",
+    "BarWarningsHarness.qml": "BAR_HARNESS_LINT_WARNINGS",
+    "ChangelogPanelWarningsHarness.qml": "CHANGELOG_HARNESS_LINT_WARNINGS",
+}
 ARTIFACT_HARNESSES = (
     "BrightnessPanelWarningsHarness.qml",
     "WallpaperServiceHarness.qml",
@@ -163,6 +184,9 @@ class FixtureLintTest(unittest.TestCase):
             "bar-pill-warnings.test.py",
             "wallpaper-panel-warnings.test.py",
             "wallpaper-tab-warnings.test.py",
+            "settings-singleton-warnings.test.py",
+            "wifi-networks-list-warnings.test.py",
+            "notification-history-warnings.test.py",
         ):
             shutil.copy2(ROOT / "Tests" / script, tests / script)
         helper = ROOT / "Tests/qml_fixture_lint.py"
@@ -201,6 +225,25 @@ class FixtureLintTest(unittest.TestCase):
             ROOT / "Tests/fixtures/root-services-wayland.cpp",
             tests / "fixtures/root-services-wayland.cpp",
         )
+        dependencies = {
+            "SettingsPanelWarningsHarness.qml": (
+                "SettingsSingletonHarness.qml",
+                "SetupLayoutGeometryHarness.qml",
+            ),
+            "WiFiPanelWarningsHarness.qml": ("WiFiNetworksListWarningsHarness.qml",),
+            "ChangelogPanelWarningsHarness.qml": (
+                "NotificationHistoryWarningsHarness.qml",
+            ),
+        }
+        for owner, names in dependencies.items():
+            if owner not in harness_scripts:
+                continue
+            for dependency in names:
+                # Copy inside the sandbox; symlinks keep dependencies undiscovered.
+                staged = root / ".fixture-dependencies" / dependency
+                staged.parent.mkdir(exist_ok=True)
+                shutil.copy2(ROOT / "Tests/Qml" / dependency, staged)
+                (tests / "Qml" / dependency).symlink_to(staged)
         runner = root / "Bin/dev/qml-static-check.sh"
         runner.parent.mkdir(parents=True)
         shutil.copy2(ROOT / "Bin/dev/qml-static-check.sh", runner)
@@ -288,12 +331,25 @@ class FixtureLintTest(unittest.TestCase):
                         name, mode, STRICT_HARNESSES, STRICT_REPORTS
                     )
 
+    def test_panel_service_routes_are_once_only_strict_and_isolated(self):
+        for name, script in PANEL_SERVICE_HARNESSES.items():
+            for mode in ("present", "absent", "warning"):
+                with self.subTest(harness=name, mode=mode):
+                    self.check_requested_route(
+                        name,
+                        mode,
+                        {name: script},
+                        PANEL_SERVICE_REPORTS,
+                        PANEL_SERVICE_MARKERS,
+                    )
+
     def check_requested_route(
         self,
         name,
         mode,
         harness_scripts=REQUESTED_HARNESSES,
         harness_reports=REQUESTED_REPORTS,
+        harness_markers=STRICT_MARKERS,
     ):
         # Visualizer's nested sandbox masks /tmp; keep staged owner code outside it.
         with tempfile.TemporaryDirectory(
@@ -327,8 +383,8 @@ class FixtureLintTest(unittest.TestCase):
             result = self.run_checker(runner, root, settings_present=mode == "present")
             output = result.stdout + result.stderr
             reports = lint_reports(result.stdout)
-            if name in STRICT_HARNESSES:
-                self.assertEqual(output.count(STRICT_MARKERS[name]), 1, output)
+            if name in harness_markers:
+                self.assertEqual(output.count(harness_markers[name]), 1, output)
             if failing:
                 self.assertNotEqual(result.returncode, 0, output)
                 self.assertTrue(result.stderr.startswith(diagnostic), result.stderr)

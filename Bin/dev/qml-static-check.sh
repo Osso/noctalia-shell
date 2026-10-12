@@ -194,6 +194,23 @@ for file in "${qml_files[@]}"; do
     Tests/Qml/SetupWallpaperWarningsHarness.qml)
         python3 "$repo_root/Tests/setup-wallpaper-warnings.test.py" lint-harness
         ;;
+    Tests/Qml/NotificationServiceHarness.qml)
+        python3 "$repo_root/Tests/notification-service-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/SettingsPanelWarningsHarness.qml)
+        python3 "$repo_root/Tests/settings-panel-warnings.test.py" lint-harness \
+            --max-warnings 0 --artifacts "$module_root/settings-panel"
+        ;;
+    Tests/Qml/WiFiPanelWarningsHarness.qml)
+        python3 "$repo_root/Tests/wifi-panel-warnings.test.py" lint-harness \
+            --artifacts "$module_root/wifi-panel"
+        ;;
+    Tests/Qml/BarWarningsHarness.qml)
+        python3 "$repo_root/Tests/bar-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/ChangelogPanelWarningsHarness.qml)
+        python3 "$repo_root/Tests/changelog-panel-warnings.test.py" lint-harness --max-warnings 0
+        ;;
     Tests/Qml/PanelServiceLifecycleHarness.qml)
         "$repo_root/Tests/panel-service-lifecycle.test.sh" lint-harness
         printf '\n'
