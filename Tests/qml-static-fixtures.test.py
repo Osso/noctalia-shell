@@ -674,7 +674,7 @@ class FixtureLintTest(unittest.TestCase):
                 "    harness = pathlib.Path(temp) / 'shell.qml'\n"
                 f"    shutil.copy2(root / 'Tests/Qml' / {name!r}, harness)\n"
                 "    result = subprocess.run(['/usr/lib/qt6/bin/qmllint', '--bare', "
-                "'--max-warnings', '0', '--json', '-', str(harness)], "
+                "'-I', '/usr/lib/qt6/qml', '--max-warnings', '0', '--json', '-', str(harness)], "
                 "capture_output=True, text=True, check=False, timeout=30)\n"
                 "    print(result.stdout, end='', flush=True)\n"
                 "    print(result.stderr, end='', file=sys.stderr, flush=True)\n"
