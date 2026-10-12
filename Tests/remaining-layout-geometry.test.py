@@ -242,6 +242,8 @@ def main():
     parser.add_argument("--expected-layout", nargs=3, type=int, default=[0, 0, 0])
     args = parser.parse_args()
     args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
+    if args.mode == "lint-harness":
+        return lint_harness(args.artifacts, args.source_root)
     before = SETTINGS.read_bytes()
     backup = args.artifacts / "settings.backup.json"
     with backup.open("xb") as stream:
@@ -250,18 +252,15 @@ def main():
     assert (
         hashlib.sha256(backup.read_bytes()).digest() == hashlib.sha256(before).digest()
     )
-    exit_code = 0
     try:
-        if args.mode == "lint-harness":
-            exit_code = lint_harness(args.artifacts, args.source_root)
-        elif args.mode == "lint":
+        if args.mode == "lint":
             lint(args.artifacts, args.expected_layout)
         else:
             behavior(args.artifacts, args.capture_only, args.source_root)
     finally:
         assert SETTINGS.read_bytes() == before, "real settings changed"
     print("Real settings unchanged; bounded processes exited.")
-    return exit_code
+    return 0
 
 
 if __name__ == "__main__":
