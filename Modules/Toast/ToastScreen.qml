@@ -129,7 +129,7 @@ Item {
     sourceComponent: PanelWindow {
       id: panel
 
-      property alias toastItem: toastItem
+      property alias toastItem: toastContent
 
       screen: root.screen
 
@@ -188,8 +188,8 @@ Item {
       margins.left: isLeft ? barOffsetLeft : 0
       margins.right: isRight ? barOffsetRight : 0
 
-      implicitWidth: Math.round(toastItem.width)
-      implicitHeight: Math.round(toastItem.height)
+      implicitWidth: Math.round(toastContent.width)
+      implicitHeight: Math.round(toastContent.height)
 
       color: NColor.transparent
 
@@ -207,24 +207,24 @@ Item {
 
         Region {
           id: toastInputRegion
-          x: toastItem.x
-          y: toastItem.y
-          width: toastItem.width
-          height: toastItem.height
+          x: toastContent.x
+          y: toastContent.y
+          width: toastContent.width
+          height: toastContent.height
           intersection: Intersection.Subtract
         }
       }
 
       function showToast(message, description, icon, type, duration) {
-        toastItem.show(message, description, icon, type, duration);
+        toastContent.show(message, description, icon, type, duration);
       }
 
       function hideToast() {
-        toastItem.hideImmediately();
+        toastContent.hideImmediately();
       }
 
       SimpleToast {
-        id: toastItem
+        id: toastContent
         onHidden: root.onToastHidden()
       }
     }
