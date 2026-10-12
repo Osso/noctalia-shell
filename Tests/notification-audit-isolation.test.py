@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Notification-only audit, filesystem isolation and warning-gate regressions."""
 
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -179,25 +180,46 @@ else:
         self.assertEqual(code, 0, output)
         self.assertIn("MASKED_ALIAS_DENIED", output)
 
-    def assert_runner_pass(self, mode, marker):
+    def assert_runner_pass(self, mode, marker=None):
         code, output = self.run_case([mode, "--max-warnings", "0"])
         self.assertEqual(code, 0, output)
         self.assertIn("NOTIFICATION_REAL_SETTINGS_AUDIT_DENIED", output)
         self.assertIn("NOTIFICATION_HOST_CONFIG_MASKED", output)
-        self.assertIn(marker, output)
+        if marker:
+            self.assertIn(marker, output)
         self.assertNotIn("OUTER_PROTECTED_METADATA", output)
         return output
 
+    def lint_results(self, output):
+        return [
+            file
+            for line in output.splitlines()
+            if line.startswith("{")
+            for file in json.loads(line)["files"]
+        ]
+
+    def assert_clean_lint(self, output):
+        results = self.lint_results(output)
+        self.assertEqual(len(results), 1, output)
+        self.assertTrue(results[0]["success"], output)
+        self.assertEqual(results[0]["warnings"], [], output)
+
     def test_strict_harness_zero_warnings(self):
-        output = self.assert_runner_pass("lint-harness", '"warnings": []')
-        self.assertIn('"success": true', output)
+        self.assert_clean_lint(self.assert_runner_pass("lint-harness"))
 
     def test_injected_warning_is_visible_and_rejected(self):
         output = self.assert_runner_pass(
             "lint-harness-regression", "NOTIFICATION_HARNESS_WARNING_REJECTED"
         )
-        self.assertIn("missingLintProbe", output)
-        self.assertIn('"success": false', output)
+        results = self.lint_results(output)
+        self.assertEqual(len(results), 2, output)
+        self.assertTrue(results[0]["success"], output)
+        self.assertEqual(results[0]["warnings"], [], output)
+        self.assertFalse(results[1]["success"], output)
+        self.assertEqual(len(results[1]["warnings"]), 1, output)
+        warning = results[1]["warnings"][0]
+        self.assertEqual(warning["id"], "missing-property")
+        self.assertIn("missingLintProbe", warning["message"])
 
     def test_isolated_notification_behavior(self):
         self.assert_runner_pass("behavior", "NOTIFICATION_BEHAVIOR_PASS")
@@ -208,7 +230,7 @@ else:
         )
         self.assertEqual(code, 0, output)
         self.assertIn("NOTIFICATION_HOST_CONFIG_MASKED", output)
-        self.assertIn('"warnings": []', output)
+        self.assert_clean_lint(output)
 
 
 if __name__ == "__main__":
