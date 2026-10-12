@@ -97,8 +97,10 @@ Item {
 
     function test_model_lifecycle(data) {
       openPicker();
-      if (data.listMode)
+      if (data.listMode) {
         mouseClick(button("filepicker-list"));
+        wait(50); // Let pending folder refresh and list layout finish before retaining a delegate.
+      }
       tryVerify(() => entry("alpha.txt", data.listMode) !== null);
       const alpha = entry("alpha.txt", data.listMode);
       mouseClick(alpha, alpha.width / 2, alpha.height / 2);
@@ -184,7 +186,8 @@ Item {
       mouseClick(button("filepicker-search"));
       tryCompare(search, "visible", true);
       tryCompare(search, "activeFocus", true);
-      keyClick(Qt.Key_A);
+      keyClick(Qt.Key_P);
+      tryCompare(search, "text", "p");
       tryCompare(grid(), "count", 1);
       keyClick(Qt.Key_Escape);
       tryCompare(search, "visible", false);
