@@ -20,7 +20,7 @@ PanelWindow {
   property QtObject contentItem: null
 
   // Expose the trayMenu Loader directly (for backward compatibility)
-  readonly property alias trayMenuLoader: trayMenuLoader
+  readonly property alias trayMenuLoader: trayLoader
 
   anchors.top: true
   anchors.left: true
@@ -49,14 +49,16 @@ PanelWindow {
 
   // Load TrayMenu as the default content
   Loader {
-    id: trayMenuLoader
+    id: trayLoader
     source: Quickshell.shellDir + "/Modules/Bar/Extras/TrayMenu.qml"
-    onLoaded: {
-      if (item) {
-        item.screen = root.screen;
-        // Set the loaded item as default content
-        root.contentItem = item;
-      }
+    onLoaded: root.initializeTrayMenu(trayLoader.item)
+  }
+
+  function initializeTrayMenu(menu: var): void {
+    if (menu) {
+      menu.screen = root.screen;
+      // Set the loaded item as default content
+      root.contentItem = menu;
     }
   }
 
@@ -72,19 +74,23 @@ PanelWindow {
     }
   }
 
-  function close() {
-    visible = false;
-    // Call close/hide method on current content
-    if (contentItem) {
-      if (typeof contentItem.hideMenu === "function") {
-        contentItem.hideMenu();
-      } else if (typeof contentItem.close === "function") {
-        contentItem.close();
+  function hideContent(menu: var): void {
+    if (menu) {
+      if (typeof menu.hideMenu === "function") {
+        menu.hideMenu();
+      } else if (typeof menu.close === "function") {
+        menu.close();
       }
     }
+  }
+
+  function close() {
+    root.visible = false;
+    // Call close/hide method on current content
+    root.hideContent(root.contentItem);
     // Restore TrayMenu as default content
-    if (trayMenuLoader.item) {
-      contentItem = trayMenuLoader.item;
+    if (trayLoader.item) {
+      root.contentItem = trayLoader.item;
     }
   }
 
