@@ -395,8 +395,8 @@ finally:
             diagnostics = json.loads(result.stdout)
             warnings = [
                 warning
-                for file in diagnostics
-                for warning in file["warnings"]
+                for diagnostic in diagnostics["files"]
+                for warning in diagnostic["warnings"]
                 if warning["type"] == "warning"
             ]
             print("WALLPAPER_TAB_HARNESS_LINT_COUNTS", {"total": len(warnings)})
