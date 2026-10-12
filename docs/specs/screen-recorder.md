@@ -76,14 +76,15 @@ Screen recorder covers gpu-screen-recorder source discovery, start/stop state, p
 
 - `Tests/screen-recorder-discovery.test.sh` - launches the real discovery processes through `Tests/Qml/ScreenRecorderDiscoveryHarness.qml`; it verifies a `Quickshell.screensChanged` refresh replaces `DP-4` with `eDP-1` when the two commands exit in reverse order, publishes matching source/resolution state, and preserves the persisted selection.
 - `Tests/screen-recorder-service-guards.test.js`
-- `Tests/simple-service-warnings.test.py` / `Tests/Qml/SimpleServiceHarness.qml` — production availability/discovery completion ordering, portal preflight failure, successful preflight dispatch, and pending recorder failure/notice. Processes are fake; no capture or portal integration. Four parser-metadata diagnostics remain; cohort proof: [testing](testing.md#simple-service-cohort).
+- `Tests/simple-service-warnings.test.py` / `Tests/Qml/SimpleServiceHarness.qml` — production availability/discovery completion ordering, portal preflight failure, successful preflight dispatch, and pending recorder failure/notice. Processes are fake; no capture or portal integration. Historical cohort proof: [testing](testing.md#simple-service-cohort).
+- `Tests/emoji-recorder-warnings.test.py runtime` — production discovery collectors completing monitors before capture options, focused command/state/stop, failed and successful portal preflight dispatch, pending exit diagnostics/missing binary, and active successful-exit saved notice against fake processes. Named collectors remove four parser-metadata `missing-property` diagnostics (4→0); cohort proof and limits: [testing](testing.md#emoji-recorder-isolated-runtime).
 - `Tests/screen-recorder-settings-ui.test.js`
 - `Tests/service-probes-parsing.test.sh`
 - `Tests/qml-runtime-guards.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Four recorder parser-metadata `missing-property` diagnostics remain; owner qualification does not make static analysis warning-free.
+- [ ] Live capture and portal/backend integration remain unproved by the isolated fixture harness.
 
 ## Out of scope
 

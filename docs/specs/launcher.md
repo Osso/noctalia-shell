@@ -74,12 +74,13 @@ Launcher covers launcher panel search state, plugin registration, command routin
 - `Tests/clipboard-plugin-guards.test.js`
 - `Tests/clipboard-preview-warnings.test.py` - isolated production-preview runtime and component lint; coverage and limits: [clipboard](clipboard.md#tests-asserting-this-spec).
 - `Tests/emoji-plugin-guards.test.js`
+- `Tests/emoji-recorder-warnings.test.py runtime` — isolated production EmojiPlugin loading/refresh, category browsing, trimmed case-insensitive search, empty results, copy/close activation, command entry, and recent-category reset against fixtures. EmojiPlugin lint drops four `unqualified` plus two var-boundary diagnostics to zero; cohort counts, negative controls, and isolation: [testing](testing.md#emoji-recorder-isolated-runtime).
 - `Tests/qml-runtime-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable tests for plugin result activation paths that currently only have structural coverage.
+- [ ] Add executable tests for application/calculator/clipboard result activation paths; emoji activation is covered against fixtures, not a real clipboard or launcher panel.
 - [ ] Add executable tests for launcher-level preview integration; isolated clipboard preview rendering/loading is covered in [clipboard](clipboard.md#launcher-preview).
 - [ ] Add concrete fixtures for desktop-entry application discovery and terminal launch fallbacks.
 
