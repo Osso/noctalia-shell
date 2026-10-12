@@ -327,6 +327,23 @@ for file in "${qml_files[@]}"; do
         python3 "$repo_root/Tests/setup-appearance-warnings.test.py" lint-harness \
             --max-warnings 0 --artifacts "$module_root/setup-appearance"
         ;;
+    Tests/Qml/LauncherWarningsHarness.qml)
+        python3 "$repo_root/Tests/launcher-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/MangoServiceHarness.qml)
+        python3 "$repo_root/Tests/mango-service-warnings.test.py" lint-harness \
+            --artifacts "$module_root/mango-service"
+        ;;
+    Tests/Qml/ProgramCheckerHarness.qml)
+        python3 "$repo_root/Tests/program-checker-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/VPNPanelWarningsHarness.qml)
+        python3 "$repo_root/Tests/vpn-panel-warnings.test.py" lint-harness \
+            --artifacts "$module_root/vpn-panel"
+        ;;
+    Tests/Qml/WallpaperPanelWarningsHarness.qml)
+        python3 "$repo_root/Tests/wallpaper-panel-warnings.test.py" --mode lint-harness
+        ;;
     Tests/Qml/tst_panel_service_lifecycle.qml)
         "$repo_root/Tests/panel-service-lifecycle.test.sh" lint-harness \
             --harness tst_panel_service_lifecycle.qml

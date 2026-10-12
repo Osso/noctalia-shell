@@ -223,6 +223,43 @@ AUDIO_TAB_MARKERS = {
     "BarTabWarningsHarness.qml": "BAR_TAB_HARNESS_LINT_WARNINGS",
     "ControlCenterTabWarningsHarness.qml": "CONTROL_CENTER_TAB_HARNESS_LINT_WARNINGS",
 }
+LAUNCHER_MANGO_PROGRAM_VPN_WALLPAPER_ROUTES = {
+    "LauncherWarningsHarness.qml": (
+        "launcher-warnings.test.py",
+        ["lint-harness", "--max-warnings", "0"],
+        False,
+        "tst_launcher.qml",
+        "LAUNCHER_HARNESS_WARNINGS",
+    ),
+    "MangoServiceHarness.qml": (
+        "mango-service-warnings.test.py",
+        ["lint-harness"],
+        True,
+        "tst_mango.qml",
+        "MANGO_HARNESS_LINT_COUNT",
+    ),
+    "ProgramCheckerHarness.qml": (
+        "program-checker-warnings.test.py",
+        ["lint-harness", "--max-warnings", "0"],
+        False,
+        "shell.qml",
+        "PROGRAM_CHECKER_LINT_COUNTS",
+    ),
+    "VPNPanelWarningsHarness.qml": (
+        "vpn-panel-warnings.test.py",
+        ["lint-harness"],
+        True,
+        "tst_vpn.qml",
+        "VPN_PANEL_HARNESS_LINT_COUNTS",
+    ),
+    "WallpaperPanelWarningsHarness.qml": (
+        "wallpaper-panel-warnings.test.py",
+        ["--mode", "lint-harness"],
+        False,
+        "tst_wallpaper.qml",
+        "WALLPAPER_PANEL_HARNESS_LINT_COUNTS",
+    ),
+}
 ARTIFACT_HARNESSES = (
     "BrightnessPanelWarningsHarness.qml",
     "WallpaperServiceHarness.qml",
@@ -298,6 +335,11 @@ class FixtureLintTest(unittest.TestCase):
                 "wifi-panel-warnings.test.py",
             ):
                 shutil.copy2(ROOT / "Tests" / script, tests / script)
+        if "VPNPanelWarningsHarness.qml" in harness_scripts:
+            shutil.copy2(
+                ROOT / "Tests/wifi-panel-warnings.test.py",
+                tests / "wifi-panel-warnings.test.py",
+            )
         if any(name in harness_scripts for name in AUDIO_TAB_HARNESSES):
             for script in (
                 "audio-card-warnings.test.py",
@@ -858,6 +900,43 @@ class FixtureLintTest(unittest.TestCase):
                     self.assertNotIn(filename, artifact_paths, "artifact path reused")
                     artifact_paths.add(filename)
 
+    def test_launcher_mango_program_vpn_wallpaper_checker_routes(self):
+        artifact_paths = set()
+        for name, (
+            script,
+            arguments,
+            artifacts,
+            _,
+            _,
+        ) in LAUNCHER_MANGO_PROGRAM_VPN_WALLPAPER_ROUTES.items():
+            for mode in ("present", "absent", "warning"):
+                with self.subTest(harness=name, mode=mode):
+                    filename = self.check_synthetic_strict_dispatch(
+                        name,
+                        script,
+                        mode == "warning",
+                        arguments,
+                        artifacts=artifacts,
+                        settings_present=mode == "present",
+                        static_only=True,
+                    )
+                    self.assertNotIn(filename, artifact_paths, "artifact path reused")
+                    artifact_paths.add(filename)
+
+    def test_launcher_mango_program_vpn_wallpaper_real_strict_routes(self):
+        for name, (
+            script,
+            _,
+            _,
+            report,
+            marker,
+        ) in LAUNCHER_MANGO_PROGRAM_VPN_WALLPAPER_ROUTES.items():
+            for mode in ("present", "absent", "warning"):
+                with self.subTest(harness=name, mode=mode):
+                    self.check_requested_route(
+                        name, mode, {name: script}, {name: report}, {name: marker}
+                    )
+
     def check_synthetic_strict_dispatch(
         self,
         name,
@@ -1030,7 +1109,8 @@ class FixtureLintTest(unittest.TestCase):
                 runner,
                 root,
                 command=command,
-                mask_audio=name in AUDIO_TAB_HARNESSES,
+                mask_audio=name in AUDIO_TAB_HARNESSES
+                or name in LAUNCHER_MANGO_PROGRAM_VPN_WALLPAPER_ROUTES,
                 settings_present=mode == "present",
                 audit_settings=name in UTILITY_HARNESSES
                 or name in POPUP_HISTORY_LOCATION_PROCESS_HARNESSES
@@ -1112,6 +1192,10 @@ class FixtureLintTest(unittest.TestCase):
                 harness.relative_to("/tmp")
                 self.assertFalse(harness.parent.exists(), "picker artifacts leaked")
                 self.assertEqual(output.count("FILE_PICKER_CONFIG_NETWORK_MASKED"), 1)
+            elif name == "MangoServiceHarness.qml":
+                self.assertEqual(file["filename"], "/fixture/tst_mango.qml")
+            elif name == "ProgramCheckerHarness.qml":
+                self.assertEqual(file["filename"], "/fixture/shell.qml")
             elif name == "WallhavenPowerWarningsHarness.qml":
                 self.assertEqual(file["filename"], "/fixture/tst_bounded.qml")
             elif name == "BrightnessKeyboardServicesHarness.qml":
