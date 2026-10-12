@@ -3,9 +3,7 @@
 
 import argparse
 from collections import Counter
-import hashlib
 import importlib.util
-import json
 import os
 from pathlib import Path
 import re
@@ -195,8 +193,7 @@ Item {
     )
 
 
-def runtime(directory, mutation):
-    stage_runtime(directory, mutation)
+def private_environment(directory):
     environment = {
         "PATH": os.environ["PATH"],
         "QT_QPA_PLATFORM": "offscreen",
@@ -211,10 +208,44 @@ def runtime(directory, mutation):
         "XDG_DATA_HOME",
         "XDG_STATE_HOME",
         "XDG_RUNTIME_DIR",
+        "NOCTALIA_CONFIG_DIR",
+        "NOCTALIA_CACHE_DIR",
     ):
         path = directory / key
-        path.mkdir(mode=0o700)
+        path.mkdir(mode=0o700, exist_ok=True)
         environment[key] = str(path)
+    return environment
+
+
+def lint_harness(directory, max_warnings):
+    stage_runtime(directory, None)
+    result = subprocess.run(
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "-I",
+            str(directory),
+            str(directory / "tst_services.qml"),
+        ],
+        env=private_environment(directory),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    output = result.stdout + result.stderr
+    (directory / "harness.lint.log").write_text(output)
+    print(output, end="")
+    counts = Counter(
+        (re.findall(r"\[([^]]+)\]", line) or ["uncategorized"])[-1]
+        for line in output.splitlines()
+        if line.startswith("Warning:")
+    )
+    total = sum(counts.values())
+    print("HARNESS_LINT_COUNTS", dict(counts), "TOTAL", total)
+    return int(result.returncode != 0 or total > max_warnings)
+
+
+def runtime(directory, mutation):
+    stage_runtime(directory, mutation)
     result = subprocess.run(
         [
             "/usr/lib/qt6/bin/qmltestrunner",
@@ -223,7 +254,7 @@ def runtime(directory, mutation):
             "-import",
             str(directory),
         ],
-        env=environment,
+        env=private_environment(directory),
         capture_output=True,
         text=True,
         timeout=45,
@@ -239,31 +270,24 @@ def runtime(directory, mutation):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "runtime", "lint-harness"))
+    parser.add_argument("--max-warnings", type=int, default=0)
     parser.add_argument("--artifacts", type=Path, required=True)
     parser.add_argument("--mutation", choices=("parse", "exit", "capture"))
     args = parser.parse_args()
     assert args.mode == "runtime" or args.mutation is None
-    directory = args.artifacts
+    if args.max_warnings < 0:
+        parser.error("--max-warnings must be nonnegative")
+    directory = args.artifacts.resolve()
     directory.mkdir(mode=0o700)
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    backup = directory / "settings.backup"
-    backup.touch(mode=0o600)
-    backup.write_bytes(original)
-    digest = hashlib.sha256(original).hexdigest()
-    assert hashlib.sha256(backup.read_bytes()).hexdigest() == digest
-    try:
-        if args.mode == "lint":
-            lint(directory)
-        else:
-            runtime(directory, args.mutation)
-    finally:
-        assert settings.read_bytes() == original, "real settings changed"
-        assert hashlib.sha256(backup.read_bytes()).hexdigest() == digest, (
-            "backup changed"
-        )
+    if args.mode == "lint":
+        lint(directory)
+    elif args.mode == "lint-harness":
+        return lint_harness(directory, args.max_warnings)
+    else:
+        runtime(directory, args.mutation)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
