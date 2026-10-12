@@ -35,14 +35,14 @@ Typed contracts:
 - [Tests/panel-lock-palette-helper-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/panel-lock-palette-helper-guards.test.js)
 - [Tests/qml-type-annotations.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/qml-type-annotations.test.js)
 
-- `Tests/lock-screen-warnings.test.py` — standalone lint and isolated production-UI runtime coverage. At `c9ebda0fc`/`b90b5c861`/`a00e603ed`, warnings fall 22→10; four behavioral cases plus QtTest init/cleanup report six passes, zero failures and no runtime warnings. Password-exposure (`visibility`) and delayed-unload (`unload`) mutations produced RED failures. Isolation and proof limits: [testing](testing.md#lock-screen-isolated-runtime).
-- The remaining ten `unqualified` warnings are implicit cross-component `lockContext` captures at lines 433 (two), 448, 940, 946, 947, 951, 1052, 1089, and 1103 at `b90b5c861`. Deliberately retained to preserve security behavior pending exact proof; not a zero-warning claim.
+- `Tests/lock-screen-warnings.test.py` — standalone strict lint and isolated production-UI runtime coverage. Through `a53947eac`/`9d6fc1b56`/`292483753`, `Bound` removes ten implicit `lockContext` capture warnings and lexical bindings remove two block-scope `var` hoisting warnings: target zero warnings/errors, five unused-import infos remain. JSON diagnostics and `--max-warnings 0` enforce the strict target.
+- Private `Bound` proof reports six normal and six owner-shadow passes (four behavioral cases plus QtTest init/cleanup each), zero failures and no runtime warnings. Four negative controls detect password routing (`routing`), release/clear/unload order (`clear-order`), delayed-unload timing (`unload`), and plaintext exposure (`visibility`). Isolation and proof limits: [testing](testing.md#lock-screen-isolated-runtime).
 
 ## Known gaps (current cycle)
 
 - [ ] Add executable coverage for PAM completion success/failure signal handling.
 - [ ] Verify real compositor session locking, PAM authentication, physical input, and live rendering; offscreen fixtures are not live-lock proof.
-- [ ] Add executable coverage for compact-mode layout and remaining context-capture changes.
+- [ ] Add executable coverage for compact-mode layout.
 
 ## Out of scope
 
