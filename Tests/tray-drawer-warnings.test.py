@@ -286,15 +286,28 @@ root = Path('source')
 spec = importlib.util.spec_from_file_location('drawer_resolution', root / 'Tests/tray-drawer-resolution.test.py')
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
+stage = module.stage
 wait_message = module.resolver.wait_message
+
+def stage_ready(directory):
+    stage(directory)
+    shell = directory / 'shell.qml'
+    shell.write_text(shell.read_text().replace('ShellRoot {', '''ShellRoot {
+  Timer {
+    interval: 0
+    running: true
+    onTriggered: console.log("DRAWER_WATCH_READY")
+  }
+''', 1))
 
 def wait_loaded(process, selector, output, marker, allow_failure=False):
     initial = not output
     wait_message(process, selector, output, marker, allow_failure)
-    if initial and 'Configuration Loaded' not in ''.join(output):
-        wait_message(process, selector, output, 'Configuration Loaded')
+    if initial and 'DRAWER_WATCH_READY' not in ''.join(output):
+        wait_message(process, selector, output, 'DRAWER_WATCH_READY')
 
-# Loader.onLoaded precedes engine startup completion and watcher installation.
+# Configuration Loaded is logged before watchers attach; wait one event turn.
+module.stage = stage_ready
 module.resolver.wait_message = wait_loaded
 for index, mode in enumerate(('cold-start', 'reload', 'reload-after-failure')):
     case = Path(str(index)).absolute()
