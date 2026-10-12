@@ -11,6 +11,8 @@ import shutil
 import subprocess
 import tempfile
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Commons/ShellState.qml")
 
@@ -140,6 +142,11 @@ QtObject {
     )
 
 
+def lint_harness(directory):
+    stage_runtime(directory)
+    return check_harness(directory, directory / "tst_shellstate.qml")
+
+
 def runtime(directory):
     stage_runtime(directory)
     environment = {
@@ -181,7 +188,11 @@ def runtime(directory):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "runtime"))
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
     arguments = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-shell-state-") as temporary:
-        globals()[arguments.mode](Path(temporary))
+        directory = Path(temporary)
+        if arguments.mode == "lint-harness":
+            raise SystemExit(lint_harness(directory))
+        globals()[arguments.mode](directory)
