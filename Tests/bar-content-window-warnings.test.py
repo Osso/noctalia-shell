@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Standalone BarContentWindow proof; no host settings or desktop access.
 
 Runtime uses synthetic PanelWindow transport and Bar content, preserving the
@@ -6,15 +5,15 @@ production bindings. Installed Quickshell metadata remains real for source lint.
 """
 
 import argparse
-from collections import Counter
 import importlib.util
 import json
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import tempfile
 import time
+from collections import Counter
+from pathlib import Path
 
 ROOT = Path(__file__).absolute().parents[1]
 TARGET = Path("Modules/MainScreen/BarContentWindow.qml")
@@ -113,14 +112,6 @@ property SettingsData data: SettingsData {}"""
     )
     write(directory, "qs.Services.UI", {"Fixture": "import QtQuick\nQtObject {}"})
     source = stage_transport((ROOT / TARGET).read_text())
-    # Only layer-shell transport is replaced; namespace expression stays real.
-    source = source.replace(
-        "WlrLayershell.namespace:", "property string fixtureNamespace:"
-    )
-    source = source.replace("WlrLayershell.layer:", "property int fixtureLayer:")
-    source = source.replace(
-        "WlrLayershell.exclusionMode:", "property int fixtureExclusionMode:"
-    )
     if mutation == "routing":
         source = source.replace("screen: barWindow.selectedScreen", "screen: null")
     elif mutation == "owner-snapshot":
@@ -384,7 +375,12 @@ ShellRoot {
           probe.assertScreen();
           console.log("BAR_NATIVE_PASS", probe.generation);
           probe.step++;
-          if (probe.generation === "RELOADED") Qt.quit();
+          if (probe.generation === "RELOADED") {
+            for (const window of probe.windows) window.destroy();
+            probe.windows = [];
+          }
+        } else if (probe.step === 3 && probe.generation === "RELOADED") {
+          Qt.quit();
         }
       } catch (error) {
         console.error(error);
@@ -402,7 +398,8 @@ def await_marker(process, log, marker, count=1):
         output = log.read_text()
         assert process.poll() is None, output
         assert not re.search(
-            r" WARN[: ]| ERROR[: ]|TypeError|ReferenceError|Binding loop", output
+            r" WARN[: ]| ERROR[: ]|TypeError|ReferenceError|Binding loop|warning: queue",
+            output,
         ), output
         assert time.monotonic() < deadline, output
         time.sleep(0.05)
@@ -438,6 +435,7 @@ def native(directory):
                     ["niri", "msg", "output", "winit", "scale", "2"],
                 ),
                 env=environment,
+                check=False,
                 capture_output=True,
                 text=True,
                 timeout=5,
@@ -461,7 +459,8 @@ def native(directory):
             assert "BAR_NATIVE_PASS RELOADED" in output, output
             assert output.count("BAR_NATIVE_PASS INITIAL") == 2, output
             assert not re.search(
-                r" WARN[: ]| ERROR[: ]|TypeError|ReferenceError|Binding loop", output
+                r" WARN[: ]| ERROR[: ]|TypeError|ReferenceError|Binding loop|warning: queue",
+                output,
             ), output
             print("BAR_NATIVE_COLD_GEOMETRY_RECREATION_OWNER_RELOAD_PASS")
         finally:
