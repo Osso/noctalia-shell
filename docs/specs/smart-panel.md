@@ -44,7 +44,7 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 ### Typed panel references
 
 - [x] SmartPanel `buttonItem` is typed as `Item`.
-- [x] SmartPanel `panelRegion` is typed as `Item`.
+- [x] SmartPanel `panelRegion` is typed as the real Item-derived `BackgroundRegion`, with four integer corner-state properties: top-left, top-right, bottom-right, and bottom-left (`-1` square, `0` inner curve, `1` X inversion, `2` Y inversion).
 - [x] SmartPanel `panelRegion` exposes the live `panelBackground` geometry consumed by `AllBackgrounds`.
 - [x] Panel background exposes its `panelItem` as an `Item`.
 
@@ -58,12 +58,13 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 - `Modules/MainScreen/MainScreen.qml` - SmartPanel host and panel placeholders.
 - `Modules/MainScreen/AllScreens.qml` - per-screen host and bar/popup loader routing.
 - `Modules/MainScreen/Backgrounds/PanelBackground.qml` - panel fill path and corner geometry.
+- `Modules/MainScreen/Backgrounds/BackgroundRegion.qml` - shared Item-derived geometry and four-corner contract for bar, active panel, and inactive placeholder regions.
 - `Services/UI/PanelService.qml` - panel registration and close notifications consumed by SmartPanel.
 - `Modules/Panels/**/*.qml` - panel implementations built on SmartPanel.
 
 ## Tests asserting this spec
 
-- `Tests/background-paths-warnings.test.py` / `Tests/Qml/BackgroundPathsHarness.qml` cover production panel/bar ShapePaths with fixture geometry, style, and visibility: 11 behavioral rows plus init/cleanup (13 reported passes) and four detected layout/rounding negative controls through `7c8e74ea2`/`23b32ca34`/`f16acbc36`. This is offscreen containment/property evidence, not SmartPanel lifecycle or compositor visual proof. Invocation and isolation: [testing](testing.md#background-paths).
+- `Tests/background-paths-warnings.test.py` / `Tests/Qml/BackgroundPathsHarness.qml` cover production panel/bar ShapePaths with fixture geometry, style, and visibility: 11 behavioral rows plus init/cleanup (13 reported passes) and four detected layout/rounding negative controls retained through `e8688d183`…`a5a892041`; PanelBackground lint drops 13→0 with the real shared region type. Private cold-start/source-reload evidence covers all 17 lazy callers per phase: [testing](testing.md#background-region-private-reload). This is offscreen containment/property evidence, not SmartPanel lifecycle or compositor visual proof. Invocation and isolation: [testing](testing.md#background-paths).
 
 - `Tests/panel-service-guards.test.js`
 - `Tests/Qml/PanelServiceLifecycleHarness.qml`
@@ -81,7 +82,8 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 
 ## Known gaps (current cycle)
 
-- [ ] PanelBackground retains 13 unsuppressed `missing-property` diagnostics: `panelItem` and corner-state fields live on anonymous Items, outside static Item metadata. Exact-count lint acceptance leaves the shared typed metadata blocker unresolved.
+- [ ] MainScreen's staging fixture omits the new BackgroundRegion type; repair is separate. Scoped background evidence does not establish an entire unit-gate pass.
+- [ ] Private region reload uses fixture leaf content and explicit close finalization; no live wallpaper or render-driven animation proof.
 
 - [ ] Four dynamic Loader member diagnostics remain after the `05772415d` SmartPanel warning reduction (76 → 4); runtime lifecycle coverage is not zero-warning static-analysis acceptance.
 - [ ] MainScreen's zero-warning lint and offscreen fixture coverage do not prove compositor pixels, native input delivery, or real-output routing.

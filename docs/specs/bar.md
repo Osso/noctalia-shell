@@ -16,6 +16,7 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 
 - [x] Bar background fill containment follows position/size, rounded/square/inverted corners, and radius clamping for small geometry.
 - [x] Bar background hides for hidden bars, excluded monitors, and null bar references; monitor selection and fill-color changes update the path.
+- [x] Bar background consumes the real Item-derived `BackgroundRegion` four-corner contract; private cold-start/reload checks all four bar sides and floating corner states.
 
 ### Bar service
 
@@ -76,6 +77,7 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 - `Modules/Bar/Bar.qml` - per-screen bar shell, orientation layout, and Control Center toggle behavior.
 - `Modules/MainScreen/Backgrounds/AllBackgrounds.qml` - unified background container that receives the exposed bar item.
 - `Modules/MainScreen/Backgrounds/BarBackground.qml` - bar shape path consumer of the exposed bar item.
+- `Modules/MainScreen/Backgrounds/BackgroundRegion.qml` - shared typed geometry/corner contract; [panel contract](smart-panel.md#typed-panel-references).
 - `Modules/Bar/Extras/BarWidgetLoader.qml` - widget component loading and implicit-size reporting.
 - `Modules/Bar/Extras/BarPill.qml` - shared pill bindings, input forwarding, and orientation-dependent loading.
 - `Modules/Bar/Extras/BarPillHorizontal.qml` - horizontal pill animation and geometry.
@@ -113,7 +115,7 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 
 - ActiveWindowSettings warning reduction 6→0 and six reported offscreen passes through `40d1f6391`/`a5322cf4b`/`9f3c50289` cover editor options, pending/copy-save isolation, and shared-dialog cancel/reopen/apply with synthetic settings. This does not prove BarService popup ownership, real persistence, or resolution of reload-time ActiveWindow warnings. Coverage: [active window](active-window.md#tests-asserting-this-spec); invocation/isolation: [testing](testing.md#activewindow-settings-isolated-runtime).
 
-- `Tests/background-paths-warnings.test.py` / `Tests/Qml/BackgroundPathsHarness.qml` cover production bar/panel paths through `7c8e74ea2`/`23b32ca34`/`f16acbc36`: 11 offscreen behavioral rows plus init/cleanup (13 reported passes), with four detected layout/rounding negative controls. Shape containment and fill-color properties are not compositor visual proof. Invocation, retained diagnostics, and isolation: [testing](testing.md#background-paths).
+- `Tests/background-paths-warnings.test.py` / `Tests/Qml/BackgroundPathsHarness.qml` cover production bar/panel paths retained through `e8688d183`…`a5a892041`: 11 offscreen behavioral rows plus init/cleanup (13 reported passes), with four detected layout/rounding negative controls. Shape containment and fill-color properties are not compositor visual proof. BarBackground lint drops 12→0 with the shared region type. Invocation and isolation: [testing](testing.md#background-paths); private cold-start/source-reload: [testing](testing.md#background-region-private-reload).
 
 - `Tests/layer-bar-owner-warnings.test.py loader` covers production BarWidgetLoader offscreen after `097536acb`: owner warnings 15→0, with three unsuppressed dynamic-widget `missing-property` diagnostics (`screen`, `scaling`, `onLoaded`) retained. One behavioral case covers two-screen property assignment, registration before widget callback, rounded/hidden sizes, density scaling, opacity/hide mode, resize propagation, ordered teardown, and recreation. Synthetic clicks reach an underlying receiver; the unchanged input region is only a fixture property, not compositor proof. Invocation and isolation: [testing](testing.md#background-and-widget-loader-owners).
 - Unified bar/panel backgrounds after `ead749abf` have offscreen color/geometry, transparent-canvas sample, and pointer pass-through coverage, not compositor-rendered pixels or live input-region proof: [testing](testing.md#background-and-widget-loader-owners).
@@ -140,7 +142,7 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 
 ## Known gaps (current cycle)
 
-- [ ] BarBackground retains 12 unsuppressed `missing-property` diagnostics for anonymous Item corner-state metadata; exact-count lint acceptance is not zero-warning analysis. Shared typed metadata remains unresolved; offscreen path coverage proves neither compositor pixels nor live input regions.
+- [ ] Offscreen typed-region coverage proves neither compositor pixels nor live input regions, wallpaper, or render-driven panel animations. MainScreen's separate staging omission prevents an entire unit-gate claim; [testing limits](testing.md#background-region-private-reload).
 
 - [ ] Extend isolated pill endpoint/delay coverage to intermediate animation frames and whole-shell integration; current fixtures use controlled style values and stub tooltip/bar services. Horizontal's eight geometry records were reported unchanged for `32d56b877`, but the harness has no tracked snapshot-equality comparator.
 - [ ] Eight BarPill Loader.item metadata `missing-property` diagnostics remain: width, height, show, hide, and showDelayed. After `705973eb2` reduced warnings 52→8, `3569081f8`/`b645aea04`/`56d317612` retain 8→8; exact-count lint acceptance is not zero-warning analysis. No intended user-facing behavior change.
