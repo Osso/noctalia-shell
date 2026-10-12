@@ -88,6 +88,8 @@ Item {
       tryCompare(loader, "active", true);
       compare(loader.item.count, 2);
       compare(loader.item.width, 8);
+      NotificationService.lastSeenTs = 250;
+      tryCompare(loader.item, "count", 1);
       NotificationService.lastSeenTs = 300;
       tryCompare(loader, "active", false);
       compare(loader.item, null);
@@ -103,6 +105,14 @@ Item {
         hideWhenZero: false
       };
       tryCompare(loader, "active", false);
+      widget.widgetSettings = {
+        showUnreadBadge: true,
+        hideWhenZero: true
+      };
+      NotificationService.lastSeenTs = 150;
+      tryCompare(loader, "active", true);
+      compare(loader.item.count, 2);
+      compare(loader.item.visible, true);
     }
 
     function test_history_date_count_and_clear_signal() {
