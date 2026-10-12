@@ -4,7 +4,7 @@ const assert = require("assert/strict");
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("node:child_process");
-const { extractComponentBlocks, stripQmlComments } = require("./qml-test-utils");
+const { extractComponentBlocks, extractFunctionBody, stripQmlComments } = require("./qml-test-utils");
 
 const repoRoot = path.resolve(__dirname, "..");
 
@@ -75,7 +75,8 @@ function testQmlFunctionTypeContractInventory() {
     extractAnnotatedSignatures(readQml(qmlFile)).map(signature => `${qmlFile}: ${signature}`));
 
   // Declaration inventory, not behavior proof. Runtime gates below execute these
-  // annotations in their real owners on the installed Qt/Quickshell runtime.
+  // annotations on installed Qt/Quickshell. Popup methods use an offscreen
+  // QtObject owner; this does not prove native PanelWindow/layershell lifecycle.
   assert.deepEqual(inventory, [
     "Modules/Bar/Widgets/Tray.qml: bindTrayContext(owner:Tray): void",
     "Modules/MainScreen/PopupMenuWindow.qml: initializeTrayMenu(menu:var): void",
@@ -90,7 +91,6 @@ function testQmlFunctionTypeContractInventory() {
 function testAnnotatedFunctionRuntimeContracts() {
   const gates = [
     ["tray-widget-reload.test.py"],
-    ["popup-menu-window-warnings.test.py", "runtime"],
     ["location-service-runtime.test.py", "runtime"],
     ["location-tab-warnings.test.py", "behavior"],
   ];
@@ -104,6 +104,86 @@ function testAnnotatedFunctionRuntimeContracts() {
     assert.equal(result.status, 0, `${runner}\n${result.stdout}${result.stderr}`);
     process.stdout.write(result.stdout);
   }
+}
+
+function testAnnotatedPopupFunctionRuntimeContracts() {
+  const source = readQml("Modules/MainScreen/PopupMenuWindow.qml");
+  const declarations = ["initializeTrayMenu", "hideContent"].map(name => {
+    const signature = source.match(new RegExp(`function\\s+${name}\\([^)]*\\)\\s*:\\s*\\w+\\s*`));
+    assert.notEqual(signature, null, `missing annotated declaration: ${name}`);
+    return signature[0] + extractFunctionBody(source, name);
+  }).join("\n");
+  const harness = `import QtQuick
+import QtTest
+TestCase {
+  name: "AnnotatedPopupFunctions"
+  QtObject {
+    id: root
+    property QtObject screen: QtObject {}
+    property QtObject activeMenu: null
+    ${declarations}
+  }
+  QtObject {
+    id: menu
+    property QtObject screen: null
+    property int hidden: 0
+    property int closed: 0
+    function hideMenu() { hidden++; }
+    function close() { closed++; }
+  }
+  QtObject {
+    id: closeOnly
+    property int closed: 0
+    function close() { closed++; }
+  }
+  function test_initialize_and_hide() {
+    root.initializeTrayMenu(menu);
+    compare(menu.screen, root.screen);
+    compare(root.activeMenu, menu);
+    root.initializeTrayMenu(null);
+    compare(root.activeMenu, menu);
+    root.hideContent(menu);
+    compare(menu.hidden, 1);
+    compare(menu.closed, 0);
+    root.hideContent(closeOnly);
+    compare(closeOnly.closed, 1);
+    root.hideContent(null);
+    compare(menu.hidden, 1);
+    compare(closeOnly.closed, 1);
+  }
+}`;
+  runOffscreenAnnotatedHarness(harness);
+}
+
+function runOffscreenAnnotatedHarness(harness) {
+  const script = `
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+sys.path.insert(0, sys.argv[1])
+import importlib.util
+spec = importlib.util.spec_from_file_location("media", Path(sys.argv[1]) / "media-mini-warnings.test.py")
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+with tempfile.TemporaryDirectory(prefix="noctalia-typed-functions-") as temporary:
+    directory = Path(temporary)
+    (directory / "tst_functions.qml").write_text(sys.stdin.read())
+    result = subprocess.run(["/usr/lib/qt6/bin/qmltestrunner", "-input", str(directory)], env=module.isolate_environment(directory), capture_output=True, text=True, timeout=30)
+    print(result.stdout + result.stderr, end="")
+    sys.exit(result.returncode)
+`;
+  const result = spawnSync("python3", ["-c", script, __dirname], {
+    input: harness,
+    encoding: "utf8",
+    timeout: 60000,
+  });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /Totals: 3 passed, 0 failed/);
+  assert.doesNotMatch(result.stdout + result.stderr,
+    /QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:/);
+  process.stdout.write(result.stdout);
 }
 
 function testAnnotatedBackendFixtureRuntimeContracts() {
@@ -1244,6 +1324,7 @@ const tests = [
   testAnnotatedSignatureExtraction,
   testQmlFunctionTypeContractInventory,
   testAnnotatedFunctionRuntimeContracts,
+  testAnnotatedPopupFunctionRuntimeContracts,
   testAnnotatedBackendFixtureRuntimeContracts,
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
