@@ -178,82 +178,122 @@ function testLocationServiceSchedulingGuards() {
 
 function testLocationServiceNetworkRequestGuards() {
   const source = readQml("Services/Location/LocationService.qml");
-  const geocodeBody = extractFunctionBody(source, "_geocodeLocation");
-  const fetchBody = extractFunctionBody(source, "_fetchWeather");
-  const errorBody = extractFunctionBody(source, "errorCallback");
+  const execute = (name, ...args) => new Function("ctx", ...args, `with (ctx) ${extractFunctionBody(source, name)}`);
+  const requests = [];
+  const errors = [];
+  const resolved = [];
+  let reschedules = 0;
+  const ctx = {
+    isFetchingWeather: true,
+    Time: { timestamp: 1234 },
+    data: { latitude: "old", longitude: "old", weather: null, weatherLastFetch: 0 },
+    coordinatesReady: false,
+    stableLatitude: "old",
+    stableLongitude: "old",
+    Logger: {
+      d() {},
+      e(...args) {
+        errors.push(args);
+      },
+    },
+    scheduleWeatherUpdate() {
+      reschedules += 1;
+    },
+    XMLHttpRequest: class {
+      static DONE = 4;
+      constructor() {
+        this.readyState = 1;
+        requests.push(this);
+      }
+      open(method, url) {
+        this.method = method;
+        this.url = url;
+      }
+      send() {
+        this.sent = true;
+      }
+      respond(status, responseText, readyState = 4) {
+        this.status = status;
+        this.responseText = responseText;
+        this.readyState = readyState;
+        this.onreadystatechange();
+      }
+    },
+  };
+  ctx.root = ctx;
+  const error = (module, message) => execute("errorCallback", "module", "message")(ctx, module, message);
+  const geocode = execute("_geocodeLocation", "locationName", "callback", "errorCallback");
+  const fetchWeather = execute("_fetchWeather", "latitude", "longitude", "errorCallback");
 
-  assert.match(
-    source,
-    /function _geocodeLocation\(locationName, callback, errorCallback\)/,
-    "_geocodeLocation must type the required location name input while keeping callbacks dynamic",
-  );
-  assert.match(source, /function errorCallback\(module, message\)/, "errorCallback must type module and message inputs");
-  assert.match(
-    geocodeBody,
-    /var geoUrl = "https:\/\/assets\.noctalia\.dev\/geocode\.php\?city=" \+ encodeURIComponent\(locationName\) \+ "&language=en&format=json"/,
-    "_geocodeLocation must build encoded geocode URLs",
-  );
-  assert.match(geocodeBody, /if \(xhr\.readyState === XMLHttpRequest\.DONE\)/, "_geocodeLocation must wait for request completion");
-  assert.match(
-    geocodeBody,
-    /if \(xhr\.status === 200\)[\s\S]*var geoData = JSON\.parse\(xhr\.responseText\)/,
-    "_geocodeLocation must parse successful responses",
-  );
-  assert.match(
-    geocodeBody,
-    /if \(geoData\.lat != null\)[\s\S]*callback\(geoData\.lat, geoData\.lng, geoData\.name, geoData\.country\)/,
-    "_geocodeLocation must callback with resolved coordinates",
-  );
-  assert.match(
-    geocodeBody,
-    /else[\s\S]*errorCallback\("Location", "could not resolve location name"\)/,
-    "_geocodeLocation must report unresolved locations",
-  );
-  assert.match(
-    geocodeBody,
-    /catch \(e\)[\s\S]*errorCallback\("Location", "Failed to parse geocoding data: " \+ e\)/,
-    "_geocodeLocation must report parse errors",
-  );
-  assert.match(geocodeBody, /errorCallback\("Location", "Geocoding error: " \+ xhr\.status\)/, "_geocodeLocation must report HTTP errors");
-  assert.match(geocodeBody, /xhr\.open\("GET", geoUrl\)[\s\S]*xhr\.send\(\)/, "_geocodeLocation must send GET requests");
-  assert.match(
-    fetchBody,
-    /var url = "https:\/\/api\.open-meteo\.com\/v1\/forecast\?latitude=" \+ latitude \+ "&longitude=" \+ longitude/,
-    "_fetchWeather must build Open-Meteo URLs",
-  );
-  assert.match(
-    fetchBody,
-    /if \(xhr\.status === 200\)[\s\S]*var weatherData = JSON\.parse\(xhr\.responseText\)/,
-    "_fetchWeather must parse successful weather responses",
-  );
-  assert.match(
-    fetchBody,
-    /data\.weather = weatherData[\s\S]*data\.weatherLastFetch = Time\.timestamp/,
-    "_fetchWeather must cache weather and fetch time",
-  );
-  assert.match(
-    fetchBody,
-    /root\.stableLatitude = data\.latitude = weatherData\.latitude\.toString\(\)[\s\S]*root\.stableLongitude = data\.longitude = weatherData\.longitude\.toString\(\)[\s\S]*root\.coordinatesReady = true/,
-    "_fetchWeather must publish stable coordinates on success",
-  );
-  assert.match(
-    fetchBody,
-    /isFetchingWeather = false[\s\S]*root\.scheduleWeatherUpdate\(\)/,
-    "_fetchWeather must clear fetch state and reschedule on success",
-  );
-  assert.match(
-    fetchBody,
-    /catch \(e\)[\s\S]*errorCallback\("Location", "Failed to parse weather data"\)/,
-    "_fetchWeather must report parse errors",
-  );
-  assert.match(fetchBody, /errorCallback\("Location", "Weather fetch error: " \+ xhr\.status\)/, "_fetchWeather must report HTTP errors");
-  assert.match(fetchBody, /xhr\.open\("GET", url\)[\s\S]*xhr\.send\(\)/, "_fetchWeather must send GET requests");
-  assert.match(errorBody, /Logger\.e\(module, message\)/, "errorCallback must log errors");
-  assert.match(
-    errorBody,
-    /isFetchingWeather = false[\s\S]*root\.scheduleWeatherUpdate\(\)/,
-    "errorCallback must clear fetch state and reschedule",
-  );
+  geocode(ctx, "Paris & suburbs", (...coordinates) => resolved.push(coordinates), error);
+  const geoRequest = requests.at(-1);
+  assert.equal(geoRequest.method, "GET");
+  assert.equal(geoRequest.url, "https://assets.noctalia.dev/geocode.php?city=Paris%20%26%20suburbs&language=en&format=json");
+  assert.equal(geoRequest.sent, true);
+  geoRequest.respond(200, '{"lat":48.85,"lng":2.35,"name":"Paris","country":"France"}', 3);
+  assert.deepEqual(resolved, [], "incomplete geocoding response must not publish coordinates");
+  geoRequest.respond(200, '{"lat":48.85,"lng":2.35,"name":"Paris","country":"France"}');
+  assert.deepEqual(resolved, [[48.85, 2.35, "Paris", "France"]]);
+  assert.deepEqual(errors, []);
+
+  for (
+    const [status, payload, expected] of [
+      [200, "{}", "could not resolve location name"],
+      [200, "invalid json", /^Failed to parse geocoding data:/],
+      [503, "{}", "Geocoding error: 503"],
+    ]
+  ) {
+    ctx.isFetchingWeather = true;
+    geocode(ctx, "Paris", (...coordinates) => resolved.push(coordinates), error);
+    requests.at(-1).respond(status, payload);
+    assert.equal(errors.at(-1)[0], "Location");
+    if (expected instanceof RegExp) assert.match(errors.at(-1)[1], expected);
+    else assert.equal(errors.at(-1)[1], expected);
+    assert.equal(ctx.isFetchingWeather, false);
+  }
+  assert.equal(resolved.length, 1, "geocoding failures must not publish coordinates");
+  assert.equal(reschedules, 3);
+
+  ctx.isFetchingWeather = true;
+  fetchWeather(ctx, 48.85, 2.35, error);
+  const weatherRequest = requests.at(-1);
+  assert.equal(weatherRequest.method, "GET");
+  assert.equal(weatherRequest.sent, true);
+  const url = new URL(weatherRequest.url);
+  assert.equal(url.origin + url.pathname, "https://api.open-meteo.com/v1/forecast");
+  assert.deepEqual(Object.fromEntries(url.searchParams), {
+    latitude: "48.85",
+    longitude: "2.35",
+    current_weather: "true",
+    current: "relativehumidity_2m,surface_pressure",
+    daily: "temperature_2m_max,temperature_2m_min,weathercode,sunset,sunrise",
+    timezone: "auto",
+  });
+  const weather = { latitude: 48.85, longitude: 2.35, current_weather: { temperature: 23 } };
+  weatherRequest.respond(200, JSON.stringify(weather));
+  assert.deepEqual(ctx.data.weather, weather);
+  assert.equal(ctx.data.weatherLastFetch, 1234);
+  assert.deepEqual([ctx.data.latitude, ctx.data.longitude], ["48.85", "2.35"]);
+  assert.deepEqual([ctx.stableLatitude, ctx.stableLongitude], ["48.85", "2.35"]);
+  assert.equal(ctx.coordinatesReady, true);
+  assert.equal(ctx.isFetchingWeather, false);
+  assert.equal(reschedules, 4);
+
+  for (
+    const [status, payload, expected] of [
+      [200, "invalid json", "Failed to parse weather data"],
+      [503, "{}", "Weather fetch error: 503"],
+    ]
+  ) {
+    ctx.isFetchingWeather = true;
+    fetchWeather(ctx, 48.85, 2.35, error);
+    requests.at(-1).respond(status, payload);
+    assert.deepEqual(errors.at(-1), ["Location", expected]);
+    assert.equal(ctx.isFetchingWeather, false);
+    assert.deepEqual(ctx.data.weather, weather, "failed requests must preserve cached weather");
+    assert.equal(ctx.data.weatherLastFetch, 1234);
+  }
+  assert.equal(reschedules, 6);
 }
 
 function testLocationServiceWeatherFormattingHelpers() {

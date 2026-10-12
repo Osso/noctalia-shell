@@ -354,7 +354,7 @@ function testSettingsErrorRetryIsReadOnlyAndStartsNewGeneration() {
 
 function settingsFileHandler(loaderId, handlerName, ...argNames) {
   const loader = findComponentBlock(source, "Loader", `id: ${loaderId}`);
-  const file = findComponentBlock(loader, "FileView", `${handlerName}:`);
+  const file = loader;
   const declaration = new RegExp(`^\\s*${handlerName}: (.*)$`, "m").exec(file);
   assert.ok(declaration, `missing ${loaderId}.${handlerName}`);
   const expression = declaration[1];
@@ -486,7 +486,7 @@ function testSettingsBootstrapUsesSnapshotHydrationAndWriteOnlyPersistence() {
       ["validationFileLoader", ctx.root.settingsFile],
     ]
   ) {
-    const file = findComponentBlock(findComponentBlock(source, "Loader", `id: ${loaderId}`), "FileView", "path:");
+    const file = findComponentBlock(source, "Loader", `id: ${loaderId}`);
     const evaluateBinding = (name) => {
       const expression = new RegExp(`^\\s*${name}: (.+)$`, "m").exec(file)[1];
       return new Function("Settings", `return ${expression}`)(ctx.root);
