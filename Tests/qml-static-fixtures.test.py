@@ -1102,6 +1102,92 @@ class FixtureLintTest(unittest.TestCase):
                     self.assertNotIn(filename, artifact_paths, "artifact path reused")
                     artifact_paths.add(filename)
 
+    def test_toast_screen_tray_menu_checker_routes(self):
+        routes = {
+            "ToastScreenWarningsHarness.qml": "toast-screen-warnings.test.py",
+            "TrayMenuWarningsHarness.qml": "tray-menu-warnings.test.py",
+        }
+        artifact_paths = set()
+        for name, script in routes.items():
+            for mode in ("present", "absent", "warning"):
+                with self.subTest(harness=name, mode=mode):
+                    filename = self.check_synthetic_strict_dispatch(
+                        name,
+                        script,
+                        mode == "warning",
+                        settings_present=mode == "present",
+                        static_only=True,
+                    )
+                    self.assertNotIn(filename, artifact_paths, "artifact path reused")
+                    artifact_paths.add(filename)
+
+    def test_toast_screen_tray_menu_real_strict_routes(self):
+        routes = {
+            "ToastScreenWarningsHarness.qml": (
+                "toast-screen-warnings.test.py",
+                "shell.qml",
+            ),
+            "TrayMenuWarningsHarness.qml": (
+                "tray-menu-warnings.test.py",
+                "tst_tray_menu.qml",
+            ),
+        }
+        for name, (script, report) in routes.items():
+            for mode in ("present", "absent", "warning"):
+                with (
+                    self.subTest(harness=name, mode=mode),
+                    tempfile.TemporaryDirectory(
+                        prefix="noctalia-toast-tray-dispatch-", dir="/var/tmp"
+                    ) as temp,
+                ):
+                    root = Path(temp)
+                    runner = self.stage_repository(root, {name: script})
+                    if mode == "warning":
+                        harness = root / "Tests/Qml" / name
+                        harness.write_text(
+                            harness.read_text().replace(
+                                "{",
+                                "{\n  property int injectedWarning: Qt.application.missingFixtureValue",
+                                1,
+                            )
+                        )
+                    result = self.run_checker(
+                        runner,
+                        root,
+                        settings_present=mode == "present",
+                        audit_settings=True,
+                        mask_audio=True,
+                        static_only=name == "ToastScreenWarningsHarness.qml",
+                        owner_audits=name == "TrayMenuWarningsHarness.qml",
+                    )
+                    output = result.stdout + result.stderr
+                    reports = lint_reports(result.stdout)
+                    self.assertEqual(len(reports), 1, output)
+                    self.assertEqual(len(reports[0]["files"]), 1, output)
+                    file = reports[0]["files"][0]
+                    self.assertEqual(Path(file["filename"]).name, report)
+                    self.assert_artifacts_are_isolated(file)
+                    diagnostics = [
+                        warning
+                        for warning in file["warnings"]
+                        if warning["type"] in ("warning", "error")
+                    ]
+                    if mode == "warning":
+                        self.assertEqual(result.returncode, 255, output)
+                        self.assertIn("missingFixtureValue", output)
+                        self.assertTrue(
+                            any(w["id"] == "missing-property" for w in diagnostics),
+                            output,
+                        )
+                        self.assertNotIn("ok qmlStaticCheck", output)
+                        self.assertNotIn("Checked ", output)
+                    else:
+                        self.assertEqual(result.returncode, 0, output)
+                        self.assertEqual(diagnostics, [], output)
+                        self.assertEqual(output.count("ok qmlStaticCheck"), 1)
+                        self.assertIn("Checked 1 QML files", output)
+                        self.assertIn("skipped 0", output)
+
     def test_launcher_mango_program_vpn_wallpaper_checker_routes(self):
         artifact_paths = set()
         for name, (

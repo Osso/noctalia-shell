@@ -391,6 +391,12 @@ for file in "${qml_files[@]}"; do
     Tests/Qml/SliderTextDialogWarningsHarness.qml)
         python3 "$repo_root/Tests/slider-text-dialog-warnings.test.py" lint-harness --max-warnings 0
         ;;
+    Tests/Qml/ToastScreenWarningsHarness.qml)
+        python3 "$repo_root/Tests/toast-screen-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/TrayMenuWarningsHarness.qml)
+        python3 "$repo_root/Tests/tray-menu-warnings.test.py" lint-harness --max-warnings 0
+        ;;
     Tests/Qml/tst_panel_service_lifecycle.qml)
         "$repo_root/Tests/panel-service-lifecycle.test.sh" lint-harness \
             --harness tst_panel_service_lifecycle.qml
