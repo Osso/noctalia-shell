@@ -27,3 +27,9 @@ Image widgets cover shared rounded-image and cached-thumbnail resource behavior.
 
 - `Tests/image-widget-resource-guards.test.js`
 - `Tests/source-coverage.test.js`
+
+### Rounded image and shadow isolated evidence
+
+- At `d0b363b73`/`cb32accad`, dedicated lint reports NDropShadow 7→0 and NImageRounded 7→0 `unqualified` warnings. Two unused-import informational notices remain; this is not whole-shell warning clearance.
+- `Tests/Qml/ImageShadowWarningsHarness.qml` has seven behavioral cases (nine reported passes including QtTest init/cleanup): image geometry/decode resizing and zero-size recovery; source/visibility/fallback/status transitions; rounded-effect geometry and Loader recreation; shadow source/property transitions; separate image and shadow two-instance creation-context isolation; shadow enable/settings/performance transitions. Production `Bound` components run offscreen with synthetic services.
+- Reported staged-copy negative controls remove the shadow source binding or force rounded corner radius to zero; both fail. Property/lifecycle assertions do not verify shader pixels, GPU rendering, live compositor interaction, real settings persistence, or live resource use. Runner isolation and acceptance: [testing](testing.md#image-and-shadow-isolated-runtime).
