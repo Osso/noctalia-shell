@@ -150,10 +150,17 @@ def run_lint(directory):
     warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
     counts = Counter(re.findall(r"\[([^]]+)\]", line)[-1] for line in warnings)
     print("BAR_PILL_LINT_COUNTS", dict(counts))
-    assert counts == {"missing-property": 8}, (
-        f"owner qualification warnings remain: {dict(counts)}"
-    )
+    assert_lint_residual(counts, warnings)
     assert result.returncode == 0, f"unexpected qmllint exit {result.returncode}"
+
+
+def assert_lint_residual(counts, warnings):
+    assert counts == {"missing-property": 6}, dict(counts)
+    members = Counter(
+        re.search(r'Member "([^"]+)" not found', warning).group(1)
+        for warning in warnings
+    )
+    assert members == {"show": 2, "hide": 2, "showDelayed": 2}, dict(members)
 
 
 HARNESS = r"""import QtQuick
@@ -430,6 +437,24 @@ Item {
       widget.forceOpen = true;
       wait(150);
       compare(label().rotation, -90);
+      verify(widget.height > 40);
+
+      const loader = widget.children[0];
+      loader.active = false;
+      compare(loader.item, null);
+      compare(widget.width, 0);
+      compare(widget.height, 0);
+      widget.show();
+      widget.hide();
+      widget.showDelayed();
+      loader.active = true;
+      wait(150);
+      compare(implementation().screen, fixtureScreen);
+      compare(label().rotation, -90);
+      compare(label().text, "42%");
+      compare(label().visible, true);
+      compare(widget.width, implementation().width);
+      compare(widget.height, implementation().height);
       verify(widget.height > 40);
     }
   }

@@ -89,7 +89,7 @@ def run_sandboxed(args):
         warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
         counts = Counter(re.findall(r"\[([^]]+)\]", line)[-1] for line in warnings)
         assert code == 0, code
-        assert counts == {"missing-property": 8}, dict(counts)
+        helper.assert_lint_residual(counts, warnings)
         print("BAR_PILL_OWNER_LINT", dict(counts))
         return
     helper.stage_runtime(directory)

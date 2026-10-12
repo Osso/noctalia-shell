@@ -37,9 +37,11 @@ Item {
   signal middleClicked
   signal wheel(int delta)
 
+  readonly property Item loadedItem: pillLoader.item
+
   // Dynamic sizing based on loaded component
-  width: pillLoader.item ? pillLoader.item.width : 0
-  height: pillLoader.item ? pillLoader.item.height : 0
+  width: root.loadedItem ? root.loadedItem.width : 0
+  height: root.loadedItem ? root.loadedItem.height : 0
 
   // Loader to switch between vertical and horizontal pill implementations
   Loader {
