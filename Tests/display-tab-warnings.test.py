@@ -249,9 +249,7 @@ def execute(mode, directory, environment, inject_warning=False):
                 harness.write_text(
                     source.replace(
                         marker,
-                        marker
-                        + "\n  property QtObject semanticProbe: QtObject { id: lintProbe }"
-                        + "\n  property int injectedWarning: lintProbe.missingLintProbe",
+                        marker + '\n  property int injectedWarning: "semantic-warning"',
                         1,
                     )
                 )
@@ -292,7 +290,9 @@ def execute(mode, directory, environment, inject_warning=False):
         warnings = [warning for report in reports for warning in report["warnings"]]
         print("DISPLAY_HARNESS_LINT_WARNINGS", len(warnings), "EXIT", result.returncode)
         if inject_warning:
-            assert any("missingLintProbe" in warning["message"] for warning in warnings)
+            assert len(warnings) == 1 and warnings[0]["id"] == "incompatible-type", (
+                warnings
+            )
             assert result.returncode != 0, "Injected semantic warning accepted"
             raise SystemExit(result.returncode)
         assert not warnings and reports[0]["success"], reports
