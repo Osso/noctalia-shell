@@ -24,7 +24,10 @@ def audit(event, args):
     if event == "open" and isinstance(args[0], (str, bytes)):
         path = Path(os.fsdecode(args[0])).absolute()
         if path.is_relative_to(real_config) or (
-            path.name == "settings.json" and not path.is_relative_to(artifacts)
+            path.name == "settings.json" and not (
+                path.is_relative_to(artifacts.parent)
+                and path.parts[-5:] == ("fixture", "home", ".config", "noctalia", "settings.json")
+            )
         ):
             raise PermissionError(f"blocked settings access: {path}")
     if event == "subprocess.Popen":
@@ -34,7 +37,7 @@ def audit(event, args):
         if program == "quickshell":
             environment = args[3]
             settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
-            backup = artifacts / "settings.backup.json"
+            backup = settings.parents[4] / "settings.backup.json"
             assert settings.read_bytes() == backup.read_bytes(), "backup bytes differ"
             assert backup.stat().st_mode & 0o777 == 0o600, "backup not private"
             assert settings.stat().st_mode & 0o777 == 0o600, "settings not private"
@@ -50,7 +53,9 @@ runpy.run_path(script, run_name="__main__")
 
 
 class SetupLayoutIsolationTest(unittest.TestCase):
-    def run_mode(self, root, arguments=(), warning=False, mutate=False):
+    def run_mode(
+        self, root, arguments=(), warning=False, mutate=False, omit_artifacts=False
+    ):
         for relative in (
             "Commons",
             "Helpers",
@@ -90,11 +95,15 @@ class SetupLayoutIsolationTest(unittest.TestCase):
                 "mutate" if mutate else "normal",
                 str(root / "Tests/setup-layout-geometry.test.py"),
                 *arguments,
-                "--artifacts",
-                str(artifacts),
+                *([] if omit_artifacts else ["--artifacts", str(artifacts)]),
             ],
             cwd=root,
-            env=dict(os.environ, HOME=str(home), XDG_CONFIG_HOME=str(home / ".config")),
+            env=dict(
+                os.environ,
+                HOME=str(home),
+                XDG_CONFIG_HOME=str(home / ".config"),
+                TMPDIR=str(root),
+            ),
             capture_output=True,
             text=True,
             timeout=120,
@@ -124,6 +133,16 @@ class SetupLayoutIsolationTest(unittest.TestCase):
             )
             self.assert_fixture(artifacts)
 
+    def test_unit_entrypoint_without_arguments_cleans_temporary_fixture(self):
+        with tempfile.TemporaryDirectory(prefix="setup-unit-entrypoint-") as temp:
+            root = Path(temp)
+            result, artifacts = self.run_mode(root, omit_artifacts=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn("20 offscreen cases", result.stdout)
+            self.assertFalse(artifacts.exists())
+            self.assertEqual(list(root.glob("noctalia-setup-geometry-*")), [])
+            self.assertEqual(list(root.glob("noctalia-setup-offscreen-*")), [])
+
     def test_wizard_transitions_preserve_fixture(self):
         with tempfile.TemporaryDirectory(prefix="setup-transitions-") as temp:
             result, artifacts = self.run_mode(Path(temp), ("--wizard-transitions",))
@@ -144,7 +163,8 @@ class SetupLayoutIsolationTest(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("Offscreen component load/runtime failed", result.stderr)
             self.assertIn(
-                "missingFixtureValue", (artifacts / "runtime.log").read_text()
+                "Unable to assign [undefined] to int",
+                (artifacts / "runtime.log").read_text(),
             )
             self.assert_fixture(artifacts)
 
