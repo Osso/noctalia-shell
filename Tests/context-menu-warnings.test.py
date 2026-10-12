@@ -66,8 +66,12 @@ def stage_runtime(directory):
 
 
 def runtime(directory):
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
+    environment = load("media-mini-warnings").isolate_environment(directory)
+    settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
+    settings.parent.mkdir(mode=0o700, parents=True)
+    original = (ROOT / "Assets/settings-default.json").read_bytes()
+    settings.touch(mode=0o600)
+    settings.write_bytes(original)
     backup = directory / "settings.backup.json"
     backup.touch(mode=0o600)
     backup.write_bytes(original)
@@ -76,8 +80,8 @@ def runtime(directory):
         == hashlib.sha256(original).digest()
     )
     stage_runtime(directory)
-    # Hide both the config link and its Syncthing destination. All other host
-    # paths are read-only; only this unique fixture directory is writable.
+    # Mask host config and all Syncthing destinations without inspecting links.
+    # Re-expose only repository sources and the writable private fixture.
     command = [
         "bwrap",
         "--die-with-parent",
@@ -85,13 +89,16 @@ def runtime(directory):
         "--ro-bind",
         "/",
         "/",
+        "--tmpfs",
+        "/home/osso/.config",
+        "--tmpfs",
+        "/syncthing",
+        "--ro-bind",
+        str(ROOT),
+        str(ROOT),
         "--bind",
         str(directory),
         str(directory),
-        "--tmpfs",
-        str(Path.home() / ".config"),
-        "--tmpfs",
-        str(settings.resolve().parent),
         "--",
         "/usr/lib/qt6/bin/qmltestrunner",
         "-input",
@@ -103,7 +110,7 @@ def runtime(directory):
         result = subprocess.run(
             command,
             cwd=ROOT,
-            env=load("media-mini-warnings").isolate_environment(directory),
+            env=environment,
             capture_output=True,
             text=True,
             timeout=60,
@@ -116,14 +123,15 @@ def runtime(directory):
             r"QWARN|QFATAL|ReferenceError|TypeError|Binding loop", output
         ), output
     finally:
-        assert settings.read_bytes() == original, "real settings changed"
+        assert settings.read_bytes() == original, "fixture settings changed"
+        assert backup.read_bytes() == original, "fixture backup changed"
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "runtime", "behavior"))
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-context-menu-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
-        {"lint": lint, "runtime": runtime}[args.mode](directory)
+        {"lint": lint, "runtime": runtime, "behavior": runtime}[args.mode](directory)
