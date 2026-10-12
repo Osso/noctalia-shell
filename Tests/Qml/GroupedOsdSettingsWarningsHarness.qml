@@ -151,6 +151,18 @@ TestCase {
     toggle(control(editor, "settings.osd.always-on-top.label"), true, false);
     compare(Settings.data.osd.enabled, false);
     compare(Settings.data.osd.overlayLayer, true);
+    const opacity = descendants(editor).find(item => item.from === 0 && item.to === 100 && item.text === "80%");
+    verify(opacity !== undefined);
+    opacity.children[0].forceActiveFocus();
+    keyClick(Qt.Key_Home);
+    tryCompare(fixtureOsd, "backgroundOpacity", 0);
+    compare(opacity.text, "0%");
+    const duration = descendants(editor).find(item => item.from === 500 && item.to === 5000 && item.text === "2s");
+    verify(duration !== undefined);
+    duration.children[0].forceActiveFocus();
+    keyClick(Qt.Key_End);
+    tryCompare(fixtureOsd, "autoHideMs", 5000);
+    compare(duration.text, "5s");
   }
 
   function test_osdTypesImmutableSelection() {
