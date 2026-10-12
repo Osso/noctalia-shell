@@ -125,6 +125,56 @@ function processPredefinedScheme(scheme, mode) {
     return harness
 
 
+def lint_harness(directory, environment, isolation, inject_warning=False):
+    harness = stage_runtime(directory, False)
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                "id: testCase",
+                "id: testCase\n    property int injectedWarning: testCase.missingLintProbe",
+                1,
+            )
+        )
+    command = [
+        "/usr/lib/qt6/bin/qmllint",
+        "--bare",
+        "--max-warnings",
+        "0",
+        "--json",
+        "-",
+        "-I",
+        str(directory),
+        "-I",
+        "/usr/lib/qt6/qml",
+        str(harness),
+    ]
+    code, output = isolation.run_child(command, directory, environment)
+    (directory / "lint-harness.log").write_text(output)
+    reports = json.loads(output)["files"]
+    assert len(reports) == 1 and reports[0]["filename"] == str(harness), reports
+    counts = Counter(warning["id"] for warning in reports[0]["warnings"])
+    print(
+        "HOOKS_APP_THEME_HARNESS_LINT",
+        dict(counts),
+        "TOTAL",
+        sum(counts.values()),
+        "EXIT",
+        code,
+        flush=True,
+    )
+    if inject_warning:
+        assert any(
+            warning["type"] == "warning"
+            and warning["id"] == "missing-property"
+            and "missingLintProbe" in warning["message"]
+            for warning in reports[0]["warnings"]
+        ), reports
+        assert code != 0, "injected diagnostic accepted"
+    else:
+        assert not counts and reports[0]["success"], reports
+    return code
+
+
 def run_sandboxed(mode, directory, isolation):
     mounts = Path("/proc/self/mountinfo").read_text().splitlines()
     for path in ("/home", "/syncthing", "/run"):
@@ -132,6 +182,17 @@ def run_sandboxed(mode, directory, isolation):
             line.split()[4] == path and " - tmpfs " in line for line in mounts
         ), path
     environment = isolation.isolated_environment(directory)
+    if mode == "lint-harness":
+        raise SystemExit(lint_harness(directory, environment, isolation))
+    if mode == "lint-harness-regression":
+        for name, injected in (("clean", False), ("injected", True)):
+            staged = directory / name
+            staged.mkdir(mode=0o700)
+            staged_environment = isolation.isolated_environment(staged)
+            code = lint_harness(staged, staged_environment, isolation, injected)
+            assert (code != 0) if injected else (code == 0), code
+        print("HOOKS_APP_THEME_HARNESS_WARNING_REJECTED", flush=True)
+        return
     if mode == "lint":
         helper("media-mini-warnings.test.py").stage_modules(directory)
         command = [
@@ -146,26 +207,13 @@ def run_sandboxed(mode, directory, isolation):
         command += [str(directory / "qs" / target) for target in TARGETS]
     else:
         harness = stage_runtime(directory, mode == "owner-probe")
-        if mode == "lint-harness":
-            command = [
-                "/usr/lib/qt6/bin/qmllint",
-                "--bare",
-                "--max-warnings",
-                "0",
-                "-I",
-                str(directory),
-                "-I",
-                "/usr/lib/qt6/qml",
-                str(harness),
-            ]
-        else:
-            command = [
-                "/usr/lib/qt6/bin/qmltestrunner",
-                "-input",
-                str(harness),
-                "-import",
-                str(directory),
-            ]
+        command = [
+            "/usr/lib/qt6/bin/qmltestrunner",
+            "-input",
+            str(harness),
+            "-import",
+            str(directory),
+        ]
     code, output = isolation.run_child(command, directory, environment)
     (directory / f"{mode}.log").write_text(output)
     if mode == "lint":
@@ -178,7 +226,7 @@ def run_sandboxed(mode, directory, isolation):
         assert all(
             not report["warnings"] and report["success"] for report in reports
         ), reports
-    elif mode != "lint-harness":
+    else:
         assert "7 passed, 0 failed" in output, output
         assert not re.search(
             r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:",
@@ -190,7 +238,14 @@ def run_sandboxed(mode, directory, isolation):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "mode", choices=("lint", "behavior", "owner-probe", "lint-harness")
+        "mode",
+        choices=(
+            "lint",
+            "behavior",
+            "owner-probe",
+            "lint-harness",
+            "lint-harness-regression",
+        ),
     )
     parser.add_argument("--sandbox", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()

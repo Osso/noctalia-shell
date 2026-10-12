@@ -9,7 +9,7 @@ import qs.Services.UI
 TestCase {
     id: testCase
 
-    readonly property string activeScreenName: Screen.name
+    readonly property string activeScreenName: testCase.Screen.name
 
     function initTestCase() {
         HooksService.init();
@@ -36,18 +36,22 @@ TestCase {
         Settings.data.colorSchemes.darkMode = true;
         compare(Recorder.events, [["hook", ["sh", "-c", "dark true"]], ["applyScheme", "fixture-day"]]);
         ColorSchemeService.deliver();
-        compare(Recorder.events[2], ["schemeTemplates", {
-            "name": "fixture-day",
-            "primary": "#123456"
-        }, "dark"]);
+        compare(Recorder.events[2], ["schemeTemplates",
+            {
+                "name": "fixture-day",
+                "primary": "#123456"
+            },
+            "dark"]);
         Recorder.events = [];
         Settings.data.colorSchemes.darkMode = false;
         compare(Recorder.events, [["hook", ["sh", "-c", "dark false"]], ["applyScheme", "fixture-day"]]);
         ColorSchemeService.deliver();
-        compare(Recorder.events[2], ["schemeTemplates", {
-            "name": "fixture-day",
-            "primary": "#123456"
-        }, "light"]);
+        compare(Recorder.events[2], ["schemeTemplates",
+            {
+                "name": "fixture-day",
+                "primary": "#123456"
+            },
+            "light"]);
         compare(Logger.errors, []);
     }
 
@@ -65,15 +69,18 @@ TestCase {
     }
 
     function test_disabledMissingAndBlankHooksDoNotDispatch() {
-        const hooks = [null, {
-            "enabled": false,
-            "wallpaperChange": "bad",
-            "darkModeChange": "bad"
-        }, {
-            "enabled": true,
-            "wallpaperChange": "",
-            "darkModeChange": ""
-        }];
+        const hooks = [null,
+            {
+                "enabled": false,
+                "wallpaperChange": "bad",
+                "darkModeChange": "bad"
+            },
+            {
+                "enabled": true,
+                "wallpaperChange": "",
+                "darkModeChange": ""
+            }
+        ];
         for (const config of hooks) {
             Settings.data.hooks = config;
             HooksService.executeWallpaperHook("/fixture/a.png", testCase.activeScreenName);
@@ -100,10 +107,12 @@ TestCase {
         compare(Logger.errors[0][0], "HooksService");
         verify(Logger.errors[0][1].includes("fixture spawn rejected"));
         ColorSchemeService.deliver();
-        compare(Recorder.events[1], ["schemeTemplates", {
-            "name": "fixture-day",
-            "primary": "#123456"
-        }, "dark"]);
+        compare(Recorder.events[1], ["schemeTemplates",
+            {
+                "name": "fixture-day",
+                "primary": "#123456"
+            },
+            "dark"]);
     }
 
     name: "HooksAppThemeOwners"
