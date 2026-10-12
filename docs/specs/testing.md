@@ -574,7 +574,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 - `Tests/settings-panel-warnings.test.py` runs standalone with `python3` in `lint` or `behavior` mode; both require `--artifacts <new-directory>`. No runner integration is claimed. Lint requires exit status zero and zero SettingsPanel qmllint warnings (35→0 at `185ed644e`). Behavior runs actual SettingsPanel/SmartPanel, Settings/SettingsData, and panel controls in offscreen Quickshell with inert tab bodies and desktop services, isolated HOME/XDG/Noctalia paths, and disconnected desktop/session-bus environments. It creates a unique permission-locked byte-for-byte real-settings backup, verifies its hash before launch, and checks backup and real settings bytes unchanged afterward. Success requires exit status zero, `SETTINGS_PANEL_BEHAVIOR_PASS`, no logged `WARN`, `ERROR`, `FATAL`, `ReferenceError`, `TypeError`, or `Binding loop`, and exact isolated final JSON with only the expected font change. All 21 tabs, wrap/scroll helpers, close/reopen teardown, and delayed dirty persistence are covered; direct helper/signal invocation is not physical input. No production tab-body/service, whole-shell, canonical reload, or real-config persistence proof is claimed. Exact coverage and limits: [settings](settings.md).
 
-- [x] **Structural reference coverage** uses `code-index` to prove source functions are inventoried and structurally referenced from tests. It does not prove runtime execution, branch coverage, QML lifecycle behavior, or integration behavior.
+- [x] **Structural reference coverage** uses `code-index` plus validated, exact indirect test references to keep source functions inventoried and linked to tests. It does not prove runtime execution, branch coverage, QML lifecycle behavior, or integration behavior.
 - [x] **Executable behavior coverage** runs JavaScript/Python/shell logic and extracted QML function bodies with deterministic inputs.
 - [x] **QML lifecycle integration** means instantiating real QML/Quickshell objects and exercising signals, bindings, loaders, processes, and destruction ordering; current coverage is feature-specific and incomplete.
 - [x] Headless QML lifecycle suites run with `qmltestrunner` on `QT_QPA_PLATFORM=offscreen` and isolated temporary XDG config/cache/data directories.
@@ -661,14 +661,31 @@ Testing covers local regression gates, structural source-reference guardrails, e
 ### Structural reference guardrails
 
 - [x] The structural runner explicitly refreshes the incremental `code-index` graph before inventory or reference queries and fails without running them if indexing fails.
-- [x] QML source functions must stay structurally referenced from tests according to `code-index untested`.
+- [x] QML source functions must have `code-index` test references or validated indirect test evidence; unmapped functions reported by `code-index untested` still fail.
 - [x] QML source function inventory must stay broad enough to catch structural-reference regressions.
 - [x] `code-index` must inventory every QML `function` declaration outside `Tests/`.
-- [x] Non-test source functions must stay structurally referenced from tests according to `code-index untested`.
+- [x] Non-test source functions retain the same reference requirement; indirect evidence applies only to exact source-path/function pairs, never whole modules.
 - [x] QML function inventory anchors must keep required high-risk QML functions discoverable.
 - [x] Every executable test file must be named by at least one `docs/specs` contract.
 - [x] Every non-meta executable test file must be named by at least one feature spec, not only by the testing spec.
 - [x] The meta-test allowlist must stay explicit and must be the only set of tests allowed to skip feature specs.
+
+#### Indirect QML test references
+
+`Tests/source-coverage.test.js` supplements the graph for private QML staging, binding/signal-driven calls and computed function extraction. Each mapping validates an existing uniquely inventoried production declaration, test runner, named case and, for a separate harness, its path in the runner. Missing declarations, paths or cases fail explicitly. This validates references, not test execution or assertions; behavioral proof remains the executable cases and their revision-scoped results. Inventory output identifies each mapping and its proof category without reporting a behavioral pass.
+
+`node Tests/source-coverage.test.js --discovery-only` runs the concrete private fixture regression without indexing or runtime suites: indirect persistence references are discovered, an unmapped neighbor and same-named function in another file remain unreferenced, and removed cases, runners, source functions or harness staging links fail. Normal invocation retains declaration completeness, the broad function-count guard, non-QML source scope and spec/test-file checks. Graph queries are shared within the invocation rather than repeated per assertion.
+
+| Exact production functions | Executable case and boundary | Proof level / limits |
+| --- | --- | --- |
+| `Commons/Settings.qml:scheduleSave` | `Tests/residual-singleton-owners.test.py:runtime`, staging `Tests/Qml/ResidualSingletonOwnersHarness.qml`: adapter edit → deferred save (at least 450 ms) → private JSON → fresh-process hydration equality; callback-owner collision run | Real singleton persistence/lifecycle; no real settings access or canonical reload. |
+| `TaskbarGrouped.qml` and `Workspace.qml`: `workspaceUrgencyKey`, `displayedUrgentForWorkspace`, `setDisplayedUrgency` (six functions under `Modules/Bar/Widgets/`) | `Tests/taskbar-grouped-warnings.test.py` stages `Tests/Qml/TaskbarGroupedHarness.qml:test_urgency_cooldown_survives_rebuild`; `Tests/qml-runtime-guards.test.js:testWorkspaceUrgentBadgeHasCooldown` stages production Workspace and injects `test_guard_cooldown` into the private Workspace harness. Horizontal/vertical badge foreground/background, clear-before-five-seconds, expiry, delegate rebuild and output isolation | Real-widget QtTest bindings/timing; synthetic compositor/settings, no desktop rendering or input proof. `Tests/Qml/WorkspaceHarness.qml:test_label_geometry_urgency_and_effect_inputs` also exercises the urgency setter and visible effect inputs. |
+| `Modules/Bar/Widgets/{TaskbarGrouped,Workspace}.qml:triggerUnifiedWave` (two functions) | `Tests/qml-runtime-guards.test.js:testFocusedWorkspaceBurstOnlyRunsOnFocusChange`: extracted production functions execute repeated/changed focus and output transitions; asserts burst keys, effect color and Workspace notifications | Executable behavior coverage with mocked model/animation; not real animation lifecycle/pixels. |
+| `Modules/Bar/Widgets/Tray.qml:bindTrayContext` | `Tests/tray-widget-reload.test.py:runtime`: production two-owner Tray/TrayMenu, private cold start/source reload/failed-reload recovery, teardown/recreation and owner re-registration | Real private Quickshell resolver/Bindings; inert notifier/services, no host tray or compositor interaction. |
+| `Modules/MainScreen/PopupMenuWindow.qml:initializeTrayMenu`, `hideContent` | `Tests/popup-menu-window-warnings.test.py:exerciseLifecycle`: real popup/Loader screen handoff, null initialization, hide-before-callback ordering, hideMenu precedence, close-only/inert/null restoration. Same runner exercises consumer expressions and private reload | Private lifecycle integration; 66-consumer evidence is consumer-contract execution, not whole-widget rendering. Cage lacks layer-shell input/configure proof. |
+| `Modules/Panels/WiFi/WiFiNetworksList.qml:submitPassword`, `cancelPassword` | `Tests/wifi-networks-list-warnings.test.py` stages `Tests/Qml/WiFiNetworksListWarningsHarness.qml:assertPassword`; `Tests/wifi-panel-ui-guards.test.js:testProductionListActionsAndGeometry` runs owner-shadow behavior. Enter/button submit, empty/busy rejection, cancel/reopen/reset, exact signals/SSID/password and inert owner connect requests | Real-list signal behavior → harness owner routing → inert backend. Agent proof at `555b7f64c`/`d0b621346`: four scenarios, 28 unchanged snapshots, nine rejected mutations; no live NetworkManager or real WiFiPanel lifecycle proof. |
+
+These fourteen mappings account for the reported graph gaps without exclusions. Their presence alone does not establish a passing full gate or new runtime proof.
 
 ### Quickshell regression log gate
 
