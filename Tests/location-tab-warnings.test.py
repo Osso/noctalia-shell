@@ -3,6 +3,7 @@
 
 import argparse
 import importlib.util
+import json
 import os
 import re
 import subprocess
@@ -63,12 +64,11 @@ def stage_behavior(directory):
     (commons / "Settings.qml").write_text(
         helper.singleton("""
       property string defaultLocation: 'Fixture Default'
-      property QtObject data: QtObject {
-        property QtObject ui: QtObject {
+      component FixtureUi: QtObject {
           property string fontDefault: 'Sans Serif'
           property string fontFixed: 'monospace'
-        }
-        property QtObject location: QtObject {
+      }
+      component FixtureLocation: QtObject {
           property string name: 'Fixture City'
           property bool weatherEnabled: true
           property bool useFahrenheit: false
@@ -78,9 +78,14 @@ def stage_behavior(directory):
           property int firstDayOfWeek: -1
           property bool showCalendarEvents: true
           property bool analogClockInCalendar: false
-        }
-        property QtObject calendar: QtObject { property var cards: [] }
       }
+      component FixtureCalendar: QtObject { property var cards: [] }
+      component FixtureData: QtObject {
+        property FixtureUi ui: FixtureUi {}
+        property FixtureLocation location: FixtureLocation {}
+        property FixtureCalendar calendar: FixtureCalendar {}
+      }
+      property FixtureData data: FixtureData {}
     """)
     )
     (commons / "I18n.qml").write_text(
@@ -137,13 +142,96 @@ def isolated_environment(directory):
     return environment
 
 
+def run_isolated(directory, environment, argv):
+    return subprocess.run(
+        [
+            "bwrap",
+            "--unshare-all",
+            "--die-with-parent",
+            "--ro-bind",
+            "/",
+            "/",
+            "--tmpfs",
+            "/home",
+            "--tmpfs",
+            "/syncthing",
+            "--tmpfs",
+            "/run",
+            "--bind",
+            str(directory),
+            str(directory),
+            "--chdir",
+            str(directory),
+            *argv,
+        ],
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+
+def lint_harness(directory, environment, inject_warning):
+    stage_behavior(directory)
+    harness = directory / "tst_location.qml"
+    if inject_warning:
+        source = harness.read_text()
+        anchor = "id: testCase\n"
+        assert source.count(anchor) == 1, "injection anchor missing or ambiguous"
+        harness.write_text(
+            source.replace(
+                anchor,
+                anchor + "  property int injectedWarning: testCase.missingLintProbe\n",
+                1,
+            )
+        )
+    result = run_isolated(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+    )
+    print(result.stdout, end="")
+    print(result.stderr, end="")
+    report = json.loads(result.stdout)
+    warnings = sum(
+        diagnostic["type"] == "warning"
+        for entry in report["files"]
+        for diagnostic in entry["warnings"]
+    )
+    print("LOCATION_TAB_HARNESS_LINT_WARNINGS", warnings, "EXIT", result.returncode)
+    if inject_warning:
+        assert warnings > 0, "injected semantic diagnostic not detected"
+        assert result.returncode != 0, "injected warning accepted"
+    if warnings or any(not entry["success"] for entry in report["files"]):
+        return result.returncode or 1
+    return result.returncode
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-location-tab-") as temporary:
         directory = Path(temporary)
         environment = isolated_environment(directory)
+        if args.mode == "lint-harness":
+            raise SystemExit(lint_harness(directory, environment, args.inject_warning))
         if args.mode == "lint":
             load_helper("media-mini-warnings.test.py").stage_modules(directory)
             argv = [
@@ -161,9 +249,7 @@ def main():
                 "-import",
                 str(directory),
             ]
-        result = subprocess.run(
-            argv, cwd=ROOT, env=environment, capture_output=True, text=True, timeout=60
-        )
+        result = run_isolated(directory, environment, argv)
         output = result.stdout + result.stderr
         print(output, end="")
         if args.mode == "lint":
@@ -173,7 +259,7 @@ def main():
             print("LOCATION_TAB_WARNING_COUNT", len(warnings))
             assert not warnings, "LocationTab warnings remain"
         else:
-            assert "0 failed" in output, "Missing QtTest completion"
+            assert "9 passed, 0 failed" in output, "Missing nine-case QtTest completion"
             assert not re.search(
                 r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|qt\.qml\.|Warning:",
                 output,
