@@ -5,6 +5,7 @@ import Quickshell.Services.SystemTray
 import qs.Commons
 import qs.Modules.Panels.Tray
 import qs.Modules.MainScreen
+import qs.Modules.Bar.Extras
 import qs.Services.UI
 
 Item {
@@ -66,6 +67,7 @@ Item {
     property var alpha
     property var beta
     property var gamma
+    readonly property TrayMenu loadedTrayMenu: popup.trayMenuLoader.item as TrayMenu
 
     function descendants(parent, predicate) {
       let found = [];
@@ -117,7 +119,7 @@ Item {
       popup.opens = 0;
       popup.closes = 0;
       popup.trayMenuLoader.active = true;
-      popup.trayMenuLoader.item.trayItem = null;
+      loadedTrayMenu.trayItem = null;
       TooltipService.text = "";
       Settings.data = {
         bar: {
@@ -235,12 +237,12 @@ Item {
       click(1, Qt.RightButton);
       compare(popup.visible, true);
       compare(popup.opens, 1);
-      compare(popup.trayMenuLoader.item.trayItem, beta);
-      compare(popup.trayMenuLoader.item.widgetSection, "left");
-      compare(popup.trayMenuLoader.item.widgetIndex, 1);
-      compare(popup.trayMenuLoader.item.anchor, icon(1));
-      compare(popup.trayMenuLoader.item.menuX, data.x);
-      compare(popup.trayMenuLoader.item.menuY, data.y);
+      compare(loadedTrayMenu.trayItem, beta);
+      compare(loadedTrayMenu.widgetSection, "left");
+      compare(loadedTrayMenu.widgetIndex, 1);
+      compare(loadedTrayMenu.anchor, icon(1));
+      compare(loadedTrayMenu.menuX, data.x);
+      compare(loadedTrayMenu.menuY, data.y);
       click(1, Qt.RightButton);
       compare(popup.visible, false);
       popup.trayMenuLoader.active = false;
@@ -249,7 +251,7 @@ Item {
       popup.trayMenuLoader.active = true;
       tryVerify(() => popup.trayMenuLoader.item !== null);
       click(2, Qt.RightButton);
-      compare(popup.trayMenuLoader.item.trayItem, gamma);
+      compare(loadedTrayMenu.trayItem, gamma);
       compare(popup.visible, true);
       mouse(0).entered();
       compare(popup.visible, false);

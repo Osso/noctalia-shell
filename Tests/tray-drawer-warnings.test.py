@@ -28,6 +28,7 @@ def load_helper(name, filename):
 
 
 helpers = load_helper("tray_runtime_helpers", "workspace-runtime.test.py")
+isolation = load_helper("drawer_isolation", "grid-list-warnings.test.py")
 
 
 def lint(directory):
@@ -92,7 +93,8 @@ def stage_runtime(directory):
         "Quickshell.Services.SystemTray",
         {
             "SystemTray": singleton(
-                "property QtObject items: QtObject { property var values: [] }"
+                "property alias items: model\n"
+                "property QtObject model: QtObject { id: model; property var values: [] }"
             ),
         },
     )
@@ -203,6 +205,103 @@ Item {
     )
 
 
+def lint_harness(directory, inject_warning=False):
+    stage_runtime(directory)
+    harness = directory / "tst_tray_drawer.qml"
+    if inject_warning:
+        source = harness.read_text()
+        marker = "id: scene"
+        assert source.count(marker) == 1, "injection owner must be unique"
+        harness.write_text(
+            source.replace(
+                marker,
+                marker + "\n  property int injectedWarning: scene.missingLintProbe",
+                1,
+            )
+        )
+    code, output = isolation.run_audited(
+        directory,
+        isolation.isolated_environment(directory),
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        "drawer-harness-lint",
+    )
+    diagnostics = json.loads(output)
+    warnings = sum(
+        warning["type"] == "warning"
+        for result in diagnostics["files"]
+        for warning in result["warnings"]
+    )
+    print("TRAY_DRAWER_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
+    if inject_warning:
+        assert warnings > 0, "injected semantic warning not diagnosed"
+        assert "missingLintProbe" in output, "injected diagnostic not visible"
+    else:
+        assert warnings == 0, f"harness warnings remain: {warnings}"
+    return code
+
+
+def lint_harness_regression(directory):
+    for name, injected in (("clean", False), ("injected", True)):
+        case = directory / name
+        case.mkdir(mode=0o700)
+        code = lint_harness(case, injected)
+        if injected:
+            assert code != 0, "genuine harness warning accepted"
+        else:
+            assert code == 0, "clean harness lint failed"
+    print("TRAY_DRAWER_HARNESS_WARNING_REJECTED")
+
+
+def reload_regression(directory):
+    # Copy only source inputs needed by the existing private resolver regression.
+    sources = (
+        TARGET,
+        Path("Tests/tray-drawer-resolution.test.py"),
+        Path("Tests/tray-widget-resolution.test.py"),
+        Path("Tests/tray-drawer-warnings.test.py"),
+        Path("Tests/workspace-runtime.test.py"),
+        Path("Tests/grid-list-warnings.test.py"),
+        Path("Tests/Qml/TrayDrawerWarningsHarness.qml"),
+    )
+    private_repo = directory / "source"
+    for relative in sources:
+        destination = private_repo / relative
+        destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        destination.write_bytes((ROOT / relative).read_bytes())
+    script = """import importlib.util
+from pathlib import Path
+root = Path('source')
+spec = importlib.util.spec_from_file_location('drawer_resolution', root / 'Tests/tray-drawer-resolution.test.py')
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+for index, mode in enumerate(('cold-start', 'reload', 'reload-after-failure')):
+    case = Path(str(index)).absolute()
+    case.mkdir(mode=0o700)
+    module.resolution(case, mode)
+"""
+    code, output = isolation.run_audited(
+        directory,
+        isolation.isolated_environment(directory),
+        ["/usr/bin/python3", "-c", script],
+        "drawer-private-reload",
+    )
+    assert code == 0, f"private reload regression exit {code}"
+    assert output.count("DRAWER_RESOLUTION_PASS") == 3, output
+    print("TRAY_DRAWER_PRIVATE_RELOAD_PASS: 3 cases; private children terminated")
+
+
 def runtime(directory):
     environment = {
         key: value
@@ -232,7 +331,7 @@ def runtime(directory):
         path.mkdir(mode=0o700)
         environment[key] = str(path)
     environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
-    settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
+    settings = Path(environment["HOME"]) / ".config/noctalia/fixture.json"
     settings.parent.mkdir(mode=0o700, parents=True)
     original = (ROOT / "Assets/settings-default.json").read_bytes()
     backup = directory / "settings.backup.json"
@@ -243,7 +342,9 @@ def runtime(directory):
         assert path.stat().st_mode & 0o777 == 0o600, "fixture mode differs"
     try:
         stage_runtime(directory)
-        result = subprocess.run(
+        code, output = isolation.run_audited(
+            directory,
+            environment,
             [
                 "/usr/lib/qt6/bin/qmltestrunner",
                 "-input",
@@ -251,16 +352,10 @@ def runtime(directory):
                 "-import",
                 str(directory),
             ],
-            cwd=ROOT,
-            env=environment,
-            capture_output=True,
-            text=True,
-            timeout=45,
+            "drawer-runtime",
         )
-        output = result.stdout + result.stderr
-        print(output, end="")
-        assert result.returncode == 0, f"Offscreen drawer exit {result.returncode}"
-        assert "0 failed" in output
+        assert code == 0, f"Offscreen drawer exit {code}"
+        assert "7 passed, 0 failed" in output
         assert not re.search(r"QWARN|QFATAL|ReferenceError|TypeError", output), output
         print("TRAY_DRAWER_RUNTIME_PASS")
     finally:
@@ -272,7 +367,27 @@ def runtime(directory):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=("lint", "runtime"), required=True)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--mode", choices=("lint", "runtime"))
+    mode.add_argument(
+        "command",
+        choices=("lint-harness", "lint-harness-regression", "reload-regression"),
+        nargs="?",
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.command != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-tray-drawer-") as temporary:
-        {"lint": lint, "runtime": runtime}[args.mode](Path(temporary))
+        directory = Path(temporary)
+        isolation.install_settings_guard(directory)
+        isolation.prove_settings_guard()
+        if args.command == "lint-harness":
+            raise SystemExit(lint_harness(directory, args.inject_warning))
+        if args.command == "lint-harness-regression":
+            lint_harness_regression(directory)
+        elif args.command == "reload-regression":
+            reload_regression(directory)
+        else:
+            {"lint": lint, "runtime": runtime}[args.mode](directory)
