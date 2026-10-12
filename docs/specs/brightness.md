@@ -70,6 +70,11 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 
 - `Tests/bar-controls-warnings.test.py` — isolated production bar-widget panel/display-settings routing, wheel adjustment and unavailable-monitor guard, first-update suppression/subsequent pill reveal, and display modes. Cohort evidence: [bar](bar.md#bar-control-cohort); no direct widget OSD dispatch or real monitor changes: [testing](testing.md#bar-control-cohort).
 
+### Host probe coverage
+
+- At user-approved `f29833ad7`, the host probe retains read-only internal `brightnessctl --list`; DDC checks use private representative detection/VCP data rather than live detect/getvcp. Reported evidence: twelve focused cases and zero sentinel DDC calls. Coverage and failure cases: [testing](testing.md#brightness-host-probe-safety).
+- Live DDC validation is deliberately excluded as a host safety mitigation. Fixture parsing does not establish live DDC discovery, brightness reads, or hardware writes.
+
 ### Isolated service signal/order evidence
 
 - Through `c5666e404`/`772a2e362`/`2c400e942`, the dead `getDetectedDisplays()` getter returning undeclared `detectedDisplays` was removed (no production callers), and four cross-component `root` captures were replaced with explicit service ownership. Service strict lint drops 5→0; `Tests/brightness-service-guards.test.js` reports 19/19.

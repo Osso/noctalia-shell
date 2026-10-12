@@ -286,6 +286,12 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - Four offscreen behavioral cases plus QtTest init/cleanup yield six reported passes. Exact coverage: [Bluetooth](bluetooth.md#tests-asserting-this-spec). Two independent panels retain height/close ownership after content recreation, proving `Bound` in the fixture hosting boundary.
 - Standalone `runtime` uses production panel code with inert Bluetooth, service, SmartPanel and device-list fixtures. Settings audit guards, synthetic HOME and sandbox isolation prevent real settings access; no radio or network operations were performed. Direct signals do not prove device-row actions, live adapter effects, visible desktop interaction, real persistence or whole-shell acceptance. This docs audit reruns no tests.
 
+### Brightness host probe safety
+
+- At user-approved `f29833ad7`, the host brightness probe retains read-only internal `brightnessctl --list` discovery of `amdgpu_bl1`; DDC validation uses private representative detection/VCP data instead of live `ddcutil detect` or `getvcp`. Its success label explicitly says private data only; live DDC not tested.
+- Reported focused evidence: `Tests/brightness-probe.test.sh` passes twelve cases covering the fixture-only probe, missing internal backlight, missing/malformed/stale DDC bus data, unsuccessful detect/getvcp statuses despite valid-looking output, malformed/out-of-range VCP, and valid/zero/maximum brightness. DDC sentinel evidence records zero calls. This establishes parsing/failure handling, not live monitor discovery or brightness reads.
+- Live DDC validation is deliberately excluded to preserve the host safety mitigation, not an accidentally skipped acceptance check. No full-suite or live-DDC acceptance is claimed; this docs-only update performs no config/hardware actions, tests, suite, or restart. Feature boundary: [brightness](brightness.md#host-probe-coverage).
+
 ### Brightness/Keyboard services isolated runtime
 
 - At `919e77989`/`5d0857b06`, `Tests/brightness-keyboard-services-warnings.test.py` supports standalone `lint`, `lint-harness`, and `runtime`, each requiring `--artifacts <new-directory>`. The original production lint baseline was BrightnessService 6→5 and KeyboardLayoutService 4→0. Through `c5666e404`/`772a2e362`/`2c400e942`, BrightnessService strict lint drops 5→0 after removing the dead undeclared getter and four cross-component owner captures; staged harness lint is also zero-warning.
