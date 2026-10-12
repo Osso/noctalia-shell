@@ -37,10 +37,16 @@ Bounded runtime regression:
 - [Tests/osd-tab-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/osd-tab-guards.test.js)
 - [Tests/qml-type-annotations.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/qml-type-annotations.test.js)
 
+### Settings owner/delegate isolated evidence
+
+- Through `871d9128c`, `OsdTab.qml` warnings drop 4→0. `ComponentBehavior: Bound` at `6d3462bfa` follows reported private-copy delegate proof; it is not live-shell acceptance. Shared counts and isolation: [testing](testing.md#grouped-taskbarosd-settings-isolated-runtime).
+- `Tests/Qml/GroupedOsdSettingsWarningsHarness.qml` checks eight location choices, enabled/overlay toggles, opacity 80→79%, duration 2000→2100 ms with displayed text, immutable type/monitor add/remove selection, duplicate prevention, and typed fixture monitor metadata. Baseline and owner-shadow runs each report seven passes across both editors, including QtTest init/cleanup.
+- Synthetic control events and fixture updates prove neither real persistence, OSD surfaces, compositor input/placement, nor canonical reload.
+
 ## Known gaps (current cycle)
 
 - [ ] Cage layer-shell/platform warnings remain visible. Real compositor placement/pixels/input, multi-output independent timers, enabled-type rejection and suppression consumption remain outside the private Cage regression.
-- [ ] Add executable coverage for monitor add/remove helper behavior.
+- [ ] Verify monitor selection against real outputs; isolated fixture add/remove coverage does not prove live monitor integration.
 
 ## Out of scope
 

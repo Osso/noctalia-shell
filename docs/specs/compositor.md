@@ -107,6 +107,12 @@ Compositor covers backend detection, shared workspace/window state, display-scal
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`
 
+### Grouped taskbar settings isolated evidence
+
+- Through `871d9128c`, `TaskbarGroupedSettings.qml` warnings drop 4→0. Shared lint/runtime counts and isolation: [testing](testing.md#grouped-taskbarosd-settings-isolated-runtime).
+- `Tests/Qml/GroupedOsdSettingsWarningsHarness.qml` checks grouped defaults, all four label modes, three toggles, pending edits, copy-save preserving unrelated fields and source data, reactive controls, and independent editor instances. Baseline and owner-shadow runs each report seven passes across both editors, including QtTest init/cleanup; not seven grouped-only cases.
+- Pre-existing runtime warning when grouped `labelMode` is omitted remains; passing fixtures explicitly supply it. No real persistence, live taskbar/compositor interaction, or notification cursor-flicker fix is proven.
+
 ## Known gaps (current cycle)
 
 - [ ] Define a concrete backend API metadata contract to resolve the facade's seven text/nineteen JSON `missing-property` diagnostics; shared `Item` typing does not expose those members.
