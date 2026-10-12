@@ -294,7 +294,7 @@ def main():
     if args.sandbox:
         inside(args)
         return
-    config_parent = str((Path.home() / ".config/noctalia").resolve().parent)
+    config_parent = str(Path.home() / ".config")
     with tempfile.TemporaryDirectory(prefix="noctalia-overview-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
@@ -311,6 +311,11 @@ def main():
             "--ro-bind",
             str(ROOT),
             str(ROOT),
+            # Replace read-only outer /tmp before creating the HOME config mask.
+            "--tmpfs",
+            "/tmp",
+            "--tmpfs",
+            "/run",
             "--perms",
             "000",
             "--tmpfs",
@@ -319,10 +324,6 @@ def main():
             "000",
             "--tmpfs",
             config_parent,
-            "--tmpfs",
-            "/tmp",
-            "--tmpfs",
-            "/run",
             "--bind",
             temporary,
             temporary,
