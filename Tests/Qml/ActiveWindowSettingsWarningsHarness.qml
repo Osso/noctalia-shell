@@ -13,7 +13,6 @@ TestCase {
   height: 900
   when: windowShown
   visible: true
-  property var updates: []
 
   function descendants(item) {
     let items = [item];
@@ -68,7 +67,6 @@ TestCase {
   }
 
   function init() {
-    suite.updates = [];
     Settings.data.bar.widgets.left = [
       {
         "id": "ActiveWindow",
@@ -156,7 +154,6 @@ TestCase {
   function test_dialogCancelAndApplySyntheticOnly() {
     const original = JSON.stringify(Settings.data.bar.widgets.left);
     const dialog = createTemporaryObject(dialogComponent, suite, {
-      "testOwner": suite,
       "widgetId": "ActiveWindow",
       "widgetIndex": 0,
       "sectionId": "left",
@@ -173,7 +170,7 @@ TestCase {
     verify(cancel !== undefined);
     mouseClick(cancel, cancel.width / 2, cancel.height / 2);
     tryCompare(dialog, "opened", false);
-    compare(suite.updates.length, 0);
+    compare(dialog.updates.length, 0);
     compare(JSON.stringify(Settings.data.bar.widgets.left), original);
     dialog.open();
     tryCompare(dialog, "opened", true);
@@ -188,9 +185,9 @@ TestCase {
     verify(apply !== undefined);
     mouseClick(apply, apply.width / 2, apply.height / 2);
     tryCompare(dialog, "opened", false);
-    compare(suite.updates.length, 1);
-    compare(suite.updates[0].section, "left");
-    compare(suite.updates[0].index, 0);
+    compare(dialog.updates.length, 1);
+    compare(dialog.updates[0].section, "left");
+    compare(dialog.updates[0].index, 0);
     compare(Settings.data.bar.widgets.left[0].maxWidth, 420);
     compare(Settings.data.bar.widgets.left[0].useFixedWidth, true);
     compare(Settings.data.bar.widgets.left[0].scrollingMode, "never");
@@ -208,9 +205,9 @@ TestCase {
     id: dialogComponent
     BarWidgetSettingsDialog {
       id: dialogRoot
-      required property TestCase testOwner
+      property var updates: []
       onUpdateWidgetSettings: (section, index, settings) => {
-        dialogRoot.testOwner.updates = dialogRoot.testOwner.updates.concat([
+        dialogRoot.updates = dialogRoot.updates.concat([
           {
             "section": section,
             "index": index,
