@@ -73,6 +73,19 @@ NEW_HARNESSES = (
     "OSDWarningsHarness.qml",
     "SimpleServiceHarness.qml",
 )
+REQUESTED_HARNESSES = {
+    "BluetoothPanelWarningsHarness.qml": "bluetooth-panel-warnings.test.py",
+    "IpcIdleServicesHarness.qml": "ipc-idle-services-warnings.test.py",
+    "BrightnessKeyboardServicesHarness.qml": "brightness-keyboard-services-warnings.test.py",
+    "DockMenuWarningsHarness.qml": "dock-menu-warnings.test.py",
+    "WallpaperTabWarningsHarness.qml": "wallpaper-tab-warnings.test.py",
+}
+REQUESTED_REPORTS = {
+    "BluetoothPanelWarningsHarness.qml": "tst_bluetooth_panel.qml",
+    "BrightnessKeyboardServicesHarness.qml": "tst_services.qml",
+    "DockMenuWarningsHarness.qml": "tst_dock_menu.qml",
+    "WallpaperTabWarningsHarness.qml": "tst_wallpaper_tab.qml",
+}
 ARTIFACT_HARNESSES = (
     "BrightnessPanelWarningsHarness.qml",
     "WallpaperServiceHarness.qml",
@@ -95,15 +108,15 @@ def lint_reports(output):
 
 
 class FixtureLintTest(unittest.TestCase):
-    def bound_discovery(self, root, name):
-        for other in HARNESS_SCRIPTS:
+    def bound_discovery(self, root, name, harness_scripts=HARNESS_SCRIPTS):
+        for other in harness_scripts:
             if other != name:
                 harness = root / "Tests/Qml" / other
                 harness.unlink()
                 # Owner staging still needs dependencies; rg skips symlinks.
                 harness.symlink_to(ROOT / "Tests/Qml" / other)
 
-    def stage_repository(self, root):
+    def stage_repository(self, root, harness_scripts=HARNESS_SCRIPTS):
         # Real dependencies remain available to behavior staging, but discovery is
         # bounded to these harnesses, not a full-project lint invocation.
         for directory in (
@@ -120,6 +133,8 @@ class FixtureLintTest(unittest.TestCase):
         (tests / "Qml").mkdir(parents=True)
         for script in (
             *HARNESS_SCRIPTS.values(),
+            *harness_scripts.values(),
+            "grid-list-warnings.test.py",
             "clock-settings-warnings.test.py",
             "workspace-runtime.test.py",
             "taskbar-grouped-warnings.test.py",
@@ -130,7 +145,7 @@ class FixtureLintTest(unittest.TestCase):
         helper = ROOT / "Tests/qml_fixture_lint.py"
         if helper.exists():
             shutil.copy2(helper, tests / helper.name)
-        for harness in HARNESS_SCRIPTS:
+        for harness in harness_scripts:
             shutil.copy2(ROOT / "Tests/Qml" / harness, tests / "Qml" / harness)
         # Runtime staging copies these dependencies; rg skips symlinks.
         for name in (
@@ -178,7 +193,28 @@ class FixtureLintTest(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="noctalia-fixture-artifacts-") as temp:
             self.fixture_tmp = Path(temp)
             result = subprocess.run(
-                [str(runner)],
+                [
+                    "bwrap",
+                    "--die-with-parent",
+                    "--unshare-net",
+                    "--ro-bind",
+                    "/",
+                    "/",
+                    "--tmpfs",
+                    "/home",
+                    "--bind",
+                    str(root),
+                    str(root),
+                    "--bind",
+                    temp,
+                    temp,
+                    "--dev",
+                    "/dev",
+                    "--proc",
+                    "/proc",
+                    "--",
+                    str(runner),
+                ],
                 cwd=root,
                 check=False,
                 env=dict(os.environ, HOME=str(home), TMPDIR=temp),
@@ -201,6 +237,65 @@ class FixtureLintTest(unittest.TestCase):
         harness = Path(file["filename"])
         harness.relative_to(self.fixture_tmp)
         self.assertFalse(harness.parent.exists(), "fixture artifacts leaked")
+
+    def test_requested_routes_are_once_only_strict_and_isolated(self):
+        for name in REQUESTED_HARNESSES:
+            for mode in ("present", "absent", "warning"):
+                with (
+                    self.subTest(harness=name, mode=mode),
+                    tempfile.TemporaryDirectory(
+                        prefix="noctalia-fixture-dispatch-"
+                    ) as temp,
+                ):
+                    root = Path(temp)
+                    runner = self.stage_repository(root, REQUESTED_HARNESSES)
+                    self.bound_discovery(root, name, REQUESTED_HARNESSES)
+                    if mode == "warning":
+                        harness = root / "Tests/Qml" / name
+                        harness.write_text(
+                            harness.read_text().replace(
+                                "{",
+                                "{\n  property int regressionWarning: Qt.application.missingFixtureValue",
+                                1,
+                            )
+                        )
+                    result = self.run_checker(
+                        runner, root, settings_present=mode == "present"
+                    )
+                    output = result.stdout + result.stderr
+                    reports = lint_reports(result.stdout)
+                    if mode == "warning":
+                        self.assertNotEqual(result.returncode, 0, output)
+                        self.assertIn("missingFixtureValue", output)
+                        self.assertNotIn("ok qmlStaticCheck", output)
+                        self.assertNotIn("Checked ", output)
+                    else:
+                        self.assertEqual(result.returncode, 0, output)
+                        self.assertEqual(output.count("ok qmlStaticCheck"), 1)
+                        self.assertIn("Checked 1 QML files", output)
+                        self.assertIn("skipped 0", output)
+                    if name == "IpcIdleServicesHarness.qml":
+                        self.assertEqual(reports, [])
+                        self.assertEqual(output.count("HARNESS_LINT_COUNTS"), 1)
+                        if mode != "warning":
+                            self.assertIn("HARNESS_LINT_COUNTS {} TOTAL 0", output)
+                    else:
+                        self.assertEqual(len(reports), 1, output)
+                        self.assertEqual(len(reports[0]["files"]), 1)
+                        file = reports[0]["files"][0]
+                        self.assertEqual(
+                            Path(file["filename"]).name, REQUESTED_REPORTS[name]
+                        )
+                        if mode == "warning":
+                            self.assertTrue(file["warnings"], output)
+                        else:
+                            self.assertEqual(file["warnings"], [])
+                        if name == "BrightnessKeyboardServicesHarness.qml":
+                            self.assertEqual(
+                                file["filename"], "/fixture/tst_services.qml"
+                            )
+                        else:
+                            self.assert_artifacts_are_isolated(file)
 
     def test_all_harnesses_are_checked_without_fixture_type_warnings(self):
         with tempfile.TemporaryDirectory(prefix="noctalia-fixture-static-") as temp:

@@ -165,6 +165,23 @@ for file in "${qml_files[@]}"; do
     Tests/Qml/SimpleServiceHarness.qml)
         python3 "$repo_root/Tests/simple-service-warnings.test.py" lint-harness
         ;;
+    Tests/Qml/BluetoothPanelWarningsHarness.qml)
+        python3 "$repo_root/Tests/bluetooth-panel-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/IpcIdleServicesHarness.qml)
+        python3 "$repo_root/Tests/ipc-idle-services-warnings.test.py" lint-harness \
+            --max-warnings 0 --artifacts "$module_root/ipc-idle-services"
+        ;;
+    Tests/Qml/BrightnessKeyboardServicesHarness.qml)
+        python3 "$repo_root/Tests/brightness-keyboard-services-warnings.test.py" lint-harness \
+            --artifacts "$module_root/brightness-keyboard-services"
+        ;;
+    Tests/Qml/DockMenuWarningsHarness.qml)
+        python3 "$repo_root/Tests/dock-menu-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/WallpaperTabWarningsHarness.qml)
+        python3 "$repo_root/Tests/wallpaper-tab-warnings.test.py" lint-harness
+        ;;
     Tests/Qml/PanelServiceLifecycleHarness.qml)
         "$repo_root/Tests/panel-service-lifecycle.test.sh" lint-harness
         printf '\n'
