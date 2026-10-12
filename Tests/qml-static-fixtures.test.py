@@ -165,6 +165,24 @@ UTILITY_MARKERS = {
     "ShortcutsClockWarningsHarness.qml": "SHORTCUTS_CLOCK_HARNESS_LINT_WARNINGS",
     "AllScreensWarningsHarness.qml": "ALL_SCREENS_HARNESS_LINT_WARNINGS",
 }
+POPUP_HISTORY_LOCATION_PROCESS_HARNESSES = {
+    "ButtonPopupWarningsHarness.qml": "button-popup-warnings.test.py",
+    "HistorySimpleToastHarness.qml": "history-simple-toast-warnings.test.py",
+    "LocationTabWarningsHarness.qml": "location-tab-warnings.test.py",
+    "ProcessPanelWarningsHarness.qml": "process-panel-warnings.test.py",
+}
+POPUP_HISTORY_LOCATION_PROCESS_REPORTS = {
+    "ButtonPopupWarningsHarness.qml": "shell.qml",
+    "HistorySimpleToastHarness.qml": "tst_history_toast.qml",
+    "LocationTabWarningsHarness.qml": "tst_location.qml",
+    "ProcessPanelWarningsHarness.qml": "tst_process.qml",
+}
+POPUP_HISTORY_LOCATION_PROCESS_MARKERS = {
+    "ButtonPopupWarningsHarness.qml": "BUTTON_POPUP_HARNESS_LINT_WARNINGS",
+    "HistorySimpleToastHarness.qml": "HISTORY_TOAST_HARNESS_LINT_COUNTS",
+    "LocationTabWarningsHarness.qml": "LOCATION_TAB_HARNESS_LINT_WARNINGS",
+    "ProcessPanelWarningsHarness.qml": "PROCESS_PANEL_HARNESS_WARNINGS",
+}
 ARTIFACT_HARNESSES = (
     "BrightnessPanelWarningsHarness.qml",
     "WallpaperServiceHarness.qml",
@@ -229,6 +247,7 @@ class FixtureLintTest(unittest.TestCase):
             "notification-history-warnings.test.py",
             "brightness-keyboard-services-warnings.test.py",
             "calendar-month-card-warnings.test.py",
+            "simple-widgets-warnings.test.py",
         ):
             shutil.copy2(ROOT / "Tests" / script, tests / script)
         helper = ROOT / "Tests/qml_fixture_lint.py"
@@ -262,7 +281,8 @@ class FixtureLintTest(unittest.TestCase):
             "ProcessPanelWarningsHarness.qml",
             "BarStatusHarness.qml",
         ):
-            (tests / "Qml" / name).symlink_to(ROOT / "Tests/Qml" / name)
+            if name not in harness_scripts:
+                (tests / "Qml" / name).symlink_to(ROOT / "Tests/Qml" / name)
         # Redirect the owner's hardcoded guard to synthetic settings only.
         for name in (
             "remaining-layout-geometry.test.py",
@@ -474,6 +494,21 @@ class FixtureLintTest(unittest.TestCase):
                         UTILITY_MARKERS,
                     )
 
+    def test_popup_history_location_process_routes_are_strict_and_isolated(self):
+        artifact_paths = set()
+        for name, script in POPUP_HISTORY_LOCATION_PROCESS_HARNESSES.items():
+            for mode in ("present", "absent", "warning"):
+                with self.subTest(harness=name, mode=mode):
+                    filename = self.check_requested_route(
+                        name,
+                        mode,
+                        {name: script},
+                        POPUP_HISTORY_LOCATION_PROCESS_REPORTS,
+                        POPUP_HISTORY_LOCATION_PROCESS_MARKERS,
+                    )
+                    self.assertNotIn(filename, artifact_paths, "artifact path reused")
+                    artifact_paths.add(filename)
+
     def check_requested_route(
         self,
         name,
@@ -515,11 +550,14 @@ class FixtureLintTest(unittest.TestCase):
                 runner,
                 root,
                 settings_present=mode == "present",
-                audit_settings=name in UTILITY_HARNESSES,
+                audit_settings=name in UTILITY_HARNESSES
+                or name in POPUP_HISTORY_LOCATION_PROCESS_HARNESSES,
                 owner_audits=name
                 in (
                     "EmojiRecorderWarningsHarness.qml",
                     "AllScreensWarningsHarness.qml",
+                    "ButtonPopupWarningsHarness.qml",
+                    "ProcessPanelWarningsHarness.qml",
                 ),
             )
             output = result.stdout + result.stderr
@@ -586,6 +624,7 @@ class FixtureLintTest(unittest.TestCase):
                 self.assertEqual(file["filename"], "/fixture/tst_services.qml")
             else:
                 self.assert_artifacts_are_isolated(file)
+            return file["filename"]
 
     def test_all_harnesses_are_checked_without_fixture_type_warnings(self):
         with tempfile.TemporaryDirectory(prefix="noctalia-fixture-static-") as temp:
