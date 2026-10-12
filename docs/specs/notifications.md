@@ -60,10 +60,14 @@ Notifications cover notification server lifecycle, suppression rules, replacemen
 - Screen routing, hover-state pause/resume callbacks, and action identifier forwarding through direct state/signal invocation.
 - Close removing history before delayed dismissal, expiry-triggered removal, invalid action JSON producing no buttons, and empty-list Loader unloading.
 - Disconnection after unload, one reconnected removal handler, animated entry settling, and synthetic right-click removal preserving history.
+- At `bee72465c`, nested action hover/exit and action ids stay with the owning card; dismissing the second card leaves the first intact. This exercises `ComponentBehavior: Bound` at runtime.
+- All six locations (`top_right`, `bottom_left`, `top`, `bottom`, `top_left`, `bottom_right`) select the expected anchors, request 400-pixel panel/card widths and stack-relative height; the right-button/hover policy and card-sized dismissal hit area are asserted.
 
-This is isolated component coverage, not production service expiry/deduplication, full-widget rendering, or desktop input delivery. Cage lacks layer-shell; mask geometry and compositor input regions are not asserted.
+This is isolated component coverage, not production service expiry/deduplication, full-widget rendering, or desktop input delivery. Cage lacks layer-shell: requested geometry is tested, configured Region geometry and compositor input/cursor behavior are not. Region code is unchanged.
 
-Targeted static analysis after `c8a930bac` and harness timing correction `58a71a208` is **42→10 warnings**: six `unqualified` and four `missing-property` diagnostics remain. Standalone lint accepts exactly these counts and exit status zero, not warning-free analysis.
+At `bee72465c`, targeted component static analysis drops **10→3 warnings** (previously 42→10). Standalone lint requires exit status zero and exactly three `missing-property` diagnostics from generic `Repeater.itemAt()` item types, not warning-free analysis. `lint-harness-regression` rejects an injected genuine warning.
+
+The runner uses synthetic HOME/XDG paths and a Python audit hook denying the named real-settings path and socket connections; the synthetic audit event is rejected. It no longer reads or backs up real settings. This is not a blanket no-real-file-access proof: the reported probe caveat remains, and the Python hook does not constrain child-process file access.
 
 ### Isolated service lifecycle coverage
 
@@ -109,7 +113,7 @@ The history ListModel and Qt Repeaters/layout are real; NotificationService, Sma
 
 - `Tests/bar-status-warnings.test.py behavior` adds two production bar-widget cases at `c14da3540`: synthetic click/context/wheel routing, DND icon updates, fixture history clearing and settings dispatch; unread timestamps, zero/badge settings, and badge Loader destruction/recreation. ListModel mutation alone is not a tested reactive binding: the case advances `lastSeenTs`. This is separate from history-panel coverage and proves neither notification persistence/delivery nor toast/input-region flicker resolution. Cohort lint and isolation: [testing](testing.md#bar-status-cohort).
 
-- `Tests/notification-warnings.test.py` (`lint` and `behavior`, standalone).
+- `Tests/notification-warnings.test.py` (`lint`, `behavior`, `lint-harness`, and injected-warning `lint-harness-regression`, standalone).
 - `Tests/notification-history-warnings.test.py` (`lint` and `runtime`, standalone).
 - `Tests/notification-service-warnings.test.py` (`lint` and `runtime`, standalone); [service lifecycle coverage](#isolated-service-lifecycle-coverage).
 - `Tests/root-service-warnings.test.py behavior` / `Tests/Qml/RootServiceHarness.qml` — production NotificationService saves/reloads a concrete history row through fixture FileView/JsonAdapter state, restores its Date timestamp, updates an active ListModel row through the real progress timer, stops that timer after clearing, and advances/clears the image queue. One of five behavioral cases at `8b1de9d34`; notification delivery, file writes, settings, and surfaces are fixtures. This does not prove expiry, deduplication, image rendering, real persistence, or input regions. Root-only lint retains seventeen `unqualified`, six `block-scope-var-declaration`, two `missing-property`, one `unresolved-type`, and one `uncreatable-type` warnings. Cohort gates: [testing](testing.md#root-service-cohort).
@@ -123,7 +127,7 @@ The history ListModel and Qt Repeaters/layout are real; NotificationService, Sma
 
 - [ ] Fix retained overflow cleanup failure; isolated service coverage exercises replacement and expiry signaling, but not production delivery or popup-driven expiry removal.
 - [ ] Add spec coverage for notification settings UI contracts.
-- [ ] Resolve the ten remaining popup static diagnostics; this slice does not establish zero warnings.
+- [ ] Resolve the three remaining generic `itemAt()` popup type diagnostics; this slice does not establish zero warnings.
 - [ ] Reproduce and fix Firefox/grouped-taskbar cursor flicker triggered per notification. It has **not been reproduced or fixed** by this slice; toast/notification layer input-region behavior is untouched, and the isolated test provides no desktop input-delivery proof.
 
 ## Out of scope
