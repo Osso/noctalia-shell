@@ -70,6 +70,12 @@ Theming covers color scheme discovery/application, wallpaper and predefined them
 - `Bound` ownership proof snapshots both palette models, empties/restores them to recreate delegates, and checks selection/borders remain attached to the first picker while a second retains `#654321`. Recreated tooltip enter/exit handlers are invoked directly and checked for exact name/uppercase color text and clearing; this is not physical hover proof.
 - Fixtures replace services/settings/palette values; software/offscreen execution proves component lifecycle only, not live compositor placement/input, real persistence, or whole-shell rendering.
 
+### Compact color picker isolated evidence
+
+- Through `372a05dda`/`847f5fb07`/`08a599b61`, `NColorPicker` warnings drop 3→0. The section/picker harness reports five passes in normal mode and five with owner-shadow properties (three behavioral tests plus QtTest init/cleanup per run).
+- Synthetic input opens the production dialog with `#123456` and RGB 18/52/86, edits red to 128 without changing the picker before Apply, then checks exactly one commit signal, `#803456`, and matching label. Cancel preserves externally updated `#abcdef` without another signal; reopen uses that preserved color. Shadow mode adds a conflicting MouseArea `selectedColor` to exercise picker ownership.
+- Host config is denied rather than backed up; synthetic services/settings and software/offscreen controls prove no real persistence, live compositor input/rendering, or whole-shell acceptance. Isolation and section add/remove/reorder coverage: [testing](testing.md#section-editorcompact-color-picker-isolated-runtime).
+
 ## How it works
 
 - [docs/wiki/systems/theming.md](../wiki/systems/theming.md)
@@ -88,6 +94,8 @@ Theming covers color scheme discovery/application, wallpaper and predefined them
 - `Assets/settings-default.json` - template enablement defaults.
 
 ## Tests asserting this spec
+
+- `Tests/section-color-warnings.test.py` (`lint`, `lint-harness`, `behavior`, `behavior --shadow`) and `Tests/Qml/SectionColorWarningsHarness.qml` — compact picker lifecycle/owner coverage; [isolation and acceptance limits](testing.md#section-editorcompact-color-picker-isolated-runtime).
 
 - `Tests/color-picker-warnings.test.py` (`lint`, `lint-harness`, `runtime`) and `Tests/Qml/ColorPickerWarningsHarness.qml` — standalone warning/lifecycle coverage; isolation and acceptance gates: [testing](testing.md#color-picker-isolated-runtime).
 
