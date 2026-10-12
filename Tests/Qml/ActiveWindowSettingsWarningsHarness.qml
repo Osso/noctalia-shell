@@ -156,6 +156,7 @@ TestCase {
   function test_dialogCancelAndApplySyntheticOnly() {
     const original = JSON.stringify(Settings.data.bar.widgets.left);
     const dialog = createTemporaryObject(dialogComponent, suite, {
+      "testOwner": suite,
       "widgetId": "ActiveWindow",
       "widgetIndex": 0,
       "sectionId": "left",
@@ -206,8 +207,10 @@ TestCase {
   Component {
     id: dialogComponent
     BarWidgetSettingsDialog {
+      id: dialogRoot
+      required property TestCase testOwner
       onUpdateWidgetSettings: (section, index, settings) => {
-        suite.updates = suite.updates.concat([
+        dialogRoot.testOwner.updates = dialogRoot.testOwner.updates.concat([
           {
             "section": section,
             "index": index,
