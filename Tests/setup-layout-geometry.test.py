@@ -13,7 +13,6 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 GOLDEN = ROOT / "Tests/fixtures/setup-layout-geometry.json"
-SETTINGS = Path("/home/osso/.config/noctalia/settings.json")
 SETTINGS_ALIAS = """pragma Singleton
 import QtQuick
 QtObject {
@@ -184,17 +183,38 @@ def isolated_environment(root):
 def capture_geometry(directory, transitions=False):
     with tempfile.TemporaryDirectory(prefix="noctalia-setup-offscreen-") as temporary:
         root = Path(temporary)
-        prepare_sources(root)
-        environment = isolated_environment(root)
-        environment["NOCTALIA_TEST_TRANSITIONS"] = "1" if transitions else "0"
-        result = subprocess.run(
-            ["quickshell", "--no-color", "-p", str(root / "shell.qml")],
-            cwd=root,
-            env=environment,
-            capture_output=True,
-            text=True,
-            timeout=60,
+        fixture = directory / "fixture"
+        fixture.mkdir(mode=0o700)
+        environment = isolated_environment(fixture)
+        settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
+        settings.parent.mkdir(mode=0o700, parents=True)
+        before = (ROOT / "Assets/settings-default.json").read_bytes()
+        for path in (settings, directory / "settings.backup.json"):
+            with os.fdopen(
+                os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb"
+            ) as stream:
+                stream.write(before)
+        backup = directory / "settings.backup.json"
+        assert (
+            hashlib.sha256(backup.read_bytes()).digest()
+            == hashlib.sha256(before).digest()
         )
+        environment["XDG_CONFIG_HOME"] = str(settings.parent.parent)
+        environment["NOCTALIA_TEST_TRANSITIONS"] = "1" if transitions else "0"
+        prepare_sources(root)
+        try:
+            result = subprocess.run(
+                ["quickshell", "--no-color", "-p", str(root / "shell.qml")],
+                cwd=root,
+                env=environment,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+        finally:
+            assert settings.read_bytes() == before, (
+                "Fixture settings changed during isolated test"
+            )
         output = result.stdout + result.stderr
         (directory / "runtime.log").write_text(output)
         if result.returncode or re.search(r"\b(?:WARN|ERROR|FATAL)\b", output):
@@ -270,17 +290,11 @@ def main():
     args = parser.parse_args()
     if args.mode == "lint-harness":
         raise SystemExit(lint_harness())
+    temporary = None
     if args.artifacts is None:
-        parser.error("runtime capture requires --artifacts")
+        temporary = tempfile.TemporaryDirectory(prefix="noctalia-setup-geometry-")
+        args.artifacts = Path(temporary.name)
     args.artifacts.mkdir(parents=True, exist_ok=True, mode=0o700)
-    before = SETTINGS.read_bytes()
-    backup = args.artifacts / "settings.backup.json"
-    with backup.open("xb") as stream:
-        os.chmod(backup, 0o600)
-        stream.write(before)
-    assert (
-        hashlib.sha256(backup.read_bytes()).digest() == hashlib.sha256(before).digest()
-    )
     try:
         snapshots = capture_geometry(args.artifacts, args.wizard_transitions)
         if args.wizard_transitions:
@@ -305,9 +319,8 @@ def main():
                 "PASS setup geometry: 20 offscreen cases, actual child geometry/content"
             )
     finally:
-        assert SETTINGS.read_bytes() == before, (
-            "Real settings changed during isolated test"
-        )
+        if temporary is not None:
+            temporary.cleanup()
 
 
 if __name__ == "__main__":
