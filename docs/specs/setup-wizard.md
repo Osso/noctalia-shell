@@ -77,12 +77,18 @@ Setup Wizard covers first-run onboarding launch, completion, and selected setup 
 - Four offscreen cases (widths 480/1000 × scales 1/1.25) assert scale draft values/text/signals, opacity values/text, floating/shadow toggles, bar-position signals, density selection, active labels/colors, external selection updates, and reversed models. `Bound` ownership is exercised through delegate recreation and two simultaneous instances with independent scale/position state and no cross-instance signals.
 - Direct signal invocation is component proof, not physical input or live-wizard acceptance. Behavior verifies no save requests and unchanged real-settings bytes after a permission-locked, hash-verified backup; real persistence remains untested. Isolation and acceptance gates: [testing](testing.md#setup-customization-isolated-runtime).
 
+### Setup wallpaper isolated evidence
+
+- At `9d8cac1b3`, `SetupWallpaperStep.qml` warnings drop 7→0 after qualifying scanner state owners and reading the named `StdioCollector`. `Tests/setup-wallpaper-warnings.test.py` reports seven isolated cases: four selection/preview geometry cases at widths 480/1000 × scales 1/1.25, directory signals, next/back selection retention, and scanner completion.
+- Geometry cases use synthetic thumbnail clicks and assert selection signals, preview path/visibility/border/size, thumbnail dimensions, and empty-directory clearing. Directory coverage invokes editing/picker signals with empty and selected paths; next/back invokes button signals and checks draft retention, fixture wallpaper application, and no save requests.
+- Scanner coverage runs real Process/StdioCollector with synthetic Python stdout: trim/blank filtering, first selection, preserving an existing selection, and unchanged list on failure. The reported wrong-collector negative control fails; it is not a built-in runner mode. No actual directory scan, wallpaper decoding/application, native picker, real persistence, or live wizard acceptance is proven. Isolation and gates: [testing](testing.md#setup-wallpaper-isolated-runtime).
+
 ## Known gaps (current cycle)
 
 - [ ] Add executable coverage for the close timer timeout; settings-saved close state is covered with a fixture signal, not real persistence or completed panel teardown.
 - [ ] Add executable coverage for setup appearance step value handoff; customization scale/bar signal handoff is covered.
 - [ ] Add executable coverage for setup dock step integration beyond typed delegates.
-- [ ] Add executable coverage for setup wallpaper UI selection signals and directory-picker integration.
+- [ ] Extend isolated setup wallpaper selection/directory-signal coverage to native directory-picker integration and live wizard acceptance.
 
 ## Out of scope
 
