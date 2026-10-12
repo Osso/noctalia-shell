@@ -13,6 +13,7 @@ import qs.Widgets
 ColumnLayout {
   id: root
 
+  property ShellScreen screen: null
   property string specificFolderMonitorName: ""
 
   spacing: Style.marginL
@@ -74,7 +75,7 @@ ColumnLayout {
         icon: "wallpaper-selector"
         tooltipText: I18n.tr("settings.wallpaper.settings.selector.tooltip")
         onClicked: {
-          const panel = PanelService.getPanel("wallpaperPanel", screen);
+          const panel = PanelService.getPanel("wallpaperPanel", root.screen);
           if (panel)
             panel.toggle();
         }

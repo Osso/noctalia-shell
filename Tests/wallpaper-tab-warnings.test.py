@@ -14,6 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/Settings/Tabs/WallpaperTab.qml")
+PARENT = Path("Modules/Panels/Settings/SettingsPanel.qml")
 
 
 def install_audit(directory):
@@ -54,7 +55,7 @@ def helper(filename):
     return module
 
 
-def stage_runtime(directory):
+def stage_runtime(directory, owner_shadow=False):
     writer = helper("about-tab-warnings.test.py")
     write = writer.write_module
     singleton = writer.singleton
@@ -74,12 +75,19 @@ def stage_runtime(directory):
         "NValueSlider",
         "NSlider",
         "NListView",
+        "NScrollView",
     )
     write(
         directory,
         "qs.Widgets",
         {
             **{name: (ROOT / f"Widgets/{name}.qml").read_text() for name in controls},
+            # Unopened color dialog is outside this tab's routing coverage.
+            "NColorPickerDialog": """import QtQuick.Controls
+Popup {
+  property color selectedColor
+  signal colorSelected(color color)
+}""",
             # Filesystem picker boundary: records selection/open, never enumerates files.
             "NFilePicker": """import QtQuick
 Item {
@@ -92,7 +100,15 @@ Item {
 }""",
         },
     )
-    write(directory, "qs.Tabs", {"WallpaperTab": (ROOT / TARGET).read_text()})
+    if owner_shadow:
+        button = directory / "qs/Widgets/NIconButton.qml"
+        button.write_text(
+            button.read_text().replace(
+                "id: root",
+                "id: root\n  property ShellScreen screen: Quickshell.screens[1]",
+            )
+        )
+    stage_parent(directory, write, singleton)
     write(
         directory,
         "Quickshell",
@@ -111,7 +127,9 @@ Item {
             "fontFixed": "monospace",
             "fontDefaultScale": 1,
             "fontFixedScale": 1,
+            "settingsPanelAttachToBar": False,
         },
+        "bar": {"position": "top", "floating": False},
         "wallpaper": {
             "enabled": True,
             "overviewEnabled": False,
@@ -149,6 +167,8 @@ Item {
         "fontSizeM": 12,
         "fontSizeL": 14,
         "fontSizeXL": 16,
+        "fontSizeXXL": 18,
+        "marginXL": 18,
         "fontWeightRegular": 400,
         "fontWeightMedium": 500,
         "fontWeightSemiBold": 600,
@@ -212,9 +232,12 @@ Item {
             "TooltipService": singleton(
                 "function show(...args) {}\nfunction hide() {}"
             ),
-            "PanelService": singleton(
-                "function getPanel(name, screen) { return null; }"
-            ),
+            "PanelService": singleton("""property var panels: []
+property var requests: []
+function getPanel(name, screen) {
+  requests = requests.concat([{name: name, screen: screen}]);
+  return panels.find(panel => panel.screen === screen) || null;
+}"""),
             "WallpaperService": singleton("""property int restarts: 0
 property var directories: ({fixture: '/private-fixture/monitor'})
 property var fillModeModel: [{key: 'crop', name: 'Crop'}, {key: 'fit', name: 'Fit'}]
@@ -227,6 +250,80 @@ function setMonitorDirectory(name, path) { directories = Object.assign({}, direc
     (directory / "tst_wallpaper_tab.qml").write_text(
         (ROOT / "Tests/Qml/WallpaperTabWarningsHarness.qml").read_text()
     )
+
+
+def stage_parent(directory, write, singleton):
+    # Retain the real SettingsPanel Component -> Repeater -> Flickable -> Loader path.
+    # Only unrelated tab bodies and the desktop-surface boundary are inert.
+    tabs = helper("settings-panel-warnings.test.py").TABS
+    write(
+        directory,
+        "qs.Modules.Panels.Settings.Tabs",
+        {
+            **{name + "Tab": "import QtQuick\nItem {}" for name in tabs},
+            "WallpaperTab": (ROOT / TARGET).read_text(),
+        },
+    )
+    write(
+        directory,
+        "qs.Modules.Panels.Settings.Tabs.ColorScheme",
+        {"ColorSchemeTab": "import QtQuick\nItem {}"},
+    )
+    write(
+        directory,
+        "qs.Modules.Panels.Settings",
+        {"SettingsPanel": (ROOT / PARENT).read_text()},
+    )
+    write(
+        directory,
+        "qs.Modules.MainScreen",
+        {
+            "SmartPanel": """import QtQuick
+import Quickshell
+Item {
+  id: panel
+  property ShellScreen screen
+  property Component panelContent
+  property real preferredWidth
+  property real preferredHeight
+  property bool forceAttachToBar
+  property bool panelAnchorHorizontalCenter
+  property bool panelAnchorVerticalCenter
+  property bool panelAnchorTop
+  property bool panelAnchorBottom
+  property bool panelAnchorLeft
+  property bool panelAnchorRight
+  property bool isPanelOpen: false
+  signal opened()
+  function setPosition() {}
+  function close() { isPanelOpen = false; }
+  Loader { anchors.fill: parent; sourceComponent: panel.panelContent }
+}"""
+        },
+    )
+    write(
+        directory,
+        "qs.Services.System",
+        {"ProgramCheckerService": singleton("function checkAllPrograms() {}")},
+    )
+
+
+def mutate_routing(directory, mutation):
+    if mutation == "owner":
+        path = directory / "qs" / TARGET
+        original = 'getPanel("wallpaperPanel", root.screen)'
+        replacement = 'getPanel("wallpaperPanel", screen)'
+    else:
+        path = directory / "qs" / PARENT
+        original = "screen: root.screen"
+        replacement = (
+            ""
+            if mutation == "caller"
+            else "Component.onCompleted: screen = root.screen"
+        )
+    source = path.read_text()
+    assert source.count(original) == 1, "routing mutation site missing or ambiguous"
+    path.write_text(source.replace(original, replacement))
 
 
 def isolated_environment(directory):
@@ -246,6 +343,17 @@ def isolated_environment(directory):
         path = directory / name
         path.mkdir(mode=0o700)
         environment[name] = str(path)
+    # Neither config location is readable, even inside this private mount.
+    private_config = Path(environment["HOME"]) / ".config"
+    private_config.mkdir(mode=0o700)
+    for config in (private_config, Path(environment["XDG_CONFIG_HOME"])):
+        config.chmod(0)
+        try:
+            (config / "noctalia/settings.json").read_bytes()
+        except PermissionError:
+            print("PRIVATE_CONFIG_DENIED", config)
+        else:
+            raise AssertionError("private config readable")
     environment.update(
         QT_QPA_PLATFORM="offscreen",
         QT_QUICK_BACKEND="software",
@@ -300,6 +408,8 @@ def main():
     )
     parser.add_argument("--mutation", action="store_true")
     parser.add_argument("--inject-warning", action="store_true")
+    parser.add_argument("--owner-shadow", action="store_true")
+    parser.add_argument("--routing-mutation", choices=("owner", "caller", "snapshot"))
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-wallpaper-tab-") as temporary:
         directory = Path(temporary)
@@ -313,9 +423,10 @@ def main():
                 "-I",
                 temporary,
                 str(directory / "qs" / TARGET),
+                str(directory / "qs" / PARENT),
             ]
         elif args.mode == "lint-harness":
-            stage_runtime(directory)
+            stage_runtime(directory, owner_shadow=args.owner_shadow)
             harness = directory / "tst_wallpaper_tab.qml"
             if args.inject_warning:
                 harness.write_text(
@@ -338,15 +449,17 @@ def main():
                 str(harness),
             ]
         elif args.mode == "runtime":
-            stage_runtime(directory)
+            stage_runtime(directory, owner_shadow=args.owner_shadow)
             if args.mutation:
-                staged = directory / "qs/Tabs/WallpaperTab.qml"
+                staged = directory / "qs" / TARGET
                 staged.write_text(
                     staged.read_text().replace(
                         "onToggled: checked => Settings.data.wallpaper.enabled = checked",
                         "onToggled: checked => Settings.data.wallpaper.enabled = !checked",
                     )
                 )
+            if args.routing_mutation:
+                mutate_routing(directory, args.routing_mutation)
             argv = [
                 "/usr/lib/qt6/bin/qmltestrunner",
                 "-input",
@@ -390,7 +503,7 @@ finally:
             ]
             counts = Counter(re.findall(r"\[([^]]+)\]", line)[-1] for line in warnings)
             print("WALLPAPER_TAB_LINT_COUNTS", dict(counts), "TOTAL", len(warnings))
-            assert counts == {"unqualified": 1}, dict(counts)
+            assert not warnings, dict(counts)
         elif args.mode == "lint-harness":
             diagnostics = json.loads(result.stdout)
             warnings = [

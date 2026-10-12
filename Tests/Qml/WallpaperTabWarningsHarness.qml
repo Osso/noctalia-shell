@@ -2,9 +2,10 @@ import QtQuick
 import QtTest
 import Quickshell
 import qs.Commons
-import qs.Services.UI
+import qs.Modules.Panels.Settings
+import qs.Modules.Panels.Settings.Tabs
 import qs.Services.Compositor
-import qs.Tabs
+import qs.Services.UI
 
 TestCase {
   id: testCase
@@ -21,6 +22,31 @@ TestCase {
   ShellScreen {
     id: secondScreen
     name: "second"
+  }
+
+  QtObject {
+    id: firstWallpaperPanel
+    property ShellScreen screen: fixtureScreen
+    property int toggles: 0
+    function toggle() {
+      toggles++;
+    }
+  }
+  QtObject {
+    id: secondWallpaperPanel
+    property ShellScreen screen: secondScreen
+    property int toggles: 0
+    function toggle() {
+      toggles++;
+    }
+  }
+
+  Component {
+    id: settingsFactory
+    SettingsPanel {
+      width: 1000
+      height: 2300
+    }
   }
 
   Component {
@@ -60,6 +86,10 @@ TestCase {
       second: "/private-fixture/second"
     };
     Quickshell.screens = [fixtureScreen, secondScreen];
+    PanelService.panels = [firstWallpaperPanel, secondWallpaperPanel];
+    PanelService.requests = [];
+    firstWallpaperPanel.toggles = 0;
+    secondWallpaperPanel.toggles = 0;
   }
 
   function newTab() {
@@ -68,6 +98,52 @@ TestCase {
     wait(20);
     verify(tab.implicitHeight > 0);
     return tab;
+  }
+
+  function newSettings(screen) {
+    const panel = createTemporaryObject(settingsFactory, testCase, {
+                                          screen: screen
+                                        });
+    verify(panel !== null);
+    panel.currentTabIndex = panel.tabsModel.findIndex(tab => tab.id === SettingsPanel.Tab.Wallpaper);
+    verify(panel.currentTabIndex >= 0);
+    tryVerify(() => descendants(panel).some(item => item.icon === "wallpaper-selector"));
+    return panel;
+  }
+
+  function clickSelector(panel, screen) {
+    const selectors = descendants(panel).filter(item => item.icon === "wallpaper-selector" && item.clicked !== undefined);
+    compare(selectors.length, 1);
+    selectors[0].clicked();
+    const request = PanelService.requests[PanelService.requests.length - 1];
+    compare(request.name, "wallpaperPanel");
+    compare(request.screen, screen);
+  }
+
+  function test_actualParentRoutesTwoScreens() {
+    const first = newSettings(fixtureScreen);
+    const second = newSettings(secondScreen);
+    clickSelector(first, fixtureScreen);
+    compare(firstWallpaperPanel.toggles, 1);
+    compare(secondWallpaperPanel.toggles, 0);
+    clickSelector(second, secondScreen);
+    compare(firstWallpaperPanel.toggles, 1);
+    compare(secondWallpaperPanel.toggles, 1);
+  }
+
+  function test_parentScreenBindingSurvivesChangeAndReload() {
+    const panel = newSettings(fixtureScreen);
+    clickSelector(panel, fixtureScreen);
+    panel.screen = secondScreen;
+    clickSelector(panel, secondScreen);
+    compare(firstWallpaperPanel.toggles, 1);
+    compare(secondWallpaperPanel.toggles, 1);
+    panel.currentTabIndex = 0;
+    wait(0);
+    panel.currentTabIndex = panel.tabsModel.findIndex(tab => tab.id === SettingsPanel.Tab.Wallpaper);
+    tryVerify(() => descendants(panel).some(item => item.icon === "wallpaper-selector"));
+    clickSelector(panel, secondScreen);
+    compare(secondWallpaperPanel.toggles, 2);
   }
 
   function test_layoutAndSwitches() {

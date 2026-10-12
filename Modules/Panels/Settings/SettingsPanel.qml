@@ -137,7 +137,9 @@ SmartPanel {
   }
   Component {
     id: wallpaperTab
-    WallpaperTab {}
+    WallpaperTab {
+      screen: root.screen
+    }
   }
   Component {
     id: screenRecorderTab
@@ -183,133 +185,133 @@ SmartPanel {
   // Order *DOES* matter
   function updateTabsModel() {
     let newTabs = [
-      {
-        "id": SettingsPanel.Tab.General,
-        "label": "settings.general.title",
-        "icon": "settings-general",
-        "source": generalTab
-      },
-      {
-        "id": SettingsPanel.Tab.UserInterface,
-        "label": "settings.user-interface.title",
-        "icon": "settings-user-interface",
-        "source": userInterfaceTab
-      },
-      {
-        "id": SettingsPanel.Tab.ColorScheme,
-        "label": "settings.color-scheme.title",
-        "icon": "settings-color-scheme",
-        "source": colorSchemeTab
-      },
-      {
-        "id": SettingsPanel.Tab.Wallpaper,
-        "label": "settings.wallpaper.title",
-        "icon": "settings-wallpaper",
-        "source": wallpaperTab
-      },
-      {
-        "id": SettingsPanel.Tab.Bar,
-        "label": "settings.bar.title",
-        "icon": "settings-bar",
-        "source": barTab
-      },
-      {
-        "id": SettingsPanel.Tab.Dock,
-        "label": "settings.dock.title",
-        "icon": "settings-dock",
-        "source": dockTab
-      },
-      {
-        "id": SettingsPanel.Tab.ControlCenter,
-        "label": "settings.control-center.title",
-        "icon": "settings-control-center",
-        "source": controlCenterTab
-      },
-      {
-        "id": SettingsPanel.Tab.Launcher,
-        "label": "settings.launcher.title",
-        "icon": "settings-launcher",
-        "source": launcherTab
-      },
-      {
-        "id": SettingsPanel.Tab.Notifications,
-        "label": "settings.notifications.title",
-        "icon": "settings-notifications",
-        "source": notificationsTab
-      },
-      {
-        "id": SettingsPanel.Tab.OSD,
-        "label": "settings.osd.title",
-        "icon": "settings-osd",
-        "source": osdTab
-      },
-      {
-        "id": SettingsPanel.Tab.LockScreen,
-        "label": "settings.lock-screen.title",
-        "icon": "settings-lock-screen",
-        "source": lockScreenTab
-      },
-      {
-        "id": SettingsPanel.Tab.SessionMenu,
-        "label": "settings.session-menu.title",
-        "icon": "settings-session-menu",
-        "source": sessionMenuTab
-      },
-      {
-        "id": SettingsPanel.Tab.Audio,
-        "label": "settings.audio.title",
-        "icon": "settings-audio",
-        "source": audioTab
-      },
-      {
-        "id": SettingsPanel.Tab.Battery,
-        "label": "settings.battery.title",
-        "icon": "battery-3",
-        "source": batteryTab
-      },
-      {
-        "id": SettingsPanel.Tab.Display,
-        "label": "settings.display.title",
-        "icon": "settings-display",
-        "source": displayTab
-      },
-      {
-        "id": SettingsPanel.Tab.Network,
-        "label": "settings.network.title",
-        "icon": "settings-network",
-        "source": networkTab
-      },
-      {
-        "id": SettingsPanel.Tab.Location,
-        "label": "settings.location.title",
-        "icon": "settings-location",
-        "source": locationTab
-      },
-      {
-        "id": SettingsPanel.Tab.ScreenRecorder,
-        "label": "settings.screen-recorder.title",
-        "icon": "settings-screen-recorder",
-        "source": screenRecorderTab
-      },
-      {
-        "id": SettingsPanel.Tab.SystemMonitor,
-        "label": "settings.system-monitor.title",
-        "icon": "settings-system-monitor",
-        "source": systemMonitorTab
-      },
-      {
-        "id": SettingsPanel.Tab.Hooks,
-        "label": "settings.hooks.title",
-        "icon": "settings-hooks",
-        "source": hooksTab
-      },
-      {
-        "id": SettingsPanel.Tab.About,
-        "label": "settings.about.title",
-        "icon": "settings-about",
-        "source": aboutTab
-      }
-    ];
+          {
+            "id": SettingsPanel.Tab.General,
+            "label": "settings.general.title",
+            "icon": "settings-general",
+            "source": generalTab
+          },
+          {
+            "id": SettingsPanel.Tab.UserInterface,
+            "label": "settings.user-interface.title",
+            "icon": "settings-user-interface",
+            "source": userInterfaceTab
+          },
+          {
+            "id": SettingsPanel.Tab.ColorScheme,
+            "label": "settings.color-scheme.title",
+            "icon": "settings-color-scheme",
+            "source": colorSchemeTab
+          },
+          {
+            "id": SettingsPanel.Tab.Wallpaper,
+            "label": "settings.wallpaper.title",
+            "icon": "settings-wallpaper",
+            "source": wallpaperTab
+          },
+          {
+            "id": SettingsPanel.Tab.Bar,
+            "label": "settings.bar.title",
+            "icon": "settings-bar",
+            "source": barTab
+          },
+          {
+            "id": SettingsPanel.Tab.Dock,
+            "label": "settings.dock.title",
+            "icon": "settings-dock",
+            "source": dockTab
+          },
+          {
+            "id": SettingsPanel.Tab.ControlCenter,
+            "label": "settings.control-center.title",
+            "icon": "settings-control-center",
+            "source": controlCenterTab
+          },
+          {
+            "id": SettingsPanel.Tab.Launcher,
+            "label": "settings.launcher.title",
+            "icon": "settings-launcher",
+            "source": launcherTab
+          },
+          {
+            "id": SettingsPanel.Tab.Notifications,
+            "label": "settings.notifications.title",
+            "icon": "settings-notifications",
+            "source": notificationsTab
+          },
+          {
+            "id": SettingsPanel.Tab.OSD,
+            "label": "settings.osd.title",
+            "icon": "settings-osd",
+            "source": osdTab
+          },
+          {
+            "id": SettingsPanel.Tab.LockScreen,
+            "label": "settings.lock-screen.title",
+            "icon": "settings-lock-screen",
+            "source": lockScreenTab
+          },
+          {
+            "id": SettingsPanel.Tab.SessionMenu,
+            "label": "settings.session-menu.title",
+            "icon": "settings-session-menu",
+            "source": sessionMenuTab
+          },
+          {
+            "id": SettingsPanel.Tab.Audio,
+            "label": "settings.audio.title",
+            "icon": "settings-audio",
+            "source": audioTab
+          },
+          {
+            "id": SettingsPanel.Tab.Battery,
+            "label": "settings.battery.title",
+            "icon": "battery-3",
+            "source": batteryTab
+          },
+          {
+            "id": SettingsPanel.Tab.Display,
+            "label": "settings.display.title",
+            "icon": "settings-display",
+            "source": displayTab
+          },
+          {
+            "id": SettingsPanel.Tab.Network,
+            "label": "settings.network.title",
+            "icon": "settings-network",
+            "source": networkTab
+          },
+          {
+            "id": SettingsPanel.Tab.Location,
+            "label": "settings.location.title",
+            "icon": "settings-location",
+            "source": locationTab
+          },
+          {
+            "id": SettingsPanel.Tab.ScreenRecorder,
+            "label": "settings.screen-recorder.title",
+            "icon": "settings-screen-recorder",
+            "source": screenRecorderTab
+          },
+          {
+            "id": SettingsPanel.Tab.SystemMonitor,
+            "label": "settings.system-monitor.title",
+            "icon": "settings-system-monitor",
+            "source": systemMonitorTab
+          },
+          {
+            "id": SettingsPanel.Tab.Hooks,
+            "label": "settings.hooks.title",
+            "icon": "settings-hooks",
+            "source": hooksTab
+          },
+          {
+            "id": SettingsPanel.Tab.About,
+            "label": "settings.about.title",
+            "icon": "settings-about",
+            "source": aboutTab
+          }
+        ];
 
     root.tabsModel = newTabs; // Assign the generated list to the model
   }
