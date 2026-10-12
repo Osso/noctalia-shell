@@ -54,7 +54,8 @@ def lint(directory):
     print("WALLPAPER_SERVICE_WARNINGS", dict(counts))
     owners = [w for w in warnings if w["id"] == "unqualified"]
     assert not owners, [(w["line"], w["message"]) for w in owners]
-    # Unrelated pre-existing hoisting and Screen metadata remain out of scope.
+    # Pre-existing var hoisting and incomplete FileViewAdapter metadata are
+    # outside lexical-owner cleanup; no casts or synthetic metadata hide them.
     assert set(counts) <= {"block-scope-var-declaration", "unresolved-type"}, counts
 
 
