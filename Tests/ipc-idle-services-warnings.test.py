@@ -241,7 +241,7 @@ def lint_harness(directory, max_warnings):
     )
     output = result.stdout + result.stderr
     (directory / "harness.lint.log").write_text(output)
-    print(output, end="")
+    print(output, end="" if output.endswith("\n") else "\n")
     report = json.loads(result.stdout)
     counts = Counter(
         warning["id"]
