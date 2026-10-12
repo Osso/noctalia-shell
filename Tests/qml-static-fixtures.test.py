@@ -739,7 +739,61 @@ class FixtureLintTest(unittest.TestCase):
                                 self.assertIn("Checked 1 QML files", output)
                                 self.assertIn("skipped 0", output)
 
-    def check_synthetic_strict_dispatch(self, name, script, warning, arguments=None):
+    def test_settings_tray_weather_clock_color_lifecycle_routes(self):
+        routes = {
+            "SettingsSingletonHarness.qml": (
+                "settings-singleton-warnings.test.py",
+                ["lint-harness", "--max-warnings", "0"],
+            ),
+            "TrayDrawerWarningsHarness.qml": (
+                "tray-drawer-warnings.test.py",
+                ["lint-harness", "--max-warnings", "0"],
+            ),
+            "WeatherCardWarningsHarness.qml": (
+                "weather-card-effects.test.py",
+                ["lint-harness", "--max-warnings", "0"],
+            ),
+            "ClockWarningsHarness.qml": (
+                "clock-warnings.test.py",
+                ["lint-harness", "--max-warnings", "0"],
+            ),
+            "ColorPickerWarningsHarness.qml": (
+                "color-picker-warnings.test.py",
+                ["lint-harness", "--max-warnings", "0"],
+            ),
+            "tst_panel_service_lifecycle.qml": (
+                "panel-service-lifecycle.test.sh",
+                ["lint-harness", "--harness", "tst_panel_service_lifecycle.qml"],
+            ),
+            "PanelServiceLifecycleHarness.qml": (
+                "panel-service-lifecycle.test.sh",
+                ["lint-harness"],
+            ),
+        }
+        artifact_paths = set()
+        for name, (script, arguments) in routes.items():
+            for mode in ("present", "absent", "warning"):
+                with self.subTest(harness=name, mode=mode):
+                    filename = self.check_synthetic_strict_dispatch(
+                        name,
+                        script,
+                        mode == "warning",
+                        arguments,
+                        artifacts=name == "SettingsSingletonHarness.qml",
+                        settings_present=mode == "present",
+                    )
+                    self.assertNotIn(filename, artifact_paths, "artifact path reused")
+                    artifact_paths.add(filename)
+
+    def check_synthetic_strict_dispatch(
+        self,
+        name,
+        script,
+        warning,
+        arguments=None,
+        artifacts=False,
+        settings_present=False,
+    ):
         if arguments is None:
             arguments = ["lint-harness", "--max-warnings", "0"]
         # Owner semantics are proved separately; exercise only the dispatch boundary.
@@ -765,13 +819,31 @@ class FixtureLintTest(unittest.TestCase):
             )
             # Synthetic executable checks the exact public CLI, then runs real lint.
             # No owner runtime imports or desktop actions can execute here.
-            (root / "Tests" / script).write_text(
-                "import pathlib, shutil, subprocess, sys, tempfile\n"
-                f"assert sys.argv[1:] == {arguments!r}, sys.argv\n"
+            owner = root / "Tests" / script
+            owner.write_text(
+                "#!/usr/bin/python3\n"
+                "import os, pathlib, shutil, subprocess, sys, tempfile\n"
+                + (
+                    f"assert sys.argv[1:-2] == {arguments!r}, sys.argv\n"
+                    "assert sys.argv[-2] == '--artifacts', sys.argv\n"
+                    "artifacts = pathlib.Path(sys.argv[-1])\n"
+                    "artifacts.relative_to(pathlib.Path(os.environ['TMPDIR']))\n"
+                    "assert artifacts.parent.stat().st_mode & 0o777 == 0o700\n"
+                    "assert not artifacts.exists(), 'artifact path reused'\n"
+                    "artifacts.mkdir(mode=0o700)\n"
+                    if artifacts
+                    else f"assert sys.argv[1:] == {arguments!r}, sys.argv\n"
+                )
+                + "sys.stderr.write('dispatch stderr visible\\n')\n"
                 "root = pathlib.Path(__file__).resolve().parents[1]\n"
                 "with (root / 'calls').open('a') as calls:\n"
                 "    calls.write(pathlib.Path(__file__).name + '\\n')\n"
-                "with tempfile.TemporaryDirectory(prefix='strict-dispatch-') as temp:\n"
+                + (
+                    "with tempfile.TemporaryDirectory(prefix='strict-dispatch-', dir=artifacts) as temp:\n"
+                    if artifacts
+                    else "with tempfile.TemporaryDirectory(prefix='strict-dispatch-') as temp:\n"
+                )
+                + "    assert pathlib.Path(temp).stat().st_mode & 0o777 == 0o700\n"
                 "    harness = pathlib.Path(temp) / 'shell.qml'\n"
                 f"    shutil.copy2(root / 'Tests/Qml' / {name!r}, harness)\n"
                 "    result = subprocess.run(['/usr/lib/qt6/bin/qmllint', '--bare', "
@@ -782,15 +854,17 @@ class FixtureLintTest(unittest.TestCase):
                 "    code = result.returncode\n"
                 "sys.exit(code)\n"
             )
+            owner.chmod(0o700)
             result = self.run_checker(
                 runner,
                 root,
-                settings_present=False,
+                settings_present=settings_present,
                 audit_settings=True,
                 mask_audio=True,
             )
             output = result.stdout + result.stderr
             self.assertEqual((root / "calls").read_text().splitlines(), [script])
+            self.assertIn("dispatch stderr visible", result.stderr)
             reports = lint_reports(result.stdout)
             self.assertEqual(len(reports), 1, output)
             self.assertEqual(len(reports[0]["files"]), 1, output)
@@ -799,7 +873,9 @@ class FixtureLintTest(unittest.TestCase):
             if warning:
                 self.assertNotEqual(result.returncode, 0, output)
                 self.assertIn("missingFixtureValue", output)
-                self.assertTrue(file["warnings"], output)
+                self.assertTrue(
+                    any(w["id"] == "missing-property" for w in file["warnings"]), output
+                )
                 self.assertNotIn("ok qmlStaticCheck", output)
                 self.assertNotIn("Checked ", output)
             else:
@@ -808,6 +884,7 @@ class FixtureLintTest(unittest.TestCase):
                 self.assertEqual(output.count("ok qmlStaticCheck"), 1)
                 self.assertIn("Checked 1 QML files", output)
                 self.assertIn("skipped 0", output)
+            return file["filename"]
 
     def test_audio_tab_owner_clis_reject_injected_semantic_warnings(self):
         for name, script in AUDIO_TAB_HARNESSES.items():

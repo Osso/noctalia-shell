@@ -297,6 +297,27 @@ for file in "${qml_files[@]}"; do
     Tests/Qml/BusyDividerWarningsHarness.qml)
         python3 "$repo_root/Tests/busy-divider-warnings.test.py" lint-harness --max-warnings 0
         ;;
+    Tests/Qml/SettingsSingletonHarness.qml)
+        python3 "$repo_root/Tests/settings-singleton-warnings.test.py" lint-harness \
+            --max-warnings 0 --artifacts "$module_root/settings-singleton"
+        ;;
+    Tests/Qml/TrayDrawerWarningsHarness.qml)
+        python3 "$repo_root/Tests/tray-drawer-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/WeatherCardWarningsHarness.qml)
+        python3 "$repo_root/Tests/weather-card-effects.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/ClockWarningsHarness.qml)
+        python3 "$repo_root/Tests/clock-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/ColorPickerWarningsHarness.qml)
+        python3 "$repo_root/Tests/color-picker-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/tst_panel_service_lifecycle.qml)
+        "$repo_root/Tests/panel-service-lifecycle.test.sh" lint-harness \
+            --harness tst_panel_service_lifecycle.qml
+        printf '\n'
+        ;;
     Tests/Qml/PanelServiceLifecycleHarness.qml)
         "$repo_root/Tests/panel-service-lifecycle.test.sh" lint-harness
         printf '\n'
