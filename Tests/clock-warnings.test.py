@@ -136,6 +136,7 @@ function hide() {}""",
     )
     # Quickshell's qs imports map to the shell directory. Expose that same tree
     # to qmllint, with explicit singleton metadata shared by both commands.
+    (directory / "qs").unlink(missing_ok=True)
     (directory / "qs").symlink_to(".", target_is_directory=True)
     for module in (
         commons,
