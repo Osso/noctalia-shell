@@ -446,7 +446,11 @@ def main():
             path = directory / key
             path.mkdir(mode=0o700)
             environment[key] = str(path)
-        environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
+        environment.update(
+            QT_QPA_PLATFORM="offscreen",
+            QT_QUICK_BACKEND="software",
+            QT_FORCE_STDERR_LOGGING="1",
+        )
         settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
         settings.parent.mkdir(mode=0o700, parents=True)
         original = (ROOT / "Assets/settings-default.json").read_bytes()
@@ -465,7 +469,7 @@ def main():
                     str(directory),
                     "-import",
                     str(directory),
-                    *(["test_fan_contract"] if args.fan_only else []),
+                    *(["SystemMonitor::test_fan_contract"] if args.fan_only else []),
                 ],
                 cwd=ROOT,
                 env=environment,
@@ -477,7 +481,7 @@ def main():
             assert result.returncode == 0, (
                 f"SystemMonitor runtime exit {result.returncode}"
             )
-            assert "0 failed" in result.stdout
+            assert "0 failed" in result.stdout + result.stderr
             assert not re.search(
                 r"QWARN|QFATAL|ReferenceError|TypeError", result.stdout + result.stderr
             )
