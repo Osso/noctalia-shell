@@ -2,7 +2,7 @@
 """Bounded production visualizer/profile proof with denied host IO.
 
 QtTest uses real visual children; services and uptime process are inert boundaries.
-Lint uses production type modules, not runtime doubles. No desktop or host settings.
+Harness lint uses the exact runtime doubles. No desktop, live audio or host settings.
 """
 
 import argparse
@@ -139,6 +139,62 @@ function getPopupMenuWindow(screen) { lastScreen = screen; return popup; }""")
     )
 
 
+def lint_harness(directory, environment, inject_warning=False):
+    stage(directory)
+    harness = directory / "tst_visualizer_profile.qml"
+    if inject_warning:
+        source = harness.read_text()
+        marker = "id: scene"
+        assert source.count(marker) == 1, "injection owner must be unique"
+        harness.write_text(
+            source.replace(
+                marker,
+                marker + "\n    property int injectedWarning: scene.missingLintProbe",
+                1,
+            )
+        )
+    code, output = command(
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        directory,
+        environment,
+    )
+    diagnostics = json.loads(output)
+    warnings = sum(
+        warning["type"] == "warning"
+        for result in diagnostics["files"]
+        for warning in result["warnings"]
+    )
+    print("VISUALIZER_PROFILE_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
+    if inject_warning:
+        assert warnings > 0, "injected warning not diagnosed"
+    return code
+
+
+def lint_harness_regression(directory):
+    for name, injected in (("clean", False), ("injected", True)):
+        staged = directory / name
+        staged.mkdir(mode=0o700)
+        environment = helper("media-mini-warnings").isolate_environment(staged)
+        code = lint_harness(staged, environment, injected)
+        if injected:
+            assert code != 0, "genuine harness warning accepted"
+        else:
+            assert code == 0, "clean harness lint failed"
+    print("VISUALIZER_PROFILE_HARNESS_WARNING_REJECTED")
+
+
 def inside(args):
     directory = args.sandbox
     for mask in ("/home/osso", CONFIG):
@@ -158,6 +214,11 @@ def inside(args):
         else:
             raise AssertionError("settings readable")
     environment = helper("media-mini-warnings").isolate_environment(directory)
+    if args.mode == "lint-harness":
+        raise SystemExit(lint_harness(directory, environment))
+    if args.mode == "lint-harness-regression":
+        lint_harness_regression(directory)
+        return
     if args.mode in ("lint", "baseline"):
         helper("media-mini-warnings").stage_modules(directory)
         for target in TARGETS:
@@ -207,7 +268,17 @@ def inside(args):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("runtime", "lint", "baseline"))
+    parser.add_argument(
+        "mode",
+        choices=(
+            "runtime",
+            "lint",
+            "baseline",
+            "lint-harness",
+            "lint-harness-regression",
+        ),
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
     parser.add_argument("--mutation", action="store_true")
     parser.add_argument("--sandbox", type=Path)
     args = parser.parse_args()
