@@ -433,6 +433,7 @@ class FixtureLintTest(unittest.TestCase):
                 "SetupLayoutGeometryHarness.qml",
             ),
             "WiFiPanelWarningsHarness.qml": ("WiFiNetworksListWarningsHarness.qml",),
+            "VPNPanelWarningsHarness.qml": ("WiFiNetworksListWarningsHarness.qml",),
             "ChangelogPanelWarningsHarness.qml": (
                 "NotificationHistoryWarningsHarness.qml",
             ),
@@ -511,7 +512,7 @@ class FixtureLintTest(unittest.TestCase):
                     "os.execv(sys.argv[2], sys.argv[2:])",
                     str(home),
                 ]
-                if audit_settings
+                if audit_settings or mask_audio
                 else []
             )
             result = subprocess.run(
