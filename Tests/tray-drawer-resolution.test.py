@@ -249,7 +249,7 @@ def wait_for(process, log, errors, marker, start, allow_failure=False):
         assert process.poll() is None, output
         if not allow_failure:
             assert not re.search(
-                r" WARN | ERROR | FATAL |ReferenceError|TypeError|Binding loop|DRAWER_NATIVE_ASSERT",
+                r"\b(?:WARN|ERROR|FATAL)\b|ReferenceError|TypeError|Binding loop|DRAWER_NATIVE_ASSERT",
                 output,
             ), output
         if marker in output:
@@ -320,7 +320,7 @@ def runtime(directory, shadow=False):
         line
         for line in output.splitlines()
         if re.search(
-            r" WARN | ERROR | FATAL |ReferenceError|TypeError|Binding loop|DRAWER_NATIVE_ASSERT",
+            r"\b(?:WARN|ERROR|FATAL)\b|ReferenceError|TypeError|Binding loop|DRAWER_NATIVE_ASSERT",
             line,
         )
     ]

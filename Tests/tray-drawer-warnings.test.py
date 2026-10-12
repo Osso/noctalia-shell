@@ -7,14 +7,14 @@ Pin/unpin is exercised through settings changes, not a live tray menu/service.
 """
 
 import argparse
-from collections import Counter
 import importlib.util
 import json
 import os
-from pathlib import Path
 import re
 import subprocess
 import tempfile
+from collections import Counter
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/Tray/TrayDrawerPanel.qml")
@@ -43,13 +43,14 @@ def lint(directory):
             str(directory / "qs" / TARGET),
         ],
         cwd=ROOT,
+        check=False,
         capture_output=True,
         text=True,
         timeout=60,
     )
     output = result.stdout + result.stderr
     print(output, end="")
-    warnings = re.findall(r"^Warning:.*$", output, re.M)
+    warnings = re.findall(r"^Warning:.*$", output, re.MULTILINE)
     counts = Counter(re.findall(r"\[([^]]+)\]", line)[-1] for line in warnings)
     print("TRAY_DRAWER_LINT_COUNTS", dict(counts))
     # Bound removes both creation-site captures. Loader.item stays dynamic;
