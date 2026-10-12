@@ -28,16 +28,14 @@ function testOsdShowRequiresScreenBeforeActivatingLoader() {
 }
 
 function testTaskbarGroupedUrgentBadgeHasCooldown() {
-  const source = readQml("Modules/Bar/Widgets/TaskbarGrouped.qml");
-
-  assert.match(source, /property var displayedUrgencyByWorkspace:/, "TaskbarGrouped badge cooldown state must survive delegate rebuilds");
-  assert.match(source, /function workspaceUrgencyKey\(workspace\)/, "TaskbarGrouped badge cooldown must key state by workspace");
-  assert.match(source, /function displayedUrgentForWorkspace\(workspace\)/, "TaskbarGrouped badge cooldown must restore displayed state after model refresh");
-  assert.match(source, /id:\s*badgeUrgencyCooldown/, "TaskbarGrouped badge must define a cooldown timer");
-  assert.match(source, /interval:\s*5000/, "TaskbarGrouped badge cooldown must be 5 seconds");
-  assert.match(source, /root\.setDisplayedUrgency\(workspaceModel,\s*container\.badgeUrgent\)/, "TaskbarGrouped badge cooldown must settle persistent urgency state");
-  assert.doesNotMatch(source, /if \(workspaceModel\.isUrgent\)\s+return NColor\.mError/, "TaskbarGrouped badge color must use the cooled urgent state");
-  assert.doesNotMatch(source, /if \(workspaceModel\.isUrgent\)\s+return NColor\.mOnError/, "TaskbarGrouped badge text color must use the cooled urgent state");
+  const result = spawnSync(
+    "python3",
+    [path.join(__dirname, "taskbar-grouped-warnings.test.py"), "behavior"],
+    { encoding: "utf8", timeout: 60000 },
+  );
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  process.stdout.write(result.stdout);
 }
 
 function testWorkspaceUrgentBadgeHasCooldown() {
