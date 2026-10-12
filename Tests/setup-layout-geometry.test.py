@@ -92,6 +92,16 @@ def prepare_sources(root):
     panel = root / "Modules/MainScreen/SmartPanel.qml"
     panel.parent.mkdir(parents=True)
     shutil.copyfile(ROOT / "Modules/MainScreen/SmartPanel.qml", panel)
+    backgrounds = panel.parent / "Backgrounds"
+    backgrounds.mkdir()
+    shutil.copyfile(
+        ROOT / "Modules/MainScreen/Backgrounds/BackgroundRegion.qml",
+        backgrounds / "BackgroundRegion.qml",
+    )
+    (backgrounds / "qmldir").write_text(
+        "module qs.Modules.MainScreen.Backgrounds\n"
+        "BackgroundRegion 1.0 BackgroundRegion.qml\n"
+    )
     for relative, body in STUBS.items():
         if "SCHEMES" in body:
             schemes = []

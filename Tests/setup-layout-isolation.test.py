@@ -63,6 +63,7 @@ class SetupLayoutIsolationTest(unittest.TestCase):
             "Assets",
             "Modules/Panels/SetupWizard",
             "Modules/MainScreen/SmartPanel.qml",
+            "Modules/MainScreen/Backgrounds/BackgroundRegion.qml",
             "Tests/setup-layout-geometry.test.py",
             "Tests/Qml/SetupLayoutGeometryHarness.qml",
             "Tests/fixtures/setup-layout-geometry.json",
