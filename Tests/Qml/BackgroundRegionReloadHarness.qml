@@ -12,7 +12,8 @@ ShellRoot {
   MainScreen {
     id: mainScreen
     screen: Quickshell.screens[0]
-    visible: false
+    // Mapped only inside the sandbox's headless compositor, never the desktop.
+    visible: true
   }
 
   Connections {
