@@ -365,6 +365,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - [x] At `bfd5fbf7b` + `974799049`, `Tests/Qml/SchemeDownloaderHarness.qml`, `ClipboardPreviewWarningsHarness.qml`, and `ActiveWindowWarningsHarness.qml` each dispatch once through their Python `lint-harness` mode against actual isolated staged runtime fixtures, with `--max-warnings 0` and retained diagnostics. Their zero-warning fixture results supersede global-production-context harness warning counts, not production diagnostics. `Tests/qml-static-runtime-fixtures.test.py` covers all three once-only checks with no static exclusions, genuine injected `missing-property` warning failure for each, and unchanged default diagnostics for matching basenames outside these exact paths. This adds static coverage only; canonical ActiveWindow live warnings remain ([active window](active-window.md#tests-asserting-this-spec)).
 - [x] Copied QML sources preserve singleton module metadata, resolving the standalone singleton declaration warnings caused by symlink resolution. Copied JavaScript helpers preserve relative imports. Import resolution must not suppress remaining warnings; passing the static gate does not mean warning-free or type-complete analysis.
 - [x] `./run-tests.sh probes` runs read-only service probes, injects the deterministic Bluetooth CLI fixture rather than contacting host Bluetooth hardware, validates launch/IPC contracts against the canonical runtime shell path, and runs the isolated non-visible production QML lifecycle harness.
+- [x] At `cb08dc6c6`/`971b5575d`, service `probe_settings` deliberately replaces canonical live-settings validation with a representative private fixture derived from `Assets/settings-default.json`, retaining the same key and value-shape predicates. It validates rather than skips; success explicitly reports `host settings not checked`. Canonical live settings are no longer validated by this probe.
 - [x] `./run-tests.sh log` runs the active Quickshell log regression gate.
 - [x] `./run-tests.sh notifications` runs visible notification probes and is isolated from the default gates.
 - [x] `all` and `regression` report visible notifications as explicitly excluded before running deterministic unit, structural reference, QML static, host probes, and live logs.
@@ -404,6 +405,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - `Tests/quickshell-regression.test.sh`
 - `Tests/runner-completeness.test.js`
 - `Tests/service-probes-parsing.test.sh`
+- `Tests/service-probes-settings.test.py` — five focused tests cover private entrypoint success/cleanup, customized `0600` fixture validity and unchanged bytes/defaults, missing/extra root and nested keys, invalid value shapes, and failed validation without success or leaked temporary directories. Sandboxed file-syscall traces assert zero attempts to access canonical host settings; this is fixture evidence, not live-settings validation.
 - `Tests/test-runner-categories.test.sh`
 - `Tests/qml-static-imports.test.py`
 - `Tests/qml-static-fixtures.test.py`
