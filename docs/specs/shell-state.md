@@ -51,12 +51,22 @@ ShellState covers the small persisted state cache shared by services that need l
 - `Tests/shell-state-consumer-roundtrip.test.js`
 - `Tests/shell-state-guards.test.js`
 - `Tests/source-coverage.test.js`
+- `Tests/shell-state-warnings.test.py` and `Tests/Qml/ShellStateHarness.qml` — isolated production-QML runtime with inert I/O/services.
+
+### Isolated warning and behavior evidence
+
+- At `f2a7ee8dd`/`6a1679370`, warnings drop 10→1; installed Quickshell metadata still leaves `FileViewAdapter` unresolved at `Commons/ShellState.qml:49`. The standalone lint gate accepts exactly one `unresolved-type` diagnostic, not zero warnings.
+- Reported isolated runtime and 17 JS checks pass, with behavioral mutation proof. Runtime covers delayed path assignment, load success, adapter defaults, all four setters/signals, timer-driven directory-before-write ordering, save completion, and snapshots before/after fixture service changes. JS contexts use the production owner aliases; setter/getter behavior replaces the removed adapter-access spelling assertion.
+- FileView, Process, settings and services are fixtures: no real settings/cache persistence, installed I/O execution, live shell, or whole-shell proof. Runner isolation and acceptance limits: [testing](testing.md#shellstate-isolated-runtime).
 
 ## Known gaps (current cycle)
 
 - [x] Add executable coverage for ShellState load success and load-failure paths.
 - [x] Add executable coverage for each setter emitting its matching change signal.
 - [x] Add executable coverage for compositor display, notification, changelog, and color-scheme cache consumers round-tripping through ShellState.
+
+- [ ] Resolve installed `FileViewAdapter` type metadata; zero-warning lint remains unproven.
+- [ ] Real persistence and live-shell behavior remain outside the isolated evidence.
 
 ## Out of scope
 
