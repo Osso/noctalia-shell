@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
 import qs.Widgets
@@ -11,6 +10,7 @@ Rectangle {
   property string text: ""
   property bool checked: false
   property int tabIndex: 0
+  property NTabBar tabBar: null
 
   // Internal state
   property bool isHovered: false
@@ -58,9 +58,8 @@ Rectangle {
     onExited: root.isHovered = false
     onClicked: {
       root.clicked();
-      // Update parent NTabBar's currentIndex
-      if (root.parent && root.parent.parent && root.parent.parent.currentIndex !== undefined) {
-        root.parent.parent.currentIndex = root.tabIndex;
+      if (root.tabBar) {
+        root.tabBar.currentIndex = root.tabIndex;
       }
     }
   }

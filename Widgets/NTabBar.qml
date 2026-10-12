@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
 import qs.Widgets
@@ -23,5 +22,13 @@ Rectangle {
     anchors.fill: parent
     anchors.margins: Style.marginXS
     spacing: root.spacing
+
+    onChildrenChanged: {
+      for (const child of tabRow.children) {
+        if (child instanceof NTabButton || child instanceof NIconTabButton) {
+          child.tabBar = root;
+        }
+      }
+    }
   }
 }

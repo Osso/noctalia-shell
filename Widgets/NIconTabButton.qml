@@ -1,7 +1,5 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
-import Quickshell
 import qs.Commons
 import qs.Services.UI
 import qs.Widgets
@@ -14,6 +12,7 @@ Rectangle {
   property string tooltipText: ""
   property bool checked: false
   property int tabIndex: 0
+  property NTabBar tabBar: null
 
   // Internal state
   property bool isHovered: false
@@ -71,9 +70,8 @@ Rectangle {
         TooltipService.hide();
       }
       root.clicked();
-      // Update parent NTabBar's currentIndex
-      if (root.parent && root.parent.parent && root.parent.parent.currentIndex !== undefined) {
-        root.parent.parent.currentIndex = root.tabIndex;
+      if (root.tabBar) {
+        root.tabBar.currentIndex = root.tabIndex;
       }
     }
   }
