@@ -86,6 +86,24 @@ REQUESTED_REPORTS = {
     "DockMenuWarningsHarness.qml": "tst_dock_menu.qml",
     "WallpaperTabWarningsHarness.qml": "tst_wallpaper_tab.qml",
 }
+STRICT_HARNESSES = {
+    "I18nThemeIconsHarness.qml": "i18n-theme-icons-warnings.test.py",
+    "VisualizerProfileHarness.qml": "visualizer-profile-warnings.test.py",
+    "SimpleWidgetsWarningsHarness.qml": "simple-widgets-warnings.test.py",
+    "SetupWallpaperWarningsHarness.qml": "setup-wallpaper-warnings.test.py",
+}
+STRICT_REPORTS = {
+    "I18nThemeIconsHarness.qml": "tst_i18n_icons.qml",
+    "VisualizerProfileHarness.qml": "tst_visualizer_profile.qml",
+    "SimpleWidgetsWarningsHarness.qml": "tst_simple_widgets.qml",
+    "SetupWallpaperWarningsHarness.qml": "shell.qml",
+}
+STRICT_MARKERS = {
+    "I18nThemeIconsHarness.qml": "HARNESS_LINT_COUNTS",
+    "VisualizerProfileHarness.qml": "VISUALIZER_PROFILE_HARNESS_LINT_WARNINGS",
+    "SimpleWidgetsWarningsHarness.qml": "SIMPLE_WIDGETS_HARNESS_LINT_WARNINGS",
+    "SetupWallpaperWarningsHarness.qml": "SETUP_WALLPAPER_HARNESS_LINT_WARNINGS",
+}
 ARTIFACT_HARNESSES = (
     "BrightnessPanelWarningsHarness.qml",
     "WallpaperServiceHarness.qml",
@@ -140,6 +158,11 @@ class FixtureLintTest(unittest.TestCase):
             "taskbar-grouped-warnings.test.py",
             "setup-layout-geometry.test.py",
             "process-panel-warnings.test.py",
+            "bar-status-warnings.test.py",
+            "bar-controls-warnings.test.py",
+            "bar-pill-warnings.test.py",
+            "wallpaper-panel-warnings.test.py",
+            "wallpaper-tab-warnings.test.py",
         ):
             shutil.copy2(ROOT / "Tests" / script, tests / script)
         helper = ROOT / "Tests/qml_fixture_lint.py"
@@ -158,6 +181,7 @@ class FixtureLintTest(unittest.TestCase):
             "TaskbarGroupedHarness.qml",
             "WorkspaceHarness.qml",
             "ProcessPanelWarningsHarness.qml",
+            "BarStatusHarness.qml",
         ):
             (tests / "Qml" / name).symlink_to(ROOT / "Tests/Qml" / name)
         # Redirect the owner's hardcoded guard to synthetic settings only.
@@ -253,15 +277,29 @@ class FixtureLintTest(unittest.TestCase):
                 with self.subTest(harness=name, mode=mode):
                     self.check_requested_route(name, mode)
 
-    def check_requested_route(self, name, mode):
+    def test_strict_routes_are_once_only_strict_and_isolated(self):
+        for name in STRICT_HARNESSES:
+            for mode in ("present", "absent", "warning"):
+                with self.subTest(harness=name, mode=mode):
+                    self.check_requested_route(
+                        name, mode, STRICT_HARNESSES, STRICT_REPORTS
+                    )
+
+    def check_requested_route(
+        self,
+        name,
+        mode,
+        harness_scripts=REQUESTED_HARNESSES,
+        harness_reports=REQUESTED_REPORTS,
+    ):
         with tempfile.TemporaryDirectory(prefix="noctalia-fixture-dispatch-") as temp:
             root = Path(temp)
-            runner = self.stage_repository(root, REQUESTED_HARNESSES)
-            self.bound_discovery(root, name, REQUESTED_HARNESSES)
+            runner = self.stage_repository(root, harness_scripts)
+            self.bound_discovery(root, name, harness_scripts)
             diagnostic = f"fixture stderr: {name}\n"
             failing = mode in ("warning", "syntax")
             if failing:
-                script = root / "Tests" / REQUESTED_HARNESSES[name]
+                script = root / "Tests" / harness_scripts[name]
                 script.write_text(
                     "import sys\nsys.stderr.write("
                     + repr(diagnostic)
@@ -283,6 +321,8 @@ class FixtureLintTest(unittest.TestCase):
             result = self.run_checker(runner, root, settings_present=mode == "present")
             output = result.stdout + result.stderr
             reports = lint_reports(result.stdout)
+            if name in STRICT_HARNESSES:
+                self.assertEqual(output.count(STRICT_MARKERS[name]), 1, output)
             if failing:
                 self.assertNotEqual(result.returncode, 0, output)
                 self.assertTrue(result.stderr.startswith(diagnostic), result.stderr)
@@ -308,7 +348,7 @@ class FixtureLintTest(unittest.TestCase):
                 self.assertEqual(len(reports), 1, output)
                 self.assertEqual(len(reports[0]["files"]), 1)
                 file = reports[0]["files"][0]
-                self.assertEqual(Path(file["filename"]).name, REQUESTED_REPORTS[name])
+                self.assertEqual(Path(file["filename"]).name, harness_reports[name])
                 if mode == "warning":
                     self.assertTrue(file["warnings"], output)
                 else:
