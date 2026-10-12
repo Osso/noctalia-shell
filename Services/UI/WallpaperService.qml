@@ -48,14 +48,14 @@ Singleton {
       // Emit directory change signals for monitors using the default directory
       if (!Settings.data.wallpaper.enableMultiMonitorDirectories) {
         // All monitors use the main directory
-        for (var i = 0; i < Quickshell.screens.length; i++) {
+        for (let i = 0; i < Quickshell.screens.length; i++) {
           root.wallpaperDirectoryChanged(Quickshell.screens[i].name, root.defaultDirectory);
         }
       } else {
         // Only monitors without custom directories are affected
-        for (var i = 0; i < Quickshell.screens.length; i++) {
-          var screenName = Quickshell.screens[i].name;
-          var monitor = root.getMonitorConfig(screenName);
+        for (let i = 0; i < Quickshell.screens.length; i++) {
+          const screenName = Quickshell.screens[i].name;
+          const monitor = root.getMonitorConfig(screenName);
           if (!monitor || !monitor.directory) {
             root.wallpaperDirectoryChanged(screenName, root.defaultDirectory);
           }
@@ -65,8 +65,8 @@ Singleton {
     function onEnableMultiMonitorDirectoriesChanged() {
       root.refreshWallpapersList();
       // Notify all monitors about potential directory changes
-      for (var i = 0; i < Quickshell.screens.length; i++) {
-        var screenName = Quickshell.screens[i].name;
+      for (let i = 0; i < Quickshell.screens.length; i++) {
+        const screenName = Quickshell.screens[i].name;
         root.wallpaperDirectoryChanged(screenName, root.getMonitorDirectory(screenName));
       }
     }
@@ -159,7 +159,7 @@ Singleton {
 
   // -------------------------------------------------------------------
   function getFillModeUniform() {
-    for (var i = 0; i < fillModeModel.count; i++) {
+    for (let i = 0; i < fillModeModel.count; i++) {
       const mode = fillModeModel.get(i);
       if (mode.key === Settings.data.wallpaper.fillMode) {
         return mode.uniform;
@@ -174,7 +174,7 @@ Singleton {
   function getMonitorConfig(screenName) {
     var monitors = Settings.data.wallpaper.monitorDirectories;
     if (monitors !== undefined) {
-      for (var i = 0; i < monitors.length; i++) {
+      for (let i = 0; i < monitors.length; i++) {
         if (monitors[i].name !== undefined && monitors[i].name === screenName) {
           return monitors[i];
         }
@@ -242,7 +242,7 @@ Singleton {
       _setWallpaper(screenName, path);
     } else {
       // If no screenName specified change for all screens
-      for (var i = 0; i < Quickshell.screens.length; i++) {
+      for (let i = 0; i < Quickshell.screens.length; i++) {
         _setWallpaper(Quickshell.screens[i].name, path);
       }
     }
@@ -291,23 +291,23 @@ Singleton {
 
     if (Settings.data.wallpaper.enableMultiMonitorDirectories) {
       // Pick a random wallpaper per screen
-      for (var i = 0; i < Quickshell.screens.length; i++) {
-        var screenName = Quickshell.screens[i].name;
-        var wallpaperList = getWallpapersList(screenName);
+      for (let i = 0; i < Quickshell.screens.length; i++) {
+        const screenName = Quickshell.screens[i].name;
+        const wallpaperList = getWallpapersList(screenName);
 
         if (wallpaperList.length > 0) {
-          var randomIndex = Math.floor(Math.random() * wallpaperList.length);
-          var randomPath = wallpaperList[randomIndex];
+          const randomIndex = Math.floor(Math.random() * wallpaperList.length);
+          const randomPath = wallpaperList[randomIndex];
           changeWallpaper(randomPath, screenName);
         }
       }
     } else {
       // Pick a random wallpaper common to all screens
       // We can use any screenName here, so we just pick the primary one.
-      var wallpaperList = getWallpapersList(Screen.name);
+      const wallpaperList = getWallpapersList(Screen.name);
       if (wallpaperList.length > 0) {
-        var randomIndex = Math.floor(Math.random() * wallpaperList.length);
-        var randomPath = wallpaperList[randomIndex];
+        const randomIndex = Math.floor(Math.random() * wallpaperList.length);
+        const randomPath = wallpaperList[randomIndex];
         changeWallpaper(randomPath, undefined);
       }
     }
@@ -344,16 +344,16 @@ Singleton {
 
     if (Settings.data.wallpaper.recursiveSearch) {
       // Use Process-based recursive search for all screens
-      for (var i = 0; i < Quickshell.screens.length; i++) {
-        var screenName = Quickshell.screens[i].name;
-        var directory = getMonitorDirectory(screenName);
+      for (let i = 0; i < Quickshell.screens.length; i++) {
+        const screenName = Quickshell.screens[i].name;
+        const directory = getMonitorDirectory(screenName);
         scanDirectoryRecursive(screenName, directory);
       }
     } else {
       // Use FolderListModel (non-recursive)
       // Force refresh by toggling each scanner's currentDirectory
-      for (var i = 0; i < wallpaperScanners.count; i++) {
-        var scanner = wallpaperScanners.objectAt(i);
+      for (let i = 0; i < wallpaperScanners.count; i++) {
+        const scanner = wallpaperScanners.objectAt(i);
         if (scanner) {
           // Capture scanner in closure
           (function (s) {
@@ -416,10 +416,10 @@ Singleton {
       scanningCount--;
       Logger.d("Wallpaper", "Process exited with code", exitCode, "for", screenName);
       if (exitCode === 0) {
-        var lines = processObject.stdout.text.split('\n');
-        var files = [];
-        for (var i = 0; i < lines.length; i++) {
-          var line = lines[i].trim();
+        const lines = processObject.stdout.text.split('\n');
+        const files = [];
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
           if (line !== '') {
             files.push(line);
           }
@@ -496,10 +496,10 @@ Singleton {
           WallpaperService.wallpaperLists[screenName] = [];
           WallpaperService.scanningCount++;
         } else if (status === FolderListModel.Ready) {
-          var files = [];
-          for (var i = 0; i < count; i++) {
-            var directory = WallpaperService.getMonitorDirectory(screenName);
-            var filepath = directory + "/" + get(i, "fileName");
+          const files = [];
+          for (let i = 0; i < count; i++) {
+            const directory = WallpaperService.getMonitorDirectory(screenName);
+            const filepath = directory + "/" + get(i, "fileName");
             files.push(filepath);
           }
 
