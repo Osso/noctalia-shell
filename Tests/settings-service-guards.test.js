@@ -452,6 +452,7 @@ function testSettingsBootstrapUsesSnapshotHydrationAndWriteOnlyPersistence() {
   ctx.root.loadGeneration = 4;
   ctx.root.bootstrapState = ctx.Snapshotting;
   ctx.root.validatedSettingsData = Buffer.from('{"settingsVersion":26}\n');
+  ctx.generation = 0;
   const snapshots = [];
   ctx.setData = (bytes) => snapshots.push(bytes);
   settingsFileHandler("snapshotWriterLoader", "Component.onCompleted")(ctx);
