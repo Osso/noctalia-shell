@@ -11,6 +11,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/Settings/Tabs/AboutTab.qml")
 SETTINGS = Path.home() / ".config/noctalia/settings.json"
@@ -197,6 +199,11 @@ QtObject {
     )
 
 
+def lint_harness(directory):
+    stage_behavior(directory)
+    return check_harness(directory, directory / "tst_about.qml")
+
+
 def behavior(directory):
     stage_behavior(directory)
     environment = {"PATH": os.environ["PATH"], "LANG": "C.UTF-8"}
@@ -273,10 +280,12 @@ def lint(directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-about-tab-") as temporary:
         directory = Path(temporary)
+        if args.mode == "lint-harness":
+            raise SystemExit(lint_harness(directory))
         before = SETTINGS.read_bytes()
         backup = directory / "settings-backup.json"
         descriptor = os.open(backup, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
