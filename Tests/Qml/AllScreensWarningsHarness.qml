@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import Quickshell as Native
 import qs.TestScreens
@@ -8,7 +10,7 @@ import qs.Modules.MainScreen
 Native.ShellRoot {
   id: harness
   property int step: 0
-  property var variants
+  property AllScreens variants
   readonly property var kinds: ["MainScreen", "BarContentWindow", "BarExclusionZone", "PopupMenuWindow"]
 
   ShellScreen {

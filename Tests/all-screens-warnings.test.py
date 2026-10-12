@@ -9,6 +9,7 @@ Installed ShellScreen metadata is tested by source lint, not the fake screens.
 import argparse
 from collections import Counter
 import importlib.util
+import json
 from pathlib import Path
 import re
 import shutil
@@ -43,9 +44,17 @@ def stage_runtime(directory, mutation):
         directory,
         "qs.Commons",
         {
-            "Settings": singleton(
-                "property QtObject data: QtObject { property QtObject bar: QtObject { property var monitors: [] }; property QtObject general: QtObject { property bool allowPanelsOnScreenWithoutBar: false } }"
-            ),
+            "Settings": singleton("""component BarSettings: QtObject {
+  property var monitors: []
+}
+component GeneralSettings: QtObject {
+  property bool allowPanelsOnScreenWithoutBar: false
+}
+component SettingsData: QtObject {
+  property BarSettings bar: BarSettings {}
+  property GeneralSettings general: GeneralSettings {}
+}
+property SettingsData data: SettingsData {}"""),
             "Logger": singleton("function d(...args) {}"),
         },
     )
@@ -92,6 +101,59 @@ Item {{
     )
 
 
+def lint_harness(directory, environment, inject_warning=False):
+    stage_runtime(directory, False)
+    harness = directory / "qs/shell.qml"
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                "id: harness",
+                "id: harness\n  property int injectedWarning: harness.missingLintProbe",
+                1,
+            )
+        )
+    code, output = isolation.run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        "all-screens-harness-lint",
+    )
+    diagnostics = json.loads(output)
+    warnings = sum(
+        warning["type"] == "warning"
+        for result in diagnostics["files"]
+        for warning in result["warnings"]
+    )
+    print("ALL_SCREENS_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
+    if inject_warning:
+        assert warnings > 0, "injected warning not diagnosed"
+        assert code != 0, "injected warning accepted"
+    else:
+        assert warnings == 0, f"harness warnings remain: {warnings}"
+    return code
+
+
+def lint_harness_regression(directory):
+    for name, injected in (("clean", False), ("injected", True)):
+        staged = directory / name
+        staged.mkdir(mode=0o700)
+        code = lint_harness(staged, isolation.isolated_environment(staged), injected)
+        assert (code != 0) if injected else (code == 0), code
+    print("ALL_SCREENS_HARNESS_WARNING_REJECTED")
+
+
 def execute(args, directory, environment):
     if args.mode == "lint":
         helper("media-mini-warnings.test.py").stage_modules(directory)
@@ -126,15 +188,31 @@ def execute(args, directory, environment):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument(
+        "mode", choices=("lint", "runtime", "lint-harness", "lint-harness-regression")
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     parser.add_argument("--mutation", action="store_true")
     args = parser.parse_args()
+    if args.mutation and args.mode != "runtime":
+        parser.error("--mutation requires runtime")
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-all-screens-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
         isolation.install_settings_guard(directory)
         isolation.prove_settings_guard()
-        execute(args, directory, isolation.isolated_environment(directory))
+        if args.mode == "lint-harness-regression":
+            lint_harness_regression(directory)
+        else:
+            environment = isolation.isolated_environment(directory)
+            if args.mode == "lint-harness":
+                raise SystemExit(
+                    lint_harness(directory, environment, args.inject_warning)
+                )
+            execute(args, directory, environment)
 
 
 if __name__ == "__main__":
