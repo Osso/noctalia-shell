@@ -14,6 +14,8 @@ Launcher covers launcher panel search state, plugin registration, command routin
 - [x] Launcher result delegates type `modelData` and `index` roles for both list and grid views.
 - [x] Launcher result delegates use typed display/image/emoji aliases instead of repeated dynamic field access.
 - [x] Launcher active plugin and plugin back-references are typed.
+- [x] Tab category navigation keeps application and emoji branch-local state separate; result navigation wraps and deferred rebuilds reset selection.
+- [x] List and grid clipboard image paths react to cache revision changes without replacing results or changing selection; replacement list delegates use the new clipboard ID.
 
 ### Applications plugin
 
@@ -68,6 +70,7 @@ Launcher covers launcher panel search state, plugin registration, command routin
 
 ## Tests asserting this spec
 
+- `Tests/launcher-warnings.test.py runtime` — production Launcher with fixture plugins/services/widgets: five behavioral cases plus init/cleanup report seven normal and seven owner-shadow offscreen passes. Covers category/keyboard navigation, deferred rebuild/filter/empty results, grid selection, and list/grid cache revision updates. Through `ed0041734`/`d86919deb`, five var-hoisting and two ineffective `_rev` expression warnings drop to zero strict warnings. Negative controls, isolation, and proof limits: [testing](testing.md#launcher-isolated-runtime).
 - `Tests/launcher-guards.test.js`
 - `Tests/applications-plugin-guards.test.js`
 - `Tests/calculator-plugin-guards.test.js`
