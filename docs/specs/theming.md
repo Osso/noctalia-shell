@@ -63,6 +63,13 @@ Theming covers color scheme discovery/application, wallpaper and predefined them
 - [x] Scheme deletion only deletes from the downloaded scheme directory, detects active-scheme deletion, resets to the default scheme when needed, reloads schemes, notifies success/failure, and manages the delete process lifecycle.
 - [x] Scheme color prefetch runs only while visible with available schemes, defers work, and skips already cached scheme colors.
 
+### Color picker isolated evidence
+
+- Through `90e6773e7`/`5cb2adc13`/`a4ad6de57`, `NColorPickerDialog` diagnostics drop from 12 `unqualified` plus one hoisting warning to zero. Recorded offscreen results are five passes: three behavioral tests plus QtTest init/cleanup.
+- Production dialog/controls assert positive screen-bounded height, theme/named swatch selection and borders, Apply emitting exactly once, Cancel emitting nothing, and reopen updating color/RGB values.
+- `Bound` ownership proof snapshots both palette models, empties/restores them to recreate delegates, and checks selection/borders remain attached to the first picker while a second retains `#654321`. Recreated tooltip enter/exit handlers are invoked directly and checked for exact name/uppercase color text and clearing; this is not physical hover proof.
+- Fixtures replace services/settings/palette values; software/offscreen execution proves component lifecycle only, not live compositor placement/input, real persistence, or whole-shell rendering.
+
 ## How it works
 
 - [docs/wiki/systems/theming.md](../wiki/systems/theming.md)
@@ -81,6 +88,8 @@ Theming covers color scheme discovery/application, wallpaper and predefined them
 - `Assets/settings-default.json` - template enablement defaults.
 
 ## Tests asserting this spec
+
+- `Tests/color-picker-warnings.test.py` (`lint`, `lint-harness`, `runtime`) and `Tests/Qml/ColorPickerWarningsHarness.qml` — standalone warning/lifecycle coverage; isolation and acceptance gates: [testing](testing.md#color-picker-isolated-runtime).
 
 - `Tests/color-namespace-runtime.test.py` - offscreen production palette/QColor binding regression, using `Tests/Qml/ColorNamespaceHarness.qml`.
 - `Tests/color-scheme-service-guards.test.js`
