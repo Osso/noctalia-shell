@@ -28,7 +28,7 @@ TestCase {
   }
 
   function test_unused_broken_getter_removed() {
-    compare(typeof BrightnessService.getDetectedDisplays, "undefined");
+    compare(Object.keys(BrightnessService).indexOf("getDetectedDisplays"), -1);
   }
 
   function test_instances_are_screen_monitors_not_detection_records() {
