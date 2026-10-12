@@ -67,7 +67,8 @@ def write_module(directory, name, sources):
     declarations = []
     for type_name, source in sources.items():
         (path / f"{type_name}.qml").write_text(source)
-        prefix = "singleton " if source.startswith("pragma Singleton") else ""
+        is_singleton = re.search(r"^\s*pragma\s+Singleton\b", source, re.M)
+        prefix = "singleton " if is_singleton else ""
         declarations.append(f"{prefix}{type_name} 1.0 {type_name}.qml\n")
     (path / "qmldir").write_text(f"module {name}\n" + "".join(declarations))
 
