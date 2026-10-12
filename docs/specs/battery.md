@@ -40,8 +40,8 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 - [x] Battery settings display the positive magnitude of signed UPower `changeRate` in watts to one decimal for charging and discharging; zero hides the power row, and battery state separately conveys direction.
 - [x] Battery settings health uses the normal text color at 80% and above, the tertiary warning color from 50% to below 80%, and the error color below 50%.
 - [x] Battery settings progress width uses the normal animation duration (300 ms at default speed with animations enabled).
-- [x] The `batteryManager.cycle` IPC command delegates to the battery service cycle helper.
-- [x] The `batteryManager.set` IPC command maps `full`, `balanced`, and `lifespan` strings to their charging modes.
+- [x] The retired `batteryManager` target is absent from the native private IPC registry; `cycle` and `set full|balanced|lifespan` report `Target not found.` (Quickshell CLI exit status zero), not charging-mode changes.
+- Battery UI start/stop threshold writes remain separate from retired charging-mode IPC. `BatteryService` exposes only `getIcon`; it has no charging-mode API.
 
 ### Types and probes
 
@@ -63,8 +63,8 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 - `Modules/Panels/Settings/Tabs/BatteryTab.qml` - battery settings and charge-threshold write helpers.
 - `Modules/Panels/Settings/Bar/WidgetSettings/BatterySettings.qml` - per-widget battery settings UI.
 - `Modules/LockScreen/LockScreen.qml` - lock-screen battery display.
-- `Services/Hardware/BatteryService.qml` - battery icon helper and charging mode service used by IPC.
-- `Services/Control/IPCService.qml` - battery manager IPC command mapping.
+- `Services/Hardware/BatteryService.qml` - `getIcon` helper only; no charging-mode API.
+- `Services/Control/IPCService.qml` - supported shell IPC; no `batteryManager` or production battery-panel IPC target.
 - `Bin/dev/service-probes.sh` - read-only UPower probe parsing.
 
 ## Tests asserting this spec
@@ -77,7 +77,8 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 - `Tests/battery-service-guards.test.js`
 - `Tests/battery-tab-guards.test.js`
 - `Tests/battery-tab-warnings.test.py` (`lint` checks only BatteryTab, requires qmllint exit status zero and no warnings; `behavior --snapshot <path>` checks signed watts (+12.5/-12.5/0), health colors (80/50/49%), normal progress animation, baseline geometry, and inert threshold writes in the production tab/controls with unchanged real-settings SHA).
-- `Tests/qml-runtime-guards.test.js`
+- `Tests/battery-ipc-isolated.test.py` (`lint` and `runtime`); native private registry/dispatch evidence and limits: [testing](testing.md#retired-battery-ipc-private-native-runtime).
+- `Tests/qml-runtime-guards.test.js` invokes the private IPC contract instead of stale charging-mode source assertions, but the aggregate runner currently fails at the separate baseline `root is not defined`; no aggregate pass is claimed.
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`
 
@@ -98,12 +99,14 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 ## Known gaps (current cycle)
 
 - [ ] Add hardware and desktop integration coverage for the battery widget; its offscreen regression does not cover real UPower/Bluetooth hardware, visible popup interaction, desktop notifications, settings persistence, or whole-shell acceptance.
-- [ ] Add executable tests for `Services/Hardware/BatteryService.qml` charging-mode cycling and command routing.
+- [ ] Correct the separate IPC/idle lint test's stale seven-warning expectation and resolve the guards runner baseline `root is not defined`; neither blocks standalone private IPC evidence nor establishes suite acceptance.
 - [ ] Add live hardware and desktop integration coverage for battery panel health/time display and close behavior; offscreen fixture assertions are covered above.
 - [ ] Resolve the six per-widget battery settings UPower `UntypedObjectModel` metadata diagnostics; the standalone `lint` mode still requires zero warnings and therefore remains failing.
 - [ ] Add host integration coverage for privileged threshold writes; the isolated production-tab test checks command construction, drag/release timing, threshold bounds, and successful-write reload using inert process/sysfs fixtures, not actual writes.
 
 ## Out of scope
+
+- Hardware-dependent BatteryManager revival: `39fd2517c` removed it for limited compatibility. User-approved retirement in `60205ac17`/`1fd21f6b1` removes leftover calls to nonexistent service APIs, not current battery UI threshold writes. Prior checked charging-mode IPC requirements were false.
 
 - Power profile switching belongs in [power-profile.md](power-profile.md).
 - Bluetooth pairing and connection behavior belongs in a separate Bluetooth spec.
