@@ -72,13 +72,21 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 - `Tests/battery-widget-guards.test.js`
 - `Tests/battery-widget-warnings.test.py lint` checks only `Modules/Bar/Widgets/Battery.qml`, reports warning categories, and requires no warnings and qmllint exit status zero.
 - `Tests/battery-widget-warnings.test.py behavior` runs `Tests/Qml/BatteryWidgetWarningsHarness.qml` with production Battery, BarPill layouts, NText/NIcon, and BatteryService; asserts initialization, icons, text, colors, visibility, device selection, and warning threshold/hysteresis without runtime warnings. Runs standalone and directly in `run-tests.sh`'s `deterministic-unit` gate after BatteryTab; lint remains standalone. Warning rejection covers this fixture runtime, not the full shell. Inert service fixtures record toast calls without delivery and replace popup windows with a non-surface item. HOME/XDG/Noctalia paths and DBus are isolated; a permission-locked real-settings backup and unchanged SHA are verified, and the child exits before cleanup.
-- `Tests/battery-panel-guards.test.js`
+- `Tests/battery-panel-guards.test.js` (seven reported passes at `3df8fa763`).
+- `Tests/battery-panel-warnings.test.py` (`lint` and `behavior --artifacts <new-directory>`); isolated evidence below.
 - `Tests/battery-service-guards.test.js`
 - `Tests/battery-tab-guards.test.js`
 - `Tests/battery-tab-warnings.test.py` (`lint` checks only BatteryTab, requires qmllint exit status zero and no warnings; `behavior --snapshot <path>` checks signed watts (+12.5/-12.5/0), health colors (80/50/49%), normal progress animation, baseline geometry, and inert threshold writes in the production tab/controls with unchanged real-settings SHA).
 - `Tests/qml-runtime-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`
+
+### Battery panel isolated evidence
+
+- At `3df8fa763`, BatteryPanel-only qmllint diagnostics drop **11→0**; standalone lint requires zero warnings and exit status zero.
+- `Tests/Qml/BatteryPanelWarningsHarness.qml` reports eight offscreen passes: six behavioral cases (charging/discharging data rows counted separately) plus QtTest init/cleanup. Both states use positive `changeRate = 12.5`; assertions cover icons/colors, percentage, health and time text, not watts rendering (the panel has no power row).
+- Coverage includes section-priority selection, replacement/removal/reappearance, line-power and missing-path handling, Bluetooth percentage/name/readiness, absent/idle state and hidden unsupported health. `Bound` ownership is exercised with shadowing Loader properties, content recreation and two instances; closing one leaves the other open.
+- Fixture proof does not establish live UPower/Bluetooth hardware, desktop input/rendering, real popup close behavior, persistence or whole-shell acceptance. Runner/isolation details: [testing](testing.md#battery-panel-isolated-runtime).
 
 ### Per-widget battery settings isolated evidence
 
@@ -91,7 +99,7 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 
 - [ ] Add hardware and desktop integration coverage for the battery widget; its offscreen regression does not cover real UPower/Bluetooth hardware, visible popup interaction, desktop notifications, settings persistence, or whole-shell acceptance.
 - [ ] Add executable tests for `Services/Hardware/BatteryService.qml` charging-mode cycling and command routing.
-- [ ] Add executable tests for battery panel health/time display text.
+- [ ] Add live hardware and desktop integration coverage for battery panel health/time display and close behavior; offscreen fixture assertions are covered above.
 - [ ] Resolve the six per-widget battery settings UPower `UntypedObjectModel` metadata diagnostics; the standalone `lint` mode still requires zero warnings and therefore remains failing.
 - [ ] Add host integration coverage for privileged threshold writes; the isolated production-tab test checks command construction, drag/release timing, threshold bounds, and successful-write reload using inert process/sysfs fixtures, not actual writes.
 
