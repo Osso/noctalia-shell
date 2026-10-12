@@ -44,12 +44,8 @@ Singleton {
     }
   }
 
-  // Distro logo helper (absolute path or empty string)
+  // No OSInfo provider is available in this shell.
   function distroLogoPath() {
-    try {
-      return (typeof OSInfo !== 'undefined' && OSInfo.distroIconPath) ? OSInfo.distroIconPath : "";
-    } catch (e) {
-      return "";
-    }
+    return "";
   }
 }

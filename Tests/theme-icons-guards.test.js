@@ -124,18 +124,6 @@ function testThemeIconsFallbackWhenDesktopEntriesLookupFails() {
 function testThemeIconsDistroLogoPathFailsClosed() {
   const distroLogoPath = qmlFunction("distroLogoPath");
 
-  assert.equal(distroLogoPath({
-    OSInfo: {
-      distroIconPath: "/usr/share/pixmaps/arch.svg",
-    },
-  }), "/usr/share/pixmaps/arch.svg");
-
-  assert.equal(distroLogoPath({
-    OSInfo: {
-      distroIconPath: "",
-    },
-  }), "");
-
   assert.equal(distroLogoPath({}), "");
 }
 

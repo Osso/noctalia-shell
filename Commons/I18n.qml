@@ -34,12 +34,12 @@ Singleton {
     onExited: function (exitCode, exitStatus) {
       if (exitCode === 0) {
         var output = stdoutCollector.text || "";
-        parseDirectoryListing(output);
+        root.parseDirectoryListing(output);
       } else {
         Logger.e("I18n", `Failed to scan translation directory`);
         // Fallback to default languages
-        availableLanguages = ["en"];
-        detectLanguage();
+        root.availableLanguages = ["en"];
+        root.detectLanguage();
       }
     }
   }
@@ -60,11 +60,11 @@ Singleton {
         root.translationsLoaded();
       } catch (e) {
         Logger.e("I18n", `Failed to parse translation file: ${e}`);
-        setLanguage("en");
+        root.setLanguage("en");
       }
     }
     onLoadFailed: function (error) {
-      setLanguage("en");
+      root.setLanguage("en");
       Logger.e("I18n", `Failed to load translation file: ${error}`);
     }
   }
