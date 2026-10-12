@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Unchanged production location singleton, real FileView/XHR, fixture transport only."""
 
+import argparse
+from collections import Counter
 import json
 import os
 from pathlib import Path
@@ -90,13 +92,16 @@ def stage_service(directory):
         commons,
         "Settings",
         """  property string cacheDir: Qt.resolvedUrl('../cache/').toString().replace('file://', '')
-  property QtObject data: QtObject {
-    property QtObject location: QtObject {
-      property bool weatherEnabled: Quickshell.env('LOCATION_SCENARIO') === 'missing'
-      property string name: 'Fixture City'
-    }
-    property QtObject colorSchemes: QtObject { property string schedulingMode: 'off' }
-  }""",
+  component FixtureLocation: QtObject {
+    property bool weatherEnabled: Quickshell.env('LOCATION_SCENARIO') === 'missing'
+    property string name: 'Fixture City'
+  }
+  component FixtureColorSchemes: QtObject { property string schedulingMode: 'off' }
+  component FixtureSettingsData: QtObject {
+    property FixtureLocation location: FixtureLocation {}
+    property FixtureColorSchemes colorSchemes: FixtureColorSchemes {}
+  }
+  property FixtureSettingsData data: FixtureSettingsData {}""",
     )
     write_singleton(commons, "Time", "  property int timestamp: 1000")
     write_singleton(
@@ -111,6 +116,18 @@ def stage_service(directory):
     shutil.copyfile(
         ROOT / "Tests/Qml/LocationServiceHarness.qml", directory / "shell.qml"
     )
+    (directory / "qmldir").write_text("module qs\n")
+    (commons / "qmldir").write_text(
+        "module qs.Commons\n"
+        + "".join(
+            f"singleton {name} 1.0 {name}.qml\n"
+            for name in ("Settings", "Time", "Logger")
+        )
+    )
+    (location / "qmldir").write_text(
+        "module qs.Services.Location\nsingleton LocationService 1.0 LocationService.qml\n"
+    )
+    (directory.parent / "qs").symlink_to(directory, target_is_directory=True)
 
 
 def environment(directory, scenario):
@@ -142,8 +159,86 @@ def environment(directory, scenario):
         LOCATION_FIXTURES=str(directory),
         LOCATION_SCENARIO=scenario,
         NOCTALIA_WEATHER_FILE=str(directory / "location.json"),
+        DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent",
+        DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent",
     )
     return env
+
+
+def run_isolated(directory, arguments, scenario):
+    return subprocess.run(
+        [
+            "bwrap",
+            "--unshare-all",
+            "--die-with-parent",
+            "--ro-bind",
+            "/",
+            "/",
+            "--tmpfs",
+            "/home",
+            "--tmpfs",
+            "/syncthing",
+            "--tmpfs",
+            "/run",
+            "--bind",
+            str(directory),
+            str(directory),
+            "--chdir",
+            str(directory),
+            *arguments,
+        ],
+        env=environment(directory, scenario),
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+
+def lint_harness(directory, max_warnings, inject_warning):
+    harness = directory / "shell/shell.qml"
+    if inject_warning:
+        source = harness.read_text()
+        anchor = "id: root\n"
+        assert source.count(anchor) == 1, (
+            "warning injection anchor missing or ambiguous"
+        )
+        harness.write_text(
+            source.replace(
+                anchor,
+                anchor + "  property int injectedWarning: missingFixtureOwner.value\n",
+                1,
+            )
+        )
+    result = run_isolated(
+        directory,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            str(max_warnings),
+            "--json",
+            "-",
+            str(harness),
+        ],
+        SCENARIOS[0],
+    )
+    print(result.stdout, end="")
+    print(result.stderr, end="")
+    report = json.loads(result.stdout)
+    counts = Counter(
+        warning["id"]
+        for entry in report["files"]
+        for warning in entry["warnings"]
+        if warning["type"] == "warning"
+    )
+    print("LOCATION_HARNESS_LINT_COUNTS", dict(counts), "exit", result.returncode)
+    if counts or any(not entry["success"] for entry in report["files"]):
+        return result.returncode or 1
+    return result.returncode
 
 
 def run_scenario(directory, scenario):
@@ -189,24 +284,18 @@ def run_scenario(directory, scenario):
         (directory / f"{name}.json").write_text(json.dumps(response))
     requests = directory / "requests.txt"
     requests.unlink(missing_ok=True)
-    output = command(
+    result = run_isolated(
+        directory,
         [
-            "bwrap",
-            "--unshare-net",
-            "--die-with-parent",
-            "--ro-bind",
-            "/",
-            "/",
-            "--bind",
-            str(directory),
-            str(directory),
             "quickshell",
             "--no-color",
             "-p",
             str(directory / "shell/shell.qml"),
         ],
-        env=environment(directory, scenario),
+        scenario,
     )
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, output
     print(output, end="")
     assert f"LOCATION_PASS {scenario}" in output, output
     assert not any(level in output for level in (" WARN ", " ERROR ", " FATAL ")), (
@@ -237,6 +326,15 @@ def run_scenario(directory, scenario):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "mode", nargs="?", default="runtime", choices=("runtime", "lint-harness")
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
+    args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-location-runtime-") as temporary:
         directory = Path(temporary)
         env = environment(directory, SCENARIOS[0])
@@ -254,8 +352,13 @@ def main():
         shell.mkdir()
         stage_service(shell)
         try:
+            if args.mode == "lint-harness":
+                raise SystemExit(
+                    lint_harness(directory, args.max_warnings, args.inject_warning)
+                )
             for scenario in SCENARIOS:
                 run_scenario(directory, scenario)
+            print(f"LOCATION_RUNTIME_COUNTS {len(SCENARIOS)} passed, 0 failed")
         finally:
             assert settings.read_bytes() == original, "fixture settings changed"
             assert backup.read_bytes() == original, "fixture backup changed"

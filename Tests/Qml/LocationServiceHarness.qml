@@ -8,7 +8,7 @@ ShellRoot {
   id: root
   property string scenario: Quickshell.env("LOCATION_SCENARIO")
   property int step: 0
-  readonly property var service: LocationService
+  readonly property LocationService service: LocationService
   readonly property var expectedErrors: ({
       "geo-http-error": "Geocoding error: 503",
       "geo-unresolved-error": "could not resolve location name",
@@ -17,9 +17,9 @@ ShellRoot {
       "weather-parse-error": "Failed to parse weather data"
     })
 
-  function require(condition, message) {
+  function require(condition: bool, message: string): void {
     if (!condition) {
-      console.error("LOCATION_FAIL", scenario, message);
+      console.error("LOCATION_FAIL", root.scenario, message);
       Qt.exit(1);
       throw new Error(message);
     }
