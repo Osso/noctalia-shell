@@ -8,6 +8,7 @@ are never read, resolved, hashed or backed up; sandbox and audits deny access.
 
 import argparse
 import importlib.util
+import json
 import re
 import shutil
 import tempfile
@@ -181,6 +182,32 @@ def lint(directory, environment):
     print("TRAY_MENU_LINT_PASS: installed PopupAnchor metadata residual preserved")
 
 
+def lint_harness(directory, environment):
+    stage_runtime(directory, None)
+    code, output = isolation.run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(directory / "tst_tray_menu.qml"),
+        ],
+        "tray-menu-harness-lint",
+    )
+    report = json.loads(output)
+    assert len(report["files"]) == 1, report
+    print("TRAY_MENU_HARNESS_LINT_FILE_COUNT", len(report["files"]), "EXIT", code)
+    return code
+
+
 def runtime(directory, environment, mutation):
     stage_runtime(directory, mutation)
     code, output = isolation.run_audited(
@@ -204,7 +231,14 @@ def runtime(directory, environment, mutation):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime", "guard"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "runtime", "guard"))
+    parser.add_argument(
+        "--max-warnings",
+        type=int,
+        choices=(0,),
+        default=0,
+        help="fixture harness lint is always strict (zero warnings)",
+    )
     parser.add_argument("--mutation", choices=("activation", "owner"))
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-tray-menu-") as temporary:
@@ -214,6 +248,8 @@ if __name__ == "__main__":
         isolation.prove_settings_guard()
         if args.mode != "guard":
             environment = isolation.isolated_environment(directory)
+            if args.mode == "lint-harness":
+                raise SystemExit(lint_harness(directory, environment))
             if args.mode == "lint":
                 lint(directory, environment)
             else:

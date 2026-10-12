@@ -271,6 +271,13 @@ def main():
         "mode", choices=("lint", "lint-harness", "behavior", "owner-shadow")
     )
     parser.add_argument(
+        "--max-warnings",
+        type=int,
+        choices=(0,),
+        default=0,
+        help="fixture harness lint is always strict (zero warnings)",
+    )
+    parser.add_argument(
         "--out", type=Path, help="retain raw evidence in a fresh directory"
     )
     args = parser.parse_args()
