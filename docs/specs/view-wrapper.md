@@ -11,12 +11,12 @@ Shared forwarding:
 - [x] `forceLayout()` and `cancelFlick()` must forward to the wrapped view.
 - [x] `flick(xVelocity, yVelocity)` must forward both velocity arguments to the wrapped view.
 - [x] `flick(xVelocity, yVelocity)` must type both velocity inputs as real numbers.
-- [x] `incrementCurrentIndex()` and `decrementCurrentIndex()` must forward to the wrapped view.
+- [x] `incrementCurrentIndex()` and `decrementCurrentIndex()` must move selection within model bounds, wrap when `keyNavigationWraps` is enabled, and leave empty-model selection at -1.
 - [x] `indexAt(x, y)`, `itemAt(x, y)`, and `itemAtIndex(index)` must return the wrapped view results.
 - [x] `indexAt(x, y)`, `itemAt(x, y)`, and `itemAtIndex(index)` must type coordinate and index inputs.
 
 Grid wrapper:
-- [x] `NGridView` must forward methods to its internal `gridView`.
+- [x] `NGridView` must forward view operations to its internal `gridView`; index increment/decrement must update its selection directly.
 - [x] `NGridView` must expose the internal `GridView` model, delegate, and current index aliases.
 
 List wrapper:
@@ -46,6 +46,12 @@ Scroll view (isolated assertions at `d3e94d7c0`):
 ## Tests asserting this spec
 
 - [Tests/view-wrapper-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/view-wrapper-guards.test.js)
+
+### Grid/list isolated evidence
+
+- At `00178bc6e`/`5bf3a9d00`, GridView-only warnings drop 9→0 and ListView-only warnings 7→0 without suppression. [Runner](../../Tests/grid-list-warnings.test.py) and [harness](../../Tests/Qml/GridListWarningsHarness.qml) cover thirteen behavioral rows plus QtTest init/cleanup: fifteen reported offscreen cases.
+- Both wrappers exercise repeated empty/small/exact-fit/overflow model changes, content/delegate geometry, scrollbar activity, selection and index lookup, beginning/end/index scrolling, cancel-flick state, index boundaries/wrapping, RTL→LTR scrollbar placement and resize, clipped pixels, and normal/pressed/released colors with policy opacity. List-only wheel events assert repeated movement and upper/lower bounds. Grid scrollbar placement remains relative to the wrapper so attached-view auto-positioning cannot replace RTL geometry.
+- Staged-copy `palette`, `selection`, and `scrollbar-parent` mutations are expected-failing negative controls. Hover color, positive flick velocity, native input and live compositor rendering are not proven. Real-config access is denied/audited, not backed up or read; isolation and gates: [testing](testing.md#gridlist-isolated-runtime). This docs-only audit inspected source without rerunning tests.
 
 ### Scroll view isolated evidence
 
