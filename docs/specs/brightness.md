@@ -67,6 +67,8 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 
 ## Tests asserting this spec
 
+- At `2a73a4c4f`, BrightnessSettings warnings drop 2→0. The isolated editor case checks all display modes, metadata defaults, keyboard selection, copy-save retaining unrelated fields without source mutation, independent instances, and reopen from saved values. Shared accounting and limits: [testing](testing.md#small-widget-settings-isolated-runtime); no real brightness adjustment or persistence proof.
+
 - `Tests/bar-controls-warnings.test.py` — isolated production bar-widget panel/display-settings routing, wheel adjustment and unavailable-monitor guard, first-update suppression/subsequent pill reveal, and display modes. Cohort evidence: [bar](bar.md#bar-control-cohort); no direct widget OSD dispatch or real monitor changes: [testing](testing.md#bar-control-cohort).
 
 ### Isolated service signal/order evidence
