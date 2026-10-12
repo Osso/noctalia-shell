@@ -1,12 +1,11 @@
 import QtQuick
-import QtQuick.Controls
 import QtTest
 import Quickshell
 import qs.Commons
+import qs.Modules.Panels.Settings.Tabs
 import qs.Services.Hardware
 import qs.Services.Location
 import qs.Services.UI
-import qs.Tabs
 
 TestCase {
   id: testCase
@@ -53,15 +52,15 @@ TestCase {
 
   function test_monitorRendering_data() {
     return [
-      {
-        tag: "scale-1",
-        scale: 1
-      },
-      {
-        tag: "scale-1.5",
-        scale: 1.5
-      }
-    ];
+          {
+            tag: "scale-1",
+            scale: 1
+          },
+          {
+            tag: "scale-1.5",
+            scale: 1.5
+          }
+        ];
   }
 
   function test_monitorRendering(data) {
@@ -156,9 +155,9 @@ TestCase {
     // The production tab has immediate edits, not a Save/Cancel transaction.
     // Serialize only fake settings; cancel means destroying the tab, not rollback.
     const saved = JSON.stringify({
-      sunrise: Settings.data.nightLight.manualSunrise,
-      sunset: Settings.data.nightLight.manualSunset
-    });
+                                   sunrise: Settings.data.nightLight.manualSunrise,
+                                   sunset: Settings.data.nightLight.manualSunset
+                                 });
     compare(saved, '{"sunrise":"07:30","sunset":"20:00"}');
     tab.destroy();
     wait(0);

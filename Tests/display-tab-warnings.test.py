@@ -2,18 +2,18 @@
 """Focused DisplayTab lint and offscreen UI proof with inert monitor boundaries."""
 
 import argparse
-import hashlib
 import importlib.util
 import json
 import os
 import re
 import subprocess
 import struct
+import sys
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/Settings/Tabs/DisplayTab.qml")
-SETTINGS = Path.home() / ".config/noctalia/settings.json"
 
 
 def load_helper(filename):
@@ -47,7 +47,11 @@ def stage_behavior(directory):
         "qs.Widgets",
         {name: (ROOT / f"Widgets/{name}.qml").read_text() for name in controls},
     )
-    write(directory, "qs.Tabs", {"DisplayTab": (ROOT / TARGET).read_text()})
+    write(
+        directory,
+        "qs.Modules.Panels.Settings.Tabs",
+        {"DisplayTab": (ROOT / TARGET).read_text()},
+    )
     write(
         directory,
         "Quickshell",
@@ -197,6 +201,9 @@ QtObject {
     )
 
 
+isolation = load_helper("grouped-osd-settings-warnings.test.py")
+
+
 def isolated_environment(directory):
     environment = {"PATH": os.environ["PATH"], "LANG": "C.UTF-8"}
     for name in (
@@ -206,6 +213,8 @@ def isolated_environment(directory):
         "XDG_DATA_HOME",
         "XDG_STATE_HOME",
         "XDG_RUNTIME_DIR",
+        "XDG_CONFIG_DIRS",
+        "XDG_DATA_DIRS",
     ):
         path = directory / name
         path.mkdir(mode=0o700)
@@ -219,7 +228,7 @@ def isolated_environment(directory):
     return environment
 
 
-def execute(mode, directory, environment):
+def execute(mode, directory, environment, inject_warning=False):
     if mode == "lint":
         staging = load_helper("media-mini-warnings.test.py")
         staging.stage_modules(directory)
@@ -231,13 +240,41 @@ def execute(mode, directory, environment):
         ]
     else:
         stage_behavior(directory)
-        argv = [
-            "/usr/lib/qt6/bin/qmltestrunner",
-            "-input",
-            str(directory / "tst_display.qml"),
-            "-import",
-            str(directory),
-        ]
+        harness = directory / "tst_display.qml"
+        if mode == "lint-harness":
+            if inject_warning:
+                source = harness.read_text()
+                marker = "  id: testCase"
+                assert source.count(marker) == 1
+                harness.write_text(
+                    source.replace(
+                        marker,
+                        marker
+                        + "\n  property int injectedWarning: testCase.missingLintProbe",
+                        1,
+                    )
+                )
+            argv = [
+                "/usr/lib/qt6/bin/qmllint",
+                "--bare",
+                "-I",
+                str(directory),
+                "-I",
+                "/usr/lib/qt6/qml",
+                "--max-warnings",
+                "0",
+                "--json",
+                "-",
+                str(harness),
+            ]
+        else:
+            argv = [
+                "/usr/lib/qt6/bin/qmltestrunner",
+                "-input",
+                str(harness),
+                "-import",
+                str(directory),
+            ]
     result = subprocess.run(
         argv, cwd=ROOT, env=environment, capture_output=True, text=True, timeout=60
     )
@@ -248,8 +285,18 @@ def execute(mode, directory, environment):
         warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
         print("DISPLAY_TAB_WARNING_COUNT", len(warnings))
         assert not warnings, "DisplayTab warnings remain"
+    elif mode == "lint-harness":
+        reports = json.loads(output)["files"]
+        assert len(reports) == 1 and reports[0]["filename"] == str(harness), reports
+        warnings = [warning for report in reports for warning in report["warnings"]]
+        print("DISPLAY_HARNESS_LINT_WARNINGS", len(warnings), "EXIT", result.returncode)
+        if inject_warning:
+            assert any("missingLintProbe" in warning["message"] for warning in warnings)
+            assert result.returncode != 0, "Injected semantic warning accepted"
+            raise SystemExit(result.returncode)
+        assert not warnings and reports[0]["success"], reports
     else:
-        assert "0 failed" in output, "Missing QtTest completion"
+        assert "8 passed, 0 failed" in output, "Missing QtTest completion"
         assert not re.search(
             r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|qt\.qml\.|Warning:",
             output,
@@ -265,27 +312,83 @@ def execute(mode, directory, environment):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
+    parser.add_argument("--sandbox", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--artifacts", type=Path, required=True)
     args = parser.parse_args()
-    directory = args.artifacts.resolve()
-    directory.mkdir(mode=0o700, parents=True, exist_ok=False)
-    before = SETTINGS.read_bytes()
-    digest = hashlib.sha256(before).hexdigest()
-    backup = directory / "settings-backup.json"
-    descriptor = os.open(backup, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    with os.fdopen(descriptor, "wb") as stream:
-        stream.write(before)
-    assert backup.stat().st_mode & 0o777 == 0o600
-    assert backup.read_bytes() == before
-    assert hashlib.sha256(backup.read_bytes()).hexdigest() == digest
-    print("SETTINGS_BACKUP_VERIFIED", backup, digest)
-    try:
-        execute(args.mode, directory, isolated_environment(directory))
-    finally:
-        assert SETTINGS.read_bytes() == before, "Real settings changed"
-        assert backup.read_bytes() == before, "Backup changed"
-        print("SETTINGS_SHA_UNCHANGED", digest)
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
+    sys.addaudithook(isolation.audit)
+    with (
+        patch("os.stat", isolation.guard_metadata(os.stat)),
+        patch("os.lstat", isolation.guard_metadata(os.lstat)),
+        patch("os.readlink", isolation.guard_metadata(os.readlink)),
+    ):
+        isolation.prove_denial()
+        directory = args.artifacts.absolute()
+        if args.sandbox:
+            mounts = Path("/proc/self/mountinfo").read_text().splitlines()
+            for path in ("/home", "/syncthing", "/run"):
+                assert any(
+                    line.split()[4] == path and " - tmpfs " in line for line in mounts
+                ), path
+            execute(
+                args.mode,
+                directory,
+                isolated_environment(directory),
+                args.inject_warning,
+            )
+            return
+        directory.mkdir(mode=0o700, parents=True, exist_ok=False)
+        directory.chmod(0o700)
+        command = [
+            "bwrap",
+            "--die-with-parent",
+            "--unshare-all",
+            "--new-session",
+            "--ro-bind",
+            "/",
+            "/",
+            "--perms",
+            "000",
+            "--tmpfs",
+            "/home",
+            "--tmpfs",
+            "/syncthing",
+            "--ro-bind",
+            str(ROOT),
+            str(ROOT),
+            "--tmpfs",
+            "/tmp",
+            "--tmpfs",
+            "/run",
+            "--bind",
+            str(directory),
+            str(directory),
+            "--proc",
+            "/proc",
+            "--dev",
+            "/dev",
+            "--chdir",
+            str(directory),
+            "--",
+            "/usr/bin/python3",
+            str(Path(__file__).absolute()),
+            args.mode,
+            "--artifacts",
+            str(directory),
+            "--sandbox",
+        ]
+        if args.inject_warning:
+            command.append("--inject-warning")
+        code, _ = isolation.run_child(
+            command,
+            directory,
+            {"PATH": "/usr/bin", "LANG": "C.UTF-8", "HOME": str(directory)},
+        )
+        raise SystemExit(code)
 
 
 if __name__ == "__main__":
