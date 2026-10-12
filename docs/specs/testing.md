@@ -125,6 +125,12 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - Four behavioral cases pass plus QtTest init/cleanup (six passes). The fake blocked-state event-ordering case failed and is excluded from the claim; the passing subset does not establish full behavioral acceptance or blocked-state event ordering. This evidence is separate from the historical root-service cohort above.
 - No radio, hardware, or network operations were performed; fixture evidence does not prove live adapter or network behavior.
 
+### Bluetooth panel isolated evidence
+
+- At `af51ed526`, BluetoothPanel-only diagnostics drop 7→4; four installed `UntypedObjectModel.values` metadata diagnostics remain. `Tests/bluetooth-panel-warnings.test.py lint` requires exactly those four `missing-property` diagnostics and accepts qmllint status 0 or 255; this is not warning-free lint. No runner integration is claimed.
+- Four offscreen behavioral cases plus QtTest init/cleanup yield six reported passes. Exact coverage: [Bluetooth](bluetooth.md#tests-asserting-this-spec). Two independent panels retain height/close ownership after content recreation, proving `Bound` in the fixture hosting boundary.
+- Standalone `runtime` uses production panel code with inert Bluetooth, service, SmartPanel and device-list fixtures. Settings audit guards, synthetic HOME and sandbox isolation prevent real settings access; no radio or network operations were performed. Direct signals do not prove device-row actions, live adapter effects, visible desktop interaction, real persistence or whole-shell acceptance. This docs audit reruns no tests.
+
 ### ServiceCohort/BrightnessPanel fixture lint dispatch
 
 - At `82d65aeb1`/`45048d1c9`, `lint-harness` reuses each runner's exact runtime staging: ServiceCohort `stage_runtime` → `tst_services.qml`; BrightnessPanel `stage_behavior` → `tst_brightness.qml`. Shared `Tests/qml_fixture_lint.py` uses `--bare`, explicit staged/Qt imports, and `--max-warnings 0`, preserves JSON/stderr diagnostics, and propagates qmllint status. Production lint and behavioral acceptance remain separate.

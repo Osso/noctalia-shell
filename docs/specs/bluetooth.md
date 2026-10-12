@@ -77,6 +77,7 @@ Bluetooth covers adapter state helpers, device ordering, device icons, connectio
 
 - `Tests/root-service-warnings.test.py behavior` / `Tests/Qml/RootServiceHarness.qml` — production BluetoothService handles fixture enabling/enabled/blocked/disabled events, suppresses transitional toast feedback, starts discovery through its timer, and handles injected successful/failed rfkill completion. One of five behavioral cases at `8b1de9d34`; adapter, process, network, and toast boundaries are inert. Root-only lint retains eight `unresolved-type` and three `missing-property` warnings; no real adapter/radio effects or warning-free service claim. Cohort gates: [testing](testing.md#root-service-cohort).
 - `Tests/bluetooth-service-warnings.test.py` — isolated service evidence at `858d93c35`: service-only warnings drop 11→8. Filtering through the typed `ObjectModel` removes three `values` member diagnostics; one adapter-type and seven enum-metadata diagnostics remain. Four behavioral cases pass, plus QtTest init/cleanup (six passes). The fake blocked-state event-ordering case failed and is excluded from the behavior claim; this is not full behavioral acceptance or warning-free lint. No radio, hardware, or network operations were performed. Evidence limits: [testing](testing.md#bluetooth-service-isolated-evidence).
+- `Tests/bluetooth-panel-warnings.test.py` / `Tests/Qml/BluetoothPanelWarningsHarness.qml` — panel-only evidence at `af51ed526`: four offscreen behavioral cases plus QtTest init/cleanup pass. Covers absent/disabled/enabled adapters and toggle/discovery routing, category/model replacement, scanning visibility, and independent height/close ownership across two instances and content recreation (`Bound`). Warning and isolation limits: [testing](testing.md#bluetooth-panel-isolated-evidence).
 - `Tests/bluetooth-service-guards.test.js`
 - `Tests/bluetooth-devices-list-runtime.test.py` — nonvisible production-list default/empty models, caller array replacement, concrete device actions/state/battery, no-signal layout geometry, installed device metadata contract, and targeted lint (only the installed state-enum metadata warning remains).
 - `Tests/qml-type-annotations.test.js`
@@ -85,7 +86,7 @@ Bluetooth covers adapter state helpers, device ordering, device icons, connectio
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable tests for Bluetooth panel row interactions and action dispatch.
+- [ ] Add executable tests for Bluetooth panel device-row interactions and device action dispatch; isolated panel routing uses an inert device-list fixture.
 - [ ] Add executable tests for control-center Bluetooth shortcut behavior and live adapter effects; isolated bar-widget dispatch does not exercise hardware.
 - [ ] Add probe coverage for adapter/device discovery output beyond the deterministic controller fixture if a stable read-only probe is available.
 
