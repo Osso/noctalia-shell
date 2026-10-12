@@ -7,6 +7,7 @@ import Quickshell.Wayland
 import qs.Commons
 import qs.Services.UI
 import qs.Modules.MainScreen
+import qs.Modules.Panels.Audio
 
 TestCase {
   id: harness
@@ -253,7 +254,7 @@ TestCase {
     BarService.isVisible = true;
     verify(!window.barShouldShow);
     PanelService.open("audioPanel-fixture-A");
-    const panel = window.audioPanel;
+    const panel = window.audioPanel as AudioPanel;
     window.screen = secondScreen;
     compare(window.screenName, "fixture-B");
     compare(panel.screen, secondScreen);
