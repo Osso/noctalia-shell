@@ -222,8 +222,13 @@ def lint_harness(directory, max_warnings):
     result = subprocess.run(
         [
             "/usr/lib/qt6/bin/qmllint",
+            "--bare",
             "-I",
             str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            str(max_warnings),
             str(directory / "tst_services.qml"),
         ],
         env=private_environment(directory),
