@@ -6,7 +6,6 @@ Production MediaMini, text/icons, art, popup delegates and spectra remain real.
 """
 
 import argparse
-import hashlib
 import json
 import os
 import re
@@ -261,30 +260,29 @@ def isolate_environment(directory):
 
 
 def run_widget(directory):
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes() if settings.exists() else None
-    if original is not None:
-        backup = directory / "settings.backup.json"
-        backup.touch(mode=0o600)
-        backup.write_bytes(original)
-        assert (
-            hashlib.sha256(backup.read_bytes()).digest()
-            == hashlib.sha256(original).digest()
-        )
+    environment = isolate_environment(directory)
+    settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
+    settings.parent.mkdir(mode=0o700, parents=True)
+    original = (ROOT / "Assets/settings-default.json").read_bytes()
+    settings.touch(mode=0o600)
+    settings.write_bytes(original)
+    backup = directory / "settings.backup.json"
+    backup.touch(mode=0o600)
+    backup.write_bytes(original)
+    assert backup.read_bytes() == original, "fixture backup bytes differ"
     stage_widget(directory)
     try:
         result = subprocess.run(
             ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
             cwd=ROOT,
-            env=isolate_environment(directory),
+            env=environment,
             capture_output=True,
             text=True,
             timeout=15,
         )
     finally:
-        assert (settings.read_bytes() if settings.exists() else None) == original, (
-            "real settings changed"
-        )
+        assert settings.read_bytes() == original, "fixture settings changed"
+        assert backup.read_bytes() == original, "fixture backup changed"
     output = result.stdout + result.stderr
     print(output, end="")
     assert result.returncode == 0, f"MediaMini runtime failed: {result.returncode}"

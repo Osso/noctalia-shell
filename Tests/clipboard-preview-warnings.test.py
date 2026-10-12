@@ -7,7 +7,6 @@ Preview, formatter, rounded image, Qt controls and Loader remain production.
 
 import argparse
 from collections import Counter
-import hashlib
 import importlib.util
 import os
 from pathlib import Path
@@ -176,15 +175,6 @@ def lint_harness_regression(directory):
 
 
 def runtime(directory):
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    backup = directory / "settings.backup.json"
-    backup.touch(mode=0o600)
-    backup.write_bytes(original)
-    assert (
-        hashlib.sha256(backup.read_bytes()).digest()
-        == hashlib.sha256(original).digest()
-    )
     environment = {
         key: value
         for key, value in os.environ.items()
@@ -213,6 +203,15 @@ def runtime(directory):
         path.mkdir(mode=0o700)
         environment[key] = str(path)
     environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
+    settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
+    settings.parent.mkdir(mode=0o700, parents=True)
+    original = (ROOT / "Assets/settings-default.json").read_bytes()
+    settings.touch(mode=0o600)
+    settings.write_bytes(original)
+    backup = directory / "settings.backup.json"
+    backup.touch(mode=0o600)
+    backup.write_bytes(original)
+    assert backup.read_bytes() == original, "fixture backup bytes differ"
     stage_runtime(directory)
     try:
         result = subprocess.run(
@@ -236,7 +235,8 @@ def runtime(directory):
         assert not re.search(r"QWARN|QFATAL|ReferenceError|TypeError", output), output
         print("CLIPBOARD_PREVIEW_RUNTIME_PASS")
     finally:
-        assert settings.read_bytes() == original, "real settings changed"
+        assert settings.read_bytes() == original, "fixture settings changed"
+        assert backup.read_bytes() == original, "fixture backup changed"
 
 
 if __name__ == "__main__":

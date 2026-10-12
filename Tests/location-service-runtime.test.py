@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Unchanged production location singleton, real FileView/XHR, fixture transport only."""
 
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -238,17 +237,18 @@ def run_scenario(directory, scenario):
 
 
 def main():
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
     with tempfile.TemporaryDirectory(prefix="noctalia-location-runtime-") as temporary:
         directory = Path(temporary)
+        env = environment(directory, SCENARIOS[0])
+        settings = Path(env["HOME"]) / ".config/noctalia/settings.json"
+        settings.parent.mkdir(mode=0o700, parents=True)
+        original = (ROOT / "Assets/settings-default.json").read_bytes()
+        settings.touch(mode=0o600)
+        settings.write_bytes(original)
         backup = directory / "settings.backup.json"
         backup.touch(mode=0o600)
         backup.write_bytes(original)
-        assert (
-            hashlib.sha256(backup.read_bytes()).digest()
-            == hashlib.sha256(original).digest()
-        )
+        assert backup.read_bytes() == original, "fixture backup bytes differ"
         build_transport(directory)
         shell = directory / "shell"
         shell.mkdir()
@@ -257,7 +257,8 @@ def main():
             for scenario in SCENARIOS:
                 run_scenario(directory, scenario)
         finally:
-            assert settings.read_bytes() == original, "real settings changed"
+            assert settings.read_bytes() == original, "fixture settings changed"
+            assert backup.read_bytes() == original, "fixture backup changed"
 
 
 if __name__ == "__main__":
