@@ -125,6 +125,24 @@ PANEL_SERVICE_MARKERS = {
     "BarWarningsHarness.qml": "BAR_HARNESS_LINT_WARNINGS",
     "ChangelogPanelWarningsHarness.qml": "CHANGELOG_HARNESS_LINT_WARNINGS",
 }
+GLOBAL_HARNESSES = {
+    "ControlCenterPanelWarningsHarness.qml": "control-center-panel-warnings.test.py",
+    "LocationServiceHarness.qml": "location-service-runtime.test.py",
+    "MainScreenWarningsHarness.qml": "main-screen-warnings.test.py",
+    "FilePickerWarningsHarness.qml": "file-picker-warnings.test.py",
+}
+GLOBAL_REPORTS = {
+    "ControlCenterPanelWarningsHarness.qml": "tst_control_center.qml",
+    "LocationServiceHarness.qml": "shell.qml",
+    "MainScreenWarningsHarness.qml": "tst_main_screen.qml",
+    "FilePickerWarningsHarness.qml": "tst_picker.qml",
+}
+GLOBAL_MARKERS = {
+    "ControlCenterPanelWarningsHarness.qml": "CONTROL_CENTER_HARNESS_WARNINGS",
+    "LocationServiceHarness.qml": "LOCATION_HARNESS_LINT_COUNTS",
+    "MainScreenWarningsHarness.qml": "MAIN_SCREEN_HARNESS_LINT_WARNINGS",
+    "FilePickerWarningsHarness.qml": "FILE_PICKER_HARNESS_WARNINGS",
+}
 ARTIFACT_HARNESSES = (
     "BrightnessPanelWarningsHarness.qml",
     "WallpaperServiceHarness.qml",
@@ -225,6 +243,13 @@ class FixtureLintTest(unittest.TestCase):
             ROOT / "Tests/fixtures/root-services-wayland.cpp",
             tests / "fixtures/root-services-wayland.cpp",
         )
+        if "LocationServiceHarness.qml" in harness_scripts:
+            fixtures = tests / "Fixtures"
+            fixtures.mkdir()
+            shutil.copy2(
+                ROOT / "Tests/Fixtures/LocationNetworkPlugin.cpp",
+                fixtures / "LocationNetworkPlugin.cpp",
+            )
         dependencies = {
             "SettingsPanelWarningsHarness.qml": (
                 "SettingsSingletonHarness.qml",
@@ -341,6 +366,18 @@ class FixtureLintTest(unittest.TestCase):
                         {name: script},
                         PANEL_SERVICE_REPORTS,
                         PANEL_SERVICE_MARKERS,
+                    )
+
+    def test_global_routes_are_once_only_strict_and_isolated(self):
+        for name, script in GLOBAL_HARNESSES.items():
+            for mode in ("present", "absent", "warning"):
+                with self.subTest(harness=name, mode=mode):
+                    self.check_requested_route(
+                        name,
+                        mode,
+                        {name: script},
+                        GLOBAL_REPORTS,
+                        GLOBAL_MARKERS,
                     )
 
     def check_requested_route(
