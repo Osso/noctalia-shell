@@ -38,19 +38,88 @@ function testTaskbarGroupedUrgentBadgeHasCooldown() {
   process.stdout.write(result.stdout);
 }
 
-function testWorkspaceUrgentBadgeHasCooldown() {
-  const source = readQml("Modules/Bar/Widgets/Workspace.qml");
+function runWorkspaceGuardBehavior(extraTests) {
+  // Extend only the private copy of the existing behavioral fixture.
+  const script = `
+import importlib.util
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+sys.path.insert(0, sys.argv[1])
 
-  assert.match(source, /property var displayedUrgencyByWorkspace:/, "Workspace badge cooldown state must survive delegate rebuilds");
-  assert.match(source, /function workspaceUrgencyKey\(workspace\)/, "Workspace badge cooldown must key state by workspace");
-  assert.match(source, /function displayedUrgentForWorkspace\(workspace\)/, "Workspace badge cooldown must restore displayed state after model refresh");
-  assert.match(source, /id:\s*horizontalUrgencyCooldown/, "Workspace horizontal badge must define a cooldown timer");
-  assert.match(source, /id:\s*verticalUrgencyCooldown/, "Workspace vertical badge must define a cooldown timer");
-  assert.match(source, /interval:\s*5000/, "Workspace badge cooldown must be 5 seconds");
-  assert.match(source, /root\.setDisplayedUrgency\(model,\s*workspacePillContainer\.urgent\)/, "Workspace horizontal badge cooldown must settle persistent urgency state");
-  assert.match(source, /root\.setDisplayedUrgency\(model,\s*workspacePillContainerVertical\.urgent\)/, "Workspace vertical badge cooldown must settle persistent urgency state");
-  assert.doesNotMatch(source, /if \(model\.isUrgent\)\s+return NColor\.mError/, "Workspace badge color must use the cooled urgent state");
-  assert.doesNotMatch(source, /if \(model\.isUrgent\)\s+return NColor\.mOnError/, "Workspace badge text color must use the cooled urgent state");
+def load(name):
+    spec = importlib.util.spec_from_file_location(name, Path(sys.argv[1]) / (name + ".test.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+with tempfile.TemporaryDirectory(prefix="noctalia-workspace-guards-") as temporary:
+    directory = Path(temporary)
+    load("workspace-runtime").stage_runtime(directory)
+    harness = directory / "tst_workspace.qml"
+    harness.write_text(harness.read_text().replace("    name: \\\"Workspace\\\"", sys.stdin.read() + "\\n    name: \\\"Workspace\\\""))
+    environment = load("media-mini-warnings").isolate_environment(directory)
+    result = subprocess.run(["/usr/lib/qt6/bin/qmltestrunner", "-input", str(directory), "-import", str(directory), "Workspace::test_guard_cooldown"], env=environment, capture_output=True, text=True, timeout=30, check=False)
+    print(result.stdout + result.stderr, end="")
+    sys.exit(result.returncode)
+`;
+  const result = spawnSync("python3", ["-c", script, __dirname], {
+    input: extraTests,
+    encoding: "utf8",
+    timeout: 60000,
+  });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /Totals: 4 passed, 0 failed/);
+  assert.doesNotMatch(result.stdout + result.stderr, /QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop/);
+  process.stdout.write(result.stdout);
+}
+
+function testWorkspaceUrgentBadgeHasCooldown() {
+  runWorkspaceGuardBehavior(`
+    function guardBadge() {
+      const labels = labelItems().filter(label => label.text === "2");
+      compare(labels.length, 1);
+      return labels[0];
+    }
+    function compareGuardBadge(background, foreground) {
+      const label = guardBadge();
+      compare(label.parent.parent.color, background);
+      compare(label.color, foreground);
+    }
+    function test_guard_cooldown_data() {
+      return [{tag: "horizontal", position: "top"}, {tag: "vertical", position: "left"}];
+    }
+    function test_guard_cooldown(data) {
+      const settings = JSON.parse(JSON.stringify(Settings.data));
+      settings.bar.position = data.position;
+      Settings.data = settings;
+      wait(30);
+      compareGuardBadge(NColor.mError, NColor.mOnError);
+
+      // Clearing urgency and rebuilding delegates must retain both urgent colors.
+      const cleared = fixtures();
+      for (const workspace of cleared)
+        workspace.is_urgent = false;
+      CompositorService.backend.recollectWorkspaces(cleared);
+      widget.screen = secondary;
+      wait(30);
+      compareGuardBadge(NColor.mSecondary, NColor.mOnSecondary);
+      widget.screen = primary;
+      wait(30);
+      compareGuardBadge(NColor.mError, NColor.mOnError);
+      wait(4500);
+      compareGuardBadge(NColor.mError, NColor.mOnError);
+      const label = guardBadge();
+      tryCompare(label.parent.parent, "color", NColor.mSecondary, 1200);
+      compare(label.color, NColor.mOnSecondary);
+
+      widget.screen = secondary;
+      widget.screen = primary;
+      wait(30);
+      compareGuardBadge(NColor.mSecondary, NColor.mOnSecondary);
+    }
+  `);
 }
 
 function testFocusedWorkspaceBurstOnlyRunsOnFocusChange() {
