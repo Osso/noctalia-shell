@@ -80,6 +80,12 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - Behavior uses offscreen/software `qmltestrunner`, private HOME/XDG/Noctalia paths, removed desktop/compositor connections, and inaccessible D-Bus addresses. Settings, backend models, adapter, process/stream completion, FileView writes, neighboring services, and surfaces are fixtures. All three modes create a permission-locked byte-for-byte real-settings backup and verify its hash before staging, then check real settings unchanged; backup bytes are not separately rechecked afterward. Behavior timeout is 45 seconds; acceptance requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `QCRITICAL`, `ReferenceError`, `TypeError`, or `Binding loop`.
 - Real Qt timers and injected boundary events do not prove desktop IPC/input, actual commands, hardware/radio effects, notification delivery/expiry/deduplication, image rendering, real persistence, layer input regions, or whole-shell acceptance. HooksService and hook execution are not covered by the IPC callback case.
 
+### Bluetooth service isolated evidence
+
+- At `858d93c35`, `Tests/bluetooth-service-warnings.test.py` records service-only warnings dropping 11→8: typed `ObjectModel` filtering removes three `values` member diagnostics; one adapter-type and seven enum-metadata diagnostics remain. This is not zero-warning production lint. Feature evidence: [Bluetooth](bluetooth.md#tests-asserting-this-spec).
+- Four behavioral cases pass plus QtTest init/cleanup (six passes). The fake blocked-state event-ordering case failed and is excluded from the claim; the passing subset does not establish full behavioral acceptance or blocked-state event ordering. This evidence is separate from the historical root-service cohort above.
+- No radio, hardware, or network operations were performed; fixture evidence does not prove live adapter or network behavior.
+
 ### ServiceCohort/BrightnessPanel fixture lint dispatch
 
 - At `82d65aeb1`/`45048d1c9`, `lint-harness` reuses each runner's exact runtime staging: ServiceCohort `stage_runtime` → `tst_services.qml`; BrightnessPanel `stage_behavior` → `tst_brightness.qml`. Shared `Tests/qml_fixture_lint.py` uses `--bare`, explicit staged/Qt imports, and `--max-warnings 0`, preserves JSON/stderr diagnostics, and propagates qmllint status. Production lint and behavioral acceptance remain separate.
