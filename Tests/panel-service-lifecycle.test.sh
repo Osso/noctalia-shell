@@ -51,6 +51,13 @@ from pathlib import Path
 root, runtime = map(Path, sys.argv[1:])
 for name in ("Assets", "Commons", "Helpers", "Modules", "Services", "Widgets"):
     shutil.copytree(root / name, runtime / name)
+# Lifecycle/animation proof needs the performance flag, not a host power daemon.
+# Keep the service API but disconnect its system-bus backend in both lint/runtime.
+power_profile = runtime / "Services/Power/PowerProfileService.qml"
+source = power_profile.read_text()
+binding = "readonly property PowerProfiles powerProfiles: PowerProfiles"
+assert source.count(binding) == 1, "power profile backend binding changed"
+power_profile.write_text(source.replace(binding, "readonly property PowerProfiles powerProfiles: null"))
 modules = {}
 for path in sorted(runtime.rglob("*.qml")):
     relative = path.relative_to(runtime)
