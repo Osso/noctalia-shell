@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -121,6 +123,7 @@ ColumnLayout {
         Repeater {
           model: Quickshell.screens || []
           delegate: ColumnLayout {
+            id: monitorDirectory
             required property ShellScreen modelData
             readonly property string monitorName: modelData ? modelData.name : ""
 
@@ -128,20 +131,20 @@ ColumnLayout {
             spacing: Style.marginS
 
             NText {
-              text: (monitorName || "Unknown")
+              text: (monitorDirectory.monitorName || "Unknown")
               color: NColor.mPrimary
               font.weight: Style.fontWeightBold
               pointSize: Style.fontSizeM
             }
 
             NTextInputButton {
-              text: WallpaperService.getMonitorDirectory(monitorName)
+              text: WallpaperService.getMonitorDirectory(monitorDirectory.monitorName)
               buttonIcon: "folder-open"
               buttonTooltip: I18n.tr("settings.wallpaper.settings.monitor-specific.tooltip")
               Layout.fillWidth: true
-              onInputEditingFinished: WallpaperService.setMonitorDirectory(monitorName, text)
+              onInputEditingFinished: WallpaperService.setMonitorDirectory(monitorDirectory.monitorName, text)
               onButtonClicked: {
-                specificFolderMonitorName = monitorName;
+                root.specificFolderMonitorName = monitorDirectory.monitorName;
                 monitorFolderPicker.open();
               }
             }
@@ -444,21 +447,21 @@ ColumnLayout {
     title: I18n.tr("settings.wallpaper.settings.select-folder")
     initialPath: Settings.data.wallpaper.directory || Quickshell.env("HOME") + "/Pictures"
     onAccepted: paths => {
-                  if (paths.length > 0) {
-                    Settings.data.wallpaper.directory = paths[0];
-                  }
-                }
+      if (paths.length > 0) {
+        Settings.data.wallpaper.directory = paths[0];
+      }
+    }
   }
 
   NFilePicker {
     id: monitorFolderPicker
     selectionMode: "folders"
     title: I18n.tr("settings.wallpaper.settings.select-monitor-folder")
-    initialPath: WallpaperService.getMonitorDirectory(specificFolderMonitorName) || Quickshell.env("HOME") + "/Pictures"
+    initialPath: WallpaperService.getMonitorDirectory(root.specificFolderMonitorName) || Quickshell.env("HOME") + "/Pictures"
     onAccepted: paths => {
-                  if (paths.length > 0) {
-                    WallpaperService.setMonitorDirectory(specificFolderMonitorName, paths[0]);
-                  }
-                }
+      if (paths.length > 0) {
+        WallpaperService.setMonitorDirectory(root.specificFolderMonitorName, paths[0]);
+      }
+    }
   }
 }
