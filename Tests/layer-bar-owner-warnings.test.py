@@ -8,6 +8,7 @@ Standalone only; offscreen event routing is not live layer-shell input proof.
 import argparse
 import hashlib
 import importlib.util
+import json
 import os
 from pathlib import Path
 import re
@@ -189,13 +190,14 @@ def lint_background_harness(directory, inject_warning):
             "/usr/lib/qt6/qml",
             "--max-warnings",
             "0",
+            "--json",
+            "-",
             str(harness),
         ],
         "background-harness-lint",
     )
-    headers = [
-        line for line in output.splitlines() if line.startswith(("Warning:", "Error:"))
-    ]
+    report = json.loads(output)
+    headers = [warning for entry in report["files"] for warning in entry["warnings"]]
     print("BACKGROUND_HARNESS_DIAGNOSTICS", len(headers), "EXIT", code)
     if inject_warning:
         assert code != 0 and "missingLintProbe" in output, output

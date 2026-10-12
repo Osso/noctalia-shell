@@ -8,6 +8,7 @@ keyboard and panel boundaries. No host config, compositor or backend access.
 import argparse
 from collections import Counter
 import importlib.util
+import json
 from pathlib import Path
 import re
 import sys
@@ -199,13 +200,14 @@ def lint_harness(directory, environment, inject_warning):
             "/usr/lib/qt6/qml",
             "--max-warnings",
             "0",
+            "--json",
+            "-",
             str(harness),
         ],
         "bar-multiline-harness-lint",
     )
-    headers = [
-        line for line in output.splitlines() if line.startswith(("Warning:", "Error:"))
-    ]
+    report = json.loads(output)
+    headers = [warning for entry in report["files"] for warning in entry["warnings"]]
     print("BAR_MULTILINE_HARNESS_DIAGNOSTICS", len(headers), "EXIT", code)
     if inject_warning:
         assert code != 0 and "missingLintProbe" in output, output
