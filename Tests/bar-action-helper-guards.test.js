@@ -211,24 +211,66 @@ function testTaskbarUpdateHasWindowFailsClosedOnErrors() {
   assert.equal(ctx.hasWindow, false);
 }
 
+function createDrawerContext(pinnedList) {
+  const root = { pinnedList };
+  const ctx = { root };
+  const wildCardMatch = qmlFunction(trayDrawerSource, "wildCardMatch", "str", "rule");
+  root.wildCardMatch = (str, rule) => wildCardMatch(ctx, str, rule);
+  return ctx;
+}
+
 function testTrayDrawerIsPinnedMatchesTitleNameAndId() {
   const isPinned = qmlFunction(trayDrawerSource, "isPinned", "item");
-  const ctx = {
-    pinnedList: ["Bluetooth*", "Network", "fallback-id"],
-    wildCardMatch(value, rule) {
-      if (!value || !rule)
-        return false;
-      const pattern = new RegExp(`^${rule.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`, "i");
-      return pattern.test(value);
-    },
-  };
+  const ctx = createDrawerContext(["Bluetooth*", "Network", "fallback-id"]);
 
   assert.equal(isPinned(ctx, { tooltipTitle: "Bluetooth Manager" }), true);
   assert.equal(isPinned(ctx, { name: "Network" }), true);
   assert.equal(isPinned(ctx, { id: "fallback-id" }), true);
   assert.equal(isPinned(ctx, { tooltipTitle: "Power" }), false);
-  assert.equal(isPinned({ ...ctx, pinnedList: [] }, { tooltipTitle: "Bluetooth Manager" }), false);
+  assert.equal(isPinned(createDrawerContext([]), { tooltipTitle: "Bluetooth Manager" }), false);
   assert.equal(isPinned(ctx, null), false);
+}
+
+function testTrayDrawerIsPinnedTracksPinAndUnpin() {
+  const isPinned = qmlFunction(trayDrawerSource, "isPinned", "item");
+  const ctx = createDrawerContext([]);
+  const item = { tooltipTitle: "Bluetooth Manager" };
+
+  assert.equal(isPinned(ctx, item), false);
+  ctx.root.pinnedList = ["Bluetooth*"];
+  assert.equal(isPinned(ctx, item), true);
+  ctx.root.pinnedList = [];
+  assert.equal(isPinned(ctx, item), false);
+}
+
+function testTrayDrawerIsPinnedWithoutOwnerPinsNothing() {
+  const isPinned = qmlFunction(trayDrawerSource, "isPinned", "item");
+  const ctx = createDrawerContext(undefined);
+
+  assert.equal(isPinned(ctx, { name: "Network" }), false);
+  assert.equal(isPinned(ctx, { id: "fallback-id" }), false);
+  assert.equal(isPinned(ctx, null), false);
+}
+
+function testTrayDrawerIsPinnedKeepsTwoOwnersIndependent() {
+  const isPinned = qmlFunction(trayDrawerSource, "isPinned", "item");
+  const first = createDrawerContext(["Bluetooth*"]);
+  const second = createDrawerContext(["Network"]);
+  const bluetooth = { tooltipTitle: "Bluetooth Manager" };
+  const network = { name: "Network" };
+
+  assert.equal(isPinned(first, bluetooth), true);
+  assert.equal(isPinned(second, bluetooth), false);
+  assert.equal(isPinned(first, network), false);
+  assert.equal(isPinned(second, network), true);
+  first.root.pinnedList = ["Network"];
+  assert.equal(isPinned(first, bluetooth), false);
+  assert.equal(isPinned(first, network), true);
+  assert.equal(isPinned(second, bluetooth), false);
+  assert.equal(isPinned(second, network), true);
+  second.root.pinnedList = [];
+  assert.equal(isPinned(second, network), false);
+  assert.equal(isPinned(first, network), true);
 }
 
 const tests = [
@@ -241,6 +283,9 @@ const tests = [
   testTaskbarUpdateHasWindowFiltersOutputAndWorkspace,
   testTaskbarUpdateHasWindowFailsClosedOnErrors,
   testTrayDrawerIsPinnedMatchesTitleNameAndId,
+  testTrayDrawerIsPinnedTracksPinAndUnpin,
+  testTrayDrawerIsPinnedWithoutOwnerPinsNothing,
+  testTrayDrawerIsPinnedKeepsTwoOwnersIndependent,
 ];
 
 for (const test of tests) {
