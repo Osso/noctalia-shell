@@ -19,6 +19,14 @@ Location/weather covers configured location lookup, cached coordinate reuse, wea
 - [x] Fresh-weather fetches fetch weather after geocoding.
 - [x] Fresh-weather fetches reuse cached coordinates when they are still valid.
 
+### Location settings tab
+
+- [x] Location edits trim whitespace, retain unchanged names without resetting weather, use the default for empty input, and retain saved values on tab recreation.
+- [x] First-day-of-week selections save immediately and survive tab recreation.
+- [x] Calendar card toggles and reordering save to settings; the header remains enabled and saved order survives tab recreation.
+- [x] Weather toggles synchronize weather-card state, availability, and dependent controls without resetting weather.
+- [x] Opening the tab removes unknown cards, supplies missing cards, and disables the weather card when weather is disabled.
+
 ### Network requests and error handling
 
 - [x] Geocoding builds an encoded `assets.noctalia.dev` geocode URL.
@@ -71,6 +79,7 @@ Lifecycle/uniform proof runs against the unchanged production card and widgets w
 - `Tests/location-service-runtime.test.py` with `Tests/Qml/LocationServiceHarness.qml` and `Tests/Fixtures/LocationNetworkPlugin.cpp` — nine isolated cases against the unchanged production singleton, real FileView and asynchronous XMLHttpRequest callbacks; fixture replies cover loaded/missing-cache startup callbacks, timer-driven coordinate reuse, success, unresolved locations, parse failures, HTTP failures, in-flight refresh exclusion, and actual cache writes. Runs non-visible with isolated config/cache paths and network namespace; verifies the real settings hash remains unchanged.
 - Runtime proof uses fixture Settings/Time/Logger singletons and synthetic provider replies, not live geocoding/Open-Meteo, real configuration integration, or whole-shell acceptance. The Python suite runs standalone; it is not wired into `run-tests.sh`.
 - Targeted LocationService lint after `1a3fbecea` retains an installed `FileViewAdapter` metadata diagnostic; owner qualification does not establish warning-free or type-complete analysis.
+- `Tests/location-tab-warnings.test.py` (`lint` / `behavior`) with `Tests/Qml/LocationTabWarningsHarness.qml` — at `b4b11e15c`, targeted LocationTab diagnostics drop 10→0; nine reported offscreen passes comprise seven behavioral rows plus QtTest init/cleanup. Production tab and controls exercise the location settings requirements above against synthetic in-memory settings and LocationService. Reopening proves fixture state retention, not disk persistence. No geolocation, provider network requests, live settings, or live desktop acceptance. Standalone modes and isolation: [testing](testing.md#locationtab-isolated-runtime).
 - `Tests/location-service-guards.test.js`
 - `Tests/source-coverage.test.js`
 
@@ -80,7 +89,8 @@ Lifecycle/uniform proof runs against the unchanged production card and widgets w
 - [x] Add executable fixture coverage for Open-Meteo success, parse-error, and HTTP-error responses.
 - [x] Add isolated WeatherCard visibility, current/forecast text and icon, and precipitation lifecycle/uniform coverage.
 - [ ] Prove precipitation GPU pixel output and natural weather refresh cadence; isolated property/delegate assertions do not establish rendered visual quality.
-- [ ] Add settings-level coverage for LocationTab weather toggles, card ordering, and provider settings.
+- [x] Add isolated LocationTab coverage for location edits, selection, weather toggles, card ordering, and tab recreation.
+- [ ] Prove LocationTab integration with real settings persistence, geolocation, and network providers; fixture settings and reset counters do not establish those boundaries.
 
 ## Out of scope
 

@@ -159,6 +159,13 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - Behavior runs actual BarTab, shared controls, and widget settings dialog under offscreen `qmltestrunner`; settings/save counter, screens, registry/services, and CustomButton editor are fixtures. Writable HOME/XDG/Noctalia paths are isolated and desktop connections removed. Both modes create a unique permission-locked, hash-verified byte-for-byte real-settings backup before staging and check real/backup bytes unchanged afterward. Timeout is 60 seconds; behavior requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `QCRITICAL`, `ReferenceError`, `TypeError`, `Binding loop`, `qt.qml.`, or `Warning:`.
 - Direct signals/helpers prove fixture mutations and dialog Cancel/Apply without immediate save requests, not physical pointer/drag input, real registry/editor integration, real settings persistence, or whole-shell acceptance.
 
+### LocationTab isolated runtime
+
+- `python3 Tests/location-tab-warnings.test.py lint` or `behavior` runs standalone; no `run-tests.sh` integration is claimed. At `b4b11e15c`, targeted LocationTab diagnostics drop 10→0; lint requires exit status zero and no `Warning:` lines. Exact behavior coverage: [location/weather](location-weather.md#location-settings-tab).
+- `Tests/Qml/LocationTabWarningsHarness.qml` runs the production tab and controls with synthetic Settings/LocationService under software/offscreen `qmltestrunner`. Seven behavioral rows plus QtTest init/cleanup yield nine reported passes: three location-edit rows, immediate selection, card toggle/reorder/save/reopen, weather availability, and missing-card normalization.
+- Both modes use temporary private HOME/XDG paths, a minimal environment without desktop connections, and nonexistent session/system D-Bus endpoints; child timeout is 60 seconds. Behavior requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `QCRITICAL`, `ReferenceError`, `TypeError`, `Binding loop`, `qt.qml.`, or `Warning:`. The runner does not access or back up real settings.
+- Synthetic key input, direct signals, and in-memory save/reopen assertions do not prove disk persistence, geolocation, network providers, live settings, live desktop interaction/rendering, or whole-shell acceptance.
+
 ### ControlCenterTab isolated runtime
 
 - `Tests/control-center-tab-warnings.test.py` runs standalone `lint` or `behavior`; no runner integration is claimed. At `e304d4747`, ControlCenterTab-only lint drops 22→0 and requires zero warnings/exit status zero. Six QtTest cases mean four behavioral cases plus initialization/cleanup. Exact coverage and unchanged initial zero-height card-row limitation: [control center](control-center.md#tests-asserting-this-spec).
