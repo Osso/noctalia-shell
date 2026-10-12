@@ -233,11 +233,24 @@ class FixtureLintTest(unittest.TestCase):
         helper = ROOT / "Tests/qml_fixture_lint.py"
         if helper.exists():
             shutil.copy2(helper, tests / helper.name)
-        if "WallpaperTabWarningsHarness.qml" in harness_scripts:
-            # Wallpaper's audit blocks directory discovery after installation.
-            # Preload the helper its AboutTab writer imports before that boundary.
-            script = tests / "wallpaper-tab-warnings.test.py"
-            script.write_text("import qml_fixture_lint\n" + script.read_text())
+        if any(
+            name in harness_scripts
+            for name in (
+                "WallpaperTabWarningsHarness.qml",
+                "CalendarMonthCardWarningsHarness.qml",
+                "ShortcutsClockWarningsHarness.qml",
+            )
+        ):
+            # Owner audits block directory discovery after installation.
+            # Preload the helper their AboutTab writer imports before that boundary.
+            for name in (
+                "WallpaperTabWarningsHarness.qml",
+                "CalendarMonthCardWarningsHarness.qml",
+                "ShortcutsClockWarningsHarness.qml",
+            ):
+                if name in harness_scripts:
+                    script = tests / harness_scripts[name]
+                    script.write_text("import qml_fixture_lint\n" + script.read_text())
         for harness in harness_scripts:
             shutil.copy2(ROOT / "Tests/Qml" / harness, tests / "Qml" / harness)
         # Runtime staging copies these dependencies; rg skips symlinks.
@@ -304,7 +317,14 @@ class FixtureLintTest(unittest.TestCase):
         )
         return runner
 
-    def run_checker(self, runner, root, settings_present=True, audit_settings=False):
+    def run_checker(
+        self,
+        runner,
+        root,
+        settings_present=True,
+        audit_settings=False,
+        owner_audits=False,
+    ):
         home = root / ".fixture-home"
         settings = home / ".config/noctalia/settings.json"
         original = (root / "Assets/settings-default.json").read_bytes()
@@ -318,7 +338,7 @@ class FixtureLintTest(unittest.TestCase):
             trace = self.fixture_tmp / "checker.trace"
             audit_command = (
                 ["strace", "-f", "-qq", "-e", "trace=%file", "-o", str(trace)]
-                if audit_settings
+                if audit_settings and not owner_audits
                 else []
             )
             probe_command = (
@@ -375,9 +395,15 @@ class FixtureLintTest(unittest.TestCase):
             print(result.stdout + result.stderr, end="")
             if audit_settings:
                 self.assertIn("CHECKER_PRIVATE_HOME_CONFIG_MASKED", result.stdout)
-                self.assertNotIn("settings.json", trace.read_text())
+                if owner_audits:
+                    # Nested strace cannot attach to children already traced here.
+                    self.assertEqual(result.stdout.count("CHILD_SETTINGS_AUDIT:"), 1)
+                    self.assertIn("zero settings attempts", result.stdout)
+                    self.assertIn("host home/config not mounted", result.stdout)
+                else:
+                    self.assertNotIn("settings.json", trace.read_text())
+                    trace.unlink()
                 print("CHECKER_SETTINGS_AUDIT: zero settings attempts")
-                trace.unlink()
             self.assertEqual(self.fixture_tmp.stat().st_mode & 0o777, 0o700)
             self.assertEqual(
                 list(self.fixture_tmp.iterdir()), [], "fixture artifacts leaked"
@@ -489,6 +515,11 @@ class FixtureLintTest(unittest.TestCase):
                 root,
                 settings_present=mode == "present",
                 audit_settings=name in UTILITY_HARNESSES,
+                owner_audits=name
+                in (
+                    "EmojiRecorderWarningsHarness.qml",
+                    "AllScreensWarningsHarness.qml",
+                ),
             )
             output = result.stdout + result.stderr
             reports = lint_reports(result.stdout)
