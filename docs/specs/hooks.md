@@ -38,6 +38,8 @@ Hooks covers user-configured shell commands that run after wallpaper and dark-mo
 
 ## Tests asserting this spec
 
+- Through `68ad69e78`/`a8ffe4ef8`/`f3d9f4656`, HooksService warnings drop 2→0. `Tests/hooks-app-theme-warnings.test.py` and `Tests/Qml/HooksAppThemeWarningsHarness.qml` assert dark-mode hook ordering before deferred template delivery, wallpaper argument substitution, missing/disabled/blank hook guards, and simulated dark-mode launch failure logging without blocking template application. Seven normal and seven owner-shadow passes include QtTest init/cleanup, not seven behavioral tests. Commands are inert recorder fixtures; no real shell launch is proven. Shared isolation, four reported negative captures, and limits: [testing](testing.md#hooksapp-theme-services-isolated-runtime).
+
 - At `18fed36d7`, HooksTab warnings drop 1→0. `Tests/Qml/NotificationsHooksWarningsHarness.qml` checks Loader-driven width changes, enabled-toggle visibility, wallpaper-command keyboard editing, unchanged theme command, and synthetic saved state on reopen. Hook execution fixtures throw if called; manual test actions are not invoked. No real hook execution, config access, or disk persistence is proven. Shared accounting and isolation: [testing](testing.md#notifications-hooks-settings-isolated-runtime).
 
 - `Tests/hooks-service-guards.test.js`
@@ -45,7 +47,7 @@ Hooks covers user-configured shell commands that run after wallpaper and dark-mo
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable coverage for dark-mode hook launch failure logging.
+- [ ] Add real command-launch integration coverage for dark-mode hook failure logging; isolated coverage currently uses a throwing fixture.
 - [ ] Add executable coverage for settings-tab manual test actions.
 - [ ] Add executable coverage for hook defaults and settings schema shape.
 

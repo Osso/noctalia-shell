@@ -95,6 +95,8 @@ Theming covers color scheme discovery/application, wallpaper and predefined them
 
 ## Tests asserting this spec
 
+- Through `68ad69e78`/`a8ffe4ef8`/`f3d9f4656`, AppThemeService warnings drop 2→0. `Tests/hooks-app-theme-warnings.test.py` and `Tests/Qml/HooksAppThemeWarningsHarness.qml` check deferred predefined-scheme delivery with dark/light mode, wallpaper signal screen filtering and current-wallpaper lookup, missing-wallpaper error/no template dispatch, and continued template application after simulated hook launch failure. Seven normal and seven owner-shadow passes include QtTest init/cleanup. Scheme delivery and template processing are inert fixtures, not real Matugen/config/network integration. Shared proof and limits: [testing](testing.md#hooksapp-theme-services-isolated-runtime).
+
 - `Tests/section-color-warnings.test.py` (`lint`, `lint-harness`, `behavior`, `behavior --shadow`) and `Tests/Qml/SectionColorWarningsHarness.qml` — compact picker lifecycle/owner coverage; [isolation and acceptance limits](testing.md#section-editorcompact-color-picker-isolated-runtime).
 
 - `Tests/color-picker-warnings.test.py` (`lint`, `lint-harness`, `runtime`) and `Tests/Qml/ColorPickerWarningsHarness.qml` — standalone warning/lifecycle coverage; isolation and acceptance gates: [testing](testing.md#color-picker-isolated-runtime).
