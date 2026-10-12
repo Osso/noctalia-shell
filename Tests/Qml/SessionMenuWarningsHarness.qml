@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtTest
 import qs.Commons
@@ -52,29 +54,29 @@ Item {
       Settings.data.sessionMenu.enableCountdown = true;
       Settings.data.general.lockOnSuspend = false;
       Settings.data.sessionMenu.powerOptions = [
-            {
-              action: "logout",
-              enabled: false
-            },
-            {
-              action: "unknown",
-              enabled: true
-            },
-            {
-              action: "lock",
-              enabled: true
-            },
-            {
-              action: "shutdown",
-              enabled: true,
-              countdownEnabled: true
-            },
-            {
-              action: "suspend",
-              enabled: true,
-              countdownEnabled: false
-            }
-          ];
+        {
+          action: "logout",
+          enabled: false
+        },
+        {
+          action: "unknown",
+          enabled: true
+        },
+        {
+          action: "lock",
+          enabled: true
+        },
+        {
+          action: "shutdown",
+          enabled: true,
+          countdownEnabled: true
+        },
+        {
+          action: "suspend",
+          enabled: true,
+          countdownEnabled: false
+        }
+      ];
       CompositorService.events = [];
       PanelService.lockScreen.active = false;
       menu = menuComponent.createObject(scene);
@@ -120,11 +122,11 @@ Item {
       verify(!menu.panelAnchorTop && !menu.panelAnchorLeft);
       verify(!menu.panelAnchorHorizontalCenter && !menu.panelAnchorVerticalCenter);
       Settings.data.sessionMenu.powerOptions = [
-            {
-              action: "hibernate",
-              enabled: true
-            }
-          ];
+        {
+          action: "hibernate",
+          enabled: true
+        }
+      ];
       tryCompare(options(), "count", 1);
       compare(options().itemAt(0).title, "session-menu.hibernate");
       compare(menu.preferredHeight, 90);

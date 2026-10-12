@@ -4,7 +4,7 @@
 import argparse
 from collections import Counter
 import json
-import os
+import importlib.util
 from pathlib import Path
 import re
 import shutil
@@ -13,6 +13,13 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 CARD = Path("Modules/Cards/TimerCard.qml")
+
+
+def helper(filename):
+    spec = importlib.util.spec_from_file_location(filename, ROOT / "Tests" / filename)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def write_singleton(directory, name, body):
@@ -166,31 +173,32 @@ function stopSound(name) { stops++; lastSound = name; }""",
         """function show(...args) {}
 function hide() {}""",
     )
+    # Expose the same staged runtime files to qmllint's URI resolver.
+    (directory / "qs").symlink_to(".", target_is_directory=True)
+    for path in (
+        "Commons",
+        "Services/System",
+        "Services/UI",
+        "Widgets",
+        "Modules/Cards",
+    ):
+        module = directory / path
+        declarations = []
+        for source in sorted(module.glob("*.qml")):
+            prefix = (
+                "singleton "
+                if source.read_text().startswith("pragma Singleton")
+                else ""
+            )
+            declarations.append(f"{prefix}{source.stem} 1.0 {source.name}\n")
+        (module / "qmldir").write_text(
+            f"module qs.{path.replace('/', '.')}\n" + "".join(declarations)
+        )
     shutil.copyfile(ROOT / "Tests/Qml/TimerCardHarness.qml", directory / "shell.qml")
 
 
 def isolate_environment(directory):
-    environment = {
-        key: value
-        for key, value in os.environ.items()
-        if not key.startswith(("XDG_", "WAYLAND_", "QT_", "QML_", "NOCTALIA_"))
-        and key not in ("DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "HOME")
-    }
-    for variable in (
-        "HOME",
-        "XDG_CONFIG_HOME",
-        "XDG_CACHE_HOME",
-        "XDG_DATA_HOME",
-        "XDG_STATE_HOME",
-        "XDG_RUNTIME_DIR",
-        "NOCTALIA_CONFIG_DIR",
-        "NOCTALIA_CACHE_DIR",
-    ):
-        path = directory / variable.lower()
-        path.mkdir(mode=0o700)
-        environment[variable] = str(path)
-    environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
-    return environment
+    return helper("wallpaper-tab-warnings.test.py").isolated_environment(directory)
 
 
 def run_behavior(directory):
@@ -207,7 +215,10 @@ def run_behavior(directory):
     try:
         stage_runtime(directory)
         result = subprocess.run(
-            ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
+            helper("wallpaper-tab-warnings.test.py").sandbox_command(
+                directory,
+                ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
+            ),
             cwd=ROOT,
             env=environment,
             capture_output=True,
@@ -228,14 +239,71 @@ def run_behavior(directory):
     )
 
 
+def lint_harness(directory, inject_warning):
+    environment = isolate_environment(directory)
+    stage_runtime(directory)
+    harness = directory / "shell.qml"
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                "id: harness",
+                "id: harness\n  property int injectedWarning: harness.missingLintProbe",
+                1,
+            )
+        )
+    result = subprocess.run(
+        helper("wallpaper-tab-warnings.test.py").sandbox_command(
+            directory,
+            [
+                "/usr/lib/qt6/bin/qmllint",
+                "--bare",
+                "-I",
+                str(directory),
+                "-I",
+                "/usr/lib/qt6/qml",
+                "--max-warnings",
+                "0",
+                "--json",
+                "-",
+                str(harness),
+            ],
+        ),
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    print(result.stdout + result.stderr, flush=True)
+    diagnostics = json.loads(result.stdout)
+    warnings = sum(
+        warning["type"] == "warning"
+        for file in diagnostics["files"]
+        for warning in file["warnings"]
+    )
+    print("TIMER_CARD_HARNESS_LINT_WARNINGS", warnings, "EXIT", result.returncode)
+    if inject_warning:
+        assert warnings > 0, "injected warning not diagnosed"
+        assert result.returncode != 0, "injected warning accepted"
+    else:
+        assert warnings == 0, f"harness warnings remain: {warnings}"
+    return result.returncode
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "behavior", "lint-harness"))
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-timer-card-") as temporary:
         directory = Path(temporary)
+        directory.chmod(0o700)
         if args.mode == "lint":
             run_lint(directory)
+        elif args.mode == "lint-harness":
+            raise SystemExit(lint_harness(directory, args.inject_warning))
         else:
             run_behavior(directory)
 

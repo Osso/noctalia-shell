@@ -9,7 +9,7 @@ import argparse
 from collections import Counter
 import hashlib
 import importlib.util
-import os
+import json
 from pathlib import Path
 import re
 import subprocess
@@ -120,16 +120,19 @@ QtObject {
             "Settings": """pragma Singleton
 import QtQuick
 QtObject {
-  property QtObject data: QtObject {
-    property QtObject general: QtObject { property bool lockOnSuspend: false }
-    property QtObject sessionMenu: QtObject {
+  component GeneralSettings: QtObject { property bool lockOnSuspend: false }
+  component SessionMenuSettings: QtObject {
       property bool showHeader: true
       property string position: "center"
       property int countdownDuration: 60000
       property bool enableCountdown: true
       property var powerOptions: []
-    }
   }
+  component SettingsData: QtObject {
+    property GeneralSettings general: GeneralSettings {}
+    property SessionMenuSettings sessionMenu: SessionMenuSettings {}
+  }
+  property SettingsData data: SettingsData {}
 }""",
         },
     )
@@ -153,7 +156,7 @@ function shutdown() { events = events.concat(["shutdown"]); }
         "qs.Services.UI",
         {
             "PanelService": singleton(
-                "property QtObject lockScreen: QtObject { property bool active: false }"
+                "component LockScreen: QtObject { property bool active: false }\nproperty LockScreen lockScreen: LockScreen {}"
             )
         },
     )
@@ -213,8 +216,11 @@ Item {
     )
 
 
-def runtime(directory):
-    settings = Path.home() / ".config/noctalia/settings.json"
+def runtime(directory, environment, isolation):
+    settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
+    settings.parent.mkdir(mode=0o700, parents=True)
+    settings.touch(mode=0o600)
+    settings.write_bytes(b'{"fixture": "session-menu"}\n')
     original = settings.read_bytes()
     backup = directory / "settings.backup.json"
     backup.touch(mode=0o600)
@@ -222,44 +228,19 @@ def runtime(directory):
     sha = hashlib.sha256(original).hexdigest()
     assert backup.stat().st_mode & 0o777 == 0o600
     assert hashlib.sha256(backup.read_bytes()).hexdigest() == sha
-    environment = {
-        k: v
-        for k, v in os.environ.items()
-        if not k.startswith(("XDG_", "WAYLAND_", "QT_", "QML_", "NOCTALIA_"))
-        and k
-        not in {
-            "DISPLAY",
-            "DBUS_SESSION_BUS_ADDRESS",
-            "HOME",
-            "NIRI_SOCKET",
-            "HYPRLAND_INSTANCE_SIGNATURE",
-            "SWAYSOCK",
-        }
-    }
-    for key in (
-        "HOME",
-        "XDG_CONFIG_HOME",
-        "XDG_CACHE_HOME",
-        "XDG_DATA_HOME",
-        "XDG_STATE_HOME",
-        "XDG_RUNTIME_DIR",
-        "NOCTALIA_CONFIG_DIR",
-        "NOCTALIA_CACHE_DIR",
-    ):
-        path = directory / key
-        path.mkdir(mode=0o700)
-        environment[key] = str(path)
-    environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
     stage_runtime(directory)
     try:
         result = subprocess.run(
-            [
-                "/usr/lib/qt6/bin/qmltestrunner",
-                "-input",
-                str(directory / "tst_session_menu.qml"),
-                "-import",
-                str(directory),
-            ],
+            isolation.sandbox_command(
+                directory,
+                [
+                    "/usr/lib/qt6/bin/qmltestrunner",
+                    "-input",
+                    str(directory / "tst_session_menu.qml"),
+                    "-import",
+                    str(directory),
+                ],
+            ),
             env=environment,
             capture_output=True,
             text=True,
@@ -275,11 +256,73 @@ def runtime(directory):
         print("SESSION_MENU_SETTINGS_SHA", sha)
 
 
+def lint_harness(directory, environment, isolation, inject_warning):
+    stage_runtime(directory)
+    harness = directory / "tst_session_menu.qml"
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                "id: scene",
+                "id: scene\n  property int injectedWarning: scene.missingLintProbe",
+                1,
+            )
+        )
+    result = subprocess.run(
+        isolation.sandbox_command(
+            directory,
+            [
+                "/usr/lib/qt6/bin/qmllint",
+                "--bare",
+                "-I",
+                str(directory),
+                "-I",
+                "/usr/lib/qt6/qml",
+                "--max-warnings",
+                "0",
+                "--json",
+                "-",
+                str(harness),
+            ],
+        ),
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    print(result.stdout + result.stderr, flush=True)
+    diagnostics = json.loads(result.stdout)
+    warnings = sum(
+        warning["type"] == "warning"
+        for file in diagnostics["files"]
+        for warning in file["warnings"]
+    )
+    print("SESSION_MENU_HARNESS_LINT_WARNINGS", warnings, "EXIT", result.returncode)
+    if inject_warning:
+        assert warnings > 0, "injected warning not diagnosed"
+        assert result.returncode != 0, "injected warning accepted"
+    else:
+        assert warnings == 0, f"harness warnings remain: {warnings}"
+    return result.returncode
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "runtime", "lint-harness"))
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-session-menu-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
-        {"lint": lint, "runtime": runtime}[args.mode](directory)
+        isolation = helper("wallpaper-tab-warnings.test.py")
+        environment = isolation.isolated_environment(directory)
+        if args.mode == "lint":
+            lint(directory)
+        elif args.mode == "lint-harness":
+            raise SystemExit(
+                lint_harness(directory, environment, isolation, args.inject_warning)
+            )
+        else:
+            runtime(directory, environment, isolation)
