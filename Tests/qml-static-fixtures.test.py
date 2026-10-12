@@ -302,6 +302,8 @@ class FixtureLintTest(unittest.TestCase):
                     # Nested owner sandboxes mount over this empty directory.
                     "--dir",
                     "/home/osso",
+                    "--tmpfs",
+                    "/tmp",
                     "--bind",
                     str(root),
                     str(root),
@@ -450,9 +452,22 @@ class FixtureLintTest(unittest.TestCase):
                 self.assertEqual(Path(file["filename"]).name, harness_reports[name])
                 if mode == "warning":
                     self.assertTrue(file["warnings"], output)
+                elif name == "LocationServiceHarness.qml":
+                    # Unused-import info is not a warning under the strict CLI.
+                    self.assertEqual(
+                        [w for w in file["warnings"] if w["type"] != "info"], []
+                    )
                 else:
                     self.assertEqual(file["warnings"], [])
-                if name == "BrightnessKeyboardServicesHarness.qml":
+                if name == "FilePickerWarningsHarness.qml":
+                    # Owner re-executes with a fresh /tmp in its nested sandbox.
+                    harness = Path(file["filename"])
+                    harness.relative_to("/tmp")
+                    self.assertFalse(harness.parent.exists(), "picker artifacts leaked")
+                    self.assertEqual(
+                        output.count("FILE_PICKER_CONFIG_NETWORK_MASKED"), 1
+                    )
+                elif name == "BrightnessKeyboardServicesHarness.qml":
                     self.assertEqual(file["filename"], "/fixture/tst_services.qml")
                 else:
                     self.assert_artifacts_are_isolated(file)
