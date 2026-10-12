@@ -11,6 +11,8 @@ import re
 import subprocess
 import tempfile
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Bar/Widgets/Tray.qml")
 
@@ -77,7 +79,8 @@ def stage_runtime(directory):
         "Quickshell.Services.SystemTray",
         {
             "SystemTray": singleton(
-                "property QtObject items: QtObject { property var values: [] }"
+                "component TrayItems: QtObject { property var values: [] }\n"
+                "property TrayItems items: TrayItems {}"
             ),
         },
     )
@@ -171,6 +174,33 @@ Item {
     )
 
 
+def lint_harness(directory):
+    stage_runtime(directory)
+    return check_harness(directory, directory / "tst_tray_widget.qml")
+
+
+def lint_harness_regression(directory):
+    clean = directory / "clean"
+    clean.mkdir()
+    assert lint_harness(clean) == 0, "clean harness lint failed"
+    injected = directory / "injected"
+    injected.mkdir()
+    stage_runtime(injected)
+    harness = injected / "tst_tray_widget.qml"
+    source = harness.read_text()
+    marker = "id: scene"
+    assert source.count(marker) == 1, "injection owner must be unique"
+    harness.write_text(
+        source.replace(
+            marker,
+            marker + "\n  property int injectedWarning: scene.missingLintProbe",
+            1,
+        )
+    )
+    assert check_harness(injected, harness) != 0, "genuine warning was accepted"
+    print("TRAY_WIDGET_HARNESS_WARNING_REJECTED")
+
+
 def runtime(directory):
     settings = Path.home() / ".config/noctalia/settings.json"
     original = settings.read_bytes() if settings.exists() else None
@@ -242,7 +272,17 @@ def runtime(directory):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=("lint", "runtime"), required=True)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--mode", choices=("lint", "runtime"))
+    mode.add_argument(
+        "command", choices=("lint-harness", "lint-harness-regression"), nargs="?"
+    )
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-tray-widget-") as temporary:
-        {"lint": lint, "runtime": runtime}[args.mode](Path(temporary))
+        directory = Path(temporary)
+        if args.command == "lint-harness":
+            raise SystemExit(lint_harness(directory))
+        if args.command == "lint-harness-regression":
+            lint_harness_regression(directory)
+        else:
+            {"lint": lint, "runtime": runtime}[args.mode](directory)

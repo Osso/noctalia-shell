@@ -36,6 +36,22 @@ Item {
     }
   }
 
+  component TrayMenu: Item {
+    width: 120
+    property ShellScreen screen
+    property var trayItem
+    property string widgetSection
+    property int widgetIndex
+    property Item anchor
+    property real menuX
+    property real menuY
+    function showAt(item, x, y) {
+      anchor = item;
+      menuX = x;
+      menuY = y;
+    }
+  }
+
   Item {
     id: popup
     visible: false
@@ -52,21 +68,7 @@ Item {
     }
     Loader {
       id: menuLoader
-      sourceComponent: Item {
-        width: 120
-        property ShellScreen screen
-        property var trayItem
-        property string widgetSection
-        property int widgetIndex
-        property Item anchor
-        property real menuX
-        property real menuY
-        function showAt(item, x, y) {
-          anchor = item;
-          menuX = x;
-          menuY = y;
-        }
-      }
+      sourceComponent: TrayMenu {}
     }
   }
 
@@ -92,6 +94,7 @@ Item {
   TestCase {
     name: "TrayWidgetWarnings"
     when: windowShown
+    readonly property TrayMenu fixtureMenu: menuLoader.item as TrayMenu
     property var widget
     property var alpha
     property var beta
@@ -160,7 +163,7 @@ Item {
       popup.opens = 0;
       popup.closes = 0;
       menuLoader.active = true;
-      menuLoader.item.trayItem = null;
+      fixtureMenu.trayItem = null;
       drawer.toggles = 0;
       TooltipService.text = "";
       Settings.data = {
@@ -291,16 +294,16 @@ Item {
         })
       });
       widget.onLoaded();
-      compare(menuLoader.item.screen, fixtureScreen);
+      compare(fixtureMenu.screen, fixtureScreen);
       click(1, Qt.RightButton);
       compare(popup.visible, true);
       compare(popup.opens, 1);
-      compare(menuLoader.item.trayItem, beta);
-      compare(menuLoader.item.widgetSection, "left");
-      compare(menuLoader.item.widgetIndex, 1);
-      compare(menuLoader.item.anchor, icon(1));
-      compare(menuLoader.item.menuX, data.x);
-      compare(menuLoader.item.menuY, data.y);
+      compare(fixtureMenu.trayItem, beta);
+      compare(fixtureMenu.widgetSection, "left");
+      compare(fixtureMenu.widgetIndex, 1);
+      compare(fixtureMenu.anchor, icon(1));
+      compare(fixtureMenu.menuX, data.x);
+      compare(fixtureMenu.menuY, data.y);
       click(1, Qt.RightButton);
       compare(popup.visible, false);
       menuLoader.active = false;
@@ -309,7 +312,7 @@ Item {
       menuLoader.active = true;
       tryVerify(() => menuLoader.item !== null);
       click(2, Qt.RightButton);
-      compare(menuLoader.item.trayItem, gamma);
+      compare(fixtureMenu.trayItem, gamma);
       click(0, Qt.MiddleButton);
       compare(popup.visible, false);
       compare(alpha.secondaryActivations, 0);
@@ -326,7 +329,7 @@ Item {
       PanelService.popup = popup;
       PanelService.popupMenuWindowRegistered(fixtureScreen);
       click(1, Qt.RightButton);
-      compare(menuLoader.item.trayItem, beta);
+      compare(fixtureMenu.trayItem, beta);
       widget.toggleDrawer(widget);
       compare(popup.visible, false);
       compare(drawer.toggles, 1);
