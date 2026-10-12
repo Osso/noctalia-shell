@@ -9,6 +9,7 @@ import argparse
 from collections import Counter
 import hashlib
 import importlib.util
+import json
 import os
 from pathlib import Path
 import re
@@ -54,7 +55,7 @@ def lint(directory):
     assert not counts and result.returncode == 0, output
 
 
-def behavior(directory):
+def stage_runtime(directory):
     helper = load_helper("clock-settings-warnings.test.py")
     helper.stage_runtime(directory)
     helper.write_module(
@@ -74,14 +75,87 @@ def behavior(directory):
             "UPowerDeviceState": helper.singleton(
                 "enum State { Charging, Discharging }"
             ),
-            "UPower": helper.singleton("""property QtObject devices: QtObject {
+            "UPower": helper.singleton("""component DeviceList: QtObject {
   property var values: []
-}"""),
+}
+property DeviceList devices: DeviceList {}"""),
         },
     )
     (directory / "tst_clock.qml").unlink()
     harness = directory / "tst_battery_settings.qml"
     shutil.copyfile(ROOT / "Tests/Qml/BatterySettingsWarningsHarness.qml", harness)
+    return harness
+
+
+def lint_harness(directory):
+    harness = stage_runtime(directory)
+    return check_harness(directory, harness)
+
+
+def check_harness(directory, harness):
+    result = subprocess.run(
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        cwd=directory,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    output = result.stdout + result.stderr
+    (directory / "lint-harness.log").write_text(output)
+    print(output, end="")
+    diagnostics = json.loads(result.stdout)
+    warnings = sum(
+        warning["type"] == "warning"
+        for item in diagnostics["files"]
+        for warning in item["warnings"]
+    )
+    print("BATTERY_SETTINGS_HARNESS_WARNINGS", warnings, "EXIT", result.returncode)
+    passed = (
+        result.returncode == 0
+        and warnings == 0
+        and all(item["success"] for item in diagnostics["files"])
+    )
+    return 0 if passed else result.returncode or 1
+
+
+def lint_harness_regression(directory):
+    clean = directory / "clean"
+    clean.mkdir()
+    assert lint_harness(clean) == 0, "clean harness lint failed"
+    injected = directory / "injected"
+    injected.mkdir()
+    harness = stage_runtime(injected)
+    source = harness.read_text()
+    marker = "id: suite"
+    assert source.count(marker) == 1, "injection owner must be unique"
+    harness.write_text(
+        source.replace(
+            marker,
+            marker + "\n  property int injectedWarning: suite.missingLintProbe",
+            1,
+        )
+    )
+    assert check_harness(injected, harness) != 0, "genuine warning was accepted"
+    assert "missingLintProbe" in (injected / "lint-harness.log").read_text(), (
+        "expected injected missing-property diagnostic"
+    )
+    print("BATTERY_SETTINGS_HARNESS_WARNING_REJECTED")
+
+
+def behavior(directory):
+    harness = stage_runtime(directory)
     result = subprocess.run(
         [
             "/usr/lib/qt6/bin/qmltestrunner",
@@ -110,10 +184,19 @@ def behavior(directory):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument(
+        "mode", choices=("lint", "behavior", "lint-harness", "lint-harness-regression")
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
     parser.add_argument("--artifacts", type=Path, required=True)
     args = parser.parse_args()
     args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
+    if args.mode == "lint-harness":
+        assert lint_harness(args.artifacts) == 0, "harness lint failed"
+        return
+    if args.mode == "lint-harness-regression":
+        lint_harness_regression(args.artifacts)
+        return
     settings = Path.home() / ".config/noctalia/settings.json"
     original = settings.read_bytes()
     backup = args.artifacts / "settings.backup.json"
