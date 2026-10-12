@@ -231,6 +231,9 @@ class FixtureLintTest(unittest.TestCase):
                     "/",
                     "--tmpfs",
                     "/home",
+                    # Nested owner sandboxes mount over this empty directory.
+                    "--dir",
+                    "/home/osso",
                     "--bind",
                     str(root),
                     str(root),
