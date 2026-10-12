@@ -13,10 +13,10 @@ import argparse
 import hashlib
 import importlib.util
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE = Path("Modules/MainScreen/Backgrounds")
@@ -82,7 +82,13 @@ def execute(directory, argv):
         QT_QUICK_BACKEND="software",
     )
     result = subprocess.run(
-        argv, cwd=directory, env=environment, capture_output=True, text=True, timeout=60
+        argv,
+        cwd=directory,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
     )
     output = result.stdout + result.stderr
     print(output, end="")
