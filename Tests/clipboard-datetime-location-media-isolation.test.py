@@ -39,7 +39,7 @@ def deny(path):
     if name == '/home/osso/.config' or name.startswith('/home/osso/.config/') or (
         name.endswith('/settings.json') and not name.startswith(str(root) + '/noctalia-')
     ):
-        raise PermissionError(f'blocked settings access: {name}')
+        raise RuntimeError(f'blocked settings access: {name}')
 
 def audit(event, args):
     if event in ('open', 'os.listdir', 'os.scandir'):
