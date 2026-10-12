@@ -1072,6 +1072,36 @@ class FixtureLintTest(unittest.TestCase):
                     self.assertNotIn(filename, artifact_paths, "artifact path reused")
                     artifact_paths.add(filename)
 
+    def test_brightness_card_context_slider_dialog_checker_routes(self):
+        routes = {
+            "BrightnessServiceOffscreenHarness.qml": (
+                "brightness-service-offscreen.test.py",
+                True,
+            ),
+            "CardContextWarningsHarness.qml": (
+                "card-context-warnings.test.py",
+                False,
+            ),
+            "SliderTextDialogWarningsHarness.qml": (
+                "slider-text-dialog-warnings.test.py",
+                False,
+            ),
+        }
+        artifact_paths = set()
+        for name, (script, artifacts) in routes.items():
+            for mode in ("present", "absent", "warning"):
+                with self.subTest(harness=name, mode=mode):
+                    filename = self.check_synthetic_strict_dispatch(
+                        name,
+                        script,
+                        mode == "warning",
+                        artifacts=artifacts,
+                        settings_present=mode == "present",
+                        static_only=True,
+                    )
+                    self.assertNotIn(filename, artifact_paths, "artifact path reused")
+                    artifact_paths.add(filename)
+
     def test_launcher_mango_program_vpn_wallpaper_checker_routes(self):
         artifact_paths = set()
         for name, (
