@@ -250,7 +250,8 @@ def execute(mode, directory, environment, inject_warning=False):
                     source.replace(
                         marker,
                         marker
-                        + "\n  property int injectedWarning: testCase.missingLintProbe",
+                        + "\n  property QtObject semanticProbe: QtObject { id: lintProbe }"
+                        + "\n  property int injectedWarning: lintProbe.missingLintProbe",
                         1,
                     )
                 )

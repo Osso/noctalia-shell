@@ -48,6 +48,11 @@ def write_modules(sources):
 
 def stage_behavior(root):
     geometry.prepare_sources(root)
+    # The appearance fixture does not instantiate wizard/panel siblings.
+    shutil.rmtree(root / "Modules/MainScreen")
+    for path in (root / "Modules/Panels/SetupWizard").glob("*.qml"):
+        if path.name != TARGET.name:
+            path.unlink()
     for name in ("Rose Pine", "Nord", "Catppuccin"):
         dark = dict(geometry.PALETTE, mSurface="#123456", mPrimary="#abcdef")
         light = dict(geometry.PALETTE, mSurface="#654321", mPrimary="#fedcba")
@@ -84,6 +89,10 @@ def execute(args, directory):
             line.split()[4] == path and " - tmpfs " in line for line in mounts
         ), path
     environment = geometry.isolated_environment(directory)
+    # Unix socket paths must fit sun_path even with long artifact directory names.
+    runtime = Path("/run/appearance")
+    runtime.mkdir(mode=0o700)
+    environment["XDG_RUNTIME_DIR"] = str(runtime)
     root = directory / "qs"
     root.mkdir()
     if args.mode == "lint":
