@@ -115,17 +115,17 @@ NIconButton {
     anchors.rightMargin: 2
     anchors.topMargin: 1
     z: 2
-    active: root.showUnreadBadge && (!root.hideWhenZero || computeUnreadCount() > 0)
+    active: root.showUnreadBadge && (!root.hideWhenZero || root.computeUnreadCount() > 0)
     sourceComponent: Rectangle {
       id: badge
-      readonly property int count: computeUnreadCount()
+      readonly property int count: root.computeUnreadCount()
       height: 8
       width: height
       radius: Style.radiusXS
       color: NColor.mError
       border.color: NColor.mSurface
       border.width: Style.borderS
-      visible: count > 0 || !hideWhenZero
+      visible: count > 0 || !root.hideWhenZero
     }
   }
 }

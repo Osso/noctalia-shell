@@ -108,16 +108,16 @@ Item {
     // Icon
     NIcon {
       icon: if (root.icon !== "") {
-              return root.icon;
-            } else if (type === "warning") {
-              return "toast-warning";
-            } else if (type === "error") {
-              return "toast-error";
-            } else {
-              return "toast-notice";
-            }
+        return root.icon;
+      } else if (root.type === "warning") {
+        return "toast-warning";
+      } else if (root.type === "error") {
+        return "toast-error";
+      } else {
+        return "toast-notice";
+      }
       color: {
-        switch (type) {
+        switch (root.type) {
         case "warning":
           return NColor.mPrimary;
         case "error":
