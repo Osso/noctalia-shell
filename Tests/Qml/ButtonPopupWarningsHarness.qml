@@ -34,15 +34,25 @@ ShellRoot {
       width: 100
       height: 40
     }
-  }
 
-  Component {
-    id: buttonFactory
     NButton {
+      id: buttonOne
+      x: 50
+      y: 100
       text: "Action"
       tooltipText: "Owner tooltip"
+      visible: false
+    }
+    NButton {
+      id: buttonTwo
+      x: 50
+      y: 100
+      text: "Action"
+      tooltipText: "Owner tooltip"
+      visible: false
     }
   }
+
   Component {
     id: popupFactory
     NPopupContextMenu {}
@@ -76,10 +86,6 @@ ShellRoot {
     return descendants(popup.contentItem, child => child.itemAction !== undefined);
   }
 
-  function makeButton(): NButton {
-    return buttonFactory.createObject(window.contentItem, { x: 50, y: 100 });
-  }
-
   function makePopup(height, label) {
     return popupFactory.createObject(suite, {
                                        itemHeight: height,
@@ -92,7 +98,9 @@ ShellRoot {
   }
 
   function testButtonInput() {
-    const button = makeButton();
+    const button = buttonOne;
+    button.visible = true;
+    settle();
     try {
       const counts = { left: 0, right: 0, middle: 0, entered: 0, exited: 0 };
       button.clicked.connect(() => counts.left++);
@@ -128,13 +136,15 @@ ShellRoot {
       equal(counts.left, 2, "reenabled dispatch");
     } finally {
       input.mouseMove(window.contentItem, 600, 440);
-      button.destroy();
+      button.visible = false;
       settle();
     }
   }
 
   function testButtonTooltipOwner() {
-    const button = makeButton();
+    const button = buttonTwo;
+    button.visible = true;
+    settle();
     try {
       // Runner can inject an empty tooltipText into the production MouseArea.
       const area = mouseArea(button);
@@ -151,7 +161,7 @@ ShellRoot {
       equal(button.hovered, false, "cancel clears hover");
       equal(TooltipService.lastText, "", "cancel hides tooltip");
     } finally {
-      button.destroy();
+      button.visible = false;
       settle();
     }
   }
