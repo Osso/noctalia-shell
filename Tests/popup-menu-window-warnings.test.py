@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Bounded popup-window lint and isolated, non-desktop production lifecycle.
+"""Bounded popup lint, consumer contracts and private headless Cage reload.
 
-Production PanelWindow, Loader and layer-shell bindings remain real. Only
-PanelService and tray content are inert fixtures; no real menu or settings load.
+Real PanelWindow/Loader/attached bindings; inert registry, tray and menu content.
+Consumer member expressions and both complete taskbar opening bodies execute
+against the real popup. This does not prove whole-widget rendering or compositor
+input: Cage lacks layer-shell support. No canonical settings/process inspection.
 """
 
 import argparse
 from collections import Counter
-import hashlib
 import importlib.util
+import json
 import os
 from pathlib import Path
 import re
@@ -16,9 +18,14 @@ import shutil
 import signal
 import subprocess
 import tempfile
+import time
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/MainScreen/PopupMenuWindow.qml")
+CONSUMERS = (
+    Path("Modules/Bar/Widgets/Taskbar.qml"),
+    Path("Modules/Bar/Widgets/TaskbarGrouped.qml"),
+)
 
 
 def helper():
@@ -32,35 +39,302 @@ def helper():
 
 def lint(directory):
     helper().stage_modules(directory)
-    result = subprocess.run(
-        [
-            "/usr/lib/qt6/bin/qmllint",
-            "-I",
-            str(directory),
-            str(directory / "qs" / TARGET),
-        ],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
-    output = result.stdout + result.stderr
-    print(output, end="")
-    counts = Counter(
-        re.findall(r"\[([^]]+)\]", line)[-1]
-        for line in output.splitlines()
-        if line.startswith("Warning:")
-    )
-    print("POPUP_WINDOW_LINT_COUNTS", dict(counts))
-    # Installed WindowInterface metadata makes PanelWindow uncreatable and
-    # exposes screen/contentItem despite this component's existing public API.
-    assert counts == {"uncreatable-type": 1, "property-override": 2}, dict(counts)
-    overrides = re.findall(
-        r'Property "([^"]+)" already exists in base type "WindowInterface"', output
-    )
-    assert sorted(overrides) == ["contentItem", "screen"], overrides
-    assert result.returncode in (0, 255), result.returncode
+    for target in (TARGET, *CONSUMERS):
+        result = subprocess.run(
+            [
+                "/usr/lib/qt6/bin/qmllint",
+                "--unqualified",
+                "error",
+                "-I",
+                str(directory),
+                str(directory / "qs" / target),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        output = result.stdout + result.stderr
+        print(output, end="")
+        counts = Counter(
+            re.findall(r"\[([^]]+)\]", line)[-1]
+            for line in output.splitlines()
+            if line.startswith("Warning:")
+        )
+        print("POPUP_WINDOW_LINT_COUNTS", str(target), dict(counts))
+        # Installed PanelWindow metadata is external; do not suppress or replace it.
+        expected = {"uncreatable-type": 1} if target == TARGET else {}
+        assert counts == expected, (str(target), dict(counts))
+        assert result.returncode == 0, result.returncode
     print("POPUP_WINDOW_LINT_PASS")
+
+
+def consumer_checks():
+    """Execute current consumer member expressions, not source-shape assertions."""
+    checks = []
+    paths = sorted((ROOT / "Modules").rglob("*.qml")) + sorted(
+        (ROOT / "Services").rglob("*.qml")
+    )
+    pattern = re.compile(
+        r"\b(?:\w+\.)*popupMenuWindow\.(\w+)(?:\(([^()\n]*)\))?(?:\s*=\s*(contextMenu|true|false)\s*;)?"
+    )
+    expected = {
+        "visible": "false",
+        "trayMenuLoader": "window.trayMenuLoader.item !== null && window.trayMenuLoader.item.screen === window.screen",
+        "dialogParent": "window.dialogParent.parent === window.contentItem && window.dialogParent.width === window.contentItem.width && window.dialogParent.height === window.contentItem.height",
+        "hasDialog": "false",
+    }
+    for path in paths:
+        source = path.read_text()
+        if path.relative_to(ROOT) == TARGET:
+            continue
+        for match in pattern.finditer(source):
+            member, arguments, assigned = match.groups()
+            label = f"{path.relative_to(ROOT)}:{source.count(chr(10), 0, match.start()) + 1}"
+            checks.extend(("window.close();", "window.hasDialog = false;"))
+            if arguments is not None:
+                arguments = arguments.replace("contextMenu", "hideMenuContent").replace(
+                    "sourceMenu", "hideMenuContent"
+                )
+                if member == "close":
+                    checks.append("window.open();")
+                checks.append(f"window.{member}({arguments});")
+                if member in ("open", "showContextMenu"):
+                    checks.append(
+                        f"check(window.visible, {json.dumps(label + ' opens')});"
+                    )
+                elif member == "close":
+                    checks.append(
+                        f"check(!window.visible, {json.dumps(label + ' closes')});"
+                    )
+                else:
+                    raise AssertionError(f"unhandled consumer call {label}: {member}")
+                if member == "showContextMenu":
+                    checks.append(
+                        f"check(window.activeMenu === hideMenuContent, {json.dumps(label + ' content')});"
+                    )
+            elif assigned:
+                value = "hideMenuContent" if assigned == "contextMenu" else assigned
+                checks.append(f"window.{member} = {value};")
+                observed = "activeMenu" if assigned == "contextMenu" else member
+                checks.append(
+                    f"check(window.{observed} === {value}, {json.dumps(label + ' assignment')});"
+                )
+                if member == "hasDialog":
+                    focus = "OnDemand" if assigned == "true" else "None"
+                    checks.append(
+                        f"check(window.WlrLayershell.keyboardFocus === WlrKeyboardFocus.{focus}, {json.dumps(label + ' focus')});"
+                    )
+            else:
+                assert member in expected, (label, member)
+                condition = (
+                    f"window.{member} === {expected[member]}"
+                    if member in ("visible", "hasDialog")
+                    else expected[member]
+                )
+                checks.append(f"check({condition}, {json.dumps(label + ' read')});")
+            checks.append(f"console.log('POPUP_CONSUMER_PASS ' + {json.dumps(label)});")
+    assert checks, "no production consumer operations found"
+    return "\n".join(checks)
+
+
+def taskbar_body(path):
+    source = (ROOT / path).read_text()
+    if path.name == "Taskbar.qml":
+        match = re.search(
+            r"    onTriggered: \{\n(.*?)\n    }\n  }\n}\s*$", source, re.S
+        )
+    else:
+        match = re.search(
+            r"  function openContextMenu\([^\n]*\) \{\n(.*?)\n  }\n}\s*$", source, re.S
+        )
+    assert match, f"cannot extract production opening body: {path}"
+    return match[1]
+
+
+HARNESS = """import QtQuick
+import Quickshell
+import Quickshell.Wayland
+import qs.Commons
+import qs.Services.UI
+import qs.Modules.MainScreen
+
+ShellRoot {
+  id: harness
+  property var window
+  property string generation: "INITIAL"
+  QtObject { id: screenDelegate; property ShellScreen modelData: Quickshell.screens[0] }
+  Component {
+    id: factory
+    PopupMenuWindow { screen: screenDelegate.modelData }
+  }
+  QtObject {
+    id: hideMenuContent
+    property int hiddenCount: 0
+    property int closedCount: 0
+    function hideMenu() {
+      harness.check(!harness.window.visible && harness.window.activeMenu === hideMenuContent, "hide ordering");
+      hiddenCount++;
+    }
+    function close() { closedCount++; }
+  }
+  QtObject {
+    id: closeContent
+    property int closedCount: 0
+    function close() {
+      harness.check(!harness.window.visible && harness.window.activeMenu === closeContent, "close ordering");
+      closedCount++;
+    }
+  }
+  QtObject { id: inertContent }
+  QtObject {
+    id: consumerRoot
+    property ShellScreen screen: screenDelegate.modelData
+    property var selectedWindow: ({id: 23})
+    property string selectedAppName: "Firefox"
+    property string barPosition: "top"
+  }
+  Item {
+    id: consumerMenu
+    property var model: []
+    property real itemHeight: 24
+    property var lastAnchor: null
+    property real lastX: 0
+    property real lastY: 0
+    property int hiddenCount: 0
+    implicitWidth: 180
+    implicitHeight: model.length * itemHeight
+    function openAtItem(anchor, x, y) {
+      harness.check(harness.window.visible, "production taskbar opens before menu anchoring");
+      lastAnchor = anchor; lastX = x; lastY = y;
+    }
+    function hideMenu() { hiddenCount++; }
+  }
+  function check(condition, message) {
+    if (!condition) {
+      console.error(message);
+      Qt.exit(1);
+      throw new Error(message);
+    }
+  }
+  function exerciseLifecycle() {
+    const tray = window.trayMenuLoader.item;
+    check(tray !== null && tray.screen === window.screen, "tray screen propagation");
+    check(window.screen === screenDelegate.modelData, "AllScreens screen assignment");
+    check(window.contentItem === window.dialogParent.parent, "native contentItem is visual root");
+    check(window.activeMenu === tray, "default tray content");
+    window.initializeTrayMenu(null);
+    check(window.activeMenu === tray, "null initialization unchanged");
+    check(!window.visible && window.color.a === 0, "initially closed and transparent");
+    check(window.anchors.top && window.anchors.bottom && window.anchors.left && window.anchors.right, "full-screen anchors");
+    check(window.WlrLayershell.keyboardFocus === WlrKeyboardFocus.None, "no dialog focus");
+    window.hasDialog = true;
+    check(window.WlrLayershell.keyboardFocus === WlrKeyboardFocus.OnDemand, "dialog focus request");
+    window.hasDialog = false;
+    check(window.WlrLayershell.keyboardFocus === WlrKeyboardFocus.None, "focus released");
+    window.open();
+    check(window.visible, "open");
+    window.close();
+    check(!window.visible && tray.hiddenCount === 1, "close tray");
+    window.showContextMenu(hideMenuContent);
+    window.showContextMenu(null);
+    check(window.visible && window.activeMenu === hideMenuContent, "null context unchanged");
+    window.close();
+    check(hideMenuContent.hiddenCount === 1 && hideMenuContent.closedCount === 0, "hideMenu precedence");
+    check(window.activeMenu === tray, "tray restored");
+    window.showContextMenu(closeContent);
+    window.close();
+    check(closeContent.closedCount === 1 && window.activeMenu === tray, "close-only restoration");
+    window.showContextMenu(inertContent);
+    window.close();
+    check(!window.visible && window.activeMenu === tray, "inert content restoration");
+    window.activeMenu = null;
+    window.close();
+    check(window.activeMenu === tray, "null content restoration");
+    window.open();
+    check(window.visible, "reopen");
+  }
+  function exerciseConsumers() {
+    @CONSUMERS@
+    window.close();
+  }
+  function taskbar(globalX, globalY, itemWidth, itemHeight) {
+    const root = consumerRoot;
+    const screen = consumerRoot.screen;
+    const contextMenu = consumerMenu;
+    @TASKBAR@
+  }
+  function grouped(globalX, globalY, itemWidth, itemHeight) {
+    const root = consumerRoot;
+    const screen = consumerRoot.screen;
+    const contextMenu = consumerMenu;
+    @GROUPED@
+  }
+  function exerciseTaskbars() {
+    for (const openMenu of [taskbar, grouped]) {
+      for (const position of ["top", "bottom", "left", "right"]) {
+        consumerRoot.barPosition = position;
+        openMenu(100, 200, 40, 32);
+        check(window.visible && window.activeMenu === consumerMenu, "taskbar owns active content");
+        check(consumerMenu.lastAnchor === consumerRoot, "taskbar anchor");
+        check(consumerMenu.model.length === 3 && consumerMenu.model[0].action === "activate" && consumerMenu.model[1].action === "close" && consumerMenu.model[2].action === "widget-settings", "window menu actions");
+        const expectedX = {top: 30, bottom: 30, left: 36, right: -184};
+        const expectedY = {top: 36, bottom: -88, left: 180, right: 180};
+        check(consumerMenu.lastX === expectedX[position] && consumerMenu.lastY === expectedY[position], "taskbar position " + position);
+        const hidden = consumerMenu.hiddenCount;
+        window.close();
+        check(consumerMenu.hiddenCount === hidden + 1 && window.activeMenu === window.trayMenuLoader.item, "taskbar closes selected content");
+      }
+      consumerRoot.selectedWindow = null;
+      openMenu(100, 200, 40, 32);
+      check(consumerMenu.model.length === 1 && consumerMenu.model[0].action === "widget-settings", "empty selection actions");
+      window.close();
+      consumerRoot.selectedWindow = ({id: 23});
+    }
+  }
+  Timer {
+    id: geometryReady
+    interval: 150
+    onTriggered: {
+      window.contentItem.width = 640;
+      window.contentItem.height = 480;
+      Qt.callLater(() => {
+        check(window.dialogParent.width === 640 && window.dialogParent.height === 480, "dialog anchored to native root");
+        let catchers = 0;
+        for (const child of window.contentItem.children) {
+          if (child instanceof MouseArea) {
+            catchers++;
+            check(child.width === 640 && child.height === 480, "catcher full-screen geometry");
+            check(child.acceptedButtons === (Qt.LeftButton | Qt.RightButton | Qt.MiddleButton), "catcher buttons");
+            child.clicked(null);
+          }
+        }
+        check(catchers === 1 && !window.visible, "outside signal closes");
+        exerciseConsumers();
+        exerciseTaskbars();
+        const key = window.registrationKey;
+        window.destroy();
+        Qt.callLater(() => {
+          check(PanelService.registeredWindow === null && PanelService.removals === 1 && PanelService.removedKey === key, "unregister on destruction");
+          console.log("POPUP_WINDOW_RUNTIME_PASS " + generation);
+          if (generation === "RELOADED") Qt.quit();
+        });
+      });
+    }
+  }
+  Component.onCompleted: {
+    check(Quickshell.screens.length > 0, "private screen exists");
+    window = factory.createObject(harness);
+    check(window !== null, "production popup created");
+    check(PanelService.registeredWindow === window && PanelService.registeredScreen === window.screen, "registered screen");
+    check(window.registrationKey === window.screen.name, "registration key");
+    check(window.objectName === "popupMenuWindow-" + window.screen.name, "object name");
+    check(window.WlrLayershell.namespace === "noctalia-popupmenu-" + window.screen.name, "namespace");
+    exerciseLifecycle();
+    geometryReady.start();
+  }
+}
+"""
 
 
 def stage_runtime(directory):
@@ -69,6 +343,12 @@ def stage_runtime(directory):
     shutil.copyfile(ROOT / TARGET, target)
     write = helper().write_singleton
     write(directory / "Commons", "NColor", 'property color transparent: "transparent"')
+    write(
+        directory / "Commons",
+        "Style",
+        "property real barHeight: 32\nproperty real marginS: 4",
+    )
+    write(directory / "Commons", "I18n", "function tr(key, args) { return key; }")
     write(
         directory / "Services/UI",
         "PanelService",
@@ -79,6 +359,10 @@ property int removals: 0
 function registerPopupMenuWindow(screen, window) {
   registeredScreen = screen;
   registeredWindow = window;
+}
+function getPopupMenuWindow(screen) {
+  if (screen !== registeredScreen) throw new Error("wrong popup lookup screen");
+  return registeredWindow;
 }
 function unregisterPopupMenuWindow(key, window) {
   if (registeredWindow !== window) throw new Error("wrong popup unregister");
@@ -98,74 +382,126 @@ Item {
   function hideMenu() { hiddenCount++; }
 }
 """)
-    shutil.copyfile(
-        ROOT / "Tests/Qml/PopupMenuWindowWarningsHarness.qml", directory / "shell.qml"
-    )
+    harness = HARNESS.replace("@CONSUMERS@", consumer_checks())
+    harness = harness.replace("@TASKBAR@", taskbar_body(CONSUMERS[0]))
+    harness = harness.replace("@GROUPED@", taskbar_body(CONSUMERS[1]))
+    (directory / "shell.qml").write_text(harness)
+
+
+def sandbox(directory, command):
+    return [
+        "bwrap",
+        "--die-with-parent",
+        "--unshare-net",
+        "--unshare-pid",
+        "--ro-bind",
+        "/usr",
+        "/usr",
+        "--symlink",
+        "usr/lib",
+        "/lib",
+        "--symlink",
+        "usr/lib",
+        "/lib64",
+        "--ro-bind",
+        "/etc/fonts",
+        "/etc/fonts",
+        "--proc",
+        "/proc",
+        "--dev",
+        "/dev",
+        "--tmpfs",
+        "/tmp",
+        "--bind",
+        str(directory),
+        str(directory),
+        "--chdir",
+        str(directory),
+        "--",
+        *command,
+    ]
 
 
 def runtime(directory):
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes() if settings.exists() else None
-    if original is not None:
-        backup = directory / "settings.backup.json"
-        backup.touch(mode=0o600)
-        backup.write_bytes(original)
-        assert (
-            hashlib.sha256(backup.read_bytes()).digest()
-            == hashlib.sha256(original).digest()
-        )
     stage_runtime(directory)
     environment = helper().isolate_environment(directory)
-    for variable in ("NIRI_SOCKET", "HYPRLAND_INSTANCE_SIGNATURE", "SWAYSOCK"):
+    for variable in (
+        "NIRI_SOCKET",
+        "HYPRLAND_INSTANCE_SIGNATURE",
+        "SWAYSOCK",
+        "QS_CONFIG_PATH",
+        "QS_CONFIG_NAME",
+        "QS_MANIFEST",
+    ):
         environment.pop(variable, None)
-    # Qt offscreen has no PanelWindow backend. A private headless Wayland
-    # compositor exercises the real backend without an active desktop socket.
     environment.update(
         WLR_BACKENDS="headless",
         WLR_RENDERER="pixman",
         WLR_LIBINPUT_NO_DEVICES="1",
         QT_QPA_PLATFORM="wayland",
+        QML_DISABLE_DISK_CACHE="1",
         DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent/popup-test",
     )
-    process = subprocess.Popen(
-        ["cage", "--", "quickshell", "--no-color", "-p", str(directory / "shell.qml")],
-        cwd=ROOT,
-        env=environment,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        start_new_session=True,
-    )
-    try:
+    log = directory / "runtime.log"
+    with log.open("w+") as stream:
+        process = subprocess.Popen(
+            sandbox(
+                directory,
+                [
+                    "cage",
+                    "--",
+                    "quickshell",
+                    "--no-color",
+                    "-p",
+                    str(directory / "shell.qml"),
+                ],
+            ),
+            cwd=directory,
+            env=environment,
+            stdout=stream,
+            stderr=stream,
+            text=True,
+            start_new_session=True,
+        )
         try:
-            stdout, stderr = process.communicate(timeout=20)
-        except subprocess.TimeoutExpired:
-            stop_process_group(process)
-            stdout, stderr = process.communicate(timeout=3)
-            print(stdout + stderr, end="")
-            raise
-        output = stdout + stderr
-        print(output, end="")
-        assert process.returncode == 0, process.returncode
-        assert "POPUP_WINDOW_RUNTIME_PASS" in output, output
-        platform_warnings = re.findall(
-            r"^.* WARN: Failed to initialize layershell integration$", output, re.M
-        )
-        print("POPUP_WINDOW_PLATFORM_WARNINGS", len(platform_warnings))
-        diagnostics = [
-            line
-            for line in output.splitlines()
-            if re.search(
-                r" WARN[: ]| ERROR[: ]| FATAL[: ]|ReferenceError|TypeError|Binding loop",
-                line,
+            deadline = time.monotonic() + 20
+            while "POPUP_WINDOW_RUNTIME_PASS INITIAL" not in log.read_text():
+                assert process.poll() is None, log.read_text()
+                assert not re.search(
+                    r"ERROR|TypeError|ReferenceError|Binding loop", log.read_text()
+                ), log.read_text()
+                assert time.monotonic() < deadline, log.read_text()
+                time.sleep(0.05)
+            # Actual file-watcher reload inside the same private Quickshell process.
+            shell = directory / "shell.qml"
+            shell.write_text(
+                shell.read_text().replace(
+                    'generation: "INITIAL"', 'generation: "RELOADED"'
+                )
             )
-        ]
-        assert diagnostics == platform_warnings, diagnostics
-    finally:
-        stop_process_group(process)
-        assert (settings.read_bytes() if settings.exists() else None) == original, (
-            "real settings changed"
-        )
+            process.wait(timeout=20)
+            output = log.read_text()
+            print(output, end="")
+            assert process.returncode == 0, process.returncode
+            assert "POPUP_WINDOW_RUNTIME_PASS RELOADED" in output, output
+            assert output.count("POPUP_WINDOW_RUNTIME_PASS") == 2, output
+            platform_warnings = re.findall(
+                r"^.* WARN: Failed to initialize layershell integration$", output, re.M
+            )
+            diagnostics = [
+                line
+                for line in output.splitlines()
+                if re.search(
+                    r" WARN[: ]| ERROR[: ]| FATAL[: ]|ReferenceError|TypeError|Binding loop",
+                    line,
+                )
+            ]
+            assert diagnostics == platform_warnings, diagnostics
+            print("POPUP_WINDOW_PLATFORM_WARNINGS", len(platform_warnings))
+            print("POPUP_WINDOW_PRIVATE_RELOAD_PASS")
+        finally:
+            stop_process_group(process)
+            assert process.poll() is not None, "private process still running"
 
 
 def stop_process_group(process):

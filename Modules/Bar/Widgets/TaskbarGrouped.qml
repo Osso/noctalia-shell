@@ -690,7 +690,7 @@ Item {
       }
 
       contextMenu.openAtItem(root, menuX, menuY);
-      popupMenuWindow.contentItem = contextMenu;
+      popupMenuWindow.activeMenu = contextMenu;
     }
   }
 }

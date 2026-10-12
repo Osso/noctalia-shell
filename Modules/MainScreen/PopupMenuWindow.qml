@@ -11,13 +11,12 @@ import qs.Services.UI
 PanelWindow {
   id: root
 
-  required property ShellScreen screen
   property string windowType: "popupmenu"  // Used for namespace and registration
   readonly property string screenName: screen ? screen.name : "unknown"
   property string registrationKey: ""
 
   // Content item to display (set by the popup that uses this window)
-  property QtObject contentItem: null
+  property QtObject activeMenu: null
 
   // Expose the trayMenu Loader directly (for backward compatibility)
   readonly property alias trayMenuLoader: trayLoader
@@ -58,7 +57,7 @@ PanelWindow {
     if (menu) {
       menu.screen = root.screen;
       // Set the loaded item as default content
-      root.contentItem = menu;
+      root.activeMenu = menu;
     }
   }
 
@@ -69,7 +68,7 @@ PanelWindow {
   // Show a context menu (temporarily replaces TrayMenu as content)
   function showContextMenu(menu) {
     if (menu) {
-      contentItem = menu;
+      activeMenu = menu;
       open();
     }
   }
@@ -87,10 +86,10 @@ PanelWindow {
   function close() {
     root.visible = false;
     // Call close/hide method on current content
-    root.hideContent(root.contentItem);
+    root.hideContent(root.activeMenu);
     // Restore TrayMenu as default content
     if (trayLoader.item) {
-      root.contentItem = trayLoader.item;
+      root.activeMenu = trayLoader.item;
     }
   }
 
