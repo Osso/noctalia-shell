@@ -47,7 +47,7 @@ Item {
     // QtTest rejects list row handles after grid row clicks despite instanceof Item.
     // Use stable scene coordinates until QtTest accepts mixed row types; handlers remain real.
     function clickDelegate(fileName, listMode, doubleClick = false) {
-      waitForRendering(harness);
+      wait(50); // Flush pending model rebuild/layout before locating a live delegate.
       const item = entry(fileName, listMode);
       verify(item !== null);
       const center = item.mapToItem(harness, item.width / 2, item.height / 2);
@@ -163,6 +163,7 @@ Item {
       tryCompare(select, "enabled", false);
       tryVerify(() => entry("alpha.txt", data.listMode) !== null);
       clickDelegate("alpha.txt", data.listMode);
+      tryCompare(select, "enabled", true);
       mouseClick(select);
       tryCompare(acceptedSpy, "count", 1);
       compare(acceptedSpy.signalArguments[0][0][0], "@FILES@/alpha.txt");
@@ -212,7 +213,7 @@ Item {
       tryCompare(search, "activeFocus", true);
       keyClick(Qt.Key_B);
       tryCompare(grid(), "count", 1);
-      waitForRendering(harness);
+      wait(50); // Let search toolbar layout finish before pointer delivery.
       mouseClick(button("filepicker-x"));
       tryCompare(search, "visible", false);
       compare(search.text, "");
