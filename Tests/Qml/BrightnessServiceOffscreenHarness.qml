@@ -137,6 +137,7 @@ TestCase {
     compare(internal.brightness, 0.4);
     compare(ddc.brightness, 0.2);
     compare(internal.brightnessControlAvailable, true);
+    compare(suite.brightnessEvents.length, 2);
     compare(suite.brightnessEvents[0].screen, internalScreen);
     compare(suite.brightnessEvents[1].screen, ddcScreen);
     suite.brightnessEvents = [];

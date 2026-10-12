@@ -231,7 +231,7 @@ def run_audited(directory, command):
     assert not forbidden, forbidden
     executables = re.findall(r'execve\("([^"]+)"', audit)
     assert executables == [command[0]], executables
-    print("AUDIT: zero config/hardware attempts; exec", executables)
+    print("AUDIT: zero real-config/hardware attempts; exec", executables)
     return result
 
 
@@ -255,7 +255,15 @@ def runtime(directory, mutation):
         r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:", output
     ), output
     if mutation:
-        assert result.returncode != 0 and "FAIL!" in output, (result.returncode, output)
+        expected_test = {
+            "monitor-signal": "test_monitor_brightness_signals_before_recorded_commands",
+            "apple-callback": "test_apple_collector_updates_singleton_and_matching_monitor",
+        }[mutation]
+        failures = re.findall(r"FAIL!\s+:.*::(test_\w+)\(\)", output)
+        assert result.returncode != 0 and failures == [expected_test], (
+            result.returncode,
+            output,
+        )
     else:
         assert result.returncode == 0 and "0 failed" in output, (
             result.returncode,
