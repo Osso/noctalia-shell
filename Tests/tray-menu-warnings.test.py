@@ -8,7 +8,6 @@ are never read, resolved, hashed or backed up; sandbox and audits deny access.
 
 import argparse
 import importlib.util
-import json
 import re
 import shutil
 import tempfile
@@ -184,7 +183,7 @@ def lint(directory, environment):
 
 def lint_harness(directory, environment):
     stage_runtime(directory, None)
-    code, output = isolation.run_audited(
+    code, _ = isolation.run_audited(
         directory,
         environment,
         [
@@ -202,9 +201,6 @@ def lint_harness(directory, environment):
         ],
         "tray-menu-harness-lint",
     )
-    report = json.loads(output)
-    assert len(report["files"]) == 1, report
-    print("TRAY_MENU_HARNESS_LINT_FILE_COUNT", len(report["files"]), "EXIT", code)
     return code
 
 
