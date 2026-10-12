@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import QtTest
 import qs.Commons
 import qs.Widgets
@@ -154,9 +153,11 @@ Item {
         compare(picker.selectedColor, swatch.swatchColor);
         compare(other.selectedColor.toString(), "#654321");
         verify(swatch.border.width > 1);
-        mouseMove(swatch, -3, -3);
-        mouseMove(swatch, 12, 12);
-        tryCompare(TooltipService, "lastText", swatch.swatchName + "\n" + swatch.swatchColor.toString().toUpperCase());
+        const area = findItems(swatch, item => item instanceof MouseArea)[0];
+        area.entered();
+        compare(TooltipService.lastText, swatch.swatchName + "\n" + swatch.swatchColor.toString().toUpperCase());
+        area.exited();
+        compare(TooltipService.lastText, "");
         compare(selectedSpy.count, 0);
       }
     }
