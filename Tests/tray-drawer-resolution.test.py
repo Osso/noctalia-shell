@@ -144,12 +144,14 @@ ShellRoot {
         first.visible = true;
         second.visible = true;
         surface.check(surface.area(first, 0).visible && surface.area(second, 0).visible, "both drawer input targets visible");
+        const firstCloses = first.closeCount;
+        const secondCloses = second.closeCount;
         PanelService.openedPanel = first;
         surface.click(first, Qt.LeftButton);
-        surface.check(alpha.activations === 1 && beta.activations === 0 && first.closeCount === 1, "left activation routes first owner");
+        surface.check(alpha.activations === 1 && beta.activations === 0 && first.closeCount === firstCloses + 1, "left activation routes first owner");
         PanelService.openedPanel = second;
         surface.click(second, Qt.MiddleButton);
-        surface.check(beta.secondaryActivations === 1 && second.closeCount === 1, "middle activation routes second owner");
+        surface.check(beta.secondaryActivations === 1 && second.closeCount === secondCloses + 1, "middle activation routes second owner");
         SystemTray.items.values = [];
         surface.check(surface.delegates(first).count === 0 && surface.delegates(second).count === 0, "both models cleared");
         SystemTray.items.values = [beta, alpha];
