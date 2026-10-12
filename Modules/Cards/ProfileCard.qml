@@ -12,110 +12,122 @@ import qs.Widgets
 
 // Header card with avatar, user and quick actions
 NBox {
-  id: root
+    id: root
 
-  property string uptimeText: "--"
+    property string uptimeText: "--"
 
-  RowLayout {
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.top: parent.top
-    anchors.bottom: parent.bottom
-    anchors.margins: Style.marginM
-    spacing: Style.marginM
-
-    NImageRounded {
-      Layout.preferredWidth: Math.round(Style.baseWidgetSize * 1.25 * Style.uiScaleRatio)
-      Layout.preferredHeight: Math.round(Style.baseWidgetSize * 1.25 * Style.uiScaleRatio)
-      radius: Math.min(Style.radiusL, Layout.preferredWidth / 2)
-      imagePath: Settings.preprocessPath(Settings.data.general.avatarImage)
-      fallbackIcon: "person"
-      borderColor: NColor.mPrimary
-      borderWidth: Style.borderS * 1.5
-    }
-
-    ColumnLayout {
-      Layout.fillWidth: true
-      spacing: Style.marginXXS
-      NText {
-        text: HostService.displayName
-        font.weight: Style.fontWeightBold
-      }
-      NText {
-        text: I18n.tr("system.uptime", {
-                        "uptime": uptimeText
-                      })
-        pointSize: Style.fontSizeS
-        color: NColor.mOnSurfaceVariant
-      }
+    function updateSystemInfo() {
+        uptimeProcess.running = true;
     }
 
     RowLayout {
-      spacing: Style.marginS
-      Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-      Item {
-        Layout.fillWidth: true
-      }
-      NIconButton {
-        icon: "settings"
-        tooltipText: I18n.tr("tooltips.open-settings")
-        onClicked: {
-          var panel = PanelService.getPanel("settingsPanel", screen);
-          panel.requestedTab = SettingsPanel.Tab.General;
-          panel.open();
-        }
-      }
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.margins: Style.marginM
+        spacing: Style.marginM
 
-      NIconButton {
-        icon: "power"
-        tooltipText: I18n.tr("tooltips.session-menu")
-        onClicked: {
-          const sessionMenuPanel = PanelService.getPanel("sessionMenuPanel", screen);
-          if (sessionMenuPanel)
-            sessionMenuPanel.open();
-
-          const controlCenterPanel = PanelService.getPanel("controlCenterPanel", screen);
-          if (controlCenterPanel)
-            controlCenterPanel.close();
+        NImageRounded {
+            Layout.preferredWidth: Math.round(Style.baseWidgetSize * 1.25 * Style.uiScaleRatio)
+            Layout.preferredHeight: Math.round(Style.baseWidgetSize * 1.25 * Style.uiScaleRatio)
+            radius: Math.min(Style.radiusL, Layout.preferredWidth / 2)
+            imagePath: Settings.preprocessPath(Settings.data.general.avatarImage)
+            fallbackIcon: "person"
+            borderColor: NColor.mPrimary
+            borderWidth: Style.borderS * 1.5
         }
-      }
 
-      NIconButton {
-        icon: "close"
-        tooltipText: I18n.tr("tooltips.close")
-        onClicked: {
-          const panel = PanelService.getPanel("controlCenterPanel", screen);
-          if (panel)
-            panel.close();
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: Style.marginXXS
+
+            NText {
+                text: HostService.displayName
+                font.weight: Style.fontWeightBold
+            }
+
+            NText {
+                text: I18n.tr("system.uptime", {
+                    "uptime": root.uptimeText
+                })
+                pointSize: Style.fontSizeS
+                color: NColor.mOnSurfaceVariant
+            }
+
         }
-      }
+
+        RowLayout {
+            spacing: Style.marginS
+            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+
+            Item {
+                Layout.fillWidth: true
+            }
+
+            NIconButton {
+                icon: "settings"
+                tooltipText: I18n.tr("tooltips.open-settings")
+                onClicked: {
+                    var panel = PanelService.getPanel("settingsPanel", screen);
+                    panel.requestedTab = SettingsPanel.Tab.General;
+                    panel.open();
+                }
+            }
+
+            NIconButton {
+                icon: "power"
+                tooltipText: I18n.tr("tooltips.session-menu")
+                onClicked: {
+                    const sessionMenuPanel = PanelService.getPanel("sessionMenuPanel", screen);
+                    if (sessionMenuPanel)
+                        sessionMenuPanel.open();
+
+                    const controlCenterPanel = PanelService.getPanel("controlCenterPanel", screen);
+                    if (controlCenterPanel)
+                        controlCenterPanel.close();
+
+                }
+            }
+
+            NIconButton {
+                icon: "close"
+                tooltipText: I18n.tr("tooltips.close")
+                onClicked: {
+                    const panel = PanelService.getPanel("controlCenterPanel", screen);
+                    if (panel)
+                        panel.close();
+
+                }
+            }
+
+        }
+
     }
-  }
 
-  // ----------------------------------
-  // Uptime
-  Timer {
-    interval: 60000
-    repeat: true
-    running: true
-    onTriggered: uptimeProcess.running = true
-  }
-
-  Process {
-    id: uptimeProcess
-    command: ["cat", "/proc/uptime"]
-    running: true
-
-    stdout: StdioCollector {
-      onStreamFinished: {
-        var uptimeSeconds = parseFloat(this.text.trim().split(' ')[0]);
-        uptimeText = Time.formatVagueHumanReadableDuration(uptimeSeconds);
-        uptimeProcess.running = false;
-      }
+    // ----------------------------------
+    // Uptime
+    Timer {
+        interval: 60000
+        repeat: true
+        running: true
+        onTriggered: uptimeProcess.running = true
     }
-  }
 
-  function updateSystemInfo() {
-    uptimeProcess.running = true;
-  }
+    Process {
+        id: uptimeProcess
+
+        command: ["cat", "/proc/uptime"]
+        running: true
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var uptimeSeconds = parseFloat(this.text.trim().split(' ')[0]);
+                root.uptimeText = Time.formatVagueHumanReadableDuration(uptimeSeconds);
+                uptimeProcess.running = false;
+            }
+        }
+
+    }
+
 }

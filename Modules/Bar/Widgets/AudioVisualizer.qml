@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import Quickshell
@@ -24,7 +26,7 @@ Item {
   property var widgetMetadata: BarWidgetRegistry.widgetMetadata[widgetId]
   property var widgetSettings: {
     if (section && sectionWidgetIndex >= 0) {
-      var widgets = Settings.data.bar.widgets[section];
+      const widgets = Settings.data.bar.widgets[section];
       if (widgets && sectionWidgetIndex < widgets.length) {
         return widgets[sectionWidgetIndex];
       }
@@ -148,7 +150,7 @@ Item {
 
     onClicked: mouse => {
       if (mouse.button === Qt.RightButton) {
-        var popupMenuWindow = PanelService.getPopupMenuWindow(root.screen);
+        const popupMenuWindow = PanelService.getPopupMenuWindow(root.screen);
         if (popupMenuWindow) {
           popupMenuWindow.showContextMenu(contextMenu);
           const pos = BarService.getContextMenuPosition(root, contextMenu.implicitWidth, contextMenu.implicitHeight);
