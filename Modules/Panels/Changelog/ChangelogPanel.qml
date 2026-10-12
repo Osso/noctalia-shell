@@ -45,7 +45,7 @@ SmartPanel {
             if (isNaN(date.getTime()))
                 return dateString;
 
-            return Qt.formatDate(date, Qt.DefaultLocaleLongDate);
+            return date.toLocaleDateString(Qt.locale());
         } catch (error) {
             return dateString;
         }
