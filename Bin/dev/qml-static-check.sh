@@ -352,6 +352,35 @@ for file in "${qml_files[@]}"; do
     Tests/Qml/WallpaperPanelWarningsHarness.qml)
         python3 "$repo_root/Tests/wallpaper-panel-warnings.test.py" --mode lint-harness
         ;;
+    Tests/Qml/AllBackgroundsOwnerHarness.qml)
+        python3 "$repo_root/Tests/layer-bar-owner-warnings.test.py" backgrounds lint-harness \
+            --max-warnings 0 --artifacts "$module_root/all-backgrounds-owner"
+        ;;
+    Tests/Qml/BackgroundRegionReloadHarness.qml)
+        python3 "$repo_root/Tests/background-region-reload.test.py" lint-harness \
+            --max-warnings 0 --artifacts "$module_root/background-region-reload"
+        ;;
+    Tests/Qml/BarMultilineVarHarness.qml)
+        python3 "$repo_root/Tests/bar-multiline-var-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/BarWidgetLoaderHarness.qml)
+        python3 "$repo_root/Tests/control-center-widget-loader-warnings.test.py" lint-harness --bar --max-warnings 0
+        ;;
+    Tests/Qml/TabButtonReloadHarness.qml)
+        python3 "$repo_root/Tests/tab-button-warnings.test.py" --harness TabButtonReloadHarness.qml lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/TabButtonWarningsHarness.qml)
+        python3 "$repo_root/Tests/tab-button-warnings.test.py" --harness TabButtonWarningsHarness.qml lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/SettingsTypesHarness.qml)
+        python3 "$repo_root/Tests/settings-types.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/ClockSettingsWarningsHarness.qml)
+        python3 "$repo_root/Tests/clock-settings-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/WidgetSettingsCohortHarness.qml)
+        python3 "$repo_root/Tests/widget-settings-cohort-warnings.test.py" lint-harness --max-warnings 0
+        ;;
     Tests/Qml/tst_panel_service_lifecycle.qml)
         "$repo_root/Tests/panel-service-lifecycle.test.sh" lint-harness \
             --harness tst_panel_service_lifecycle.qml

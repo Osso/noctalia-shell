@@ -996,6 +996,82 @@ class FixtureLintTest(unittest.TestCase):
                     self.assertNotIn(filename, artifact_paths, "artifact path reused")
                     artifact_paths.add(filename)
 
+    def test_background_bar_tabs_settings_checker_routes(self):
+        routes = {
+            "AllBackgroundsOwnerHarness.qml": (
+                "layer-bar-owner-warnings.test.py",
+                ["backgrounds", "lint-harness", "--max-warnings", "0"],
+                True,
+            ),
+            "BackgroundRegionReloadHarness.qml": (
+                "background-region-reload.test.py",
+                ["lint-harness", "--max-warnings", "0"],
+                True,
+            ),
+            "BarMultilineVarHarness.qml": (
+                "bar-multiline-var-warnings.test.py",
+                ["lint-harness", "--max-warnings", "0"],
+                False,
+            ),
+            "BarWidgetLoaderHarness.qml": (
+                "control-center-widget-loader-warnings.test.py",
+                ["lint-harness", "--bar", "--max-warnings", "0"],
+                False,
+            ),
+            "TabButtonReloadHarness.qml": (
+                "tab-button-warnings.test.py",
+                [
+                    "--harness",
+                    "TabButtonReloadHarness.qml",
+                    "lint-harness",
+                    "--max-warnings",
+                    "0",
+                ],
+                False,
+            ),
+            "TabButtonWarningsHarness.qml": (
+                "tab-button-warnings.test.py",
+                [
+                    "--harness",
+                    "TabButtonWarningsHarness.qml",
+                    "lint-harness",
+                    "--max-warnings",
+                    "0",
+                ],
+                False,
+            ),
+            "SettingsTypesHarness.qml": (
+                "settings-types.test.py",
+                ["lint-harness", "--max-warnings", "0"],
+                False,
+            ),
+            "ClockSettingsWarningsHarness.qml": (
+                "clock-settings-warnings.test.py",
+                ["lint-harness", "--max-warnings", "0"],
+                False,
+            ),
+            "WidgetSettingsCohortHarness.qml": (
+                "widget-settings-cohort-warnings.test.py",
+                ["lint-harness", "--max-warnings", "0"],
+                False,
+            ),
+        }
+        artifact_paths = set()
+        for name, (script, arguments, artifacts) in routes.items():
+            for mode in ("present", "absent", "warning"):
+                with self.subTest(harness=name, mode=mode):
+                    filename = self.check_synthetic_strict_dispatch(
+                        name,
+                        script,
+                        mode == "warning",
+                        arguments,
+                        artifacts=artifacts,
+                        settings_present=mode == "present",
+                        static_only=True,
+                    )
+                    self.assertNotIn(filename, artifact_paths, "artifact path reused")
+                    artifact_paths.add(filename)
+
     def test_launcher_mango_program_vpn_wallpaper_checker_routes(self):
         artifact_paths = set()
         for name, (
