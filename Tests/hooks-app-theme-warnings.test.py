@@ -2,14 +2,14 @@
 """Bounded owner lint and inert signal/template QtTest in a masked private HOME."""
 
 import argparse
-from collections import Counter
 import importlib.util
 import json
 import os
-from pathlib import Path
 import re
 import sys
 import tempfile
+from collections import Counter
+from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).absolute().parents[1]
