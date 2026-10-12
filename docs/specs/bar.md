@@ -90,6 +90,11 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 
 ## Tests asserting this spec
 
+### Optional dynamic widget loader contract
+
+- At `985a57a53`, BarWidgetLoader diagnostics remain 3→3 (`screen`, `scaling`, `onLoaded`); production is unchanged. Inspection of all 40 registered widget types across both registries found no truthful shared contract for these optional members. Exact-count acceptance is not zero-warning analysis.
+- `Tests/Qml/BarWidgetLoaderHarness.qml` covers filtered props, screen/scaling assignment and registration before callback, independent owners/reload, optional-member absence, owner-bound density scaling, rounded/hidden geometry and transparent hide mode, missing-registry handling, and destruction unregistration. Six behavioral cases plus init/cleanup report eight passes each in normal and owner-shadow offscreen runs. Shared dedicated-test accounting, nine negative controls, and isolation limits: [testing](testing.md#control-center-widget-loader-isolated-runtime).
+
 ### Bar control cohort
 
 - `Tests/bar-controls-warnings.test.py` covers production ControlCenter, Brightness, Microphone, Volume, Bluetooth, VPN, LockKeys, and SessionMenu. Through `1fa24f0b0`, owner qualification reduces cohort unqualified-access warnings 62→0 and block-scoped-variable warnings 10→0; standalone lint requires zero warnings per widget. No intended user-facing behavior change.
