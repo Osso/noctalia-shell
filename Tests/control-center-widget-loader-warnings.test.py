@@ -18,6 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/ControlCenter/ControlCenterWidgetLoader.qml")
+BAR_TARGET = Path("Modules/Bar/Extras/BarWidgetLoader.qml")
 
 
 def helper(filename):
@@ -60,24 +61,40 @@ def deny_config(config_parent):
             print("CONFIG_ACCESS_DENIED", path, "EACCES")
 
 
-def stage_runtime(directory, mutation, owner_shadow):
+def stage_runtime(directory, args):
     modules = helper("about-tab-warnings.test.py")
-    source = (ROOT / TARGET).read_text()
-    if mutation:
+    target = BAR_TARGET if args.bar else TARGET
+    loader_name = "BarWidgetLoader" if args.bar else "ControlCenterWidgetLoader"
+    source = (ROOT / target).read_text()
+    if args.mutation:
         # Reverse only owner qualifications in the private production copy.
         source = source.replace("root.widgetProps", "widgetProps")
         source = source.replace("root.widgetScreen", "widgetScreen")
-    if owner_shadow:
+        source = source.replace("root.scaling", "scaling")
+    if args.callback_first:
+        callback = """      if (item.hasOwnProperty("onLoaded")) {
+        item.onLoaded();
+      }"""
+        assert source.count(callback) == 1
+        source = source.replace(callback, "")
+        source = source.replace(
+            "      // Apply properties to loaded widget",
+            callback + "\n\n      // Apply properties to loaded widget",
+        )
+    if args.required_member:
+        source = source.replace(
+            f'item.hasOwnProperty("{args.required_member}")', "true"
+        )
+    if args.owner_shadow:
         # Deliberately shadow outer names at the lexical boundary under test.
         source = source.replace(
             "id: loader",
             """id: loader
     property var widgetProps: ({caption: "wrong-owner"})
-    property ShellScreen widgetScreen: null""",
+    property ShellScreen widgetScreen: null
+    property real scaling: 9.0""",
         )
-    modules.write_module(
-        directory, "qs.LoaderProof", {"ControlCenterWidgetLoader": source}
-    )
+    modules.write_module(directory, "qs.LoaderProof", {loader_name: source})
     modules.write_module(
         directory,
         "Quickshell",
@@ -88,26 +105,29 @@ def stage_runtime(directory, mutation, owner_shadow):
         "qs.Commons",
         {
             "Logger": modules.singleton("""property var warnings: []
-function w(...args) { warnings = warnings.concat([args]); }""")
+function w(...args) { warnings = warnings.concat([args]); }
+function d(...args) {}""")
         },
     )
-    modules.write_module(
-        directory,
-        "qs.Services.UI",
-        {
-            "ControlCenterWidgetRegistry": """pragma Singleton
-import QtQuick
-QtObject {
-  property var widgets: ({})
-  function getWidget(id) { return widgets[id] || null; }
-  function hasWidget(id) { return id in widgets; }
-}"""
-        },
-    )
+    services = {
+        loader_name.replace(
+            "Loader", "Registry"
+        ): modules.singleton("""property var widgets: ({})
+function getWidget(id) { return widgets[id] || null; }
+function hasWidget(id) { return id in widgets; }""")
+    }
+    if args.bar:
+        services["BarService"] = modules.singleton("""property var registrations: []
+property var removals: []
+function registerWidget(screen, section, id, index, item) {
+  registrations = registrations.concat([{screen: screen, section: section, id: id, index: index, item: item}]);
+}
+function unregisterWidget(screen, section, id, index) {
+  removals = removals.concat([{screen: screen, section: section, id: id, index: index}]);
+}""")
+    modules.write_module(directory, "qs.Services.UI", services)
     harness = directory / "tst_loader.qml"
-    harness.write_text(
-        (ROOT / "Tests/Qml/ControlCenterWidgetLoaderHarness.qml").read_text()
-    )
+    harness.write_text((ROOT / f"Tests/Qml/{loader_name}Harness.qml").read_text())
     return harness
 
 
@@ -178,7 +198,7 @@ def sandboxed(args):
                 "/usr/lib/qt6/bin/qmllint",
                 "-I",
                 str(directory),
-                str(directory / "qs" / TARGET),
+                str(directory / "qs" / (BAR_TARGET if args.bar else TARGET)),
             ],
             directory,
             environment,
@@ -187,9 +207,9 @@ def sandboxed(args):
         counts = Counter(re.findall(r"\[([^]]+)\]", line)[-1] for line in warnings)
         print("LOADER_WARNINGS", len(warnings), dict(counts))
         assert code == 0, code
-        assert counts == {"missing-property": 2}, dict(counts)
+        assert counts == {"missing-property": 3 if args.bar else 2}, dict(counts)
         return
-    harness = stage_runtime(directory, args.mutation, args.owner_shadow)
+    harness = stage_runtime(directory, args)
     if args.mode == "lint-harness":
         raise SystemExit(
             lint_harness(directory, harness, environment, args.inject_warning)
@@ -229,6 +249,9 @@ def main():
     parser.add_argument("mode", choices=("runtime", "lint", "lint-harness"))
     parser.add_argument("--inject-warning", action="store_true")
     parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--bar", action="store_true")
+    parser.add_argument("--callback-first", action="store_true")
+    parser.add_argument("--required-member", choices=("screen", "scaling", "onLoaded"))
     parser.add_argument("--mutation", action="store_true")
     parser.add_argument("--owner-shadow", action="store_true")
     parser.add_argument("--sandbox", type=Path, help=argparse.SUPPRESS)
@@ -287,12 +310,17 @@ def main():
             "--config-parent",
             config_parent,
         ]
-        if args.inject_warning:
-            command.append("--inject-warning")
-        if args.mutation:
-            command.append("--mutation")
-        if args.owner_shadow:
-            command.append("--owner-shadow")
+        for flag in (
+            "inject_warning",
+            "mutation",
+            "owner_shadow",
+            "bar",
+            "callback_first",
+        ):
+            if getattr(args, flag):
+                command.append("--" + flag.replace("_", "-"))
+        if args.required_member:
+            command.extend(["--required-member", args.required_member])
         audit = directory / "access.trace"
         command = [
             "strace",

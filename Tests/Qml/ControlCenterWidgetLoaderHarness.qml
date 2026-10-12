@@ -1,44 +1,53 @@
 import QtQuick
 import QtTest
 import Quickshell
-import qs.LoaderProof
 import qs.Commons
+import qs.LoaderProof
 import qs.Services.UI
 
 Item {
   id: host
+
   width: 400
   height: 300
 
   ShellScreen {
     id: firstScreen
+
     name: "first"
   }
+
   ShellScreen {
     id: secondScreen
+
     name: "second"
   }
 
   Component {
     id: widget
+
     Item {
       property string caption: "default"
       property ShellScreen screen
       property int loadedCount: 0
       property string loadedSnapshot: ""
-      implicitWidth: 71
-      implicitHeight: 29
+
       function onLoaded() {
         loadedCount++;
-        loadedSnapshot = caption + ":" + screen.name;
+        loadedSnapshot = caption + ":" + (screen ? screen.name : "unset");
       }
+
+      implicitWidth: 71
+      implicitHeight: 29
     }
   }
 
   Component {
     id: plainWidget
+
     Item {
       property string caption: "plain"
+
       implicitWidth: 33
       implicitHeight: 18
     }
@@ -46,34 +55,33 @@ Item {
 
   Component {
     id: subject
+
     ControlCenterWidgetLoader {}
   }
 
   TestCase {
     id: tests
-    name: "ControlCenterWidgetLoader"
-    when: windowShown
 
     function init() {
       ControlCenterWidgetRegistry.widgets = {
-        first: widget,
-        second: widget,
-        plain: plainWidget
+        "first": widget,
+        "second": widget,
+        "plain": plainWidget
       };
       Logger.warnings = [];
     }
 
     function createLoader(id) {
       const loaded = createTemporaryObject(subject, host, {
-        widgetId: id,
-        widgetScreen: firstScreen,
-        widgetProps: {
-          caption: "initial",
-          section: "left",
-          sectionWidgetIndex: 2,
-          unknown: "ignored"
-        }
-      });
+                                             "widgetId": id,
+                                             "widgetScreen": firstScreen,
+                                             "widgetProps": {
+                                               "caption": "initial",
+                                               "section": "left",
+                                               "sectionWidgetIndex": 2,
+                                               "unknown": "ignored"
+                                             }
+                                           });
       verify(loaded !== null);
       return loaded;
     }
@@ -104,9 +112,9 @@ Item {
     function test_reload_reads_current_owner_properties() {
       const loaded = createLoader("first");
       loaded.widgetProps = {
-        caption: "updated",
-        section: "right",
-        sectionWidgetIndex: 4
+        "caption": "updated",
+        "section": "right",
+        "sectionWidgetIndex": 4
       };
       loaded.widgetScreen = secondScreen;
       // Existing widget receives assignments only at loading, not on props changes.
@@ -118,6 +126,24 @@ Item {
       loaded.widgetId = "second";
       compare(findWidget(loaded).loadedSnapshot, "updated:second");
       compare(findWidget(loaded).loadedCount, 1);
+    }
+
+    function test_two_owners_preserve_optional_members() {
+      const first = createLoader("first");
+      const second = createLoader("plain");
+      second.widgetProps = {
+        "caption": "second-owner",
+        "section": "right"
+      };
+      second.widgetScreen = secondScreen;
+      compare(findWidget(second).screen, undefined);
+      compare(findWidget(second).onLoaded, undefined);
+      second.widgetId = "second";
+      compare(findWidget(second).loadedSnapshot, "second-owner:second");
+      compare(findWidget(second).loadedCount, 1);
+      compare(findWidget(first).loadedSnapshot, "initial:first");
+      compare(first.section, "left");
+      compare(second.section, "right");
     }
 
     function test_implicit_geometry_tracks_visibility_and_size() {
@@ -159,5 +185,8 @@ Item {
         return cleared;
       });
     }
+
+    name: "ControlCenterWidgetLoader"
+    when: windowShown
   }
 }

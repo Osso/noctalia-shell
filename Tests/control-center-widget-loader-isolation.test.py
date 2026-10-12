@@ -109,19 +109,55 @@ class LoaderIsolationTest(unittest.TestCase):
         self.assertIn("CONFIG_AUDIT_PASS", output)
 
     def test_normal_runtime(self):
-        self.assert_pass(["runtime"], "7 passed, 0 failed")
+        self.assert_pass(["runtime"], "8 passed, 0 failed")
 
     def test_owner_runtime(self):
-        self.assert_pass(["runtime", "--owner-shadow"], "7 passed, 0 failed")
-
-    def test_owner_mutation_rejected(self):
-        code, output = self.run_case(["runtime", "--owner-shadow", "--mutation"])
-        self.assertNotEqual(code, 0, output)
-        self.assertIn("FAIL!", output)
-        self.assertIn("CONFIG_AUDIT_PASS", output)
+        self.assert_pass(["runtime", "--owner-shadow"], "8 passed, 0 failed")
 
     def test_production_lint(self):
         self.assert_pass(["lint"], "LOADER_WARNINGS 2 {'missing-property': 2}")
+
+    def test_bar_normal_runtime(self):
+        self.assert_pass(["runtime", "--bar"], "8 passed, 0 failed")
+
+    def test_bar_owner_runtime(self):
+        self.assert_pass(["runtime", "--bar", "--owner-shadow"], "8 passed, 0 failed")
+
+    def test_bar_strict_harness_lint(self):
+        self.assert_pass(
+            ["lint-harness", "--bar"], "LOADER_HARNESS_LINT_WARNINGS 0 EXIT 0"
+        )
+
+    def test_bar_production_lint(self):
+        self.assert_pass(["lint", "--bar"], "LOADER_WARNINGS 3 {'missing-property': 3}")
+
+    def test_owner_and_order_mutations_rejected(self):
+        for loader in ([], ["--bar"]):
+            for mutation in (["--owner-shadow", "--mutation"], ["--callback-first"]):
+                with self.subTest(loader=loader, mutation=mutation):
+                    code, output = self.run_case(["runtime", *loader, *mutation])
+                    self.assertNotEqual(code, 0, output)
+                    self.assertIn("FAIL!", output)
+                    self.assertIn("CONFIG_AUDIT_PASS", output)
+
+    def test_optional_member_mutations_rejected(self):
+        for loader, members in (
+            ([], ("screen", "onLoaded")),
+            (["--bar"], ("screen", "scaling", "onLoaded")),
+        ):
+            for member in members:
+                with self.subTest(loader=loader, member=member):
+                    code, output = self.run_case(
+                        ["runtime", *loader, "--required-member", member]
+                    )
+                    self.assertNotEqual(code, 0, output)
+                    expected = (
+                        "TypeError"
+                        if member == "onLoaded"
+                        else f'Cannot assign to non-existent property "{member}"'
+                    )
+                    self.assertIn(expected, output)
+                    self.assertIn("CONFIG_AUDIT_PASS", output)
 
 
 class SettingsAuditTest(unittest.TestCase):
