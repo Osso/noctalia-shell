@@ -207,7 +207,12 @@ def lint_harness(directory, environment, inject_warning):
         "bar-multiline-harness-lint",
     )
     report = json.loads(output)
-    headers = [warning for entry in report["files"] for warning in entry["warnings"]]
+    headers = [
+        warning
+        for entry in report["files"]
+        for warning in entry["warnings"]
+        if warning["type"] in ("warning", "error")
+    ]
     print("BAR_MULTILINE_HARNESS_DIAGNOSTICS", len(headers), "EXIT", code)
     if inject_warning:
         assert code != 0 and "missingLintProbe" in output, output

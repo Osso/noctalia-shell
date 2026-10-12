@@ -118,11 +118,12 @@ function closedPanel(panel) { openedPanel = null; }""",
     )
     for path in directory.rglob("qmldir"):
         path.unlink()
-    # Quickshell exposes this tree as qs; register its actual singleton sources
+    # Quickshell exposes this tree as qs; declare only actual staged sources
     # for both runtime and lint, without substituting production service metadata.
-    for relative in ("Commons", "Services/UI"):
-        module_directory = directory / relative
-        declarations = ["module qs." + relative.replace("/", ".")]
+    module_directories = {source.parent for source in directory.rglob("*.qml")}
+    for module_directory in sorted(module_directories):
+        relative = module_directory.relative_to(directory)
+        declarations = ["module qs." + ".".join(relative.parts)]
         for source in sorted(module_directory.glob("*.qml")):
             prefix = (
                 "singleton "
@@ -173,7 +174,12 @@ def lint_harness(directory, inject_warning):
         "region-harness-lint",
     )
     report = json.loads(output)
-    headers = [warning for entry in report["files"] for warning in entry["warnings"]]
+    headers = [
+        warning
+        for entry in report["files"]
+        for warning in entry["warnings"]
+        if warning["type"] in ("warning", "error")
+    ]
     print("REGION_HARNESS_DIAGNOSTICS", len(headers), "EXIT", code)
     if inject_warning:
         assert code != 0 and "missingLintProbe" in output, output

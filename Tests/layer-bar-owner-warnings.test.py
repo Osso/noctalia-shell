@@ -197,7 +197,12 @@ def lint_background_harness(directory, inject_warning):
         "background-harness-lint",
     )
     report = json.loads(output)
-    headers = [warning for entry in report["files"] for warning in entry["warnings"]]
+    headers = [
+        warning
+        for entry in report["files"]
+        for warning in entry["warnings"]
+        if warning["type"] in ("warning", "error")
+    ]
     print("BACKGROUND_HARNESS_DIAGNOSTICS", len(headers), "EXIT", code)
     if inject_warning:
         assert code != 0 and "missingLintProbe" in output, output
