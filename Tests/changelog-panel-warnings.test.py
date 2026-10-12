@@ -140,7 +140,63 @@ def run_isolated(directory, command, label):
     isolation = helper("grid-list-warnings.test.py")
     environment = isolation.isolated_environment(directory)
     environment["LC_ALL"] = "C"
-    return isolation.run_audited(directory, environment, command, label)
+    trace = directory / f"{label}.trace"
+    sandbox = [
+        "bwrap",
+        "--die-with-parent",
+        "--unshare-net",
+        "--ro-bind",
+        "/usr",
+        "/usr",
+        "--symlink",
+        "usr/lib",
+        "/lib",
+        "--symlink",
+        "usr/lib",
+        "/lib64",
+        "--ro-bind",
+        "/etc/fonts",
+        "/etc/fonts",
+        "--proc",
+        "/proc",
+        "--dev",
+        "/dev",
+        "--tmpfs",
+        "/tmp",
+        "--bind",
+        str(directory),
+        str(directory),
+        "--chdir",
+        str(directory),
+        "--",
+    ]
+    result = subprocess.run(
+        [
+            "strace",
+            "-f",
+            "-qq",
+            "-e",
+            "trace=%file",
+            "-o",
+            str(trace),
+            *sandbox,
+            *command,
+        ],
+        cwd=directory,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert "settings.json" not in trace.read_text(), (
+        "SETTINGS_AUDIT_DENIED: child settings access attempted"
+    )
+    print(
+        f"CHILD_SETTINGS_AUDIT: {label} zero settings attempts; host home/config not mounted"
+    )
+    print(result.stdout, end="")
+    print(result.stderr, end="", file=sys.stderr)
+    return result
 
 
 def lint_harness(directory, inject_warning=False):
@@ -155,7 +211,7 @@ def lint_harness(directory, inject_warning=False):
                 1,
             )
         )
-    code, output = run_isolated(
+    result = run_isolated(
         directory,
         [
             "/usr/lib/qt6/bin/qmllint",
@@ -172,12 +228,18 @@ def lint_harness(directory, inject_warning=False):
         ],
         "changelog-harness-lint",
     )
-    diagnostics = json.loads(output)
+    diagnostics = json.loads(result.stdout)
     warnings = sum(
         warning["type"] == "warning"
         for result in diagnostics["files"]
         for warning in result["warnings"]
     )
+    failed = not diagnostics["files"] or any(
+        not entry["success"]
+        or any(warning["type"] in ("warning", "error") for warning in entry["warnings"])
+        for entry in diagnostics["files"]
+    )
+    code = result.returncode or int(failed)
     print("CHANGELOG_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
     if inject_warning:
         assert warnings > 0, "injected diagnostic not detected"
@@ -198,7 +260,7 @@ def lint_harness_regression(directory):
 
 def runtime(directory):
     stage_runtime(directory)
-    code, output = run_isolated(
+    result = run_isolated(
         directory,
         [
             "/usr/lib/qt6/bin/qmltestrunner",
@@ -209,7 +271,8 @@ def runtime(directory):
         ],
         "changelog-runtime",
     )
-    assert code == 0, f"runtime exit {code}"
+    assert result.returncode == 0, f"runtime exit {result.returncode}"
+    output = result.stdout + result.stderr
     assert "7 passed, 0 failed" in output, output
     assert not re.search(r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError", output), (
         output
