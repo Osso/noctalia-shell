@@ -3,6 +3,7 @@
 
 import argparse
 import importlib.util
+import json
 from pathlib import Path
 import re
 import subprocess
@@ -87,7 +88,7 @@ Rectangle {
             ),
             "Time": singleton("property date now: new Date(2026, 0, 15, 12)"),
             "I18n": singleton('property var locale: Qt.locale("en_US")'),
-            "Settings": singleton("""property QtObject data: QtObject {
+            "Settings": singleton("""property var data: QtObject {
   property QtObject location: QtObject {
     property int firstDayOfWeek: 1
     property bool showWeekNumberInCalendar: true
@@ -148,10 +149,16 @@ function execDetached(args) { launches = launches.concat([args]); }
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime", "isolation"))
+    parser.add_argument(
+        "mode", choices=("lint", "lint-harness", "runtime", "isolation")
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     parser.add_argument("--expect-warnings", type=int, default=0)
     parser.add_argument("--mutation", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-calendar-card-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
@@ -165,6 +172,34 @@ def main():
                 "-I",
                 temporary,
                 str(directory / "qs" / TARGET),
+            ]
+        elif args.mode == "lint-harness":
+            stage_runtime(directory)
+            harness = directory / "tst_calendar.qml"
+            if args.inject_warning:
+                source = harness.read_text()
+                marker = "id: testCase"
+                assert source.count(marker) == 1, "injection owner must be unique"
+                harness.write_text(
+                    source.replace(
+                        marker,
+                        marker
+                        + "\n  property int injectedWarning: testCase.missingLintProbe",
+                        1,
+                    )
+                )
+            argv = [
+                "/usr/lib/qt6/bin/qmllint",
+                "--bare",
+                "-I",
+                temporary,
+                "-I",
+                "/usr/lib/qt6/qml",
+                "--max-warnings",
+                str(args.max_warnings),
+                "--json",
+                "-",
+                str(harness),
             ]
         elif args.mode == "runtime":
             stage_runtime(directory, args.mutation)
@@ -207,10 +242,26 @@ finally: s.close()
             print("CALENDAR_CARD_WARNINGS", len(warnings))
             assert len(warnings) == args.expect_warnings, output
             assert result.returncode == 0, result.returncode
+        elif args.mode == "lint-harness":
+            diagnostics = json.loads(result.stdout)
+            warnings = sum(
+                warning["type"] == "warning"
+                for entry in diagnostics["files"]
+                for warning in entry["warnings"]
+            )
+            print("CALENDAR_CARD_HARNESS_WARNINGS", warnings, "EXIT", result.returncode)
+            if args.inject_warning:
+                assert warnings > 0 and result.returncode != 0, (
+                    "injected warning was accepted"
+                )
+                raise SystemExit(result.returncode)
+            assert warnings == 0 and result.returncode == 0, (
+                "strict harness lint failed"
+            )
         else:
             assert result.returncode == 0, result.returncode
             if args.mode == "runtime":
-                assert "0 failed" in output
+                assert "7 passed, 0 failed" in output
                 assert not re.search(
                     r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:",
                     output,
