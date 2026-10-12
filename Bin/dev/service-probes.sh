@@ -582,9 +582,34 @@ probe_audio() {
     echo "ok probeAudio"
 }
 
+validate_ddc_brightness_fixture() {
+    local detect_status="$1" ddc_output="$2" vcp_status="$3" vcp_output="$4"
+    local lg_bus
+
+    if [[ "$detect_status" -ne 0 ]]; then
+        echo "DDC fixture detect failed with exit status $detect_status" >&2
+        return 1
+    fi
+
+    lg_bus="$(find_lg_ultrawide_bus "$ddc_output")"
+    if [[ -z "$lg_bus" ]]; then
+        echo "DDC fixture has no LG ULTRAWIDE bus" >&2
+        return 1
+    fi
+
+    if [[ "$vcp_status" -ne 0 ]]; then
+        echo "DDC fixture getvcp failed with exit status $vcp_status" >&2
+        return 1
+    fi
+
+    if ! is_ddc_brightness_output "$vcp_output"; then
+        echo "unexpected DDC fixture brightness output on bus $lg_bus: $vcp_output" >&2
+        return 1
+    fi
+}
+
 probe_brightness() {
     require_command brightnessctl
-    require_command ddcutil
     require_command rg
 
     if ! brightnessctl --list | rg -q "Device 'amdgpu_bl1' of class 'backlight'"; then
@@ -592,20 +617,20 @@ probe_brightness() {
         exit 1
     fi
 
-    local ddc_output vcp_output lg_bus
-    ddc_output="$(ddcutil detect 2>&1)"
-    lg_bus="$(find_lg_ultrawide_bus "$ddc_output")"
+    # Live DDC is disabled as a host safety mitigation. This proves parsing only.
+    local ddc_fixture='Display 1
+   I2C bus:  /dev/i2c-4
+   EDID synopsis:
+      Model:                LG ULTRAWIDE
 
-    if [ -n "$lg_bus" ]; then
-        vcp_output="$(ddcutil -b "$lg_bus" getvcp 10 --brief 2>&1)"
-        if ! is_ddc_brightness_output "$vcp_output"; then
-            echo "unexpected DDC brightness output for LG ULTRAWIDE on bus $lg_bus: $vcp_output" >&2
-            exit 1
-        fi
-        echo "ok probeBrightnessDdc"
-    else
-        echo "ok probeBrightnessDdcSkipped"
+Display 2
+   I2C bus:  /dev/i2c-7
+   EDID synopsis:
+      Model:                Other Display'
+    if ! validate_ddc_brightness_fixture 0 "$ddc_fixture" 0 'VCP 10 C 25 100'; then
+        exit 1
     fi
+    echo "ok probeBrightnessDdcFixture (private data only; live DDC not tested)"
 
     echo "ok probeBrightness"
 }
