@@ -7,6 +7,7 @@ settings persistence, canonical Quickshell, native input or whole-shell proof.
 
 import argparse
 import importlib.util
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -137,7 +138,15 @@ def runtime(directory):
     # Reuse permission-locked settings backup, isolated HOME/XDG and timeout handling.
     history = helper("notification-history-warnings.test.py")
     history.stage_runtime = stage_runtime
-    history.runtime(directory)
+    original_locale = os.environ.get("LC_ALL")
+    os.environ["LC_ALL"] = "C"
+    try:
+        history.runtime(directory)
+    finally:
+        if original_locale is None:
+            del os.environ["LC_ALL"]
+        else:
+            os.environ["LC_ALL"] = original_locale
 
 
 if __name__ == "__main__":

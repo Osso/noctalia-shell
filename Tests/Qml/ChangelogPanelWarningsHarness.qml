@@ -108,6 +108,38 @@ Item {
             });
         }
 
+        function test_release_date_long_locale_format() {
+            compare(panel.formatReleaseDate("2026-01-15T12:00:00"), "Thursday, 15 January 2026");
+            compare(panel.formatReleaseDate(""), "");
+            compare(panel.formatReleaseDate("not-a-date"), "not-a-date");
+        }
+
+        function test_two_instance_content_ownership() {
+            const other = panelComponent.createObject(scene);
+            verify(other !== null);
+            try {
+                other.open();
+                tryVerify(() => other.contentItem !== null);
+                verify(other.contentItem !== panel.contentItem);
+                const closeButtons = descendants(other.contentItem, child => child.tooltipText === "tooltips.close");
+                compare(closeButtons.length, 1);
+                closeButtons[0].clicked();
+                tryCompare(other, "contentItem", null);
+                verify(panel.isPanelOpen);
+                verify(panel.contentItem !== null);
+                compare(find(child => child.text === "Highlights").headingLevel, 1);
+                other.open();
+                tryVerify(() => other.contentItem !== null);
+                find(child => child.text === "changelog.panel.buttons.dismiss").clicked();
+                tryCompare(panel, "contentItem", null);
+                verify(other.isPanelOpen);
+                verify(other.contentItem !== null);
+            } finally {
+                other.destroy();
+                wait(0);
+            }
+        }
+
         function test_scroll_long_content_and_render() {
             const entries = ["# Long release"];
             for (let index = 0; index < 80; index++) entries.push("Entry " + index + " concrete release note")
