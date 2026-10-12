@@ -851,9 +851,8 @@ function testBrightnessServiceMonitorScreenModelAliasIsTyped() {
   const monitorComponent = /component\s+Monitor:\s+QtObject\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+screenModel:\s+modelData\s*\?\s*modelData\.model\s*:\s*""/;
 
   assert.match(source, monitorComponent, "BrightnessService Monitor must expose null-safe typed screenModel alias from ShellScreen modelData");
-  assert.match(source, /root\.ddcMonitors\.some\(m\s*=>\s*m\.model\s*===\s*screenModel\)/, "BrightnessService DDC detection must use screenModel");
-  assert.match(source, /root\.ddcMonitors\.find\(m\s*=>\s*m\.model\s*===\s*screenModel\)/, "BrightnessService DDC bus lookup must use screenModel");
-  assert.match(source, /root\.appleDisplayPresent\s*&&\s*screenModel\.startsWith\("StudioDisplay"\)/, "BrightnessService Apple display detection must use screenModel");
+  // Display detection behavior is covered by brightness-service-guards.test.js
+  // and Qml/BrightnessServiceOffscreenHarness.qml, not source construction.
 
   const modelReads = source.match(/modelData\.model/g) ?? [];
   assert.deepEqual(modelReads, ["modelData.model"], "BrightnessService Monitor must use screenModel after declaration");
