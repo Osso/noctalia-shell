@@ -1,9 +1,9 @@
 import QtQuick
-import QtQuick.Controls
 import QtTest
 import qs.Widgets
 
 Item {
+  id: harness
   width: 1000
   height: 800
   visible: true // qmltestrunner uses offscreen QPA only
@@ -157,7 +157,7 @@ Item {
       for (let i = 0; i < 3; i++) {
         const temporaryPicker = component.createObject(picker.parent, {
           initialPath: "@FILES@"
-        });
+        }) as NFilePicker;
         verify(temporaryPicker !== null);
         temporaryPicker.openFilePicker();
         tryCompare(temporaryPicker, "opened", true);

@@ -15,6 +15,8 @@ import re
 import shutil
 import subprocess
 import tempfile
+import errno
+import socket
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "Widgets/NFilePicker.qml"
@@ -65,7 +67,7 @@ def lint(directory):
     print("FILE_PICKER_LINT_PASS")
 
 
-def runtime(directory):
+def stage_runtime(directory):
     files = directory / "files"
     files.mkdir()
     (files / "child").mkdir()
@@ -124,6 +126,10 @@ def runtime(directory):
     shutil.copyfile(ROOT / "Helpers/FuzzySort.js", helpers / "FuzzySort.js")
     source = (ROOT / "Tests/Qml/FilePickerWarningsHarness.qml").read_text()
     (directory / "tst_picker.qml").write_text(source.replace("@FILES@", str(files)))
+    return directory / "tst_picker.qml"
+
+
+def isolated_environment(directory):
     environment = {
         key: value
         for key, value in os.environ.items()
@@ -147,11 +153,19 @@ def runtime(directory):
         path.mkdir(mode=0o700)
         environment[key] = str(path)
     environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
+    environment["DBUS_SESSION_BUS_ADDRESS"] = "unix:path=/nonexistent/picker-session"
+    environment["DBUS_SYSTEM_BUS_ADDRESS"] = "unix:path=/nonexistent/picker-system"
+    return environment
+
+
+def runtime(directory):
+    harness = stage_runtime(directory)
+    environment = isolated_environment(directory)
     result = subprocess.run(
         [
             "/usr/lib/qt6/bin/qmltestrunner",
             "-input",
-            str(directory / "tst_picker.qml"),
+            str(harness),
             "-import",
             str(directory),
         ],
@@ -170,9 +184,138 @@ def runtime(directory):
     print("FILE_PICKER_RUNTIME_PASS")
 
 
-if __name__ == "__main__":
+def lint_harness(directory, inject_warning=False):
+    harness = stage_runtime(directory)
+    if inject_warning:
+        source = harness.read_text()
+        marker = "id: harness"
+        assert source.count(marker) == 1, "Injection owner must be unique"
+        harness.write_text(
+            source.replace(
+                marker,
+                marker + "\n  property int injectedWarning: harness.missingLintProbe",
+                1,
+            )
+        )
+    result = subprocess.run(
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        cwd=directory,
+        env=isolated_environment(directory),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    print(result.stdout + result.stderr, end="")
+    diagnostics = json.loads(result.stdout)
+    warnings = sum(
+        warning["type"] == "warning"
+        for item in diagnostics["files"]
+        for warning in item["warnings"]
+    )
+    print("FILE_PICKER_HARNESS_WARNINGS", warnings, "EXIT", result.returncode)
+    if inject_warning:
+        assert warnings > 0 and "missingLintProbe" in result.stdout, (
+            "Injection not diagnosed"
+        )
+    passed = (
+        result.returncode == 0
+        and warnings == 0
+        and all(item["success"] for item in diagnostics["files"])
+    )
+    return 0 if passed else result.returncode or 1
+
+
+def lint_harness_regression(directory):
+    for name, injected in (("clean", False), ("injected", True)):
+        staged = directory / name
+        staged.mkdir(mode=0o700)
+        code = lint_harness(staged, injected)
+        assert (code != 0) if injected else (code == 0), name
+    print("FILE_PICKER_HARNESS_WARNING_REJECTED")
+
+
+def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=("lint", "runtime"), required=True)
+    parser.add_argument(
+        "--mode",
+        choices=("lint", "runtime", "lint-harness", "lint-harness-regression"),
+        required=True,
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--sandbox", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-picker-") as temporary:
-        {"lint": lint, "runtime": runtime}[args.mode](Path(temporary))
+        directory = Path(temporary)
+        if not args.sandbox:
+            command = [
+                "bwrap",
+                "--die-with-parent",
+                "--unshare-all",
+                "--new-session",
+                "--ro-bind",
+                "/",
+                "/",
+                "--tmpfs",
+                "/home",
+                "--tmpfs",
+                "/syncthing",
+                "--ro-bind",
+                str(ROOT),
+                str(ROOT),
+                "--tmpfs",
+                "/tmp",
+                "--tmpfs",
+                "/run",
+                "--bind",
+                str(directory),
+                str(directory),
+                "--proc",
+                "/proc",
+                "--dev",
+                "/dev",
+                "--chdir",
+                str(directory),
+                "--",
+                "/usr/bin/python3",
+                str(Path(__file__).resolve()),
+                "--mode",
+                args.mode,
+                "--max-warnings",
+                "0",
+                "--sandbox",
+            ]
+            result = subprocess.run(
+                command,
+                env={"PATH": "/usr/bin", "LANG": "C.UTF-8", "HOME": str(directory)},
+                timeout=120,
+            )
+            return result.returncode
+        assert not Path("/home/osso/.config").exists(), "Host config visible"
+        with socket.socket() as connection:
+            connection.settimeout(1)
+            assert connection.connect_ex(("192.0.2.1", 9)) == errno.ENETUNREACH
+        print("FILE_PICKER_CONFIG_NETWORK_MASKED")
+        if args.mode == "lint-harness":
+            return lint_harness(directory)
+        {
+            "lint": lint,
+            "runtime": runtime,
+            "lint-harness-regression": lint_harness_regression,
+        }[args.mode](directory)
+        return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
