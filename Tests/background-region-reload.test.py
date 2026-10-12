@@ -80,6 +80,7 @@ property int barHeight: 32
 property int marginXL: 16
 property int marginL: 12
 property int marginM: 8
+property real uiScaleRatio: 1
 property int radiusL: 12""",
     )
     write(
