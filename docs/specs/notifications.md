@@ -112,6 +112,8 @@ The history ListModel and Qt Repeaters/layout are real; NotificationService, Sma
 
 ## Tests asserting this spec
 
+- At `18fed36d7`/`23790c6b2`, NotificationsTab warnings drop 2→0. `Tests/Qml/NotificationsHooksWarningsHarness.qml` checks enabled/overlay/expiry/keyboard-toast/DND toggles, synthetic state on reopen, monitor metadata, and monitor selection by replacement array without mutating the original. Colliding checkbox methods exercise editor ownership; `ComponentBehavior: Bound` follows reported private-copy proof. No real notification delivery, config access, disk persistence, or cursor/input-region proof. Shared accounting and isolation: [testing](testing.md#notifications-hooks-settings-isolated-runtime).
+
 - At `adeaf6598`/`1121019df`, NotificationHistory widget warnings drop 3→0. `Tests/Qml/HistorySimpleToastHarness.qml` checks numeric/Date unread counts, badge count updates, zero/settings-driven Loader destruction and recreation with `ComponentBehavior: Bound`, and clear-history/popup-close callbacks. Model mutation alone is not reactive proof: the badge case advances `lastSeenTs`. Services and popup are fixtures; real delivery, persistence, desktop input and cursor behavior remain unproven. Shared accounting and isolation: [testing](testing.md#historysimpletoast-isolated-runtime).
 
 - At `5a3d4be9d`, NotificationHistorySettings warnings drop 4→0. `Tests/Qml/AudioNotificationSettingsWarningsHarness.qml` checks show-unread-badge/hide-when-zero defaults and toggles, copy-save without source mutation, unrelated-field retention, and shared-dialog cancel/reopen/apply. This proves synthetic editor state, not badge rendering, notification delivery, persistence, or cursor-flicker resolution. Shared accounting and isolation: [testing](testing.md#audionotification-settings-isolated-runtime).
@@ -131,7 +133,7 @@ The history ListModel and Qt Repeaters/layout are real; NotificationService, Sma
 ## Known gaps (current cycle)
 
 - [ ] Fix retained overflow cleanup failure; isolated service coverage exercises replacement and expiry signaling, but not production delivery or popup-driven expiry removal.
-- [ ] Add spec coverage for notification settings UI contracts.
+- [ ] Extend notification settings UI coverage beyond isolated toggles, monitor selection, and synthetic reopen state to real service/config persistence.
 - [ ] Resolve the three remaining generic `itemAt()` popup type diagnostics; this slice does not establish zero warnings.
 - [ ] Reproduce and fix Firefox/grouped-taskbar cursor flicker triggered per notification. It has **not been reproduced or fixed** by this slice; toast/notification layer input-region behavior is untouched, and the isolated test provides no desktop input-delivery proof.
 

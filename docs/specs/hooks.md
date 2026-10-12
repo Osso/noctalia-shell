@@ -38,6 +38,8 @@ Hooks covers user-configured shell commands that run after wallpaper and dark-mo
 
 ## Tests asserting this spec
 
+- At `18fed36d7`, HooksTab warnings drop 1→0. `Tests/Qml/NotificationsHooksWarningsHarness.qml` checks Loader-driven width changes, enabled-toggle visibility, wallpaper-command keyboard editing, unchanged theme command, and synthetic saved state on reopen. Hook execution fixtures throw if called; manual test actions are not invoked. No real hook execution, config access, or disk persistence is proven. Shared accounting and isolation: [testing](testing.md#notifications-hooks-settings-isolated-runtime).
+
 - `Tests/hooks-service-guards.test.js`
 - `Tests/source-coverage.test.js`
 
