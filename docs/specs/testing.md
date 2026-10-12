@@ -2,6 +2,12 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 ## What it must do
 
+### Control Center panel isolated runtime
+
+- `Tests/control-center-panel-warnings.test.py` runs standalone `lint`, `lint-harness`, or `behavior`, requiring `--artifacts <new-directory>`; no runner integration is claimed. At `b55847897`, panel-only static warnings drop 12→0; production lint requires zero warnings and exit status zero. Exact four-case coverage: [control center](control-center.md#tests-asserting-this-spec).
+- Behavior stages unchanged production ControlCenterPanel with inert SmartPanel, leaf cards, settings, screens, media and VPN services under software/offscreen `qmltestrunner`. Four behavioral tests plus QtTest init/cleanup yield six cases. This proves panel routing/layout/ownership bindings and fixture interactions, not real card rendering, compositor placement/input, settings persistence, or media/VPN backends.
+- All modes create a unique permission-locked, hash-verified byte-for-byte real-settings backup before staging and finally check real/backup bytes and canonical process/registry identity unchanged. Behavior uses private writable paths and removed desktop connections; timeout is 45 seconds. Acceptance requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `QCRITICAL`, `ReferenceError`, `TypeError`, `Binding loop`, or `Warning:`. Production lint timeout is 60 seconds; `lint-harness` separately checks the staged harness.
+
 ### Lock-screen isolated runtime
 
 - `python3 Tests/lock-screen-warnings.test.py lint` or `runtime` runs standalone; no runner integration is claimed. At `c9ebda0fc`/`b90b5c861`/`a00e603ed`, lint requires exit status zero, exactly ten `unqualified` warnings, and diagnostic source lines containing `lockContext.`. Warning reduction, retained captures, behavioral assertions, and recorded GREEN/RED results: [lock screen](lock-screen.md#tests-asserting-this-spec).
