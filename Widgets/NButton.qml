@@ -144,19 +144,19 @@ Rectangle {
     onEntered: {
       root.hovered = true;
       root.entered();
-      if (tooltipText) {
+      if (root.tooltipText) {
         TooltipService.show(root, root.tooltipText);
       }
     }
     onExited: {
       root.hovered = false;
       root.exited();
-      if (tooltipText) {
+      if (root.tooltipText) {
         TooltipService.hide();
       }
     }
     onPressed: mouse => {
-      if (tooltipText) {
+      if (root.tooltipText) {
         TooltipService.hide();
       }
       if (mouse.button === Qt.LeftButton) {
@@ -170,7 +170,7 @@ Rectangle {
 
     onCanceled: {
       root.hovered = false;
-      if (tooltipText) {
+      if (root.tooltipText) {
         TooltipService.hide();
       }
     }
