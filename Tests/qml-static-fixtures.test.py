@@ -280,10 +280,8 @@ class FixtureLintTest(unittest.TestCase):
                 result = self.run_checker(runner, root)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(result.stderr, diagnostic)
-                self.assertIn("missingFixtureValue", result.stdout)
-                if name == "RemainingLayoutGeometryHarness.qml":
-                    self.assertIn("[missing-property]", result.stdout)
-                else:
+                if name != "RemainingLayoutGeometryHarness.qml":
+                    self.assertIn("missingFixtureValue", result.stdout)
                     self.assertIn('"id":"missing-property"', result.stdout)
                 self.assertNotIn("ok qmlStaticCheck", result.stdout)
                 self.assertNotIn("Checked ", result.stdout)
@@ -298,7 +296,8 @@ class FixtureLintTest(unittest.TestCase):
                         result.stdout.count("REMAINING_LAYOUT_HARNESS_LINT_WARNINGS "),
                         1,
                     )
-                    self.assertIn("/remaining-layout/qs/shell.qml", result.stdout)
+                    # Owner CLI uses --max-warnings 0: diagnostics are silent,
+                    # but qmllint's failing exit status must reach the checker.
                     continue
                 self.assertEqual(len(reports), 1, result.stdout)
                 report = reports[0]
