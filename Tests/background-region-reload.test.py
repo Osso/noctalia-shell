@@ -133,7 +133,7 @@ def wait_ready(process, selector, output):
             print(chunk, end="", flush=True)
             text = "".join(output[start:])
             assert not re.search(
-                r" WARN | ERROR | FATAL |ReferenceError|TypeError|REGION_ASSERT", text
+                r"\b(?:WARN|ERROR|FATAL)\b|ReferenceError|TypeError|REGION_ASSERT", text
             ), text
             if "REGION_RESOLUTION_READY" in text:
                 for name in PANELS:

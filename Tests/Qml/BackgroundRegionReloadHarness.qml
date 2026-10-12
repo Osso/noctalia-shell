@@ -41,6 +41,13 @@ ShellRoot {
       return Array.from(backgrounds.children[0].children[0].data).filter(entry => entry.hasOwnProperty("backgroundColor"));
     }
 
+    function updateBarSettings(changes) {
+      // The fixture stores plain JSON; replace data to emit its notify signal.
+      Settings.data = Object.assign({}, Settings.data, {
+        bar: Object.assign({}, Settings.data.bar, changes)
+      });
+    }
+
     function checkBar(paths) {
       const bar = paths[0].bar;
       const corners = ["topLeftCornerState", "topRightCornerState", "bottomRightCornerState", "bottomLeftCornerState"];
@@ -50,19 +57,27 @@ ShellRoot {
         left: [-1, 1, 1, -1],
         right: [1, -1, -1, 1]
       };
-      Settings.data.bar.outerCorners = true;
+      updateBarSettings({
+        outerCorners: true
+      });
       for (const position of ["top", "bottom", "left", "right"]) {
-        Settings.data.bar.position = position;
-        Settings.data.bar.floating = false;
+        updateBarSettings({
+          position: position,
+          floating: false
+        });
         for (let index = 0; index < corners.length; index++)
           check(bar[corners[index]] === expected[position][index], position + " " + corners[index]);
         check(paths[0].barWidth === bar.width && paths[0].barHeight === bar.height, "bar geometry " + position);
-        Settings.data.bar.floating = true;
+        updateBarSettings({
+          floating: true
+        });
         for (const corner of corners)
           check(bar[corner] === 0, "floating " + corner);
       }
-      Settings.data.bar.position = "top";
-      Settings.data.bar.floating = false;
+      updateBarSettings({
+        position: "top",
+        floating: false
+      });
       console.log("REGION_BAR_STATES_PASS");
     }
 
