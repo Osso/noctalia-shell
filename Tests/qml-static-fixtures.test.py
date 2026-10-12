@@ -269,7 +269,7 @@ class FixtureLintTest(unittest.TestCase):
                 )
                 harness = root / "Tests/Qml" / name
                 if mode == "syntax":
-                    # IPC's zero-warning CLI hides warnings, not parse errors.
+                    # IPC hides semantic warning text; parse diagnostics remain visible.
                     harness.write_text(harness.read_text() + "\n}\n")
                 else:
                     harness.write_text(
@@ -286,7 +286,8 @@ class FixtureLintTest(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0, output)
                 self.assertTrue(result.stderr.startswith(diagnostic), result.stderr)
                 if mode == "syntax":
-                    self.assertIn("Error:", result.stdout)
+                    self.assertIn("Unexpected token", result.stdout)
+                    self.assertIn("[syntax]", result.stdout)
                     self.assertIn("tst_services.qml", result.stdout)
                 elif name != "IpcIdleServicesHarness.qml":
                     self.assertIn("missingFixtureValue", output)
