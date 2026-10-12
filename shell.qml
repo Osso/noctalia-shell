@@ -176,8 +176,8 @@ ShellRoot {
 
     // Open Setup Wizard as a panel in the same windowing system as Settings/ControlCenter
     if (Quickshell.screens.length > 0) {
-      var targetScreen = Quickshell.screens[0];
-      var setupPanel = PanelService.getPanel("setupWizardPanel", targetScreen);
+      const targetScreen = Quickshell.screens[0];
+      const setupPanel = PanelService.getPanel("setupWizardPanel", targetScreen);
       if (setupPanel) {
         setupPanel.open();
       } else {

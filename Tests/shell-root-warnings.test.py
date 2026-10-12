@@ -9,6 +9,7 @@ hardware are absent. No teardown callbacks reach into deleted fixture singletons
 import argparse
 from collections import Counter
 import importlib.util
+import json
 import os
 from pathlib import Path
 import re
@@ -40,13 +41,29 @@ def lint(directory, environment):
     code, output = isolation.run_audited(
         directory,
         environment,
-        ["/usr/lib/qt6/bin/qmllint", "-I", str(directory), str(source)],
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            "-I",
+            str(directory),
+            str(source),
+        ],
         "shell-root-lint",
     )
-    counts = Counter(re.findall(r"^Warning:.*?\[([\w-]+)\]", output, re.M | re.S))
-    print("SHELL_ROOT_LINT_COUNTS", dict(counts), "EXIT", code)
-    assert counts["unqualified"] == 0, counts
-    assert counts == Counter({"block-scope-var-declaration": 2}), counts
+    files = json.loads(output)["files"]
+    assert len(files) == 1, files
+    # JSON includes block-scope diagnostics omitted from Qt's text output.
+    warnings = [
+        diagnostic
+        for diagnostic in files[0]["warnings"]
+        if diagnostic["type"] in {"warning", "error"}
+    ]
+    counts = Counter(diagnostic["id"] for diagnostic in warnings)
+    print("SHELL_ROOT_LINT_COUNTS", dict(counts), "TOTAL", len(warnings), "EXIT", code)
+    assert not warnings, warnings
     assert code == 0, code
 
 
