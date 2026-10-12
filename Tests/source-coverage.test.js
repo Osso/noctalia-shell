@@ -23,6 +23,34 @@ const metaTestFiles = new Set([
 
 // Reviewed indirect test references, not records of test execution.
 const indirectTestEvidence = [
+  ...["NGridView", "NListView"].flatMap(widget => [
+    {
+      source: `Widgets/${widget}.qml`,
+      functions: [
+        "positionViewAtIndex",
+        "positionViewAtBeginning",
+        "positionViewAtEnd",
+        "forceLayout",
+        "cancelFlick",
+        "flick",
+        "indexAt",
+        "itemAt",
+        "itemAtIndex",
+      ],
+      runner: "Tests/view-wrapper-guards.test.js",
+      caseFile: "Tests/view-wrapper-guards.test.js",
+      caseName: "testViewWrapperMethodArgumentsAndResults",
+      proof: "Executable behavior coverage",
+    },
+    {
+      source: `Widgets/${widget}.qml`,
+      functions: ["incrementCurrentIndex", "decrementCurrentIndex"],
+      runner: "Tests/grid-list-warnings.test.py",
+      caseFile: "Tests/Qml/GridListWarningsHarness.qml",
+      caseName: "test_index_boundaries",
+      proof: "QML lifecycle integration",
+    },
+  ]),
   {
     source: "Commons/Settings.qml",
     functions: ["scheduleSave"],

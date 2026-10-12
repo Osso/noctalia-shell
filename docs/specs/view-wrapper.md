@@ -53,6 +53,28 @@ Scroll view (isolated assertions at `d3e94d7c0`):
 - Both wrappers exercise repeated empty/small/exact-fit/overflow model changes, content/delegate geometry, scrollbar activity, selection and index lookup, beginning/end/index scrolling, cancel-flick state, index boundaries/wrapping, RTL→LTR scrollbar placement and resize, clipped pixels, and normal/pressed/released colors with policy opacity. List-only wheel events assert repeated movement and upper/lower bounds. Grid scrollbar placement remains relative to the wrapper so attached-view auto-positioning cannot replace RTL geometry.
 - Staged-copy `palette`, `selection`, and `scrollbar-parent` mutations are expected-failing negative controls. Hover color, positive flick velocity, native input and live compositor rendering are not proven. Real-config access is denied/audited, not backed up or read; isolation and gates: [testing](testing.md#gridlist-isolated-runtime). This docs-only audit inspected source without rerunning tests.
 
+### Exact grid/list indirect references
+
+`Tests/source-coverage.test.js` maps each boundary below separately for `Widgets/NGridView.qml` and `Widgets/NListView.qml` (22 exact path/function pairs). The computed extraction in `Tests/view-wrapper-guards.test.js` executes production method bodies, not name-string assertions. Its rewrite is committed at `2382a230f`; `0a2361b52` changes the FilePicker harness, not these wrappers.
+
+| Boundary in each wrapper | Exact behavioral case and assertion | Proof level |
+| --- | --- | --- |
+| `positionViewAtIndex` | `Tests/view-wrapper-guards.test.js:testViewWrapperMethodArgumentsAndResults`: `(7, 3)` becomes wrapped position `[7, 3]` | Extracted production body, mock view |
+| `positionViewAtBeginning` | Same JS case: wrapped position becomes `"beginning"` | Extracted production body, mock view |
+| `positionViewAtEnd` | Same JS case: wrapped position becomes `"end"` | Extracted production body, mock view |
+| `forceLayout` | Same JS case: wrapped layout version advances from 0 to 1 | Extracted production body, mock view |
+| `cancelFlick` | Same JS case: velocity becomes `[0, 0]` after nonzero flick | Extracted production body, mock view |
+| `flick` | Same JS case: velocities remain `[-123.5, 456.25]` | Extracted production body, mock view; no native flick physics |
+| `incrementCurrentIndex` | `Tests/Qml/GridListWarningsHarness.qml:test_index_boundaries`: nonwrapping last index stays 2, wrapping last index becomes 0, empty model stays -1 | Real-widget offscreen QtTest |
+| `decrementCurrentIndex` | Same QtTest case: nonwrapping first index stays 0, wrapping first index becomes 2, empty model stays -1 | Real-widget offscreen QtTest |
+| `indexAt` | Same JS case: `(12.5, 47.25)` returns 7; `(0, 0)` returns -1 | Extracted production body, mock view |
+| `itemAt` | Same JS case: `(12.5, 47.25)` returns exact item identity; `(0, 0)` returns null | Extracted production body, mock view |
+| `itemAtIndex` | Same JS case: 7 returns exact item identity; -1 returns null | Extracted production body, mock view |
+
+The QtTest mapping uses `Tests/grid-list-warnings.test.py`, which stages the named harness and unchanged production wrappers; the JS `testViewWrappersOffscreenContract` invokes its runtime mode and requires fifteen passes. Both grid/list data rows execute each mapped selection case. `test_selection_scroll` additionally asserts interior selection, lookup identity, beginning/end/index content offsets, current-item geometry and cancel-flick state; `test_repeat_geometry` asserts model/count aliases and layout after repeated model changes.
+
+Mapping validation requires the real runner and named case, the separate harness path in that runner, and a unique inventoried production function with an existing declaration. It grants no module waiver and does not establish test execution. The 22 reported missing references are not evidence of missing behavior or a stale graph; no index refresh or behavioral rerun is needed to classify these exact assertions. Native flick physics, hover color and compositor/input integration remain unproven.
+
 ### Scroll view isolated evidence
 
 - At `d3e94d7c0`, NScrollView-only diagnostics drop 12→0 through explicit scrollbar-owner references, without suppression. [Runner](../../Tests/scrollview-warnings.test.py) and [harness](../../Tests/Qml/ScrollViewWarningsHarness.qml) assert ten behavioral cases (five geometry rows, offsets/resize, horizontal disable, clipped pixels, two palette rows), plus QtTest init/cleanup: twelve reported cases.
@@ -72,7 +94,7 @@ Scroll view (isolated assertions at `d3e94d7c0`):
 
 ## Known gaps (current cycle)
 
-- [ ] Add function-level coverage before behavior/spec expansion if `code-index` reports any untested view wrapper functions.
+- [ ] Review any newly reported `code-index untested` boundary against executable assertions; a missing structural reference alone does not establish missing behavior. The 22 grid/list methods above have exact indirect references, not runtime proof from inventory.
 
 ## Out of scope
 
