@@ -178,12 +178,16 @@ SmartPanel {
 
     Component {
       id: profileCard
-      ProfileCard {}
+      ProfileCard {
+        screen: root.screen
+      }
     }
 
     Component {
       id: shortcutsCard
-      ShortcutsCard {}
+      ShortcutsCard {
+        controlCenter: root
+      }
     }
 
     Component {

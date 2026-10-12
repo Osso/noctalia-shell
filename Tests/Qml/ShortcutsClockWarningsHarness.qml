@@ -37,6 +37,7 @@ Item {
       height: 80
 
       ShortcutsCard {
+        controlCenter: root
         anchors.fill: parent
       }
     }

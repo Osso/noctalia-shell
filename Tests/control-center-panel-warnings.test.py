@@ -122,9 +122,14 @@ Item {
         ("MediaCard", "media-sysmon-card"),
     ):
         weather_size = "height: 173" if name == "WeatherCard" else ""
+        dependencies = {
+            "ProfileCard": "required property QtObject screen",
+            "ShortcutsCard": "required property QtObject controlCenter",
+        }.get(name, "")
         cards[name] = f'''import QtQuick
 Item {{
   readonly property string cardKind: "{card_id}"
+  {dependencies}
   {weather_size}
 }}'''
     write(directory, "qs.Modules.Cards", cards)

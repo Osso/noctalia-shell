@@ -11,8 +11,7 @@ import qs.Widgets
 RowLayout {
   id: shortcuts
 
-  // The caller supplies root through ControlCenterPanel's creation context.
-  readonly property ControlCenterPanel controlCenter: root
+  required property ControlCenterPanel controlCenter
 
   Layout.fillWidth: true
   spacing: Style.marginL

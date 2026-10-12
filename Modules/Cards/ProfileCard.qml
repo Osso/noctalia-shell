@@ -14,6 +14,7 @@ import qs.Widgets
 NBox {
     id: root
 
+    required property ShellScreen screen
     property string uptimeText: "--"
 
     function updateSystemInfo() {
@@ -54,7 +55,6 @@ NBox {
                 pointSize: Style.fontSizeS
                 color: NColor.mOnSurfaceVariant
             }
-
         }
 
         RowLayout {
@@ -69,7 +69,7 @@ NBox {
                 icon: "settings"
                 tooltipText: I18n.tr("tooltips.open-settings")
                 onClicked: {
-                    var panel = PanelService.getPanel("settingsPanel", screen);
+                    var panel = PanelService.getPanel("settingsPanel", root.screen);
                     panel.requestedTab = SettingsPanel.Tab.General;
                     panel.open();
                 }
@@ -79,14 +79,13 @@ NBox {
                 icon: "power"
                 tooltipText: I18n.tr("tooltips.session-menu")
                 onClicked: {
-                    const sessionMenuPanel = PanelService.getPanel("sessionMenuPanel", screen);
+                    const sessionMenuPanel = PanelService.getPanel("sessionMenuPanel", root.screen);
                     if (sessionMenuPanel)
                         sessionMenuPanel.open();
 
-                    const controlCenterPanel = PanelService.getPanel("controlCenterPanel", screen);
+                    const controlCenterPanel = PanelService.getPanel("controlCenterPanel", root.screen);
                     if (controlCenterPanel)
                         controlCenterPanel.close();
-
                 }
             }
 
@@ -94,15 +93,12 @@ NBox {
                 icon: "close"
                 tooltipText: I18n.tr("tooltips.close")
                 onClicked: {
-                    const panel = PanelService.getPanel("controlCenterPanel", screen);
+                    const panel = PanelService.getPanel("controlCenterPanel", root.screen);
                     if (panel)
                         panel.close();
-
                 }
             }
-
         }
-
     }
 
     // ----------------------------------
@@ -127,7 +123,5 @@ NBox {
                 uptimeProcess.running = false;
             }
         }
-
     }
-
 }

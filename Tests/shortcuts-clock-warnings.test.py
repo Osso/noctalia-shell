@@ -264,7 +264,7 @@ def main():
     parser.add_argument("mode", choices=("lint", "runtime", "lint-harness"))
     parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
     parser.add_argument("--inject-warning", action="store_true")
-    parser.add_argument("--expect-warnings", nargs=2, type=int, default=(1, 0))
+    parser.add_argument("--expect-warnings", nargs=2, type=int, default=(0, 0))
     parser.add_argument("--shadow", action="store_true")
     parser.add_argument("--mutation", action="store_true")
     args = parser.parse_args()

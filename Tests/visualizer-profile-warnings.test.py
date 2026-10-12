@@ -241,7 +241,7 @@ def inside(args):
             counts = Counter(w["id"] for w in warnings if w["type"] == "warning")
             print(target, "COUNTS", dict(counts), "EXIT", code)
             if args.mode == "lint":
-                expected = {} if target == TARGETS[0] else {"unqualified": 4}
+                expected = {}
                 assert counts == expected, counts
                 assert code == 0, code
         return

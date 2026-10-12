@@ -11,7 +11,6 @@ import qs.Services.UI
 Item {
     id: scene
 
-    // ProfileCard currently resolves this screen through its creation context.
     property var screen: fixtureScreen
 
     width: 800
@@ -26,17 +25,15 @@ Item {
     Component {
         id: visualizerFactory
 
-        AudioVisualizer {
-        }
-
+        AudioVisualizer {}
     }
 
     Component {
         id: profileFactory
 
         ProfileCard {
+            screen: scene.screen
         }
-
     }
 
     TestCase {
@@ -63,7 +60,7 @@ Item {
                 }
             });
             verify(widget !== null);
-            const loader = widget.children.find((child) => {
+            const loader = widget.children.find(child => {
                 return child.sourceComponent !== undefined;
             });
             for (const type of ["linear", "mirrored", "wave"]) {
@@ -123,10 +120,10 @@ Item {
                     "colorName": "error"
                 }
             });
-            const firstLoader = first.children.find((child) => {
+            const firstLoader = first.children.find(child => {
                 return child.sourceComponent !== undefined;
             });
-            const secondLoader = second.children.find((child) => {
+            const secondLoader = second.children.find(child => {
                 return child.sourceComponent !== undefined;
             });
             for (const type of ["linear", "mirrored", "wave"]) {
@@ -193,7 +190,7 @@ Item {
             compare(labels.children[0].text, "Fixture User");
             HostService.displayName = "Another User";
             compare(labels.children[0].text, "Another User");
-            const process = widget.resources.find((resource) => {
+            const process = widget.resources.find(resource => {
                 return resource.command !== undefined;
             });
             verify(process !== undefined);
@@ -203,7 +200,7 @@ Item {
             compare(process.running, false);
             widget.updateSystemInfo();
             compare(process.running, true);
-            const actions = row.children[2].children.filter((child) => {
+            const actions = row.children[2].children.filter(child => {
                 return child.icon !== undefined;
             });
             compare(actions.length, 3);
@@ -230,5 +227,4 @@ Item {
         name: "VisualizerProfile"
         when: windowShown
     }
-
 }
