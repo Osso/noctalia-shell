@@ -152,7 +152,8 @@ Item {
 
     ScrollBar.vertical: ScrollBar {
       id: verticalScrollBar
-      parent: gridView
+      // Keep attached scrollbar auto-positioning from replacing the RTL binding.
+      parent: root
       x: gridView.effectiveLayoutDirection === Qt.RightToLeft ? 0 : gridView.width - verticalScrollBar.width
       y: 0
       height: gridView.height

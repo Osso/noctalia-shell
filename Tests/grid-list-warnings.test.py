@@ -81,6 +81,8 @@ def stage(directory, mutation):
     )
     for name in WIDGETS:
         source = (ROOT / f"Widgets/{name}.qml").read_text()
+        if mutation == "scrollbar-parent" and name == "NGridView":
+            source = source.replace("parent: root", "parent: gridView")
         if mutation == "palette":
             source = source.replace("root.handlePressedColor", "root.handleColor")
         if mutation == "selection":
@@ -178,7 +180,9 @@ def run_audited(directory, environment, command, label):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=("lint", "runtime", "guard"))
-    parser.add_argument("--mutation", choices=("palette", "selection"))
+    parser.add_argument(
+        "--mutation", choices=("palette", "selection", "scrollbar-parent")
+    )
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-grid-list-") as temporary:
         directory = Path(temporary)
