@@ -197,21 +197,40 @@ function getPanel(name, screen) { return null; }"""),
     )
 
 
-def lint_harness(directory):
+def lint_harness(directory, inject_warning=False):
     stage(directory)
     environment = helper("media-mini-warnings").isolate_environment(directory)
+    harness = directory / "tst_history_toast.qml"
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                "Item {", 'Item {\n  property int fixtureLintWarning: "injected"', 1
+            )
+        )
     result = sandbox(
         [
             "/usr/lib/qt6/bin/qmllint",
-            "--max-warnings",
-            "0",
+            "--bare",
             "-I",
             str(directory),
-            str(directory / "tst_history_toast.qml"),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
         ],
         environment,
     )
-    print(result.stdout + result.stderr, end="")
+    print(result.stdout)
+    print(result.stderr, end="")
+    diagnostics = json.loads(result.stdout)
+    counts = Counter(
+        warning["id"] for file in diagnostics["files"] for warning in file["warnings"]
+    )
+    print("HISTORY_TOAST_HARNESS_LINT_COUNTS", dict(counts), "EXIT", result.returncode)
+    assert not counts, f"harness diagnostics remain: {dict(counts)}"
     assert result.returncode == 0, result.returncode
 
 
@@ -254,14 +273,17 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
     parser.add_argument("--max-warnings", type=int, default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-history-toast-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
         if args.mode == "lint":
             lint(directory, args.max_warnings)
         elif args.mode == "lint-harness":
-            lint_harness(directory)
+            lint_harness(directory, args.inject_warning)
         else:
             behavior(directory)
 

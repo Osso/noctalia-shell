@@ -39,7 +39,7 @@ Item {
   TestCase {
     id: tests
     name: "HistorySimpleToast"
-    when: windowShown
+    when: tests.windowShown
     property var toast
 
     function init() {
@@ -135,7 +135,7 @@ Item {
     }
 
     function test_toast_display_types_and_description() {
-      const item = makeToast();
+      const item = tests.makeToast();
       const row = item.children.find(child => child.spacing === Style.marginL);
       verify(row !== undefined);
       const icon = row.children.find(child => child.icon !== undefined);
@@ -165,7 +165,7 @@ Item {
     }
 
     function test_toast_timeout_and_replacement() {
-      const item = makeToast();
+      const item = tests.makeToast();
       item.show("First", "", "", "notice", 80);
       wait(30);
       item.show("Replacement", "", "", "notice", 160);
@@ -182,7 +182,7 @@ Item {
     }
 
     function test_toast_hit_area_and_click_dismissal() {
-      const item = makeToast();
+      const item = tests.makeToast();
       item.show("Clickable", "Description", "", "notice", 5000);
       tryCompare(item, "scale", 1);
       const hit = item.children.find(child => child.acceptedButtons !== undefined);
@@ -204,7 +204,7 @@ Item {
     }
 
     function test_toast_hide_cancel_and_destroy_running_timers() {
-      const item = makeToast();
+      const item = tests.makeToast();
       item.show("Old", "", "", "notice", 5000);
       item.hide();
       item.show("New", "", "", "notice", 5000);
