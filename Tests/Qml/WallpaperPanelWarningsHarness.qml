@@ -64,6 +64,66 @@ Item {
       wait(30);
     }
 
+    function test_instance_routing_survives_content_recreation() {
+      const other = createTemporaryObject(panelComponent, scene, {
+        "screen": Quickshell.screens[1]
+      });
+      verify(other !== null);
+      tryVerify(() => other.contentItem !== null);
+      wait(30);
+      PanelService.routes = [];
+      PanelService.settingsPanel.opens = 0;
+      for (let cycle = 0; cycle < 2; cycle++) {
+        for (const owner of [panel, other]) {
+          const content = owner.contentItem;
+          compare(owner.currentWallpaperView().targetScreen.name, owner.screen.name);
+          const local = content.screenRepeater.itemAt(0);
+          const remote = descendants(owner, child => child.wallpapers !== undefined)[0];
+          compare(local.panelScreen.name, owner.screen.name);
+          compare(remote.panelScreen.name, owner.screen.name);
+          const expectedColumns = owner.screen.width > 1920 ? 5 : 4;
+          compare(local.gridView.columns, expectedColumns);
+          compare(remote.gridView.columns, expectedColumns);
+          const input = descendants(owner, child => child.placeholderText !== undefined)[0];
+          input.text = "desert";
+          tryCompare(content, "filterText", "desert");
+          compare(local.filteredWallpapers, [WallpaperService.files + "/desert.png"]);
+          const tabs = descendants(owner, child => child.tabIndex !== undefined);
+          compare(tabs.length, 2);
+          tabs[0].clicked();
+          compare(content.currentScreenIndex, 0);
+          tabs[1].clicked();
+          compare(content.currentScreenIndex, 1);
+          owner.currentGridView().forceActiveFocus();
+          owner.currentGridView().currentIndex = -1;
+          owner.onReturnPressed();
+          const settings = descendants(owner, child => child.icon === "settings" && child.visible);
+          compare(settings.length, 1);
+          settings[0].clicked();
+          compare(PanelService.routes[PanelService.routes.length - 1], {
+            "name": "settingsPanel",
+            "screen": owner.screen.name
+          });
+          compare(PanelService.settingsPanel.requestedTab, 0);
+          const close = descendants(owner, child => child.icon === "close")[0];
+          const previous = owner.closeCount;
+          close.clicked();
+          compare(owner.closeCount, previous + 1);
+        }
+        compare(PanelService.settingsPanel.opens, (cycle + 1) * 2);
+        if (cycle === 0) {
+          for (const owner of [panel, other])
+            owner.contentActive = false;
+          wait(20);
+          for (const owner of [panel, other])
+            owner.contentActive = true;
+          wait(30);
+        }
+      }
+      compare(WallpaperService.changes, []);
+      compare(PanelService.routes.map(route => route.screen), ["DP-1", "HDMI-A-1", "DP-1", "HDMI-A-1"]);
+    }
+
     function test_filter_refresh_and_screen_roles() {
       const content = panel.contentItem;
       const first = content.screenRepeater.itemAt(0);

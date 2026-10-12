@@ -15,6 +15,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/Wallpaper/WallpaperPanel.qml")
@@ -43,13 +44,16 @@ def lint(directory):
     spec.loader.exec_module(staging)
     staging.stage_modules(directory)
     result = subprocess.run(
-        [
-            "/usr/lib/qt6/bin/qmllint",
-            "-I",
-            str(directory),
-            str(directory / "qs" / TARGET),
-        ],
-        cwd=ROOT,
+        sandbox_command(
+            directory,
+            [
+                "/usr/lib/qt6/bin/qmllint",
+                "-I",
+                str(directory),
+                str(directory / "qs" / TARGET),
+            ],
+        ),
+        cwd=directory,
         capture_output=True,
         text=True,
         timeout=60,
@@ -66,41 +70,14 @@ def lint(directory):
         if "[unqualified]" in block and "ComponentBehavior: Bound" not in block
     ]
     assert not actionable, "Known-owner accesses remain:\n" + "".join(actionable)
-    assert counts == {"unqualified": 6}, dict(counts)
-    assert result.returncode in (0, 255)
-    print("WALLPAPER_PANEL_LINT_PASS (6 unbound creation-site captures retained)")
+    assert not counts, dict(counts)
+    assert result.returncode == 0
+    print("WALLPAPER_PANEL_LINT_PASS (zero warnings)")
 
 
 def stage_runtime(directory):
-    files = directory / "wallpapers"
-    files.mkdir()
-    # Real image paths, no network/cache/service bootstrap.
-    import struct
-    import zlib
-
-    def chunk(kind, data):
-        return (
-            struct.pack("!I", len(data))
-            + kind
-            + data
-            + struct.pack("!I", zlib.crc32(kind + data))
-        )
-
-    image = (
-        b"\x89PNG\r\n\x1a\n"
-        + chunk(b"IHDR", struct.pack("!2I5B", 1, 1, 8, 2, 0, 0, 0))
-        + chunk(b"IDAT", zlib.compress(b"\x00\x80\x80\x80"))
-        + chunk(b"IEND", b"")
-    )
-    for name in (
-        "forest.png",
-        "desert.png",
-        "ocean.png",
-        "meadow.png",
-        "sky.png",
-        "city.png",
-    ):
-        (files / name).write_bytes(image)
+    files = directory / "absent-wallpapers"
+    assert not files.exists()
     write_module(
         directory,
         "Quickshell",
@@ -113,16 +90,20 @@ QtObject {
 }""",
         },
     )
-    defaults = json.loads((ROOT / "Assets/settings-default.json").read_text())
-    wallpaper = defaults["wallpaper"]
-    wallpaper.update(
-        enabled=False,
+    wallpaper = dict(
+        panelPosition="follow_bar",
         useWallhaven=False,
         setWallpaperOnAllMonitors=False,
+        enableMultiMonitorDirectories=False,
+        hideWallpaperFilenames=False,
         wallhavenQuery="forest",
         wallhavenResolutionWidth="1920",
         wallhavenResolutionHeight="1080",
         wallhavenResolutionMode="atleast",
+        wallhavenCategories="111",
+        wallhavenPurity="100",
+        wallhavenSorting="relevance",
+        wallhavenOrder="desc",
     )
     properties = []
     for name, value in wallpaper.items():
@@ -175,10 +156,12 @@ Item {
   property bool panelAnchorRight
   property bool panelAnchorBottom
   property bool panelAnchorTop
+  property bool contentActive: true
+  property int closeCount: 0
   signal opened
   signal closed
-  function close() { closed(); }
-  Loader { anchors.fill: parent; sourceComponent: parent.panelContent }
+  function close() { closeCount++; closed(); }
+  Loader { anchors.fill: parent; active: parent.contentActive; sourceComponent: parent.panelContent }
 }""",
         },
     )
@@ -226,13 +209,22 @@ property int lastPage: 3
 signal searchCompleted(var results, var meta)
 signal searchFailed(string error)
 function search(query, page) { searches = searches.concat([{query: query, page: page}]); initialSearchScheduled = false; }
-function getThumbnailUrl(wallpaper, size) { return wallpaper.thumb; }
+function getThumbnailUrl(wallpaper, size) { return ""; }
 function downloadWallpaper(wallpaper, callback) { downloads = downloads.concat([wallpaper.id]); callback(true, wallpaper.local); }
 function previousPage() { currentPage--; }
 function nextPage() { currentPage++; }
 """),
             "PanelService": singleton(
-                "function getPanel(name, screen) { return null; }"
+                """property var routes: []
+property QtObject settingsPanel: QtObject {
+  property int requestedTab: -1
+  property int opens: 0
+  function open() { opens++; }
+}
+function getPanel(name, screen) {
+  routes = routes.concat([{name: name, screen: screen.name}]);
+  return settingsPanel;
+}"""
             ),
         },
     )
@@ -247,10 +239,10 @@ function nextPage() { currentPage++; }
             "NComboBox": "import QtQuick\nItem { property var model; property string currentKey; signal selected(string key); implicitWidth: 100; implicitHeight: 30 }",
             "NToggle": "import QtQuick\nItem { property string label; property string description; property bool checked; signal toggled(bool checked); implicitHeight: 30 }",
             "NTabBar": "import QtQuick\nRow { property int currentIndex }",
-            "NTabButton": "import QtQuick\nItem { property string text; property int tabIndex; property bool checked; implicitWidth: 100; implicitHeight: 30 }",
             "NDivider": "import QtQuick\nItem { implicitHeight: 1 }",
             "NBusyIndicator": "import QtQuick\nItem { property real size; property color color }",
-            "NImageCached": "import QtQuick\nImage { property string imagePath; property string cacheFolder; source: imagePath }",
+            "NImageCached": "import QtQuick\nItem { property string imagePath; property string cacheFolder }",
+            "NTabButton": "import QtQuick\nItem { property string text; property int tabIndex; property bool checked; implicitWidth: 100; implicitHeight: 30; signal clicked; onClicked: parent.currentIndex = tabIndex }",
         },
     )
     write_module(directory, "qs.Modules.Panels.Wallpaper", {"WallpaperPanel": source})
@@ -266,7 +258,7 @@ function nextPage() { currentPage++; }
     )
 
 
-def runtime(directory):
+def runtime(directory, mutation=False):
     environment = {
         key: value
         for key, value in os.environ.items()
@@ -297,7 +289,7 @@ def runtime(directory):
     environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
     settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
     settings.parent.mkdir(mode=0o700, parents=True)
-    original = (ROOT / "Assets/settings-default.json").read_bytes()
+    original = b'{"fixture": "wallpaper-panel-only"}\n'
     backup = directory / "settings.backup.json"
     for path in (settings, backup):
         path.touch(mode=0o600)
@@ -306,15 +298,25 @@ def runtime(directory):
         assert path.stat().st_mode & 0o777 == 0o600, "fixture mode differs"
     try:
         stage_runtime(directory)
+        if mutation:
+            source = directory / "qs" / TARGET
+            source.write_text(
+                source.read_text().replace(
+                    "panelScreen: root.screen", "panelScreen: Quickshell.screens[0]"
+                )
+            )
         result = subprocess.run(
-            [
-                "/usr/lib/qt6/bin/qmltestrunner",
-                "-input",
-                str(directory / "tst_wallpaper.qml"),
-                "-import",
-                str(directory),
-            ],
-            cwd=ROOT,
+            sandbox_command(
+                directory,
+                [
+                    "/usr/lib/qt6/bin/qmltestrunner",
+                    "-input",
+                    str(directory / "tst_wallpaper.qml"),
+                    "-import",
+                    str(directory),
+                ],
+            ),
+            cwd=directory,
             env=environment,
             capture_output=True,
             text=True,
@@ -324,7 +326,11 @@ def runtime(directory):
         print(output, end="")
         assert result.returncode == 0, f"Offscreen panel exit {result.returncode}"
         assert "0 failed" in output
-        assert not re.search(r"QWARN|QFATAL|ReferenceError|TypeError", output), output
+        assert not re.search(
+            r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:",
+            output,
+        ), output
+        assert not (directory / "absent-wallpapers").exists()
         print("WALLPAPER_PANEL_RUNTIME_PASS")
     finally:
         assert settings.read_bytes() == original, "fixture settings changed"
@@ -333,9 +339,62 @@ def runtime(directory):
         assert backup.stat().st_mode & 0o777 == 0o600, "fixture backup mode changed"
 
 
+def isolation_helper():
+    spec = importlib.util.spec_from_file_location(
+        "wallpaper_tab_isolation", ROOT / "Tests/wallpaper-tab-warnings.test.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def sandbox_command(directory, argv):
+    return isolation_helper().sandbox_command(directory, argv)
+
+
+def isolation(directory):
+    result = subprocess.run(
+        sandbox_command(
+            directory,
+            [
+                "/usr/bin/python3",
+                "-c",
+                "import pathlib, socket\n"
+                "for p in ('/home/osso/.config', '/syncthing', '/run/user'):\n"
+                " assert not pathlib.Path(p).exists(), p\n"
+                " print('MASK_ABSENT', p)\n"
+                "s = socket.socket(); s.settimeout(1)\n"
+                "try: s.connect(('1.1.1.1', 443))\n"
+                "except OSError: print('NETWORK_DENIED')\n"
+                "else: raise AssertionError('network accessible')\n"
+                "finally: s.close()\n",
+            ],
+        ),
+        cwd=directory,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    print(result.stdout + result.stderr, end="")
+    assert result.returncode == 0
+    assert "NETWORK_DENIED" in result.stdout
+    print("WALLPAPER_PANEL_ISOLATION_PASS")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=("lint", "runtime"), required=True)
+    parser.add_argument(
+        "--mode", choices=("lint", "runtime", "isolation"), required=True
+    )
+    parser.add_argument("--mutation", action="store_true")
     args = parser.parse_args()
+    if args.mutation and args.mode != "runtime":
+        parser.error("--mutation requires --mode runtime")
     with tempfile.TemporaryDirectory(prefix="noctalia-wallpaper-panel-") as temporary:
-        {"lint": lint, "runtime": runtime}[args.mode](Path(temporary))
+        directory = Path(temporary)
+        directory.chmod(0o700)
+        isolation_helper().install_audit(directory)
+        if args.mode == "runtime":
+            runtime(directory, args.mutation)
+        else:
+            {"lint": lint, "isolation": isolation}[args.mode](directory)
