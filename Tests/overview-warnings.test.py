@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Overview-only proof in a private offscreen sandbox.
 
-Real Loader, Variants lifecycle, bindings, callbacks and overlay geometry run.
-Layer-shell and image decoding are inert boundaries: no wallpaper resources,
-compositor routing, blur pixels or memory claims. Parent/child deny host config.
+Production Loader, bindings, callbacks and overlay geometry run. Variants uses
+Qt Instantiator; layer-shell and image decoding are inert boundaries. No wallpaper
+resources, compositor routing, blur pixels or memory claims. Parent/child deny
+host config. RED at 35cc9734c9: recreation logs undefined timerDisableFx; target
+lint has five warnings. Coverage: two screen sizes/resize, monitor routing, all
+three enable gates, Loader and screen-list recreation. Staged negative controls
+break cover anchors, overview enable gating, and image fill geometry.
 """
 
 import argparse
@@ -208,7 +212,14 @@ def inside(args):
             r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output
         ), output
         if args.mutation:
-            assert code != 0 and "FAIL!" in output, "negative control escaped"
+            failed_case = (
+                "test_visibility_and_recreation"
+                if args.mutation == "visibility"
+                else "test_cover_screen_and_geometry"
+            )
+            assert code != 0 and re.search(
+                r"FAIL!.*Overview::" + failed_case, output
+            ), "negative control escaped"
             print("OVERVIEW_NEGATIVE_DETECTED", args.mutation)
         else:
             assert code == 0 and "0 failed" in output, output
