@@ -5,6 +5,10 @@ Service fixtures avoid network/settings bootstrap; production widgets, Loader,
 NumberAnimation, ShaderEffect and ShaderEffectSource remain real QML objects.
 """
 
+import argparse
+from collections import Counter
+import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -104,6 +108,92 @@ def stage_card(directory):
     shutil.copyfile(
         ROOT / "Tests/Qml/WeatherCardEffectsHarness.qml", directory / "shell.qml"
     )
+    (directory / "qmldir").write_text("module qs\n")
+    for path in (commons, widgets, cards, location):
+        module = "qs." + ".".join(path.relative_to(directory).parts)
+        declarations = []
+        for source in sorted(path.glob("*.qml")):
+            singleton = (
+                "singleton "
+                if source.read_text().startswith("pragma Singleton")
+                else ""
+            )
+            declarations.append(f"{singleton}{source.stem} 1.0 {source.name}\n")
+        (path / "qmldir").write_text(f"module {module}\n" + "".join(declarations))
+    (directory / "qs").symlink_to(".", target_is_directory=True)
+
+
+def load_helper(filename):
+    spec = importlib.util.spec_from_file_location(filename, ROOT / "Tests" / filename)
+    helper = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(helper)
+    return helper
+
+
+def lint_harness(directory, environment, max_warnings, inject_warning):
+    # Reuse the exact fake weather service and harness staged for runtime.
+    load_helper("weather-card-warnings.test.py").stage_runtime(directory)
+    harness = directory / "shell.qml"
+    if inject_warning:
+        source = harness.read_text()
+        anchor = "id: harness\n"
+        assert source.count(anchor) == 1, "warning injection owner must be unique"
+        harness.write_text(
+            source.replace(
+                anchor,
+                anchor + "  property int injectedWarning: harness.missingLintProbe\n",
+                1,
+            )
+        )
+    isolation = load_helper("wallpaper-tab-warnings.test.py")
+    result = subprocess.run(
+        isolation.sandbox_command(
+            directory,
+            [
+                "/usr/lib/qt6/bin/qmllint",
+                "--bare",
+                "-I",
+                str(directory),
+                "-I",
+                "/usr/lib/qt6/qml",
+                "--max-warnings",
+                str(max_warnings),
+                "--json",
+                "-",
+                str(harness),
+            ],
+        ),
+        cwd=directory,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    print(result.stdout, end="")
+    print(result.stderr, end="")
+    report = json.loads(result.stdout)
+    counts = Counter(
+        diagnostic["id"]
+        for entry in report["files"]
+        for diagnostic in entry["warnings"]
+        if diagnostic["type"] == "warning"
+    )
+    print(
+        "WEATHER_CARD_HARNESS_LINT_COUNTS",
+        dict(counts),
+        "WARNINGS",
+        sum(counts.values()),
+        "EXIT",
+        result.returncode,
+    )
+    if inject_warning:
+        assert counts["missing-property"] > 0 and result.returncode != 0, (
+            "injected semantic warning was accepted"
+        )
+        return result.returncode
+    if counts or any(not entry["success"] for entry in report["files"]):
+        return result.returncode or 1
+    return result.returncode
 
 
 def isolate_environment(directory):
@@ -132,9 +222,27 @@ def isolate_environment(directory):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "mode",
+        nargs="?",
+        default="effects",
+        choices=("effects", "behavior", "lint-harness"),
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
+    args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-weather-effects-") as temporary:
         directory = Path(temporary)
         environment = isolate_environment(directory)
+        if args.mode == "lint-harness":
+            raise SystemExit(
+                lint_harness(
+                    directory, environment, args.max_warnings, args.inject_warning
+                )
+            )
         settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
         settings.parent.mkdir(mode=0o700, parents=True)
         original = (ROOT / "Assets/settings-default.json").read_bytes()
@@ -143,11 +251,22 @@ def main():
         backup = directory / "settings.backup.json"
         backup.touch(mode=0o600)
         backup.write_bytes(original)
-        assert backup.read_bytes() == original, "fixture backup bytes differ"
-        stage_card(directory)
+        assert (
+            hashlib.sha256(backup.read_bytes()).digest()
+            == hashlib.sha256(original).digest()
+        ), "fixture backup bytes differ"
+        if args.mode == "behavior":
+            load_helper("weather-card-warnings.test.py").stage_runtime(directory)
+        else:
+            stage_card(directory)
+        isolation = load_helper("wallpaper-tab-warnings.test.py")
         try:
             result = subprocess.run(
-                ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
+                isolation.sandbox_command(
+                    directory,
+                    ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
+                ),
+                cwd=directory,
                 env=environment,
                 capture_output=True,
                 text=True,
@@ -165,7 +284,12 @@ def main():
         assert result.returncode == 0, (
             f"WeatherCard runtime failed (exit {result.returncode})"
         )
-        assert "WEATHER_EFFECTS_PASS" in output, "WeatherCard assertions did not finish"
+        marker = (
+            "WEATHER_CARD_BEHAVIOR_PASS"
+            if args.mode == "behavior"
+            else "WEATHER_EFFECTS_PASS"
+        )
+        assert marker in output, "WeatherCard assertions did not finish"
         assert not any(level in output for level in (" WARN ", " ERROR ", " FATAL ")), (
             output
         )
