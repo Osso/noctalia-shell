@@ -62,6 +62,7 @@ Session Menu covers the power/session action panel, countdown confirmation behav
 - `Tests/bar-controls-warnings.test.py` — isolated production bar-button panel toggle and context/settings routing, not session actions or IPC. Cohort evidence and limits: [bar](bar.md#bar-control-cohort), [testing](testing.md#bar-control-cohort).
 
 - `Tests/session-menu-warnings.test.py` / `Tests/Qml/SessionMenuWarningsHarness.qml` — `e59ef4d75` reduces SessionMenu-only lint 27→0; `25662be64` waits past the destroyed pending timer's deadline. Four behavioral cases cover option filtering/defaults, live fixture layout/anchors, navigation, selected/pending/countdown display, cancel/close/reopen reset, second-click confirmation, real timer expiry, and inert lock/power routing. Six QtTest cases include initialization/cleanup, not six behavioral scenarios. No physical keyboard/pointer, authorization, real power action, or settings persistence proof. Isolation and acceptance: [testing](testing.md#session-menu-isolated-runtime).
+- `Tests/session-menu-tab-warnings.test.py` / `Tests/Qml/SessionMenuTabWarningsHarness.qml` — `be4ab87a4`/`61a6c155c` reduce SessionMenuTab warnings 8→3; `QQuickItem` metadata still lacks `dragging`, `dragStartIndex`, and `dragTargetIndex`. Four behavioral cases plus QtTest init/cleanup yield six reported offscreen passes: startup option ordering/default saves before edits; position/header/countdown controls and reopen; checkbox/countdown edits confined to the owning instance; pointer drag reorder/reset and fixture reopen. Checkbox mutation is a reported failing negative control. No host session commands or real settings persistence proof. Isolation and acceptance: [testing](testing.md#session-menu-tab-isolated-runtime).
 - `Tests/session-menu-guards.test.js`
 - `Tests/session-menu-tab-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
@@ -69,6 +70,8 @@ Session Menu covers the power/session action panel, countdown confirmation behav
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
+
+- [ ] Startup mutates the entries array without notifying ListView, leaving the initial list empty. Unchanged by these commits; UI tests call `updateEntry(0, {})` to publish a fresh model after separately asserting startup fixture saves.
 
 - [ ] Verify physical desktop navigation/input and pending/selected rendering beyond isolated property/text assertions.
 - [ ] Add executable coverage for per-action compositor failure feedback.
