@@ -281,6 +281,18 @@ def lint_reports(output):
     ]
 
 
+def settings_file_attempts(audit):
+    attempts = []
+    for line in audit.splitlines():
+        paths = re.findall(r'"((?:\\.|[^"\\])*)"', line)
+        if re.search(r"\bexecve(?:at)?\(", line):
+            # Only the executable is a file path; argv can contain guard source.
+            paths = paths[:1]
+        if any("settings.json" in path for path in paths):
+            attempts.append(line)
+    return attempts
+
+
 class FixtureLintTest(unittest.TestCase):
     def bound_discovery(self, root, name, harness_scripts=HARNESS_SCRIPTS):
         for other in harness_scripts:
@@ -319,6 +331,7 @@ class FixtureLintTest(unittest.TestCase):
             "bar-pill-warnings.test.py",
             "wallpaper-panel-warnings.test.py",
             "wallpaper-tab-warnings.test.py",
+            "settings-panel-warnings.test.py",
             "settings-singleton-warnings.test.py",
             "wifi-networks-list-warnings.test.py",
             "notification-history-warnings.test.py",
@@ -582,7 +595,7 @@ class FixtureLintTest(unittest.TestCase):
                     self.assertIn("host home/config not mounted", result.stdout)
                 else:
                     audit = trace.read_text()
-                    self.assertNotIn("settings.json", audit)
+                    self.assertEqual(settings_file_attempts(audit), [], audit)
                     if static_only:
                         executables = {
                             Path(path).name
@@ -666,6 +679,24 @@ class FixtureLintTest(unittest.TestCase):
                     )
 
     def test_utility_routes_are_once_only_strict_and_isolated(self):
+        guard_exec = (
+            '101 execve("/usr/bin/python3", ["python3", "-c", '
+            '"deny(\\"settings.json\\")"], 0x1234) = 0'
+        )
+        self.assertEqual(settings_file_attempts(guard_exec), [])
+        file_attempts = [
+            '102 openat(AT_FDCWD, "/home/osso/.config/noctalia/settings.json", O_RDONLY) = 3',
+            '102 openat(AT_FDCWD, "settings.json", O_RDONLY) = -1 EACCES (Permission denied)',
+            '102 newfstatat(AT_FDCWD, "settings.json", 0x1234, 0) = -1 ENOENT (No such file or directory)',
+            '102 readlink("settings.json", 0x1234, 4096) = -1 EACCES (Permission denied)',
+            '102 readlink("alias", "/home/osso/.config/noctalia/settings.json", 4096) = 40',
+            '102 execve("settings.json", ["python3"], 0x1234) = -1 EACCES (Permission denied)',
+            '102 execveat(AT_FDCWD, "settings.json", ["python3"], 0x1234, 0) = -1 EACCES (Permission denied)',
+        ]
+        self.assertEqual(
+            settings_file_attempts("\n".join([guard_exec, *file_attempts])),
+            file_attempts,
+        )
         for name, script in UTILITY_HARNESSES.items():
             for mode in ("present", "absent", "warning"):
                 with self.subTest(harness=name, mode=mode):
