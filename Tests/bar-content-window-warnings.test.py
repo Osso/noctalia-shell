@@ -123,6 +123,15 @@ property SettingsData data: SettingsData {}"""
     )
     if mutation == "routing":
         source = source.replace("screen: barWindow.selectedScreen", "screen: null")
+    elif mutation == "owner-snapshot":
+        source = source.replace(
+            "readonly property ShellScreen selectedScreen: barWindow.screen",
+            "property ShellScreen selectedScreen",
+        ).replace(
+            "Component.onCompleted: {",
+            "Component.onCompleted: {\n    selectedScreen = barWindow.screen;",
+            1,
+        )
     elif mutation == "rotation":
         source = source.replace(
             'barPosition === "left" || barPosition === "right"', "false"
@@ -474,7 +483,9 @@ def main():
     )
     parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
     parser.add_argument("--inject-warning", action="store_true")
-    parser.add_argument("--mutation", choices=("routing", "rotation", "margins"))
+    parser.add_argument(
+        "--mutation", choices=("routing", "rotation", "margins", "owner-snapshot")
+    )
     args = parser.parse_args()
     if args.mutation and args.mode != "runtime":
         parser.error("--mutation requires runtime")

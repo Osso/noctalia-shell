@@ -51,6 +51,7 @@ ShellRoot {
   }
   readonly property ShellScreen wideScreen: Quickshell.screens.find(screen => screen.name === "wide")
   readonly property ShellScreen portraitScreen: Quickshell.screens.find(screen => screen.name === "portrait")
+  property var activeScreens: []
 
   Component {
     id: mainExclusion
@@ -69,6 +70,7 @@ ShellRoot {
     Style.barHeight = 40;
     Style.marginXL = 12;
     Logger.events = [];
+    activeScreens = [wideScreen, portraitScreen];
   }
 
   function assertLayout(window, position, width, height, marginH, marginV) {
@@ -92,7 +94,7 @@ ShellRoot {
     compare(bar.screen, window.screen);
     compare(window.selectedScreen, window.screen);
     compare(window.fixtureNamespace, "noctalia-bar-content-" + window.screen.name);
-    compare(window.color, "#00000000");
+    compare(String(window.color), "#00000000");
   }
 
   function test_exclusionRoutingAndRecreation() {
@@ -146,7 +148,7 @@ ShellRoot {
 
   function test_twoRealScreensRoutingAndOrientation() {
     const first = createTemporaryObject(windowComponent, testCase, {
-                                          screen: wideScreen
+                                          screen: Qt.binding(() => testCase.activeScreens[0])
                                         });
     const second = createTemporaryObject(windowComponent, testCase, {
                                            screen: portraitScreen
@@ -154,8 +156,7 @@ ShellRoot {
     verify(first !== null && second !== null);
     assertLayout(first, "top", 1920, 40, 0, 0);
     assertLayout(second, "top", 900, 40, 0, 0);
-    first.screen = portraitScreen;
-    assertLayout(first, "top", 900, 40, 0, 0);
+    activeScreens = [portraitScreen];
     assertLayout(first, "top", 900, 40, 0, 0);
     assertLayout(second, "top", 900, 40, 0, 0);
     Settings.data.bar.position = "right";
@@ -166,7 +167,7 @@ ShellRoot {
     Settings.data.bar.marginHorizontal = 0.3;
     Settings.data.bar.marginVertical = 0.2;
     assertLayout(first, "right", 48, 1600, 4, 2);
-    first.screen = wideScreen;
+    activeScreens = [wideScreen, portraitScreen];
     assertLayout(first, "right", 48, 1080, 4, 2);
     assertLayout(second, "right", 48, 1600, 4, 2);
   }
