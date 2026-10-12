@@ -74,9 +74,15 @@ Update Service covers changelog initialization, upgrade-log fetching, release-no
 - `Tests/shell-state-consumer-roundtrip.test.js`
 - `Tests/source-coverage.test.js`
 
+### Changelog panel isolated evidence
+
+- Through `1515e94ff`, panel-only qmllint warnings drop 12→0; two informational unused-import diagnostics remain. `Tests/changelog-panel-warnings.test.py` provides standalone `lint` and `runtime` modes.
+- `Tests/Qml/ChangelogPanelWarningsHarness.qml` covers five behavioral tests plus QtTest init/cleanup (seven cases): version/heading/blank/error/empty rows; long-date formatting under `LC_ALL=C` (including empty/invalid input); two-instance close ownership; 80-entry scrolling and an 820×620 image grab; inert links, dismiss/close seen-version recording, and reopen/content disposal.
+- Production panel content, layouts, Text, and Repeaters run offscreen with a stock ScrollView, fixture leaf widgets, an inert SmartPanel Loader host, and fixture services. This proves isolated rendering/scroll/lifecycle/ownership behavior, not full-widget rendering, live compositor/input, network links, persistence, or whole-shell acceptance.
+
 ## Known gaps (current cycle)
 
-None.
+- [ ] Live compositor and full-widget changelog panel acceptance remain unverified.
 
 ## Out of scope
 
