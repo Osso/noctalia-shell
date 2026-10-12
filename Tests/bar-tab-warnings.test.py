@@ -183,7 +183,6 @@ def execute(mode, directory, environment, inject_warning=False):
         directory, environment, argv, f"bar-tab-{mode}"
     )
     (directory / f"{mode}.log").write_text(output)
-    print(output, end="")
     if mode == "lint":
         warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
         print("BAR_TAB_WARNINGS", len(warnings))
