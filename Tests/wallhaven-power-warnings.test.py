@@ -89,9 +89,9 @@ def stage(directory, mutation):
         "qs.Commons",
         {
             "Settings": singleton(
-                "property QtObject data: QtObject { property QtObject wallpaper: QtObject {\n"
+                "component WallpaperSettings: QtObject {\n"
                 + fields
-                + "\n} }"
+                + "\n}\ncomponent FixtureSettings: QtObject { property WallpaperSettings wallpaper: WallpaperSettings {} }\nproperty FixtureSettings data: FixtureSettings {}"
             ),
             "Style": singleton(
                 "\n".join(
@@ -227,7 +227,15 @@ def main():
             output = result.stdout + result.stderr
             print(output, end="")
             if args.mutation:
-                assert result.returncode != 0 and "FAIL!" in output
+                expected_test = {
+                    "selection": "test_selection",
+                    "resolution": "test_resolution_cache",
+                    "power": "test_power_backend_state",
+                }[args.mutation]
+                assert result.returncode != 0
+                assert re.search(r"FAIL!\s+:.*::" + expected_test + r"\(\)", output), (
+                    output
+                )
             else:
                 assert result.returncode == 0
             assert not re.search(
