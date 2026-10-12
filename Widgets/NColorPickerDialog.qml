@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQml
 import QtQuick
 import QtQuick.Controls
@@ -36,7 +38,7 @@ Popup {
   width: 580
   height: {
     const h = scrollView.implicitHeight + padding * 2;
-    const availableHeight = screen ? screen.height - Style.barHeight - Style.marginL * 2 : h;
+    const availableHeight = root.parent.Screen.height - Style.barHeight - Style.marginL * 2;
     Math.min(h, availableHeight);
   }
   padding: Style.marginXL
@@ -282,7 +284,7 @@ Popup {
 
                   onValueChanged: {
                     if (!selectedSlider.pressed && !fieldMouse.pressed && !hexInput.activeFocus && value !== Math.round(root.displayHue * 360)) {
-                      var newHue = value / 360;
+                      const newHue = value / 360;
                       root.selectedColor = Qt.hsva(newHue, root.selectedColor.hsvSaturation, root.selectedColor.hsvValue, 1);
                       root.stableHue = newHue;
                     }
@@ -660,6 +662,7 @@ Popup {
                 ]
 
                 Rectangle {
+                  id: themeSwatch
                   required property var modelData
                   required property int index
                   readonly property string swatchName: modelData ? (modelData.name || "") : ""
@@ -678,13 +681,13 @@ Popup {
                     hoverEnabled: true
 
                     onEntered: {
-                      TooltipService.show(parent, swatchName + "\n" + parent.color.toString().toUpperCase());
+                      TooltipService.show(themeSwatch, themeSwatch.swatchName + "\n" + themeSwatch.swatchColor.toString().toUpperCase());
                     }
                     onExited: {
                       TooltipService.hide();
                     }
                     onClicked: {
-                      root.selectedColor = swatchColor;
+                      root.selectedColor = themeSwatch.swatchColor;
                       TooltipService.hide();
                     }
                   }
@@ -702,6 +705,7 @@ Popup {
                 model: ColorList.colors
 
                 Rectangle {
+                  id: namedSwatch
                   required property var modelData
                   required property int index
                   readonly property string swatchName: modelData ? (modelData.name || "") : ""
@@ -720,13 +724,13 @@ Popup {
                     hoverEnabled: true
 
                     onEntered: {
-                      TooltipService.show(parent, swatchName + "\n" + parent.color.toString().toUpperCase(), "auto");
+                      TooltipService.show(namedSwatch, namedSwatch.swatchName + "\n" + namedSwatch.swatchColor.toString().toUpperCase(), "auto");
                     }
                     onExited: {
                       TooltipService.hide();
                     }
                     onClicked: {
-                      root.selectedColor = swatchColor;
+                      root.selectedColor = namedSwatch.swatchColor;
                       TooltipService.hide();
                     }
                   }
