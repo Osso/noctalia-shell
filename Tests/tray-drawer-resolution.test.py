@@ -140,6 +140,10 @@ ShellRoot {
         surface.check(surface.delegates(first).itemAt(0).modelData === alpha, "first pinned model");
         surface.check(surface.delegates(second).itemAt(0).modelData === beta, "second pinned model");
         surface.check(surface.contentItem.Window.window !== null && surface.contentItem.Window.window.visible, "native drawer window visible");
+        // Startup starts empty; the production drawer closes before fixture items arrive.
+        first.visible = true;
+        second.visible = true;
+        surface.check(surface.area(first, 0).visible && surface.area(second, 0).visible, "both drawer input targets visible");
         PanelService.openedPanel = first;
         surface.click(first, Qt.LeftButton);
         surface.check(alpha.activations === 1 && beta.activations === 0 && first.closeCount === 1, "left activation routes first owner");
