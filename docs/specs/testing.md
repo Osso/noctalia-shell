@@ -405,6 +405,12 @@ None for the current registry-selection contract.
 - Production lint timeout is 60 seconds; behavior timeout is 15 seconds. Behavior requires exit status zero, `TOAST_SCREEN_BEHAVIOR_PASS`, and no `ERROR`, `FATAL`, scene warnings, `ReferenceError`, `TypeError`, or `Binding loop`; platform warnings are not universally rejected. `lint-harness` separately checks the staged harness.
 - Cage lacks layer-shell. Requested sizing, anchor bindings, dismiss geometry and cursor/button properties do not prove configured mask/region operations, margins, compositor placement/input delivery, actual cursor behavior or flicker prevention. Region operations remain unchanged; no real notifications, visible desktop surface, shell restart, real persistence or whole-shell acceptance is established.
 
+### Popup window isolated runtime
+
+- `python3 Tests/popup-menu-window-warnings.test.py lint` or `runtime` runs standalone; no runner integration is claimed. At `d7ecf92b5`, target warnings drop 10→3. Lint accepts exit status 0 or 255 and exactly one `uncreatable-type` plus two `property-override` diagnostics, naming inherited `screen`/`contentItem`; retained metadata warnings are not suppressed. Exact lifecycle/anchor/focus assertions: [popup context menu](popup-context-menu.md#popup-window-isolated-evidence).
+- Runtime stages production PopupMenuWindow with inert PanelService/tray content under private headless Cage/Quickshell, isolated writable paths and removed desktop connections. If real settings exist, it creates a permission-locked byte-for-byte backup and verifies its SHA-256 before staging; cleanup checks real settings unchanged and terminates the experimental process group. Backup bytes and canonical registry identity are not separately checked afterward.
+- Lint timeout is 60 seconds; runtime timeout is 20 seconds. Runtime requires exit status zero and `POPUP_WINDOW_RUNTIME_PASS`; only `Failed to initialize layershell integration` platform warnings are allowed among checked WARN/ERROR/FATAL, ReferenceError, TypeError and binding-loop diagnostics. Manual parent sizing and direct click signals prove bindings/dispatch, not compositor sizing/input delivery, actual focus, real menu rendering, persistence or whole-shell acceptance. No canonical visible popup or shell restart is part of this evidence.
+
 ## Out of scope
 
 - Feature behavior tested by individual guard suites belongs in that feature's spec.

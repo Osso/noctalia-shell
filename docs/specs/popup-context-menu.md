@@ -37,6 +37,7 @@ Popup Context Menu covers the shared popup menu widgets used by bar widgets and 
 
 - `Widgets/NPopupContextMenu.qml` - popup menu model, width calculation, anchor positioning, close helpers, and typed delegate roles.
 - `Widgets/NContextMenu.qml` - legacy Popup-based context menu with typed delegate roles and open helpers.
+- `Modules/MainScreen/PopupMenuWindow.qml` - shared window, default tray Loader, content restoration, outside-click catcher, and dialog focus binding.
 - `Modules/Bar/Widgets/*.qml` - bar widget context-menu consumers.
 - `Modules/Panels/Wallpaper/WallpaperPanel.qml` - panel action menu consumer.
 
@@ -45,12 +46,19 @@ Popup Context Menu covers the shared popup menu widgets used by bar widgets and 
 - `Tests/popup-context-menu-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
+- `Tests/popup-menu-window-warnings.test.py` and `Tests/Qml/PopupMenuWindowWarningsHarness.qml` - standalone isolated window lint/runtime.
+
+### Popup window isolated evidence
+
+- At `d7ecf92b5`, PopupMenuWindow warnings drop 10→3. Retained installed metadata diagnostics: one `uncreatable-type` for PanelWindow and two `property-override` warnings for inherited `screen`/`contentItem`; no zero-warning claim.
+- Private headless Cage exercises production PanelWindow/Loader with inert PanelService and tray content. Assertions cover registration/destruction, tray screen/default content, open/close/reopen, hide-before-callback ordering, `hideMenu` precedence over `close`, null/inert content, tray restoration, transparent color, full-screen anchors, and None→OnDemand→None dialog focus binding.
+- Manually assigned 640×480 visual-parent geometry verifies dialog/catcher anchor propagation; direct `clicked(null)` verifies close dispatch and accepted-button binding. Cage lacks layer-shell integration: compositor sizing, pointer delivery, actual keyboard focus, real menu rendering, and canonical desktop behavior remain unproven. Runner isolation/acceptance: [testing](testing.md#popup-window-isolated-runtime).
 
 ## Known gaps (current cycle)
 
 - [ ] Add executable coverage for item click signal emission and parent-controlled closing.
 - [ ] Add executable coverage for keyboard escape closing.
-- [ ] Add executable coverage for click-outside behavior in the containing popup window.
+- [ ] Verify compositor-delivered click-outside behavior in the containing popup window; isolated direct-signal dispatch is covered above.
 
 ## Out of scope
 
