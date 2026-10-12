@@ -35,7 +35,7 @@ Tray covers the bar tray widget, tray menu popup, tray drawer panel, pinned/blac
 - [x] Tray menu item references are typed.
 - [x] Tray submenu references are typed.
 - [x] Tray menu loader references are typed in both the tray widget and tray drawer.
-- [x] Tray popup menu window references are typed in both the tray widget and tray drawer.
+- [ ] Tray popup menu window references have concrete popup types in both the tray widget and tray drawer; the widget retains generic QtObject typing because the concrete import creates a cycle.
 - [x] Tray settings blacklist delegate roles are typed.
 
 ## How it works
@@ -54,12 +54,19 @@ Tray covers the bar tray widget, tray menu popup, tray drawer panel, pinned/blac
 ## Tests asserting this spec
 
 - `Tests/tray-widget-guards.test.js`
-- `Tests/tray-widget-warnings.test.py` (`--mode lint` / `--mode runtime`), with `Tests/Qml/TrayWidgetWarningsHarness.qml`: production Tray and installed IconImage offscreen, inert notifier/popup/settings boundaries. Six behavioral cases (two tests plus four menu-position rows), with QtTest init/cleanup accounting for eight reported passes. Covers Ready/Null opacity, primary/secondary activation, only-menu inhibition, blacklist/pinned filtering, model reorder/clear/reassignment, all four bar menu positions, Loader clear/recreation, popup reassignment, tooltip ownership, and drawer metadata. Preserves SystemTray order; does not introduce alphabetical sorting or exercise real notifier/menu DBus actions. Lint rejects known-owner accesses; the audited slice fell from 60 to 34 warnings after `5268c25d3` and formatting-only `57f1fc78a`, without a claimed user-facing behavior change. Remaining diagnostics: 28 unbound creation-context captures, five `missing-property` metadata warnings, and one `incompatible-type` warning. Lint enforces the latter two counts but does not fix the unbound count.
+- `Tests/tray-widget-warnings.test.py`, `Tests/Qml/TrayWidgetWarningsHarness.qml` and `Tests/tray-widget-reload.test.py`: [isolated Tray widget evidence](#tray-widget-isolated-evidence).
 - `Tests/tray-menu-guards.test.js`
 - `Tests/tray-menu-warnings.test.py` and `Tests/Qml/TrayMenuWarningsHarness.qml`: [isolated TrayMenu evidence](#tray-menu-isolated-evidence).
 - `Tests/bar-action-helper-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
+
+### Tray widget isolated evidence
+
+- Through `8a1636052`/`b9b8785c8`, widget warnings drop 20→13 through a truthful `TrayMenu` binding for the loaded menu, not fixture-only metadata or warning suppression. Standalone `--mode lint` rejects unqualified accesses and QQuickLoader.item metadata warnings; it accepts exactly 12 `missing-property` and one `incompatible-type` diagnostic, with exit status 0 or 255. Concrete popup typing remains blocked by an import cycle; generic popup/Repeater metadata and external `UntypedObjectModel.values` metadata remain visible.
+- `--mode runtime` and `--mode runtime --shadow` each report eight passes: six behavioral cases (two tests plus four menu-position rows) and QtTest init/cleanup. Production Tray and installed IconImage run offscreen with inert notifier/popup/settings boundaries. Coverage includes Ready/Null opacity, primary/secondary activation, only-menu inhibition, blacklist/pinned filtering, model reorder/clear/reassignment, all four menu positions, Loader recreation, popup reassignment, tooltip ownership and drawer metadata. Shadow members test owner resolution; SystemTray ordering is preserved.
+- The private reload runner uses actual Tray/TrayMenu, installed Quickshell resolution and PopupWindow with an invisible owner, synthetic services/notifiers and inert controls. Reported cold-start, source reload and recovery after an intentionally invalid reload cover two owners, menu teardown/recreation, screen handoff, popup unregister/re-register and drawer routing. The failed reload is a negative control, not acceptance.
+- Private HOME/XDG paths, settings-access guards and sandbox isolation exclude real config and desktop connections. Runtime retains permission-locked synthetic fixture/backup integrity checks; reload tracing requires zero settings.json attempts and termination of the private process group. Real settings are not accessed or backed up; no canonical restart/reload, native notifier/menu DBus actions, compositor placement/focus/input, real persistence or whole-shell acceptance is proven.
 
 ### Tray settings isolated evidence
 
