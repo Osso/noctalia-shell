@@ -389,6 +389,8 @@ function testShellStateSettersSaveAndEmitMatchingSignals() {
       },
     };
 
+    ctx.root = ctx;
+    ctx.data = ctx.adapter;
     testCase.setter(ctx, testCase.value);
 
     assert.deepEqual(ctx.adapter[testCase.adapterKey], testCase.value);

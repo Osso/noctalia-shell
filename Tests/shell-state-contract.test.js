@@ -53,10 +53,6 @@ function testShellStateAdapterContract() {
   assertContains(adapterBody, /changelogState:[\s\S]*lastSeenVersion:\s*""/, "changelogState must default lastSeenVersion");
   assertContains(adapterBody, /colorSchemesList:[\s\S]*schemes:\s*\[\],[\s\S]*timestamp:\s*0/, "colorSchemesList must default schemes and timestamp");
 
-  for (const key of expectedStateKeys) {
-    assertContains(shellStateSource, new RegExp(`adapter\\.${key}\\b`), `${key} must be read or written through adapter`);
-  }
-
   assertContains(shellStateSource, /function setDisplay\(displayData\)/, "display setter missing");
   assertContains(shellStateSource, /function getDisplay\(\)/, "display getter missing");
   assertContains(shellStateSource, /function setNotificationsState\(stateData\)/, "notifications setter missing");

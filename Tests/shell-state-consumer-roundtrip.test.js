@@ -24,6 +24,7 @@ function createShellState() {
     colorSchemesListChanged() {},
   };
   shellState.data = shellState.adapter;
+  shellState.root = shellState;
   for (const [name, args] of [
     ["getDisplay", []],
     ["setDisplay", ["displayData"]],
