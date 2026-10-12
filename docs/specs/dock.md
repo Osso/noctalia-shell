@@ -46,6 +46,8 @@ Dock covers the shell dock and dock context menu for running and pinned app acti
 
 ## Tests asserting this spec
 
+- Through `7f8da8e4c`/`2cf87e998`, DockTab warnings drop 2→0; one unused-import informational notice remains. `Tests/Qml/AudioDockTabsWarningsHarness.qml` covers monitor labels/scaled descriptions, selection and reordered-screen repopulation under `Bound`, enabled-dependent visibility, display modes, toggles and sliders. Synthetic snapshot and close/reopen retain immediate fixture edits, not a rollback transaction or disk persistence. Shared eight-pass accounting and isolation: [testing](testing.md#audiodock-tabs-isolated-runtime).
+
 - `Tests/dock-menu-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
@@ -63,7 +65,7 @@ Dock covers the shell dock and dock context menu for running and pinned app acti
 
 - [ ] Add executable coverage for `Dock.qml` app list and pinned app rendering.
 - [ ] Prove dock context menu show/hide timing on a live compositor; isolated reopen and exit auto-close are covered.
-- [ ] Add executable coverage for dock monitor settings in setup/settings flows.
+- [ ] Cover setup dock monitor settings and live settings integration; isolated DockTab selection/repopulation is covered.
 - [ ] Add executable coverage for launching pinned apps without running toplevels.
 
 ## Out of scope
