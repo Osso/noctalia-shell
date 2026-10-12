@@ -972,8 +972,10 @@ function testClockSettingsFocusedInputIsTyped() {
 function testClockSettingsPreviewModelsAreTyped() {
   const source = readQml("Modules/Panels/Settings/Bar/WidgetSettings/ClockSettings.qml");
 
-  const previews = extractComponentBlocks(source, "NText")
-    .filter((block) => /\bproperty\s+\w+\s+modelData\b/.test(block));
+  const previews = extractComponentBlocks(source, "Repeater")
+    .filter((block) =>
+      /model:\s*I18n\.locale\.toString\(root\.now,\s*root\.valueFormat(?:Horizontal|Vertical)\.trim\(\)\)/.test(block)
+    );
 
   assert.equal(previews.length, 2, "horizontal and vertical typed preview delegates");
 
