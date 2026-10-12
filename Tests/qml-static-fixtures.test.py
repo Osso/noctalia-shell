@@ -342,6 +342,7 @@ class FixtureLintTest(unittest.TestCase):
                 fixtures / "LocationNetworkPlugin.cpp",
             )
         dependencies = {
+            "AudioDockTabsWarningsHarness.qml": ("ClockSettingsWarningsHarness.qml",),
             "ButtonPopupWarningsHarness.qml": ("SimpleWidgetsWarningsHarness.qml",),
             "LocationTabWarningsHarness.qml": ("AboutTabWarningsHarness.qml",),
             "ShortcutsClockWarningsHarness.qml": (
@@ -364,7 +365,9 @@ class FixtureLintTest(unittest.TestCase):
                 staged = root / ".fixture-dependencies" / dependency
                 staged.parent.mkdir(exist_ok=True)
                 shutil.copy2(ROOT / "Tests/Qml" / dependency, staged)
-                (tests / "Qml" / dependency).symlink_to(staged)
+                link = tests / "Qml" / dependency
+                link.unlink(missing_ok=True)
+                link.symlink_to(staged)
         runner = root / "Bin/dev/qml-static-check.sh"
         runner.parent.mkdir(parents=True)
         shutil.copy2(ROOT / "Bin/dev/qml-static-check.sh", runner)
