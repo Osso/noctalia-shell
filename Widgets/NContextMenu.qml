@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -49,9 +51,6 @@ Popup {
       opacity: itemEnabled ? 1.0 : 0.5
       enabled: itemEnabled
 
-      // Store reference to the popup
-      property Popup popup: root
-
       background: Rectangle {
         color: menuItem.hovered && menuItem.enabled ? NColor.mHover : NColor.transparent
         radius: Style.radiusS
@@ -68,8 +67,8 @@ Popup {
 
         // Optional icon
         NIcon {
-          visible: hasIcon
-          icon: itemIcon
+          visible: menuItem.hasIcon
+          icon: menuItem.itemIcon
           pointSize: Style.fontSizeM
           color: menuItem.hovered && menuItem.enabled ? NColor.mOnHover : NColor.mOnSurface
           Layout.leftMargin: root.itemPadding
@@ -82,12 +81,12 @@ Popup {
         }
 
         NText {
-          text: itemText
+          text: menuItem.itemText
           pointSize: Style.fontSizeM
           color: menuItem.hovered && menuItem.enabled ? NColor.mOnHover : NColor.mOnSurface
           verticalAlignment: Text.AlignVCenter
           Layout.fillWidth: true
-          Layout.leftMargin: hasIcon ? 0 : root.itemPadding
+          Layout.leftMargin: menuItem.hasIcon ? 0 : root.itemPadding
 
           Behavior on color {
             ColorAnimation {
@@ -99,8 +98,8 @@ Popup {
 
       onClicked: {
         if (enabled) {
-          popup.triggered(itemAction);
-          popup.close();
+          root.triggered(menuItem.itemAction);
+          root.close();
         }
       }
     }
