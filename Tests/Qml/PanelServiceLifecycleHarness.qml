@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import Quickshell
 import qs.Commons
@@ -262,7 +264,7 @@ ShellRoot {
   Component {
     id: screenOwnerFactory
 
-    PanelWindow {
+    FloatingWindow {
       id: owner
       property string screenName: "eDP-1"
       property alias panel: panel
