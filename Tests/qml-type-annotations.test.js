@@ -76,8 +76,8 @@ function testQmlFunctionTypeContractInventory() {
     extractAnnotatedSignatures(readQml(qmlFile)).map(signature => `${qmlFile}: ${signature}`));
 
   // Declaration inventory, not behavior proof. Runtime gates below execute these
-  // annotations on installed Qt/Quickshell. Popup methods use an offscreen
-  // QtObject owner; this does not prove native PanelWindow/layershell lifecycle.
+  // annotations on installed Qt/Quickshell. Popup methods additionally use an
+  // offscreen QtObject owner; the native gate proves PanelWindow/layer-shell lifecycle.
   assert.deepEqual(inventory, [
     "Modules/Bar/Widgets/Tray.qml: bindTrayContext(owner:Tray): void",
     "Modules/MainScreen/PopupMenuWindow.qml: initializeTrayMenu(menu:var): void",
@@ -92,6 +92,7 @@ function testQmlFunctionTypeContractInventory() {
 function testAnnotatedFunctionRuntimeContracts() {
   const gates = [
     ["tray-widget-reload.test.py"],
+    ["popup-menu-window-warnings.test.py", "runtime"],
     ["location-service-runtime.test.py", "runtime"],
     ["location-tab-warnings.test.py", "behavior"],
   ];

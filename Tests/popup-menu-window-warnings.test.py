@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
-"""Bounded popup lint, consumer contracts and private headless Cage reload.
+"""Bounded popup lint and native headless Cage→Niri layer-shell reload.
 
 Real PanelWindow/Loader/attached bindings; inert registry, tray and menu content.
-Consumer member expressions and both complete taskbar opening bodies execute
-against the real popup. This does not prove whole-widget rendering or compositor
-input: Cage lacks layer-shell support. No canonical settings/process inspection.
+Consumer expressions and both taskbar opening bodies execute against the real
+popup. No whole-widget/input acceptance or canonical settings/process access.
 """
 
 import argparse
 from collections import Counter
 import importlib.util
 import json
-import os
 from pathlib import Path
 import re
 import shutil
-import signal
 import subprocess
 import tempfile
 import time
@@ -28,9 +25,9 @@ CONSUMERS = (
 )
 
 
-def helper():
+def helper(runner="media-mini-warnings.test.py"):
     spec = importlib.util.spec_from_file_location(
-        "popup_window_helpers", ROOT / "Tests/media-mini-warnings.test.py"
+        "popup_window_helpers", ROOT / "Tests" / runner
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -396,143 +393,84 @@ Item {
     (directory / "shell.qml").write_text(harness)
 
 
-def sandbox(directory, command):
-    return [
-        "bwrap",
-        "--die-with-parent",
-        "--unshare-net",
-        "--unshare-pid",
-        "--ro-bind",
-        "/usr",
-        "/usr",
-        "--symlink",
-        "usr/lib",
-        "/lib",
-        "--symlink",
-        "usr/lib",
-        "/lib64",
-        "--ro-bind",
-        "/etc/fonts",
-        "/etc/fonts",
-        "--proc",
-        "/proc",
-        "--dev",
-        "/dev",
-        "--tmpfs",
-        "/tmp",
-        "--bind",
-        str(directory),
-        str(directory),
-        "--chdir",
-        str(directory),
-        "--",
-        *command,
+def assert_native_output(output):
+    diagnostics = [
+        line
+        for line in output.splitlines()
+        if re.search(
+            r" WARN[: ]| ERROR[: ]| FATAL[: ]|ReferenceError|TypeError|Binding loop|^warning:|wl_callback|queue destroyed",
+            line,
+            re.I,
+        )
     ]
+    assert not diagnostics, diagnostics
+    assert "POPUP_WINDOW_RUNTIME_PASS INITIAL" in output, output
+    assert "POPUP_WINDOW_RUNTIME_PASS RELOADED" in output, output
+    assert output.count("POPUP_WINDOW_RUNTIME_PASS") == 2, output
+    expected_consumers = consumer_checks().count("POPUP_CONSUMER_PASS")
+    assert output.count("POPUP_CONSUMER_PASS") == 2 * expected_consumers, output
 
 
 def runtime(directory):
     stage_runtime(directory)
-    environment = helper().isolate_environment(directory)
-    for variable in (
-        "NIRI_SOCKET",
-        "HYPRLAND_INSTANCE_SIGNATURE",
-        "SWAYSOCK",
-        "QS_CONFIG_PATH",
-        "QS_CONFIG_NAME",
-        "QS_MANIFEST",
-    ):
-        environment.pop(variable, None)
-    environment.update(
-        WLR_BACKENDS="headless",
-        WLR_RENDERER="pixman",
-        WLR_LIBINPUT_NO_DEVICES="1",
-        QT_QPA_PLATFORM="wayland",
-        QML_DISABLE_DISK_CACHE="1",
-        DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent/popup-test",
-    )
+    display = helper("popup-private-display.py")
     log = directory / "runtime.log"
-    with log.open("w+") as stream:
-        process = subprocess.Popen(
-            sandbox(
-                directory,
-                [
-                    "cage",
-                    "--",
-                    "quickshell",
-                    "--no-color",
-                    "-p",
-                    str(directory / "shell.qml"),
-                ],
-            ),
-            cwd=directory,
-            env=environment,
-            stdout=stream,
-            stderr=stream,
-            text=True,
-            start_new_session=True,
-        )
-        try:
-            deadline = time.monotonic() + 20
-            while "POPUP_WINDOW_RUNTIME_PASS INITIAL" not in log.read_text():
-                assert process.poll() is None, log.read_text()
-                assert not re.search(
-                    r"ERROR|TypeError|ReferenceError|Binding loop", log.read_text()
-                ), log.read_text()
-                assert time.monotonic() < deadline, log.read_text()
-                time.sleep(0.05)
-            # Actual file-watcher reload inside the same private Quickshell process.
-            shell = directory / "shell.qml"
-            shell.write_text(
-                shell.read_text().replace(
-                    'generation: "INITIAL"', 'generation: "RELOADED"'
-                )
+    errors = directory / "client.stderr.raw"
+    with display.PopupPrivateDisplay(directory / "display") as environment:
+        with log.open("w") as stream, errors.open("w") as stderr:
+            process = subprocess.Popen(
+                display.sandbox(
+                    directory,
+                    ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
+                ),
+                cwd=directory,
+                env=environment,
+                stdout=stream,
+                stderr=stderr,
+                text=True,
+                start_new_session=True,
             )
-            process.wait(timeout=20)
-            output = log.read_text()
-            print(output, end="")
-            assert process.returncode == 0, process.returncode
-            assert "POPUP_WINDOW_RUNTIME_PASS RELOADED" in output, output
-            assert output.count("POPUP_WINDOW_RUNTIME_PASS") == 2, output
-            platform_warnings = re.findall(
-                r"^.* WARN: Failed to initialize layershell integration$", output, re.M
-            )
-            diagnostics = [
-                line
-                for line in output.splitlines()
-                if re.search(
-                    r" WARN[: ]| ERROR[: ]| FATAL[: ]|ReferenceError|TypeError|Binding loop|^warning:",
-                    line,
+            try:
+                deadline = time.monotonic() + 20
+                while "POPUP_WINDOW_RUNTIME_PASS INITIAL" not in log.read_text():
+                    output = log.read_text() + errors.read_text()
+                    assert process.poll() is None, output
+                    assert not re.search(
+                        r"ERROR|TypeError|ReferenceError|Binding loop", output
+                    ), output
+                    assert time.monotonic() < deadline, output
+                    time.sleep(0.05)
+                # Actual file-watcher reload in the same private Quickshell process.
+                shell = directory / "shell.qml"
+                shell.write_text(
+                    shell.read_text().replace(
+                        'generation: "INITIAL"', 'generation: "RELOADED"'
+                    )
                 )
-            ]
-            assert diagnostics == platform_warnings, diagnostics
-            print("POPUP_WINDOW_PLATFORM_WARNINGS", len(platform_warnings))
-            print("POPUP_WINDOW_PRIVATE_RELOAD_PASS")
-        finally:
-            stop_process_group(process)
-            assert process.poll() is not None, "private process still running"
-
-
-def stop_process_group(process):
-    try:
-        os.killpg(process.pid, signal.SIGTERM)
-    except ProcessLookupError:
-        return
-    try:
-        process.wait(timeout=3)
-    except subprocess.TimeoutExpired:
-        os.killpg(process.pid, signal.SIGKILL)
-        process.wait(timeout=3)
-    try:
-        os.killpg(process.pid, signal.SIGKILL)
-    except ProcessLookupError:
-        pass
+                process.wait(timeout=20)
+                output = log.read_text() + errors.read_text()
+                print(output, end="")
+                assert process.returncode == 0, process.returncode
+                assert_native_output(output)
+                print("POPUP_WINDOW_PRIVATE_RELOAD_PASS")
+            finally:
+                display.stop_owned(process)
+                assert process.poll() is not None, "private client still running"
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument(
+        "--out", type=Path, help="retain raw evidence in a fresh directory"
+    )
     args = parser.parse_args()
-    with tempfile.TemporaryDirectory(prefix="noctalia-popup-window-") as temporary:
-        directory = Path(temporary)
-        directory.chmod(0o700)
+    if args.out is not None:
+        directory = args.out.absolute()
+        directory.mkdir(mode=0o700)
         {"lint": lint, "runtime": runtime}[args.mode](directory)
+    else:
+        with tempfile.TemporaryDirectory(prefix="noctalia-popup-window-") as temporary:
+            directory = Path(temporary)
+            directory.chmod(0o700)
+            {"lint": lint, "runtime": runtime}[args.mode](directory)
