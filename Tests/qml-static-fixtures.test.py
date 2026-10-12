@@ -281,15 +281,28 @@ def lint_reports(output):
     ]
 
 
-def settings_file_attempts(audit):
+def settings_file_attempts(audit, private_directory=None):
     attempts = []
     for line in audit.splitlines():
         paths = re.findall(r'"((?:\\.|[^"\\])*)"', line)
         if re.search(r"\bexecve(?:at)?\(", line):
             # Only the executable is a file path; argv can contain guard source.
             paths = paths[:1]
-        if any("settings.json" in path for path in paths):
-            attempts.append(line)
+        settings_paths = [path for path in paths if "settings.json" in path]
+        if not settings_paths:
+            continue
+        # Owners deliberately probe their permission-locked synthetic config.
+        # Only denied probes inside this test's private artifacts are permitted.
+        if (
+            private_directory is not None
+            and line.endswith("= -1 EACCES (Permission denied)")
+            and all(
+                Path(os.path.normpath(path)).is_relative_to(private_directory)
+                for path in settings_paths
+            )
+        ):
+            continue
+        attempts.append(line)
     return attempts
 
 
@@ -595,7 +608,9 @@ class FixtureLintTest(unittest.TestCase):
                     self.assertIn("host home/config not mounted", result.stdout)
                 else:
                     audit = trace.read_text()
-                    self.assertEqual(settings_file_attempts(audit), [], audit)
+                    self.assertEqual(
+                        settings_file_attempts(audit, self.fixture_tmp), [], audit
+                    )
                     if static_only:
                         executables = {
                             Path(path).name
@@ -620,7 +635,10 @@ class FixtureLintTest(unittest.TestCase):
                         )
                         print("CHECKER_STATIC_ONLY_AUDIT: no runtime or gamma commands")
                     trace.unlink()
-                print("CHECKER_SETTINGS_AUDIT: zero settings attempts")
+                print(
+                    "CHECKER_SETTINGS_AUDIT: zero protected settings attempts; "
+                    "zero successful host settings access"
+                )
             self.assertEqual(self.fixture_tmp.stat().st_mode & 0o777, 0o700)
             self.assertEqual(
                 list(self.fixture_tmp.iterdir()), [], "fixture artifacts leaked"
@@ -692,9 +710,25 @@ class FixtureLintTest(unittest.TestCase):
             '102 readlink("alias", "/home/osso/.config/noctalia/settings.json", 4096) = 40',
             '102 execve("settings.json", ["python3"], 0x1234) = -1 EACCES (Permission denied)',
             '102 execveat(AT_FDCWD, "settings.json", ["python3"], 0x1234, 0) = -1 EACCES (Permission denied)',
+            '102 openat(AT_FDCWD, "/tmp/private-fixture/../../home/osso/.config/noctalia/settings.json", O_RDONLY) = -1 EACCES (Permission denied)',
         ]
         self.assertEqual(
             settings_file_attempts("\n".join([guard_exec, *file_attempts])),
+            file_attempts,
+        )
+        private_directory = Path("/tmp/private-fixture")
+        private_probe = (
+            '102 openat(AT_FDCWD, "/tmp/private-fixture/HOME/.config/noctalia/settings.json", '
+            "O_RDONLY) = -1 EACCES (Permission denied)"
+        )
+        self.assertEqual(settings_file_attempts(private_probe, private_directory), [])
+        successful_probe = private_probe.replace("-1 EACCES (Permission denied)", "3")
+        self.assertEqual(
+            settings_file_attempts(successful_probe, private_directory),
+            [successful_probe],
+        )
+        self.assertEqual(
+            settings_file_attempts("\n".join(file_attempts), private_directory),
             file_attempts,
         )
         for name, script in UTILITY_HARNESSES.items():
