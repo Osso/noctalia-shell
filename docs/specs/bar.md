@@ -99,6 +99,12 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 - At `c14da3540`, NotificationHistory/ScreenRecorder/WiFi/AudioVisualizer owner fixes remove 6+2+6+9 warnings. `Tests/bar-status-warnings.test.py` retains exact per-file residual diagnostics rather than claiming warning-free cohort analysis.
 - Eight isolated behavioral cases exercise production buttons/pills, badge and spectrum Loaders, geometry, routing, and timed spinner/size transitions; QtTest init/cleanup add two reported passes. Feature assertions: [notifications](notifications.md#tests-asserting-this-spec), [screen recorder](screen-recorder.md#tests-asserting-this-spec), [network](network.md#tests-asserting-this-spec), [audio](audio.md#tests-asserting-this-spec). Invocation, residual counts, and integration limits: [testing](testing.md#bar-status-cohort).
 
+### Bar content window isolated evidence
+
+- At `4d9c52ccc`, `Tests/bar-content-window-warnings.test.py` retains BarContentWindow diagnostics 8→8: one PanelWindow creatability diagnostic, four opaque Margins fields (`top`, `bottom`, `left`, `right`), and three opaque screen fields (`name`, `width`, `height`). Exact-count lint acceptance is not zero-warning analysis; production source is unchanged.
+- Offscreen runtime reports four passes: two behavioral cases plus QtTest init/cleanup. Production bindings with synthetic PanelWindow transport and Bar content cover four-side anchors/dimensions, floating margins, rotation, empty-position default, two-screen routing/reassignment, reactive screen/style dimensions, namespace, transparent color, and creation logging. `routing`, `rotation`, and `margins` staged-copy negative controls exercise those failure boundaries.
+- No real compositor, layer-surface placement/input, production Bar rendering, persistence, or whole-shell proof. Invocation and settings-denied isolation: [testing](testing.md#bar-content-window-isolated-runtime).
+
 ### Other bar coverage
 
 - `Tests/background-paths-warnings.test.py` / `Tests/Qml/BackgroundPathsHarness.qml` cover production bar/panel paths through `7c8e74ea2`/`23b32ca34`/`f16acbc36`: 11 offscreen behavioral rows plus init/cleanup (13 reported passes), with four detected layout/rounding negative controls. Shape containment and fill-color properties are not compositor visual proof. Invocation, retained diagnostics, and isolation: [testing](testing.md#background-paths).
