@@ -35,10 +35,10 @@ Singleton {
   Component.onCompleted: {
     // Load display scales from ShellState
     Qt.callLater(() => {
-                   if (typeof ShellState !== 'undefined' && ShellState.isLoaded) {
-                     loadDisplayScalesFromState();
-                   }
-                 });
+      if (typeof ShellState !== 'undefined' && ShellState.isLoaded) {
+        loadDisplayScalesFromState();
+      }
+    });
 
     detectCompositor();
   }
@@ -47,7 +47,7 @@ Singleton {
     target: typeof ShellState !== 'undefined' ? ShellState : null
     function onIsLoadedChanged() {
       if (ShellState.isLoaded) {
-        loadDisplayScalesFromState();
+        root.loadDisplayScalesFromState();
       }
     }
   }
@@ -98,7 +98,7 @@ Singleton {
     onLoaded: {
       if (item) {
         root.backend = item;
-        setupBackendConnections();
+        root.setupBackendConnections();
         root.backend.initialize();
       }
     }
@@ -160,29 +160,29 @@ Singleton {
 
     // Connect backend signals to facade signals
     backend.workspaceChanged.connect(() => {
-                                       // Sync workspaces when they change
-                                       syncWorkspaces();
-                                       // Forward the signal
-                                       workspaceChanged();
-                                     });
+      // Sync workspaces when they change
+      syncWorkspaces();
+      // Forward the signal
+      workspaceChanged();
+    });
 
     backend.activeWindowChanged.connect(() => {
-                                          // Sync active window when it changes
-                                          // TODO: Avoid re-syncing all windows
-                                          syncWindows();
-                                          // Forward the signal
-                                          activeWindowChanged();
-                                        });
+      // Sync active window when it changes
+      // TODO: Avoid re-syncing all windows
+      syncWindows();
+      // Forward the signal
+      activeWindowChanged();
+    });
 
     backend.windowListChanged.connect(() => {
-                                        // syncWindows publishes the facade signal after replacing the model.
-                                        syncWindows();
-                                      });
+      // syncWindows publishes the facade signal after replacing the model.
+      syncWindows();
+    });
 
     // Property bindings - use automatic property change signal
     backend.focusedWindowIndexChanged.connect(() => {
-                                                focusedWindowIndex = backend.focusedWindowIndex;
-                                              });
+      focusedWindowIndex = backend.focusedWindowIndex;
+    });
 
     // Initial sync
     syncWorkspaces();
@@ -419,7 +419,7 @@ Singleton {
           Logger.i("Compositor", "Lock screen confirmed active, suspending");
           stop();
           root.lockAndSuspendCheckCount = 0;
-          suspend();
+          root.suspend();
         } else {
           // Lock screen is active but component not loaded yet, wait a bit more
           if (root.lockAndSuspendCheckCount > 20) {
@@ -427,7 +427,7 @@ Singleton {
             Logger.w("Compositor", "Lock screen active but component not loaded, suspending anyway");
             stop();
             root.lockAndSuspendCheckCount = 0;
-            suspend();
+            root.suspend();
           }
         }
       } else {
@@ -437,7 +437,7 @@ Singleton {
           Logger.w("Compositor", "Lock screen failed to activate, suspending anyway");
           stop();
           root.lockAndSuspendCheckCount = 0;
-          suspend();
+          root.suspend();
         }
       }
     }
