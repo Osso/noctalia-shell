@@ -64,6 +64,12 @@ Scroll view (isolated assertions at `d3e94d7c0`):
 - Assertions cover busy-indicator default/reactive geometry and style, an arc pixel using the outer stroke width, animation stop/resume with a changed duration, and divider orientation, parent resizing and border thickness. Shadow fixtures collide with Canvas `strokeWidth` and Gradient `vertical`; reported owner-collision RED establishes the failure boundary before qualification.
 - Private config masking and proof limits: [testing](testing.md#busy-indicatordivider-isolated-runtime). Native/compositor rendering and whole-shell acceptance remain unproven. This docs-only audit inspected source without rerunning tests.
 
+### Tab buttons isolated evidence
+
+- At `3f3e0be41`, NIconTabButton and NTabButton each drop 2→0 warnings without suppression. Both expose `property NTabBar tabBar: null`; the containing NTabBar assigns itself to button children. Clicks emit `clicked` before updating that explicit owner's `currentIndex`, without discovering ownership through ancestor properties. Unused QtQuick.Controls imports are removed from all three widgets; NIconTabButton also drops Quickshell.
+- [Runner](../../Tests/tab-button-warnings.test.py) and [QtTest harness](../../Tests/Qml/TabButtonWarningsHarness.qml) cover text/icon selection and text/icon owner-shadow rows: four behavioral rows plus init/cleanup, six reported isolated cases. Selection asserts independent bars, checked bindings, pre-update click observation, fixture-provided left/right keyboard navigation, and delegate destruction/recreation. Shadow rows reparent buttons beneath conflicting `currentIndex` and `tabBar` members and assert the original explicit owner still changes.
+- [Private Quickshell harness](../../Tests/Qml/TabButtonReloadHarness.qml) checks assigned owners, independent selection and recreated delegates at cold start and after a private source reload. Isolation, acceptance gates and limits: [testing](testing.md#tab-buttons-isolated-runtime). This docs-only audit inspected source; no proof commands were rerun.
+
 ## Known gaps (current cycle)
 
 - [ ] Add function-level coverage before behavior/spec expansion if `code-index` reports any untested view wrapper functions.
