@@ -112,6 +112,7 @@ QtObject {
     defaults["ui"].update(fontDefault="DejaVu Sans", fontFixed="DejaVu Sans Mono")
     defaults["audio"]["mprisBlacklist"] = ["FirstPlayer", "SecondPlayer"]
     defaults["dock"].update(enabled=True, monitors=["eDP-1"])
+    declarations = []
     sections = []
     for section, values in defaults.items():
         if isinstance(values, dict):
@@ -125,13 +126,18 @@ QtObject {
                     else "var"
                 )
                 fields.append(f"property {kind} {key}: {json.dumps(value)}")
-            sections.append(
-                f"property QtObject {section}: QtObject {{\n"
-                + "\n".join(fields)
-                + "\n}"
+            type_name = section[0].upper() + section[1:] + "State"
+            declarations.append(
+                f"component {type_name}: QtObject {{\n" + "\n".join(fields) + "\n}"
             )
+            sections.append(f"property {type_name} {section}: {type_name} {{}}")
+    declarations.append(
+        "component SettingsState: QtObject {\n" + "\n".join(sections) + "\n}"
+    )
     (directory / "qs/Commons/Settings.qml").write_text(
-        singleton("property QtObject data: QtObject {\n" + "\n".join(sections) + "\n}")
+        singleton(
+            "\n".join(declarations) + "\nproperty SettingsState data: SettingsState {}"
+        )
     )
     (directory / "qs/Commons/I18n.qml").write_text(
         singleton("""
