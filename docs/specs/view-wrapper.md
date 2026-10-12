@@ -58,6 +58,12 @@ Scroll view (isolated assertions at `d3e94d7c0`):
 - At `d3e94d7c0`, NScrollView-only diagnostics drop 12→0 through explicit scrollbar-owner references, without suppression. [Runner](../../Tests/scrollview-warnings.test.py) and [harness](../../Tests/Qml/ScrollViewWarningsHarness.qml) assert ten behavioral cases (five geometry rows, offsets/resize, horizontal disable, clipped pixels, two palette rows), plus QtTest init/cleanup: twelve reported cases.
 - The staged `runtime --mutation palette` negative control replaces pressed colors with normal colors and is expected to fail the pressed-color assertions. Hover color and native pointer interaction are not asserted. Isolation and acceptance gates: [testing](testing.md#scroll-view-isolated-runtime). This audit inspected source; it did not rerun proof commands.
 
+### Busy indicator/divider isolated evidence
+
+- At `627eb5599`, NBusyIndicator and NDivider each drop 1→0 unqualified warnings through explicit outer-owner references; Divider retains two unused-import informational notices. [Runner](../../Tests/busy-divider-warnings.test.py) and [harness](../../Tests/Qml/BusyDividerWarningsHarness.qml) cover four behavioral tests plus init/cleanup: six reported normal and six owner-shadow offscreen passes.
+- Assertions cover busy-indicator default/reactive geometry and style, an arc pixel using the outer stroke width, animation stop/resume with a changed duration, and divider orientation, parent resizing and border thickness. Shadow fixtures collide with Canvas `strokeWidth` and Gradient `vertical`; reported owner-collision RED establishes the failure boundary before qualification.
+- Private config masking and proof limits: [testing](testing.md#busy-indicatordivider-isolated-runtime). Native/compositor rendering and whole-shell acceptance remain unproven. This docs-only audit inspected source without rerunning tests.
+
 ## Known gaps (current cycle)
 
 - [ ] Add function-level coverage before behavior/spec expansion if `code-index` reports any untested view wrapper functions.
