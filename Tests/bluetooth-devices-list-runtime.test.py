@@ -13,7 +13,7 @@ Neither harness creates a window.
 """
 
 import argparse
-import hashlib
+from contextlib import contextmanager
 import importlib.util
 import os
 from pathlib import Path
@@ -254,6 +254,24 @@ def assert_installed_device_contract():
     print("BLUETOOTH_DEVICE_CONTRACT_PASS", properties)
 
 
+@contextmanager
+def fixture_settings(directory):
+    home = directory / "fixture/home"
+    settings = home / ".config/noctalia/settings.json"
+    settings.parent.mkdir(parents=True, mode=0o700)
+    original = (ROOT / "Assets/settings-default.json").read_bytes()
+    backup = directory / "settings.backup.json"
+    for path in (settings, backup):
+        path.touch(mode=0o600)
+        path.write_bytes(original)
+        assert path.read_bytes() == original, "fixture copy differs"
+    try:
+        yield
+    finally:
+        assert settings.read_bytes() == original, "fixture settings changed"
+        assert backup.read_bytes() == original, "fixture backup changed"
+
+
 def stage_list(directory, concrete=False):
     commons = directory / "Commons"
     widgets = directory / "Widgets"
@@ -397,6 +415,12 @@ def isolate_environment(directory):
         DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent/noctalia-test-session",
         DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent/noctalia-test-system",
     )
+    home = directory / "fixture/home"
+    environment.update(
+        HOME=str(home),
+        XDG_CONFIG_HOME=str(home / ".config"),
+        NOCTALIA_CONFIG_DIR=str(home / ".config/noctalia"),
+    )
     return environment
 
 
@@ -432,30 +456,16 @@ def main():
     )
     args = parser.parse_args()
     assert_installed_device_contract()
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes() if settings.exists() else None
     with tempfile.TemporaryDirectory(prefix="noctalia-bluetooth-list-") as temporary:
         directory = Path(temporary)
-        if original is not None:
-            backup = directory / "settings.backup.json"
-            backup.touch(mode=0o600)
-            backup.write_bytes(original)
-            assert (
-                hashlib.sha256(backup.read_bytes()).digest()
-                == hashlib.sha256(original).digest()
-            )
-        if args.mode == "lint":
-            try:
+        with fixture_settings(directory):
+            if args.mode == "lint":
                 lint(directory)
-            finally:
-                if original is not None:
-                    assert settings.read_bytes() == original, "real settings changed"
-            return
-        stage_list(directory, concrete=args.mode == "devices")
-        environment = isolate_environment(directory)
-        if args.mode == "devices":
-            environment["QML_IMPORT_PATH"] = str(directory / "imports")
-        try:
+                return
+            stage_list(directory, concrete=args.mode == "devices")
+            environment = isolate_environment(directory)
+            if args.mode == "devices":
+                environment["QML_IMPORT_PATH"] = str(directory / "imports")
             result = subprocess.run(
                 ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
                 env=environment,
@@ -463,9 +473,6 @@ def main():
                 text=True,
                 timeout=15,
             )
-        finally:
-            if original is not None:
-                assert settings.read_bytes() == original, "real settings changed"
         output = result.stdout + result.stderr
         print(output, end="")
         assert result.returncode == 0, (

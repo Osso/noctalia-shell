@@ -2,7 +2,7 @@
 """Targeted Battery lint and isolated production widget/pill regression."""
 
 import argparse
-import hashlib
+from contextlib import contextmanager
 import importlib.util
 import json
 import os
@@ -16,7 +16,24 @@ from qml_fixture_lint import check_harness
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Bar/Widgets/Battery.qml")
-SETTINGS = Path("/home/osso/.config/noctalia/settings.json")
+
+
+@contextmanager
+def fixture_settings(directory):
+    home = directory / "fixture/home"
+    settings = home / ".config/noctalia/settings.json"
+    settings.parent.mkdir(parents=True, mode=0o700)
+    original = (ROOT / "Assets/settings-default.json").read_bytes()
+    backup = directory / "settings.backup.json"
+    for path in (settings, backup):
+        path.touch(mode=0o600)
+        path.write_bytes(original)
+        assert path.read_bytes() == original, "fixture copy differs"
+    try:
+        yield
+    finally:
+        assert settings.read_bytes() == original, "fixture settings changed"
+        assert backup.read_bytes() == original, "fixture backup changed"
 
 
 def load_staging():
@@ -277,6 +294,12 @@ def behavior(directory):
         DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent/battery-widget-session",
         DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent/battery-widget-system",
     )
+    home = directory / "fixture/home"
+    environment.update(
+        HOME=str(home),
+        XDG_CONFIG_HOME=str(home / ".config"),
+        NOCTALIA_CONFIG_DIR=str(home / ".config/noctalia"),
+    )
     result = subprocess.run(
         [
             "/usr/lib/qt6/bin/qmltestrunner",
@@ -306,19 +329,9 @@ def main():
         directory = Path(temporary)
         if args.mode == "lint-harness":
             raise SystemExit(lint_harness(directory))
-        original = SETTINGS.read_bytes()
-        backup = directory / "settings-backup.json"
-        backup.touch(mode=0o600)
-        backup.write_bytes(original)
-        digest = hashlib.sha256(original).hexdigest()
-        assert hashlib.sha256(backup.read_bytes()).hexdigest() == digest
-        try:
+        with fixture_settings(directory):
             (lint if args.mode == "lint" else behavior)(directory)
-        finally:
-            assert hashlib.sha256(SETTINGS.read_bytes()).hexdigest() == digest, (
-                "Real settings changed"
-            )
-            print("SETTINGS_SHA_UNCHANGED", digest)
+        print("FIXTURE_SETTINGS_UNCHANGED")
 
 
 if __name__ == "__main__":

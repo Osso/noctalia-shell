@@ -2,7 +2,7 @@
 """Actual widgets with Loader's post-construction instance assignment, offscreen."""
 
 import argparse
-import hashlib
+from contextlib import contextmanager
 import importlib.util
 from pathlib import Path
 import re
@@ -18,6 +18,24 @@ spec = importlib.util.spec_from_file_location(
 )
 fixture = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fixture)
+
+
+@contextmanager
+def fixture_settings(directory):
+    home = directory / "fixture/home"
+    settings = home / ".config/noctalia/settings.json"
+    settings.parent.mkdir(parents=True, mode=0o700)
+    original = (ROOT / "Assets/settings-default.json").read_bytes()
+    backup = directory / "settings.backup.json"
+    for path in (settings, backup):
+        path.touch(mode=0o600)
+        path.write_bytes(original)
+        assert path.read_bytes() == original, "fixture copy differs"
+    try:
+        yield
+    finally:
+        assert settings.read_bytes() == original, "fixture settings changed"
+        assert backup.read_bytes() == original, "fixture backup changed"
 
 
 def stage_widgets(directory):
@@ -117,6 +135,12 @@ def isolate_environment(directory):
     environment["DBUS_SYSTEM_BUS_ADDRESS"] = (
         "unix:path=/nonexistent/noctalia-test-system"
     )
+    home = directory / "fixture/home"
+    environment.update(
+        HOME=str(home),
+        XDG_CONFIG_HOME=str(home / ".config"),
+        NOCTALIA_CONFIG_DIR=str(home / ".config/noctalia"),
+    )
     return environment
 
 
@@ -140,19 +164,10 @@ def main():
             prefix="noctalia-widget-metadata-lint-"
         ) as temporary:
             raise SystemExit(lint_harness(Path(temporary)))
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
     with tempfile.TemporaryDirectory(prefix="noctalia-widget-metadata-") as temporary:
         directory = Path(temporary)
-        backup = directory / "settings.backup.json"
-        backup.touch(mode=0o600)
-        backup.write_bytes(original)
-        assert (
-            hashlib.sha256(backup.read_bytes()).digest()
-            == hashlib.sha256(original).digest()
-        )
-        stage_widgets(directory)
-        try:
+        with fixture_settings(directory):
+            stage_widgets(directory)
             result = subprocess.run(
                 ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
                 cwd=ROOT,
@@ -161,8 +176,6 @@ def main():
                 text=True,
                 timeout=15,
             )
-        finally:
-            assert settings.read_bytes() == original, "real settings changed"
         output = result.stdout + result.stderr
         print(output, end="")
         assert result.returncode == 0, f"widget runtime exit {result.returncode}"
