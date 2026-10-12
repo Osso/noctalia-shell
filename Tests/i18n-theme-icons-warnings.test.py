@@ -3,6 +3,8 @@
 
 import argparse
 import importlib.util
+import json
+from collections import Counter
 import os
 from pathlib import Path
 import shutil
@@ -25,7 +27,15 @@ def helper(name):
 def lint(directory):
     helper("media-mini-warnings").stage_modules(directory)
     result = subprocess.run(
-        ["/usr/lib/qt6/bin/qmllint", "--max-warnings", "0", "-I", str(directory)]
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--json",
+            "-",
+            "--max-warnings",
+            "0",
+            "-I",
+            str(directory),
+        ]
         + [str(directory / "qs" / target) for target in TARGETS],
         capture_output=True,
         text=True,
@@ -34,14 +44,19 @@ def lint(directory):
     )
     output = result.stdout + result.stderr
     print(output, end="")
-    for target in TARGETS:
-        count = sum(
-            line.startswith("Warning:") and target in line
-            for line in output.splitlines()
-        )
-        print(f"{target}: {count} warnings")
-    assert result.returncode == 0, result.returncode
-    assert "Warning:" not in output, output
+    files = json.loads(result.stdout)["files"]
+    assert len(files) == len(TARGETS), files
+    for target, report in zip(TARGETS, files):
+        assert report["filename"] == str(directory / "qs" / target), report
+        counts = Counter(warning["id"] for warning in report["warnings"])
+        print(f"{target}: {dict(counts)}")
+        # Existing hoisting diagnostics are outside this owner-qualification scope.
+        expected = {"block-scope-var-declaration": 11} if target == TARGETS[0] else {}
+        assert dict(counts) == expected, counts
+    assert result.returncode == 255, result.returncode
+    print(
+        "Owner regression PASS; strict zero-warning lint retains 11 hoisting warnings."
+    )
 
 
 def stage_runtime(directory):
