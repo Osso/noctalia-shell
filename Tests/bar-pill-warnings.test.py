@@ -8,6 +8,7 @@ BarPillHorizontal and BarPillVertical are copied unchanged, never edited.
 import argparse
 import importlib.util
 import json
+import os
 import re
 import subprocess
 import tempfile
@@ -131,7 +132,9 @@ def run_behavior(directory):
 
 
 def run_lint(directory):
-    load_helper("media-mini-warnings").stage_modules(directory)
+    helper = load_helper("media-mini-warnings")
+    os.environ.update(helper.isolate_environment(directory))
+    helper.stage_modules(directory)
     result = subprocess.run(
         [
             "/usr/lib/qt6/bin/qmllint",
