@@ -70,13 +70,17 @@ Idle Inhibitor covers shell-managed idle inhibition, backend selection, manual k
 
 - `Tests/idle-inhibitor-service-guards.test.js`
 - `Tests/source-coverage.test.js`
+- `Tests/ipc-idle-services-warnings.test.py` and `Tests/Qml/IpcIdleServicesHarness.qml` — at `83c7cdebf`, IdleInhibitor diagnostics drop 7→0. Four behavioral tests plus QtTest init/cleanup yield six reported offscreen cases shared with IPC. Inhibitor assertions cover IPC toggle responses, duplicate/unknown ids, overlapping manual/application ownership, recorded systemd/Wayland commands and SIGTERM, unexpected process exit, real Qt timer expiry, timeout extension and cancellation back to untimed inhibition.
+- IPC assertions cover numeric media parsing and invalid-input warnings, state JSON and unavailable/circular snapshot errors, and `Bound` screen-detector recreation with two independent instances, overlapping-request rejection, monitor filtering and single-screen routing. IPC diagnostics drop 9→7; remaining `missing-property` diagnostics concern BatteryService charging metadata, not zero-warning acceptance.
+- Negative controls mutate staged copies: `parse` changes the relative seek value, `exit` removes inhibition-state clearing, and `capture` substitutes the first screen. These are expected-failing controls, not acceptance modes. Isolation and gates: [testing](testing.md#ipc-and-idle-inhibitor-isolated-runtime).
+- Private handler calls, inert process signals and fixture screens prove neither real IPC transport nor host idle inhibition, backend detection, native layer-shell screen detection, desktop input, persistence or whole-shell acceptance.
 
 ## Known gaps (current cycle)
 
 - [ ] Add executable coverage for bar KeepAwake click and wheel interactions.
 - [ ] Add executable coverage for control-center KeepAwake toggle behavior.
-- [ ] Add executable coverage for inhibitor process exit handling.
-- [ ] Add executable coverage for active timeout timer expiry.
+- [ ] Verify inhibitor process exit handling with a real backend; injected exit coverage above does not prove host process behavior.
+- [ ] Verify timed inhibition with a real backend; isolated Qt timer expiry above does not prove host idle inhibition.
 
 ## Out of scope
 
