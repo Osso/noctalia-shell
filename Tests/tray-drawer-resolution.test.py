@@ -30,6 +30,7 @@ display = load_helper("drawer_display", "popup-private-display.py")
 
 PROBE = """import QtQuick
 import QtTest
+import QtQuick.Window
 import Quickshell
 import Quickshell.Wayland
 import qs.Commons
@@ -138,7 +139,7 @@ ShellRoot {
         surface.check(surface.delegates(second).itemAt(0).drawer === second, "second delegate owner");
         surface.check(surface.delegates(first).itemAt(0).modelData === alpha, "first pinned model");
         surface.check(surface.delegates(second).itemAt(0).modelData === beta, "second pinned model");
-        surface.check(input.waitForRendering(surface.contentItem, 1000), "native drawer surface rendered");
+        surface.check(surface.contentItem.Window.window !== null && surface.contentItem.Window.window.visible, "native drawer window visible");
         PanelService.openedPanel = first;
         surface.click(first, Qt.LeftButton);
         surface.check(alpha.activations === 1 && beta.activations === 0 && first.closeCount === 1, "left activation routes first owner");
