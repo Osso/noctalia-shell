@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
@@ -12,6 +14,7 @@ import qs.Services.UI
 Variants {
   model: Quickshell.screens
   delegate: Item {
+    id: screenDelegate
     required property ShellScreen modelData
     readonly property string currentScreenName: modelData ? modelData.name : ""
 
@@ -53,7 +56,7 @@ Variants {
       active: parent.shouldBeActive
       asynchronous: false
 
-      property ShellScreen loaderScreen: modelData
+      property ShellScreen loaderScreen: screenDelegate.modelData
 
       onLoaded: {
         // Signal that window is loaded so exclusion zone can be created
@@ -76,7 +79,7 @@ Variants {
       asynchronous: false
 
       sourceComponent: BarContentWindow {
-        screen: modelData
+        screen: screenDelegate.modelData
       }
 
       onLoaded: {
@@ -96,7 +99,7 @@ Variants {
       asynchronous: false
 
       sourceComponent: BarExclusionZone {
-        screen: modelData
+        screen: screenDelegate.modelData
       }
 
       onLoaded: {
@@ -116,7 +119,7 @@ Variants {
       asynchronous: false
 
       sourceComponent: PopupMenuWindow {
-        screen: modelData
+        screen: screenDelegate.modelData
       }
 
       onLoaded: {
