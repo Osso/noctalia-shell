@@ -16,6 +16,8 @@ import re
 import shutil
 import subprocess
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Services/Compositor/CompositorService.qml")
 
@@ -153,6 +155,7 @@ Item {
         directory,
         "Fixture",
         {
+            "Backend": backend.replace("KIND", ""),
             "FixtureBackend": singleton(
                 "property int live: 0\nproperty var actions: []"
             ),
@@ -178,7 +181,7 @@ Item {
         {
             "CompositorService": source,
             **{
-                name + "Service": backend.replace("KIND", name)
+                name + "Service": f'import Fixture\nBackend {{ kind: "{name}" }}'
                 for name in ("Niri", "Hyprland", "Sway", "Mango")
             },
         },
@@ -186,6 +189,33 @@ Item {
     shutil.copyfile(
         ROOT / "Tests/Qml/CompositorServiceHarness.qml", directory / "tst_service.qml"
     )
+
+
+def lint_harness(directory, inject_warning=False):
+    stage_runtime(directory, None)
+    harness = directory / "tst_service.qml"
+    if inject_warning:
+        source = harness.read_text()
+        harness.write_text(
+            source.replace(
+                "  id: root\n",
+                "  id: root\n  property int injectedWarning: missingFixtureOwner.value\n",
+                1,
+            )
+        )
+    return check_harness(directory, harness)
+
+
+def lint_harness_regression(directory):
+    clean = directory / "clean"
+    injected = directory / "injected"
+    clean.mkdir(mode=0o700)
+    injected.mkdir(mode=0o700)
+    assert lint_harness(clean) == 0, "clean fixture lint failed"
+    assert lint_harness(injected, inject_warning=True) != 0, (
+        "injected fixture warning was accepted"
+    )
+    print("COMPOSITOR_HARNESS_INJECTED_WARNING_REJECTED")
 
 
 def runtime(directory, mutation):
@@ -244,13 +274,21 @@ def runtime(directory, mutation):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument(
+        "mode", choices=("lint", "lint-harness", "lint-harness-regression", "runtime")
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
     parser.add_argument("--artifacts", type=Path, required=True)
     parser.add_argument("--mutation", choices=("disconnect", "cache", "timer"))
     args = parser.parse_args()
     assert args.mode == "runtime" or args.mutation is None
     directory = args.artifacts
     directory.mkdir(mode=0o700)
+    if args.mode == "lint-harness":
+        raise SystemExit(lint_harness(directory))
+    if args.mode == "lint-harness-regression":
+        lint_harness_regression(directory)
+        return
     settings = Path.home() / ".config/noctalia/settings.json"
     original = settings.read_bytes()
     backup = directory / "settings.backup"
