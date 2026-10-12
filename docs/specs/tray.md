@@ -35,7 +35,7 @@ Tray covers the bar tray widget, tray menu popup, tray drawer panel, pinned/blac
 - [x] Tray menu item references are typed.
 - [x] Tray submenu references are typed.
 - [x] Tray menu loader references are typed in both the tray widget and tray drawer.
-- [ ] Tray popup menu window references have concrete popup types in both the tray widget and tray drawer; the widget retains generic QtObject typing because the concrete import creates a cycle.
+- [ ] Tray widget popup menu window references have concrete popup types; the widget retains generic QtObject typing because the concrete import creates a cycle. The drawer now uses truthful PopupMenuWindow typing.
 - [x] Tray settings blacklist delegate roles are typed.
 
 ## How it works
@@ -64,6 +64,12 @@ Tray covers the bar tray widget, tray menu popup, tray drawer panel, pinned/blac
 - `Tests/bar-action-helper-guards.test.js` — at `ce976459e`, drawer pin matching, pin/unpin, absent-owner and two-owner isolation execute the production helper with owner-bound fixture settings; not source-regex or live tray proof.
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
+
+### Tray drawer isolated evidence
+
+- Through `6143e851d`/`0704c07e5`, drawer warnings drop 5→2: both external `UntypedObjectModel.values` metadata diagnostics remain. Bound content/delegate owners preserve loaded menu identity and native PopupMenuWindow assignment. `Tests/tray-drawer-warnings.test.py` and `Tests/Qml/TrayDrawerWarningsHarness.qml` report eight passes each offscreen in normal/shadow modes, not zero-warning production proof.
+- `Tests/tray-drawer-resolution.test.py` saved normal/shadow private-native receipts cover successful cold start, source reload and failed-reload recovery actions. Original wrappers exit 1 on the diagnostic regex despite passing actions; they are not exit-0 acceptance. At `dba5edf36`, corrected classifier replay exits 0 over two saved positives and six rejected diagnostic mutations; only three deliberate failed-reload ERROR lines are admitted.
+- Latest fresh private-native attempts failed startup font/socket discovery and remain failed evidence, not a fresh current wrapper pass. Current dependency/provenance audit validates saved actions plus corrected classifier artifacts. No actual tray DBus/menu content, seat input, real persistence or canonical desktop proof follows; [integration limits](testing.md#last-source-integration-matrix).
 
 ### Tray widget isolated evidence
 

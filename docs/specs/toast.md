@@ -51,9 +51,9 @@ Toast covers lightweight transient messages, toast command helpers, queue manage
 
 ### ToastScreen isolated evidence
 
-- At `d12a363a2`, ToastScreen warnings drop 10→8: four margin-property and two Loader-method metadata `missing-property` diagnostics, plus two outer-component-ID `unqualified` diagnostics remain. This is not zero-warning acceptance. The content ID is disambiguated; region operations remain unchanged.
+- Through `844eed270`, ToastScreen warnings drop 10→8→6: Bound owner IDs remove the two `unqualified` diagnostics; four margin-property and two Loader-method `missing-property` diagnostics remain. Strict staged harness lint has zero warnings, not production zero-warning acceptance.
 - Reported isolated behavior covers idle/unloaded state, notification-signal activation and content/screen routing, FIFO continuation, replacement unload/reload, expiry and empty-queue inactivity. Requested window size follows toast dimensions, including resizing; six locations across four bar positions exercise anchor bindings. Assertions also cover the inset dismiss hit area and pointing-hand/left-button policy. Six existing toast-screen guards cover queue and hidden-state behavior.
-- Production ToastScreen/SimpleToast run on private headless Cage with inert settings/services/leaf widgets. Cage lacks layer-shell: configured mask/region behavior, margins, compositor placement, delivered input and actual cursor/flicker behavior remain unproven. Cursor-policy properties are not compositor cursor proof. No real notifications or real-settings writes are exercised. Runner isolation, acceptance and cleanup: [testing](testing.md#toastscreen-isolated-runtime).
+- `Tests/toast-screen-warnings.test.py behavior` and `owner-shadow`, with `Tests/Qml/ToastScreenWarningsHarness.qml`, now run production ToastScreen/SimpleToast on a private layer-shell compositor with inert settings/services/leaf widgets. Native traces prove four destroyed layers, 31 geometry snapshots, two independent owners, 400×103→460×160 resizing and Region updates (initial rectangle 0,0,400,103; resized inset 13,17,447,143), anchors/margins and keyboard policy. Both client traces have zero diagnostics; compositor warnings remain separately recorded. Delivered seat input, actual cursor/flicker behavior, real notifications and persistence remain unproven. Isolation and evidence limits: [testing](testing.md#toastscreen-isolated-runtime).
 
 ### SimpleToast isolated evidence
 
@@ -64,7 +64,7 @@ Toast covers lightweight transient messages, toast command helpers, queue manage
 
 - [ ] Verify live toast rendering and delivered click-to-hide input; isolated item assertions do not prove compositor rendering/input.
 - [ ] Add multi-screen coverage for `ToastOverlay` screen delegation.
-- [ ] Verify layer-shell input-region delivery and cursor/flicker behavior on a supporting compositor; isolated Cage assertions do not close this gap.
+- [ ] Verify delivered seat input and cursor/flicker behavior; private-native Region traces establish configured masks, not pointer delivery.
 
 ## Out of scope
 
