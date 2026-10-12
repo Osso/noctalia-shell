@@ -2,6 +2,13 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 ## What it must do
 
+### Shell-root isolated lifecycle
+
+- At `03d617445`, `python3 Tests/shell-root-warnings.test.py lint` proves shell.qml six `unqualified` warnings → zero, with exactly two `block-scope-var-declaration` hoisting warnings remaining. No overall zero-QML-warning claim.
+- `runtime` uses real Quickshell with fake Settings/services/screens; private cold-start and source reload each pass nine lifecycle cases. Exact assertions and Bound Loader/screen owner proof: [shell](shell.md#tests-asserting-this-spec). No inline types introduced.
+- Private HOME/XDG paths and bubblewrap isolate the child from host config, desktop devices/connections, and network. The harness asserts masks/network denial, zero traced settings-file attempts, and private-process termination. No real persistence, backend, compositor pixel/input, or whole-shell acceptance is proven.
+- Reported main-session read-only observation, October 11, 2026 at 22:13 CDT: canonical PID `797384` loaded and wlsunset `manual22` unaffected. This docs-only update runs no tests or restart.
+
 ### Calendar month card isolated runtime
 
 - `python3 Tests/calendar-month-card-warnings.test.py lint`, `runtime`, or `isolation` runs standalone; no runner integration is claimed. Through `343bfa973`/`7c5ab77f2`, CalendarMonthCard warnings drop 5→0; lint requires exit status zero and exactly zero `Warning:` diagnostics. Exact behavioral coverage: [calendar](calendar.md#tests-asserting-this-spec).
