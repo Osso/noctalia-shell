@@ -2,12 +2,11 @@
 """Exercise bar-pill public owners under a masked host and read-only private HOME."""
 
 import json
-import os
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OWNER = ROOT / "Tests/bar-pill-owner-warnings.test.py"
