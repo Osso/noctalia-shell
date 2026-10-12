@@ -34,7 +34,7 @@ Item {
     property int clicks: 0
 
     anchors.fill: parent
-    onClicked: clicks++
+    onClicked: receiver.clicks++
   }
 
   Component {
@@ -44,6 +44,8 @@ Item {
   }
 
   TestCase {
+    id: testCase
+
     function createLoader(screen, index, x) {
       return loaderComponent.createObject(scene, {
                                             "widgetId": "Fixture",
@@ -67,7 +69,7 @@ Item {
     function destroyLoader(loader, screen, index) {
       loader.destroy();
       tryVerify(function () {
-        return !BarService.widgets[key(screen, index)];
+        return !BarService.widgets[testCase.key(screen, index)];
       });
     }
 

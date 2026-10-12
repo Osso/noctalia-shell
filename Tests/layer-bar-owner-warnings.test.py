@@ -14,6 +14,8 @@ import re
 import shutil
 import subprocess
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = {
     "backgrounds": Path("Modules/MainScreen/Backgrounds/AllBackgrounds.qml"),
@@ -160,6 +162,10 @@ QtObject {
 
 
 def execute(directory, target, mode):
+    if mode == "lint-harness":
+        stage_behavior(directory, target)
+        assert check_harness(directory, directory / "tst_owner.qml") == 0
+        return
     if mode == "lint":
         helper("media-mini-warnings.test.py").stage_modules(directory)
         argv = [
@@ -215,11 +221,16 @@ def execute(directory, target, mode):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("target", choices=TARGETS)
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
     parser.add_argument("--artifacts", type=Path, required=True)
     args = parser.parse_args()
+    if args.mode == "lint-harness" and args.target != "loader":
+        parser.error("lint-harness is only supported for the loader target")
     directory = args.artifacts.resolve()
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
+    if args.mode == "lint-harness":
+        execute(directory, args.target, args.mode)
+        return
     settings = Path.home() / ".config/noctalia/settings.json"
     original = settings.read_bytes()
     digest = hashlib.sha256(original).hexdigest()
