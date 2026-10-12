@@ -21,6 +21,7 @@ function testProductionListActionsAndGeometry() {
       [
         path.join(__dirname, "wifi-networks-list-warnings.test.py"),
         "behavior",
+        "--owner-shadow",
         "--snapshot",
         path.join(temporary, "geometry.json"),
       ],

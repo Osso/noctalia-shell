@@ -187,7 +187,11 @@ property bool connecting: false
 property var requests: []
 function isSecured(security) { return security === "WPA2"; }
 function signalIcon(signal, connected) { return connected ? "wifi" : "wifi-low"; }
-function connect(ssid) { requests = requests.concat([{action: "connect", ssid: ssid}]); }
+function connect(ssid, password) {
+  const request = {action: "connect", ssid: ssid};
+  if (password !== undefined) request.password = password;
+  requests = requests.concat([request]);
+}
 function disconnect(ssid) { requests = requests.concat([{action: "disconnect", ssid: ssid}]); }""",
     )
     shutil.copyfile(
@@ -301,9 +305,86 @@ def isolated_environment(directory):
     return environment
 
 
-def behavior(directory, snapshot, baseline):
+PASSWORD_MUTATIONS = {
+    "submit-signal": (
+        "root.passwordSubmitted(networkItem.networkSsid, password);",
+        "",
+        "submission clears credentials and closes editor",
+    ),
+    "cancel-signal": (
+        "root.passwordCancelled();",
+        "",
+        "cancel clears credentials and closes editor",
+    ),
+    "submit-reset": (
+        'function submitPassword(password) {\n          pwdInput.text = "";',
+        "function submitPassword(password) {",
+        "submission must clear editor before signal",
+    ),
+    "cancel-reset": (
+        'function cancelPassword() {\n          pwdInput.text = "";',
+        "function cancelPassword() {",
+        "cancellation must clear editor before signal",
+    ),
+    "submit-password": (
+        "root.passwordSubmitted(networkItem.networkSsid, password);",
+        'root.passwordSubmitted(networkItem.networkSsid, "");',
+        "submission signal must preserve SSID/password",
+    ),
+    "busy-enter": (
+        "if (text && !NetworkService.connecting) {",
+        "if (text) {",
+        "rejected Enter must not emit submission",
+    ),
+    "empty-enter": (
+        "if (text && !NetworkService.connecting) {",
+        "if (!NetworkService.connecting) {",
+        "rejected Enter must not emit submission",
+    ),
+    "submit-owner": (
+        "onClicked: networkItem.submitPassword(pwdInput.text)",
+        "onClicked: submitPassword(pwdInput.text)",
+        "shadow owner handled submission",
+    ),
+    "cancel-owner": (
+        "onClicked: networkItem.cancelPassword()",
+        "onClicked: cancelPassword()",
+        "shadow owner handled cancellation",
+    ),
+}
+
+
+def stage_password_probe(directory, owner_shadow, mutation):
+    source_path = directory / TARGET
+    source = source_path.read_text()
+    if owner_shadow:
+        for marker, shadow in (
+            (
+                "id: pwdInput",
+                'property string networkSsid: "shadow-editor"',
+            ),
+            (
+                'text: I18n.tr("wifi.panel.connect")\n                fontSize: Style.fontSizeXXS',
+                'function submitPassword(password) { throw new Error("shadow owner handled submission"); }',
+            ),
+            (
+                "onClicked: networkItem.cancelPassword()",
+                'function cancelPassword() { throw new Error("shadow owner handled cancellation"); }',
+            ),
+        ):
+            assert source.count(marker) == 1, marker
+            source = source.replace(marker, marker + "\n                " + shadow, 1)
+    if mutation:
+        original, replacement, _ = PASSWORD_MUTATIONS[mutation]
+        assert source.count(original) == 1, (mutation, original)
+        source = source.replace(original, replacement, 1)
+    source_path.write_text(source)
+
+
+def behavior(directory, snapshot, baseline, owner_shadow=False, mutation=None):
     environment = isolated_environment(directory)
     stage_harness(directory)
+    stage_password_probe(directory, owner_shadow, mutation)
     code, output = audited_fixture().run_audited(
         directory,
         environment,
@@ -313,6 +394,15 @@ def behavior(directory, snapshot, baseline):
     print(
         "\n".join(line for line in output.splitlines() if "WIFI_SNAPSHOT " not in line)
     )
+    if mutation:
+        expected = PASSWORD_MUTATIONS[mutation][2]
+        assert code != 0 and "WIFI_LIST_FAIL" in output and expected in output, (
+            mutation,
+            code,
+            output,
+        )
+        print("WIFI_PASSWORD_MUTATION_REJECTED", mutation)
+        return
     assert code == 0, "Offscreen production list failed"
     assert "WIFI_LIST_BEHAVIOR_PASS" in output, output
     assert not re.search(r"\b(?:WARN|ERROR|FATAL)\b", output), output
@@ -337,7 +427,11 @@ def main():
     )
     parser.add_argument("--snapshot", type=Path)
     parser.add_argument("--baseline", action="store_true")
+    parser.add_argument("--owner-shadow", action="store_true")
+    parser.add_argument("--mutation", choices=PASSWORD_MUTATIONS)
     args = parser.parse_args()
+    if args.mutation and (args.mode != "behavior" or not args.owner_shadow):
+        parser.error("--mutation requires behavior --owner-shadow")
     if args.mode == "behavior" and args.baseline and not args.snapshot:
         parser.error("--baseline requires --snapshot")
     with tempfile.TemporaryDirectory(prefix="noctalia-wifi-list-") as temporary:
@@ -347,7 +441,13 @@ def main():
         isolation.install_settings_guard(directory)
         isolation.prove_settings_guard()
         if args.mode == "behavior":
-            behavior(directory, args.snapshot, args.baseline)
+            behavior(
+                directory,
+                args.snapshot,
+                args.baseline,
+                args.owner_shadow,
+                args.mutation,
+            )
         else:
             globals()[args.mode.replace("-", "_")](directory)
 
