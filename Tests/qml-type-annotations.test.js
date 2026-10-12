@@ -1185,7 +1185,7 @@ function testTrayMenuLoaderReferencesAreTyped() {
 }
 
 function testTrayPopupMenuWindowReferencesAreTyped() {
-  assertQmlOwner("Modules/Bar/Widgets/Tray.qml", "Item", "root", {
+  assertQmlOwner("Modules/Bar/Widgets/Tray.qml", "Rectangle", "root", {
     popupMenuWindow: "readonly QtObject",
   });
 
