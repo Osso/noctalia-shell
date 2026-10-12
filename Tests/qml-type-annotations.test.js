@@ -80,8 +80,10 @@ function testQmlFunctionTypeContractInventory() {
     "Modules/Bar/Widgets/Tray.qml: bindTrayContext(owner:Tray): void",
     "Modules/MainScreen/PopupMenuWindow.qml: initializeTrayMenu(menu:var): void",
     "Modules/MainScreen/PopupMenuWindow.qml: hideContent(menu:var): void",
+    "Tests/Qml/CompositorServiceHarness.qml: fixtureBackend(): Backend",
     "Tests/Qml/LocationServiceHarness.qml: require(condition:bool, message:string): void",
     "Tests/Qml/LocationTabWarningsHarness.qml: descendants(item:Item): var",
+    "Tests/Qml/ServiceCohortHarness.qml: selectBackend(hyprland): var",
   ], "Update the typed contract inventory and runtime evidence together when signatures change");
 }
 
@@ -102,6 +104,46 @@ function testAnnotatedFunctionRuntimeContracts() {
     assert.equal(result.status, 0, `${runner}\n${result.stdout}${result.stderr}`);
     process.stdout.write(result.stdout);
   }
+}
+
+function testAnnotatedBackendFixtureRuntimeContracts() {
+  // The two legacy CLI entrypoints read real settings. Stage only their private
+  // runtime fixtures; QtTest still executes the unchanged annotated helpers.
+  const script = `
+import importlib.util
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+sys.path.insert(0, sys.argv[1])
+def load(name):
+    spec = importlib.util.spec_from_file_location(name, Path(sys.argv[1]) / (name + ".test.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+for name in ("compositor-service-warnings", "service-cohort-warnings"):
+    with tempfile.TemporaryDirectory(prefix="noctalia-typed-backend-") as temporary:
+        directory = Path(temporary)
+        module = load(name)
+        if name == "compositor-service-warnings":
+            module.stage_runtime(directory, None)
+        else:
+            module.stage_runtime(directory)
+        environment = load("media-mini-warnings").isolate_environment(directory)
+        result = subprocess.run(["/usr/lib/qt6/bin/qmltestrunner", "-input", str(directory), "-import", str(directory)], env=environment, capture_output=True, text=True, timeout=45)
+        print(result.stdout + result.stderr, end="")
+        if result.returncode:
+            sys.exit(result.returncode)
+`;
+  const result = spawnSync("python3", ["-c", script, __dirname], {
+    encoding: "utf8",
+    timeout: 120000,
+  });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.doesNotMatch(result.stdout + result.stderr,
+    /QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:/);
+  process.stdout.write(result.stdout);
 }
 
 function assertPropertyType(relativePath, propertyName, expectedType) {
@@ -1202,6 +1244,7 @@ const tests = [
   testAnnotatedSignatureExtraction,
   testQmlFunctionTypeContractInventory,
   testAnnotatedFunctionRuntimeContracts,
+  testAnnotatedBackendFixtureRuntimeContracts,
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
   testPopupContextMenuOpenHelpersAreTyped,
