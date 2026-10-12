@@ -23,8 +23,8 @@ ColumnLayout {
     // Populate the ListModel from localBlacklist
     for (var i = 0; i < localBlacklist.length; i++) {
       blacklistModel.append({
-                              "rule": localBlacklist[i]
-                            });
+        "rule": localBlacklist[i]
+      });
     }
   }
 
@@ -76,8 +76,8 @@ ColumnLayout {
             }
             if (!exists) {
               blacklistModel.append({
-                                      "rule": newRule
-                                    });
+                "rule": newRule
+              });
               newRuleInput.text = "";
             }
           }
@@ -94,10 +94,11 @@ ColumnLayout {
     clip: true
     model: blacklistModel
     delegate: Item {
+      id: blacklistDelegate
       required property string rule
       required property int index
 
-      width: ListView.width
+      width: blacklistDelegate.ListView.view.width
       height: 40
 
       Rectangle {
@@ -108,7 +109,7 @@ ColumnLayout {
         border.color: NColor.mOutline
         border.width: Style.borderS
         radius: Style.radiusS
-        visible: rule !== "" // Only visible if rule exists
+        visible: blacklistDelegate.rule !== "" // Only visible if rule exists
       }
 
       Row {
@@ -118,7 +119,7 @@ ColumnLayout {
         spacing: Style.marginS
 
         NText {
-          text: rule
+          text: blacklistDelegate.rule
           elide: Text.ElideRight
           verticalAlignment: Text.AlignVCenter
           Layout.fillWidth: true
@@ -134,7 +135,7 @@ ColumnLayout {
           colorBgHover: NColor.mError
           colorFgHover: NColor.mOnError
           onClicked: {
-            blacklistModel.remove(index);
+            blacklistDelegate.ListView.view.model.remove(blacklistDelegate.index);
           }
         }
       }
