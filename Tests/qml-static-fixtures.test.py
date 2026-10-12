@@ -27,6 +27,11 @@ HARNESS_SCRIPTS = {
     "BarWidgetLoaderOwnerHarness.qml": "layer-bar-owner-warnings.test.py",
     "NotificationWarningsHarness.qml": "notification-warnings.test.py",
     "PanelServiceLifecycleHarness.qml": "panel-service-lifecycle.test.sh",
+    "CompositorServiceHarness.qml": "compositor-service-warnings.test.py",
+    "ShellStateHarness.qml": "shell-state-warnings.test.py",
+    "BatterySettingsWarningsHarness.qml": "battery-settings-warnings.test.py",
+    "OSDWarningsHarness.qml": "osd-warnings.test.py",
+    "SimpleServiceHarness.qml": "simple-service-warnings.test.py",
 }
 HARNESS_REPORTS = {
     "BatteryTabWarningsHarness.qml": "tst_battery.qml",
@@ -45,6 +50,11 @@ HARNESS_REPORTS = {
     "BarWidgetLoaderOwnerHarness.qml": "tst_owner.qml",
     "NotificationWarningsHarness.qml": "shell.qml",
     "PanelServiceLifecycleHarness.qml": "shell.qml",
+    "CompositorServiceHarness.qml": "tst_service.qml",
+    "ShellStateHarness.qml": "tst_shellstate.qml",
+    "BatterySettingsWarningsHarness.qml": "tst_battery_settings.qml",
+    "OSDWarningsHarness.qml": "shell.qml",
+    "SimpleServiceHarness.qml": "tst_services.qml",
 }
 NEW_HARNESSES = (
     "TrayWidgetWarningsHarness.qml",
@@ -57,6 +67,11 @@ NEW_HARNESSES = (
     "BarWidgetLoaderOwnerHarness.qml",
     "NotificationWarningsHarness.qml",
     "PanelServiceLifecycleHarness.qml",
+    "CompositorServiceHarness.qml",
+    "ShellStateHarness.qml",
+    "BatterySettingsWarningsHarness.qml",
+    "OSDWarningsHarness.qml",
+    "SimpleServiceHarness.qml",
 )
 ARTIFACT_HARNESSES = (
     "BrightnessPanelWarningsHarness.qml",
@@ -65,6 +80,8 @@ ARTIFACT_HARNESSES = (
     "BatteryPanelWarningsHarness.qml",
     "ColorSchemeServiceHarness.qml",
     "BarWidgetLoaderOwnerHarness.qml",
+    "CompositorServiceHarness.qml",
+    "BatterySettingsWarningsHarness.qml",
 )
 
 
@@ -86,7 +103,7 @@ class FixtureLintTest(unittest.TestCase):
         (tests / "Qml").mkdir(parents=True)
         for script in (
             *HARNESS_SCRIPTS.values(),
-            "simple-service-warnings.test.py",
+            "clock-settings-warnings.test.py",
             "workspace-runtime.test.py",
             "taskbar-grouped-warnings.test.py",
             "setup-layout-geometry.test.py",
@@ -100,7 +117,7 @@ class FixtureLintTest(unittest.TestCase):
             shutil.copy2(ROOT / "Tests/Qml" / harness, tests / "Qml" / harness)
         # Runtime staging copies these dependencies; rg skips symlinks.
         for name in (
-            "SimpleServiceHarness.qml",
+            "ClockSettingsWarningsHarness.qml",
             "TaskbarGroupedHarness.qml",
             "WorkspaceHarness.qml",
             "ProcessPanelWarningsHarness.qml",
@@ -315,6 +332,7 @@ class FixtureLintTest(unittest.TestCase):
                 if name in (
                     "BatteryPanelWarningsHarness.qml",
                     "BarWidgetLoaderOwnerHarness.qml",
+                    "BatterySettingsWarningsHarness.qml",
                 ):
                     self.assertTrue(result.stderr.startswith(diagnostic), result.stderr)
                     self.assertIn("AssertionError", result.stderr)
