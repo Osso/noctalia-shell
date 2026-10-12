@@ -628,6 +628,86 @@ class FixtureLintTest(unittest.TestCase):
                     self.assertNotIn(filename, artifact_paths, "artifact path reused")
                     artifact_paths.add(filename)
 
+    def test_control_overview_session_timer_dispatch_is_strict_and_isolated(self):
+        routes = {
+            "ControlCenterWidgetLoaderHarness.qml": "control-center-widget-loader-warnings.test.py",
+            "OverviewWarningsHarness.qml": "overview-warnings.test.py",
+            "SessionMenuWarningsHarness.qml": "session-menu-warnings.test.py",
+            "TimerCardHarness.qml": "timer-card-runtime.test.py",
+        }
+        for name, script in routes.items():
+            for warning in (False, True):
+                with self.subTest(harness=name, warning=warning):
+                    self.check_synthetic_strict_dispatch(name, script, warning)
+
+    def check_synthetic_strict_dispatch(self, name, script, warning):
+        # Owner semantics are proved separately; exercise only the dispatch boundary.
+        with tempfile.TemporaryDirectory(prefix="noctalia-dispatch-") as temp:
+            root = Path(temp)
+            runner = root / "Bin/dev/qml-static-check.sh"
+            runner.parent.mkdir(parents=True)
+            shutil.copy2(ROOT / "Bin/dev/qml-static-check.sh", runner)
+            (runner.parent / "qml-static-exclusions.txt").write_text("")
+            (root / "Assets").mkdir()
+            (root / "Assets/settings-default.json").write_text("{}\n")
+            (root / "calls").write_text("")
+            harness = root / "Tests/Qml" / name
+            harness.parent.mkdir(parents=True)
+            harness.write_text(
+                "import QtQuick\nQtObject {\n"
+                + (
+                    "property int probe: Qt.application.missingFixtureValue\n"
+                    if warning
+                    else "property int probe: 42\n"
+                )
+                + "}\n"
+            )
+            # Synthetic executable checks the exact public CLI, then runs real lint.
+            # No owner runtime imports or desktop actions can execute here.
+            (root / "Tests" / script).write_text(
+                "import pathlib, shutil, subprocess, sys, tempfile\n"
+                "assert sys.argv[1:] == ['lint-harness', '--max-warnings', '0'], sys.argv\n"
+                "root = pathlib.Path(__file__).resolve().parents[1]\n"
+                "with (root / 'calls').open('a') as calls:\n"
+                "    calls.write(pathlib.Path(__file__).name + '\\n')\n"
+                "with tempfile.TemporaryDirectory(prefix='strict-dispatch-') as temp:\n"
+                "    harness = pathlib.Path(temp) / 'shell.qml'\n"
+                f"    shutil.copy2(root / 'Tests/Qml' / {name!r}, harness)\n"
+                "    result = subprocess.run(['/usr/lib/qt6/bin/qmllint', '--bare', "
+                "'--max-warnings', '0', '--json', '-', str(harness)], "
+                "capture_output=True, text=True, check=False, timeout=30)\n"
+                "    print(result.stdout, end='', flush=True)\n"
+                "    print(result.stderr, end='', file=sys.stderr, flush=True)\n"
+                "    code = result.returncode\n"
+                "sys.exit(code)\n"
+            )
+            result = self.run_checker(
+                runner,
+                root,
+                settings_present=False,
+                audit_settings=True,
+                mask_audio=True,
+            )
+            output = result.stdout + result.stderr
+            self.assertEqual((root / "calls").read_text().splitlines(), [script])
+            reports = lint_reports(result.stdout)
+            self.assertEqual(len(reports), 1, output)
+            self.assertEqual(len(reports[0]["files"]), 1, output)
+            file = reports[0]["files"][0]
+            self.assert_artifacts_are_isolated(file)
+            if warning:
+                self.assertNotEqual(result.returncode, 0, output)
+                self.assertIn("missingFixtureValue", output)
+                self.assertTrue(file["warnings"], output)
+                self.assertNotIn("ok qmlStaticCheck", output)
+                self.assertNotIn("Checked ", output)
+            else:
+                self.assertEqual(result.returncode, 0, output)
+                self.assertEqual(file["warnings"], [])
+                self.assertEqual(output.count("ok qmlStaticCheck"), 1)
+                self.assertIn("Checked 1 QML files", output)
+                self.assertIn("skipped 0", output)
+
     def test_audio_tab_owner_clis_reject_injected_semantic_warnings(self):
         for name, script in AUDIO_TAB_HARNESSES.items():
             for mode in ("absent", "warning"):
