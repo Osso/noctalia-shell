@@ -12,7 +12,6 @@ import os
 from pathlib import Path
 import re
 import shutil
-import subprocess
 
 from qml_fixture_lint import check_harness
 
@@ -45,15 +44,18 @@ def stage_behavior(directory, target):
         directory,
         "qs.Commons",
         {
-            "Settings": singleton("""property QtObject data: QtObject {
-  property QtObject ui: QtObject { property real panelBackgroundOpacity: 0.6 }
-  property QtObject bar: QtObject { property real backgroundOpacity: 0.8; property var monitors: [] }
+            "Settings": singleton("""component FixtureUi: QtObject { property real panelBackgroundOpacity: 0.6 }
+component FixtureBar: QtObject { property real backgroundOpacity: 0.8; property var monitors: [] }
+component FixtureData: QtObject {
+  property FixtureUi ui: FixtureUi {}
+  property FixtureBar bar: FixtureBar {}
   property QtObject general: QtObject {
     property bool enableShadows: false
     property real shadowOffsetX: 0
     property real shadowOffsetY: 0
   }
-}"""),
+}
+property FixtureData data: FixtureData {}"""),
             "NColor": singleton(
                 'property color mSurface: "#204060"\nproperty color black: "black"'
             ),
@@ -162,6 +164,44 @@ QtObject {
     shutil.copyfile(ROOT / "Tests/Qml" / harness, directory / "tst_owner.qml")
 
 
+def lint_background_harness(directory, inject_warning):
+    stage_behavior(directory, "backgrounds")
+    harness = directory / "tst_owner.qml"
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                "id: scene",
+                "id: scene\n  property int lintProbe: scene.missingLintProbe",
+                1,
+            )
+        )
+    isolation = helper("grid-list-warnings.test.py")
+    environment = isolation.isolated_environment(directory)
+    code, output = isolation.run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            str(harness),
+        ],
+        "background-harness-lint",
+    )
+    headers = [
+        line for line in output.splitlines() if line.startswith(("Warning:", "Error:"))
+    ]
+    print("BACKGROUND_HARNESS_DIAGNOSTICS", len(headers), "EXIT", code)
+    if inject_warning:
+        assert code != 0 and "missingLintProbe" in output, output
+    return code or bool(headers)
+
+
 def execute(directory, target, mode):
     if mode == "lint-harness":
         stage_behavior(directory, target)
@@ -187,10 +227,8 @@ def execute(directory, target, mode):
     environment = helper("display-tab-warnings.test.py").isolated_environment(directory)
     environment["NOCTALIA_CONFIG_DIR"] = environment["XDG_CONFIG_HOME"]
     environment["NOCTALIA_CACHE_DIR"] = environment["XDG_CACHE_HOME"]
-    result = subprocess.run(
-        argv, cwd=directory, env=environment, capture_output=True, text=True, timeout=60
-    )
-    output = result.stdout + result.stderr
+    isolation = helper("grid-list-warnings.test.py")
+    code, output = isolation.run_audited(directory, environment, argv, mode)
     (directory / f"{mode}.log").write_text(output)
     print(output, end="")
     if mode == "lint":
@@ -216,7 +254,7 @@ def execute(directory, target, mode):
         assert not re.search(
             r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output
         ), output
-    assert result.returncode == 0, result.returncode
+    assert code == 0, code
 
 
 def main():
@@ -224,12 +262,18 @@ def main():
     parser.add_argument("target", choices=TARGETS)
     parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
     parser.add_argument("--artifacts", type=Path, required=True)
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
-    if args.mode == "lint-harness" and args.target != "loader":
-        parser.error("lint-harness is only supported for the loader target")
+    if args.inject_warning and (
+        args.mode != "lint-harness" or args.target != "backgrounds"
+    ):
+        parser.error("--inject-warning requires backgrounds lint-harness")
     directory = args.artifacts.resolve()
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
     if args.mode == "lint-harness":
+        if args.target == "backgrounds":
+            raise SystemExit(lint_background_harness(directory, args.inject_warning))
         execute(directory, args.target, args.mode)
         return
     settings = Path.home() / ".config/noctalia/settings.json"

@@ -176,6 +176,42 @@ def lint(directory, environment):
     assert not failures, failures
 
 
+def lint_harness(directory, environment, inject_warning):
+    stage_runtime(directory)
+    harness = directory / "tst_bar_multiline.qml"
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                "id: scene",
+                "id: scene\n    property int lintProbe: scene.missingLintProbe",
+                1,
+            )
+        )
+    code, output = isolation.run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            str(harness),
+        ],
+        "bar-multiline-harness-lint",
+    )
+    headers = [
+        line for line in output.splitlines() if line.startswith(("Warning:", "Error:"))
+    ]
+    print("BAR_MULTILINE_HARNESS_DIAGNOSTICS", len(headers), "EXIT", code)
+    if inject_warning:
+        assert code != 0 and "missingLintProbe" in output, output
+    return code or bool(headers)
+
+
 def runtime(directory, environment, mutation):
     stage_runtime(directory, mutation)
     code, output = isolation.run_audited(
@@ -202,9 +238,15 @@ def runtime(directory, environment, mutation):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "runtime"))
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     parser.add_argument("--mutation", choices=("tail", "click"))
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
+    if args.mutation and args.mode != "runtime":
+        parser.error("--mutation requires runtime")
     with tempfile.TemporaryDirectory(prefix="noctalia-bar-multiline-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
@@ -213,6 +255,8 @@ def main():
         environment = isolation.isolated_environment(directory)
         if args.mode == "lint":
             lint(directory, environment)
+        elif args.mode == "lint-harness":
+            raise SystemExit(lint_harness(directory, environment, args.inject_warning))
         else:
             runtime(directory, environment, args.mutation)
 

@@ -117,10 +117,65 @@ function closedPanel(panel) { openedPanel = null; }""",
     )
     for path in directory.rglob("qmldir"):
         path.unlink()
+    # Quickshell exposes this tree as qs; register its actual singleton sources
+    # for both runtime and lint, without substituting production service metadata.
+    for relative in ("Commons", "Services/UI"):
+        module_directory = directory / relative
+        declarations = ["module qs." + relative.replace("/", ".")]
+        for source in sorted(module_directory.glob("*.qml")):
+            prefix = (
+                "singleton "
+                if source.read_text().startswith("pragma Singleton")
+                else ""
+            )
+            declarations.append(f"{prefix}{source.stem} 1.0 {source.name}")
+        (module_directory / "qmldir").write_text("\n".join(declarations) + "\n")
     shutil.copyfile(
         ROOT / "Tests/Qml/BackgroundRegionReloadHarness.qml", directory / "shell.qml"
     )
     return module / "Backgrounds/BackgroundRegion.qml"
+
+
+def lint_harness(directory, inject_warning):
+    stage(directory)
+    harness = directory / "shell.qml"
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                "id: root",
+                "id: root\n  property int lintProbe: root.missingLintProbe",
+                1,
+            )
+        )
+    isolation = helper("grid-list-warnings.test.py")
+    environment = isolation.isolated_environment(directory)
+    imports = directory / "lint-imports"
+    imports.mkdir()
+    # Match Quickshell's qs root mapping; no generated type metadata or stubs.
+    (imports / "qs").symlink_to(directory, target_is_directory=True)
+    code, output = isolation.run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(imports),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            str(harness),
+        ],
+        "region-harness-lint",
+    )
+    headers = [
+        line for line in output.splitlines() if line.startswith(("Warning:", "Error:"))
+    ]
+    print("REGION_HARNESS_DIAGNOSTICS", len(headers), "EXIT", code)
+    if inject_warning:
+        assert code != 0 and "missingLintProbe" in output, output
+    return code or bool(headers)
 
 
 def wait_ready(process, selector, output):
@@ -214,9 +269,19 @@ def run_reload(directory):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "mode", nargs="?", choices=("runtime", "lint-harness"), default="runtime"
+    )
     parser.add_argument("--artifacts", type=Path, required=True)
-    directory = parser.parse_args().artifacts.resolve()
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
+    args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
+    directory = args.artifacts.resolve()
     directory.mkdir(mode=0o700, parents=True, exist_ok=False)
+    if args.mode == "lint-harness":
+        raise SystemExit(lint_harness(directory, args.inject_warning))
     settings = Path.home() / ".config/noctalia/settings.json"
     original = settings.read_bytes()
     backup = directory / "settings.backup.json"
