@@ -100,14 +100,22 @@ def main():
         commons.mkdir(mode=0o700)
         # Passive signals expose FileView completion without changing its operations.
         palette_source = (ROOT / "Commons/NColor.qml").read_text()
-        palette_source = palette_source.replace(
-            "  id: root\n",
-            "  id: root\n  signal fileLoaded()\n  signal fileSaved()\n",
-        ).replace(
-            "    id: customColorsFile\n",
-            "    id: customColorsFile\n"
-            '    onLoaded: { console.log("COLOR_FILE_LOADED"); root.fileLoaded(); }\n'
-            '    onSaved: { console.log("COLOR_FILE_SAVED"); root.fileSaved(); }\n',
+        palette_source = (
+            palette_source.replace(
+                "  id: root\n",
+                "  id: root\n  signal fileLoaded()\n  signal fileSaved()\n",
+            )
+            .replace(
+                "    id: customColorsFile\n",
+                "    id: customColorsFile\n"
+                '    onLoaded: { console.log("COLOR_FILE_LOADED"); root.fileLoaded(); }\n'
+                '    onSaved: { console.log("COLOR_FILE_SAVED", "loaded=" + loaded); root.fileSaved(); }\n',
+            )
+            .replace(
+                "    onLoadFailed: function (error) {\n",
+                "    onLoadFailed: function (error) {\n"
+                '      console.log("COLOR_FILE_LOAD_FAILED", error, "loaded=" + loaded);\n',
+            )
         )
         (commons / "NColor.qml").write_text(palette_source)
         config_path = json.dumps(str(directory / "config") + "/")
@@ -177,10 +185,13 @@ def main():
         assert result.returncode == 0 and "COLOR_NAMESPACE_PASS" in output
         assert_no_diagnostics(output)
         assert "COLOR_FILE_SAVED" in output
-        assert output.index("COLOR_FILE_SAVED") < output.index("COLOR_FILE_LOADED")
+        assert "COLOR_FILE_LOAD_FAILED 2 loaded=false" in output
+        assert output.index("COLOR_FILE_LOAD_FAILED") < output.index("COLOR_FILE_SAVED")
+        assert output.index("COLOR_FILE_SAVED") < output.index("COLOR_NAMESPACE_PASS")
         created_bytes = colors_file.read_bytes()
         assert json.loads(created_bytes) == DEFAULT_COLORS
-        # A fresh process must reload the generated palette without rewriting it.
+        # A watcher reload during an active write need not emit loaded. Require
+        # that completion in a fresh process, without rewriting the saved palette.
         result = subprocess.run(
             ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
             env=environment,
@@ -192,6 +203,9 @@ def main():
         print(output, end="")
         assert result.returncode == 0 and "COLOR_NAMESPACE_PASS" in output
         assert_no_diagnostics(output)
+        assert "COLOR_FILE_LOADED" in output
+        assert output.index("COLOR_FILE_LOADED") < output.index("COLOR_NAMESPACE_PASS")
+        assert "COLOR_FILE_SAVED" not in output
         assert colors_file.read_bytes() == created_bytes
 
 

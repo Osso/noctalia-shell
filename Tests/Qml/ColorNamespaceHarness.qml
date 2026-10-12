@@ -12,6 +12,10 @@ ShellRoot {
       // Let FileView finish clearing the completed operation before teardown.
       Qt.callLater(root.verifyPalette);
     }
+    function onFileSaved() {
+      // Creation completes at saved; watcher reload may run during the write.
+      Qt.callLater(root.verifyPalette);
+    }
   }
 
   Window {
@@ -71,7 +75,7 @@ ShellRoot {
     interval: 10000
     running: true
     onTriggered: {
-      console.error("COLOR_NAMESPACE_FAIL: timed out waiting for file load completion");
+      console.error("COLOR_NAMESPACE_FAIL: timed out waiting for file load or save completion");
       Qt.exit(1);
     }
   }
