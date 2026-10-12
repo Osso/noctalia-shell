@@ -51,6 +51,7 @@ Icons covers bundled icon-font loading, theme/desktop icon path resolution, and 
 
 ## Tests asserting this spec
 
+- `Tests/residual-singleton-owners.test.py runtime` — at `159c2d307`, Icons callback owner warnings drop 1→0. Offscreen actual Icons checks mapped lookup and a directly emitted `Quickshell.reloadCompleted` signal incrementing font version once and reaching `FontLoader.Ready`, including callback-local owner shadows. A host TrueType font substitutes for the bundled Tabler font; this proves neither Tabler glyph rendering nor canonical hot reload. Gates: [testing](testing.md#residual-singleton-owners).
 - `Tests/icons-guards.test.js`
 - `Tests/theme-icons-guards.test.js`
 - `Tests/source-coverage.test.js`
