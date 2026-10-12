@@ -9,15 +9,14 @@ import qs.Services.Keyboard
 TestCase {
     id: suite
 
-    property var backend
+    property MangoService backend: null
     property int scaleSignals: 0
 
     function init() {
         FixtureIo.processes = [];
         ToplevelManager.toplevels.values = [];
         Quickshell.commands = [];
-        CompositorService.displayScales = {
-        };
+        CompositorService.displayScales = {};
         CompositorService.scaleUpdates = 0;
         suite.scaleSignals = 0;
         suite.backend = suite.createTemporaryObject(mangoComponent, suite);
@@ -32,7 +31,7 @@ TestCase {
 
     function process(args) {
         const key = JSON.stringify(["mmsg"].concat(args));
-        return FixtureIo.processes.find((value) => {
+        return FixtureIo.processes.find(value => {
             return JSON.stringify(value.command) === key;
         });
     }
@@ -48,9 +47,11 @@ TestCase {
             "title": "Editor",
             "appId": "editor",
             "activated": true,
-            "outputs": [{
-                "name": "DP-1"
-            }],
+            "outputs": [
+                {
+                    "name": "DP-1"
+                }
+            ],
             "fullscreen": false,
             "maximized": false
         };
@@ -58,9 +59,11 @@ TestCase {
             "title": "Browser",
             "appId": "browser",
             "activated": false,
-            "outputs": [{
-                "name": "HDMI-A-1"
-            }],
+            "outputs": [
+                {
+                    "name": "HDMI-A-1"
+                }
+            ],
             "fullscreen": false,
             "maximized": true
         };
@@ -143,9 +146,7 @@ TestCase {
     Component {
         id: mangoComponent
 
-        MangoService {
-        }
-
+        MangoService {}
     }
 
     Connections {
@@ -155,5 +156,4 @@ TestCase {
 
         target: suite.backend
     }
-
 }

@@ -218,6 +218,67 @@ function onDisplayScalesUpdated(value) { displayScales = value; scaleUpdates++; 
     )
 
 
+def lint_harness(directory, inject_warning=False):
+    stage_runtime(directory, None)
+    harness = directory / "tst_mango.qml"
+    if inject_warning:
+        source = harness.read_text()
+        marker = "    id: suite\n"
+        assert source.count(marker) == 1, "fixture warning injection owner missing"
+        harness.write_text(
+            source.replace(
+                marker,
+                marker + "    property int injectedWarning: suite.missingLintProbe\n",
+                1,
+            )
+        )
+    result = run_isolated(
+        directory,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            "/fixture",
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            "/fixture/tst_mango.qml",
+        ],
+    )
+    (directory / "harness-lint.json").write_text(result.stdout)
+    print(result.stdout, end="")
+    print(result.stderr, end="")
+    report = json.loads(result.stdout)
+    assert len(report["files"]) == 1, report
+    entry = report["files"][0]
+    diagnostics = entry["warnings"]
+    print("MANGO_HARNESS_LINT_COUNT", len(diagnostics), "exit", result.returncode)
+    if result.returncode:
+        return result.returncode
+    return int(not entry["success"] or bool(diagnostics))
+
+
+def lint_harness_regression(directory):
+    clean = directory / "clean"
+    injected = directory / "injected"
+    clean.mkdir(mode=0o700)
+    injected.mkdir(mode=0o700)
+    assert lint_harness(clean) == 0, "clean fixture lint failed"
+    assert lint_harness(injected, inject_warning=True) != 0, (
+        "injected semantic warning was accepted"
+    )
+    report = json.loads((injected / "harness-lint.json").read_text())
+    assert any(
+        warning["type"] == "warning" and "missingLintProbe" in warning["message"]
+        for entry in report["files"]
+        for warning in entry["warnings"]
+    ), report
+    print("MANGO_HARNESS_INJECTED_WARNING_REJECTED")
+
+
 def assert_isolation(directory):
     probe = """import os
 from pathlib import Path
@@ -264,38 +325,25 @@ def runtime(directory, mutation):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "lint-harness", "runtime"))
+    parser.add_argument(
+        "mode", choices=("lint", "lint-harness", "lint-harness-regression", "runtime")
+    )
     parser.add_argument("--artifacts", type=Path, required=True)
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     parser.add_argument("--mutation", choices=("tags", "scale"))
     args = parser.parse_args()
     assert args.mutation is None or args.mode == "runtime"
+    assert not args.inject_warning or args.mode == "lint-harness"
     directory = args.artifacts.resolve()
     directory.mkdir(mode=0o700)
     deny_host_access(directory)
     if args.mode == "lint":
         lint(directory)
     elif args.mode == "lint-harness":
-        stage_runtime(directory, None)
-        result = run_isolated(
-            directory,
-            [
-                "/usr/lib/qt6/bin/qmllint",
-                "--bare",
-                "-I",
-                "/fixture",
-                "-I",
-                "/usr/lib/qt6/qml",
-                "--max-warnings",
-                "0",
-                "--json",
-                "-",
-                "/fixture/tst_mango.qml",
-            ],
-        )
-        (directory / "harness-lint.json").write_text(result.stdout)
-        print(result.stdout, end="")
-        print(result.stderr, end="")
-        assert result.returncode == 0, result.returncode
+        raise SystemExit(lint_harness(directory, args.inject_warning))
+    elif args.mode == "lint-harness-regression":
+        lint_harness_regression(directory)
     else:
         runtime(directory, args.mutation)
 
