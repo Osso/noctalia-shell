@@ -116,6 +116,23 @@ for file in "${qml_files[@]}"; do
     Tests/Qml/ActiveWindowWarningsHarness.qml)
         python3 "$repo_root/Tests/active-window-warnings.test.py" lint-harness
         ;;
+    Tests/Qml/TrayWidgetWarningsHarness.qml)
+        python3 "$repo_root/Tests/tray-widget-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/WallpaperServiceHarness.qml)
+        python3 "$repo_root/Tests/wallpaper-service-warnings.test.py" lint-harness \
+            --artifacts "$module_root/wallpaper-service"
+        ;;
+    Tests/Qml/TaskbarHarness.qml)
+        python3 "$repo_root/Tests/taskbar-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/AboutTabWarningsHarness.qml)
+        python3 "$repo_root/Tests/about-tab-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/RemainingLayoutGeometryHarness.qml)
+        python3 "$repo_root/Tests/remaining-layout-geometry.test.py" lint-harness \
+            --artifacts "$module_root/remaining-layout"
+        ;;
     Tests/network-service/shell.qml)
         python3 "$repo_root/Tests/network-service-warnings.test.py" lint-harness
         ;;
