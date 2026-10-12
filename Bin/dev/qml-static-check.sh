@@ -79,189 +79,189 @@ for file in "${qml_files[@]}"; do
     fi
 
     case "$file" in
-        Tests/Qml/BatteryTabWarningsHarness.qml)
-            python3 "$repo_root/Tests/battery-tab-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/BatteryWidgetWarningsHarness.qml)
-            python3 "$repo_root/Tests/battery-widget-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/MediaMiniWarningsHarness.qml)
-            python3 "$repo_root/Tests/media-mini-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/BarWidgetMetadataHarness.qml)
-            python3 "$repo_root/Tests/bar-widget-metadata-runtime.test.py" lint-harness
-            ;;
-        Tests/Qml/TaskbarGroupedHarness.qml)
-            python3 "$repo_root/Tests/taskbar-grouped-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/SetupLayoutGeometryHarness.qml)
-            python3 "$repo_root/Tests/setup-layout-geometry.test.py" lint-harness
-            ;;
-        Tests/Qml/SchemeDownloaderHarness.qml)
-            python3 "$repo_root/Tests/scheme-downloader-runtime.test.py" lint-harness
-            ;;
-        Tests/Qml/ClipboardPreviewWarningsHarness.qml)
-            python3 "$repo_root/Tests/clipboard-preview-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/RootServiceHarness.qml)
-            python3 "$repo_root/Tests/root-service-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/ServiceCohortHarness.qml)
-            python3 "$repo_root/Tests/service-cohort-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/BrightnessPanelWarningsHarness.qml)
-            python3 "$repo_root/Tests/brightness-panel-warnings.test.py" lint-harness \
-                --artifacts "$module_root/brightness-panel"
-            ;;
-        Tests/Qml/ActiveWindowWarningsHarness.qml)
-            python3 "$repo_root/Tests/active-window-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/TrayWidgetWarningsHarness.qml)
-            python3 "$repo_root/Tests/tray-widget-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/WallpaperServiceHarness.qml)
-            python3 "$repo_root/Tests/wallpaper-service-warnings.test.py" lint-harness \
-                --artifacts "$module_root/wallpaper-service"
-            ;;
-        Tests/Qml/TaskbarHarness.qml)
-            python3 "$repo_root/Tests/taskbar-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/AboutTabWarningsHarness.qml)
-            python3 "$repo_root/Tests/about-tab-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/RemainingLayoutGeometryHarness.qml)
-            python3 "$repo_root/Tests/remaining-layout-geometry.test.py" lint-harness \
-                --artifacts "$module_root/remaining-layout"
-            ;;
-        Tests/Qml/BatteryPanelWarningsHarness.qml)
-            python3 "$repo_root/Tests/battery-panel-warnings.test.py" lint-harness \
-                --artifacts "$module_root/battery-panel"
-            ;;
-        Tests/Qml/ColorSchemeServiceHarness.qml)
-            python3 "$repo_root/Tests/color-scheme-service-runtime.test.py" lint-harness \
-                --artifacts "$module_root/color-scheme-service"
-            ;;
-        Tests/Qml/BarWidgetLoaderOwnerHarness.qml)
-            python3 "$repo_root/Tests/layer-bar-owner-warnings.test.py" loader lint-harness \
-                --artifacts "$module_root/bar-widget-loader-owner"
-            ;;
-        Tests/Qml/NotificationWarningsHarness.qml)
-            python3 "$repo_root/Tests/notification-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/CompositorServiceHarness.qml)
-            python3 "$repo_root/Tests/compositor-service-warnings.test.py" lint-harness \
-                --max-warnings 0 --artifacts "$module_root/compositor-service"
-            ;;
-        Tests/Qml/ShellStateHarness.qml)
-            python3 "$repo_root/Tests/shell-state-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/BatterySettingsWarningsHarness.qml)
-            python3 "$repo_root/Tests/battery-settings-warnings.test.py" lint-harness \
-                --max-warnings 0 --artifacts "$module_root/battery-settings"
-            ;;
-        Tests/Qml/OSDWarningsHarness.qml)
-            python3 "$repo_root/Tests/osd-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/SimpleServiceHarness.qml)
-            python3 "$repo_root/Tests/simple-service-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/BluetoothPanelWarningsHarness.qml)
-            python3 "$repo_root/Tests/bluetooth-panel-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/IpcIdleServicesHarness.qml)
-            python3 "$repo_root/Tests/ipc-idle-services-warnings.test.py" lint-harness \
-                --max-warnings 0 --artifacts "$module_root/ipc-idle-services"
-            ;;
-        Tests/Qml/BrightnessKeyboardServicesHarness.qml)
-            python3 "$repo_root/Tests/brightness-keyboard-services-warnings.test.py" lint-harness \
-                --artifacts "$module_root/brightness-keyboard-services"
-            ;;
-        Tests/Qml/DockMenuWarningsHarness.qml)
-            python3 "$repo_root/Tests/dock-menu-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/WallpaperTabWarningsHarness.qml)
-            python3 "$repo_root/Tests/wallpaper-tab-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/I18nThemeIconsHarness.qml)
-            python3 "$repo_root/Tests/i18n-theme-icons-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/VisualizerProfileHarness.qml)
-            python3 "$repo_root/Tests/visualizer-profile-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/SimpleWidgetsWarningsHarness.qml)
-            python3 "$repo_root/Tests/simple-widgets-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/SetupWallpaperWarningsHarness.qml)
-            python3 "$repo_root/Tests/setup-wallpaper-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/NotificationServiceHarness.qml)
-            python3 "$repo_root/Tests/notification-service-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/SettingsPanelWarningsHarness.qml)
-            python3 "$repo_root/Tests/settings-panel-warnings.test.py" lint-harness \
-                --max-warnings 0 --artifacts "$module_root/settings-panel"
-            ;;
-        Tests/Qml/WiFiPanelWarningsHarness.qml)
-            python3 "$repo_root/Tests/wifi-panel-warnings.test.py" lint-harness \
-                --artifacts "$module_root/wifi-panel"
-            ;;
-        Tests/Qml/BarWarningsHarness.qml)
-            python3 "$repo_root/Tests/bar-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/ChangelogPanelWarningsHarness.qml)
-            python3 "$repo_root/Tests/changelog-panel-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/ControlCenterPanelWarningsHarness.qml)
-            python3 "$repo_root/Tests/control-center-panel-warnings.test.py" lint-harness \
-                --max-warnings 0 --artifacts "$module_root/control-center-panel"
-            ;;
-        Tests/Qml/LocationServiceHarness.qml)
-            python3 "$repo_root/Tests/location-service-runtime.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/MainScreenWarningsHarness.qml)
-            python3 "$repo_root/Tests/main-screen-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/FilePickerWarningsHarness.qml)
-            python3 "$repo_root/Tests/file-picker-warnings.test.py" --mode lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/EmojiRecorderWarningsHarness.qml)
-            python3 "$repo_root/Tests/emoji-recorder-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/WallhavenPowerWarningsHarness.qml)
-            python3 "$repo_root/Tests/wallhaven-power-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/CalendarMonthCardWarningsHarness.qml)
-            python3 "$repo_root/Tests/calendar-month-card-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/ShortcutsClockWarningsHarness.qml)
-            python3 "$repo_root/Tests/shortcuts-clock-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/AllScreensWarningsHarness.qml)
-            python3 "$repo_root/Tests/all-screens-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/ButtonPopupWarningsHarness.qml)
-            python3 "$repo_root/Tests/button-popup-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/HistorySimpleToastHarness.qml)
-            python3 "$repo_root/Tests/history-simple-toast-warnings.test.py" lint-harness
-            ;;
-        Tests/Qml/LocationTabWarningsHarness.qml)
-            python3 "$repo_root/Tests/location-tab-warnings.test.py" lint-harness --max-warnings 0
-            ;;
-        Tests/Qml/ProcessPanelWarningsHarness.qml)
-            python3 "$repo_root/Tests/process-panel-warnings.test.py" lint-harness \
-                --max-warnings 0 --artifacts "$module_root/process-panel"
-            ;;
-        Tests/Qml/PanelServiceLifecycleHarness.qml)
-            "$repo_root/Tests/panel-service-lifecycle.test.sh" lint-harness
-            printf '\n'
-            ;;
-        Tests/network-service/shell.qml)
-            python3 "$repo_root/Tests/network-service-warnings.test.py" lint-harness
-            ;;
-        *)
-            "$qmllint" -I "$module_root" "$module_root/qs/$file"
-            ;;
+    Tests/Qml/BatteryTabWarningsHarness.qml)
+        python3 "$repo_root/Tests/battery-tab-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/BatteryWidgetWarningsHarness.qml)
+        python3 "$repo_root/Tests/battery-widget-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/MediaMiniWarningsHarness.qml)
+        python3 "$repo_root/Tests/media-mini-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/BarWidgetMetadataHarness.qml)
+        python3 "$repo_root/Tests/bar-widget-metadata-runtime.test.py" lint-harness
+        ;;
+    Tests/Qml/TaskbarGroupedHarness.qml)
+        python3 "$repo_root/Tests/taskbar-grouped-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/SetupLayoutGeometryHarness.qml)
+        python3 "$repo_root/Tests/setup-layout-geometry.test.py" lint-harness
+        ;;
+    Tests/Qml/SchemeDownloaderHarness.qml)
+        python3 "$repo_root/Tests/scheme-downloader-runtime.test.py" lint-harness
+        ;;
+    Tests/Qml/ClipboardPreviewWarningsHarness.qml)
+        python3 "$repo_root/Tests/clipboard-preview-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/RootServiceHarness.qml)
+        python3 "$repo_root/Tests/root-service-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/ServiceCohortHarness.qml)
+        python3 "$repo_root/Tests/service-cohort-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/BrightnessPanelWarningsHarness.qml)
+        python3 "$repo_root/Tests/brightness-panel-warnings.test.py" lint-harness \
+            --artifacts "$module_root/brightness-panel"
+        ;;
+    Tests/Qml/ActiveWindowWarningsHarness.qml)
+        python3 "$repo_root/Tests/active-window-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/TrayWidgetWarningsHarness.qml)
+        python3 "$repo_root/Tests/tray-widget-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/WallpaperServiceHarness.qml)
+        python3 "$repo_root/Tests/wallpaper-service-warnings.test.py" lint-harness \
+            --artifacts "$module_root/wallpaper-service"
+        ;;
+    Tests/Qml/TaskbarHarness.qml)
+        python3 "$repo_root/Tests/taskbar-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/AboutTabWarningsHarness.qml)
+        python3 "$repo_root/Tests/about-tab-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/RemainingLayoutGeometryHarness.qml)
+        python3 "$repo_root/Tests/remaining-layout-geometry.test.py" lint-harness \
+            --artifacts "$module_root/remaining-layout"
+        ;;
+    Tests/Qml/BatteryPanelWarningsHarness.qml)
+        python3 "$repo_root/Tests/battery-panel-warnings.test.py" lint-harness \
+            --artifacts "$module_root/battery-panel"
+        ;;
+    Tests/Qml/ColorSchemeServiceHarness.qml)
+        python3 "$repo_root/Tests/color-scheme-service-runtime.test.py" lint-harness \
+            --artifacts "$module_root/color-scheme-service"
+        ;;
+    Tests/Qml/BarWidgetLoaderOwnerHarness.qml)
+        python3 "$repo_root/Tests/layer-bar-owner-warnings.test.py" loader lint-harness \
+            --artifacts "$module_root/bar-widget-loader-owner"
+        ;;
+    Tests/Qml/NotificationWarningsHarness.qml)
+        python3 "$repo_root/Tests/notification-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/CompositorServiceHarness.qml)
+        python3 "$repo_root/Tests/compositor-service-warnings.test.py" lint-harness \
+            --max-warnings 0 --artifacts "$module_root/compositor-service"
+        ;;
+    Tests/Qml/ShellStateHarness.qml)
+        python3 "$repo_root/Tests/shell-state-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/BatterySettingsWarningsHarness.qml)
+        python3 "$repo_root/Tests/battery-settings-warnings.test.py" lint-harness \
+            --max-warnings 0 --artifacts "$module_root/battery-settings"
+        ;;
+    Tests/Qml/OSDWarningsHarness.qml)
+        python3 "$repo_root/Tests/osd-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/SimpleServiceHarness.qml)
+        python3 "$repo_root/Tests/simple-service-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/BluetoothPanelWarningsHarness.qml)
+        python3 "$repo_root/Tests/bluetooth-panel-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/IpcIdleServicesHarness.qml)
+        python3 "$repo_root/Tests/ipc-idle-services-warnings.test.py" lint-harness \
+            --max-warnings 0 --artifacts "$module_root/ipc-idle-services"
+        ;;
+    Tests/Qml/BrightnessKeyboardServicesHarness.qml)
+        python3 "$repo_root/Tests/brightness-keyboard-services-warnings.test.py" lint-harness \
+            --artifacts "$module_root/brightness-keyboard-services"
+        ;;
+    Tests/Qml/DockMenuWarningsHarness.qml)
+        python3 "$repo_root/Tests/dock-menu-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/WallpaperTabWarningsHarness.qml)
+        python3 "$repo_root/Tests/wallpaper-tab-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/I18nThemeIconsHarness.qml)
+        python3 "$repo_root/Tests/i18n-theme-icons-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/VisualizerProfileHarness.qml)
+        python3 "$repo_root/Tests/visualizer-profile-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/SimpleWidgetsWarningsHarness.qml)
+        python3 "$repo_root/Tests/simple-widgets-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/SetupWallpaperWarningsHarness.qml)
+        python3 "$repo_root/Tests/setup-wallpaper-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/NotificationServiceHarness.qml)
+        python3 "$repo_root/Tests/notification-service-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/SettingsPanelWarningsHarness.qml)
+        python3 "$repo_root/Tests/settings-panel-warnings.test.py" lint-harness \
+            --max-warnings 0 --artifacts "$module_root/settings-panel"
+        ;;
+    Tests/Qml/WiFiPanelWarningsHarness.qml)
+        python3 "$repo_root/Tests/wifi-panel-warnings.test.py" lint-harness \
+            --artifacts "$module_root/wifi-panel"
+        ;;
+    Tests/Qml/BarWarningsHarness.qml)
+        python3 "$repo_root/Tests/bar-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/ChangelogPanelWarningsHarness.qml)
+        python3 "$repo_root/Tests/changelog-panel-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/ControlCenterPanelWarningsHarness.qml)
+        python3 "$repo_root/Tests/control-center-panel-warnings.test.py" lint-harness \
+            --max-warnings 0 --artifacts "$module_root/control-center-panel"
+        ;;
+    Tests/Qml/LocationServiceHarness.qml)
+        python3 "$repo_root/Tests/location-service-runtime.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/MainScreenWarningsHarness.qml)
+        python3 "$repo_root/Tests/main-screen-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/FilePickerWarningsHarness.qml)
+        python3 "$repo_root/Tests/file-picker-warnings.test.py" --mode lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/EmojiRecorderWarningsHarness.qml)
+        python3 "$repo_root/Tests/emoji-recorder-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/WallhavenPowerWarningsHarness.qml)
+        python3 "$repo_root/Tests/wallhaven-power-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/CalendarMonthCardWarningsHarness.qml)
+        python3 "$repo_root/Tests/calendar-month-card-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/ShortcutsClockWarningsHarness.qml)
+        python3 "$repo_root/Tests/shortcuts-clock-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/AllScreensWarningsHarness.qml)
+        python3 "$repo_root/Tests/all-screens-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/ButtonPopupWarningsHarness.qml)
+        python3 "$repo_root/Tests/button-popup-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/HistorySimpleToastHarness.qml)
+        python3 "$repo_root/Tests/history-simple-toast-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/LocationTabWarningsHarness.qml)
+        python3 "$repo_root/Tests/location-tab-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/ProcessPanelWarningsHarness.qml)
+        python3 "$repo_root/Tests/process-panel-warnings.test.py" lint-harness \
+            --max-warnings 0 --artifacts "$module_root/process-panel"
+        ;;
+    Tests/Qml/PanelServiceLifecycleHarness.qml)
+        "$repo_root/Tests/panel-service-lifecycle.test.sh" lint-harness
+        printf '\n'
+        ;;
+    Tests/network-service/shell.qml)
+        python3 "$repo_root/Tests/network-service-warnings.test.py" lint-harness
+        ;;
+    *)
+        "$qmllint" -I "$module_root" "$module_root/qs/$file"
+        ;;
     esac
     checked_count=$((checked_count + 1))
 done
