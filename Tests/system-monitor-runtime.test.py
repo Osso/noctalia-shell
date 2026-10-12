@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise production SystemMonitor offscreen with isolated service fixtures."""
 
+import argparse
 import json
 import os
 from pathlib import Path
@@ -223,6 +224,14 @@ Item {
     sectionWidgetIndex: 0
     width: 400; height: 40
   }
+  Component {
+    id: fanMonitorComponent
+    SystemMonitor {
+      screen: testScreen
+      widgetId: "SystemMonitor"
+      width: 400; height: 40
+    }
+  }
   TestCase {
     name: "SystemMonitor"
     when: windowShown
@@ -241,6 +250,52 @@ Item {
       data.bar.density = density;
       data.bar.widgets.left = [{id: "SystemMonitor", showCpuUsage: true}];
       Settings.data = data;
+    }
+    function test_fan_contract() {
+      configure("top", "comfortable");
+      const originalData = Settings.data;
+      const icon = objects(monitor, child => child.icon === "propeller")[0];
+      verify(icon !== undefined);
+      const container = icon.parent.parent.parent;
+      const text = objects(container, child => child.family !== undefined)[0];
+      compare(text.text, "1200rpm");
+      const hover = objects(container, child => child.acceptedButtons === Qt.NoButton)[0];
+      verify(hover !== undefined);
+      FanService.fans = [{label: "CPU", rpm: 2100}, {label: "Chassis", rpm: 980}];
+      hover.entered();
+      compare(TooltipService.text, "CPU: 2100 RPM\\nChassis: 980 RPM");
+      hover.exited();
+      compare(TooltipService.hides, 1);
+      for (const enabled of [true, false]) {
+        const data = JSON.parse(JSON.stringify(Settings.data));
+        data.bar.widgets.left = [{id: "SystemMonitor", showFanSpeed: enabled}];
+        Settings.data = data;
+        for (const available of [true, false]) {
+          for (const detected of [true, false]) {
+            FanService.available = available;
+            FanService.sensorDetected = detected;
+            compare(container.visible, enabled && (available || detected));
+            compare(FanService.refs, enabled ? 1 : 0);
+          }
+        }
+      }
+      monitor.visible = false;
+      compare(FanService.refs, 0);
+      const temporary = fanMonitorComponent.createObject(monitor.parent);
+      verify(temporary !== null);
+      compare(FanService.refs, 1);
+      FanService.refs = 0;
+      FanService.sensorDetected = !FanService.sensorDetected;
+      compare(FanService.refs, 1, "sensor change restores polling after service reset");
+      temporary.destroy();
+      tryCompare(FanService, "refs", 0);
+      Settings.data = originalData;
+      FanService.available = true;
+      FanService.sensorDetected = true;
+      FanService.fans = [{label: "CPU", rpm: 1200}];
+      TooltipService.hides = 0;
+      TooltipService.text = "";
+      monitor.visible = true;
     }
     function test_scaling() {
       configure("top", "comfortable");
@@ -369,6 +424,9 @@ Item {
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fan-only", action="store_true")
+    args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-system-monitor-") as temporary:
         directory = Path(temporary)
         environment = {
@@ -407,6 +465,7 @@ def main():
                     str(directory),
                     "-import",
                     str(directory),
+                    *(["test_fan_contract"] if args.fan_only else []),
                 ],
                 cwd=ROOT,
                 env=environment,
