@@ -65,6 +65,11 @@ Singleton {
       Logger.i("Color", "Writing colors to disk");
       writeAdapter();
     }
+    onSaved: {
+      // Watcher reloads during a write cannot start a reader. FileView clears
+      // that operation after saved, so read back only after its cleanup.
+      Qt.callLater(customColorsFile.reload);
+    }
 
     // Trigger initial load when path changes from empty to actual path
     onPathChanged: {

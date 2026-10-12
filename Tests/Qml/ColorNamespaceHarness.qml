@@ -6,14 +6,13 @@ import qs.Commons
 ShellRoot {
   id: root
 
+  readonly property bool testReloadAfterCreation: Quickshell.env("COLOR_TEST_RELOAD_AFTER_CREATION") === "1"
+  property bool waitingForExternalReload: false
+
   Connections {
     target: NColor
     function onFileLoaded() {
       // Let FileView finish clearing the completed operation before teardown.
-      Qt.callLater(root.verifyPalette);
-    }
-    function onFileSaved() {
-      // Creation completes at saved; watcher reload may run during the write.
       Qt.callLater(root.verifyPalette);
     }
   }
@@ -26,12 +25,17 @@ ShellRoot {
     color: NColor.transparent
 
     Rectangle {
+      id: paletteRectangle
       anchors.fill: parent
       color: NColor.mOnSurface
     }
   }
 
   function verifyPalette() {
+    if (root.waitingForExternalReload) {
+      root.verifyExternalColors();
+      return;
+    }
     console.log("COLOR_NAMESPACE_PROOF", "windowAlpha=" + window.color.a, "onSurface=" + NColor.mOnSurface, "transparentType=" + typeof NColor.transparent);
     const windowIsTransparent = window.color.a === 0;
     const defaults = {
@@ -67,6 +71,36 @@ ShellRoot {
       Qt.exit(1);
     } else {
       console.log("COLOR_NAMESPACE_PASS");
+      if (root.testReloadAfterCreation) {
+        root.waitingForExternalReload = true;
+      } else {
+        Qt.quit();
+      }
+    }
+  }
+
+  function verifyExternalColors() {
+    const customColorsMatch = Qt.colorEqual(NColor.mPrimary, "#abcdef") && Qt.colorEqual(NColor.mOnSurface, "#40203040");
+    if (!customColorsMatch) {
+      return;
+    }
+    const unchangedDefaultMatches = Qt.colorEqual(NColor.mSecondary, "#a984c4");
+    const absoluteColorsMatch = NColor.transparent.a === 0 && Qt.colorEqual(NColor.black, "#000000") && Qt.colorEqual(NColor.white, "#ffffff");
+    const windowMatches = window.color.a === 0 && Qt.colorEqual(paletteRectangle.color, "#40203040");
+    if (!unchangedDefaultMatches || !absoluteColorsMatch || !windowMatches) {
+      console.error("COLOR_FILE_FAIL: defaults, transparency and rendering must survive formerly-missing reload");
+      Qt.exit(1);
+      return;
+    }
+    // Keep observing after reload so write loops cannot hide behind early exit.
+    settledTimer.start();
+  }
+
+  Timer {
+    id: settledTimer
+    interval: 250
+    onTriggered: {
+      console.log("COLOR_MISSING_FILE_RELOAD_PASS");
       Qt.quit();
     }
   }
@@ -75,7 +109,7 @@ ShellRoot {
     interval: 10000
     running: true
     onTriggered: {
-      console.error("COLOR_NAMESPACE_FAIL: timed out waiting for file load or save completion");
+      console.error("COLOR_NAMESPACE_FAIL: timed out waiting for file load completion");
       Qt.exit(1);
     }
   }

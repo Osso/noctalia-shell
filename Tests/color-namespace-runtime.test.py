@@ -54,6 +54,84 @@ def assert_no_diagnostics(output):
         )
 
 
+def wait_for_marker(process, log_path, marker):
+    deadline = time.monotonic() + 12
+    while marker not in log_path.read_text():
+        if process.poll() is not None or time.monotonic() >= deadline:
+            raise AssertionError(f"did not reach {marker}:\n" + log_path.read_text())
+        time.sleep(0.05)
+
+
+def test_missing_file_lifecycle(directory, environment):
+    colors_file = directory / "config" / "colors.json"
+    colors_file.unlink()
+    shutil.copyfile(
+        ROOT / "Tests/Qml/ColorNamespaceHarness.qml", directory / "shell.qml"
+    )
+    log_path = directory / "missing-colors.log"
+    with log_path.open("w") as log:
+        process = subprocess.Popen(
+            ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
+            env={**environment, "COLOR_TEST_RELOAD_AFTER_CREATION": "1"},
+            stdout=log,
+            stderr=subprocess.STDOUT,
+        )
+        try:
+            wait_for_marker(process, log_path, "COLOR_NAMESPACE_PASS")
+            output = log_path.read_text()
+            assert_no_diagnostics(output)
+            assert "COLOR_FILE_LOAD_FAILED 2 loaded=false" in output
+            assert output.index("COLOR_FILE_LOAD_FAILED") < output.index(
+                "COLOR_FILE_SAVED"
+            )
+            assert output.index("COLOR_FILE_SAVED") < output.index("COLOR_FILE_LOADED")
+            assert output.index("COLOR_FILE_LOADED") < output.index(
+                "COLOR_NAMESPACE_PASS"
+            )
+            created_bytes = colors_file.read_bytes()
+            assert json.loads(created_bytes) == DEFAULT_COLORS
+
+            # Fresh read is an additional control, never a replacement for same-process load.
+            fresh = subprocess.run(
+                ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
+                env=environment,
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+            fresh_output = fresh.stdout + fresh.stderr
+            print(fresh_output, end="")
+            assert_no_diagnostics(fresh_output)
+            assert fresh.returncode == 0 and "COLOR_NAMESPACE_PASS" in fresh_output
+            assert "COLOR_FILE_LOADED" in fresh_output
+            assert "COLOR_FILE_SAVED" not in fresh_output
+            assert "COLOR_FILE_LOAD_FAILED" not in fresh_output
+            assert colors_file.read_bytes() == created_bytes
+            assert process.poll() is None
+
+            custom_bytes = b'{"mPrimary": "#abcdef", "mOnSurface": "#40203040"}'
+            colors_file.write_bytes(custom_bytes)
+            process.wait(timeout=12)
+            assert colors_file.read_bytes() == custom_bytes
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait(timeout=5)
+    output = log_path.read_text()
+    print(output, end="")
+    assert_no_diagnostics(output)
+    assert process.returncode == 0 and "COLOR_MISSING_FILE_RELOAD_PASS" in output
+    assert output.count("COLOR_FILE_SAVED") == 1
+    assert output.count("COLOR_FILE_LOAD_FAILED") == 1
+    assert output.count("COLOR_NAMESPACE_PASS") == 1
+    assert output.count("Configuration Loaded") == 1
+    assert output.count("COLOR_FILE_LOADED") >= 2
+    assert output.rindex("COLOR_FILE_LOADED") > output.index("COLOR_NAMESPACE_PASS")
+    assert output.rindex("COLOR_FILE_LOADED") < output.index(
+        "COLOR_MISSING_FILE_RELOAD_PASS"
+    )
+
+
 def test_custom_file_reload(directory, environment):
     colors_file = directory / "config" / "colors.json"
     initial_bytes = b'{"mPrimary": "#123456", "mOnSurface": "#80402010"}'
@@ -69,13 +147,7 @@ def test_custom_file_reload(directory, environment):
             stderr=subprocess.STDOUT,
         )
         try:
-            deadline = time.monotonic() + 12
-            while "COLOR_FILE_LOAD_PASS" not in log_path.read_text():
-                if process.poll() is not None or time.monotonic() >= deadline:
-                    raise AssertionError(
-                        "custom palette did not load:\n" + log_path.read_text()
-                    )
-                time.sleep(0.05)
+            wait_for_marker(process, log_path, "COLOR_FILE_LOAD_PASS")
             assert colors_file.read_bytes() == initial_bytes
             colors_file.write_bytes(reloaded_bytes)
             process.wait(timeout=12)
@@ -87,6 +159,8 @@ def test_custom_file_reload(directory, environment):
     output = log_path.read_text()
     print(output, end="")
     assert_no_diagnostics(output)
+    assert "COLOR_FILE_SAVED" not in output
+    assert "COLOR_FILE_LOAD_FAILED" not in output
     if process.returncode != 0 or "COLOR_FILE_RELOAD_PASS" not in output:
         raise AssertionError(
             f"custom palette reload failed (exit {process.returncode})"
@@ -100,22 +174,24 @@ def main():
         commons.mkdir(mode=0o700)
         # Passive signals expose FileView completion without changing its operations.
         palette_source = (ROOT / "Commons/NColor.qml").read_text()
-        palette_source = (
-            palette_source.replace(
-                "  id: root\n",
-                "  id: root\n  signal fileLoaded()\n  signal fileSaved()\n",
-            )
-            .replace(
-                "    id: customColorsFile\n",
-                "    id: customColorsFile\n"
-                '    onLoaded: { console.log("COLOR_FILE_LOADED"); root.fileLoaded(); }\n'
-                '    onSaved: { console.log("COLOR_FILE_SAVED", "loaded=" + loaded); root.fileSaved(); }\n',
-            )
-            .replace(
-                "    onLoadFailed: function (error) {\n",
-                "    onLoadFailed: function (error) {\n"
-                '      console.log("COLOR_FILE_LOAD_FAILED", error, "loaded=" + loaded);\n',
-            )
+        palette_source = palette_source.replace(
+            "  id: root\n",
+            """  id: root
+  signal fileLoaded()
+  Connections {
+    target: customColorsFile
+    function onLoaded() {
+      console.log("COLOR_FILE_LOADED");
+      root.fileLoaded();
+    }
+    function onSaved() {
+      console.log("COLOR_FILE_SAVED", "loaded=" + customColorsFile.loaded);
+    }
+    function onLoadFailed(error) {
+      console.log("COLOR_FILE_LOAD_FAILED", error, "loaded=" + customColorsFile.loaded);
+    }
+  }
+""",
         )
         (commons / "NColor.qml").write_text(palette_source)
         config_path = json.dumps(str(directory / "config") + "/")
@@ -132,7 +208,13 @@ def main():
             key: value
             for key, value in os.environ.items()
             if not key.startswith(("XDG_", "WAYLAND_", "QT_", "QML_", "NOCTALIA_"))
-            and key not in ("DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "HOME")
+            and key
+            not in (
+                "DISPLAY",
+                "DBUS_SESSION_BUS_ADDRESS",
+                "HOME",
+                "COLOR_TEST_RELOAD_AFTER_CREATION",
+            )
         }
         for variable, name in {
             "HOME": "home",
@@ -166,47 +248,11 @@ def main():
             raise AssertionError(
                 f"offscreen palette/window test failed (exit {result.returncode})"
             )
+        assert "COLOR_FILE_SAVED" not in output
+        assert "COLOR_FILE_LOAD_FAILED" not in output
         assert (directory / "config" / "colors.json").read_bytes() == b"{}\n"
         test_custom_file_reload(directory, environment)
-        colors_file = directory / "config" / "colors.json"
-        colors_file.unlink()
-        shutil.copyfile(
-            ROOT / "Tests/Qml/ColorNamespaceHarness.qml", directory / "shell.qml"
-        )
-        result = subprocess.run(
-            ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
-            env=environment,
-            capture_output=True,
-            text=True,
-            timeout=15,
-        )
-        output = result.stdout + result.stderr
-        print(output, end="")
-        assert result.returncode == 0 and "COLOR_NAMESPACE_PASS" in output
-        assert_no_diagnostics(output)
-        assert "COLOR_FILE_SAVED" in output
-        assert "COLOR_FILE_LOAD_FAILED 2 loaded=false" in output
-        assert output.index("COLOR_FILE_LOAD_FAILED") < output.index("COLOR_FILE_SAVED")
-        assert output.index("COLOR_FILE_SAVED") < output.index("COLOR_NAMESPACE_PASS")
-        created_bytes = colors_file.read_bytes()
-        assert json.loads(created_bytes) == DEFAULT_COLORS
-        # A watcher reload during an active write need not emit loaded. Require
-        # that completion in a fresh process, without rewriting the saved palette.
-        result = subprocess.run(
-            ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
-            env=environment,
-            capture_output=True,
-            text=True,
-            timeout=15,
-        )
-        output = result.stdout + result.stderr
-        print(output, end="")
-        assert result.returncode == 0 and "COLOR_NAMESPACE_PASS" in output
-        assert_no_diagnostics(output)
-        assert "COLOR_FILE_LOADED" in output
-        assert output.index("COLOR_FILE_LOADED") < output.index("COLOR_NAMESPACE_PASS")
-        assert "COLOR_FILE_SAVED" not in output
-        assert colors_file.read_bytes() == created_bytes
+        test_missing_file_lifecycle(directory, environment)
 
 
 if __name__ == "__main__":
