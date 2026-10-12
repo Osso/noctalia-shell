@@ -58,14 +58,18 @@ Qml.Connections {
         {
             "Recorder": singleton("""property var events: []
 function append(event) { events = events.concat([event]); }"""),
-            "Settings": singleton("""property QtObject data: QtObject {
-  property QtObject colorSchemes: QtObject {
-    property bool darkMode: false
-    property bool useWallpaperColors: false
-    property string predefinedScheme: "fixture-day"
-  }
+            "Settings": singleton("property SettingsData data: SettingsData {}"),
+            "SettingsData": """import QtQuick
+QtObject {
+  property ColorSchemes colorSchemes: ColorSchemes {}
   property var hooks: ({enabled: true, wallpaperChange: "wall $1 $2 $1", darkModeChange: "dark $1"})
-}"""),
+}""",
+            "ColorSchemes": """import QtQuick
+QtObject {
+  property bool darkMode: false
+  property bool useWallpaperColors: false
+  property string predefinedScheme: "fixture-day"
+}""",
             "Logger": singleton("""property var errors: []
 function i(...args) {}
 function d(...args) {}
