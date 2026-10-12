@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Quickshell
 import qs.Commons
 import qs.Widgets
 
@@ -138,6 +137,7 @@ ColumnLayout {
               }
             ]
             delegate: Rectangle {
+              id: positionDelegate
               required property string key
               required property string name
 
@@ -146,14 +146,14 @@ ColumnLayout {
               radius: Style.radiusM
               border.width: Style.borderS
 
-              property bool isActive: selectedBarPosition === key
+              property bool isActive: root.selectedBarPosition === key
 
               color: (hoverHandler.hovered || isActive) ? NColor.mPrimary : NColor.mSurfaceVariant
               border.color: (hoverHandler.hovered || isActive) ? NColor.mPrimary : NColor.mOutline
               opacity: (hoverHandler.hovered || isActive) ? 1.0 : 0.8
 
               NText {
-                text: name
+                text: positionDelegate.name
                 pointSize: Style.fontSizeM
                 font.weight: (hoverHandler.hovered || parent.isActive) ? Style.fontWeightBold : Style.fontWeightMedium
                 color: (hoverHandler.hovered || parent.isActive) ? NColor.mOnPrimary : NColor.mOnSurface
@@ -167,8 +167,8 @@ ColumnLayout {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  selectedBarPosition = key;
-                  barPositionChanged(key);
+                  root.selectedBarPosition = positionDelegate.key;
+                  root.barPositionChanged(positionDelegate.key);
                 }
               }
 
@@ -260,6 +260,7 @@ ColumnLayout {
               }
             ]
             delegate: Rectangle {
+              id: densityDelegate
               required property string key
               required property string name
 
@@ -276,7 +277,7 @@ ColumnLayout {
 
               NText {
                 id: densityText
-                text: name
+                text: densityDelegate.name
                 pointSize: Style.fontSizeS
                 font.weight: (densityHoverHandler.hovered || parent.isActive) ? Style.fontWeightBold : Style.fontWeightMedium
                 color: (densityHoverHandler.hovered || parent.isActive) ? NColor.mOnPrimary : NColor.mOnSurface
@@ -291,7 +292,7 @@ ColumnLayout {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  Settings.data.bar.density = key;
+                  Settings.data.bar.density = densityDelegate.key;
                 }
               }
 
@@ -367,12 +368,12 @@ ColumnLayout {
           from: 0.8
           to: 1.2
           stepSize: 0.05
-          value: selectedScaleRatio
+          value: root.selectedScaleRatio
           onMoved: function (value) {
-            selectedScaleRatio = value;
-            scaleRatioChanged(value);
+            root.selectedScaleRatio = value;
+            root.scaleRatioChanged(value);
           }
-          text: Math.floor(selectedScaleRatio * 100) + "%"
+          text: Math.floor(root.selectedScaleRatio * 100) + "%"
         }
       }
 
