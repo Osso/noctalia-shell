@@ -152,7 +152,11 @@ def isolated_environment(directory):
         path = directory / key
         path.mkdir(mode=0o700)
         environment[key] = str(path)
-    environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
+    environment.update(
+        QT_QPA_PLATFORM="offscreen",
+        QT_QUICK_BACKEND="software",
+        QT_FORCE_STDERR_LOGGING="1",
+    )
     environment["DBUS_SESSION_BUS_ADDRESS"] = "unix:path=/nonexistent/picker-session"
     environment["DBUS_SYSTEM_BUS_ADDRESS"] = "unix:path=/nonexistent/picker-system"
     return environment

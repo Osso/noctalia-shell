@@ -1,13 +1,19 @@
 #!/usr/bin/env node
 
 const assert = require("assert/strict");
+const path = require("path");
+const { spawnSync } = require("child_process");
 const { extractFunctionBody, readQml } = require("./qml-test-utils");
 
 const source = readQml("Widgets/NFilePicker.qml");
 
 function qmlFunction(functionName, ...argNames) {
   const body = extractFunctionBody(source, functionName);
-  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+  return new Function(
+    "ctx",
+    ...argNames,
+    `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`,
+  );
 }
 
 function createFolderModel(rows) {
@@ -32,7 +38,6 @@ function createFilteredModel() {
 }
 
 function testFilePickerIconMappingUsesKnownExtensionsAndFallback() {
-  assert.match(source, /function getFileIcon\(fileName\)/, "getFileIcon must type file-name input");
   const getFileIcon = qmlFunction("getFileIcon", "fileName");
 
   assert.equal(getFileIcon({}, "README.MD"), "filepicker-file-text");
@@ -47,7 +52,6 @@ function testFilePickerIconMappingUsesKnownExtensionsAndFallback() {
 }
 
 function testFilePickerFormatsFileSizes() {
-  assert.match(source, /function formatFileSize\(bytes\)/, "formatFileSize must type byte-size input");
   const formatFileSize = qmlFunction("formatFileSize", "bytes");
 
   assert.equal(formatFileSize({}, 0), "0 B");
@@ -125,13 +129,33 @@ function testFilePickerFilteredModelHidesHiddenFilesAndMatchesSearch() {
   const ctx = {
     filteredModel,
     filePickerPanel: {
-      filterText: "pro",
+      filterText: "PrO",
     },
     folderModel: createFolderModel([
-      { fileName: "Project", filePath: "/home/osso/Project", fileIsDir: true, fileSize: 0 },
-      { fileName: ".profile", filePath: "/home/osso/.profile", fileIsDir: false, fileSize: 42 },
-      { fileName: "notes.txt", filePath: "/home/osso/notes.txt", fileIsDir: false, fileSize: 12 },
-      { fileName: "proposal.pdf", filePath: "/home/osso/proposal.pdf", fileIsDir: false, fileSize: 100 },
+      {
+        fileName: "Project",
+        filePath: "/home/osso/Project",
+        fileIsDir: true,
+        fileSize: 0,
+      },
+      {
+        fileName: ".profile",
+        filePath: "/home/osso/.profile",
+        fileIsDir: false,
+        fileSize: 42,
+      },
+      {
+        fileName: "notes.txt",
+        filePath: "/home/osso/notes.txt",
+        fileIsDir: false,
+        fileSize: 12,
+      },
+      {
+        fileName: "proposal.pdf",
+        filePath: "/home/osso/proposal.pdf",
+        fileIsDir: false,
+        fileSize: 100,
+      },
     ]),
     root: {
       showHiddenFiles: false,
@@ -142,9 +166,27 @@ function testFilePickerFilteredModelHidesHiddenFilesAndMatchesSearch() {
   updateFilteredModel(ctx);
 
   assert.deepEqual(filteredModel.rows, [
-    { fileName: "Project", filePath: "/home/osso/Project", fileIsDir: true, fileSize: 0 },
-    { fileName: "proposal.pdf", filePath: "/home/osso/proposal.pdf", fileIsDir: false, fileSize: 100 },
+    {
+      picker: ctx.root,
+      fileName: "Project",
+      filePath: "/home/osso/Project",
+      fileIsDir: true,
+      fileSize: 0,
+    },
+    {
+      picker: ctx.root,
+      fileName: "proposal.pdf",
+      filePath: "/home/osso/proposal.pdf",
+      fileIsDir: false,
+      fileSize: 100,
+    },
   ]);
+  for (const row of filteredModel.rows)
+    assert.equal(
+      row.picker,
+      ctx.root,
+      "delegates receive this picker's owner, not a copy",
+    );
 }
 
 function testFilePickerFilteredModelSupportsFolderModeAndHiddenFiles() {
@@ -156,9 +198,24 @@ function testFilePickerFilteredModelSupportsFolderModeAndHiddenFiles() {
       filterText: "",
     },
     folderModel: createFolderModel([
-      { fileName: ".config", filePath: "/home/osso/.config", fileIsDir: true, fileSize: 0 },
-      { fileName: "Downloads", filePath: "/home/osso/Downloads", fileIsDir: true, fileSize: 0 },
-      { fileName: "file.txt", filePath: "/home/osso/file.txt", fileIsDir: false, fileSize: 20 },
+      {
+        fileName: ".config",
+        filePath: "/home/osso/.config",
+        fileIsDir: true,
+        fileSize: 0,
+      },
+      {
+        fileName: "Downloads",
+        filePath: "/home/osso/Downloads",
+        fileIsDir: true,
+        fileSize: 0,
+      },
+      {
+        fileName: "file.txt",
+        filePath: "/home/osso/file.txt",
+        fileIsDir: false,
+        fileSize: 20,
+      },
     ]),
     root: {
       showHiddenFiles: true,
@@ -169,13 +226,25 @@ function testFilePickerFilteredModelSupportsFolderModeAndHiddenFiles() {
   updateFilteredModel(ctx);
 
   assert.deepEqual(filteredModel.rows, [
-    { fileName: ".config", filePath: "/home/osso/.config", fileIsDir: true, fileSize: 0 },
-    { fileName: "Downloads", filePath: "/home/osso/Downloads", fileIsDir: true, fileSize: 0 },
+    {
+      picker: ctx.root,
+      fileName: ".config",
+      filePath: "/home/osso/.config",
+      fileIsDir: true,
+      fileSize: 0,
+    },
+    {
+      picker: ctx.root,
+      fileName: "Downloads",
+      filePath: "/home/osso/Downloads",
+      fileIsDir: true,
+      fileSize: 0,
+    },
   ]);
+  for (const row of filteredModel.rows) assert.equal(row.picker, ctx.root);
 }
 
 function testFilePickerNavigatesToParentPath() {
-  assert.match(source, /function navigateToPath\(path\)/, "navigateToPath must type path input");
   const navigateToPath = qmlFunction("navigateToPath", "path");
   const ctx = {
     folderModel: {
@@ -190,11 +259,9 @@ function testFilePickerNavigatesToParentPath() {
 
   assert.equal(ctx.folderModel.folder, "file:///home/osso");
   assert.equal(ctx.root.currentPath, "/home/osso");
-  assert.match(source, /const parentPath = folderModel\.parentFolder\.toString\(\)\.replace\("file:\/\/", ""\)[\s\S]*root\.navigateToPath\(parentPath\)/, "parent button must navigate through the helper");
 }
 
 function testFilePickerSearchBarToggleClearsAndFocuses() {
-  assert.match(source, /function setSearchBarVisible\(visible\)/, "setSearchBarVisible must type visibility input");
   const setSearchBarVisible = qmlFunction("setSearchBarVisible", "visible");
   const events = [];
   const ctx = {
@@ -231,14 +298,15 @@ function testFilePickerSearchBarToggleClearsAndFocuses() {
   assert.equal(ctx.filePickerPanel.searchText, "");
   assert.equal(ctx.filePickerPanel.filterText, "");
   assert.deepEqual(events, ["filter"]);
-
-  assert.match(source, /root\.setSearchBarVisible\(!filePickerPanel\.showSearchBar\)/, "search button must toggle through helper");
-  assert.match(source, /root\.setSearchBarVisible\(false\)/, "escape handling must close search through helper");
 }
 
 function testFilePickerFileEntrySelectionBehavior() {
-  assert.match(source, /function handleFileEntryActivated\(filePath, fileIsDir, doubleClick\)/, "file entry activation helper must type path, directory, and double-click inputs");
-  const handleFileEntryActivated = qmlFunction("handleFileEntryActivated", "filePath", "fileIsDir", "doubleClick");
+  const handleFileEntryActivated = qmlFunction(
+    "handleFileEntryActivated",
+    "filePath",
+    "fileIsDir",
+    "doubleClick",
+  );
   const ctx = {
     filePickerPanel: {
       currentSelection: [],
@@ -255,27 +323,73 @@ function testFilePickerFileEntrySelectionBehavior() {
   };
 
   handleFileEntryActivated(ctx, "/home/osso/Documents", true, false);
-  assert.deepEqual(ctx.filePickerPanel.currentSelection, [], "single-click folder in file mode must not select");
+  assert.deepEqual(
+    ctx.filePickerPanel.currentSelection,
+    [],
+    "single-click folder in file mode must not select",
+  );
 
   handleFileEntryActivated(ctx, "/home/osso/Documents", true, true);
-  assert.equal(ctx.root.currentPath, "/home/osso/Documents", "double-click folder must navigate");
+  assert.equal(
+    ctx.root.currentPath,
+    "/home/osso/Documents",
+    "double-click folder must navigate",
+  );
 
   handleFileEntryActivated(ctx, "/home/osso/file.txt", false, false);
-  assert.deepEqual(ctx.filePickerPanel.currentSelection, ["/home/osso/file.txt"], "single-click file in file mode must select");
+  assert.deepEqual(
+    ctx.filePickerPanel.currentSelection,
+    ["/home/osso/file.txt"],
+    "single-click file in file mode must select",
+  );
 
   handleFileEntryActivated(ctx, "/home/osso/other.txt", false, true);
-  assert.deepEqual(ctx.filePickerPanel.currentSelection, ["/home/osso/other.txt"], "double-click file must select before confirming");
-  assert.equal(ctx.root.confirmed, true, "double-click file in file mode must confirm");
+  assert.deepEqual(
+    ctx.filePickerPanel.currentSelection,
+    ["/home/osso/other.txt"],
+    "double-click file must select before confirming",
+  );
+  assert.equal(
+    ctx.root.confirmed,
+    true,
+    "double-click file in file mode must confirm",
+  );
 
   ctx.root.selectionMode = "folders";
   ctx.root.confirmed = false;
   handleFileEntryActivated(ctx, "/home/osso/Pictures", true, false);
-  assert.deepEqual(ctx.filePickerPanel.currentSelection, ["/home/osso/Pictures"], "single-click folder in folder mode must select");
+  assert.deepEqual(
+    ctx.filePickerPanel.currentSelection,
+    ["/home/osso/Pictures"],
+    "single-click folder in folder mode must select",
+  );
 
   handleFileEntryActivated(ctx, "/home/osso/ignored.txt", false, false);
-  assert.deepEqual(ctx.filePickerPanel.currentSelection, ["/home/osso/Pictures"], "single-click file in folder mode must not replace selection");
-  assert.match(source, /root\.handleFileEntryActivated\(filePath,\s*fileIsDir,\s*false\)/, "single-click handler must route through helper");
-  assert.match(source, /root\.handleFileEntryActivated\(filePath,\s*fileIsDir,\s*true\)/, "double-click handler must route through helper");
+  assert.deepEqual(
+    ctx.filePickerPanel.currentSelection,
+    ["/home/osso/Pictures"],
+    "single-click file in folder mode must not replace selection",
+  );
+}
+
+function testFilePickerOffscreenDelegateAndControlContract() {
+  const result = spawnSync(
+    "python3",
+    [path.join(__dirname, "file-picker-warnings.test.py"), "--mode", "runtime"],
+    {
+      encoding: "utf8",
+      timeout: 90000,
+    },
+  );
+  assert.ifError(result.error);
+  const output = result.stdout + result.stderr;
+  process.stdout.write(output);
+  assert.equal(result.status, 0, output);
+  assert.match(
+    output,
+    /7 passed, 0 failed/,
+    "grid/list delegate lifecycle and search/navigation controls must finish",
+  );
 }
 
 const tests = [
@@ -288,6 +402,7 @@ const tests = [
   testFilePickerNavigatesToParentPath,
   testFilePickerSearchBarToggleClearsAndFocuses,
   testFilePickerFileEntrySelectionBehavior,
+  testFilePickerOffscreenDelegateAndControlContract,
 ];
 
 for (const test of tests) {
