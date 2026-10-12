@@ -1,4 +1,4 @@
-Brightness covers monitor lookup, available brightness methods, global brightness adjustment, detected-display reporting, and brightness widget display helpers. Runtime source lives mainly in `Services/Hardware/BrightnessService.qml`; implementation notes belong in [docs/wiki/systems/brightness.md](../wiki/systems/brightness.md).
+Brightness covers monitor lookup, available brightness methods, global brightness adjustment, and brightness widget display helpers. Runtime source lives mainly in `Services/Hardware/BrightnessService.qml`; implementation notes belong in [docs/wiki/systems/brightness.md](../wiki/systems/brightness.md).
 
 ## What it must do
 
@@ -6,7 +6,6 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 
 - [x] Screen lookup returns the monitor whose `modelData` is the exact screen object.
 - [x] Screen lookup does not match a different object just because it has the same shape.
-- [x] Detected display reporting returns the current detected display list.
 - [x] DDC detection output parsing handles blank output, supported monitors, invalid displays, unsupported monitors, and missing model/bus fields.
 - [x] DDC process output is buffered until exit determines success or failure.
 - [x] Successful valid detection atomically replaces the prior DDC monitor list; malformed DDC-capable exit-zero output, non-zero exits, and failed `ddcutil` starts preserve the last known monitors and log a concrete error.
@@ -73,7 +72,8 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 
 ### Isolated service signal/order evidence
 
-- At `919e77989`/`5d0857b06`, `Tests/brightness-keyboard-services-warnings.test.py` reports BrightnessService diagnostics 6→5: undeclared `detectedDisplays` and four cross-component `root` references remain. This is not zero-warning production acceptance.
+- Through `c5666e404`/`772a2e362`/`2c400e942`, the dead `getDetectedDisplays()` getter returning undeclared `detectedDisplays` was removed (no production callers), and four cross-component `root` captures were replaced with explicit service ownership. Service strict lint drops 5→0; `Tests/brightness-service-guards.test.js` reports 19/19.
+- `Tests/brightness-service-offscreen.test.py` reports five behavioral cases plus setup/cleanup. DDC stays OFF; no hardware or real-config access attempts occurred. Enabled-DDC behavior has JS-only coverage. Safety and full-gate limits: [testing](testing.md#brightnesskeyboard-services-isolated-runtime).
 - Two of the three shared behavioral cases cover DDC enable/collector/exit/stop ordering, coalesced restart and stale completion after disable; and monitor publication before recorded command dispatch, refresh signals, unchanged-value suppression and screen removal. `ddc-signal` is a failing negative control. Harness lint is zero-warning; isolation and shared proof limits: [testing](testing.md#brightnesskeyboard-services-isolated-runtime).
 
 ### Brightness panel coverage
