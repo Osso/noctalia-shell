@@ -136,8 +136,15 @@ Item {
       const repeaters = palettes(picker);
       for (let i = 0; i < repeaters.length; i++) {
         const repeater = repeaters[i];
-        const originalModel = repeater.model;
         const count = repeater.count;
+        const originalModel = [];
+        for (let row = 0; row < count; row++) {
+          const swatch = repeater.itemAt(row);
+          originalModel.push({
+            name: swatch.swatchName,
+            color: swatch.swatchColor
+          });
+        }
         repeater.model = [];
         tryCompare(repeater, "count", 0);
         repeater.model = originalModel;

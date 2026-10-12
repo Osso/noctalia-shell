@@ -11,6 +11,8 @@ import shutil
 import subprocess
 import tempfile
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -24,9 +26,16 @@ def load(name):
 def run_lint(directory):
     load("media-mini-warnings").stage_modules(directory)
     result = subprocess.run(
-        ["/usr/lib/qt6/bin/qmllint", "-I", str(directory),
-         str(directory / "qs/Widgets/NColorPickerDialog.qml")],
-        cwd=ROOT, capture_output=True, text=True, timeout=60,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "-I",
+            str(directory),
+            str(directory / "qs/Widgets/NColorPickerDialog.qml"),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=60,
     )
     output = result.stdout + result.stderr
     print(output, end="")
@@ -41,8 +50,14 @@ def stage_runtime(directory):
     (directory / "tst_simple_widgets.qml").unlink()
     widgets = directory / "qs/Widgets"
     for name in (
-        "NColorPickerDialog", "NColorSlider", "NCollapsible", "NScrollView",
-        "NBox", "NTextInput", "NButton", "NDivider",
+        "NColorPickerDialog",
+        "NColorSlider",
+        "NCollapsible",
+        "NScrollView",
+        "NBox",
+        "NTextInput",
+        "NButton",
+        "NDivider",
     ):
         shutil.copyfile(ROOT / f"Widgets/{name}.qml", widgets / f"{name}.qml")
         with (widgets / "qmldir").open("a") as file:
@@ -53,7 +68,9 @@ def stage_runtime(directory):
         "NColor": 'property color mSecondary: "#fedcba"\nproperty color mOnSecondary: "#101010"\nproperty color mTertiary: "#aabbcc"\nproperty color mError: "#ff0000"\nproperty color white: "#ffffff"',
     }.items():
         path = commons / f"{name}.qml"
-        path.write_text(path.read_text().replace("QtObject {", "QtObject {\n" + properties))
+        path.write_text(
+            path.read_text().replace("QtObject {", "QtObject {\n" + properties)
+        )
     (commons / "I18n.qml").write_text(
         "pragma Singleton\nimport QtQuick\nQtObject { function tr(key) { return key; } }\n"
     )
@@ -63,7 +80,15 @@ def stage_runtime(directory):
     helpers.mkdir()
     shutil.copyfile(ROOT / "Helpers/ColorList.js", helpers / "ColorList.js")
     shutil.copytree(ROOT / "Shaders/qsb", directory / "qs/Shaders/qsb")
-    shutil.copyfile(ROOT / "Tests/Qml/ColorPickerWarningsHarness.qml", directory / "tst_color_picker.qml")
+    shutil.copyfile(
+        ROOT / "Tests/Qml/ColorPickerWarningsHarness.qml",
+        directory / "tst_color_picker.qml",
+    )
+
+
+def run_harness_lint(directory):
+    stage_runtime(directory)
+    assert check_harness(directory, directory / "tst_color_picker.qml") == 0
 
 
 def run_runtime(directory):
@@ -77,16 +102,28 @@ def run_runtime(directory):
     stage_runtime(directory)
     try:
         result = subprocess.run(
-            ["/usr/lib/qt6/bin/qmltestrunner", "-input", str(directory / "tst_color_picker.qml"),
-             "-import", str(directory)],
-            cwd=ROOT, env=load("media-mini-warnings").isolate_environment(directory),
-            capture_output=True, text=True, timeout=60,
+            [
+                "/usr/lib/qt6/bin/qmltestrunner",
+                "-input",
+                str(directory / "tst_color_picker.qml"),
+                "-import",
+                str(directory),
+            ],
+            cwd=ROOT,
+            env=load("media-mini-warnings").isolate_environment(directory),
+            capture_output=True,
+            text=True,
+            timeout=60,
         )
         output = result.stdout + result.stderr
         print(output, end="")
-        assert result.returncode == 0, f"offscreen color-picker exit {result.returncode}"
+        assert result.returncode == 0, (
+            f"offscreen color-picker exit {result.returncode}"
+        )
         assert "0 failed" in output
-        assert not re.search(r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output), output
+        assert not re.search(
+            r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output
+        ), output
     finally:
         assert settings.read_bytes() == original, "real settings changed"
         assert hashlib.sha256(backup.read_bytes()).digest() == digest
@@ -94,10 +131,15 @@ def run_runtime(directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "runtime"))
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-color-picker-") as temporary:
-        (run_lint if args.mode == "lint" else run_runtime)(Path(temporary))
+        modes = {
+            "lint": run_lint,
+            "lint-harness": run_harness_lint,
+            "runtime": run_runtime,
+        }
+        modes[args.mode](Path(temporary))
 
 
 if __name__ == "__main__":
