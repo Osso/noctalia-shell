@@ -9,11 +9,11 @@ import argparse
 import importlib.util
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Services/Compositor/MangoService.qml")
@@ -103,6 +103,7 @@ def run_isolated(directory, command):
             *command,
         ],
         env=environment,
+        check=False,
         capture_output=True,
         text=True,
         timeout=45,
