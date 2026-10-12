@@ -333,6 +333,8 @@ def main():
                 "/usr/lib/qt6/qml",
                 "--max-warnings",
                 "0",
+                "--json",
+                "-",
                 str(harness),
             ]
         elif args.mode == "runtime":
@@ -390,8 +392,12 @@ finally:
             print("WALLPAPER_TAB_LINT_COUNTS", dict(counts), "TOTAL", len(warnings))
             assert counts == {"unqualified": 1}, dict(counts)
         elif args.mode == "lint-harness":
+            diagnostics = json.loads(result.stdout)
             warnings = [
-                line for line in output.splitlines() if line.startswith("Warning:")
+                warning
+                for file in diagnostics
+                for warning in file["warnings"]
+                if warning["type"] == "warning"
             ]
             print("WALLPAPER_TAB_HARNESS_LINT_COUNTS", {"total": len(warnings)})
             assert not warnings, "WallpaperTab harness warnings remain"
