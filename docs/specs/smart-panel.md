@@ -36,6 +36,11 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 - [x] Closing before opacity fade-in completes skips the opacity fade and unloads content after size animation.
 - [x] Output teardown destroys loaded content and clears the opened-panel reference while unregistering the original key.
 
+### Background path
+
+- [x] Panel background fill containment follows position/size, rounded/square/inverted corners, and small-geometry radius clamping.
+- [x] Hidden/null panels clear the path, panel-item replacement moves it, and background-color changes update fill color.
+
 ### Typed panel references
 
 - [x] SmartPanel `buttonItem` is typed as `Item`.
@@ -51,10 +56,13 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 
 - `Modules/MainScreen/SmartPanel.qml` - shared panel lifecycle, sizing, positioning, masking, close/open watchdogs, and typed panel references.
 - `Modules/MainScreen/MainScreen.qml` - SmartPanel host and panel placeholders.
+- `Modules/MainScreen/Backgrounds/PanelBackground.qml` - panel fill path and corner geometry.
 - `Services/UI/PanelService.qml` - panel registration and close notifications consumed by SmartPanel.
 - `Modules/Panels/**/*.qml` - panel implementations built on SmartPanel.
 
 ## Tests asserting this spec
+
+- `Tests/background-paths-warnings.test.py` / `Tests/Qml/BackgroundPathsHarness.qml` cover production panel/bar ShapePaths with fixture geometry, style, and visibility: 11 behavioral rows plus init/cleanup (13 reported passes) and four detected layout/rounding negative controls through `7c8e74ea2`/`23b32ca34`/`f16acbc36`. This is offscreen containment/property evidence, not SmartPanel lifecycle or compositor visual proof. Invocation and isolation: [testing](testing.md#background-paths).
 
 - `Tests/panel-service-guards.test.js`
 - `Tests/Qml/PanelServiceLifecycleHarness.qml`
@@ -65,6 +73,8 @@ Smart Panel covers the shared panel shell used by settings, changelog, control c
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)
+
+- [ ] PanelBackground retains 13 unsuppressed `missing-property` diagnostics: `panelItem` and corner-state fields live on anonymous Items, outside static Item metadata. Exact-count lint acceptance leaves the shared typed metadata blocker unresolved.
 
 - [ ] Four dynamic Loader member diagnostics remain after the `05772415d` SmartPanel warning reduction (76 → 4); runtime lifecycle coverage is not zero-warning static-analysis acceptance.
 - [ ] MainScreen retains 11 `missing-property` diagnostics after `8a689c0bc` (48 → 11): five installed screen-metadata diagnostics and six optional SmartPanel key-handler diagnostics. Its standalone lint gate accepts exactly that count with exit status zero; no compositor pixel or desktop input-delivery proof is provided by its nonvisible fixture suite.

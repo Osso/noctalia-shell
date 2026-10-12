@@ -12,6 +12,11 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 - [x] Bar widget loader screen references and widget-id delegate aliases are typed.
 - [x] Bar background consumers accept the exposed bar item as a typed `Item` while keeping the owning panel window dynamic.
 
+### Background path
+
+- [x] Bar background fill containment follows position/size, rounded/square/inverted corners, and radius clamping for small geometry.
+- [x] Bar background hides for hidden bars, excluded monitors, and null bar references; monitor selection and fill-color changes update the path.
+
 ### Bar service
 
 - [x] Bar registration marks each screen ready once and emits readiness changes.
@@ -96,6 +101,8 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 
 ### Other bar coverage
 
+- `Tests/background-paths-warnings.test.py` / `Tests/Qml/BackgroundPathsHarness.qml` cover production bar/panel paths through `7c8e74ea2`/`23b32ca34`/`f16acbc36`: 11 offscreen behavioral rows plus init/cleanup (13 reported passes), with four detected layout/rounding negative controls. Shape containment and fill-color properties are not compositor visual proof. Invocation, retained diagnostics, and isolation: [testing](testing.md#background-paths).
+
 - `Tests/layer-bar-owner-warnings.test.py loader` covers production BarWidgetLoader offscreen after `097536acb`: owner warnings 15→0, with three unsuppressed dynamic-widget `missing-property` diagnostics (`screen`, `scaling`, `onLoaded`) retained. One behavioral case covers two-screen property assignment, registration before widget callback, rounded/hidden sizes, density scaling, opacity/hide mode, resize propagation, ordered teardown, and recreation. Synthetic clicks reach an underlying receiver; the unchanged input region is only a fixture property, not compositor proof. Invocation and isolation: [testing](testing.md#background-and-widget-loader-owners).
 - Unified bar/panel backgrounds after `ead749abf` have offscreen color/geometry, transparent-canvas sample, and pointer pass-through coverage, not compositor-rendered pixels or live input-region proof: [testing](testing.md#background-and-widget-loader-owners).
 
@@ -120,6 +127,8 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 - `Tests/service-probes-parsing.test.sh`
 
 ## Known gaps (current cycle)
+
+- [ ] BarBackground retains 12 unsuppressed `missing-property` diagnostics for anonymous Item corner-state metadata; exact-count lint acceptance is not zero-warning analysis. Shared typed metadata remains unresolved; offscreen path coverage proves neither compositor pixels nor live input regions.
 
 - [ ] Extend isolated pill endpoint/delay coverage to intermediate animation frames and whole-shell integration; current fixtures use controlled style values and stub tooltip/bar services. Horizontal's eight geometry records were reported unchanged for `32d56b877`, but the harness has no tracked snapshot-equality comparator.
 - [ ] Eight BarPill Loader/QObject `missing-property` typing diagnostics remain after `705973eb2` reduced warnings from 52 to 8. Standalone lint expects exactly those eight, not warning-free analysis; owner qualification introduces no intended user-facing behavior change.
