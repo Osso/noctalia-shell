@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -372,7 +373,7 @@ ColumnLayout {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  root.updateEntry(index, {
+                  root.updateEntry(delegateItem.index, {
                                      "enabled": !delegateItem.entryEnabled
                                    });
                 }
