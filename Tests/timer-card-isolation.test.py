@@ -1,12 +1,11 @@
-#!/usr/bin/env python3
 """Timer parent owns fixtures outside the denied offscreen child config."""
 
-from pathlib import Path
 import os
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BOOTSTRAP = r"""
@@ -117,6 +116,7 @@ class TimerIsolationTest(unittest.TestCase):
                     *arguments,
                 ],
                 cwd=ROOT,
+                check=False,
                 env=dict(
                     os.environ,
                     HOME=str(home),
