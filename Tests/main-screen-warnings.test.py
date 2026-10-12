@@ -99,6 +99,10 @@ def stage_runtime(directory, mutation):
     target.write_text(source)
     backgrounds = target.parent / "Backgrounds"
     backgrounds.mkdir()
+    shutil.copyfile(
+        ROOT / "Modules/MainScreen/Backgrounds/BackgroundRegion.qml",
+        backgrounds / "BackgroundRegion.qml",
+    )
     (backgrounds / "AllBackgrounds.qml").write_text(
         "import QtQuick\nItem { property var bar; property var windowRoot }\n"
     )
@@ -155,11 +159,12 @@ function finishClose() { openedPanel = null; }""",
     panel_source = """import QtQuick
 import Quickshell
 import qs.Services.UI
+import qs.Modules.MainScreen.Backgrounds
 Item {
   property ShellScreen screen
   property bool exclusiveKeyboard: false
   property bool isClosing: false
-  property Item panelRegion: Item { width: 200; height: 100 }
+  property BackgroundRegion panelRegion: BackgroundRegion { width: 200; height: 100 }
   function close() { isClosing = true; }
 }
 """
