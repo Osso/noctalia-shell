@@ -145,6 +145,11 @@ class FixtureLintTest(unittest.TestCase):
         helper = ROOT / "Tests/qml_fixture_lint.py"
         if helper.exists():
             shutil.copy2(helper, tests / helper.name)
+        if "WallpaperTabWarningsHarness.qml" in harness_scripts:
+            # Wallpaper's audit blocks directory discovery after installation.
+            # Preload the helper its AboutTab writer imports before that boundary.
+            script = tests / "wallpaper-tab-warnings.test.py"
+            script.write_text("import qml_fixture_lint\n" + script.read_text())
         for harness in harness_scripts:
             shutil.copy2(ROOT / "Tests/Qml" / harness, tests / "Qml" / harness)
         # Runtime staging copies these dependencies; rg skips symlinks.
@@ -250,7 +255,15 @@ class FixtureLintTest(unittest.TestCase):
                     root = Path(temp)
                     runner = self.stage_repository(root, REQUESTED_HARNESSES)
                     self.bound_discovery(root, name, REQUESTED_HARNESSES)
+                    diagnostic = f"fixture stderr: {name}\n"
                     if mode == "warning":
+                        script = root / "Tests" / REQUESTED_HARNESSES[name]
+                        script.write_text(
+                            "import sys\nsys.stderr.write("
+                            + repr(diagnostic)
+                            + ")\n"
+                            + script.read_text()
+                        )
                         harness = root / "Tests/Qml" / name
                         harness.write_text(
                             harness.read_text().replace(
@@ -266,7 +279,11 @@ class FixtureLintTest(unittest.TestCase):
                     reports = lint_reports(result.stdout)
                     if mode == "warning":
                         self.assertNotEqual(result.returncode, 0, output)
-                        self.assertIn("missingFixtureValue", output)
+                        self.assertTrue(
+                            result.stderr.startswith(diagnostic), result.stderr
+                        )
+                        if name != "IpcIdleServicesHarness.qml":
+                            self.assertIn("missingFixtureValue", output)
                         self.assertNotIn("ok qmlStaticCheck", output)
                         self.assertNotIn("Checked ", output)
                     else:
