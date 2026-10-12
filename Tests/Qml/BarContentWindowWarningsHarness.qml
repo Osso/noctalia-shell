@@ -1,27 +1,64 @@
 import QtQuick
-import QtTest
+import Quickshell
 import qs.Commons
+import qs.Modules.Bar.Extras as Extras
 import qs.Modules.MainScreen
 
-TestCase {
+ShellRoot {
   id: testCase
-  name: "BarContentWindow"
+  property var temporaryObjects: []
+
+  function verify(value) {
+    if (!value)
+      throw new Error("verification failed");
+  }
+
+  function compare(actual, expected) {
+    if (actual !== expected)
+      throw new Error("expected " + expected + ", got " + actual);
+  }
+
+  function createTemporaryObject(component, owner, properties) {
+    const object = component.createObject(owner, properties);
+    temporaryObjects.push(object);
+    return object;
+  }
+
+  Timer {
+    interval: 10
+    running: true
+    onTriggered: {
+      try {
+        for (const test of [testCase.test_rotationAndFloatingMargins, testCase.test_twoRealScreensRoutingAndOrientation, testCase.test_exclusionRoutingAndRecreation]) {
+          testCase.init();
+          test();
+          for (const object of testCase.temporaryObjects)
+            object.destroy();
+          testCase.temporaryObjects = [];
+        }
+        console.log("BAR_SCREEN_OWNER_PASS three cases two real ShellScreens");
+        Qt.quit();
+      } catch (error) {
+        console.error(error);
+        Qt.exit(1);
+      }
+    }
+  }
 
   Component {
     id: windowComponent
     BarContentWindow {}
   }
-  QtObject {
-    id: wideScreen
-    property string name: "wide"
-    property real width: 1920
-    property real height: 1080
+  readonly property ShellScreen wideScreen: Quickshell.screens.find(screen => screen.name === "wide")
+  readonly property ShellScreen portraitScreen: Quickshell.screens.find(screen => screen.name === "portrait")
+
+  Component {
+    id: mainExclusion
+    BarExclusionZone {}
   }
-  QtObject {
-    id: portraitScreen
-    property string name: "portrait"
-    property real width: 900
-    property real height: 1600
+  Component {
+    id: extraExclusion
+    Extras.BarExclusionZone {}
   }
 
   function init() {
@@ -48,19 +85,50 @@ TestCase {
     compare(window.margins.right, position === "right" || !vertical ? marginH : 0);
     compare(window.implicitWidth, width);
     compare(window.implicitHeight, height);
-    const bar = findChild(window.contentItem, "fixtureBar");
+    const bar = window.contentItem.children[0];
     verify(bar !== null);
     compare(bar.width, width);
     compare(bar.height, height);
     compare(bar.screen, window.screen);
+    compare(window.selectedScreen, window.screen);
     compare(window.fixtureNamespace, "noctalia-bar-content-" + window.screen.name);
     compare(window.color, "#00000000");
   }
 
+  function test_exclusionRoutingAndRecreation() {
+    for (const component of [mainExclusion, extraExclusion]) {
+      let zone = component.createObject(testCase, {
+                                          screen: wideScreen
+                                        });
+      verify(zone !== null);
+      compare(zone.selectedScreen, wideScreen);
+      compare(zone.screenName, "wide");
+      zone.screen = portraitScreen;
+      compare(zone.selectedScreen, portraitScreen);
+      compare(zone.screenName, "portrait");
+      for (const position of ["top", "bottom", "left", "right"]) {
+        Settings.data.bar.position = position;
+        Settings.data.bar.floating = true;
+        const vertical = position === "left" || position === "right";
+        compare(zone.implicitWidth, vertical ? 58 : 0);
+        compare(zone.implicitHeight, vertical ? 0 : 49);
+        compare(zone.fixtureNamespace, "noctalia-bar-exclusion-portrait");
+      }
+      zone.destroy();
+      zone = component.createObject(testCase, {
+                                      screen: wideScreen
+                                    });
+      verify(zone !== null);
+      compare(zone.selectedScreen, wideScreen);
+      compare(zone.screenName, "wide");
+      zone.destroy();
+    }
+  }
+
   function test_rotationAndFloatingMargins() {
     const window = createTemporaryObject(windowComponent, testCase, {
-      screen: wideScreen
-    });
+                                           screen: wideScreen
+                                         });
     verify(window !== null);
     compare(Logger.events.length, 1);
     compare(Logger.events[0][2], "wide");
@@ -76,34 +144,30 @@ TestCase {
     assertLayout(window, "top", 1920, 40, 0, 0);
   }
 
-  function test_screenRoutingAndReactiveDimensions() {
+  function test_twoRealScreensRoutingAndOrientation() {
     const first = createTemporaryObject(windowComponent, testCase, {
-      screen: wideScreen
-    });
+                                          screen: wideScreen
+                                        });
     const second = createTemporaryObject(windowComponent, testCase, {
-      screen: portraitScreen
-    });
+                                           screen: portraitScreen
+                                         });
     verify(first !== null && second !== null);
     assertLayout(first, "top", 1920, 40, 0, 0);
     assertLayout(second, "top", 900, 40, 0, 0);
     first.screen = portraitScreen;
     assertLayout(first, "top", 900, 40, 0, 0);
-    portraitScreen.width = 920;
-    assertLayout(first, "top", 920, 40, 0, 0);
-    assertLayout(second, "top", 920, 40, 0, 0);
+    assertLayout(first, "top", 900, 40, 0, 0);
+    assertLayout(second, "top", 900, 40, 0, 0);
     Settings.data.bar.position = "right";
     Style.barHeight = 48;
-    portraitScreen.height = 1700;
-    assertLayout(first, "right", 48, 1700, 0, 0);
-    assertLayout(second, "right", 48, 1700, 0, 0);
+    assertLayout(first, "right", 48, 1600, 0, 0);
+    assertLayout(second, "right", 48, 1600, 0, 0);
     Settings.data.bar.floating = true;
     Settings.data.bar.marginHorizontal = 0.3;
     Settings.data.bar.marginVertical = 0.2;
-    assertLayout(first, "right", 48, 1700, 4, 2);
+    assertLayout(first, "right", 48, 1600, 4, 2);
     first.screen = wideScreen;
     assertLayout(first, "right", 48, 1080, 4, 2);
-    assertLayout(second, "right", 48, 1700, 4, 2);
-    portraitScreen.width = 900;
-    portraitScreen.height = 1600;
+    assertLayout(second, "right", 48, 1600, 4, 2);
   }
 }

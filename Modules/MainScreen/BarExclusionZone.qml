@@ -14,7 +14,8 @@ PanelWindow {
 
   property bool exclusive: Settings.data.bar.exclusive !== undefined ? Settings.data.bar.exclusive : false
 
-  readonly property string screenName: screen ? screen.name : "unknown"
+  readonly property ShellScreen selectedScreen: root.screen
+  readonly property string screenName: root.selectedScreen ? root.selectedScreen.name : "unknown"
   readonly property string barPosition: Settings.data.bar.position || "top"
   readonly property bool barIsVertical: barPosition === "left" || barPosition === "right"
   readonly property bool barFloating: Settings.data.bar.floating || false

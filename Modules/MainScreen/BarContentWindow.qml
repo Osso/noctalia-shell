@@ -17,7 +17,8 @@ import qs.Services.UI
 PanelWindow {
   id: barWindow
 
-  readonly property string screenName: barWindow.screen ? barWindow.screen.name : "unknown"
+  readonly property ShellScreen selectedScreen: barWindow.screen
+  readonly property string screenName: barWindow.selectedScreen ? barWindow.selectedScreen.name : "unknown"
 
   // Note: screen property is inherited from PanelWindow and should be set by parent
   color: NColor.transparent // Transparent - background is in MainScreen below
@@ -55,12 +56,12 @@ PanelWindow {
   }
 
   // Set a tight window size
-  implicitWidth: barIsVertical ? Style.barHeight : barWindow.screen.width
-  implicitHeight: barIsVertical ? barWindow.screen.height : Style.barHeight
+  implicitWidth: barIsVertical ? Style.barHeight : barWindow.selectedScreen.width
+  implicitHeight: barIsVertical ? barWindow.selectedScreen.height : Style.barHeight
 
   // Bar content - just the widgets, no background
   Bar {
     anchors.fill: parent
-    screen: barWindow.screen
+    screen: barWindow.selectedScreen
   }
 }
