@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -59,9 +61,9 @@ Item {
     target: "settings"
     function toggle() {
       root.withTargetScreen(screen => {
-                              var settingsPanel = PanelService.getPanel("settingsPanel", screen);
-                              root.togglePanel(settingsPanel);
-                            });
+        var settingsPanel = PanelService.getPanel("settingsPanel", screen);
+        root.togglePanel(settingsPanel);
+      });
     }
   }
 
@@ -69,9 +71,9 @@ Item {
     target: "calendar"
     function toggle() {
       root.withTargetScreen(screen => {
-                              var clockPanel = PanelService.getPanel("clockPanel", screen);
-                              root.togglePanel(clockPanel, "Clock");
-                            });
+        var clockPanel = PanelService.getPanel("clockPanel", screen);
+        root.togglePanel(clockPanel, "Clock");
+      });
     }
   }
 
@@ -80,9 +82,9 @@ Item {
     function toggleHistory() {
       // Will attempt to open the panel next to the bar button if any.
       root.withTargetScreen(screen => {
-                              var notificationHistoryPanel = PanelService.getPanel("notificationHistoryPanel", screen);
-                              notificationHistoryPanel.toggle(null, "NotificationHistory");
-                            });
+        var notificationHistoryPanel = PanelService.getPanel("notificationHistoryPanel", screen);
+        notificationHistoryPanel.toggle(null, "NotificationHistory");
+      });
     }
     function toggleDND() {
       NotificationService.doNotDisturb = !NotificationService.doNotDisturb;
@@ -121,27 +123,27 @@ Item {
     target: "launcher"
     function toggle() {
       root.withTargetScreen(screen => {
-                              var launcherPanel = PanelService.getPanel("launcherPanel", screen);
-                              root.setLauncherMode(launcherPanel, "", "");
-                            });
+        var launcherPanel = PanelService.getPanel("launcherPanel", screen);
+        root.setLauncherMode(launcherPanel, "", "");
+      });
     }
     function clipboard() {
       root.withTargetScreen(screen => {
-                              var launcherPanel = PanelService.getPanel("launcherPanel", screen);
-                              root.setLauncherMode(launcherPanel, ">clip ", ">clip");
-                            });
+        var launcherPanel = PanelService.getPanel("launcherPanel", screen);
+        root.setLauncherMode(launcherPanel, ">clip ", ">clip");
+      });
     }
     function calculator() {
       root.withTargetScreen(screen => {
-                              var launcherPanel = PanelService.getPanel("launcherPanel", screen);
-                              root.setLauncherMode(launcherPanel, ">calc ", ">calc");
-                            });
+        var launcherPanel = PanelService.getPanel("launcherPanel", screen);
+        root.setLauncherMode(launcherPanel, ">calc ", ">calc");
+      });
     }
     function emoji() {
       root.withTargetScreen(screen => {
-                              var launcherPanel = PanelService.getPanel("launcherPanel", screen);
-                              root.setLauncherMode(launcherPanel, ">emoji ", ">emoji");
-                            });
+        var launcherPanel = PanelService.getPanel("launcherPanel", screen);
+        root.setLauncherMode(launcherPanel, ">emoji ", ">emoji");
+      });
     }
   }
 
@@ -213,9 +215,9 @@ Item {
     target: "sessionMenu"
     function toggle() {
       root.withTargetScreen(screen => {
-                              var sessionMenuPanel = PanelService.getPanel("sessionMenuPanel", screen);
-                              root.togglePanel(sessionMenuPanel);
-                            });
+        var sessionMenuPanel = PanelService.getPanel("sessionMenuPanel", screen);
+        root.togglePanel(sessionMenuPanel);
+      });
     }
 
     function lockAndSuspend() {
@@ -227,14 +229,14 @@ Item {
     target: "controlCenter"
     function toggle() {
       root.withTargetScreen(screen => {
-                              var controlCenterPanel = PanelService.getPanel("controlCenterPanel", screen);
-                              if (Settings.data.controlCenter.position === "close_to_bar_button") {
-                                // Will attempt to open the panel next to the bar button if any.
-                                root.togglePanel(controlCenterPanel, "ControlCenter");
-                              } else {
-                                root.togglePanel(controlCenterPanel);
-                              }
-                            });
+        var controlCenterPanel = PanelService.getPanel("controlCenterPanel", screen);
+        if (Settings.data.controlCenter.position === "close_to_bar_button") {
+          // Will attempt to open the panel next to the bar button if any.
+          root.togglePanel(controlCenterPanel, "ControlCenter");
+        } else {
+          root.togglePanel(controlCenterPanel);
+        }
+      });
     }
   }
 
@@ -251,9 +253,9 @@ Item {
     function toggle() {
       if (Settings.data.wallpaper.enabled) {
         root.withTargetScreen(screen => {
-                                var wallpaperPanel = PanelService.getPanel("wallpaperPanel", screen);
-                                root.togglePanel(wallpaperPanel);
-                              });
+          var wallpaperPanel = PanelService.getPanel("wallpaperPanel", screen);
+          root.togglePanel(wallpaperPanel);
+        });
       }
     }
 
@@ -469,7 +471,7 @@ Item {
       mask: Region {}
 
       onScreenChanged: {
-        detectedScreen = screen;
+        root.detectedScreen = screen;
         screenDetectorDebounce.restart();
       }
     }

@@ -141,9 +141,9 @@ Singleton {
     running: false
 
     onExited: function (exitCode, exitStatus) {
-      if (isInhibited) {
+      if (root.isInhibited) {
         Logger.w("IdleInhibitor", "Inhibitor process exited unexpectedly:", exitCode);
-        isInhibited = false;
+        root.isInhibited = false;
       }
     }
 
@@ -157,14 +157,14 @@ Singleton {
     repeat: true
     interval: 1000 // 1 second
     onTriggered: function () {
-      if (timeout == null) {
+      if (root.timeout == null) {
         inhibitorTimeout.stop();
         return;
       }
 
-      timeout -= 1;
-      if (timeout <= 0) {
-        removeManualInhibitor();
+      root.timeout -= 1;
+      if (root.timeout <= 0) {
+        root.removeManualInhibitor();
         return;
       }
     }
