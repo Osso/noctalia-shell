@@ -3,7 +3,6 @@
 
 import argparse
 from collections import Counter
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -195,30 +194,31 @@ def isolate_environment(directory):
 
 
 def run_behavior(directory):
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes() if settings.exists() else None
-    if original is not None:
-        backup = directory / "settings.backup.json"
-        backup.touch(mode=0o600)
-        backup.write_bytes(original)
-        assert (
-            hashlib.sha256(backup.read_bytes()).digest()
-            == hashlib.sha256(original).digest()
-        )
-    stage_runtime(directory)
+    environment = isolate_environment(directory)
+    settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
+    settings.parent.mkdir(mode=0o700, parents=True)
+    original = (ROOT / "Assets/settings-default.json").read_bytes()
+    backup = directory / "settings.backup.json"
+    for path in (settings, backup):
+        path.touch(mode=0o600)
+        path.write_bytes(original)
+        assert path.read_bytes() == original, "fixture bytes differ"
+        assert path.stat().st_mode & 0o777 == 0o600, "fixture mode differs"
     try:
+        stage_runtime(directory)
         result = subprocess.run(
             ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
             cwd=ROOT,
-            env=isolate_environment(directory),
+            env=environment,
             capture_output=True,
             text=True,
             timeout=20,
         )
     finally:
-        assert (settings.read_bytes() if settings.exists() else None) == original, (
-            "real settings changed"
-        )
+        assert settings.read_bytes() == original, "fixture settings changed"
+        assert backup.read_bytes() == original, "fixture backup changed"
+        assert settings.stat().st_mode & 0o777 == 0o600, "fixture settings mode changed"
+        assert backup.stat().st_mode & 0o777 == 0o600, "fixture backup mode changed"
     output = result.stdout + result.stderr
     print(output, end="")
     assert result.returncode == 0, f"TimerCard runtime failed: {result.returncode}"
