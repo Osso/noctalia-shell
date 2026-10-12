@@ -143,6 +143,27 @@ GLOBAL_MARKERS = {
     "MainScreenWarningsHarness.qml": "MAIN_SCREEN_HARNESS_LINT_WARNINGS",
     "FilePickerWarningsHarness.qml": "FILE_PICKER_HARNESS_WARNINGS",
 }
+UTILITY_HARNESSES = {
+    "EmojiRecorderWarningsHarness.qml": "emoji-recorder-warnings.test.py",
+    "WallhavenPowerWarningsHarness.qml": "wallhaven-power-warnings.test.py",
+    "CalendarMonthCardWarningsHarness.qml": "calendar-month-card-warnings.test.py",
+    "ShortcutsClockWarningsHarness.qml": "shortcuts-clock-warnings.test.py",
+    "AllScreensWarningsHarness.qml": "all-screens-warnings.test.py",
+}
+UTILITY_REPORTS = {
+    "EmojiRecorderWarningsHarness.qml": "tst_emoji_recorder.qml",
+    "WallhavenPowerWarningsHarness.qml": "tst_bounded.qml",
+    "CalendarMonthCardWarningsHarness.qml": "tst_calendar.qml",
+    "ShortcutsClockWarningsHarness.qml": "tst_shortcuts_clock.qml",
+    "AllScreensWarningsHarness.qml": "shell.qml",
+}
+UTILITY_MARKERS = {
+    "EmojiRecorderWarningsHarness.qml": "EMOJI_RECORDER_HARNESS_WARNINGS",
+    "WallhavenPowerWarningsHarness.qml": "WALLHAVEN_POWER_HARNESS_LINT_COUNTS",
+    "CalendarMonthCardWarningsHarness.qml": "CALENDAR_CARD_HARNESS_WARNINGS",
+    "ShortcutsClockWarningsHarness.qml": "SHORTCUTS_CLOCK_HARNESS_LINT_WARNINGS",
+    "AllScreensWarningsHarness.qml": "ALL_SCREENS_HARNESS_LINT_WARNINGS",
+}
 ARTIFACT_HARNESSES = (
     "BrightnessPanelWarningsHarness.qml",
     "WallpaperServiceHarness.qml",
@@ -205,6 +226,8 @@ class FixtureLintTest(unittest.TestCase):
             "settings-singleton-warnings.test.py",
             "wifi-networks-list-warnings.test.py",
             "notification-history-warnings.test.py",
+            "brightness-keyboard-services-warnings.test.py",
+            "calendar-month-card-warnings.test.py",
         ):
             shutil.copy2(ROOT / "Tests" / script, tests / script)
         helper = ROOT / "Tests/qml_fixture_lint.py"
@@ -251,6 +274,9 @@ class FixtureLintTest(unittest.TestCase):
                 fixtures / "LocationNetworkPlugin.cpp",
             )
         dependencies = {
+            "ShortcutsClockWarningsHarness.qml": (
+                "CalendarMonthCardWarningsHarness.qml",
+            ),
             "SettingsPanelWarningsHarness.qml": (
                 "SettingsSingletonHarness.qml",
                 "SetupLayoutGeometryHarness.qml",
@@ -278,7 +304,7 @@ class FixtureLintTest(unittest.TestCase):
         )
         return runner
 
-    def run_checker(self, runner, root, settings_present=True):
+    def run_checker(self, runner, root, settings_present=True, audit_settings=False):
         home = root / ".fixture-home"
         settings = home / ".config/noctalia/settings.json"
         original = (root / "Assets/settings-default.json").read_bytes()
@@ -289,8 +315,29 @@ class FixtureLintTest(unittest.TestCase):
         # Keep runtime staging outside the repository's inherited .ignore rules.
         with tempfile.TemporaryDirectory(prefix="noctalia-fixture-artifacts-") as temp:
             self.fixture_tmp = Path(temp)
+            trace = self.fixture_tmp / "checker.trace"
+            audit_command = (
+                ["strace", "-f", "-qq", "-e", "trace=%file", "-o", str(trace)]
+                if audit_settings
+                else []
+            )
+            probe_command = (
+                [
+                    "python3",
+                    "-c",
+                    "import os, pathlib, sys; "
+                    "assert not pathlib.Path('/home/osso/.config').exists(); "
+                    "assert pathlib.Path.home() == pathlib.Path(sys.argv[1]); "
+                    "print('CHECKER_PRIVATE_HOME_CONFIG_MASKED', flush=True); "
+                    "os.execv(sys.argv[2], sys.argv[2:])",
+                    str(home),
+                ]
+                if audit_settings
+                else []
+            )
             result = subprocess.run(
                 [
+                    *audit_command,
                     "bwrap",
                     "--die-with-parent",
                     "--unshare-net",
@@ -315,6 +362,7 @@ class FixtureLintTest(unittest.TestCase):
                     "--proc",
                     "/proc",
                     "--",
+                    *probe_command,
                     str(runner),
                 ],
                 cwd=root,
@@ -325,6 +373,11 @@ class FixtureLintTest(unittest.TestCase):
                 timeout=90,
             )
             print(result.stdout + result.stderr, end="")
+            if audit_settings:
+                self.assertIn("CHECKER_PRIVATE_HOME_CONFIG_MASKED", result.stdout)
+                self.assertNotIn("settings.json", trace.read_text())
+                print("CHECKER_SETTINGS_AUDIT: zero settings attempts")
+                trace.unlink()
             self.assertEqual(self.fixture_tmp.stat().st_mode & 0o777, 0o700)
             self.assertEqual(
                 list(self.fixture_tmp.iterdir()), [], "fixture artifacts leaked"
@@ -382,6 +435,18 @@ class FixtureLintTest(unittest.TestCase):
                         GLOBAL_MARKERS,
                     )
 
+    def test_utility_routes_are_once_only_strict_and_isolated(self):
+        for name, script in UTILITY_HARNESSES.items():
+            for mode in ("present", "absent", "warning"):
+                with self.subTest(harness=name, mode=mode):
+                    self.check_requested_route(
+                        name,
+                        mode,
+                        {name: script},
+                        UTILITY_REPORTS,
+                        UTILITY_MARKERS,
+                    )
+
     def check_requested_route(
         self,
         name,
@@ -419,7 +484,12 @@ class FixtureLintTest(unittest.TestCase):
                             1,
                         )
                     )
-            result = self.run_checker(runner, root, settings_present=mode == "present")
+            result = self.run_checker(
+                runner,
+                root,
+                settings_present=mode == "present",
+                audit_settings=name in UTILITY_HARNESSES,
+            )
             output = result.stdout + result.stderr
             reports = lint_reports(result.stdout)
             if name in harness_markers:
@@ -467,6 +537,8 @@ class FixtureLintTest(unittest.TestCase):
                     self.assertEqual(
                         output.count("FILE_PICKER_CONFIG_NETWORK_MASKED"), 1
                     )
+                elif name == "WallhavenPowerWarningsHarness.qml":
+                    self.assertEqual(file["filename"], "/fixture/tst_bounded.qml")
                 elif name == "BrightnessKeyboardServicesHarness.qml":
                     self.assertEqual(file["filename"], "/fixture/tst_services.qml")
                 else:

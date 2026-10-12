@@ -224,6 +224,21 @@ for file in "${qml_files[@]}"; do
     Tests/Qml/FilePickerWarningsHarness.qml)
         python3 "$repo_root/Tests/file-picker-warnings.test.py" --mode lint-harness --max-warnings 0
         ;;
+    Tests/Qml/EmojiRecorderWarningsHarness.qml)
+        python3 "$repo_root/Tests/emoji-recorder-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/WallhavenPowerWarningsHarness.qml)
+        python3 "$repo_root/Tests/wallhaven-power-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/CalendarMonthCardWarningsHarness.qml)
+        python3 "$repo_root/Tests/calendar-month-card-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/ShortcutsClockWarningsHarness.qml)
+        python3 "$repo_root/Tests/shortcuts-clock-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/AllScreensWarningsHarness.qml)
+        python3 "$repo_root/Tests/all-screens-warnings.test.py" lint-harness --max-warnings 0
+        ;;
     Tests/Qml/PanelServiceLifecycleHarness.qml)
         "$repo_root/Tests/panel-service-lifecycle.test.sh" lint-harness
         printf '\n'
