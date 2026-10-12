@@ -8,6 +8,7 @@ fixtures. Source lint uses unchanged installed metadata, not fixture types.
 import argparse
 from collections import Counter
 import importlib.util
+import json
 from pathlib import Path
 import re
 import shutil
@@ -61,7 +62,8 @@ def stage_runtime(directory):
         "Quickshell.Bluetooth",
         {
             "Bluetooth": singleton(
-                "property QtObject devices: QtObject { property var values: [] }"
+                "component DeviceList: QtObject { property var values: [] }\n"
+                "property DeviceList devices: DeviceList {}"
             ),
             "BluetoothAdapter": "import QtQuick\nQtObject { property bool enabled: false; property bool discovering: false }",
             "BluetoothDevice": """import QtQuick
@@ -135,7 +137,7 @@ Item {
   property real preferredHeight
   property bool isPanelOpen: false
   property int closes: 0
-  readonly property Item content: contentLoader.item
+  readonly property var content: contentLoader.item
   function open() { host.isPanelOpen = true; }
   function close() { host.closes++; host.isPanelOpen = false; }
   Loader {
@@ -173,6 +175,65 @@ Item {
     )
 
 
+def check_harness(directory, environment, label):
+    code, output = isolation.run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(directory / "tst_bluetooth_panel.qml"),
+        ],
+        label,
+    )
+    diagnostics = [
+        diagnostic
+        for file in json.loads(output)["files"]
+        for diagnostic in file["warnings"]
+        if diagnostic["type"] in ("warning", "error")
+    ]
+    counts = Counter(diagnostic["id"] for diagnostic in diagnostics)
+    print("BLUETOOTH_PANEL_HARNESS_LINT_COUNTS", dict(counts), "EXIT", code)
+    return code, diagnostics
+
+
+def lint_harness(directory, environment):
+    stage_runtime(directory)
+    code, diagnostics = check_harness(directory, environment, "harness-lint")
+    assert code == 0 and not diagnostics, (code, diagnostics)
+
+
+def lint_harness_regression(directory, environment):
+    lint_harness(directory, environment)
+    harness = directory / "tst_bluetooth_panel.qml"
+    source = harness.read_text()
+    marker = "id: suite"
+    assert source.count(marker) == 1, "injection owner must be unique"
+    harness.write_text(
+        source.replace(
+            marker,
+            marker + "\n  property int injectedWarning: suite.missingLintProbe",
+            1,
+        )
+    )
+    code, diagnostics = check_harness(directory, environment, "harness-injected")
+    assert code != 0, "injected diagnostic was accepted"
+    assert any(
+        diagnostic["id"] == "missing-property"
+        and "missingLintProbe" in diagnostic["message"]
+        for diagnostic in diagnostics
+    ), diagnostics
+    print("BLUETOOTH_PANEL_HARNESS_WARNING_REJECTED")
+
+
 def runtime(directory, environment):
     stage_runtime(directory)
     code, output = isolation.run_audited(
@@ -195,7 +256,10 @@ def runtime(directory, environment):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime", "guard"))
+    parser.add_argument(
+        "mode",
+        choices=("lint", "lint-harness", "lint-harness-regression", "runtime", "guard"),
+    )
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-bluetooth-panel-") as temporary:
         directory = Path(temporary)
@@ -223,7 +287,7 @@ def main():
             else:
                 raise AssertionError("child settings guard failed")
         else:
-            globals()[args.mode](directory, environment)
+            globals()[args.mode.replace("-", "_")](directory, environment)
 
 
 if __name__ == "__main__":
