@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
 import QtQuick.Window
 import QtTest
 import Quickshell
@@ -20,13 +19,11 @@ ShellRoot {
     function verify(value) {
         if (!value)
             throw new Error("Verification failed");
-
     }
 
     function compare(actual, expected) {
         if (JSON.stringify(actual) !== JSON.stringify(expected))
             throw new Error(JSON.stringify(actual) + " != " + JSON.stringify(expected));
-
     }
 
     function tryVerify(predicate) {
@@ -34,14 +31,14 @@ ShellRoot {
     }
 
     function createTemporaryObject(component, owner, properties) {
-        const object = component.createObject(window.contentItem, properties || {
-        });
+        const object = component.createObject(window.contentItem, properties || {});
         owned.push(object);
         return object;
     }
 
     function cleanup() {
-        for (const object of owned) object.destroy()
+        for (const object of owned)
+            object.destroy();
         owned = [];
     }
 
@@ -65,7 +62,6 @@ ShellRoot {
             const found = find(child, predicate);
             if (found)
                 return found;
-
         }
         return null;
     }
@@ -74,13 +70,11 @@ ShellRoot {
         for (const resource of item.resources || []) {
             if (predicate(resource))
                 return resource;
-
         }
         for (const child of item.children || []) {
             const found = findResource(child, predicate);
             if (found)
                 return found;
-
         }
         return null;
     }
@@ -94,30 +88,35 @@ ShellRoot {
     }
 
     function test_selection_geometry_data() {
-        return [{
-            "tag": "480x1",
-            "width": 480,
-            "scale": 1
-        }, {
-            "tag": "1000x1",
-            "width": 1000,
-            "scale": 1
-        }, {
-            "tag": "480x1.25",
-            "width": 480,
-            "scale": 1.25
-        }, {
-            "tag": "1000x1.25",
-            "width": 1000,
-            "scale": 1.25
-        }];
+        return [
+            {
+                "tag": "480x1",
+                "width": 480,
+                "scale": 1
+            },
+            {
+                "tag": "1000x1",
+                "width": 1000,
+                "scale": 1
+            },
+            {
+                "tag": "480x1.25",
+                "width": 480,
+                "scale": 1.25
+            },
+            {
+                "tag": "1000x1.25",
+                "width": 1000,
+                "scale": 1.25
+            }
+        ];
     }
 
     function test_selection_geometry(data) {
         const step = geometryStep;
         verify(step !== null);
         compare(step.selectedWallpaper, "/fixture/forest.png");
-        const preview = find(step, (child) => {
+        const preview = find(step, child => {
             return child.imagePath !== undefined;
         });
         verify(preview !== null);
@@ -128,14 +127,14 @@ ShellRoot {
         compare(preview.imagePath, "file:///fixture/forest.png");
         compare(preview.visible, true);
         compare(preview.borderWidth, 2);
-        const thumbnail = find(step, (child) => {
+        const thumbnail = find(step, child => {
             return String(child.source) === "file:///fixture/desert.jpg";
         });
         verify(thumbnail !== null);
         compare(thumbnail.parent.parent.width, 146);
         compare(thumbnail.parent.parent.height, 106);
         const changes = [];
-        step.wallpaperChanged.connect((path) => {
+        step.wallpaperChanged.connect(path => {
             return changes.push(path);
         });
         input.mouseClick(thumbnail.parent.parent);
@@ -156,15 +155,15 @@ ShellRoot {
             "width": 480,
             "height": 760
         });
-        const input = find(step, (child) => {
+        const input = find(step, child => {
             return typeof child.inputEditingFinished === "function";
         });
-        const picker = find(step, (child) => {
+        const picker = find(step, child => {
             return typeof child.accepted === "function";
         });
         verify(input !== null && picker !== null);
         const changes = [];
-        step.directoryChanged.connect((path) => {
+        step.directoryChanged.connect(path => {
             return changes.push(path);
         });
         input.text = "/fixture/typed";
@@ -188,7 +187,7 @@ ShellRoot {
         });
         scanStep.selectedDirectory = "";
         scanStep.selectedWallpaper = "";
-        scanner = findResource(scanStep, (child) => {
+        scanner = findResource(scanStep, child => {
             return child.command !== undefined;
         });
         verify(scanner !== null);
@@ -200,7 +199,7 @@ ShellRoot {
 
     function checkScanner() {
         if (scanner.running)
-            return ;
+            return;
 
         if (scanPhase === 0) {
             compare(scanStep.wallpapersList, ["/fixture/a.png", "/fixture/b.jpg"]);
@@ -217,7 +216,7 @@ ShellRoot {
             cleanup();
             console.log("PASS setup wallpaper: 7 cases");
             Qt.quit();
-            return ;
+            return;
         }
         scanPhase++;
         scanner.running = true;
@@ -232,12 +231,12 @@ ShellRoot {
         verify(content !== null);
         wizard.opened();
         wizard.currentStep = 1;
-        const step = find(content, (child) => {
+        const step = find(content, child => {
             return typeof child.refreshWallpapers === "function";
         });
         verify(step !== null);
         step.refreshWallpapers();
-        const thumbnail = find(step, (child) => {
+        const thumbnail = find(step, child => {
             return String(child.source) === "file:///fixture/ocean.webp";
         });
         verify(thumbnail !== null);
@@ -245,10 +244,10 @@ ShellRoot {
         input.mouseClick(thumbnail.parent.parent);
         compare(wizard.selectedWallpaper, "/fixture/ocean.webp");
         compare(WallpaperService.appliedWallpaper, "/fixture/ocean.webp");
-        const next = find(content, (child) => {
+        const next = find(content, child => {
             return child.text === "Continue →" && typeof child.clicked === "function";
         });
-        const back = find(content, (child) => {
+        const back = find(content, child => {
             return child.text === "← Back" && typeof child.clicked === "function";
         });
         next.clicked();
@@ -324,17 +323,12 @@ ShellRoot {
     Component {
         id: stepComponent
 
-        SetupWallpaperStep {
-        }
-
+        SetupWallpaperStep {}
     }
 
     Component {
         id: wizardComponent
 
-        SetupWizard {
-        }
-
+        SetupWizard {}
     }
-
 }

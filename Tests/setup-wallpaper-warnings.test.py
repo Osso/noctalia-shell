@@ -155,8 +155,13 @@ signal barPositionChanged(string position)
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("lint", "runtime", "isolation"))
+    parser.add_argument(
+        "mode", choices=("lint", "lint-harness", "runtime", "isolation")
+    )
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="sw-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
@@ -170,6 +175,31 @@ def main():
                 "-I",
                 temporary,
                 str(directory / "qs" / TARGET),
+            ]
+        elif args.mode == "lint-harness":
+            stage_runtime(directory)
+            harness = directory / "qs/shell.qml"
+            if args.inject_warning:
+                source = harness.read_text()
+                harness.write_text(
+                    source.replace(
+                        "id: test",
+                        "id: test\n    property int injectedWarning: test.missingLintProbe",
+                        1,
+                    )
+                )
+            argv = [
+                "/usr/lib/qt6/bin/qmllint",
+                "--bare",
+                "-I",
+                temporary,
+                "-I",
+                "/usr/lib/qt6/qml",
+                "--max-warnings",
+                "0",
+                "--json",
+                "-",
+                str(harness),
             ]
         elif args.mode == "runtime":
             stage_runtime(directory)
@@ -213,6 +243,21 @@ finally:
             warnings = re.findall(r"^Warning:.*$", output, re.M)
             print("SETUP_WALLPAPER_WARNINGS", len(warnings))
             assert not warnings, warnings
+        elif args.mode == "lint-harness":
+            diagnostics = json.loads(result.stdout)
+            warnings = [
+                warning
+                for diagnostic in diagnostics["files"]
+                for warning in diagnostic["warnings"]
+                if warning["type"] == "warning"
+            ]
+            print(
+                "SETUP_WALLPAPER_HARNESS_LINT_WARNINGS",
+                len(warnings),
+                "EXIT",
+                result.returncode,
+            )
+            assert not warnings, "SetupWallpaper harness warnings remain"
         elif args.mode == "runtime":
             assert "PASS setup wallpaper: 7 cases" in output, output
             assert not re.search(
