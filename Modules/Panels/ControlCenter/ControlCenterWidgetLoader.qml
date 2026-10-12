@@ -32,15 +32,15 @@ Item {
         return;
 
       // Apply properties to loaded widget
-      for (var prop in widgetProps) {
+      for (var prop in root.widgetProps) {
         if (item.hasOwnProperty(prop)) {
-          item[prop] = widgetProps[prop];
+          item[prop] = root.widgetProps[prop];
         }
       }
 
       // Set screen property
       if (item.hasOwnProperty("screen")) {
-        item.screen = widgetScreen;
+        item.screen = root.widgetScreen;
       }
 
       // Call custom onLoaded if it exists
@@ -51,7 +51,7 @@ Item {
 
     Component.onDestruction: {
       // Explicitly clear references
-      widgetProps = null;
+      root.widgetProps = null;
     }
   }
 
