@@ -16,7 +16,7 @@ Singleton {
     // When the wallpaper changes, regenerate with Matugen if necessary
     function onWallpaperChanged(screenName, path) {
       if (screenName === Screen.name && Settings.data.colorSchemes.useWallpaperColors) {
-        generateFromWallpaper();
+        root.generateFromWallpaper();
       }
     }
   }
@@ -25,7 +25,7 @@ Singleton {
     target: Settings.data.colorSchemes
     function onDarkModeChanged() {
       Logger.d("AppThemeService", "Detected dark mode change");
-      generate();
+      root.generate();
     }
   }
 

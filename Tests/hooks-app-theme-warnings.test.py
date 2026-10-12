@@ -1,0 +1,255 @@
+#!/usr/bin/env python3
+"""Bounded owner lint and inert signal/template QtTest in a masked private HOME."""
+
+import argparse
+from collections import Counter
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import sys
+import tempfile
+from unittest.mock import patch
+
+ROOT = Path(__file__).absolute().parents[1]
+TARGETS = ("Services/Control/HooksService.qml", "Services/Theming/AppThemeService.qml")
+
+
+def helper(filename):
+    spec = importlib.util.spec_from_file_location(filename, ROOT / "Tests" / filename)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def stage_runtime(directory, shadow):
+    utilities = helper("workspace-runtime.test.py")
+    write = utilities.write_module
+
+    def singleton(body):
+        return utilities.singleton(body).replace(
+            "import QtQuick", "import QtQuick\nimport qs.Commons"
+        )
+
+    quickshell = {
+        "Singleton": "import QtQuick\nQtObject { default property list<QtObject> children }",
+        "Quickshell": singleton("""property string shellDir: "/fixture"
+property bool rejectCommand: false
+function execDetached(argv) {
+  if (rejectCommand) throw new Error("fixture spawn rejected");
+  Recorder.append(["hook", argv]);
+}"""),
+    }
+    if shadow:
+        # Adversarial dynamic scope, not a claimed production Connections API.
+        # Unchanged service handlers must still select their lexical singleton.
+        quickshell["Connections"] = """import QtQml as Qml
+Qml.Connections {
+  function executeWallpaperHook(path, screen) { throw new Error("WRONG_OWNER wallpaper"); }
+  function executeDarkModeHook(dark) { throw new Error("WRONG_OWNER dark"); }
+  function generateFromWallpaper() { throw new Error("WRONG_OWNER wallpaper templates"); }
+  function generate() { throw new Error("WRONG_OWNER templates"); }
+}"""
+    write(directory, "Quickshell", quickshell)
+    write(
+        directory,
+        "qs.Commons",
+        {
+            "Recorder": singleton("""property var events: []
+function append(event) { events = events.concat([event]); }"""),
+            "Settings": singleton("""property QtObject data: QtObject {
+  property QtObject colorSchemes: QtObject {
+    property bool darkMode: false
+    property bool useWallpaperColors: false
+    property string predefinedScheme: "fixture-day"
+  }
+  property var hooks: ({enabled: true, wallpaperChange: "wall $1 $2 $1", darkModeChange: "dark $1"})
+}"""),
+            "Logger": singleton("""property var errors: []
+function i(...args) {}
+function d(...args) {}
+function e(...args) { errors = errors.concat([args]); }"""),
+        },
+    )
+    write(
+        directory,
+        "qs.Services.UI",
+        {
+            "WallpaperService": singleton("""property string currentWallpaper: "/fixture/a.png"
+signal wallpaperChanged(string screenName, string path)
+function getWallpaper(screen) {
+  Recorder.append(["readWallpaper", screen]);
+  return currentWallpaper;
+}"""),
+        },
+    )
+    write(
+        directory,
+        "qs.Services.Control",
+        {
+            "HooksService": (ROOT / TARGETS[0]).read_text(),
+        },
+    )
+    write(
+        directory,
+        "qs.Services.Theming",
+        {
+            "AppThemeService": (ROOT / TARGETS[1]).read_text(),
+            "ColorSchemeService": singleton("""property var pending: null
+function applyScheme(name) {
+  Recorder.append(["applyScheme", name]);
+  pending = {name: name, primary: "#123456"};
+}
+function deliver() {
+  const scheme = pending;
+  pending = null;
+  AppThemeService.generateFromPredefinedScheme(scheme);
+}"""),
+            "TemplateProcessor": singleton("""function processWallpaperColors(path, mode) {
+  Recorder.append(["wallpaperTemplates", path, mode]);
+}
+function processPredefinedScheme(scheme, mode) {
+  Recorder.append(["schemeTemplates", scheme, mode]);
+}"""),
+        },
+    )
+    harness = directory / "tst_hooks_app_theme.qml"
+    harness.write_text(
+        (ROOT / "Tests/Qml/HooksAppThemeWarningsHarness.qml").read_text()
+    )
+    return harness
+
+
+def run_sandboxed(mode, directory, isolation):
+    mounts = Path("/proc/self/mountinfo").read_text().splitlines()
+    for path in ("/home", "/syncthing", "/run"):
+        assert any(
+            line.split()[4] == path and " - tmpfs " in line for line in mounts
+        ), path
+    environment = isolation.isolated_environment(directory)
+    if mode == "lint":
+        helper("media-mini-warnings.test.py").stage_modules(directory)
+        command = [
+            "/usr/lib/qt6/bin/qmllint",
+            "--json",
+            "-",
+            "--max-warnings",
+            "0",
+            "-I",
+            str(directory),
+        ]
+        command += [str(directory / "qs" / target) for target in TARGETS]
+    else:
+        harness = stage_runtime(directory, mode == "owner-probe")
+        if mode == "lint-harness":
+            command = [
+                "/usr/lib/qt6/bin/qmllint",
+                "--bare",
+                "--max-warnings",
+                "0",
+                "-I",
+                str(directory),
+                "-I",
+                "/usr/lib/qt6/qml",
+                str(harness),
+            ]
+        else:
+            command = [
+                "/usr/lib/qt6/bin/qmltestrunner",
+                "-input",
+                str(harness),
+                "-import",
+                str(directory),
+            ]
+    code, output = isolation.run_child(command, directory, environment)
+    (directory / f"{mode}.log").write_text(output)
+    if mode == "lint":
+        reports = json.loads(output)["files"]
+        assert len(reports) == len(TARGETS), reports
+        for target, report in zip(TARGETS, reports):
+            assert report["filename"] == str(directory / "qs" / target), report
+            counts = Counter(warning["id"] for warning in report["warnings"])
+            print(target, dict(counts), "TOTAL", sum(counts.values()), flush=True)
+        assert all(
+            not report["warnings"] and report["success"] for report in reports
+        ), reports
+    elif mode != "lint-harness":
+        assert "7 passed, 0 failed" in output, output
+        assert not re.search(
+            r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:",
+            output,
+        ), output
+    assert code == 0, code
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "mode", choices=("lint", "behavior", "owner-probe", "lint-harness")
+    )
+    parser.add_argument("--sandbox", type=Path, help=argparse.SUPPRESS)
+    args = parser.parse_args()
+    isolation = helper("notifications-hooks-warnings.test.py")
+    sys.addaudithook(isolation.audit)
+    with (
+        patch("os.stat", isolation.guard_metadata(os.stat)),
+        patch("os.lstat", isolation.guard_metadata(os.lstat)),
+        patch("os.readlink", isolation.guard_metadata(os.readlink)),
+    ):
+        isolation.prove_denial()
+        if args.sandbox:
+            run_sandboxed(args.mode, args.sandbox, isolation)
+            return
+        with tempfile.TemporaryDirectory(
+            prefix="noctalia-hooks-app-theme-"
+        ) as temporary:
+            directory = Path(temporary)
+            directory.chmod(0o700)
+            command = [
+                "bwrap",
+                "--die-with-parent",
+                "--unshare-all",
+                "--new-session",
+                "--ro-bind",
+                "/",
+                "/",
+                "--perms",
+                "000",
+                "--tmpfs",
+                "/home",
+                "--tmpfs",
+                "/syncthing",
+                "--ro-bind",
+                str(ROOT),
+                str(ROOT),
+                "--tmpfs",
+                "/tmp",
+                "--tmpfs",
+                "/run",
+                "--bind",
+                temporary,
+                temporary,
+                "--proc",
+                "/proc",
+                "--dev",
+                "/dev",
+                "--chdir",
+                temporary,
+                "--",
+                "/usr/bin/python3",
+                str(Path(__file__).absolute()),
+                args.mode,
+                "--sandbox",
+                temporary,
+            ]
+            code, _ = isolation.run_child(
+                command,
+                directory,
+                {"PATH": "/usr/bin", "LANG": "C.UTF-8", "HOME": temporary},
+            )
+            raise SystemExit(code)
+
+
+if __name__ == "__main__":
+    main()

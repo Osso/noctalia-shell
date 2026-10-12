@@ -12,14 +12,14 @@ Singleton {
   Connections {
     target: Settings.data.colorSchemes
     function onDarkModeChanged() {
-      executeDarkModeHook(Settings.data.colorSchemes.darkMode);
+      root.executeDarkModeHook(Settings.data.colorSchemes.darkMode);
     }
   }
 
   Connections {
     target: WallpaperService
     function onWallpaperChanged(screenName, path) {
-      executeWallpaperHook(path, screenName);
+      root.executeWallpaperHook(path, screenName);
     }
   }
 
