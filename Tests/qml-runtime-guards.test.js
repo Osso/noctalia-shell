@@ -449,9 +449,12 @@ function testIpcScreenDebounceExecutesBarPolicyAndCleanup() {
     [false, undefined, secondary],
   ]) {
     const called = [];
-    const ctx = {
+    const root = {
       detectedScreen: secondary,
       pendingCallback(screen) { called.push(screen); },
+    };
+    const ctx = {
+      root,
       Settings: { data: { general: { allowPanelsOnScreenWithoutBar: allow }, bar: { monitors } } },
       Quickshell: { screens: [primary, secondary] },
       Logger: { d() {} },
@@ -459,11 +462,14 @@ function testIpcScreenDebounceExecutesBarPolicyAndCleanup() {
     };
     debounce(ctx);
     assert.deepEqual(called, [expected]);
-    assert.equal(ctx.pendingCallback, null);
+    assert.equal(root.detectedScreen, expected);
+    assert.equal(root.pendingCallback, null);
     assert.equal(ctx.screenDetectorLoader.active, false);
     ctx.screenDetectorLoader.active = true;
     debounce(ctx);
     assert.deepEqual(called, [expected]);
+    assert.equal(root.detectedScreen, expected);
+    assert.equal(root.pendingCallback, null);
     assert.equal(ctx.screenDetectorLoader.active, false);
   }
 }

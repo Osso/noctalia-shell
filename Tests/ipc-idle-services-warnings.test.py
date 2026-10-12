@@ -24,7 +24,7 @@ def helper(name):
 
 def lint(directory):
     helper("media-mini-warnings").stage_modules(directory)
-    expected = ({"missing-property": 7}, {})
+    expected = ({}, {})
     for target, wanted in zip(TARGETS, expected):
         result = subprocess.run(
             [
