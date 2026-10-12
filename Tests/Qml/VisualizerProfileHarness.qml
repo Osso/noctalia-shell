@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtTest
 import Quickshell
@@ -20,6 +22,23 @@ Item {
         id: fixtureScreen
 
         name: "fixture"
+    }
+
+    ShellScreen {
+        id: secondScreen
+
+        name: "second-owner"
+    }
+
+    Component {
+        id: shadowOwnerFactory
+
+        Item {
+            property ShellScreen screen: secondScreen
+
+            width: 800
+            height: 600
+        }
     }
 
     Component {
@@ -222,6 +241,45 @@ Item {
             wait(30);
             verify(row.width > 600);
             verify(labels.width > 0);
+
+            const shadowOwner = createTemporaryObject(shadowOwnerFactory, scene);
+            verify(shadowOwner !== null);
+            const captured = createTemporaryObject(profileFactory, shadowOwner, {
+                "width": 560,
+                "height": 90
+            });
+            const second = createTemporaryObject(profileFactory, scene, {
+                "screen": secondScreen,
+                "width": 560,
+                "height": 90,
+                "y": 120
+            });
+            verify(captured !== null);
+            verify(second !== null);
+            compare(shadowOwner.screen, secondScreen);
+            compare(captured.screen, fixtureScreen);
+            compare(second.screen, secondScreen);
+            wait(30);
+            const capturedSettings = captured.children[0].children[2].children.find(child => child.icon === "settings");
+            const secondSettings = second.children[0].children[2].children.find(child => child.icon === "settings");
+            mouseClick(capturedSettings, 20, 20);
+            compare(PanelService.lastScreen, fixtureScreen);
+            mouseClick(secondSettings, 20, 20);
+            compare(PanelService.lastScreen, secondScreen);
+            captured.destroy();
+            wait(20);
+            mouseClick(secondSettings, 20, 20);
+            compare(PanelService.lastScreen, secondScreen);
+            const recreated = createTemporaryObject(profileFactory, shadowOwner, {
+                "width": 560,
+                "height": 90
+            });
+            verify(recreated !== null);
+            compare(recreated.screen, fixtureScreen);
+            wait(30);
+            const recreatedSettings = recreated.children[0].children[2].children.find(child => child.icon === "settings");
+            mouseClick(recreatedSettings, 20, 20);
+            compare(PanelService.lastScreen, fixtureScreen);
         }
 
         name: "VisualizerProfile"

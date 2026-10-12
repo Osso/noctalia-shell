@@ -171,6 +171,7 @@ def lint_harness(directory, environment, inject_warning=False):
         environment,
     )
     diagnostics = json.loads(output)
+    diagnostic_count = sum(len(result["warnings"]) for result in diagnostics["files"])
     warnings = sum(
         warning["type"] == "warning"
         for result in diagnostics["files"]
@@ -179,6 +180,8 @@ def lint_harness(directory, environment, inject_warning=False):
     print("VISUALIZER_PROFILE_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
     if inject_warning:
         assert warnings > 0, "injected warning not diagnosed"
+    else:
+        assert diagnostic_count == 0, f"harness diagnostics remain: {diagnostic_count}"
     return code
 
 
@@ -260,7 +263,9 @@ def inside(args):
         directory,
         environment,
     )
-    assert code == 0 and "0 failed" in output, output
+    assert code == 0 and re.search(
+        r"Totals: 6 passed, 0 failed, 0 skipped, 0 blacklisted", output
+    ), output
     assert not re.search(
         r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output
     ), output
