@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Private actual-Tray/TrayMenu cold start, source reload and failed-reload recovery.
 
 Real Quickshell resolver and PopupWindow; synthetic services, inert controls and
@@ -7,7 +6,6 @@ an invisible popup owner. No canonical process, settings or desktop access.
 
 import importlib.util
 import os
-from pathlib import Path
 import re
 import selectors
 import shutil
@@ -15,6 +13,7 @@ import signal
 import subprocess
 import tempfile
 import time
+from pathlib import Path
 
 ROOT = Path(__file__).absolute().parents[1]
 
