@@ -103,10 +103,11 @@ ShellRoot {
       function scrollUp() { up++; }
       function scrollDown() { down++; }
     }
-    TestCase { id: input; when: false }
+    TestEvent { id: input }
+    TestResult { id: rendering }
     function click(owner, button) {
       const mouse = area(owner, 0);
-      input.mouseClick(mouse, mouse.width / 2, mouse.height / 2, button);
+      check(input.mouseClick(mouse, mouse.width / 2, mouse.height / 2, button, Qt.NoModifier, -1), "native click dispatched");
     }
     function check(condition, message) {
       if (!condition) throw new Error("DRAWER_NATIVE_ASSERT: " + message);
@@ -158,8 +159,8 @@ ShellRoot {
         surface.check(surface.delegates(first).itemAt(0).modelData === alpha && surface.delegates(second).itemAt(0).modelData === beta, "models recreated");
         first.visible = true;
         second.visible = true;
-        surface.check(input.waitForPolish(surface.delegates(second).parent, 1000), "recreated grid polished");
-        input.mouseWheel(surface.area(second, 0), 10, 10, 0, 120);
+        surface.check(rendering.waitForPolish(surface.delegates(second).parent, 1000), "recreated grid polished");
+        surface.check(input.mouseWheel(surface.area(second, 0), 10, 10, Qt.NoButton, Qt.NoModifier, 0, 120, -1), "native wheel dispatched");
         surface.check(beta.up === 1 && alpha.up === 0, "wheel routes recreated model");
         surface.click(second, Qt.RightButton);
         surface.check(popup.visible && second.trayMenuItem.trayItem === beta, "native popup opened for second model");
