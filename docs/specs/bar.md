@@ -107,6 +107,8 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 
 ### Other bar coverage
 
+- At `5a3d4be9d`, AudioVisualizerSettings and NotificationHistorySettings warnings each drop 4→0. Shared-dialog offscreen coverage checks cancel without updates, reopening with original values, and one Apply update to the requested section/index while preserving unrelated fixture fields. Editor assertions: [audio](audio.md#tests-asserting-this-spec), [notifications](notifications.md#tests-asserting-this-spec); eight-pass accounting and config-denied isolation: [testing](testing.md#audionotification-settings-isolated-runtime). No BarService popup ownership or real persistence proof.
+
 - ActiveWindowSettings warning reduction 6→0 and six reported offscreen passes through `40d1f6391`/`a5322cf4b`/`9f3c50289` cover editor options, pending/copy-save isolation, and shared-dialog cancel/reopen/apply with synthetic settings. This does not prove BarService popup ownership, real persistence, or resolution of reload-time ActiveWindow warnings. Coverage: [active window](active-window.md#tests-asserting-this-spec); invocation/isolation: [testing](testing.md#activewindow-settings-isolated-runtime).
 
 - `Tests/background-paths-warnings.test.py` / `Tests/Qml/BackgroundPathsHarness.qml` cover production bar/panel paths through `7c8e74ea2`/`23b32ca34`/`f16acbc36`: 11 offscreen behavioral rows plus init/cleanup (13 reported passes), with four detected layout/rounding negative controls. Shape containment and fill-color properties are not compositor visual proof. Invocation, retained diagnostics, and isolation: [testing](testing.md#background-paths).

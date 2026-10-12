@@ -111,6 +111,8 @@ The history ListModel and Qt Repeaters/layout are real; NotificationService, Sma
 
 ## Tests asserting this spec
 
+- At `5a3d4be9d`, NotificationHistorySettings warnings drop 4→0. `Tests/Qml/AudioNotificationSettingsWarningsHarness.qml` checks show-unread-badge/hide-when-zero defaults and toggles, copy-save without source mutation, unrelated-field retention, and shared-dialog cancel/reopen/apply. This proves synthetic editor state, not badge rendering, notification delivery, persistence, or cursor-flicker resolution. Shared accounting and isolation: [testing](testing.md#audionotification-settings-isolated-runtime).
+
 - `Tests/bar-status-warnings.test.py behavior` adds two production bar-widget cases at `c14da3540`: synthetic click/context/wheel routing, DND icon updates, fixture history clearing and settings dispatch; unread timestamps, zero/badge settings, and badge Loader destruction/recreation. ListModel mutation alone is not a tested reactive binding: the case advances `lastSeenTs`. This is separate from history-panel coverage and proves neither notification persistence/delivery nor toast/input-region flicker resolution. Cohort lint and isolation: [testing](testing.md#bar-status-cohort).
 
 - `Tests/notification-warnings.test.py` (`lint`, `behavior`, `lint-harness`, and injected-warning `lint-harness-regression`, standalone).

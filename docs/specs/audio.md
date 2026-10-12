@@ -72,6 +72,8 @@ Audio covers PipeWire-backed output/input volume state, device selection, OSD su
 
 ## Tests asserting this spec
 
+- At `5a3d4be9d`, AudioVisualizerSettings warnings drop 4→0. `Tests/Qml/AudioNotificationSettingsWarningsHarness.qml` checks hide-when-idle defaults/toggling, width metadata/default and invalid-width handling, keyboard color selection, copy-save without source mutation, unrelated-field retention, and shared-dialog cancel/reopen/apply. These are synthetic editor assertions, not live audio or persisted settings proof. Shared accounting and isolation: [testing](testing.md#audionotification-settings-isolated-runtime).
+
 - At `1e05e0ef7`, AudioVisualizer lint drops 8→0. `Tests/Qml/VisualizerProfileHarness.qml` covers linear/mirrored/wave Loader switching, fixture frames/colors, horizontal/vertical sizing, idle unload/reactivation, `none` collapse, independent instance ownership and survivor updates after disposal, and click/menu cycling/settings routing. Offscreen evidence does not prove live audio or desktop rendering/input. Shared six-case accounting, mutation and isolation: [testing](testing.md#visualizerprofile-isolated-runtime).
 
 - `Tests/bar-status-warnings.test.py behavior` adds two production AudioVisualizer bar-widget cases at `c14da3540`: click/menu type cycling and settings dispatch, inert wheel, real spectrum Loader switching, fixture frame/color/orientation propagation, idle destruction/reactivation, timed size transitions, and `none` collapse. This extends spectrum-component coverage to widget integration, not live Cava/audio capture, GPU pixels, native input, real popup, or persistence. Cohort lint and isolation: [testing](testing.md#bar-status-cohort).
