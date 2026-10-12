@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Bounded MainScreen lint and nonvisible production PanelWindow lifecycle.
+"""Bounded MainScreen lint and isolated offscreen UI/layout/routing proof.
 
-Panels/background rendering and services are inert fixtures. MainScreen, Loaders,
-window color, Region geometry and layer-shell properties remain unchanged. The
-mask assertions cover empty input-region construction, not compositor delivery.
-Private headless Cage never connects to the active display; animations are disabled.
+Production MainScreen bindings, loaders and shortcuts run with synthetic screen,
+PanelWindow and Region transport. No compositor delivery or real-screen proof.
+Installed Quickshell metadata remains unchanged for production source lint.
 """
 
 import argparse
@@ -12,11 +11,9 @@ from collections import Counter
 import hashlib
 import importlib.util
 import json
-import os
 from pathlib import Path
 import re
 import shutil
-import signal
 import subprocess
 import tempfile
 
@@ -55,26 +52,42 @@ def lint(directory):
         if line.startswith("Warning:")
     )
     print("MAIN_SCREEN_LINT_COUNTS", dict(counts))
-    # _Window exports QuickshellScreenInfo as opaque despite core ShellScreen metadata.
-    assert counts == {"missing-property": 5}, dict(counts)
-    missing = Counter(
-        re.findall(
-            r'^Warning: .*: Member "([^"]+)" not found on type "([^"]+)" \[missing-property\]$',
-            output,
-            re.M,
-        )
-    )
-    assert missing == Counter(
-        (name, "QuickshellScreenInfo") for name in ("name", "width", "height", "x", "y")
-    ), dict(missing)
+    assert not counts, dict(counts)
     assert result.returncode == 0, result.returncode
 
 
-def stage_runtime(directory):
+def stage_runtime(directory, mutation):
     write = helper().write_singleton
     target = directory / TARGET
     target.parent.mkdir(parents=True)
-    shutil.copyfile(ROOT / TARGET, target)
+    source = (ROOT / TARGET).read_text()
+    # Replace attached layer-shell transport only; all binding expressions stay real.
+    for name, kind in (
+        ("layer", "int"),
+        ("namespace", "string"),
+        ("exclusionMode", "int"),
+        ("keyboardFocus", "int"),
+    ):
+        source = source.replace(
+            f"WlrLayershell.{name}:", f"property {kind} fixture{name.capitalize()}:"
+        )
+    if mutation == "geometry":
+        source = source.replace(
+            "readonly property real attachmentOverlap: 1",
+            "readonly property real attachmentOverlap: 0",
+        )
+    elif mutation == "routing":
+        source = source.replace("screen: root.screen", "screen: null")
+    elif mutation == "selection":
+        source = source.replace(
+            "readonly property ShellScreen selectedScreen: root.screen",
+            "property ShellScreen selectedScreen",
+        ).replace(
+            "Component.onCompleted: {",
+            "Component.onCompleted: {\n    selectedScreen = root.screen;",
+            1,
+        )
+    target.write_text(source)
     backgrounds = target.parent / "Backgrounds"
     backgrounds.mkdir()
     (backgrounds / "AllBackgrounds.qml").write_text(
@@ -172,80 +185,165 @@ Item {
         (path / f"{name}.qml").write_text(
             panel_source.rsplit("}", 1)[0] + navigation + "}\n"
         )
+    stage_transport(directory)
+    modules = {}
+    for path in directory.rglob("*.qml"):
+        if path.parts[-1] == "tst_main_screen.qml":
+            continue
+        relative = path.relative_to(directory)
+        singleton = path.read_text().startswith("pragma Singleton")
+        prefix = "singleton " if singleton else ""
+        modules.setdefault(relative.parent, []).append(
+            f"{prefix}{path.stem} 1.0 {path.name}\n"
+        )
+    for relative, declarations in modules.items():
+        name = ".".join(("qs", *relative.parts))
+        (directory / relative / "qmldir").write_text(
+            f"module {name}\n" + "".join(declarations)
+        )
     shutil.copyfile(
-        ROOT / "Tests/Qml/MainScreenWarningsHarness.qml", directory / "shell.qml"
+        ROOT / "Tests/Qml/MainScreenWarningsHarness.qml",
+        directory.parent / "tst_main_screen.qml",
     )
 
 
-def stop_process_group(process):
-    try:
-        os.killpg(process.pid, signal.SIGTERM)
-    except ProcessLookupError:
-        return
-    try:
-        process.wait(timeout=3)
-    except subprocess.TimeoutExpired:
-        os.killpg(process.pid, signal.SIGKILL)
-        process.wait(timeout=3)
-    try:
-        os.killpg(process.pid, signal.SIGKILL)
-    except ProcessLookupError:
-        pass
+def stage_transport(directory):
+    core = directory.parent / "Quickshell"
+    core.mkdir()
+    sources = {
+        "ShellScreen": """import QtQuick
+QtObject {
+  property string name
+  property int width
+  property int height
+  property int x
+  property int y
+}
+""",
+        "WindowAnchors": """import QtQuick
+QtObject {
+  property bool top
+  property bool bottom
+  property bool left
+  property bool right
+}
+""",
+        "PanelWindow": """import QtQuick
+import Quickshell
+QtObject {
+  id: window
+  default property alias data: content.data
+  property ShellScreen screen
+  property bool visible: false
+  property color color
+  property Region mask
+  property WindowAnchors anchors: WindowAnchors {}
+  readonly property real width: screen ? screen.width : 0
+  readonly property real height: screen ? screen.height : 0
+  property Item contentItem: Item {
+    id: content
+    width: window.width
+    height: window.height
+  }
+}
+""",
+        "Region": """import QtQuick
+QtObject {
+  default property list<QtObject> children
+  property list<QtObject> regions
+  property real x
+  property real y
+  property real width
+  property real height
+  property int intersection
+}
+""",
+        "Intersection": "import QtQuick\nQtObject { enum Mode { Xor, Subtract } }\n",
+    }
+    for name, source in sources.items():
+        (core / f"{name}.qml").write_text(source)
+    (core / "qmldir").write_text(
+        "module Quickshell\n" + "".join(f"{name} 1.0 {name}.qml\n" for name in sources)
+    )
+    wayland = core / "Wayland"
+    wayland.mkdir()
+    sources = {
+        "WlrLayer": "enum Layer { Top }",
+        "ExclusionMode": "enum Mode { Ignore }",
+        "WlrKeyboardFocus": "enum Focus { None, Exclusive, OnDemand }",
+    }
+    for name, body in sources.items():
+        (wayland / f"{name}.qml").write_text(
+            "import QtQuick\nQtObject { " + body + " }\n"
+        )
+    (wayland / "qmldir").write_text(
+        "module Quickshell.Wayland\n"
+        + "".join(f"{name} 1.0 {name}.qml\n" for name in sources)
+    )
 
 
-def runtime(directory):
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    digest = hashlib.sha256(original).hexdigest()
-    backup = directory / "settings.backup.json"
-    backup.touch(mode=0o600)
-    backup.write_bytes(original)
-    assert hashlib.sha256(backup.read_bytes()).hexdigest() == digest
-    stage_runtime(directory)
+def runtime(directory, mutation="none"):
     environment = helper().isolate_environment(directory)
     environment.update(
-        WLR_BACKENDS="headless",
-        WLR_RENDERER="pixman",
-        WLR_LIBINPUT_NO_DEVICES="1",
-        QT_QPA_PLATFORM="wayland",
+        DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent/main-screen-test",
         DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent/main-screen-test",
     )
-    process = subprocess.Popen(
-        ["cage", "--", "quickshell", "--no-color", "-p", str(directory / "shell.qml")],
-        cwd=ROOT,
-        env=environment,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        start_new_session=True,
-    )
+    settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
+    settings.parent.mkdir(mode=0o700, parents=True)
+    original = (ROOT / "Assets/settings-default.json").read_bytes()
+    digest = hashlib.sha256(original).hexdigest()
+    backup = directory / "settings.backup.json"
+    for path in (settings, backup):
+        path.touch(mode=0o600)
+        path.write_bytes(original)
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == digest
+    modules = directory / "qs"
+    modules.mkdir()
+    stage_runtime(modules, mutation)
     try:
-        try:
-            stdout, stderr = process.communicate(timeout=20)
-        except subprocess.TimeoutExpired:
-            stop_process_group(process)
-            stdout, stderr = process.communicate(timeout=3)
-            print(stdout + stderr, end="")
-            raise
-        output = stdout + stderr
+        result = subprocess.run(
+            [
+                "/usr/lib/qt6/bin/qmltestrunner",
+                "-input",
+                str(directory / "tst_main_screen.qml"),
+                "-import",
+                str(directory),
+            ],
+            cwd=ROOT,
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        output = result.stdout + result.stderr
         print(output, end="")
-        assert process.returncode == 0, process.returncode
+        assert result.returncode == 0, result.returncode
         assert "MAIN_SCREEN_RUNTIME_PASS" in output, output
         assert not re.search(
-            r" WARN | ERROR | FATAL |ReferenceError|TypeError|Binding loop",
+            r"QWARN| WARN | ERROR | FATAL |ReferenceError|TypeError|Binding loop",
             output,
         ), output
     finally:
-        stop_process_group(process)
-        assert settings.read_bytes() == original, "real settings changed"
-        print("MAIN_SCREEN_SETTINGS_SHA", digest)
+        assert settings.read_bytes() == original, "fixture settings changed"
+        assert backup.read_bytes() == original, "fixture backup changed"
+        print("MAIN_SCREEN_FIXTURE_SETTINGS_SHA", digest)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument(
+        "--mutation",
+        choices=("none", "geometry", "routing", "selection"),
+        default="none",
+    )
     args = parser.parse_args()
+    if args.mode == "lint" and args.mutation != "none":
+        parser.error("mutations apply only to staged runtime fixtures")
     with tempfile.TemporaryDirectory(prefix="noctalia-main-screen-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
-        {"lint": lint, "runtime": runtime}[args.mode](directory)
+        if args.mode == "lint":
+            lint(directory)
+        else:
+            runtime(directory, args.mutation)

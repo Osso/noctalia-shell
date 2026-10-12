@@ -56,7 +56,8 @@ PanelWindow {
   readonly property Item wifiPanel: wifiPanelLoader.item
   readonly property Item vpnPanel: vpnPanelLoader.item
   readonly property Item processPanel: processPanelLoader.item
-  readonly property string screenName: screen ? screen.name : "unknown"
+  readonly property ShellScreen selectedScreen: root.screen
+  readonly property string screenName: root.selectedScreen ? root.selectedScreen.name : "unknown"
   property var registeredLazyPanels: []
 
   // Expose panel backgrounds for AllBackgrounds without forcing panel instantiation.
@@ -79,10 +80,10 @@ PanelWindow {
   readonly property Item processPanelPlaceholder: processPanelLoader.item ? processPanelLoader.item.panelRegion : processPanelPlaceholderItem
 
   Component.onCompleted: {
-    const screenWidth = screen ? screen.width : 0;
-    const screenHeight = screen ? screen.height : 0;
-    const screenX = screen ? screen.x : 0;
-    const screenY = screen ? screen.y : 0;
+    const screenWidth = root.selectedScreen ? root.selectedScreen.width : 0;
+    const screenHeight = root.selectedScreen ? root.selectedScreen.height : 0;
+    const screenX = root.selectedScreen ? root.selectedScreen.x : 0;
+    const screenY = root.selectedScreen ? root.selectedScreen.y : 0;
     Logger.d("MainScreen", "Initialized for screen:", screenName, "- Dimensions:", screenWidth, "x", screenHeight, "- Position:", screenX, ",", screenY);
   }
 
@@ -153,7 +154,7 @@ PanelWindow {
 
     // Check screen-specific configuration
     var monitors = Settings.data.bar.monitors || [];
-    var currentScreenName = screen ? screen.name : "";
+    var currentScreenName = root.selectedScreen ? root.selectedScreen.name : "";
 
     // If no monitors specified, show on all screens
     // If monitors specified, only show if this screen is in the list
