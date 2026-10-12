@@ -55,9 +55,14 @@ Toast covers lightweight transient messages, toast command helpers, queue manage
 - Reported isolated behavior covers idle/unloaded state, notification-signal activation and content/screen routing, FIFO continuation, replacement unload/reload, expiry and empty-queue inactivity. Requested window size follows toast dimensions, including resizing; six locations across four bar positions exercise anchor bindings. Assertions also cover the inset dismiss hit area and pointing-hand/left-button policy. Six existing toast-screen guards cover queue and hidden-state behavior.
 - Production ToastScreen/SimpleToast run on private headless Cage with inert settings/services/leaf widgets. Cage lacks layer-shell: configured mask/region behavior, margins, compositor placement, delivered input and actual cursor/flicker behavior remain unproven. Cursor-policy properties are not compositor cursor proof. No real notifications or real-settings writes are exercised. Runner isolation, acceptance and cleanup: [testing](testing.md#toastscreen-isolated-runtime).
 
+### SimpleToast isolated evidence
+
+- At `adeaf6598`, SimpleToast warnings drop 3→0; unused-import information remains, not a warning. `Tests/Qml/HistorySimpleToastHarness.qml` checks message/description bindings and visibility, warning/error/custom icons and colors, show/hide opacity/scale, timeout replacement without early dismissal, inset hit geometry and synthetic left-click dismissal (edge/right clicks do not dismiss), hide/show cancellation, immediate-hide single emission, and destruction with running timers.
+- Production SimpleToast and NIcon/NText run offscreen with inert services and shadow rendering. This is item-level behavior, not real delivery, ToastScreen queue integration, compositor input-region delivery, pixel rendering or cursor/flicker proof. Shared accounting and isolation: [testing](testing.md#historysimpletoast-isolated-runtime).
+
 ## Known gaps (current cycle)
 
-- [ ] Add UI-level coverage for toast icon, message, description, type color, and click-to-hide rendering.
+- [ ] Verify live toast rendering and delivered click-to-hide input; isolated item assertions do not prove compositor rendering/input.
 - [ ] Add multi-screen coverage for `ToastOverlay` screen delegation.
 - [ ] Verify layer-shell input-region delivery and cursor/flicker behavior on a supporting compositor; isolated Cage assertions do not close this gap.
 
