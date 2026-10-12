@@ -84,14 +84,14 @@ SmartPanel {
   function onTabPressed() {
     // In emoji browsing mode, Tab navigates between categories
     if (activePlugin === emojiPlugin && emojiPlugin.isBrowsingMode) {
-      var currentIndex = emojiPlugin.categories.indexOf(emojiPlugin.selectedCategory);
-      var nextIndex = (currentIndex + 1) % emojiPlugin.categories.length;
+      const currentIndex = emojiPlugin.categories.indexOf(emojiPlugin.selectedCategory);
+      const nextIndex = (currentIndex + 1) % emojiPlugin.categories.length;
       emojiPlugin.selectCategory(emojiPlugin.categories[nextIndex]);
     } else if ((activePlugin === null || activePlugin === appsPlugin) && appsPlugin.isBrowsingMode) {
       // In apps browsing mode (no search), Tab navigates between categories
-      var availableCategories = appsPlugin.availableCategories || ["all"];
-      var currentIndex = availableCategories.indexOf(appsPlugin.selectedCategory);
-      var nextIndex = (currentIndex + 1) % availableCategories.length;
+      const availableCategories = appsPlugin.availableCategories || ["all"];
+      const currentIndex = availableCategories.indexOf(appsPlugin.selectedCategory);
+      const nextIndex = (currentIndex + 1) % availableCategories.length;
       appsPlugin.selectCategory(availableCategories[nextIndex]);
     } else {
       selectNextWrapped();
@@ -820,10 +820,7 @@ SmartPanel {
 
                       // Fetches from the service's cache.
                       // The dependency on `_rev` ensures this binding is re-evaluated when the cache is updated.
-                      imagePath: {
-                        _rev;
-                        return ClipboardService.getImageData(resultClipboardId) || "";
-                      }
+                      imagePath: (imagePreview._rev, ClipboardService.getImageData(resultClipboardId) || "")
 
                       Rectangle {
                         anchors.fill: parent
@@ -1166,10 +1163,7 @@ SmartPanel {
 
                     readonly property int _rev: ClipboardService.revision
 
-                    imagePath: {
-                      _rev;
-                      return ClipboardService.getImageData(resultClipboardId) || "";
-                    }
+                    imagePath: (gridImagePreview._rev, ClipboardService.getImageData(resultClipboardId) || "")
 
                     Rectangle {
                       anchors.fill: parent
