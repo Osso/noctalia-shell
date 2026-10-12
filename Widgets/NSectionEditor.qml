@@ -507,7 +507,7 @@ NBox {
                      draggedModelData = null;
 
                      // Find which widget was clicked
-                     for (var i = 0; i < widgetModel.length; i++) {
+                     for (var i = 0; i < root.widgetModel.length; i++) {
                        const widget = widgetFlow.children[i];
                        if (widget && widget.widgetIndex !== undefined) {
                          if (mouse.x >= widget.x && mouse.x <= widget.x + widget.width && mouse.y >= widget.y && mouse.y <= widget.y + widget.height) {
@@ -566,7 +566,7 @@ NBox {
         onReleased: mouse => {
                       if (dragStarted && dropTargetIndex !== -1 && dropTargetIndex !== draggedIndex) {
                         // Perform the reorder
-                        reorderWidget(sectionId, draggedIndex, dropTargetIndex);
+                        root.reorderWidget(root.sectionId, draggedIndex, dropTargetIndex);
                       }
 
                       // Always signal end of interaction if we started one

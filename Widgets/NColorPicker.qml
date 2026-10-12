@@ -21,13 +21,15 @@ Rectangle {
 
   // Minimized Look
   MouseArea {
+    property NColorPickerDialog dialog: null
+
     anchors.fill: parent
     cursorShape: Qt.PointingHandCursor
     onClicked: {
-      var dialog = Qt.createComponent("NColorPickerDialog.qml").createObject(root, {
-                                                                               "selectedColor": selectedColor,
-                                                                               "parent": Overlay.overlay
-                                                                             });
+      dialog = Qt.createComponent("NColorPickerDialog.qml").createObject(root, {
+        "selectedColor": root.selectedColor,
+        "parent": Overlay.overlay
+      });
       // Connect the dialog's signal to the picker's signal
       dialog.colorSelected.connect(function (color) {
         root.selectedColor = color;
