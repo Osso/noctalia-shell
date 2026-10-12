@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 """Production Bar and BarWidgetLoader, fixture screens/services, offscreen only.
 
-Static checks target Bar alone. Runtime exercises all six explicit-role delegates;
-fixture widgets record registration state without desktop or real settings IO.
+Production lint targets Bar; fixture lint uses the exact runtime modules.
+Runtime exercises all six explicit-role delegates in a masked-config sandbox.
 """
 
 import argparse
 from collections import Counter
-import hashlib
 import importlib.util
 import json
 from pathlib import Path
 import re
-import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,27 +24,24 @@ def load_helper(name):
     return helper
 
 
-def run_lint(directory):
+def run_lint(directory, environment):
     load_helper("media-mini-warnings").stage_modules(directory)
-    result = subprocess.run(
+    code, output = load_helper("grid-list-warnings").run_audited(
+        directory,
+        environment,
         [
             "/usr/lib/qt6/bin/qmllint",
             "-I",
             str(directory),
             str(directory / "qs" / TARGET),
         ],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        timeout=60,
+        "bar-production-lint",
     )
-    output = result.stdout + result.stderr
-    print(output, end="")
     warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
     counts = Counter(re.findall(r"\[([^]]+)\]", line)[-1] for line in warnings)
     print("BAR_LINT_COUNTS", dict(counts))
     assert not counts, f"Bar warnings remain: {dict(counts)}"
-    assert result.returncode == 0, f"unexpected qmllint exit {result.returncode}"
+    assert code == 0, f"unexpected qmllint exit {code}"
 
 
 def stage_runtime(directory):
@@ -156,51 +151,109 @@ QtObject {
     )
 
 
-def run_behavior(directory):
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    backup = directory / "settings.backup.json"
-    backup.touch(mode=0o600)
-    backup.write_bytes(original)
-    assert (
-        hashlib.sha256(backup.read_bytes()).digest()
-        == hashlib.sha256(original).digest()
-    )
+def run_behavior(directory, environment):
     stage_runtime(directory)
-    try:
-        result = subprocess.run(
-            [
-                "/usr/lib/qt6/bin/qmltestrunner",
-                "-input",
-                str(directory),
-                "-import",
-                str(directory),
-            ],
-            cwd=ROOT,
-            env=load_helper("media-mini-warnings").isolate_environment(directory),
-            capture_output=True,
-            text=True,
-            timeout=45,
+    code, output = load_helper("grid-list-warnings").run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmltestrunner",
+            "-input",
+            str(directory / "tst_bar.qml"),
+            "-import",
+            str(directory),
+        ],
+        "bar-behavior",
+    )
+    assert code == 0, f"Bar behavior exit {code}"
+    assert "0 failed" in output
+    assert not re.search(
+        r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output
+    ), output
+
+
+def lint_harness(directory, environment, inject_warning=False):
+    stage_runtime(directory)
+    harness = directory / "tst_bar.qml"
+    if inject_warning:
+        source = harness.read_text()
+        harness.write_text(
+            source.replace(
+                "id: tests",
+                "id: tests\n        property int injectedWarning: tests.missingLintProbe",
+                1,
+            )
         )
-        output = result.stdout + result.stderr
-        print(output, end="")
-        assert result.returncode == 0, f"Bar behavior exit {result.returncode}"
-        assert "0 failed" in output
-        assert not re.search(
-            r"QWARN|QFATAL|ReferenceError|TypeError|Binding loop", output
-        ), output
-    finally:
-        assert settings.read_bytes() == original, "real settings changed"
+    code, output = load_helper("grid-list-warnings").run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        "bar-harness-lint",
+    )
+    diagnostics = json.loads(output)
+    warnings = sum(
+        warning["type"] == "warning"
+        for result in diagnostics["files"]
+        for warning in result["warnings"]
+    )
+    print("BAR_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
+    if inject_warning:
+        assert warnings > 0, "injected warning not diagnosed"
+    else:
+        assert warnings == 0, f"harness warnings remain: {warnings}"
+    return code
+
+
+def lint_harness_regression(directory):
+    isolation = load_helper("grid-list-warnings")
+    for name, injected in (("clean", False), ("injected", True)):
+        staged = directory / name
+        staged.mkdir(mode=0o700)
+        code = lint_harness(staged, isolation.isolated_environment(staged), injected)
+        if injected:
+            assert code != 0, "genuine harness warning accepted"
+        else:
+            assert code == 0, "clean harness lint failed"
+    print("BAR_HARNESS_WARNING_REJECTED")
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument(
+        "mode", choices=("lint", "behavior", "lint-harness", "lint-harness-regression")
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-bar-warnings-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
-        (run_lint if args.mode == "lint" else run_behavior)(directory)
+        isolation = load_helper("grid-list-warnings")
+        isolation.install_settings_guard(directory)
+        isolation.prove_settings_guard()
+        if args.mode == "lint-harness-regression":
+            lint_harness_regression(directory)
+        else:
+            environment = isolation.isolated_environment(directory)
+            if args.mode == "lint-harness":
+                raise SystemExit(
+                    lint_harness(directory, environment, args.inject_warning)
+                )
+            (run_lint if args.mode == "lint" else run_behavior)(directory, environment)
 
 
 if __name__ == "__main__":
