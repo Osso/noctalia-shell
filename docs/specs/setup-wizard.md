@@ -39,7 +39,7 @@ Setup Wizard covers first-run onboarding launch, completion, and selected setup 
 - [x] Appearance, customization, dock, and wizard content preserve actual child geometry and text at widths 480/1000 and UI scales 1/1.25 when layout-owned dimensions become preferred sizes.
 - [x] Appearance geometry covers both wallpaper-color modes, including scheme swatches.
 - [x] Wizard progress geometry preserves the hidden final connector's 40 × 2 size as well as visible child geometry.
-- [x] Geometry regression runs only offscreen with isolated writable paths, inert external services, and unchanged real settings.
+- [x] Geometry regression runs only offscreen with isolated writable paths, inert external services, and fixture-owned settings without real-config access.
 
 ### Typed delegates
 
@@ -67,6 +67,7 @@ Setup Wizard covers first-run onboarding launch, completion, and selected setup 
 - The same script's `--wizard-transitions` mode captures 52 snapshots: 13 forward/back step states across widths 480/1000 and scales 1/1.25. Assertions cover all five steps, wallpaper directory/image and customization scale/bar handoff, a changed-scale probe at 1.1, finish/skip save requests and settings-saved close state, duplicate completion, disabled Escape, and cancellation without saving. Transition geometry comparison requires `--expected <pre-change-capture>`; no tracked transition golden is implied. Buttons and selection signals are invoked directly, settings/services are fixtures, and animations are disabled: this is not physical input, real persistence, or visible-panel acceptance.
 - Targeted `SetupWizard.qml` unqualified-access warnings fell from 48 to zero after owner qualification; this is not a zero-total-warning claim or an intended behavior change.
 - `Tests/Qml/SetupLayoutGeometryHarness.qml` — production step and wizard-content instantiation without opening SmartPanel. Reported harness warnings fell 41→0 after owner qualification at `d6da20595`. Standalone `python3 Tests/setup-layout-geometry.test.py lint-harness` stages the runtime fixture sources with temporary singleton-aware module declarations; the static checker dispatches it exactly once. At `8fe0cc5d6`, acceptance requires qmllint success and no emitted `Warning:` lines; an injected warning exits 1 even when qmllint exits zero. This is harness-only static proof, not global warning-free acceptance; geometry/navigation coverage and limits above remain unchanged.
+- At `0e62615da`/`a07dd776a`/`d8bdb9a49`, geometry capture uses default-settings bytes in a private synthetic HOME, creates a `0600` fixture and byte-for-byte `0600` backup, verifies the backup hash before staging, and checks fixture bytes after execution. `Tests/setup-layout-isolation.test.py` covers denied real-settings access with absent synthetic HOME, retained 20 geometries/52 transitions, no-argument temporary cleanup, pure lint without settings access, fixture-mutation rejection, and injected runtime-warning rejection. Successful captures check fixture/backup bytes and permissions; short temporary paths avoid IPC socket length failures. Safety details: [testing](testing.md#tests-asserting-this-spec).
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
 
