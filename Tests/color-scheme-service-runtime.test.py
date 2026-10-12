@@ -12,6 +12,8 @@ import shutil
 import signal
 import subprocess
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Services/Theming/ColorSchemeService.qml")
 SETTINGS = Path("/home/osso/.config/noctalia/settings.json")
@@ -107,12 +109,14 @@ def stage_runtime(directory, mode):
         {
             "Settings": singleton(
                 "property string configDir: " + json.dumps(str(config) + "/") + "\n"
-                "property QtObject data: QtObject {\n"
-                "property QtObject colorSchemes: QtObject {\n"
+                "component ColorSchemeSettings: QtObject {\n"
                 "property bool darkMode: true\nproperty bool useWallpaperColors: false\n"
                 "property string predefinedScheme: " + json.dumps(str(rose)) + "\n"
                 "property bool generateTemplatesForPredefined: true\n}\n"
-                "property var templates: ({terminal: true})\n}"
+                "component FixtureSettings: QtObject {\n"
+                "property ColorSchemeSettings colorSchemes: ColorSchemeSettings {}\n"
+                "property var templates: ({terminal: true})\n}\n"
+                "property FixtureSettings data: FixtureSettings {}"
             ),
             "Logger": singleton(
                 "property var messages: []\nfunction record(args) { messages = messages.concat([args.join(' ')]); }\nfunction i(...args) { record(args); }\nfunction d(...args) { record(args); }\nfunction e(...args) { record(args); }"
@@ -160,6 +164,15 @@ def stage_runtime(directory, mode):
     }.items():
         harness = harness.replace(json.dumps("@" + key + "@"), json.dumps(value))
     (directory / "shell.qml").write_text(harness)
+
+
+def lint_harness(directory):
+    stage_runtime(directory, "normal")
+    # Quickshell maps qs.* to the shell root; qmllint needs that URI explicitly.
+    imports = directory / "imports"
+    imports.mkdir()
+    (imports / "qs").symlink_to(directory.resolve(), target_is_directory=True)
+    return check_harness(imports, directory / "shell.qml")
 
 
 def runtime(directory):
@@ -228,10 +241,12 @@ def runtime(directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "runtime"))
     parser.add_argument("--artifacts", type=Path, required=True)
     args = parser.parse_args()
     args.artifacts.mkdir(mode=0o700)
+    if args.mode == "lint-harness":
+        return lint_harness(args.artifacts)
     original = SETTINGS.read_bytes()
     backup = args.artifacts / "settings.json.backup"
     backup.write_bytes(original)
@@ -246,4 +261,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
