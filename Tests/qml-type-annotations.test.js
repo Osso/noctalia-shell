@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("node:child_process");
 const { extractComponentBlocks, extractFunctionBody, stripQmlComments } = require("./qml-test-utils");
+const { assertOwnedProperties } = require("./qml-type-inventory");
 
 const repoRoot = path.resolve(__dirname, "..");
 
@@ -226,6 +227,63 @@ for name in ("compositor-service-warnings", "service-cohort-warnings"):
   process.stdout.write(result.stdout);
 }
 
+function testOwnedPropertyInventory() {
+  const contract = { index: "required int", name: "readonly string" };
+  const valid = `Item {
+    delegate: Rectangle {
+      id: row
+      readonly property string name: "{ property var index }"
+      function probe() { const braces = /[{}]/; return \`\${braces}\`; }
+      required property int index
+    }
+  }`;
+  assertOwnedProperties(valid, "Rectangle", "row", contract);
+  assertOwnedProperties(valid.replace("delegate: Rectangle", "component Row: Rectangle"), "Rectangle", "row", contract);
+  for (
+    const invalid of [
+      valid.replace("required property int index", "property int index"),
+      valid.replace("required property int index", "required property var index"),
+      valid.replace("readonly property string name", "property string name"),
+      valid.replace("readonly property string name", "readonly property int name"),
+      valid.replace("required property int index", "// required property int index"),
+      valid.replace("required property int index", "Item { required property int index }"),
+      valid.replace("required property int index", "required property int index; required property int index"),
+      valid.replace("required property int index", "").replace("id: row", "id: other"),
+      valid.replace("id: row", "id: other"),
+      valid.replace("delegate: Rectangle", "delegate: Item"),
+    ]
+  ) {
+    assert.throws(() => assertOwnedProperties(invalid, "Rectangle", "row", contract), assert.AssertionError);
+  }
+  const wrongOwner = `Item {
+    Rectangle { id: row; readonly property string name: "row" }
+    Rectangle { id: sibling; required property int index }
+  }`;
+  assert.throws(() => assertOwnedProperties(wrongOwner, "Rectangle", "row", contract), assert.AssertionError);
+  const region = "PanelWindow { id: root; readonly property Backgrounds.BackgroundRegion region }";
+  const regionContract = { region: "readonly Backgrounds.BackgroundRegion" };
+  assertOwnedProperties(region, "PanelWindow", "root", regionContract);
+  for (const wrongType of ["Item", "var", "BackgroundsXBackgroundRegion"]) {
+    assert.throws(
+      () =>
+        assertOwnedProperties(
+          region.replace("Backgrounds.BackgroundRegion", wrongType),
+          "PanelWindow",
+          "root",
+          regionContract,
+        ),
+      assert.AssertionError,
+    );
+  }
+}
+
+// These checks inventory declarations on their literal owners, not UI behavior.
+// Existing executable gates above remain separate; no field-use/order regex is a
+// substitute for those gates or for each feature's dedicated runtime harness.
+function assertQmlOwner(relativePath, componentType, ownerId, expected) {
+  return assertOwnedProperties(readQml(relativePath), componentType, ownerId, expected);
+}
+
 function assertPropertyType(relativePath, propertyName, expectedType) {
   const source = readQml(relativePath);
   const declaration = new RegExp(`\\bproperty\\s+${expectedType}\\s+${propertyName}\\b`);
@@ -301,12 +359,15 @@ function testSmartPanelButtonItemIsTyped() {
 }
 
 function testSmartPanelPanelRegionIsTyped() {
+  assertQmlOwner("Modules/MainScreen/SmartPanel.qml", "Item", "root", {
+    panelRegion: "readonly BackgroundRegion",
+  });
+
   const source = readQml("Modules/MainScreen/SmartPanel.qml");
 
-  assertPropertyType("Modules/MainScreen/SmartPanel.qml", "panelRegion", "Item");
-  assertNoPropertyType("Modules/MainScreen/SmartPanel.qml", "panelRegion", "var");
-  assert.match(source, /readonly\s+property\s+Item\s+panelRegion:\s*panelBackground/, "SmartPanel panelRegion must expose panelBackground geometry for AllBackgrounds");
-  assert.doesNotMatch(source, /readonly\s+property\s+Item\s+panelRegion:\s*panelContent\.maskRegion/, "SmartPanel panelRegion must not resolve through panelContent component state");
+  assert.match(source, /readonly\s+property\s+BackgroundRegion\s+panelRegion:\s*panelBackground/);
+
+  assert.doesNotMatch(source, /panelRegion:\s*panelContent\.maskRegion/);
 }
 
 function testMainScreenPanelPlaceholdersAreTyped() {
@@ -330,10 +391,12 @@ function testMainScreenPanelPlaceholdersAreTyped() {
     "processPanelPlaceholder",
   ];
 
-  for (const placeholderName of placeholderNames) {
-    assertPropertyType("Modules/MainScreen/MainScreen.qml", placeholderName, "Item");
-    assertNoPropertyType("Modules/MainScreen/MainScreen.qml", placeholderName, "var");
-  }
+  assertQmlOwner(
+    "Modules/MainScreen/MainScreen.qml",
+    "PanelWindow",
+    "root",
+    Object.fromEntries(placeholderNames.map((name) => [name, "readonly Backgrounds.BackgroundRegion"])),
+  );
 }
 
 function testAllScreensScreenNameAliasIsTyped() {
@@ -376,14 +439,18 @@ function testSettingsPanelActiveScrollViewIsTyped() {
 }
 
 function testSettingsPanelTabsDelegatesAreTyped() {
-  const source = readQml("Modules/Panels/Settings/SettingsPanel.qml");
-  const sidebarDelegate = /NListView\s*\{[\s\S]*?model:\s*root\.tabsModel[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+icon[\s\S]*?required\s+property\s+string\s+label[\s\S]*?icon:\s*tabItem\.icon[\s\S]*?text:\s*I18n\.tr\(tabItem\.label\)/;
-  const contentDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.tabsModel[\s\S]*?delegate:\s*Loader\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?active:\s*index\s*===\s*root\.currentTabIndex/;
+  assertQmlOwner("Modules/Panels/Settings/SettingsPanel.qml", "Rectangle", "tabItem", {
+    index: "required int",
+    icon: "required string",
+    label: "required string",
+  });
 
-  assert.match(source, sidebarDelegate, "SettingsPanel sidebar tab delegate must type scalar roles");
-  assert.match(source, contentDelegate, "SettingsPanel content loader delegate must declare index role");
-  assert.doesNotMatch(source, /modelData\.(?:icon|label)/, "SettingsPanel tab delegates must use typed roles instead of modelData.*");
-  assert.doesNotMatch(source, /delegate:\s*Loader\s*\{[\s\S]*?required\s+property\s+var\s+modelData/, "SettingsPanel content loader must not keep unused modelData");
+  assertQmlOwner("Modules/Panels/Settings/SettingsPanel.qml", "Loader", "tabLoader", {
+    index: "required int",
+    loadedContent: "readonly Item",
+  });
+
+  assert.doesNotMatch(readQml("Modules/Panels/Settings/SettingsPanel.qml"), /modelData\.(?:icon|label)/);
 }
 
 function testComboBoxDelegateParentIsTyped() {
@@ -391,17 +458,24 @@ function testComboBoxDelegateParentIsTyped() {
 }
 
 function testComboBoxDelegateIndexIsTyped() {
-  const source = readQml("Widgets/NComboBox.qml");
-  const delegateIndex = /delegate:\s*ItemDelegate\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?property\s+int\s+itemIndex:\s*index/;
+  const delegate = assertQmlOwner("Widgets/NComboBox.qml", "ItemDelegate", "delegateRoot", {
+    widgetOwner: "required NComboBox",
+    index: "required int",
+    parentComboBox: "required ComboBox",
+    itemIndex: "int",
+  });
 
-  assert.match(source, delegateIndex, "NComboBox delegate must declare index role before using it");
+  assert.match(delegate, /property\s+int\s+itemIndex:\s*delegateRoot\.index/);
+
+  assert.match(readQml("Widgets/NComboBox.qml"), /delegate:\s*OptionDelegate\s*\{/);
 }
 
 function testWeatherCardForecastDelegateIndexIsTyped() {
-  const source = readQml("Modules/Cards/WeatherCard.qml");
-  const forecastDelegate = /Repeater\s*\{[\s\S]*?model:\s*weatherReady\s*\?[\s\S]*?delegate:\s*ColumnLayout\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?daily\.time\[index\]/;
+  const delegate = assertQmlOwner("Modules/Cards/WeatherCard.qml", "ColumnLayout", "forecastDay", {
+    index: "required int",
+  });
 
-  assert.match(source, forecastDelegate, "WeatherCard forecast delegate must declare index role before reading forecast arrays");
+  assert.match(delegate, /daily\.time\[forecastDay\.index\]/);
 }
 
 function testMediaCardWallpaperChangeInputsAreTyped() {
@@ -411,29 +485,43 @@ function testMediaCardWallpaperChangeInputsAreTyped() {
 }
 
 function testLockScreenForecastDelegateIndexIsTyped() {
-  const source = readQml("Modules/LockScreen/LockScreen.qml");
-  const forecastDelegate = /Repeater\s*\{[\s\S]*?model:\s*MediaService\.currentPlayer\s*&&\s*MediaService\.canPlay\s*\?\s*3\s*:\s*4[\s\S]*?delegate:\s*ColumnLayout\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?daily\.time\[index\]/;
+  const delegate = assertQmlOwner("Modules/LockScreen/LockScreen.qml", "ColumnLayout", "forecastDay", {
+    index: "required int",
+  });
 
-  assert.match(source, forecastDelegate, "LockScreen forecast delegate must declare index role before reading forecast arrays");
+  assert.match(delegate, /daily\.time\[forecastDay\.index\]/);
 }
 
 function testChangelogPanelHighlightDelegatesAreTyped() {
-  const source = readQml("Modules/Panels/Changelog/ChangelogPanel.qml");
-  const highlightDelegate = /Repeater\s*\{[\s\S]*?model:\s*releaseHighlights[\s\S]*?delegate:\s*ColumnLayout\s*\{[\s\S]*?required\s+property\s+var\s+entries[\s\S]*?model:\s*entries/;
-  const entryDelegate = /Repeater\s*\{[\s\S]*?model:\s*entries[\s\S]*?delegate:\s*NText\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?headingLevel\(modelData\)/;
+  const section = assertQmlOwner("Modules/Panels/Changelog/ChangelogPanel.qml", "ColumnLayout", "releaseSection", {
+    entries: "required var",
+  });
 
-  assert.match(source, highlightDelegate, "ChangelogPanel highlight delegate must type entries role");
-  assert.match(source, entryDelegate, "ChangelogPanel entry delegate must type string modelData");
-  assert.doesNotMatch(source, /modelData\.entries/, "ChangelogPanel highlight delegate must use typed entries role instead of modelData.entries");
+  assertOwnedProperties(section, "NText", undefined, {
+    modelData: "required string",
+    headingLevel: "readonly int",
+  });
+
+  assert.doesNotMatch(section, /modelData\.entries/);
 }
 
 function testNotificationDelegateIndexIsTyped() {
-  const source = readQml("Modules/Notification/Notification.qml");
-  const notificationDelegate = /Repeater\s*\{[\s\S]*?model:\s*notificationModel[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+id[\s\S]*?required\s+property\s+real\s+progress[\s\S]*?required\s+property\s+int\s+urgency[\s\S]*?required\s+property\s+string\s+appName[\s\S]*?required\s+property\s+string\s+summary[\s\S]*?required\s+property\s+string\s+body[\s\S]*?required\s+property\s+string\s+originalImage[\s\S]*?required\s+property\s+string\s+actionsJson[\s\S]*?required\s+property\s+date\s+timestamp[\s\S]*?property\s+string\s+notificationId:\s*id[\s\S]*?animationDelay:\s*index\s*\*\s*100[\s\S]*?text:\s*appName\s*\|\|\s*"Unknown App"[\s\S]*?Time\.formatRelativeTime\(timestamp\)[\s\S]*?text:\s*summary\s*\|\|\s*I18n\.tr\("general\.no-summary"\)[\s\S]*?text:\s*body\s*\|\|\s*""/;
+  const card = assertQmlOwner("Modules/Notification/Notification.qml", "Item", "card", {
+    index: "required int",
+    id: "required string",
+    progress: "required real",
+    urgency: "required int",
+    appName: "required string",
+    summary: "required string",
+    body: "required string",
+    originalImage: "required string",
+    actionsJson: "required string",
+    timestamp: "required date",
+    notificationId: "string",
+    animationDelay: "readonly int",
+  });
 
-  assert.match(source, notificationDelegate, "Notification card delegate must declare typed roles before using notification fields");
-  assert.doesNotMatch(source, /required\s+property\s+var\s+timestamp/, "Notification card timestamp role must use the date type");
-  assert.doesNotMatch(source, /model\.(?:id|appName|summary|body|timestamp|urgency|originalImage|actionsJson|progress)/, "Notification card delegate must use typed roles instead of model.* display fields");
+  assert.doesNotMatch(card, /model\.(?:id|appName|summary|body|timestamp|urgency|originalImage|actionsJson|progress)/);
 }
 
 function testWallpaperTabIntervalPresetModelDataIsTyped() {
@@ -481,23 +569,30 @@ function testLauncherGridDisplayAliasesAreTyped() {
 }
 
 function testDateTimeTokenDelegateRolesAreTyped() {
-  const source = readQml("Widgets/NDateTimeTokens.qml");
-  const tokenDelegate = /delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*tokenDelegate[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+category[\s\S]*?required\s+property\s+string\s+token[\s\S]*?required\s+property\s+string\s+description[\s\S]*?root\.tokenClicked\(token\)[\s\S]*?getCategoryColor\(category\)[\s\S]*?text:\s*description[\s\S]*?toString\(root\.sampleDate,\s*token\)/;
+  const delegate = assertQmlOwner("Widgets/NDateTimeTokens.qml", "Rectangle", "tokenDelegate", {
+    index: "required int",
+    category: "required string",
+    token: "required string",
+    description: "required string",
+  });
 
-  assert.match(source, tokenDelegate, "NDateTimeTokens delegate must type scalar token roles");
-  assert.match(source, /function getCategoryColor\(category\)/, "NDateTimeTokens category color helper must accept category input");
-  assert.doesNotMatch(source, /required\s+property\s+var\s+modelData/, "NDateTimeTokens delegate must not keep unused modelData");
-  assert.doesNotMatch(source, /modelData\.(?:category|token|description)/, "NDateTimeTokens delegate must use typed roles instead of modelData.*");
+  assert.match(readQml("Widgets/NDateTimeTokens.qml"), /function getCategoryColor\(category\)/);
+
+  assert.doesNotMatch(delegate, /required\s+property\s+var\s+modelData|modelData\.(?:category|token|description)/);
 }
 
 function testSetupCustomizeOptionDelegatesAreTyped() {
-  const source = readQml("Modules/Panels/SetupWizard/SetupCustomizeStep.qml");
-  const barPositionDelegate = /model:\s*\[[\s\S]*?"key":\s*"left"[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+string\s+key[\s\S]*?required\s+property\s+string\s+name[\s\S]*?selectedBarPosition\s*===\s*key[\s\S]*?text:\s*name[\s\S]*?barPositionChanged\(key\)/;
-  const densityDelegate = /model:\s*\[[\s\S]*?"key":\s*"comfortable"[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+string\s+key[\s\S]*?required\s+property\s+string\s+name[\s\S]*?Settings\.data\.bar\.density\s*===\s*key[\s\S]*?text:\s*name[\s\S]*?Settings\.data\.bar\.density\s*=\s*key/;
+  assertQmlOwner("Modules/Panels/SetupWizard/SetupCustomizeStep.qml", "Rectangle", "positionDelegate", {
+    key: "required string",
+    name: "required string",
+  });
 
-  assert.match(source, barPositionDelegate, "SetupCustomizeStep bar position delegate must type key/name roles");
-  assert.match(source, densityDelegate, "SetupCustomizeStep density delegate must type key/name roles");
-  assert.doesNotMatch(source, /modelData\.(?:key|name)/, "SetupCustomizeStep option delegates must use typed roles instead of modelData.*");
+  assertQmlOwner("Modules/Panels/SetupWizard/SetupCustomizeStep.qml", "Rectangle", "densityDelegate", {
+    key: "required string",
+    name: "required string",
+  });
+
+  assert.doesNotMatch(readQml("Modules/Panels/SetupWizard/SetupCustomizeStep.qml"), /modelData\.(?:key|name)/);
 }
 
 function testColorPickerSwatchDelegatesAreTyped() {
@@ -519,24 +614,33 @@ function testColorPickerSwatchDelegatesAreTyped() {
   ], "NColorPickerDialog swatch bindings must use typed local aliases after declaration");
 }
 
-function testSetupAppearanceSchemeLoaderModelDataIsTyped() {
-  const source = readQml("Modules/Panels/SetupWizard/SetupAppearanceStep.qml");
-  const schemeLoaderDelegate = /Repeater\s*\{[\s\S]*?model:\s*ColorSchemeService\.schemes[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?path:\s*modelData/;
-  const materialSchemeDelegate = /model:\s*\[[\s\S]*?"key":\s*"scheme-tonal-spot"[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+string\s+key[\s\S]*?required\s+property\s+string\s+name[\s\S]*?matugenSchemeType\s*===\s*key[\s\S]*?text:\s*name[\s\S]*?matugenSchemeType\s*=\s*key/;
+function testSetupAppearanceSchemeLoaderRolesAreTyped() {
+  const loader = assertQmlOwner("Modules/Panels/SetupWizard/SetupAppearanceStep.qml", "Item", "schemeLoader", {
+    schemePath: "required string",
+    appearanceOwner: "required var",
+  });
 
-  assert.match(source, schemeLoaderDelegate, "SetupAppearanceStep scheme loader delegate must type string modelData");
-  assert.match(source, materialSchemeDelegate, "SetupAppearanceStep material scheme delegate must type key/name roles");
-  assert.doesNotMatch(source, /modelData\.(?:key|name)/, "SetupAppearanceStep material scheme delegate must use typed roles instead of modelData.*");
+  assertQmlOwner("Modules/Panels/SetupWizard/SetupAppearanceStep.qml", "Rectangle", "matugenOption", {
+    key: "required string",
+    name: "required string",
+  });
+
+  assert.match(loader, /path:\s*schemeLoader\.schemePath/);
+
+  assert.doesNotMatch(loader, /required\s+property\s+string\s+modelData/);
 }
 
 function testFilePickerDelegatesUseTypedFileRoles() {
-  const source = readQml("Widgets/NFilePicker.qml");
-  const gridDelegate = /GridView\s*\{[\s\S]*?model:\s*filteredModel[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*gridItem[\s\S]*?required\s+property\s+string\s+fileName[\s\S]*?required\s+property\s+string\s+filePath[\s\S]*?required\s+property\s+bool\s+fileIsDir[\s\S]*?required\s+property\s+int\s+fileSize[\s\S]*?currentSelection\.includes\(filePath\)/;
-  const listDelegate = /NListView\s*\{[\s\S]*?model:\s*filteredModel[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?id:\s*listItem[\s\S]*?required\s+property\s+string\s+fileName[\s\S]*?required\s+property\s+string\s+filePath[\s\S]*?required\s+property\s+bool\s+fileIsDir[\s\S]*?required\s+property\s+int\s+fileSize[\s\S]*?currentSelection\.includes\(filePath\)/;
-
-  assert.match(source, gridDelegate, "NFilePicker grid delegate must declare file roles");
-  assert.match(source, listDelegate, "NFilePicker list delegate must declare file roles");
-  assert.doesNotMatch(source, /model\.file(?:Name|Path|IsDir|Size)/, "NFilePicker delegates must use typed file role properties instead of model.*");
+  for (const ownerId of ["gridItem", "listItem"]) {
+    const delegate = assertQmlOwner("Widgets/NFilePicker.qml", "Rectangle", ownerId, {
+      picker: "required NFilePicker",
+      fileName: "required string",
+      filePath: "required string",
+      fileIsDir: "required bool",
+      fileSize: "required int",
+    });
+    assert.doesNotMatch(delegate, /model\.file(?:Name|Path|IsDir|Size)/);
+  }
 }
 
 function testTaskbarWindowDelegateRolesAreTyped() {
@@ -547,27 +651,44 @@ function testTaskbarWindowDelegateRolesAreTyped() {
   assert.doesNotMatch(source, /modelData\.(?:appId|title|output|workspaceId|isFocused)/, "Taskbar window delegate must use typed scalar roles instead of modelData.* field reads");
 }
 
-function testShortcutsCardShortcutIdsAreTyped() {
-  const source = readQml("Modules/Cards/ShortcutsCard.qml");
-  const leftDelegate = /model:\s*Settings\.data\.controlCenter\.shortcuts\.left[\s\S]*?delegate:\s*ControlCenterWidgetLoader\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+string\s+id[\s\S]*?widgetId:\s*id[\s\S]*?"widgetId":\s*id/;
-  const rightDelegate = /model:\s*Settings\.data\.controlCenter\.shortcuts\.right[\s\S]*?delegate:\s*ControlCenterWidgetLoader\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+string\s+id[\s\S]*?widgetId:\s*id[\s\S]*?"widgetId":\s*id/;
+function testShortcutsCardWidgetInputsAreTyped() {
+  // Object models inject modelData; widgetId is a typed inherited input, not an id role.
 
-  assert.match(source, leftDelegate, "ShortcutsCard left shortcut delegate must type id role");
-  assert.match(source, rightDelegate, "ShortcutsCard right shortcut delegate must type id role");
-  assert.doesNotMatch(source, /modelData\.id/, "ShortcutsCard shortcut delegates must use typed id role instead of modelData.id");
+  for (const side of ["leftContent", "rightContent"]) {
+    const content = assertQmlOwner("Modules/Cards/ShortcutsCard.qml", "RowLayout", side, {});
+    const loader = assertOwnedProperties(content, "ControlCenterWidgetLoader", undefined, {
+      modelData: "required var",
+      index: "required int",
+    });
+    assert.match(loader, /widgetId:\s*modelData\.id/);
+  }
+
+  assertQmlOwner("Modules/Panels/ControlCenter/ControlCenterWidgetLoader.qml", "Item", "root", {
+    widgetId: "required string",
+    widgetScreen: "required ShellScreen",
+    widgetProps: "required var",
+  });
 }
 
 function testVpnConnectionRowsAreTyped() {
-  const listSource = readQml("Modules/Panels/VPN/VPNConnectionsList.qml");
-  const itemSource = readQml("Modules/Panels/VPN/VPNConnectionItem.qml");
-  const rowDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.model[\s\S]*?VPNConnectionItem\s*\{[\s\S]*?required\s+property\s+string\s+uuid[\s\S]*?required\s+property\s+string\s+name[\s\S]*?required\s+property\s+bool\s+active[\s\S]*?connectionUuid:\s*uuid[\s\S]*?connectionName:\s*name[\s\S]*?connectionActive:\s*active/;
+  const delegate = assertQmlOwner(
+    "Modules/Panels/VPN/VPNConnectionsList.qml",
+    "VPNConnectionItem",
+    "connectionDelegate",
+    {
+      active: "required bool",
+      name: "required string",
+      uuid: "required string",
+    },
+  );
 
-  assert.match(listSource, rowDelegate, "VPNConnectionsList delegate must type connection scalar roles");
-  assert.doesNotMatch(listSource, /connection:\s*modelData/, "VPNConnectionsList must pass typed scalar roles instead of raw modelData");
-  assertPropertyType("Modules/Panels/VPN/VPNConnectionItem.qml", "connectionUuid", "string");
-  assertPropertyType("Modules/Panels/VPN/VPNConnectionItem.qml", "connectionName", "string");
-  assertPropertyType("Modules/Panels/VPN/VPNConnectionItem.qml", "connectionActive", "bool");
-  assert.doesNotMatch(itemSource, /connection\.(?:uuid|name|active)/, "VPNConnectionItem must use typed connection properties instead of connection.* field reads");
+  assert.doesNotMatch(delegate, /connection:\s*modelData/);
+
+  assertQmlOwner("Modules/Panels/VPN/VPNConnectionItem.qml", "Rectangle", "root", {
+    connectionActive: "required bool",
+    connectionName: "required string",
+    connectionUuid: "required string",
+  });
 }
 
 function testSectionEditorWidgetIdsAreTyped() {
@@ -580,10 +701,21 @@ function testSectionEditorWidgetIdsAreTyped() {
 }
 
 function testSessionMenuPowerOptionRolesAreTyped() {
-  const source = readQml("Modules/Panels/SessionMenu/SessionMenu.qml");
-  const powerOptionDelegate = /Repeater\s*\{[\s\S]*?model:\s*powerOptions[\s\S]*?delegate:\s*PowerButton\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?readonly\s+property\s+string\s+action:\s*modelData\s*\?\s*\(modelData\.action\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+bool\s+optionIsShutdown:\s*modelData\s*\?\s*modelData\.isShutdown\s*===\s*true\s*:\s*false[\s\S]*?icon:\s*modelData\s*\?\s*\(modelData\.icon\s*\|\|\s*""\)\s*:\s*""[\s\S]*?title:\s*modelData\s*\?\s*\(modelData\.title\s*\|\|\s*""\)\s*:\s*""[\s\S]*?isShutdown:\s*optionIsShutdown[\s\S]*?isSelected:\s*index\s*===\s*selectedIndex[\s\S]*?startTimer\(action\)[\s\S]*?pending:\s*timerActive\s*&&\s*pendingAction\s*===\s*action/;
+  assertQmlOwner("Modules/Panels/SessionMenu/SessionMenu.qml", "PowerButton", "powerOption", {
+    index: "required int",
+    modelData: "required var",
+    action: "readonly string",
+    optionIsShutdown: "readonly bool",
+  });
 
-  assert.match(source, powerOptionDelegate, "SessionMenu power option delegate must expose null-safe aliases from the JS object model");
+  assertQmlOwner("Modules/Panels/SessionMenu/SessionMenu.qml", "Rectangle", "buttonRoot", {
+    icon: "string",
+    title: "string",
+    pending: "bool",
+    isShutdown: "bool",
+    isSelected: "bool",
+    timeRemaining: "int",
+  });
 }
 
 function testCalendarMonthDayDelegateRolesAreTyped() {
@@ -596,38 +728,62 @@ function testCalendarMonthDayDelegateRolesAreTyped() {
   assert.doesNotMatch(source, /modelData\.(?:day|month|year|today|currentMonth)/, "CalendarMonthCard day delegate must use typed roles instead of modelData scalar date reads");
 }
 
-function testAboutTabContributorDelegateIndexesAreTyped() {
-  const source = readQml("Modules/Panels/Settings/Tabs/AboutTab.qml");
-  const topContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.min\(root\.contributors\.length,\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\]\.login/;
-  const remainingContributorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Math\.max\(0,\s*root\.contributors\.length\s*-\s*root\.topContributorsCount\)[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+int\s+index[\s\S]*?root\.contributors\[index\s*\+\s*root\.topContributorsCount\]\.login/;
+function testAboutTabContributorModelDataIsTyped() {
+  // Sliced contributor arrays inject objects, not an unused numeric index role.
 
-  assert.match(source, topContributorDelegate, "AboutTab top contributor delegate must declare index role");
-  assert.match(source, remainingContributorDelegate, "AboutTab remaining contributor delegate must declare index role");
+  for (const ownerId of ["contributorCard", "contributorLink"]) {
+    assertQmlOwner("Modules/Panels/Settings/Tabs/AboutTab.qml", "Rectangle", ownerId, {
+      modelData: "required var",
+    });
+  }
 }
 
 function testCustomButtonStateCheckDelegateRolesAreTyped() {
-  const source = readQml("Modules/Panels/Settings/ControlCenter/WidgetSettings/CustomButtonSettings.qml");
-  const stateCheckDelegate = /Repeater\s*\{[\s\S]*?model:\s*_settings\._stateChecksListModel[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+string\s+command[\s\S]*?required\s+property\s+string\s+icon[\s\S]*?required\s+property\s+int\s+index[\s\S]*?property\s+int\s+currentIndex:\s*index/;
+  const delegate = assertQmlOwner(
+    "Modules/Panels/Settings/ControlCenter/WidgetSettings/CustomButtonSettings.qml",
+    "Item",
+    "stateCheckDelegate",
+    {
+      command: "required string",
+      icon: "required string",
+      index: "required int",
+    },
+  );
 
-  assert.match(source, stateCheckDelegate, "CustomButtonSettings state-check delegate must type command, icon, and index roles");
-  assert.doesNotMatch(source, /model\.(?:command|icon)/, "CustomButtonSettings state-check delegate must use typed role properties instead of model.*");
+  assert.doesNotMatch(delegate, /model\.(?:command|icon)/);
 }
 
 function testTraySettingsBlacklistDelegateRolesAreTyped() {
-  const source = readQml("Modules/Panels/Settings/Bar/WidgetSettings/TraySettings.qml");
-  const blacklistDelegate = /ListView\s*\{[\s\S]*?model:\s*blacklistModel[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+string\s+rule[\s\S]*?required\s+property\s+int\s+index[\s\S]*?visible:\s*rule\s*!==\s*""[\s\S]*?text:\s*rule/;
+  const delegate = assertQmlOwner(
+    "Modules/Panels/Settings/Bar/WidgetSettings/TraySettings.qml",
+    "Item",
+    "blacklistDelegate",
+    {
+      rule: "required string",
+      index: "required int",
+    },
+  );
 
-  assert.match(source, blacklistDelegate, "TraySettings blacklist delegate must type rule and index roles");
-  assert.doesNotMatch(source, /model\.rule/, "TraySettings blacklist delegate must use typed rule role instead of model.rule");
+  assert.doesNotMatch(delegate, /model\.rule/);
 }
 
 function testReorderCheckboxDelegateRolesAreTyped() {
-  const source = readQml("Widgets/NReorderCheckboxes.qml");
-  const checkboxDelegate = /ListView\s*\{[\s\S]*?model:\s*root\.model[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?id:\s*delegateItem[\s\S]*?required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+id[\s\S]*?required\s+property\s+string\s+text[\s\S]*?readonly\s+property\s+bool\s+itemEnabled:\s*modelData\s*\?\s*modelData\.enabled\s*===\s*true\s*:\s*false[\s\S]*?readonly\s+property\s+bool\s+required:\s*modelData\s*\?\s*modelData\.required\s*===\s*true\s*:\s*false[\s\S]*?root\.disabledIds\s*\|\|\s*\[\]\)\.indexOf\(id\)[\s\S]*?color:\s*delegateItem\.itemEnabled\s*\?[\s\S]*?visible:\s*delegateItem\.itemEnabled/;
+  const delegate = assertQmlOwner("Widgets/NReorderCheckboxes.qml", "Item", "delegateItem", {
+    widgetOwner: "required NReorderCheckboxes",
+    ownerView: "required ListView",
+    index: "required int",
+    modelData: "required var",
+    id: "required string",
+    text: "required string",
+    itemEnabled: "readonly bool",
+    required: "readonly bool",
+    isDisabled: "readonly bool",
+    canDrag: "readonly bool",
+  });
 
-  assert.match(source, checkboxDelegate, "NReorderCheckboxes delegate must type item roles and readonly derived flags");
-  assert.doesNotMatch(source, /required\s+property\s+bool\s+enabled/, "NReorderCheckboxes must not bind the enabled role to Item.enabled");
-  assert.doesNotMatch(source, /modelData\.(?:id|text)/, "NReorderCheckboxes delegate must use typed roles instead of modelData.*");
+  assert.doesNotMatch(delegate, /required\s+property\s+bool\s+enabled|modelData\.(?:id|text)/);
+
+  assert.match(readQml("Widgets/NReorderCheckboxes.qml"), /delegate:\s*ChecklistItem\s*\{/);
 }
 
 function testSessionMenuTabEntryDelegateRolesAreTyped() {
@@ -681,26 +837,39 @@ function testPanelServiceOpenedPanelIsTyped() {
   assertPropertyType("Services/UI/PanelService.qml", "openedPanel", "SmartPanel");
 }
 
-function testContextMenuDelegatePopupIsTyped() {
-  assertPropertyType("Widgets/NContextMenu.qml", "popup", "Popup");
+function testContextMenuPopupOwnerContract() {
+  // The component itself owns Popup API; no valid delegate popup proxy existed.
+
+  const popup = assertQmlOwner("Widgets/NContextMenu.qml", "Popup", "root", {
+    model: "alias",
+    itemHeight: "real",
+    itemPadding: "real",
+    verticalPolicy: "int",
+    horizontalPolicy: "int",
+  });
+
+  assert.match(popup, /signal\s+triggered\(string\s+action\)/);
+
+  assert.doesNotMatch(popup, /property\s+\w+\s+popup\b/);
 }
 
 function testContextMenuDelegateRolesAreTyped() {
-  const source = readQml("Widgets/NContextMenu.qml");
-  const delegateRoles = /delegate:\s*ItemDelegate\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+bool\s+itemVisible:\s+modelData\s*\?\s*modelData\.visible\s*!==\s*false\s*:\s*false[\s\S]*?readonly\s+property\s+bool\s+itemEnabled:\s+modelData\s*\?\s*modelData\.enabled\s*!==\s*false\s*:\s*false[\s\S]*?readonly\s+property\s+string\s+itemIcon:\s+modelData\s*\?\s*\(modelData\.icon\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+bool\s+hasIcon:\s*itemIcon\s*!==\s*""[\s\S]*?readonly\s+property\s+string\s+itemText:\s+modelData\s*\?\s*\(modelData\.label\s*\|\|\s*modelData\.text\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+itemAction:\s+modelData\s*\?\s*\(modelData\.action\s*\|\|\s*modelData\.key\s*\|\|\s*index\.toString\(\)\)\s*:\s*index\.toString\(\)/;
+  const delegate = assertQmlOwner("Widgets/NContextMenu.qml", "ItemDelegate", "menuItem", {
+    modelData: "required var",
+    index: "required int",
+    itemVisible: "readonly bool",
+    itemEnabled: "readonly bool",
+    itemIcon: "readonly string",
+    hasIcon: "readonly bool",
+    itemText: "readonly string",
+    itemAction: "readonly string",
+  });
 
-  assert.match(source, /function openAt\(x, y\)/, "NContextMenu openAt must accept coordinate inputs");
-  assert.match(source, /function openAtItem\(item, mouseX, mouseY\)/, "NContextMenu openAtItem must accept anchor and coordinate inputs");
-  assert.match(source, delegateRoles, "NContextMenu delegate must declare null-safe typed aliases for menu entry fields");
-  assert.match(source, /height:\s*itemVisible\s*\?\s*root\.itemHeight\s*:\s*0/, "NContextMenu delegate height must use itemVisible");
-  assert.match(source, /visible:\s*itemVisible/, "NContextMenu delegate visible binding must use itemVisible");
-  assert.match(source, /opacity:\s*itemEnabled\s*\?\s*1\.0\s*:\s*0\.5/, "NContextMenu delegate opacity must use itemEnabled");
-  assert.match(source, /enabled:\s*itemEnabled/, "NContextMenu delegate enabled binding must use itemEnabled");
-  assert.match(source, /visible:\s*hasIcon/, "NContextMenu icon visibility must use hasIcon");
-  assert.match(source, /icon:\s*itemIcon/, "NContextMenu icon must use itemIcon");
-  assert.match(source, /text:\s*itemText/, "NContextMenu label must use itemText");
-  assert.match(source, /Layout\.leftMargin:\s*hasIcon\s*\?\s*0\s*:\s*root\.itemPadding/, "NContextMenu label margin must use hasIcon");
-  assert.match(source, /popup\.triggered\(itemAction\)/, "NContextMenu click handler must use itemAction");
+  assert.match(delegate, /root\.triggered\(menuItem\.itemAction\)/);
+
+  assert.match(readQml("Widgets/NContextMenu.qml"), /function openAt\(x, y\)/);
+
+  assert.match(readQml("Widgets/NContextMenu.qml"), /function openAtItem\(item, mouseX, mouseY\)/);
 }
 
 function testPopupContextMenuDelegateRolesAreTyped() {
@@ -718,11 +887,32 @@ function testPopupContextMenuDelegateRolesAreTyped() {
   assert.match(source, /root\.triggered\(menuItem\.itemAction\)/, "NPopupContextMenu click handler must use itemAction");
 }
 
-function testGeometryReferencesAreTypedItems() {
-  assertPropertyType("Modules/Bar/Bar.qml", "barItem", "Item");
-  assertPropertyType("Modules/MainScreen/MainScreen.qml", "barItem", "Item");
-  assertPropertyType("Modules/MainScreen/SmartPanel.qml", "panelItem", "Item");
-  assertPropertyType("Modules/MainScreen/Backgrounds/PanelBackground.qml", "panelBg", "Item");
+function testGeometryOwnersAreTyped() {
+  assertQmlOwner("Modules/Bar/Bar.qml", "Item", "root", {
+    barItem: "readonly Item",
+    barRegion: "readonly Item",
+  });
+
+  assertQmlOwner("Modules/MainScreen/MainScreen.qml", "Backgrounds.BackgroundRegion", "barPlaceholder", {
+    screen: "ShellScreen",
+    screenWidth: "readonly real",
+    screenHeight: "readonly real",
+  });
+
+  assertQmlOwner("Modules/MainScreen/SmartPanel.qml", "Item", "root", {
+    panelRegion: "readonly BackgroundRegion",
+  });
+
+  assertQmlOwner("Modules/MainScreen/Backgrounds/PanelBackground.qml", "ShapePath", "root", {
+    panelBg: "readonly BackgroundRegion",
+  });
+
+  assertOwnedProperties(readQml("Modules/MainScreen/Backgrounds/BackgroundRegion.qml"), "Item", undefined, {
+    topLeftCornerState: "int",
+    topRightCornerState: "int",
+    bottomRightCornerState: "int",
+    bottomLeftCornerState: "int",
+  });
 }
 
 function testTimeNowPropertiesAreTypedDates() {
@@ -781,18 +971,35 @@ function testClockSettingsFocusedInputIsTyped() {
 
 function testClockSettingsPreviewModelsAreTyped() {
   const source = readQml("Modules/Panels/Settings/Bar/WidgetSettings/ClockSettings.qml");
-  const horizontalPreview = /model:\s*I18n\.locale\.toString\(now,\s*valueFormatHorizontal\.trim\(\)\)\.split\("\\\\n"\)[\s\S]*?delegate:\s*NText\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?text:\s*modelData/;
-  const verticalPreview = /model:\s*I18n\.locale\.toString\(now,\s*valueFormatVertical\.trim\(\)\)\.split\(" "\)[\s\S]*?delegate:\s*NText\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?text:\s*modelData/;
 
-  assert.match(source, horizontalPreview, "ClockSettings horizontal preview delegate must type string modelData");
-  assert.match(source, verticalPreview, "ClockSettings vertical preview delegate must type string modelData");
+  const previews = extractComponentBlocks(source, "NText")
+    .filter((block) => /\bproperty\s+\w+\s+modelData\b/.test(block));
+
+  assert.equal(previews.length, 2, "horizontal and vertical typed preview delegates");
+
+  for (const preview of previews) {
+    assertOwnedProperties(preview, "NText", undefined, { modelData: "required string" });
+  }
+
+  assert.match(source, /toString\(root\.now,\s*root\.valueFormatHorizontal\.trim\(\)\)/);
+
+  assert.match(source, /toString\(root\.now,\s*root\.valueFormatVertical\.trim\(\)\)/);
 }
 
 function testMangoPatternContainerIsTyped() {
-  const mangoServiceFile = "Services/Compositor/MangoService.qml";
+  assertQmlOwner("Services/Compositor/MangoService.qml", "QtObject", "internal", {
+    _patterns: "readonly QtObject",
+  });
 
-  assertPropertyType(mangoServiceFile, "patterns", "QtObject");
-  assertNoPropertyType(mangoServiceFile, "patterns", "var");
+  assertQmlOwner("Services/Compositor/MangoService.qml", "QtObject", "patterns", {
+    tagDetail: "readonly var",
+    tagBinary: "readonly var",
+    layout: "readonly var",
+    metadata: "readonly var",
+    kbLayout: "readonly var",
+    scale: "readonly var",
+    selmon: "readonly var",
+  });
 }
 
 function testPopupMenuWindowActiveMenuIsTyped() {
@@ -824,26 +1031,22 @@ function testDockMenuToplevelIsTyped() {
 }
 
 function testDockMenuItemDelegateInputsAreTyped() {
-  const source = readQml("Modules/Dock/DockMenu.qml");
-  const itemDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.items[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+menuIcon:\s*modelData\s*\?\s*\(modelData\.icon\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+menuText:\s*modelData\s*\?\s*\(modelData\.text\s*\|\|\s*""\)\s*:\s*""[\s\S]*?icon:\s*menuIcon[\s\S]*?text:\s*menuText/;
-
-  assert.match(source, itemDelegate, "DockMenu item delegate must expose typed aliases for icon and text");
-  assert.equal((source.match(/modelData\.icon/g) ?? []).length, 1, "DockMenu item delegate must use menuIcon after declaration");
-  assert.equal((source.match(/modelData\.text/g) ?? []).length, 1, "DockMenu item delegate must use menuText after declaration");
+  assertQmlOwner("Modules/Dock/DockMenu.qml", "Rectangle", "menuEntry", {
+    modelData: "required var",
+    index: "required int",
+    menuIcon: "readonly string",
+    menuText: "readonly string",
+  });
 }
 
 function testLauncherPluginBackReferencesAreTyped() {
-  const pluginFiles = [
-    "Modules/Panels/Launcher/Plugins/ApplicationsPlugin.qml",
-    "Modules/Panels/Launcher/Plugins/CalculatorPlugin.qml",
-    "Modules/Panels/Launcher/Plugins/ClipboardPlugin.qml",
-    "Modules/Panels/Launcher/Plugins/EmojiPlugin.qml",
-  ];
-
-  for (const pluginFile of pluginFiles) {
-    assertPropertyType(pluginFile, "launcher", "Item");
-    assertNoPropertyType(pluginFile, "launcher", "var");
+  for (const plugin of ["Applications", "Calculator", "Clipboard"]) {
+    assertPropertyType(`Modules/Panels/Launcher/Plugins/${plugin}Plugin.qml`, "launcher", "Item");
   }
+
+  assertQmlOwner("Modules/Panels/Launcher/Plugins/EmojiPlugin.qml", "Item", "root", {
+    launcher: "Launcher",
+  });
 }
 
 function testCompositorBackendIsTyped() {
@@ -854,10 +1057,9 @@ function testCompositorBackendIsTyped() {
 }
 
 function testPowerProfilesReferenceIsTyped() {
-  const powerProfileServiceFile = "Services/Power/PowerProfileService.qml";
-
-  assertPropertyType(powerProfileServiceFile, "powerProfiles", "QtObject");
-  assertNoPropertyType(powerProfileServiceFile, "powerProfiles", "var");
+  assertQmlOwner("Services/Power/PowerProfileService.qml", "Singleton", "root", {
+    powerProfiles: "readonly PowerProfiles",
+  });
 }
 
 function testUPowerBatteryReferencesAreTyped() {
@@ -875,10 +1077,26 @@ function testUPowerBatteryReferencesAreTyped() {
 }
 
 function testBluetoothDeviceDelegateInputsAreTyped() {
-  const source = readQml("Modules/Panels/Bluetooth/BluetoothDevicesList.qml");
-  const deviceDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.model[\s\S]*?Rectangle\s*\{[\s\S]*?required\s+property\s+BluetoothDevice\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+bool\s+devicePairing:\s*modelData\s*\?\s*modelData\.pairing\s*===\s*true\s*:\s*false[\s\S]*?readonly\s+property\s+bool\s+deviceBlocked:\s*modelData\s*\?\s*modelData\.blocked\s*===\s*true\s*:\s*false[\s\S]*?readonly\s+property\s+bool\s+deviceConnected:\s*modelData\s*\?\s*modelData\.connected\s*===\s*true\s*:\s*false[\s\S]*?readonly\s+property\s+bool\s+deviceConnecting:\s*modelData\s*\?\s*modelData\.state\s*===\s*BluetoothDeviceState\.Connecting\s*:\s*false[\s\S]*?readonly\s+property\s+string\s+deviceDisplayName:\s*modelData\s*\?\s*\(modelData\.name\s*\|\|\s*modelData\.deviceName\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+bool\s+hasSignalStrength:\s*modelData\s*\?\s*modelData\.signalStrength\s*!==\s*undefined\s*:\s*false[\s\S]*?readonly\s+property\s+int\s+deviceSignalStrength:\s*modelData\s*\?\s*\(modelData\.signalStrength\s*\|\|\s*0\)\s*:\s*0[\s\S]*?readonly\s+property\s+bool\s+showSignalStrength:\s*deviceSignalStrength\s*>\s*0\s*&&\s*!devicePairing\s*&&\s*!deviceBlocked[\s\S]*?readonly\s+property\s+bool\s+hasBattery:\s*modelData\s*\?\s*modelData\.batteryAvailable\s*===\s*true\s*:\s*false[\s\S]*?BluetoothService\.canConnect\(modelData\)[\s\S]*?devicePairing\s*\|\|\s*deviceConnecting[\s\S]*?text:\s*deviceDisplayName[\s\S]*?font\.weight:\s*deviceConnected\s*\?[\s\S]*?visible:\s*hasSignalStrength[\s\S]*?visible:\s*showSignalStrength[\s\S]*?text:\s*showSignalStrength\s*\?\s*deviceSignalStrength\s*\+\s*"%"[\s\S]*?visible:\s*hasBattery[\s\S]*?visible:\s*!deviceConnecting[\s\S]*?if\s*\(devicePairing\)[\s\S]*?if\s*\(deviceBlocked\)[\s\S]*?if\s*\(deviceConnected\)/;
+  const device = assertQmlOwner("Modules/Panels/Bluetooth/BluetoothDevicesList.qml", "Rectangle", "device", {
+    modelData: "required BluetoothDevice",
+    index: "required int",
+    devicePairing: "readonly bool",
+    deviceBlocked: "readonly bool",
+    deviceConnected: "readonly bool",
+    deviceConnecting: "readonly bool",
+    deviceDisplayName: "readonly string",
+    hasBattery: "readonly bool",
+    canConnect: "readonly bool",
+    canDisconnect: "readonly bool",
+    isBusy: "readonly bool",
+  });
 
-  assert.match(source, deviceDelegate, "BluetoothDevicesList device delegate must type modelData and expose stable status aliases");
+  // Installed BluetoothDevice has no signal-strength API (bluetooth.md).
+
+  assert.doesNotMatch(
+    device,
+    /\b(?:hasSignalStrength|deviceSignalStrength|showSignalStrength)\b|modelData\.signalStrength/,
+  );
 }
 
 function testBluetoothServiceDeviceModelIsTyped() {
@@ -920,15 +1138,16 @@ function testAudioTabDeviceDelegatesAreTyped() {
 }
 
 function testProcessPanelProcessDelegateInputsAreTyped() {
-  const source = readQml("Modules/Panels/Process/ProcessPanel.qml");
-  const processDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.processList[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+processCommand:\s*modelData\s*\?\s*\(modelData\.command\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+processName:\s*modelData\s*\?\s*\(modelData\.displayName\s*\|\|\s*processCommand\)\s*:\s*processCommand[\s\S]*?readonly\s+property\s+real\s+processCpu:\s*modelData\s*\?\s*\(modelData\.cpu\s*\|\|\s*0\)\s*:\s*0[\s\S]*?readonly\s+property\s+int\s+processMemoryKb:\s*modelData\s*\?\s*\(modelData\.memoryKB\s*\|\|\s*0\)\s*:\s*0[\s\S]*?readonly\s+property\s+int\s+processPid:\s*modelData\s*\?\s*\(modelData\.pid\s*\|\|\s*0\)\s*:\s*0[\s\S]*?readonly\s+property\s+color\s+processCpuColor:[\s\S]*?processCpu\s*>\s*50[\s\S]*?ProcessService\.getProcessIcon\(processCommand\)[\s\S]*?text:\s*processName[\s\S]*?ProcessService\.formatCpu\(processCpu\)[\s\S]*?color:\s*processCpuColor[\s\S]*?ProcessService\.formatMemory\(processMemoryKb\)[\s\S]*?processPid\.toString\(\)/;
-
-  assert.match(source, processDelegate, "ProcessPanel process delegate must declare typed aliases for process fields");
-  assert.equal((source.match(/modelData\.command/g) ?? []).length, 1, "ProcessPanel process delegate must use processCommand after declaration");
-  assert.equal((source.match(/modelData\.displayName/g) ?? []).length, 1, "ProcessPanel process delegate must use processName after declaration");
-  assert.equal((source.match(/modelData\.cpu/g) ?? []).length, 1, "ProcessPanel process delegate must use processCpu after declaration");
-  assert.equal((source.match(/modelData\.memoryKB/g) ?? []).length, 1, "ProcessPanel process delegate must use processMemoryKb after declaration");
-  assert.equal((source.match(/modelData\.pid/g) ?? []).length, 1, "ProcessPanel process delegate must use processPid after declaration");
+  assertQmlOwner("Modules/Panels/Process/ProcessPanel.qml", "Rectangle", "processDelegate", {
+    modelData: "required var",
+    index: "required int",
+    processCommand: "readonly string",
+    processName: "readonly string",
+    processCpu: "readonly real",
+    processMemoryKb: "readonly int",
+    processPid: "readonly int",
+    processCpuColor: "readonly color",
+  });
 }
 
 function testTrayMenuItemIsTyped() {
@@ -964,15 +1183,17 @@ function testTrayMenuLoaderReferencesAreTyped() {
 }
 
 function testTrayPopupMenuWindowReferencesAreTyped() {
-  const trayMenuFiles = [
-    "Modules/Bar/Widgets/Tray.qml",
-    "Modules/Panels/Tray/TrayDrawerPanel.qml",
-  ];
+  assertQmlOwner("Modules/Bar/Widgets/Tray.qml", "Item", "root", {
+    popupMenuWindow: "readonly QtObject",
+  });
 
-  for (const trayMenuFile of trayMenuFiles) {
-    assertPropertyType(trayMenuFile, "popupMenuWindow", "QtObject");
-    assertNoPropertyType(trayMenuFile, "popupMenuWindow", "var");
-  }
+  assertQmlOwner("Modules/Bar/Widgets/Tray.qml", "Item", "trayDelegate", {
+    popupMenuWindow: "QtObject",
+  });
+
+  assertQmlOwner("Modules/Panels/Tray/TrayDrawerPanel.qml", "SmartPanel", "root", {
+    popupMenuWindow: "readonly PopupMenuWindow",
+  });
 }
 
 function testSectionEditorRegistryIsTyped() {
@@ -983,17 +1204,15 @@ function testSectionEditorRegistryIsTyped() {
 }
 
 function testDisplayTabBrightnessMonitorIsTyped() {
-  const displayTabFile = "Modules/Panels/Settings/Tabs/DisplayTab.qml";
-
-  assertPropertyType(displayTabFile, "brightnessMonitor", "QtObject");
-  assertNoPropertyType(displayTabFile, "brightnessMonitor", "var");
+  assertQmlOwner("Modules/Panels/Settings/Tabs/DisplayTab.qml", "Rectangle", "monitorCard", {
+    brightnessMonitor: "BrightnessService.Monitor",
+  });
 }
 
 function testBrightnessPanelBrightnessMonitorIsTyped() {
-  const brightnessPanelFile = "Modules/Panels/Brightness/BrightnessPanel.qml";
-
-  assertPropertyType(brightnessPanelFile, "brightnessMonitor", "QtObject");
-  assertNoPropertyType(brightnessPanelFile, "brightnessMonitor", "var");
+  assertQmlOwner("Modules/Panels/Brightness/BrightnessPanel.qml", "NBox", "monitorBox", {
+    brightnessMonitor: "BrightnessService.Monitor",
+  });
 }
 
 function testBrightnessServiceMonitorScreenModelAliasIsTyped() {
@@ -1022,22 +1241,19 @@ function testBackgroundShapeContainersAreTyped() {
 }
 
 function testPanelBackgroundPanelReferenceIsTyped() {
-  const panelBackgroundFile = "Modules/MainScreen/Backgrounds/PanelBackground.qml";
-
-  assertPropertyType(panelBackgroundFile, "panel", "Item");
-  assertNoPropertyType(panelBackgroundFile, "panel", "var");
+  assertQmlOwner("Modules/MainScreen/Backgrounds/PanelBackground.qml", "ShapePath", "root", {
+    panel: "required BackgroundRegion",
+  });
 }
 
 function testBarBackgroundBarReferenceIsTyped() {
-  const backgroundFiles = [
-    "Modules/MainScreen/Backgrounds/AllBackgrounds.qml",
-    "Modules/MainScreen/Backgrounds/BarBackground.qml",
-  ];
+  assertQmlOwner("Modules/MainScreen/Backgrounds/AllBackgrounds.qml", "Item", "root", {
+    bar: "required BackgroundRegion",
+  });
 
-  for (const backgroundFile of backgroundFiles) {
-    assertPropertyType(backgroundFile, "bar", "Item");
-    assertNoPropertyType(backgroundFile, "bar", "var");
-  }
+  assertQmlOwner("Modules/MainScreen/Backgrounds/BarBackground.qml", "ShapePath", "root", {
+    bar: "required BackgroundRegion",
+  });
 }
 
 function testBackgroundWindowRootStaysUntypedForPanelWindow() {
@@ -1053,21 +1269,25 @@ function testBackgroundWindowRootStaysUntypedForPanelWindow() {
 }
 
 function testBackgroundScreenAliasesAreTyped() {
-  const source = readQml("Modules/Background/Background.qml");
-  const screenDelegate = /Variants\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?delegate:\s*Loader\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s*modelData\s*\?\s*modelData\.name\s*:\s*""[\s\S]*?readonly\s+property\s+int\s+monitorWidth:\s*modelData\s*\?\s*modelData\.width\s*:\s*0[\s\S]*?readonly\s+property\s+int\s+monitorHeight:\s*modelData\s*\?\s*modelData\.height\s*:\s*0[\s\S]*?screenName\s*===\s*monitorName[\s\S]*?CompositorService\.getDisplayScale\(monitorName\)[\s\S]*?monitorWidth\s*\*\s*compositorScale[\s\S]*?monitorHeight\s*\*\s*compositorScale[\s\S]*?WallpaperService\.getWallpaper\(monitorName\)/;
+  assertQmlOwner("Modules/Background/Background.qml", "Loader", "wallpaperLoader", {
+    modelData: "required ShellScreen",
+  });
 
-  assert.match(source, screenDelegate, "Background screen delegate must expose null-safe typed screen aliases");
-  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "Background must use monitorName after declaration");
-  assert.equal((source.match(/modelData\.width/g) ?? []).length, 1, "Background must use monitorWidth after declaration");
-  assert.equal((source.match(/modelData\.height/g) ?? []).length, 1, "Background must use monitorHeight after declaration");
+  const window = assertQmlOwner("Modules/Background/Background.qml", "PanelWindow", "root", {
+    monitorScreen: "readonly ShellScreen",
+    monitorName: "readonly string",
+    monitorWidth: "readonly int",
+    monitorHeight: "readonly int",
+  });
+
+  assert.match(window, /monitorScreen:\s*wallpaperLoader\.modelData/);
 }
 
 function testOverviewScreenAliasIsTyped() {
-  const source = readQml("Modules/Background/Overview.qml");
-  const screenDelegate = /Variants\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?delegate:\s*PanelWindow\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s*modelData\s*\?\s*modelData\.name\s*:\s*""[\s\S]*?Loading overview for Niri on",\s*monitorName[\s\S]*?screenName\s*===\s*monitorName[\s\S]*?WallpaperService\.getWallpaper\(monitorName\)/;
-
-  assert.match(source, screenDelegate, "Overview screen delegate must expose null-safe typed monitorName alias");
-  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "Overview must use monitorName after declaration");
+  assertQmlOwner("Modules/Background/Overview.qml", "PanelWindow", "panelWindow", {
+    modelData: "required ShellScreen",
+    monitorName: "readonly string",
+  });
 }
 
 function testWallpaperPanelScreenReferencesAreTyped() {
@@ -1095,25 +1315,23 @@ function testWallpaperPanelScreenViewModelIsTyped() {
 }
 
 function testWallpaperPanelWallhavenDelegateAliasesAreTyped() {
-  const source = readQml("Modules/Panels/Wallpaper/WallpaperPanel.qml");
-  const wallhavenDelegate = /delegate:\s*ColumnLayout\s*\{[\s\S]*?id:\s*wallhavenItem[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+thumbnailUrl:\s*\(modelData\s*&&\s*typeof\s+WallhavenService\s*!==\s*"undefined"\)\s*\?\s*WallhavenService\.getThumbnailUrl\(modelData,\s*"large"\)\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+wallpaperId:\s*\(modelData\s*&&\s*modelData\.id\)\s*\|\|\s*""[\s\S]*?source:\s*thumbnailUrl[\s\S]*?text:\s*wallpaperId\s*\|\|\s*I18n\.tr\("wallpaper\.unknown"\)/;
+  assertQmlOwner("Modules/Panels/Wallpaper/WallpaperPanel.qml", "ColumnLayout", "wallhavenItem", {
+    owningGrid: "readonly WallhavenGrid",
+    screenView: "readonly WallhavenView",
+    modelData: "required var",
+    index: "required int",
+    thumbnailUrl: "readonly string",
+    wallpaperId: "readonly string",
+  });
 
-  assert.match(source, wallhavenDelegate, "WallpaperPanel Wallhaven delegate must expose readonly typed aliases");
-  assert.equal((source.match(/modelData\.id/g) ?? []).length, 1, "WallpaperPanel Wallhaven delegate must use wallpaperId after declaration");
+  assert.match(readQml("Modules/Panels/Wallpaper/WallpaperPanel.qml"), /delegate:\s*WallhavenWallpaperDelegate\s*\{/);
 }
 
 function testWallpaperTabMonitorNameAliasIsTyped() {
-  const wallpaperTabFile = "Modules/Panels/Settings/Tabs/WallpaperTab.qml";
-  const source = readQml(wallpaperTabFile);
-  const monitorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?delegate:\s*ColumnLayout\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s+modelData\s*\?\s*modelData\.name\s*:\s*""/;
-
-  assert.match(source, monitorDelegate, "WallpaperTab monitor delegate must expose null-safe typed monitorName alias from ShellScreen modelData");
-  assert.match(source, /text:\s*\(monitorName\s*\|\|\s*"Unknown"\)/, "WallpaperTab monitor label must use monitorName");
-  assert.match(source, /WallpaperService\.getMonitorDirectory\(monitorName\)/, "WallpaperTab monitor directory lookup must use monitorName");
-  assert.match(source, /WallpaperService\.setMonitorDirectory\(monitorName,\s*text\)/, "WallpaperTab monitor directory save must use monitorName");
-  assert.match(source, /specificFolderMonitorName\s*=\s*monitorName/, "WallpaperTab folder picker state must use monitorName");
-
-  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "WallpaperTab monitor delegate must use monitorName after declaration");
+  assertQmlOwner("Modules/Panels/Settings/Tabs/WallpaperTab.qml", "ColumnLayout", "monitorDirectory", {
+    modelData: "required ShellScreen",
+    monitorName: "readonly string",
+  });
 }
 
 function testSettingsMonitorModelsAreTyped() {
@@ -1135,43 +1353,23 @@ function testSettingsMonitorModelsAreTyped() {
 }
 
 function testBarTabMonitorAliasesAreTyped() {
-  const barTabFile = "Modules/Panels/Settings/Tabs/BarTab.qml";
-  const source = readQml(barTabFile);
-  const monitorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?delegate:\s*NCheckbox\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s+modelData\s*\?\s*modelData\.name\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+monitorModel:\s+modelData\s*\?\s*modelData\.model\s*:\s*""[\s\S]*?readonly\s+property\s+int\s+monitorWidth:\s+modelData\s*\?\s*modelData\.width\s*:\s*0[\s\S]*?readonly\s+property\s+int\s+monitorHeight:\s+modelData\s*\?\s*modelData\.height\s*:\s*0/;
-
-  assert.match(source, monitorDelegate, "BarTab monitor delegate must expose null-safe typed aliases for ShellScreen fields");
-  assert.match(source, /label:\s*monitorName\s*\|\|\s*"Unknown"/, "BarTab monitor label must use monitorName");
-  assert.match(source, /CompositorService\.getDisplayScale\(monitorName\)/, "BarTab monitor scale lookup must use monitorName");
-  assert.match(source, /"model":\s*monitorModel/, "BarTab monitor description must use monitorModel");
-  assert.match(source, /"width":\s*monitorWidth\s*\*\s*compositorScale/, "BarTab monitor description must use monitorWidth");
-  assert.match(source, /"height":\s*monitorHeight\s*\*\s*compositorScale/, "BarTab monitor description must use monitorHeight");
-  assert.match(source, /indexOf\(monitorName\)\s*!==\s*-1/, "BarTab monitor selection must use monitorName");
-  assert.match(source, /addMonitor\(Settings\.data\.bar\.monitors,\s*monitorName\)/, "BarTab monitor add action must use monitorName");
-  assert.match(source, /removeMonitor\(Settings\.data\.bar\.monitors,\s*monitorName\)/, "BarTab monitor remove action must use monitorName");
-
-  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "BarTab monitor delegate must use monitorName after declaration");
-  assert.equal((source.match(/modelData\.model/g) ?? []).length, 1, "BarTab monitor delegate must use monitorModel after declaration");
-  assert.equal((source.match(/modelData\.width/g) ?? []).length, 1, "BarTab monitor delegate must use monitorWidth after declaration");
-  assert.equal((source.match(/modelData\.height/g) ?? []).length, 1, "BarTab monitor delegate must use monitorHeight after declaration");
+  assertQmlOwner("Modules/Panels/Settings/Tabs/BarTab.qml", "NCheckbox", "monitorCheckbox", {
+    modelData: "required ShellScreen",
+    monitorName: "readonly string",
+    monitorModel: "readonly string",
+    monitorWidth: "readonly int",
+    monitorHeight: "readonly int",
+  });
 }
 
 function testDisplayTabMonitorAliasesAreTyped() {
-  const displayTabFile = "Modules/Panels/Settings/Tabs/DisplayTab.qml";
-  const source = readQml(displayTabFile);
-  const monitorDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?delegate:\s*Rectangle\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s*modelData\s*\?\s*modelData\.name\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+monitorModel:\s*modelData\s*\?\s*modelData\.model\s*:\s*""[\s\S]*?readonly\s+property\s+int\s+monitorWidth:\s*modelData\s*\?\s*modelData\.width\s*:\s*0[\s\S]*?readonly\s+property\s+int\s+monitorHeight:\s*modelData\s*\?\s*modelData\.height\s*:\s*0/;
-
-  assert.match(source, monitorDelegate, "DisplayTab monitor delegate must expose null-safe typed aliases for ShellScreen fields");
-  assert.match(source, /BrightnessService\.getMonitorForScreen\(modelData\)/, "DisplayTab brightness lookup must keep using the typed ShellScreen object");
-  assert.match(source, /label:\s*monitorName\s*\|\|\s*"Unknown"/, "DisplayTab monitor label must use monitorName");
-  assert.match(source, /CompositorService\.getDisplayScale\(monitorName\)/, "DisplayTab monitor scale lookup must use monitorName");
-  assert.match(source, /"model":\s*monitorModel/, "DisplayTab monitor description must use monitorModel");
-  assert.match(source, /"width":\s*monitorWidth\s*\*\s*compositorScale/, "DisplayTab monitor description must use monitorWidth");
-  assert.match(source, /"height":\s*monitorHeight\s*\*\s*compositorScale/, "DisplayTab monitor description must use monitorHeight");
-
-  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "DisplayTab monitor delegate must use monitorName after declaration");
-  assert.equal((source.match(/modelData\.model/g) ?? []).length, 1, "DisplayTab monitor delegate must use monitorModel after declaration");
-  assert.equal((source.match(/modelData\.width/g) ?? []).length, 1, "DisplayTab monitor delegate must use monitorWidth after declaration");
-  assert.equal((source.match(/modelData\.height/g) ?? []).length, 1, "DisplayTab monitor delegate must use monitorHeight after declaration");
+  assertQmlOwner("Modules/Panels/Settings/Tabs/DisplayTab.qml", "Rectangle", "monitorCard", {
+    modelData: "required ShellScreen",
+    monitorName: "readonly string",
+    monitorModel: "readonly string",
+    monitorWidth: "readonly int",
+    monitorHeight: "readonly int",
+  });
 }
 
 function testDockTabMonitorAliasesAreTyped() {
@@ -1246,11 +1444,11 @@ function testNotificationsTabMonitorAliasesAreTyped() {
 }
 
 function testWallpaperServiceScannerModelIsTyped() {
-  const source = readQml("Services/UI/WallpaperService.qml");
-  const scannerModelDelegate = /Instantiator\s*\{[\s\S]*?model:\s*Quickshell\.screens[\s\S]*?delegate:\s*FolderListModel\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+screenName:\s*modelData\s*\?\s*modelData\.name\s*:\s*""[\s\S]*?property\s+string\s+currentDirectory:\s*root\.getMonitorDirectory\(screenName\)/;
-
-  assert.match(source, scannerModelDelegate, "WallpaperService scanner must expose a null-safe typed screenName alias");
-  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "WallpaperService scanner must use screenName after declaration");
+  assertQmlOwner("Services/UI/WallpaperService.qml", "FolderListModel", "wallpaperScanner", {
+    modelData: "required ShellScreen",
+    screenName: "readonly string",
+    currentDirectory: "string",
+  });
 }
 
 function testSetupDockStepMonitorModelIsTyped() {
@@ -1283,44 +1481,38 @@ function testSetupDockStepMonitorAliasesAreTyped() {
 }
 
 function testSetupWizardProgressDelegateModelIsTyped() {
-  const source = readQml("Modules/Panels/SetupWizard/SetupWizard.qml");
-  const progressDelegate = /Repeater\s*\{[\s\S]*?"label":\s*"Dock"[\s\S]*?delegate:\s*RowLayout\s*\{[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?required\s+property\s+int\s+index[\s\S]*?readonly\s+property\s+string\s+stepIcon:\s*modelData\s*\?\s*\(modelData\.icon\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+stepLabel:\s*modelData\s*\?\s*\(modelData\.label\s*\|\|\s*""\)\s*:\s*""[\s\S]*?icon:\s*stepIcon[\s\S]*?text:\s*stepLabel/;
-
-  assert.match(source, progressDelegate, "SetupWizard progress delegate must expose typed aliases for icon and label");
-  assert.equal((source.match(/modelData\.icon/g) ?? []).length, 1, "SetupWizard progress delegate must use stepIcon after declaration");
-  assert.equal((source.match(/modelData\.label/g) ?? []).length, 1, "SetupWizard progress delegate must use stepLabel after declaration");
+  assertQmlOwner("Modules/Panels/SetupWizard/SetupWizard.qml", "RowLayout", "progressStep", {
+    modelData: "required var",
+    index: "required int",
+    stepIcon: "readonly string",
+    stepLabel: "readonly string",
+  });
 }
 
 function testBrightnessPanelScreenModelIsTyped() {
-  const source = readQml("Modules/Panels/Brightness/BrightnessPanel.qml");
-  const screenModelDelegate = /Repeater\s*\{[\s\S]*?model:\s*Quickshell\.screens(?:\s*\|\|\s*\[\])?[\s\S]*?delegate:\s*NBox\s*\{[\s\S]*?required\s+property\s+ShellScreen\s+modelData[\s\S]*?readonly\s+property\s+string\s+monitorName:\s*modelData\s*\?\s*modelData\.name\s*:\s*""[\s\S]*?readonly\s+property\s+string\s+monitorModel:\s*modelData\s*\?\s*modelData\.model\s*:\s*""[\s\S]*?readonly\s+property\s+int\s+monitorWidth:\s*modelData\s*\?\s*modelData\.width\s*:\s*0[\s\S]*?readonly\s+property\s+int\s+monitorHeight:\s*modelData\s*\?\s*modelData\.height\s*:\s*0/;
-
-  assert.match(source, screenModelDelegate, "BrightnessPanel monitor delegate must expose null-safe typed screen aliases");
-  assert.match(source, /label:\s*monitorName\s*\|\|\s*"Unknown"/, "BrightnessPanel monitor label must use monitorName");
-  assert.match(source, /CompositorService\.getDisplayScale\(monitorName\)/, "BrightnessPanel monitor scale lookup must use monitorName");
-  assert.match(source, /"model":\s*monitorModel/, "BrightnessPanel monitor description must use monitorModel");
-  assert.match(source, /"width":\s*monitorWidth\s*\*\s*compositorScale/, "BrightnessPanel monitor description must use monitorWidth");
-  assert.match(source, /"height":\s*monitorHeight\s*\*\s*compositorScale/, "BrightnessPanel monitor description must use monitorHeight");
-  assert.equal((source.match(/modelData\.name/g) ?? []).length, 1, "BrightnessPanel monitor delegate must use monitorName after declaration");
-  assert.equal((source.match(/modelData\.model/g) ?? []).length, 1, "BrightnessPanel monitor delegate must use monitorModel after declaration");
-  assert.equal((source.match(/modelData\.width/g) ?? []).length, 1, "BrightnessPanel monitor delegate must use monitorWidth after declaration");
-  assert.equal((source.match(/modelData\.height/g) ?? []).length, 1, "BrightnessPanel monitor delegate must use monitorHeight after declaration");
+  assertQmlOwner("Modules/Panels/Brightness/BrightnessPanel.qml", "NBox", "monitorBox", {
+    modelData: "required ShellScreen",
+    monitorName: "readonly string",
+    monitorModel: "readonly string",
+    monitorWidth: "readonly int",
+    monitorHeight: "readonly int",
+  });
 }
 
 function testWiFiNetworkDelegateAliasesAreTyped() {
-  const source = readQml("Modules/Panels/WiFi/WiFiNetworksList.qml");
-  const networkDelegate = /Repeater\s*\{[\s\S]*?model:\s*root\.model[\s\S]*?Rectangle\s*\{[\s\S]*?id:\s*networkItem[\s\S]*?required\s+property\s+var\s+modelData[\s\S]*?readonly\s+property\s+string\s+networkSsid:\s*modelData\s*\?\s*\(modelData\.ssid\s*\|\|\s*""\)\s*:\s*""[\s\S]*?readonly\s+property\s+bool\s+networkConnected:\s*modelData\s*\?\s*modelData\.connected\s*===\s*true\s*:\s*false[\s\S]*?readonly\s+property\s+int\s+networkSignal:\s*modelData\s*\?\s*\(modelData\.signal\s*\|\|\s*0\)\s*:\s*0[\s\S]*?readonly\s+property\s+string\s+networkSecurity:\s*modelData\s*\?\s*\(modelData\.security\s*\|\|\s*"Open"\)\s*:\s*"Open"[\s\S]*?readonly\s+property\s+bool\s+networkExisting:\s*modelData\s*\?\s*modelData\.existing\s*===\s*true\s*:\s*false[\s\S]*?readonly\s+property\s+bool\s+networkCached:\s*modelData\s*\?\s*modelData\.cached\s*===\s*true\s*:\s*false/;
-
-  assert.match(source, networkDelegate, "WiFiNetworksList delegate must type stable network aliases");
-  assert.equal((source.match(/modelData\.ssid/g) ?? []).length, 1, "WiFiNetworksList delegate must use networkSsid after declaration");
-  assert.equal((source.match(/modelData\.connected/g) ?? []).length, 1, "WiFiNetworksList delegate must use networkConnected after declaration");
-  assert.equal((source.match(/modelData\.signal/g) ?? []).length, 1, "WiFiNetworksList delegate must use networkSignal after declaration");
-  assert.equal((source.match(/modelData\.security/g) ?? []).length, 1, "WiFiNetworksList delegate must use networkSecurity after declaration");
-  assert.equal((source.match(/modelData\.existing/g) ?? []).length, 1, "WiFiNetworksList delegate must use networkExisting after declaration");
-  assert.equal((source.match(/modelData\.cached/g) ?? []).length, 1, "WiFiNetworksList delegate must use networkCached after declaration");
+  assertQmlOwner("Modules/Panels/WiFi/WiFiNetworksList.qml", "Rectangle", "networkItem", {
+    modelData: "required var",
+    networkSsid: "readonly string",
+    networkConnected: "readonly bool",
+    networkSignal: "readonly int",
+    networkSecurity: "readonly string",
+    networkExisting: "readonly bool",
+    networkCached: "readonly bool",
+  });
 }
 
 const tests = [
+  testOwnedPropertyInventory,
   testAnnotatedSignatureExtraction,
   testQmlFunctionTypeContractInventory,
   testAnnotatedFunctionRuntimeContracts,
@@ -1358,15 +1550,15 @@ const tests = [
   testDateTimeTokenDelegateRolesAreTyped,
   testSetupCustomizeOptionDelegatesAreTyped,
   testColorPickerSwatchDelegatesAreTyped,
-  testSetupAppearanceSchemeLoaderModelDataIsTyped,
+  testSetupAppearanceSchemeLoaderRolesAreTyped,
   testFilePickerDelegatesUseTypedFileRoles,
   testTaskbarWindowDelegateRolesAreTyped,
-  testShortcutsCardShortcutIdsAreTyped,
+  testShortcutsCardWidgetInputsAreTyped,
   testVpnConnectionRowsAreTyped,
   testSectionEditorWidgetIdsAreTyped,
   testSessionMenuPowerOptionRolesAreTyped,
   testCalendarMonthDayDelegateRolesAreTyped,
-  testAboutTabContributorDelegateIndexesAreTyped,
+  testAboutTabContributorModelDataIsTyped,
   testCustomButtonStateCheckDelegateRolesAreTyped,
   testTraySettingsBlacklistDelegateRolesAreTyped,
   testReorderCheckboxDelegateRolesAreTyped,
@@ -1376,10 +1568,10 @@ const tests = [
   testControlCenterPanelCardDelegateIsTyped,
   testClockPanelCardDelegateIsTyped,
   testPanelServiceOpenedPanelIsTyped,
-  testContextMenuDelegatePopupIsTyped,
+  testContextMenuPopupOwnerContract,
   testContextMenuDelegateRolesAreTyped,
   testPopupContextMenuDelegateRolesAreTyped,
-  testGeometryReferencesAreTypedItems,
+  testGeometryOwnersAreTyped,
   testTimeNowPropertiesAreTypedDates,
   testEffectSourcePropertiesAreTyped,
   testBarWidgetLoaderScreenIsTyped,
