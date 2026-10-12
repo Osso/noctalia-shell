@@ -3,15 +3,13 @@
 
 import argparse
 from collections import Counter
-import hashlib
+import json
+import sys
 import importlib.util
 from pathlib import Path
 import re
 import shutil
-import subprocess
 import tempfile
-
-from qml_fixture_lint import check_harness
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -23,26 +21,27 @@ def load(name):
     return module
 
 
-def run_lint(directory):
+isolation = load("grid-list-warnings")
+config_guard = load("simple-widgets-warnings")
+
+
+def run_lint(directory, environment):
     load("media-mini-warnings").stage_modules(directory)
-    result = subprocess.run(
+    code, output = isolation.run_audited(
+        directory,
+        environment,
         [
             "/usr/lib/qt6/bin/qmllint",
             "-I",
             str(directory),
             str(directory / "qs/Widgets/NColorPickerDialog.qml"),
         ],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        timeout=60,
+        "color-picker-lint",
     )
-    output = result.stdout + result.stderr
-    print(output, end="")
     counts = Counter(re.findall(r"^Warning:.*?\[([^]]+)\]", output, re.M | re.S))
     print("COLOR_PICKER_LINT_COUNTS", dict(counts))
     assert not counts, f"color-picker diagnostics remain: {dict(counts)}"
-    assert result.returncode == 0, f"qmllint exit {result.returncode}"
+    assert code == 0, f"qmllint exit {code}"
 
 
 def stage_runtime(directory):
@@ -86,60 +85,90 @@ def stage_runtime(directory):
     )
 
 
-def run_harness_lint(directory):
+def run_harness_lint(directory, environment, inject_warning=False):
     stage_runtime(directory)
-    assert check_harness(directory, directory / "tst_color_picker.qml") == 0
+    harness = directory / "tst_color_picker.qml"
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                "id: scene",
+                "id: scene\n  property int injectedWarning: scene.missingLintProbe",
+                1,
+            )
+        )
+    code, output = isolation.run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        "color-picker-harness-lint",
+    )
+    diagnostics = json.loads(output)
+    warnings = sum(
+        warning["type"] == "warning"
+        for file in diagnostics["files"]
+        for warning in file["warnings"]
+    )
+    print("COLOR_PICKER_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
+    if inject_warning:
+        assert warnings > 0, "injected warning not diagnosed"
+        assert code != 0, "injected warning accepted"
+    assert not warnings or code != 0, "qmllint accepted harness warnings"
+    return code
 
 
-def run_runtime(directory):
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    backup = directory / "settings.backup.json"
-    backup.touch(mode=0o600)
-    backup.write_bytes(original)
-    digest = hashlib.sha256(original).digest()
-    assert hashlib.sha256(backup.read_bytes()).digest() == digest
+def run_runtime(directory, environment):
     stage_runtime(directory)
-    try:
-        result = subprocess.run(
-            [
-                "/usr/lib/qt6/bin/qmltestrunner",
-                "-input",
-                str(directory / "tst_color_picker.qml"),
-                "-import",
-                str(directory),
-            ],
-            cwd=ROOT,
-            env=load("media-mini-warnings").isolate_environment(directory),
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
-        output = result.stdout + result.stderr
-        print(output, end="")
-        assert result.returncode == 0, (
-            f"offscreen color-picker exit {result.returncode}"
-        )
-        assert "0 failed" in output
-        assert not re.search(
-            r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output
-        ), output
-    finally:
-        assert settings.read_bytes() == original, "real settings changed"
-        assert hashlib.sha256(backup.read_bytes()).digest() == digest
+    code, output = isolation.run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmltestrunner",
+            "-input",
+            str(directory / "tst_color_picker.qml"),
+            "-import",
+            str(directory),
+        ],
+        "color-picker-runtime",
+    )
+    assert code == 0, f"offscreen color-picker exit {code}"
+    assert "0 failed" in output
+    assert not re.search(
+        r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output
+    ), output
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=("lint", "lint-harness", "runtime"))
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-color-picker-") as temporary:
-        modes = {
-            "lint": run_lint,
-            "lint-harness": run_harness_lint,
-            "runtime": run_runtime,
-        }
-        modes[args.mode](Path(temporary))
+        directory = Path(temporary)
+        directory.chmod(0o700)
+        isolation.install_settings_guard(directory)
+        isolation.prove_settings_guard()
+        sys.addaudithook(config_guard.deny_real_config)
+        environment = isolation.isolated_environment(directory)
+        if args.mode == "lint-harness":
+            raise SystemExit(
+                run_harness_lint(directory, environment, args.inject_warning)
+            )
+        (run_lint if args.mode == "lint" else run_runtime)(directory, environment)
 
 
 if __name__ == "__main__":
