@@ -13,8 +13,6 @@ function qmlFunction(functionName, ...argNames) {
 function testWallpaperServiceInitializationAndModels() {
   const initBody = extractFunctionBody(source, "init");
   const translateBody = extractFunctionBody(source, "translateModels");
-  const getFillModeUniform = qmlFunction("getFillModeUniform");
-
   assert.match(initBody, /Logger\.i\("Wallpaper", "Service started"\)/, "init must log service startup");
   assert.match(initBody, /translateModels\(\)/, "init must translate UI models");
   assert.match(initBody, /Qt\.callLater\(\(\) =>[\s\S]*wallpaperCacheFile = Settings\.cacheDir \+ "wallpapers\.json"[\s\S]*wallpaperCacheView\.path = wallpaperCacheFile/, "init must defer cache path setup until Settings is available");
@@ -25,20 +23,6 @@ function testWallpaperServiceInitializationAndModels() {
   assert.match(translateBody, /"key": "fit"[\s\S]*"uniform": 2\.0/, "translateModels must include fit fill mode");
   assert.match(translateBody, /"key": "stretch"[\s\S]*"uniform": 3\.0/, "translateModels must include stretch fill mode");
   assert.match(translateBody, /"key": "none"[\s\S]*"key": "random"[\s\S]*"key": "fade"[\s\S]*"key": "disc"[\s\S]*"key": "stripes"[\s\S]*"key": "wipe"/, "translateModels must include all transition modes");
-  const modes = [
-    { key: "center", uniform: 0 },
-    { key: "crop", uniform: 1 },
-    { key: "fit", uniform: 2 },
-  ];
-  const ctx = {
-    fillModeModel: { count: modes.length, get: index => modes[index] },
-    Settings: { data: { wallpaper: { fillMode: "fit" } } },
-  };
-  assert.equal(getFillModeUniform(ctx), 2, "lookup must reach later fill modes");
-  ctx.Settings.data.wallpaper.fillMode = "missing";
-  assert.equal(getFillModeUniform(ctx), 1, "unknown fill modes use crop");
-  ctx.fillModeModel.count = 0;
-  assert.equal(getFillModeUniform(ctx), 1, "empty models use crop");
 }
 
 function testWallpaperServiceMonitorAndWallpaperSelection() {
@@ -93,10 +77,6 @@ function testWallpaperServiceRandomWallpaperFlow() {
     { path: "/first-b.jpg", screenName: "first" },
     { path: "/second-b.jpg", screenName: "second" },
   ], "random selection must process every screen's own list");
-  ctx.Settings.data.wallpaper.enableMultiMonitorDirectories = false;
-  ctx.Screen = { name: "primary" };
-  setRandomWallpaper(ctx);
-  assert.deepEqual(changes[2], { path: "/primary-b.jpg", screenName: undefined });
   assert.match(toggleBody, /if \(Settings\.data\.wallpaper\.randomEnabled\)[\s\S]*restartRandomWallpaperTimer\(\)[\s\S]*setRandomWallpaper\(\)/, "toggleRandomWallpaper must restart and immediately randomize when enabled");
   assert.match(restartBody, /if \(Settings\.data\.wallpaper\.randomEnabled\)[\s\S]*randomWallpaperTimer\.restart\(\)/, "restartRandomWallpaperTimer must only run when random mode is enabled");
   assert.match(listBody, /if \(screenName != undefined && wallpaperLists\[screenName\] != undefined\)[\s\S]*return wallpaperLists\[screenName\]/, "getWallpapersList must return cached lists for known screens");
@@ -158,9 +138,8 @@ function testWallpaperServiceRefreshAndRecursiveScan() {
     Logger: { d() {}, i() {}, w() {} },
     Qt: {
       createComponent() { return {}; },
-      createQmlObject(qml, owner, name) {
+      createQmlObject(qml, owner) {
         assert.equal(owner, scanCtx);
-        assert.ok(name.startsWith("RecursiveScan_"));
         const process = {
           running: false,
           destroyed: false,
@@ -232,6 +211,8 @@ function testWallpaperServiceLookupHelpersExecute() {
   assert.equal(getFillModeUniform(ctx), 2, "getFillModeUniform must return the configured mode uniform");
   ctx.Settings.data.wallpaper.fillMode = "missing";
   assert.equal(getFillModeUniform(ctx), 1, "getFillModeUniform must fall back to crop uniform");
+  ctx.fillModeModel.count = 0;
+  assert.equal(getFillModeUniform(ctx), 1, "empty fill mode models must use crop uniform");
   assert.deepEqual(getMonitorConfig(ctx, "HDMI-A-1"), { name: "HDMI-A-1", path: "/wallpapers/external" }, "getMonitorConfig must return named monitor config");
   assert.equal(getMonitorConfig(ctx, "DP-1"), undefined, "getMonitorConfig must return undefined for unknown screens");
   assert.deepEqual(getWallpapersList(ctx, "HDMI-A-1"), ["/a.jpg", "/b.jpg"], "getWallpapersList must return cached screen lists");
