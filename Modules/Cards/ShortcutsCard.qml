@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -7,12 +9,17 @@ import qs.Modules.Panels.ControlCenter
 import qs.Widgets
 
 RowLayout {
+  id: shortcuts
+
+  // The caller supplies root through ControlCenterPanel's creation context.
+  readonly property ControlCenterPanel controlCenter: root
+
   Layout.fillWidth: true
   spacing: Style.marginL
 
   NBox {
     Layout.fillWidth: true
-    Layout.preferredHeight: root.shortcutsHeight
+    Layout.preferredHeight: shortcuts.controlCenter.shortcutsHeight
     visible: Settings.data.controlCenter.shortcuts.left.length > 0
 
     RowLayout {
@@ -33,7 +40,7 @@ RowLayout {
 
           Layout.fillWidth: false
           widgetId: id
-          widgetScreen: root.screen
+          widgetScreen: shortcuts.controlCenter.screen
           widgetProps: {
             "widgetId": id,
             "section": "quickSettings",
@@ -53,7 +60,7 @@ RowLayout {
 
   NBox {
     Layout.fillWidth: true
-    Layout.preferredHeight: root.shortcutsHeight
+    Layout.preferredHeight: shortcuts.controlCenter.shortcutsHeight
     visible: Settings.data.controlCenter.shortcuts.right.length > 0
 
     RowLayout {
@@ -74,7 +81,7 @@ RowLayout {
 
           Layout.fillWidth: false
           widgetId: id
-          widgetScreen: root.screen
+          widgetScreen: shortcuts.controlCenter.screen
           widgetProps: {
             "widgetId": id,
             "section": "quickSettings",
