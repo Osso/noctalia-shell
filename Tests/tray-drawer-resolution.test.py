@@ -2,7 +2,7 @@
 """Private Winit/layer-shell drawer cold start, reload and failed-load recovery.
 
 Production drawer + PopupMenuWindow; synthetic tray, SmartPanel and menu content.
-Handler signals prove routing/state, not compositor-delivered pointer input.
+QtTest injects pointer events into native Qt windows, not the compositor seat.
 """
 
 import argparse
@@ -29,6 +29,7 @@ fixtures = load_helper("drawer_fixtures", "tray-drawer-warnings.test.py")
 display = load_helper("drawer_display", "popup-private-display.py")
 
 PROBE = """import QtQuick
+import QtTest
 import Quickshell
 import Quickshell.Wayland
 import qs.Commons
@@ -101,6 +102,11 @@ ShellRoot {
       function scrollUp() { up++; }
       function scrollDown() { down++; }
     }
+    TestCase { id: input; when: false }
+    function click(owner, button) {
+      const mouse = area(owner, 0);
+      input.mouseClick(mouse, mouse.width / 2, mouse.height / 2, button);
+    }
     function check(condition, message) {
       if (!condition) throw new Error("DRAWER_NATIVE_ASSERT: " + message);
     }
@@ -132,11 +138,12 @@ ShellRoot {
         surface.check(surface.delegates(second).itemAt(0).drawer === second, "second delegate owner");
         surface.check(surface.delegates(first).itemAt(0).modelData === alpha, "first pinned model");
         surface.check(surface.delegates(second).itemAt(0).modelData === beta, "second pinned model");
+        surface.check(input.waitForRendering(surface.contentItem, 1000), "native drawer surface rendered");
         PanelService.openedPanel = first;
-        surface.area(first, 0).clicked({button: Qt.LeftButton});
+        surface.click(first, Qt.LeftButton);
         surface.check(alpha.activations === 1 && beta.activations === 0 && first.closeCount === 1, "left activation routes first owner");
         PanelService.openedPanel = second;
-        surface.area(second, 0).clicked({button: Qt.MiddleButton});
+        surface.click(second, Qt.MiddleButton);
         surface.check(beta.secondaryActivations === 1 && second.closeCount === 1, "middle activation routes second owner");
         SystemTray.items.values = [];
         surface.check(surface.delegates(first).count === 0 && surface.delegates(second).count === 0, "both models cleared");
@@ -144,20 +151,21 @@ ShellRoot {
         surface.check(surface.delegates(first).itemAt(0).modelData === alpha && surface.delegates(second).itemAt(0).modelData === beta, "models recreated");
         first.visible = true;
         second.visible = true;
-        surface.area(second, 0).wheel({angleDelta: {y: 120}});
+        surface.check(input.waitForPolish(surface.delegates(second).parent, 1000), "recreated grid polished");
+        input.mouseWheel(surface.area(second, 0), 10, 10, 0, 120);
         surface.check(beta.up === 1 && alpha.up === 0, "wheel routes recreated model");
-        surface.area(second, 0).clicked({button: Qt.RightButton});
+        surface.click(second, Qt.RightButton);
         surface.check(popup.visible && second.trayMenuItem.trayItem === beta, "native popup opened for second model");
         surface.check(second.trayMenuItem.widgetSection === "right" && second.trayMenuItem.widgetIndex === 0, "second owner menu context");
         surface.check(second.trayMenuItem.anchor === surface.find(surface.delegates(second).itemAt(0), "backer"), "menu anchor identity");
-        surface.area(second, 0).clicked({button: Qt.RightButton});
+        surface.click(second, Qt.RightButton);
         surface.check(!popup.visible, "second right click closes native popup");
         popup.trayMenuLoader.active = false;
         surface.check(first.trayMenuItem === null && second.trayMenuItem === null, "menu teardown reaches both owners");
         popup.trayMenuLoader.active = true;
         Qt.callLater(() => {
           surface.check(first.trayMenuItem !== null && first.trayMenuItem === second.trayMenuItem, "menu recreated for both owners");
-          surface.area(first, 0).clicked({button: Qt.RightButton});
+          surface.click(first, Qt.RightButton);
           surface.check(popup.visible && first.trayMenuItem.trayItem === alpha && first.trayMenuItem.widgetSection === "left", "first menu after recreation");
           surface.area(first, 0).entered();
           surface.check(!popup.visible && TooltipService.text === "Alpha", "hover closes native popup and routes tooltip");
