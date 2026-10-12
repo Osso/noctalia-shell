@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Templates as T
 import qs.Commons
 
 Item {
@@ -8,13 +7,13 @@ Item {
 
   // Intercept all key events at the root level to prevent GridView from handling them
   Keys.onPressed: event => {
-                    // Don't let this event reach the GridView
-                    event.accepted = false;
-                  }
+    // Don't let this event reach the GridView
+    event.accepted = false;
+  }
 
   Keys.onReleased: event => {
-                     event.accepted = false;
-                   }
+    event.accepted = false;
+  }
 
   property color handleColor: Qt.alpha(NColor.mHover, 0.8)
   property color handleHoverColor: handleColor
@@ -96,11 +95,17 @@ Item {
   }
 
   function incrementCurrentIndex() {
-    gridView.incrementCurrentIndex();
+    if (gridView.currentIndex < gridView.count - 1)
+      gridView.currentIndex++;
+    else if (gridView.count > 0 && gridView.keyNavigationWraps)
+      gridView.currentIndex = 0;
   }
 
   function decrementCurrentIndex() {
-    gridView.decrementCurrentIndex();
+    if (gridView.currentIndex > 0)
+      gridView.currentIndex--;
+    else if (gridView.count > 0 && gridView.keyNavigationWraps)
+      gridView.currentIndex = gridView.count - 1;
   }
 
   function indexAt(x, y) {
@@ -136,18 +141,19 @@ Item {
 
     // Override key navigation - do nothing
     Keys.onPressed: event => {
-                      // Consume the event here so GridView doesn't process it
-                      // but don't actually do anything
-                      event.accepted = true;
-                    }
+      // Consume the event here so GridView doesn't process it
+      // but don't actually do anything
+      event.accepted = true;
+    }
 
     Keys.onReleased: event => {
-                       event.accepted = true;
-                     }
+      event.accepted = true;
+    }
 
     ScrollBar.vertical: ScrollBar {
+      id: verticalScrollBar
       parent: gridView
-      x: gridView.mirrored ? 0 : gridView.width - width
+      x: gridView.effectiveLayoutDirection === Qt.RightToLeft ? 0 : gridView.width - verticalScrollBar.width
       y: 0
       height: gridView.height
       policy: root.verticalPolicy
@@ -156,8 +162,8 @@ Item {
         implicitWidth: root.handleWidth
         implicitHeight: 100
         radius: root.handleRadius
-        color: parent.pressed ? root.handlePressedColor : parent.hovered ? root.handleHoverColor : root.handleColor
-        opacity: parent.policy === ScrollBar.AlwaysOn ? 1.0 : root.verticalScrollBarActive ? (parent.active ? 1.0 : 0.0) : 0.0
+        color: verticalScrollBar.pressed ? root.handlePressedColor : verticalScrollBar.hovered ? root.handleHoverColor : root.handleColor
+        opacity: verticalScrollBar.policy === ScrollBar.AlwaysOn ? 1.0 : root.verticalScrollBarActive ? (verticalScrollBar.active ? 1.0 : 0.0) : 0.0
 
         Behavior on opacity {
           NumberAnimation {
@@ -176,7 +182,7 @@ Item {
         implicitWidth: root.handleWidth
         implicitHeight: 100
         color: root.trackColor
-        opacity: parent.policy === ScrollBar.AlwaysOn ? 0.3 : root.verticalScrollBarActive ? (parent.active ? 0.3 : 0.0) : 0.0
+        opacity: verticalScrollBar.policy === ScrollBar.AlwaysOn ? 0.3 : root.verticalScrollBarActive ? (verticalScrollBar.active ? 0.3 : 0.0) : 0.0
         radius: root.handleRadius / 2
 
         Behavior on opacity {

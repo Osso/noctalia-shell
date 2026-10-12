@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Templates as T
 import qs.Commons
 
 Item {
@@ -149,8 +148,9 @@ Item {
     }
 
     ScrollBar.vertical: ScrollBar {
+      id: verticalScrollBar
       parent: root // Position relative to root Item, not listView
-      x: listView.mirrored ? 0 : root.width - width
+      x: listView.effectiveLayoutDirection === Qt.RightToLeft ? 0 : root.width - verticalScrollBar.width
       y: 0
       height: listView.height
       policy: root.verticalPolicy
@@ -159,8 +159,8 @@ Item {
         implicitWidth: root.handleWidth
         implicitHeight: 100
         radius: root.handleRadius
-        color: parent.pressed ? root.handlePressedColor : parent.hovered ? root.handleHoverColor : root.handleColor
-        opacity: parent.policy === ScrollBar.AlwaysOn ? 1.0 : root.verticalScrollBarActive ? (parent.active ? 1.0 : 0.0) : 0.0
+        color: verticalScrollBar.pressed ? root.handlePressedColor : verticalScrollBar.hovered ? root.handleHoverColor : root.handleColor
+        opacity: verticalScrollBar.policy === ScrollBar.AlwaysOn ? 1.0 : root.verticalScrollBarActive ? (verticalScrollBar.active ? 1.0 : 0.0) : 0.0
 
         Behavior on opacity {
           NumberAnimation {
@@ -179,7 +179,7 @@ Item {
         implicitWidth: root.handleWidth
         implicitHeight: 100
         color: root.trackColor
-        opacity: parent.policy === ScrollBar.AlwaysOn ? 0.3 : root.verticalScrollBarActive ? (parent.active ? 0.3 : 0.0) : 0.0
+        opacity: verticalScrollBar.policy === ScrollBar.AlwaysOn ? 0.3 : root.verticalScrollBarActive ? (verticalScrollBar.active ? 0.3 : 0.0) : 0.0
         radius: root.handleRadius / 2
 
         Behavior on opacity {
