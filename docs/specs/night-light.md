@@ -17,6 +17,7 @@ Night Light covers wlsunset command generation, manual and automatic scheduling,
 - [x] Applying disabled settings stops the runner and never starts one while cleanup is pending; changes while cleanup is pending use the latest desired command.
 - [x] Wlsunset stderr reports gamma-control failures.
 - [x] Settings signal handlers reapply night light state and emit enabled/disabled or forced/normal notices where applicable.
+- [x] Changes to `Settings.data.nightLight.autoSchedule`, `manualSunset`, and `manualSunrise` reapply state in the same shell process, without reload; edits during cleanup select the latest desired schedule before replacement starts.
 - [x] Location coordinate readiness applies night light state only after coordinates become ready.
 
 ## How it works
@@ -33,7 +34,8 @@ Night Light covers wlsunset command generation, manual and automatic scheduling,
 
 ## Tests asserting this spec
 
-- `Tests/night-light-service-guards.test.js`
+- `Tests/night-light-service-guards.test.js` — seven reported passing guards at `bd79dc881`/`f2c439276`, covering command generation, coordinate readiness, stop state, settings handlers, and location readiness.
+- `Tests/night-light-schedule-runtime.test.py` — same-process automatic→manual regression with production service/Quickshell Process and private fake clients; RED before the fix, GREEN at `bd79dc881`/`f2c439276`. Asserts manual `-S 06:30 -s 22:00` after a sunset edit during cleanup, later sunset/sunrise edits, and stop → cleanup → replacement ordering. These times are fixtures, not defaults. Isolation and proof limits: [testing](testing.md#night-light-schedule-private-runtime).
 - `Tests/night-light-runtime.test.py` — eight private headless Wayland gamma cases with real wlsunset/Quickshell Process, passing at `cbaf31bd0`: overlap, delayed exit, timeout, enumeration failure, disabled cleanup, latest desired command, unchanged command, and gamma failure. This is private process/gamma proof, not active-display acceptance; test-only dependencies listed in test docstring.
 - `Tests/simple-service-warnings.test.py` / `Tests/Qml/SimpleServiceHarness.qml` — production settings signal reapplication, cleanup failure logging, changed temperature, and disable-during-cleanup race with fake processes. Distinct from real gamma proof; cohort invocation and limits: [testing](testing.md#simple-service-cohort).
 - `Tests/source-coverage.test.js`
