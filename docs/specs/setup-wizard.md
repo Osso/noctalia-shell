@@ -70,6 +70,12 @@ Setup Wizard covers first-run onboarding launch, completion, and selected setup 
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
 
+### Customization isolated evidence
+
+- At `07c412dea`/`56791a2ec`, `SetupCustomizeStep.qml` warnings drop 12→0. Standalone `Tests/setup-customize-warnings.test.py lint|behavior --artifacts <new-directory>` covers production customization with synthetic settings; no runner integration is claimed.
+- Four offscreen cases (widths 480/1000 × scales 1/1.25) assert scale draft values/text/signals, opacity values/text, floating/shadow toggles, bar-position signals, density selection, active labels/colors, external selection updates, and reversed models. `Bound` ownership is exercised through delegate recreation and two simultaneous instances with independent scale/position state and no cross-instance signals.
+- Direct signal invocation is component proof, not physical input or live-wizard acceptance. Behavior verifies no save requests and unchanged real-settings bytes after a permission-locked, hash-verified backup; real persistence remains untested. Isolation and acceptance gates: [testing](testing.md#setup-customization-isolated-runtime).
+
 ## Known gaps (current cycle)
 
 - [ ] Add executable coverage for the close timer timeout; settings-saved close state is covered with a fixture signal, not real persistence or completed panel teardown.
