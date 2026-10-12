@@ -87,7 +87,8 @@ with patch("os.stat", guard(os.stat)), patch("os.lstat", guard(os.lstat)), patch
 
 class UnitParentSettingsIsolationTest(unittest.TestCase):
     def run_mode(self, script, mode, mutation="normal"):
-        with tempfile.TemporaryDirectory(prefix="unit-parent-isolation-") as temporary:
+        # Quickshell's nested IPC socket must fit the Unix-domain path limit.
+        with tempfile.TemporaryDirectory(prefix="up-") as temporary:
             root = Path(temporary)
             home = root / "absent-home"
             self.assertFalse(home.exists())
