@@ -7,7 +7,6 @@ fixture curl/wget executables; every writable path belongs to a temporary tree.
 """
 
 import argparse
-import hashlib
 import importlib.util
 import json
 import os
@@ -22,7 +21,6 @@ from qml_fixture_lint import check_harness
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/Settings/Tabs/ColorScheme/SchemeDownloader.qml")
-SETTINGS = Path("/home/osso/.config/noctalia/settings.json")
 
 
 def load_staging():
@@ -254,14 +252,27 @@ def runtime(directory):
         QML_IMPORT_PATH=str(directory),
         PATH=str(directory / "bin") + os.pathsep + os.environ["PATH"],
     )
-    result = subprocess.run(
-        ["quickshell", "-p", str(directory / "shell.qml")],
-        cwd=directory,
-        env=environment,
-        capture_output=True,
-        text=True,
-        timeout=20,
-    )
+    settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
+    settings.parent.mkdir(mode=0o700, parents=True)
+    original = (ROOT / "Assets/settings-default.json").read_bytes()
+    settings.touch(mode=0o600)
+    settings.write_bytes(original)
+    backup = directory / "settings.backup.json"
+    backup.touch(mode=0o600)
+    backup.write_bytes(original)
+    assert backup.read_bytes() == original, "fixture backup bytes differ"
+    try:
+        result = subprocess.run(
+            ["quickshell", "-p", str(directory / "shell.qml")],
+            cwd=directory,
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+    finally:
+        assert settings.read_bytes() == original, "fixture settings changed"
+        assert backup.read_bytes() == original, "fixture backup changed"
     output = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout + result.stderr)
     print(output, end="")
     assert result.returncode == 0, result.returncode
@@ -286,20 +297,8 @@ def main():
             prefix="noctalia-scheme-harness-lint-"
         ) as name:
             raise SystemExit(lint_harness(Path(name)))
-    before = SETTINGS.read_bytes()
-    with tempfile.TemporaryDirectory(prefix="scheme-downloader-backup-") as backup_name:
-        backup = Path(backup_name) / "settings.json"
-        backup.write_bytes(before)
-        backup.chmod(0o600)
-        assert (
-            hashlib.sha256(backup.read_bytes()).digest()
-            == hashlib.sha256(before).digest()
-        )
-        try:
-            with tempfile.TemporaryDirectory(prefix="scheme-downloader-test-") as name:
-                globals()[args.mode](Path(name))
-        finally:
-            assert SETTINGS.read_bytes() == before, "Real settings changed"
+    with tempfile.TemporaryDirectory(prefix="noctalia-scheme-downloader-") as name:
+        globals()[args.mode](Path(name))
 
 
 if __name__ == "__main__":

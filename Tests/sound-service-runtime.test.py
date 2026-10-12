@@ -6,7 +6,6 @@ Missing media exercises real asynchronous errors, not audio playback. Stopped-st
 signals additionally exercise one-shot/repeat cleanup without decoding valid audio.
 """
 
-import hashlib
 from pathlib import Path
 import shutil
 import subprocess
@@ -111,30 +110,30 @@ def sandbox_command(directory):
 
 
 def main():
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes() if settings.exists() else None
     with tempfile.TemporaryDirectory(prefix="noctalia-sound-runtime-") as temporary:
         directory = Path(temporary)
-        if original is not None:
-            backup = directory / "settings.backup.json"
-            backup.touch(mode=0o600)
-            backup.write_bytes(original)
-            assert (
-                hashlib.sha256(backup.read_bytes()).digest()
-                == hashlib.sha256(original).digest()
-            )
         stage_service(directory)
+        command = sandbox_command(directory)
+        settings = directory / "home/.config/noctalia/settings.json"
+        settings.parent.mkdir(mode=0o700, parents=True)
+        original = (ROOT / "Assets/settings-default.json").read_bytes()
+        settings.touch(mode=0o600)
+        settings.write_bytes(original)
+        backup = directory / "settings.backup.json"
+        backup.touch(mode=0o600)
+        backup.write_bytes(original)
+        assert backup.read_bytes() == original, "fixture backup bytes differ"
         try:
             result = subprocess.run(
-                sandbox_command(directory),
+                command,
                 cwd=ROOT,
                 capture_output=True,
                 text=True,
                 timeout=15,
             )
         finally:
-            if original is not None:
-                assert settings.read_bytes() == original, "real settings changed"
+            assert settings.read_bytes() == original, "fixture settings changed"
+            assert backup.read_bytes() == original, "fixture backup changed"
         output = result.stdout + result.stderr
         print(output, end="")
         assert result.returncode == 0, f"SoundService runtime exit {result.returncode}"

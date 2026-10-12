@@ -7,7 +7,6 @@ settings, popup surfaces and compositor facade are inert boundary fixtures.
 
 import argparse
 from collections import Counter
-import hashlib
 import importlib.util
 import os
 from pathlib import Path
@@ -149,20 +148,19 @@ Item {
 
 
 def run_behavior(directory):
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes() if settings.exists() else None
-    if original is not None:
-        backup = directory / "settings.backup.json"
-        backup.touch(mode=0o600)
-        backup.write_bytes(original)
-        assert (
-            hashlib.sha256(backup.read_bytes()).digest()
-            == hashlib.sha256(original).digest()
-        )
     stage_runtime(directory)
     environment = load_helper("media-mini-warnings").isolate_environment(directory)
     for key in ("NIRI_SOCKET", "HYPRLAND_INSTANCE_SIGNATURE", "SWAYSOCK"):
         environment.pop(key, None)
+    settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
+    settings.parent.mkdir(mode=0o700, parents=True)
+    original = (ROOT / "Assets/settings-default.json").read_bytes()
+    settings.touch(mode=0o600)
+    settings.write_bytes(original)
+    backup = directory / "settings.backup.json"
+    backup.touch(mode=0o600)
+    backup.write_bytes(original)
+    assert backup.read_bytes() == original, "fixture backup bytes differ"
     try:
         result = subprocess.run(
             [
@@ -188,9 +186,8 @@ def run_behavior(directory):
             r"QWARN|QFATAL|ReferenceError|TypeError|Binding loop", output
         ), output
     finally:
-        assert (settings.read_bytes() if settings.exists() else None) == original, (
-            "real settings changed"
-        )
+        assert settings.read_bytes() == original, "fixture settings changed"
+        assert backup.read_bytes() == original, "fixture backup changed"
 
 
 def run_lint(directory):
