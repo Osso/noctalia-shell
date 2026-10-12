@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Effects
 import QtQuick.Layouts
@@ -204,7 +206,6 @@ Variants {
             required property date timestamp
 
             property string notificationId: id
-            property var notificationData: model
             property int hoverCount: 0
             property bool isRemoving: false
 
@@ -516,7 +517,6 @@ Variants {
                     Layout.topMargin: Style.marginM
                     flow: Flow.LeftToRight
 
-                    property string parentNotificationId: card.notificationId
                     property var parsedActions: {
                       try {
                         return card.actionsJson ? JSON.parse(card.actionsJson) : [];
@@ -551,7 +551,7 @@ Variants {
                         outlined: false
                         implicitHeight: 24
                         onClicked: {
-                          NotificationService.invokeAction(parent.parentNotificationId, actionData.identifier);
+                          NotificationService.invokeAction(card.notificationId, actionButton.actionData.identifier);
                         }
                       }
                     }

@@ -54,6 +54,31 @@ ShellRoot {
     return found[0];
   }
 
+  function exerciseGeometry() {
+    const panel = harness.panel();
+    const card = harness.card("critical");
+    const mouse = harness.descendants(card, item => item.acceptedButtons !== undefined)[0];
+    harness.require(mouse.acceptedButtons === Qt.RightButton && mouse.hoverEnabled, "right-click hover policy");
+    harness.require(mouse.width === card.width && mouse.height === card.height, "dismiss hit area follows card");
+    for (const location of ["top_right", "bottom_left", "top", "bottom", "top_left", "bottom_right"]) {
+      Settings.data = Object.assign({}, Settings.data, {
+        notifications: Object.assign({}, Settings.data.notifications, {
+          location: location
+        })
+      });
+      clock.wait(20);
+      harness.require(panel.anchors.top === location.startsWith("top") && panel.anchors.bottom === location.startsWith("bottom"), "vertical anchors " + location);
+      harness.require(panel.anchors.left === location.endsWith("_left") && panel.anchors.right === location.endsWith("_right"), "horizontal anchors " + location);
+      harness.require(panel.implicitWidth === 400 && card.width === 400, "requested width " + location);
+      harness.require(panel.implicitHeight === card.parent.implicitHeight + Style.marginL, "requested height follows stack");
+    }
+    Settings.data = Object.assign({}, Settings.data, {
+      notifications: Object.assign({}, Settings.data.notifications, {
+        location: "top_right"
+      })
+    });
+  }
+
   function exerciseContent() {
     harness.require(Quickshell.screens.length === 1, "private headless screen");
     harness.append("critical", 2, '[{"identifier":"open","text":"default,Read message"}]');
@@ -77,15 +102,32 @@ ShellRoot {
     }
     const panel = harness.panel();
     harness.require(panel.screen === Quickshell.screens[0], "screen route");
-    // Cage lacks layer-shell: mask geometry/input delivery cannot be asserted here.
+    // Cage lacks layer-shell: configured Region/input delivery cannot be observed.
+    harness.exerciseGeometry();
     card.hoverCount = 1;
     harness.require(NotificationService.events.includes("pause:critical"), "hover pauses expiry");
     card.hoverCount = 0;
     clock.wait(70);
     harness.require(NotificationService.events.includes("resume:critical"), "hover resumes expiry");
     const button = harness.descendants(card, item => item.text === "Read message")[0];
+    button.entered();
+    harness.require(card.hoverCount === 1, "action hover belongs to card");
+    button.exited();
+    harness.require(card.hoverCount === 0, "action exit belongs to card");
     button.clicked();
     harness.require(NotificationService.events.includes("action:critical:open"), "action id and notification id");
+    harness.append("second", 0, '[{"identifier":"reply","text":"Reply"}]');
+    const second = harness.card("second");
+    const reply = harness.descendants(second, item => item.text === "Reply")[0];
+    reply.entered();
+    harness.require(second.hoverCount === 1 && card.hoverCount === 0, "nested hover stays with second card");
+    reply.exited();
+    reply.clicked();
+    harness.require(NotificationService.events.includes("action:second:reply") && !NotificationService.events.includes("action:critical:reply"), "nested action stays with second card");
+    NotificationService.animateAndRemove("second");
+    harness.require(second.isRemoving && !card.isRemoving, "removal selects second card");
+    clock.wait(120);
+    harness.require(NotificationService.activeList.count === 1 && harness.card("critical") === card, "first card survives second dismissal");
   }
 
   function exerciseClose() {

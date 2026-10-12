@@ -8,7 +8,6 @@ layer-shell input delivery or cursor behavior.
 
 import argparse
 from collections import Counter
-import hashlib
 import importlib.util
 import json
 import os
@@ -17,6 +16,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import sys
 
 from qml_fixture_lint import check_harness
 
@@ -53,8 +53,8 @@ def lint(directory):
         if line.startswith("Warning:")
     )
     print("NOTIFICATION_LINT_COUNTS", dict(counts))
-    # Unbound cross-component IDs and dynamic delegate metadata remain explicit.
-    assert counts == {"unqualified": 6, "missing-property": 4}, dict(counts)
+    # Repeater.itemAt() exposes QQuickItem, not the anonymous card's members.
+    assert counts == {"missing-property": 3}, dict(counts)
     assert result.returncode == 0, result.returncode
 
 
@@ -191,13 +191,6 @@ def lint_harness_regression(directory):
 
 
 def behavior(directory):
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    backup = directory / "settings.backup.json"
-    backup.touch(mode=0o600)
-    backup.write_bytes(original)
-    original_sha = hashlib.sha256(original).hexdigest()
-    assert hashlib.sha256(backup.read_bytes()).hexdigest() == original_sha
     stage_runtime(directory)
     environment = helper("media-mini-warnings").isolate_environment(directory)
     environment.update(
@@ -220,10 +213,6 @@ def behavior(directory):
         stdout, stderr = process.communicate(timeout=15)
     finally:
         helper("osd-warnings").stop_process_group(process)
-        assert hashlib.sha256(settings.read_bytes()).hexdigest() == original_sha, (
-            "real settings changed"
-        )
-        print("NOTIFICATION_SETTINGS_SHA", original_sha)
     output = stdout + stderr
     print(output, end="")
     assert process.returncode == 0, process.returncode
@@ -237,7 +226,20 @@ def behavior(directory):
     )
 
 
+def deny_real_settings(event, args):
+    if event == "open":
+        path = args[0]
+        if isinstance(path, (str, bytes, os.PathLike)):
+            requested = Path(os.fsdecode(path)).absolute()
+            protected = Path("/home/osso/.config/noctalia/settings.json")
+            if requested == protected or requested.resolve() == protected.resolve():
+                raise PermissionError(f"real settings access denied: {requested}")
+    if event == "socket.connect":
+        raise PermissionError("network access denied in notification fixture")
+
+
 def main():
+    sys.addaudithook(deny_real_settings)
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "mode", choices=("lint", "lint-harness", "lint-harness-regression", "behavior")
@@ -247,6 +249,19 @@ def main():
     with tempfile.TemporaryDirectory(prefix="noctalia-notification-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
+        environment_directory = directory / "environment"
+        environment_directory.mkdir(mode=0o700)
+        environment = helper("media-mini-warnings").isolate_environment(
+            environment_directory
+        )
+        os.environ.clear()
+        os.environ.update(environment)
+        try:
+            sys.audit("open", "/home/osso/.config/noctalia/settings.json", "r", 0)
+        except PermissionError:
+            print("NOTIFICATION_REAL_SETTINGS_AUDIT_DENIED")
+        else:
+            raise AssertionError("real settings audit guard failed")
         if args.mode == "lint-harness":
             raise SystemExit(lint_harness(directory))
         if args.mode == "lint-harness-regression":
