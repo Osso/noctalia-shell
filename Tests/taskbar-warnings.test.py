@@ -15,6 +15,8 @@ from pathlib import Path
 
 from importlib.util import module_from_spec, spec_from_file_location
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -163,12 +165,20 @@ def run_lint(directory):
     assert result.returncode == 0
 
 
+def lint_harness(directory):
+    stage_runtime(directory)
+    return check_harness(directory, directory / "tst_taskbar.qml")
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "behavior", "lint-harness"))
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-taskbar-") as temporary:
-        (run_lint if args.mode == "lint" else run_behavior)(Path(temporary))
+        directory = Path(temporary)
+        if args.mode == "lint-harness":
+            raise SystemExit(lint_harness(directory))
+        (run_lint if args.mode == "lint" else run_behavior)(directory)
 
 
 if __name__ == "__main__":
