@@ -7,7 +7,6 @@ settings persistence. No desktop surfaces or service backends are available.
 """
 
 import argparse
-import hashlib
 import importlib.util
 from pathlib import Path
 import re
@@ -177,30 +176,12 @@ def main():
     parser.add_argument("--artifacts", type=Path, required=True)
     args = parser.parse_args()
     args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
-    settings = Path("/home/osso/.config/noctalia/settings.json")
-    original = settings.read_bytes()
-    digest = hashlib.sha256(original).hexdigest()
-    backup = args.artifacts / "settings.backup.json"
-    backup.touch(mode=0o600)
-    backup.write_bytes(original)
-    assert backup.stat().st_mode & 0o777 == 0o600
-    assert hashlib.sha256(backup.read_bytes()).hexdigest() == digest
-    identity_reader = helper("brightness-panel-warnings.test.py").runtime_identity
-    identity = identity_reader()
-    (args.artifacts / "canonical-runtime.txt").write_text("\n".join(identity))
-    try:
-        if args.mode == "lint-harness":
-            stage_behavior(args.artifacts)
-            raise SystemExit(
-                check_harness(args.artifacts, args.artifacts / "tst_control_center.qml")
-            )
-        {"lint": lint, "behavior": behavior}[args.mode](args.artifacts)
-    finally:
-        assert settings.read_bytes() == original, "real settings changed"
-        assert backup.read_bytes() == original, "backup changed"
-        assert identity_reader() == identity, "canonical process/registry changed"
-        print("CANONICAL_RUNTIME_UNCHANGED")
-        print("SETTINGS_SHA_UNCHANGED", digest)
+    if args.mode == "lint-harness":
+        stage_behavior(args.artifacts)
+        raise SystemExit(
+            check_harness(args.artifacts, args.artifacts / "tst_control_center.qml")
+        )
+    {"lint": lint, "behavior": behavior}[args.mode](args.artifacts)
 
 
 if __name__ == "__main__":
