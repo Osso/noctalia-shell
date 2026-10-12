@@ -303,6 +303,18 @@ class FixtureLintTest(unittest.TestCase):
                 "audio-notification-settings-warnings.test.py",
             ):
                 shutil.copy2(ROOT / "Tests" / script, tests / script)
+        if any(
+            name in harness_scripts
+            for name in (
+                "HooksAppThemeWarningsHarness.qml",
+                "BusyDividerWarningsHarness.qml",
+            )
+        ):
+            for script in (
+                "notifications-hooks-warnings.test.py",
+                "grouped-osd-settings-warnings.test.py",
+            ):
+                shutil.copy2(ROOT / "Tests" / script, tests / script)
         if "ShellRootWarningsProbe.qml" in harness_scripts:
             source = root / ".fixture-dependencies/shell.qml"
             source.parent.mkdir(exist_ok=True)
@@ -640,7 +652,96 @@ class FixtureLintTest(unittest.TestCase):
                 with self.subTest(harness=name, warning=warning):
                     self.check_synthetic_strict_dispatch(name, script, warning)
 
-    def check_synthetic_strict_dispatch(self, name, script, warning):
+    def test_hooks_busy_checker_dispatch_is_strict_once_only_and_isolated(self):
+        for name, script, arguments, report, marker in (
+            (
+                "HooksAppThemeWarningsHarness.qml",
+                "hooks-app-theme-warnings.test.py",
+                ["lint-harness"],
+                "tst_hooks_app_theme.qml",
+                "HOOKS_APP_THEME_HARNESS_LINT",
+            ),
+            (
+                "BusyDividerWarningsHarness.qml",
+                "busy-divider-warnings.test.py",
+                ["lint-harness", "--max-warnings", "0"],
+                "tst_busy_divider.qml",
+                "BUSY_DIVIDER_HARNESS_LINT_WARNINGS",
+            ),
+        ):
+            for warning in (False, True):
+                with self.subTest(harness=name, warning=warning, boundary="dispatch"):
+                    self.check_synthetic_strict_dispatch(
+                        name, script, warning, arguments
+                    )
+                for owner_cli in (False, True):
+                    with (
+                        self.subTest(
+                            harness=name, warning=warning, owner_cli=owner_cli
+                        ),
+                        tempfile.TemporaryDirectory(
+                            prefix="noctalia-hooks-busy-dispatch-", dir="/var/tmp"
+                        ) as temp,
+                    ):
+                        root = Path(temp)
+                        runner = self.stage_repository(root, {name: script})
+                        if warning:
+                            harness = root / "Tests/Qml" / name
+                            harness.write_text(
+                                harness.read_text().replace(
+                                    "{",
+                                    "{\n  property int injectedWarning: Qt.application.missingFixtureValue",
+                                    1,
+                                )
+                            )
+                        result = self.run_checker(
+                            runner,
+                            root,
+                            settings_present=False,
+                            audit_settings=True,
+                            mask_audio=True,
+                            command=(
+                                [
+                                    "/usr/bin/python3",
+                                    str(root / "Tests" / script),
+                                    *arguments,
+                                ]
+                                if owner_cli
+                                else None
+                            ),
+                        )
+                        output = result.stdout + result.stderr
+                        self.assertEqual(output.count(marker), 1, output)
+                        reports = lint_reports(result.stdout)
+                        self.assertEqual(len(reports), 1, output)
+                        self.assertEqual(len(reports[0]["files"]), 1, output)
+                        file = reports[0]["files"][0]
+                        self.assertEqual(Path(file["filename"]).name, report)
+                        self.assert_artifacts_are_isolated(file)
+                        if warning:
+                            self.assertNotEqual(result.returncode, 0, output)
+                            self.assertIn("missingFixtureValue", output)
+                            self.assertTrue(
+                                any(
+                                    w["id"] == "missing-property"
+                                    for w in file["warnings"]
+                                ),
+                                output,
+                            )
+                            self.assertNotIn("ok qmlStaticCheck", output)
+                            self.assertNotIn("Checked ", output)
+                        else:
+                            self.assertEqual(result.returncode, 0, output)
+                            self.assertEqual(file["warnings"], [])
+                            self.assertTrue(file["success"], output)
+                            if not owner_cli:
+                                self.assertEqual(output.count("ok qmlStaticCheck"), 1)
+                                self.assertIn("Checked 1 QML files", output)
+                                self.assertIn("skipped 0", output)
+
+    def check_synthetic_strict_dispatch(self, name, script, warning, arguments=None):
+        if arguments is None:
+            arguments = ["lint-harness", "--max-warnings", "0"]
         # Owner semantics are proved separately; exercise only the dispatch boundary.
         with tempfile.TemporaryDirectory(prefix="noctalia-dispatch-") as temp:
             root = Path(temp)
@@ -666,7 +767,7 @@ class FixtureLintTest(unittest.TestCase):
             # No owner runtime imports or desktop actions can execute here.
             (root / "Tests" / script).write_text(
                 "import pathlib, shutil, subprocess, sys, tempfile\n"
-                "assert sys.argv[1:] == ['lint-harness', '--max-warnings', '0'], sys.argv\n"
+                f"assert sys.argv[1:] == {arguments!r}, sys.argv\n"
                 "root = pathlib.Path(__file__).resolve().parents[1]\n"
                 "with (root / 'calls').open('a') as calls:\n"
                 "    calls.write(pathlib.Path(__file__).name + '\\n')\n"

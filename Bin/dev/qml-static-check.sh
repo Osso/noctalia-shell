@@ -291,6 +291,12 @@ for file in "${qml_files[@]}"; do
     Tests/Qml/TimerCardHarness.qml)
         python3 "$repo_root/Tests/timer-card-runtime.test.py" lint-harness --max-warnings 0
         ;;
+    Tests/Qml/HooksAppThemeWarningsHarness.qml)
+        python3 "$repo_root/Tests/hooks-app-theme-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/BusyDividerWarningsHarness.qml)
+        python3 "$repo_root/Tests/busy-divider-warnings.test.py" lint-harness --max-warnings 0
+        ;;
     Tests/Qml/PanelServiceLifecycleHarness.qml)
         "$repo_root/Tests/panel-service-lifecycle.test.sh" lint-harness
         printf '\n'
