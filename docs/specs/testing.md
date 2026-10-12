@@ -2,6 +2,13 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 ## What it must do
 
+### Calendar month card isolated runtime
+
+- `python3 Tests/calendar-month-card-warnings.test.py lint`, `runtime`, or `isolation` runs standalone; no runner integration is claimed. Through `343bfa973`/`7c5ab77f2`, CalendarMonthCard warnings drop 5→0; lint requires exit status zero and exactly zero `Warning:` diagnostics. Exact behavioral coverage: [calendar](calendar.md#tests-asserting-this-spec).
+- Software/offscreen QtTest stages production CalendarMonthCard/NBox with synthetic settings, fixed time, calendar events and inert services/controls. Five behavioral cases plus init/cleanup yield seven reported passes. Bound weekday delegates require an integer index; two-instance coverage checks event ownership. `runtime --mutation` changes timed-event colors on the staged copy and fails the color assertion; this is a negative control, not acceptance, and the wrapper requires zero child status rather than treating mutation failure as success.
+- Shared wallpaper-tab Python audit denies host config and network access during staging; bubblewrap allowlisted mounts, unshared namespaces and private HOME/XDG paths isolate children. `isolation` asserts `/home/osso/.config`, `/syncthing`, and `/run/user` absent and external network denied. Real config is inaccessible, not read/backed up. All child modes have a 60-second timeout; runtime requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `QCRITICAL`, `ReferenceError`, `TypeError`, `Binding loop`, or `Warning:` output.
+- No real calendar backend, application launch, settings persistence, native/compositor interaction, canonical reload or whole-shell acceptance is proven. No suite run or restart is implied.
+
 ### Control Center widget loader isolated runtime
 
 - `python3 Tests/control-center-widget-loader-warnings.test.py lint`, `lint-harness`, or `runtime` runs standalone; no runner integration is claimed. At `3325e0c65`, loader warnings drop 6→2; lint requires exit status zero and exactly two `missing-property` diagnostics for generic QObject `screen`/`onLoaded` metadata. Behavioral coverage: [control center](control-center.md#tests-asserting-this-spec).

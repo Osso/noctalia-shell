@@ -71,6 +71,7 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 - `Tests/calendar-service-guards.test.js`
 - `Tests/calendar-service-runtime.test.py`
 - `Tests/calendar-month-card-guards.test.js`
+- `Tests/calendar-month-card-warnings.test.py runtime` - five software/offscreen behavioral cases plus QtTest init/cleanup yield seven reported passes through `343bfa973`/`7c5ab77f2`: year-boundary navigation/reset and load requests; date launch arguments and program/events gates; weekday labels, equal positive cell widths, ordering, locale-derived first weekday (`fr_FR`/`en_US`) and week-number width changes; timed/multi-day dot colors, 12/24-hour tooltips and month recreation; independent event delegates across two card instances. Bound delegates declare the required weekday index and event model data. Lint drops CalendarMonthCard warnings 5→0. Isolation, negative control and proof limits: [testing](testing.md#calendar-month-card-isolated-runtime).
 - `Tests/clock-widget-guards.test.js`
 - `Tests/calendar-scripts.test.sh`
 - `Tests/calendar-events-safe-get-time.test.py`
@@ -82,7 +83,8 @@ Calendar covers local calendar availability checks, calendar/event loading, cach
 - [ ] Extend calendar header rendering coverage to analog clock, other locales/content, and settings-card ordering.
 - [x] Add executable tests for clock-widget calendar action routing.
 - [x] Add typed-QML coverage for calendar month week-number delegates.
-- [ ] Add typed-QML coverage for calendar event indicator delegates if current aliases can be narrowed.
+- [x] Add executable event-indicator delegate coverage for colors, recreation and two-instance ownership.
+- [ ] Narrow event payloads beyond required `var modelData`; current coverage does not establish a typed event schema.
 
 ## Out of scope
 
