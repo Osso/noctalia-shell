@@ -54,19 +54,19 @@ Singleton {
 
       // NotificationService: notification state
       property var notificationsState: ({
-                                          lastSeenTs: 0
-                                        })
+          lastSeenTs: 0
+        })
 
       // UpdateService: changelog state
       property var changelogState: ({
-                                      lastSeenVersion: ""
-                                    })
+          lastSeenVersion: ""
+        })
 
       // SchemeDownloader: color schemes list
       property var colorSchemesList: ({
-                                        schemes: [],
-                                        timestamp: 0
-                                      })
+          schemes: [],
+          timestamp: 0
+        })
     }
 
     onLoaded: root.handleStateLoaded()
@@ -79,7 +79,7 @@ Singleton {
   Timer {
     id: saveTimer
     interval: 500
-    onTriggered: performSave()
+    onTriggered: root.performSave()
   }
 
   Process {
@@ -168,50 +168,50 @@ Singleton {
 
   // Display state (CompositorService)
   function setDisplay(displayData) {
-    adapter.display = displayData;
+    root.data.display = displayData;
     save();
     displayStateChanged();
   }
 
   function getDisplay() {
-    return adapter.display || {};
+    return root.data.display || {};
   }
 
   // Notifications state (NotificationService)
   function setNotificationsState(stateData) {
-    adapter.notificationsState = stateData;
+    root.data.notificationsState = stateData;
     save();
     notificationsStateChanged();
   }
 
   function getNotificationsState() {
-    return adapter.notificationsState || {
+    return root.data.notificationsState || {
       lastSeenTs: 0
     };
   }
 
   // Changelog state (UpdateService)
   function setChangelogState(stateData) {
-    adapter.changelogState = stateData;
+    root.data.changelogState = stateData;
     save();
     changelogStateChanged();
   }
 
   function getChangelogState() {
-    return adapter.changelogState || {
+    return root.data.changelogState || {
       lastSeenVersion: ""
     };
   }
 
   // Color schemes list (SchemeDownloader)
   function setColorSchemesList(listData) {
-    adapter.colorSchemesList = listData;
+    root.data.colorSchemesList = listData;
     save();
     colorSchemesListChanged();
   }
 
   function getColorSchemesList() {
-    return adapter.colorSchemesList || {
+    return root.data.colorSchemesList || {
       schemes: [],
       timestamp: 0
     };
