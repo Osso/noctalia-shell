@@ -1,7 +1,5 @@
 import QtQuick
-import QtQuick.Controls
 import QtTest
-import qs.Commons
 import qs.Widgets
 
 Item {
@@ -29,7 +27,6 @@ Item {
       height: 300
       sectionId: "left"
       sectionName: "Fixture"
-      availableWidgets: available
       widgetModel: [
         {
           id: "Clock"
@@ -94,7 +91,9 @@ Item {
     }
 
     function init() {
-      section = createTemporaryObject(sectionFactory, scene);
+      section = createTemporaryObject(sectionFactory, scene, {
+        availableWidgets: available
+      });
       picker = createTemporaryObject(pickerFactory, scene);
       verify(section !== null);
       verify(picker !== null);

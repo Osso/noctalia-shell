@@ -125,6 +125,7 @@ def run_sandboxed(args, directory):
         print("SECTION_COLOR_WARNINGS", counts, "EXIT", code)
         assert all(count == args.expect_warnings for count in counts.values()), counts
         assert len(warnings) == sum(counts.values()), warnings
+        assert code == 0, code
     else:
         assert code == 0, code
         assert not re.search(
