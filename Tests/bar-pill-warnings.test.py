@@ -7,7 +7,6 @@ BarPillHorizontal and BarPillVertical are copied unchanged, never edited.
 
 import argparse
 from collections import Counter
-import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -111,40 +110,23 @@ def stage_runtime(directory):
 
 
 def run_behavior(directory):
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    backup = directory / "settings.backup.json"
-    backup.touch(mode=0o600)
-    backup.write_bytes(original)
-    assert (
-        hashlib.sha256(backup.read_bytes()).digest()
-        == hashlib.sha256(original).digest()
+    harness = directory / "bar-pill-harness.qml"
+    harness.write_text(HARNESS)
+    result = subprocess.run(
+        [
+            "/usr/bin/python3",
+            str(ROOT / "Tests/bar-pill-owner-warnings.test.py"),
+            "runtime",
+            "--harness",
+            str(harness),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=70,
     )
-    stage_runtime(directory)
-    try:
-        result = subprocess.run(
-            [
-                "/usr/lib/qt6/bin/qmltestrunner",
-                "-input",
-                str(directory),
-                "-import",
-                str(directory),
-            ],
-            cwd=ROOT,
-            env=load_helper("media-mini-warnings").isolate_environment(directory),
-            capture_output=True,
-            text=True,
-            timeout=45,
-        )
-        output = result.stdout + result.stderr
-        print(output, end="")
-        assert result.returncode == 0, f"BarPill behavior exit {result.returncode}"
-        assert "0 failed" in output
-        assert not re.search(
-            r"QWARN|QFATAL|ReferenceError|TypeError|Binding loop", output
-        ), output
-    finally:
-        assert settings.read_bytes() == original, "real settings changed"
+    print(result.stdout + result.stderr, end="")
+    assert result.returncode == 0, f"BarPill behavior exit {result.returncode}"
 
 
 def run_lint(directory):
