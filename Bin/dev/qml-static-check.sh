@@ -313,6 +313,20 @@ for file in "${qml_files[@]}"; do
     Tests/Qml/ColorPickerWarningsHarness.qml)
         python3 "$repo_root/Tests/color-picker-warnings.test.py" lint-harness --max-warnings 0
         ;;
+    Tests/Qml/ImageShadowWarningsHarness.qml)
+        python3 "$repo_root/Tests/image-shadow-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/NotificationHistoryWarningsHarness.qml)
+        python3 "$repo_root/Tests/notification-history-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/DisplayTabWarningsHarness.qml)
+        python3 "$repo_root/Tests/display-tab-warnings.test.py" lint-harness \
+            --max-warnings 0 --artifacts "$module_root/display-tab"
+        ;;
+    Tests/Qml/SetupAppearanceWarningsHarness.qml)
+        python3 "$repo_root/Tests/setup-appearance-warnings.test.py" lint-harness \
+            --max-warnings 0 --artifacts "$module_root/setup-appearance"
+        ;;
     Tests/Qml/tst_panel_service_lifecycle.qml)
         "$repo_root/Tests/panel-service-lifecycle.test.sh" lint-harness \
             --harness tst_panel_service_lifecycle.qml

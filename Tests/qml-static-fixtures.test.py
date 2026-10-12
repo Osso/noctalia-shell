@@ -3,6 +3,7 @@
 from collections import Counter
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -423,6 +424,7 @@ class FixtureLintTest(unittest.TestCase):
         owner_audits=False,
         mask_audio=False,
         command=None,
+        static_only=False,
     ):
         home = root / ".fixture-home"
         settings = home / ".config/noctalia/settings.json"
@@ -436,7 +438,15 @@ class FixtureLintTest(unittest.TestCase):
             self.fixture_tmp = Path(temp)
             trace = self.fixture_tmp / "checker.trace"
             audit_command = (
-                ["strace", "-f", "-qq", "-e", "trace=%file", "-o", str(trace)]
+                [
+                    "strace",
+                    "-f",
+                    "-qq",
+                    "-e",
+                    "trace=%file,process" if static_only else "trace=%file",
+                    "-o",
+                    str(trace),
+                ]
                 if audit_settings and not owner_audits
                 else []
             )
@@ -527,7 +537,31 @@ class FixtureLintTest(unittest.TestCase):
                     self.assertIn("zero settings attempts", result.stdout)
                     self.assertIn("host home/config not mounted", result.stdout)
                 else:
-                    self.assertNotIn("settings.json", trace.read_text())
+                    audit = trace.read_text()
+                    self.assertNotIn("settings.json", audit)
+                    if static_only:
+                        executables = {
+                            Path(path).name
+                            for path in re.findall(r'execve\("([^\"]+)"', audit)
+                        }
+                        self.assertIn("qmllint", executables, audit)
+                        self.assertLessEqual(
+                            executables,
+                            {
+                                "bwrap",
+                                "bash",
+                                "qml-static-check.sh",
+                                "python3",
+                                "dirname",
+                                "rg",
+                                "sort",
+                                "mktemp",
+                                "qmllint",
+                                "rm",
+                            },
+                            executables,
+                        )
+                        print("CHECKER_STATIC_ONLY_AUDIT: no runtime or gamma commands")
                     trace.unlink()
                 print("CHECKER_SETTINGS_AUDIT: zero settings attempts")
             self.assertEqual(self.fixture_tmp.stat().st_mode & 0o777, 0o700)
@@ -785,6 +819,45 @@ class FixtureLintTest(unittest.TestCase):
                     self.assertNotIn(filename, artifact_paths, "artifact path reused")
                     artifact_paths.add(filename)
 
+    def test_image_history_display_appearance_checker_routes(self):
+        routes = {
+            "ImageShadowWarningsHarness.qml": (
+                "image-shadow-warnings.test.py",
+                ["lint-harness"],
+                False,
+            ),
+            "NotificationHistoryWarningsHarness.qml": (
+                "notification-history-warnings.test.py",
+                ["lint-harness"],
+                False,
+            ),
+            "DisplayTabWarningsHarness.qml": (
+                "display-tab-warnings.test.py",
+                ["lint-harness", "--max-warnings", "0"],
+                True,
+            ),
+            "SetupAppearanceWarningsHarness.qml": (
+                "setup-appearance-warnings.test.py",
+                ["lint-harness", "--max-warnings", "0"],
+                True,
+            ),
+        }
+        artifact_paths = set()
+        for name, (script, arguments, artifacts) in routes.items():
+            for mode in ("present", "absent", "warning"):
+                with self.subTest(harness=name, mode=mode):
+                    filename = self.check_synthetic_strict_dispatch(
+                        name,
+                        script,
+                        mode == "warning",
+                        arguments,
+                        artifacts=artifacts,
+                        settings_present=mode == "present",
+                        static_only=True,
+                    )
+                    self.assertNotIn(filename, artifact_paths, "artifact path reused")
+                    artifact_paths.add(filename)
+
     def check_synthetic_strict_dispatch(
         self,
         name,
@@ -793,6 +866,7 @@ class FixtureLintTest(unittest.TestCase):
         arguments=None,
         artifacts=False,
         settings_present=False,
+        static_only=False,
     ):
         if arguments is None:
             arguments = ["lint-harness", "--max-warnings", "0"]
@@ -861,6 +935,7 @@ class FixtureLintTest(unittest.TestCase):
                 settings_present=settings_present,
                 audit_settings=True,
                 mask_audio=True,
+                static_only=static_only,
             )
             output = result.stdout + result.stderr
             self.assertEqual((root / "calls").read_text().splitlines(), [script])
