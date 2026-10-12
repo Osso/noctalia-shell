@@ -189,9 +189,9 @@ class FixtureLintTest(unittest.TestCase):
     def run_checker(self, runner, root, settings_present=True):
         home = root / ".fixture-home"
         settings = home / ".config/noctalia/settings.json"
-        settings.parent.mkdir(parents=True, mode=0o700)
         original = (root / "Assets/settings-default.json").read_bytes()
         if settings_present:
+            settings.parent.mkdir(parents=True, mode=0o700)
             settings.touch(mode=0o600)
             settings.write_bytes(original)
         # Keep runtime staging outside the repository's inherited .ignore rules.
@@ -236,6 +236,7 @@ class FixtureLintTest(unittest.TestCase):
             self.assertEqual(settings.read_bytes(), original)
         else:
             self.assertFalse(settings.exists(), "lint created settings")
+            self.assertFalse(home.exists(), "lint created synthetic HOME")
         return result
 
     def assert_artifacts_are_isolated(self, file):
