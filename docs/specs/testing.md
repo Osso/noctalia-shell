@@ -391,6 +391,13 @@ None for the current registry-selection contract.
 
 - [ ] Qt 6 static-analysis warnings remain outside warning-free fixture harness checks, including production type-context diagnostics. Fixture-aware lint does not establish warning-free production analysis or whole-shell runtime acceptance; canonical ActiveWindow live warnings remain, and remaining diagnostics are not suppressed.
 
+### ToastScreen isolated runtime
+
+- `python3 Tests/toast-screen-warnings.test.py lint`, `lint-harness`, or `behavior` runs standalone; no runner integration is claimed. At `d12a363a2`, target warnings drop 10→8. Production lint requires exit status zero and exactly six `missing-property` plus two `unqualified` warnings, not zero warnings. Residual breakdown, lifecycle/sizing/hit-area/cursor-policy assertions and six reported guard passes: [toast](toast.md#toastscreen-isolated-evidence).
+- Behavior stages production ToastScreen/SimpleToast with inert settings, services and leaf widgets on private headless Cage/Quickshell, using isolated writable paths and inaccessible session/system buses. Before staging, it creates a unique permission-locked byte-for-byte real-settings backup and verifies its SHA-256; cleanup checks real-settings bytes unchanged and terminates the experimental process group. Backup bytes are not separately rechecked afterward. No real settings are modified.
+- Production lint timeout is 60 seconds; behavior timeout is 15 seconds. Behavior requires exit status zero, `TOAST_SCREEN_BEHAVIOR_PASS`, and no `ERROR`, `FATAL`, scene warnings, `ReferenceError`, `TypeError`, or `Binding loop`; platform warnings are not universally rejected. `lint-harness` separately checks the staged harness.
+- Cage lacks layer-shell. Requested sizing, anchor bindings, dismiss geometry and cursor/button properties do not prove configured mask/region operations, margins, compositor placement/input delivery, actual cursor behavior or flicker prevention. Region operations remain unchanged; no real notifications, visible desktop surface, shell restart, real persistence or whole-shell acceptance is established.
+
 ## Out of scope
 
 - Feature behavior tested by individual guard suites belongs in that feature's spec.

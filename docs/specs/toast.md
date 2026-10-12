@@ -47,11 +47,19 @@ Toast covers lightweight transient messages, toast command helpers, queue manage
 - `Tests/toast-screen-guards.test.js`
 - `Tests/simple-toast-guards.test.js`
 - `Tests/source-coverage.test.js`
+- `Tests/toast-screen-warnings.test.py` and `Tests/Qml/ToastScreenWarningsHarness.qml` — standalone isolated lint/lifecycle evidence below.
+
+### ToastScreen isolated evidence
+
+- At `d12a363a2`, ToastScreen warnings drop 10→8: four margin-property and two Loader-method metadata `missing-property` diagnostics, plus two outer-component-ID `unqualified` diagnostics remain. This is not zero-warning acceptance. The content ID is disambiguated; region operations remain unchanged.
+- Reported isolated behavior covers idle/unloaded state, notification-signal activation and content/screen routing, FIFO continuation, replacement unload/reload, expiry and empty-queue inactivity. Requested window size follows toast dimensions, including resizing; six locations across four bar positions exercise anchor bindings. Assertions also cover the inset dismiss hit area and pointing-hand/left-button policy. Six existing toast-screen guards cover queue and hidden-state behavior.
+- Production ToastScreen/SimpleToast run on private headless Cage with inert settings/services/leaf widgets. Cage lacks layer-shell: configured mask/region behavior, margins, compositor placement, delivered input and actual cursor/flicker behavior remain unproven. Cursor-policy properties are not compositor cursor proof. No real notifications or real-settings writes are exercised. Runner isolation, acceptance and cleanup: [testing](testing.md#toastscreen-isolated-runtime).
 
 ## Known gaps (current cycle)
 
 - [ ] Add UI-level coverage for toast icon, message, description, type color, and click-to-hide rendering.
 - [ ] Add multi-screen coverage for `ToastOverlay` screen delegation.
+- [ ] Verify layer-shell input-region delivery and cursor/flicker behavior on a supporting compositor; isolated Cage assertions do not close this gap.
 
 ## Out of scope
 
