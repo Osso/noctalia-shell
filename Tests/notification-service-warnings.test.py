@@ -7,7 +7,6 @@ The empty-mask contract is observed through a fixture, not compositor input deli
 
 import argparse
 from collections import Counter
-import hashlib
 import importlib.util
 import json
 import os
@@ -16,9 +15,12 @@ import re
 import shutil
 import subprocess
 import tempfile
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Services/System/NotificationService.qml")
+HOST_CONFIG = Path("/home/osso/.config")
+HOST_CONFIG_RESOLVED = HOST_CONFIG.resolve()
 
 
 def helper(name):
@@ -175,22 +177,15 @@ function showNotice(...args) { messages = messages.concat([args]); }"""),
     shutil.copyfile(
         ROOT / "Tests/Qml/NotificationServiceHarness.qml", directory / "tst_service.qml"
     )
+    (directory / "fonts.conf").write_text(
+        "<fontconfig><dir>/usr/share/fonts</dir>"
+        "<cachedir>/tmp/XDG_CACHE_HOME/fontconfig</cachedir></fontconfig>"
+    )
 
 
-def runtime(directory):
-    stage_runtime(directory)
-    environment = {
-        k: v
-        for k, v in os.environ.items()
-        if not k.startswith(("XDG_", "WAYLAND_", "QT_", "QML_", "NOCTALIA_"))
-        and k
-        not in (
-            "HOME",
-            "DISPLAY",
-            "DBUS_SESSION_BUS_ADDRESS",
-            "DBUS_SYSTEM_BUS_ADDRESS",
-        )
-    }
+def run_isolated(directory, command, timeout):
+    environment = {"PATH": "/usr/bin"}
+    sandbox_directories = []
     for key in (
         "HOME",
         "XDG_CONFIG_HOME",
@@ -199,59 +194,176 @@ def runtime(directory):
         "XDG_STATE_HOME",
         "XDG_RUNTIME_DIR",
     ):
-        path = directory / key
-        path.mkdir(mode=0o700)
-        environment[key] = str(path)
+        path = "/tmp/" + key
+        sandbox_directories.extend(["--dir", path, "--chmod", "0700", path])
+        environment[key] = path
     environment.update(
         QT_QPA_PLATFORM="offscreen",
         QT_QUICK_BACKEND="software",
+        FONTCONFIG_FILE=str(directory / "fonts.conf"),
         DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent",
         DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent",
     )
-    result = subprocess.run(
+    return subprocess.run(
         [
-            "/usr/lib/qt6/bin/qmltestrunner",
-            "-input",
+            "bwrap",
+            "--unshare-all",
+            "--die-with-parent",
+            "--ro-bind",
+            "/usr",
+            "/usr",
+            "--symlink",
+            "usr/lib",
+            "/lib",
+            "--symlink",
+            "usr/lib",
+            "/lib64",
+            "--proc",
+            "/proc",
+            "--dev",
+            "/dev",
+            "--tmpfs",
+            "/tmp",
+            "--tmpfs",
+            "/home",
+            *sandbox_directories,
+            "--ro-bind",
             str(directory),
-            "-import",
             str(directory),
+            "--chdir",
+            str(directory),
+            *command,
         ],
-        cwd=ROOT,
         env=environment,
         capture_output=True,
         text=True,
-        timeout=45,
+        timeout=timeout,
+    )
+
+
+def lint_harness(directory, inject_warning=False):
+    stage_runtime(directory)
+    harness = directory / "tst_service.qml"
+    if inject_warning:
+        source = harness.read_text()
+        marker = "  id: root\n"
+        assert source.count(marker) == 1, "injection owner must be unique"
+        harness.write_text(
+            source.replace(
+                marker,
+                marker + "  property int injectedWarning: root.missingLintProbe\n",
+                1,
+            )
+        )
+    result = run_isolated(
+        directory,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        60,
+    )
+    (directory / "harness.lint.json").write_text(result.stdout)
+    print(result.stdout, end="")
+    print(result.stderr, end="")
+    report = json.loads(result.stdout)
+    counts = Counter(
+        warning["type"] for entry in report["files"] for warning in entry["warnings"]
+    )
+    print(
+        "NOTIFICATION_SERVICE_HARNESS_LINT_COUNTS",
+        dict(counts),
+        "exit",
+        result.returncode,
+    )
+    return result.returncode
+
+
+def lint_harness_regression(directory):
+    clean = directory / "clean"
+    clean.mkdir()
+    assert lint_harness(clean) == 0, "clean harness lint failed"
+    injected = directory / "injected"
+    injected.mkdir()
+    assert lint_harness(injected, True) != 0, "genuine warning was accepted"
+    print("NOTIFICATION_SERVICE_HARNESS_WARNING_REJECTED")
+
+
+def runtime(directory):
+    stage_runtime(directory)
+    result = run_isolated(
+        directory,
+        [
+            "/usr/lib/qt6/bin/qmltestrunner",
+            "-input",
+            str(directory / "tst_service.qml"),
+            "-import",
+            str(directory),
+        ],
+        45,
     )
     output = result.stdout + result.stderr
     (directory / "runtime.log").write_text(output)
     print(output, end="")
     assert result.returncode == 0 and "0 failed" in output, output
     assert not re.search(
-        r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output
+        r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Fontconfig error",
+        output,
     ), output
 
 
+def deny_host_config(event, args):
+    if event == "open" and isinstance(args[0], (str, bytes, os.PathLike)):
+        path = Path(os.fsdecode(args[0])).absolute()
+        if path.is_relative_to(HOST_CONFIG) or path.resolve().is_relative_to(
+            HOST_CONFIG_RESOLVED
+        ):
+            raise PermissionError(f"host config access denied: {path}")
+    if event == "socket.connect":
+        raise PermissionError("network access denied in notification service fixture")
+
+
 def main():
+    sys.addaudithook(deny_host_config)
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument(
+        "mode", choices=("lint", "lint-harness", "lint-harness-regression", "runtime")
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
     args = parser.parse_args()
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
     with tempfile.TemporaryDirectory(
         prefix="noctalia-notification-service-"
     ) as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
-        backup = directory / "settings.backup"
-        backup.touch(mode=0o600)
-        backup.write_bytes(original)
-        digest = hashlib.sha256(original).hexdigest()
-        assert hashlib.sha256(backup.read_bytes()).hexdigest() == digest
+        environment_directory = directory / "environment"
+        environment_directory.mkdir(mode=0o700)
+        environment = helper("media-mini-warnings").isolate_environment(
+            environment_directory
+        )
+        os.environ.clear()
+        os.environ.update(environment)
         try:
-            globals()[args.mode](directory)
-        finally:
-            assert settings.read_bytes() == original, "real settings changed"
-            print("SETTINGS_SHA256", digest)
+            sys.audit("open", "/home/osso/.config/noctalia/settings.json", "r", 0)
+        except PermissionError:
+            print("NOTIFICATION_SERVICE_HOST_CONFIG_DENIED")
+        else:
+            raise AssertionError("host config audit guard failed")
+        if args.mode == "lint-harness":
+            raise SystemExit(lint_harness(directory))
+        elif args.mode == "lint-harness-regression":
+            lint_harness_regression(directory)
+        else:
+            (lint if args.mode == "lint" else runtime)(directory)
 
 
 if __name__ == "__main__":
