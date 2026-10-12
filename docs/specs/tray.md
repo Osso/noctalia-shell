@@ -61,6 +61,12 @@ Tray covers the bar tray widget, tray menu popup, tray drawer panel, pinned/blac
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
 
+### Tray settings isolated evidence
+
+- At `3a0c2e2dc`, TraySettings diagnostics drop 5→0; standalone lint requires zero warnings and exit status zero.
+- `Tests/tray-settings-warnings.test.py` and `Tests/Qml/TraySettingsWarningsHarness.qml` cover the production editor offscreen. Three behavioral tests plus QtTest init/cleanup yield five reported passes: defaults/metadata and toggle save; blacklist removal, trimmed addition, duplicate/empty rejection and preserved order; copy-save retaining unrelated fields without mutating input or sharing the saved blacklist; positive row widths equal to the list width, labels and reactive toggles.
+- Settings/services/controls are synthetic fixtures. Audited open/stat/lstat/readlink denial and sandbox masks make real config inaccessible, not read or backed up. No live panel, real persistence, compositor interaction or whole-shell acceptance is proven.
+
 ### Tray menu isolated evidence
 
 - At `149effda0`/`2970c1957`, TrayMenu diagnostics drop 9→1 after enabling `ComponentBehavior: Bound`; the installed `PopupAnchor.updateAnchor` `missing-property` metadata warning remains unsuppressed. Standalone lint accepts exactly that diagnostic and exit status 0 or 255, not zero-warning acceptance.
@@ -71,7 +77,8 @@ Tray covers the bar tray widget, tray menu popup, tray drawer panel, pinned/blac
 
 - [x] Add isolated executable coverage for tray icon activation and right-click menu opening.
 - [ ] Add executable coverage for tray drawer rendered grid dimensions.
-- [ ] Add executable coverage for blacklist settings persistence from the settings UI.
+- [x] Add isolated executable coverage for blacklist editing and copy-save output from the settings UI.
+- [ ] Verify real blacklist persistence through the live settings panel.
 - [ ] Add executable coverage for nested submenu positioning.
 
 ## Out of scope
