@@ -5,14 +5,14 @@ Only desktop/process/settings boundaries are fixtures. No Quickshell instance
 is launched; activation commands are recorded instead of reaching Niri.
 """
 
+import argparse
+import importlib.util
 import json
-import os
 from pathlib import Path
 import re
-import subprocess
 import tempfile
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).absolute().parents[1]
 
 
 def singleton(body):
@@ -174,37 +174,96 @@ Item {
     )
 
 
+def lint_harness(isolation, directory, environment, inject_warning=False):
+    harness = directory / "tst_workspace.qml"
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                "id: scene",
+                "id: scene\n  property int injectedWarning: scene.missingLintProbe",
+                1,
+            )
+        )
+    code, output = isolation.run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        "workspace-harness-lint",
+    )
+    diagnostics = json.loads(output)
+    warnings = sum(
+        warning["type"] == "warning"
+        for result in diagnostics["files"]
+        for warning in result["warnings"]
+    )
+    print("WORKSPACE_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
+    if inject_warning:
+        assert any(
+            warning["type"] == "warning"
+            and warning["id"] == "missing-property"
+            and "missingLintProbe" in warning["message"]
+            for result in diagnostics["files"]
+            for warning in result["warnings"]
+        ), "injected semantic warning not diagnosed"
+        assert code != 0, "injected warning accepted"
+    else:
+        assert warnings == 0, f"harness warnings remain: {warnings}"
+        assert code == 0, f"harness lint exit {code}"
+        assert all(result["success"] for result in diagnostics["files"]), diagnostics
+    return code
+
+
+def lint_harness_regression(isolation, directory):
+    for label, injected in (("clean", False), ("injected", True)):
+        staged = directory / label
+        staged.mkdir(mode=0o700)
+        stage_runtime(staged)
+        code = lint_harness(
+            isolation, staged, isolation.isolated_environment(staged), injected
+        )
+        assert code != 0 if injected else code == 0, code
+    print("WORKSPACE_HARNESS_WARNING_REJECTED")
+
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "mode",
+        nargs="?",
+        default="runtime",
+        choices=("runtime", "lint-harness", "lint-harness-regression"),
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
+    args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
+    spec = importlib.util.spec_from_file_location(
+        "workspace_isolation", ROOT / "Tests/grid-list-warnings.test.py"
+    )
+    isolation = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(isolation)
     with tempfile.TemporaryDirectory(prefix="noctalia-workspace-") as temporary:
         directory = Path(temporary)
-        environment = {
-            key: value
-            for key, value in os.environ.items()
-            if not key.startswith(("XDG_", "WAYLAND_", "QT_", "QML_", "NOCTALIA_"))
-            and key
-            not in (
-                "DISPLAY",
-                "DBUS_SESSION_BUS_ADDRESS",
-                "HOME",
-                "NIRI_SOCKET",
-                "HYPRLAND_INSTANCE_SIGNATURE",
-                "SWAYSOCK",
-            )
-        }
-        for key in (
-            "HOME",
-            "XDG_CONFIG_HOME",
-            "XDG_CACHE_HOME",
-            "XDG_DATA_HOME",
-            "XDG_STATE_HOME",
-            "XDG_RUNTIME_DIR",
-            "NOCTALIA_CONFIG_DIR",
-            "NOCTALIA_CACHE_DIR",
-        ):
-            path = directory / key
-            path.mkdir(mode=0o700)
-            environment[key] = str(path)
-        environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
+        directory.chmod(0o700)
+        isolation.install_settings_guard(directory)
+        isolation.prove_settings_guard()
+        if args.mode == "lint-harness-regression":
+            lint_harness_regression(isolation, directory)
+            return
+        environment = isolation.isolated_environment(directory)
         settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
         settings.parent.mkdir(mode=0o700, parents=True)
         original = (ROOT / "Assets/settings-default.json").read_bytes()
@@ -216,7 +275,13 @@ def main():
         assert backup.read_bytes() == original, "fixture backup bytes differ"
         stage_runtime(directory)
         try:
-            result = subprocess.run(
+            if args.mode == "lint-harness":
+                raise SystemExit(
+                    lint_harness(isolation, directory, environment, args.inject_warning)
+                )
+            code, output = isolation.run_audited(
+                directory,
+                environment,
                 [
                     "/usr/lib/qt6/bin/qmltestrunner",
                     "-input",
@@ -224,19 +289,13 @@ def main():
                     "-import",
                     str(directory),
                 ],
-                cwd=ROOT,
-                env=environment,
-                capture_output=True,
-                text=True,
-                timeout=30,
+                "workspace-runtime",
             )
-            output = result.stdout + result.stderr
-            print(output, end="")
-            assert result.returncode == 0, f"Workspace runtime exit {result.returncode}"
-            assert "0 failed" in result.stdout
-            assert not re.search(r"QWARN|QFATAL|ReferenceError|TypeError", output), (
-                output
-            )
+            assert code == 0, f"Workspace runtime exit {code}"
+            assert "Totals: 10 passed, 0 failed" in output, output
+            assert not re.search(
+                r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output
+            ), output
         finally:
             assert settings.read_bytes() == original, "fixture settings changed"
             assert backup.read_bytes() == original, "fixture backup changed"
