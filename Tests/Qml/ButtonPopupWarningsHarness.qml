@@ -76,6 +76,10 @@ ShellRoot {
     return descendants(popup.contentItem, child => child.itemAction !== undefined);
   }
 
+  function makeButton(): NButton {
+    return buttonFactory.createObject(window.contentItem, { x: 50, y: 100 });
+  }
+
   function makePopup(height, label) {
     return popupFactory.createObject(suite, {
                                        itemHeight: height,
@@ -88,7 +92,7 @@ ShellRoot {
   }
 
   function testButtonInput() {
-    const button = buttonFactory.createObject(window.contentItem, { x: 50, y: 100 });
+    const button = makeButton();
     try {
       const counts = { left: 0, right: 0, middle: 0, entered: 0, exited: 0 };
       button.clicked.connect(() => counts.left++);
@@ -130,7 +134,7 @@ ShellRoot {
   }
 
   function testButtonTooltipOwner() {
-    const button = buttonFactory.createObject(window.contentItem, { x: 50, y: 100 });
+    const button = makeButton();
     try {
       // Runner can inject an empty tooltipText into the production MouseArea.
       const area = mouseArea(button);

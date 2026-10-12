@@ -102,6 +102,28 @@ def lint(directory, environment):
         assert code == 0, code
 
 
+def lint_harness(directory, environment):
+    stage_runtime(directory, False, None, False)
+    (directory / "qs").mkdir()
+    for name in ("Commons", "Widgets", "Services"):
+        (directory / "qs" / name).symlink_to(directory / name, target_is_directory=True)
+    code, output = isolation.run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "-I",
+            str(directory),
+            "--max-warnings",
+            "0",
+            str(directory / "shell.qml"),
+        ],
+        "button-popup-harness-lint",
+    )
+    assert code == 0, code
+    assert "Warning:" not in output, output
+
+
 def runtime(directory, environment, bound, mutation, owner_shadow):
     stage_runtime(directory, bound, mutation, owner_shadow)
     code, output = isolation.run_audited(
@@ -131,7 +153,7 @@ def runtime(directory, environment, bound, mutation, owner_shadow):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "runtime"))
     parser.add_argument(
         "--bound",
         action="store_true",
@@ -148,6 +170,8 @@ if __name__ == "__main__":
         environment = isolation.isolated_environment(directory)
         if args.mode == "lint":
             lint(directory, environment)
+        elif args.mode == "lint-harness":
+            lint_harness(directory, environment)
         else:
             runtime(
                 directory, environment, args.bound, args.mutation, args.owner_shadow
