@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtTest
 import Quickshell
@@ -9,7 +11,7 @@ import qs.Modules.MainScreen
 TestCase {
   id: harness
   name: "MainScreenWarnings"
-  property QtObject window
+  property MainScreen window
   readonly property var panelNames: ["audioPanel", "batteryPanel", "bluetoothPanel", "brightnessPanel", "changelogPanel", "clockPanel", "controlCenterPanel", "launcherPanel", "notificationHistoryPanel", "sessionMenuPanel", "settingsPanel", "setupWizardPanel", "processPanel", "trayDrawerPanel", "wallpaperPanel", "wifiPanel", "vpnPanel"]
 
   ShellScreen {

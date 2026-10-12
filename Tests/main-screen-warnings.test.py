@@ -21,6 +21,15 @@ ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/MainScreen/MainScreen.qml")
 
 
+def isolation_helper():
+    spec = importlib.util.spec_from_file_location(
+        "main_screen_isolation", ROOT / "Tests/grid-list-warnings.test.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def helper():
     spec = importlib.util.spec_from_file_location(
         "main_screen_staging", ROOT / "Tests/media-mini-warnings.test.py"
@@ -282,8 +291,64 @@ QtObject {
     )
 
 
+def lint_harness(directory, environment, inject_warning=False):
+    modules = directory / "qs"
+    modules.mkdir()
+    stage_runtime(modules, "none")
+    harness = directory / "tst_main_screen.qml"
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                'name: "MainScreenWarnings"',
+                'name: "MainScreenWarnings"\n  property int injectedDiagnostic: missingFixtureValue',
+                1,
+            )
+        )
+    code, output = isolation_helper().run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        "main-screen-harness-lint",
+    )
+    diagnostics = json.loads(output)
+    warnings = sum(
+        warning["type"] == "warning"
+        for result in diagnostics["files"]
+        for warning in result["warnings"]
+    )
+    print("MAIN_SCREEN_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
+    if inject_warning:
+        assert warnings > 0, "injected warning not diagnosed"
+        assert code != 0, "injected warning accepted"
+    else:
+        assert warnings == 0, f"harness warnings remain: {warnings}"
+    return code
+
+
+def lint_harness_regression(directory):
+    for name, injected in (("clean", False), ("injected", True)):
+        staged = directory / name
+        staged.mkdir(mode=0o700)
+        environment = isolation_helper().isolated_environment(staged)
+        code = lint_harness(staged, environment, injected)
+        assert (code != 0) if injected else (code == 0), code
+    print("MAIN_SCREEN_HARNESS_WARNING_REJECTED")
+
+
 def runtime(directory, mutation="none"):
-    environment = helper().isolate_environment(directory)
+    environment = isolation_helper().isolated_environment(directory)
     environment.update(
         DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent/main-screen-test",
         DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent/main-screen-test",
@@ -301,7 +366,9 @@ def runtime(directory, mutation="none"):
     modules.mkdir()
     stage_runtime(modules, mutation)
     try:
-        result = subprocess.run(
+        code, output = isolation_helper().run_audited(
+            directory,
+            environment,
             [
                 "/usr/lib/qt6/bin/qmltestrunner",
                 "-input",
@@ -309,15 +376,9 @@ def runtime(directory, mutation="none"):
                 "-import",
                 str(directory),
             ],
-            cwd=ROOT,
-            env=environment,
-            capture_output=True,
-            text=True,
-            timeout=30,
+            "main-screen-runtime",
         )
-        output = result.stdout + result.stderr
-        print(output, end="")
-        assert result.returncode == 0, result.returncode
+        assert code == 0, code
         assert "MAIN_SCREEN_RUNTIME_PASS" in output, output
         assert not re.search(
             r"QWARN| WARN | ERROR | FATAL |ReferenceError|TypeError|Binding loop",
@@ -331,19 +392,38 @@ def runtime(directory, mutation="none"):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument(
+        "mode", choices=("lint", "runtime", "lint-harness", "lint-harness-regression")
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     parser.add_argument(
         "--mutation",
         choices=("none", "geometry", "routing", "selection"),
         default="none",
     )
     args = parser.parse_args()
-    if args.mode == "lint" and args.mutation != "none":
+    if args.mode != "runtime" and args.mutation != "none":
         parser.error("mutations apply only to staged runtime fixtures")
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-main-screen-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
+        isolation = isolation_helper()
+        isolation.install_settings_guard(directory)
+        isolation.prove_settings_guard()
         if args.mode == "lint":
             lint(directory)
+        elif args.mode == "lint-harness":
+            raise SystemExit(
+                lint_harness(
+                    directory,
+                    isolation.isolated_environment(directory),
+                    args.inject_warning,
+                )
+            )
+        elif args.mode == "lint-harness-regression":
+            lint_harness_regression(directory)
         else:
             runtime(directory, args.mutation)
