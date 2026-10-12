@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
 import qs.Widgets
@@ -80,16 +79,16 @@ ColumnLayout {
     Layout.fillWidth: true
     label: I18n.tr("bar.widget-settings.active-window.max-width.label")
     description: I18n.tr("bar.widget-settings.active-window.max-width.description")
-    placeholderText: widgetMetadata.maxWidth
-    text: valueMaxWidth
+    placeholderText: root.widgetMetadata.maxWidth
+    text: root.valueMaxWidth
   }
 
   NToggle {
     Layout.fillWidth: true
     label: I18n.tr("bar.widget-settings.active-window.use-fixed-width.label")
     description: I18n.tr("bar.widget-settings.active-window.use-fixed-width.description")
-    checked: valueUseFixedWidth
-    onToggled: checked => valueUseFixedWidth = checked
+    checked: root.valueUseFixedWidth
+    onToggled: checked => root.valueUseFixedWidth = checked
   }
 
   NComboBox {
@@ -109,8 +108,8 @@ ColumnLayout {
         "name": I18n.tr("options.scrolling-modes.never")
       }
     ]
-    currentKey: valueScrollingMode
-    onSelected: key => valueScrollingMode = key
+    currentKey: root.valueScrollingMode
+    onSelected: key => root.valueScrollingMode = key
     minimumWidth: 200
   }
 }
