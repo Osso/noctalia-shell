@@ -111,8 +111,7 @@ PopupWindow {
       const appId = root.toplevel.appId;
       const entry = (DesktopEntries.heuristicLookup) ? DesktopEntries.heuristicLookup(appId) : DesktopEntries.byId(appId);
       if (entry != null) {
-        for (let i = 0; i < entry.actions.length; i++) {
-          const action = entry.actions[i];
+        for (const action of entry.actions) {
           next.push({
             "icon": "",
             "text": action.name,
