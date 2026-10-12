@@ -46,10 +46,21 @@ Scope {
     }
   }
 
+  function observeError(path, error, errorString) {
+    harness.require(error === MediaPlayer.ResourceError, "logger receives real missing-media error code");
+    harness.require(errorString.length > 0, "logger receives nonempty backend error text");
+    if (harness.errors.length < 2) {
+      const player = SoundService.activePlayers[SoundService.resolvePath(path.toString())];
+      harness.require(player !== null && player !== undefined, "logger sees failing player before cleanup");
+      harness.require(error === player.error && errorString === player.errorString, "logger arguments match failing player");
+    }
+    harness.errors.push(path.toString());
+  }
+
   function testVolumeAndStopping() {
     SoundService.playSound("stopped.wav", {
-                             volume: -0.5
-                           });
+      volume: -0.5
+    });
     const stopped = SoundService.activePlayers[SoundService.resolvePath("stopped.wav")];
     harness.stoppedPlayer = stopped;
     harness.require(harness.volumeEquals(stopped, 0), "low volume clamp");
@@ -59,10 +70,10 @@ Scope {
     harness.require(Object.keys(SoundService.activePlayers).length === 0, "stopped one-shot removes registration");
 
     SoundService.playSound("repeat.wav", {
-                             volume: 1.5,
-                             repeat: true,
-                             fallback: true
-                           });
+      volume: 1.5,
+      repeat: true,
+      fallback: true
+    });
     const repeating = SoundService.activePlayers[SoundService.resolvePath("repeat.wav")];
     harness.replacedPlayer = repeating;
     harness.require(harness.volumeEquals(repeating, 1), "high volume clamp");
@@ -70,21 +81,21 @@ Scope {
     repeating.playbackStateChanged(MediaPlayer.StoppedState);
     harness.require(Object.keys(SoundService.activePlayers).length === 1, "stopped repeating player remains registered");
     SoundService.playSound("repeat.wav", {
-                             volume: 0.7,
-                             repeat: true
-                           });
+      volume: 0.7,
+      repeat: true
+    });
     harness.repeatPlayer = SoundService.activePlayers[SoundService.resolvePath("repeat.wav")];
     harness.require(harness.repeatPlayer !== harness.replacedPlayer, "repeat replaces old player");
     SoundService.stopSound("repeat.wav");
     harness.require(Object.keys(SoundService.activePlayers).length === 0, "specific stop clears registration");
 
     SoundService.playSound("all-a.wav", {
-                             repeat: true
-                           });
+      repeat: true
+    });
     harness.stopAllFirst = SoundService.activePlayers[SoundService.resolvePath("all-a.wav")];
     SoundService.playSound("all-b.wav", {
-                             repeat: true
-                           });
+      repeat: true
+    });
     harness.stopAllSecond = SoundService.activePlayers[SoundService.resolvePath("all-b.wav")];
     SoundService.stopSound();
     harness.require(Object.keys(SoundService.activePlayers).length === 0, "stop all clears registrations");
@@ -92,11 +103,11 @@ Scope {
 
   Component.onCompleted: {
     harness.logger.observe = path => harness.observePlayer(path);
-    harness.logger.observeError = path => harness.errors.push(path.toString());
+    harness.logger.observeError = (path, error, errorString) => harness.observeError(path, error, errorString);
     SoundService.playSound("missing.wav", {
-                             volume: 0.4,
-                             fallback: true
-                           });
+      volume: 0.4,
+      fallback: true
+    });
     harness.require(harness.firstPlayer !== null, "real MediaPlayer created synchronously");
   }
 
@@ -118,7 +129,7 @@ Scope {
         } else if (harness.phase === 1) {
           harness.require(harness.stoppedPlayer === null && harness.replacedPlayer === null && harness.repeatPlayer === null, "stopped/replaced players destroyed");
           harness.require(harness.stopAllFirst === null && harness.stopAllSecond === null, "stop all destroys players");
-          console.log("SOUND_SERVICE_PASS: creation, asynchronous errors, bounded fallback, cleanup, volume binding, repeat replacement, stop all");
+          console.log("SOUND_SERVICE_PASS: creation, asynchronous error logger arguments, bounded fallback, cleanup, volume binding, repeat replacement, stop all");
           Qt.quit();
         }
       } catch (error) {

@@ -30,23 +30,23 @@ Singleton {
         volume: mediaPlayer.soundVolume
       }
 
-      onErrorOccurred: {
-        Logger.w("SoundService", "Error playing sound:", source, error, errorString);
-        if (shouldFallback) {
+      onErrorOccurred: function (error, errorString) {
+        Logger.w("SoundService", "Error playing sound:", mediaPlayer.source, error, errorString);
+        if (mediaPlayer.shouldFallback) {
           const fallbackPath = Quickshell.shellDir + "/Assets/Sounds/notification.mp3";
-          if (fallbackPath !== resolvedPath) {
+          if (fallbackPath !== mediaPlayer.resolvedPath) {
             root.playSound(fallbackPath, {
-                             volume: soundVolume,
-                             fallback: false,
-                             repeat: false
-                           });
+              volume: mediaPlayer.soundVolume,
+              fallback: false,
+              repeat: false
+            });
           }
         }
         // Clean up on error
-        if (root.activePlayers[resolvedPath]) {
-          delete root.activePlayers[resolvedPath];
+        if (root.activePlayers[mediaPlayer.resolvedPath]) {
+          delete root.activePlayers[mediaPlayer.resolvedPath];
         }
-        destroy();
+        mediaPlayer.destroy();
       }
 
       onPlaybackStateChanged: function (state) {
@@ -124,12 +124,12 @@ Singleton {
 
     // Create MediaPlayer instance
     const player = playerComponent.createObject(playersContainer, {
-                                                  resolvedPath: resolvedPath,
-                                                  source: "file://" + resolvedPath,
-                                                  loops: repeat ? MediaPlayer.Infinite : 1,
-                                                  soundVolume: Math.max(0, Math.min(1, volume)),
-                                                  shouldFallback: fallback && !repeat
-                                                });
+      resolvedPath: resolvedPath,
+      source: "file://" + resolvedPath,
+      loops: repeat ? MediaPlayer.Infinite : 1,
+      soundVolume: Math.max(0, Math.min(1, volume)),
+      shouldFallback: fallback && !repeat
+    });
 
     if (!player) {
       Logger.w("SoundService", "Failed to create MediaPlayer for:", resolvedPath);
@@ -138,10 +138,10 @@ Singleton {
         const defaultSound = Quickshell.shellDir + "/Assets/Sounds/notification.mp3";
         if (defaultSound !== resolvedPath) {
           playSound(defaultSound, {
-                      volume: volume,
-                      fallback: false,
-                      repeat: false
-                    });
+            volume: volume,
+            fallback: false,
+            repeat: false
+          });
         }
       }
       return;

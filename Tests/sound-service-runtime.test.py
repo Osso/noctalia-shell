@@ -39,8 +39,8 @@ QtObject {
   function d(service, message, path) {
     if (message === "Playing sound:") observe(path);
   }
-  function w(service, message, path) {
-    if (message === "Error playing sound:") observeError(path);
+  function w(service, message, path, error, errorString) {
+    if (message === "Error playing sound:") observeError(path, error, errorString);
     else throw new Error("Unexpected service warning: " + message);
   }
 }
@@ -140,6 +140,9 @@ def main():
         assert (
             "SOUND_SERVICE_PASS:" in output and "SOUND_SERVICE_FAIL:" not in output
         ), output
+        assert (
+            "Injection of parameters into signal handlers is deprecated" not in output
+        ), "SoundService media error handler implicitly injects signal parameters"
         # Expected backend errors come from intentionally absent files. QML
         # context/reference failures are not part of that fixture contract.
         for diagnostic in (
