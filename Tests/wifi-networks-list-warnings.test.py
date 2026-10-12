@@ -3,7 +3,6 @@
 
 import argparse
 from collections import Counter
-import hashlib
 import importlib.util
 import json
 import os
@@ -37,6 +36,7 @@ def lint(directory):
             str(directory / "qs" / TARGET),
         ],
         cwd=ROOT,
+        env=isolated_environment(directory),
         capture_output=True,
         text=True,
         timeout=60,
@@ -215,15 +215,29 @@ def isolated_environment(directory):
 
 
 def behavior(directory, snapshot, baseline):
+    environment = isolated_environment(directory)
+    settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
+    settings.parent.mkdir(mode=0o700, parents=True)
+    original = (ROOT / "Assets/settings-default.json").read_bytes()
+    settings.touch(mode=0o600)
+    settings.write_bytes(original)
+    backup = directory / "settings.backup.json"
+    backup.touch(mode=0o600)
+    backup.write_bytes(original)
+    assert backup.read_bytes() == original, "fixture backup bytes differ"
     stage_list(directory)
-    result = subprocess.run(
-        ["quickshell", "--no-color", "-p", str(directory / "tst_wifi.qml")],
-        cwd=ROOT,
-        env=isolated_environment(directory),
-        capture_output=True,
-        text=True,
-        timeout=45,
-    )
+    try:
+        result = subprocess.run(
+            ["quickshell", "--no-color", "-p", str(directory / "tst_wifi.qml")],
+            cwd=ROOT,
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=45,
+        )
+    finally:
+        assert settings.read_bytes() == original, "fixture settings changed"
+        assert backup.read_bytes() == original, "fixture backup changed"
     output = result.stdout + result.stderr
     print(
         "\n".join(line for line in output.splitlines() if "WIFI_SNAPSHOT " not in line)
@@ -253,26 +267,13 @@ def main():
     args = parser.parse_args()
     if args.mode == "behavior" and args.baseline and not args.snapshot:
         parser.error("--baseline requires --snapshot")
-    settings = Path("/home/osso/.config/noctalia/settings.json")
-    original = settings.read_bytes()
-    digest = hashlib.sha256(original).hexdigest()
     with tempfile.TemporaryDirectory(prefix="noctalia-wifi-list-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
-        backup = directory / "settings-backup.json"
-        backup.touch(mode=0o600)
-        backup.write_bytes(original)
-        assert hashlib.sha256(backup.read_bytes()).hexdigest() == digest
-        try:
-            if args.mode == "lint":
-                lint(directory)
-            else:
-                behavior(directory, args.snapshot, args.baseline)
-        finally:
-            assert hashlib.sha256(settings.read_bytes()).hexdigest() == digest, (
-                "Real settings changed"
-            )
-            print("SETTINGS_SHA_UNCHANGED", digest)
+        if args.mode == "lint":
+            lint(directory)
+        else:
+            behavior(directory, args.snapshot, args.baseline)
 
 
 if __name__ == "__main__":

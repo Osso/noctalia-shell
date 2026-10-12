@@ -5,7 +5,6 @@ Only desktop/process/settings boundaries are fixtures. No Quickshell instance
 is launched; activation commands are recorded instead of reaching Niri.
 """
 
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -176,18 +175,8 @@ Item {
 
 
 def main():
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes() if settings.exists() else None
     with tempfile.TemporaryDirectory(prefix="noctalia-workspace-") as temporary:
         directory = Path(temporary)
-        if original is not None:
-            backup = directory / "settings.backup.json"
-            backup.touch(mode=0o600)
-            backup.write_bytes(original)
-            assert (
-                hashlib.sha256(backup.read_bytes()).digest()
-                == hashlib.sha256(original).digest()
-            )
         environment = {
             key: value
             for key, value in os.environ.items()
@@ -216,6 +205,15 @@ def main():
             path.mkdir(mode=0o700)
             environment[key] = str(path)
         environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
+        settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
+        settings.parent.mkdir(mode=0o700, parents=True)
+        original = (ROOT / "Assets/settings-default.json").read_bytes()
+        settings.touch(mode=0o600)
+        settings.write_bytes(original)
+        backup = directory / "settings.backup.json"
+        backup.touch(mode=0o600)
+        backup.write_bytes(original)
+        assert backup.read_bytes() == original, "fixture backup bytes differ"
         stage_runtime(directory)
         try:
             result = subprocess.run(
@@ -240,9 +238,8 @@ def main():
                 output
             )
         finally:
-            assert (settings.read_bytes() if settings.exists() else None) == original, (
-                "real settings changed"
-            )
+            assert settings.read_bytes() == original, "fixture settings changed"
+            assert backup.read_bytes() == original, "fixture backup changed"
 
 
 if __name__ == "__main__":
