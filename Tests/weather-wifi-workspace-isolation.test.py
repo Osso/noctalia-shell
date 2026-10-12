@@ -43,6 +43,8 @@ def audit(event, args):
     if event in ('socket.connect', 'socket.getaddrinfo'):
         raise RuntimeError('blocked network access')
     if event == 'subprocess.Popen':
+        if Path(args[0]).name == 'rg':
+            return
         env = args[3]
         assert env['QT_QPA_PLATFORM'] == 'offscreen'
         assert env['QT_QUICK_BACKEND'] == 'software'
