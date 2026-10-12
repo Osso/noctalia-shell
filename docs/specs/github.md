@@ -1,4 +1,4 @@
-GitHub covers cached Noctalia GitHub metadata, contributor lists, contributor avatar caching, and About tab contributor index typing. Runtime source lives mainly in `Services/Noctalia/GitHubService.qml`; implementation notes belong in [docs/wiki/systems/github.md](../wiki/systems/github.md).
+GitHub covers cached Noctalia GitHub metadata, contributor lists, contributor avatar caching, and About tab contributor object-role typing. Runtime source lives mainly in `Services/Noctalia/GitHubService.qml`; implementation notes belong in [docs/wiki/systems/github.md](../wiki/systems/github.md).
 
 ## What it must do
 
@@ -65,8 +65,8 @@ GitHub covers cached Noctalia GitHub metadata, contributor lists, contributor av
 
 ### Types
 
-- [x] About tab top contributor delegates declare an index role.
-- [x] About tab remaining contributor delegates declare an index role.
+- [x] About tab top contributor delegate `contributorCard` consumes contributor objects from an array slice through required `var modelData`.
+- [x] About tab remaining contributor delegate `contributorLink` consumes contributor objects from an array slice through required `var modelData`; neither delegate requires an unused numeric index role.
 
 ## How it works
 
@@ -82,7 +82,8 @@ GitHub covers cached Noctalia GitHub metadata, contributor lists, contributor av
 
 - `Tests/github-service-guards.test.js`
 - `Tests/simple-service-warnings.test.py` / `Tests/Qml/SimpleServiceHarness.qml` — production service metadata-process destruction, version/contributor stream parsing, malformed responses, and deferred fake cache writes. Invocation, lint counts, and fake I/O limits: [testing](testing.md#simple-service-cohort).
-- `Tests/qml-type-annotations.test.js`
+- `Tests/qml-type-annotations.test.js` — contributor owner/declaration inventory, not rendering or click proof.
+- `Tests/qml-type-inventory.js` — source-only owner/declaration helper consumed by the annotation inventory; parser fixtures run through that runner, not as standalone runtime cases. Shared proof classification: [testing](testing.md).
 - `Tests/source-coverage.test.js`
 
 ## Known gaps (current cycle)

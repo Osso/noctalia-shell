@@ -29,7 +29,7 @@ Control Center covers the panel card loader, shortcut widget registry, shortcut/
 - [x] Moving shortcuts between sections validates bounds and appends to the target section.
 - [x] Updating shortcut settings replaces the indexed shortcut entry and saves immediately.
 - [x] Shortcut settings dialog cancel leaves the entry unchanged; apply updates the entry and requests an immediate save.
-- [x] `ShortcutsCard` left and right shortcut delegates type the shortcut id role and use it for widget loading/settings.
+- [x] `ShortcutsCard` left and right shortcut delegates declare required `var modelData` and `int index`, consume shortcut objects, and bind `modelData.id` to the loader's inherited required `string widgetId`. Settings receive the same shortcut object; loader inputs retain required `ShellScreen widgetScreen` and `var widgetProps`.
 
 ### IPC and placement
 
@@ -40,7 +40,7 @@ Control Center covers the panel card loader, shortcut widget registry, shortcut/
 ### Loader typing
 
 - [x] Control Center widget loader screen references are typed.
-- [x] MainScreen Control Center panel placeholder is typed as an `Item`.
+- [x] MainScreen Control Center panel placeholder is typed as the Item-derived `Backgrounds.BackgroundRegion`, preserving geometry and integer corner-state contracts.
 
 ## How it works
 

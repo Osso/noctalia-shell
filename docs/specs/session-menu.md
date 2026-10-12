@@ -31,7 +31,7 @@ Session Menu covers the power/session action panel, countdown confirmation behav
 - [x] First selection sets index zero.
 - [x] Last selection selects the final option and clamps empty option lists to zero.
 - [x] Activation starts the selected option action and ignores missing selected options.
-- [x] Power option delegates type icon, title, action, shutdown, and pending roles instead of using dynamic `modelData.*` reads.
+- [x] Power option delegate `powerOption` declares required `int index` and `var modelData` for internally generated option objects, projecting readonly `string action` and `bool optionIsShutdown`. Its `PowerButton` component (`buttonRoot`) declares `string icon`/`title`, `bool pending`/`isShutdown`/`isSelected`, and `int timeRemaining`; object fields supply icon/title and shutdown state while menu state supplies selection/countdown.
 
 ### Settings tab
 

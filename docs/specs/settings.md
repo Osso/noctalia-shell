@@ -55,7 +55,7 @@ Settings covers persisted shell configuration, startup bootstrap and recovery, d
 - [x] Shared monitor settings repeaters type `modelData` as `ShellScreen`.
 - [x] BarTab monitor delegates expose typed aliases for screen name, model, width, and height before label, scale, description, selection, and add/remove actions.
 - [x] Settings-related combo box delegates type parent and index roles.
-- [x] Main screen settings panel placeholder references are typed as `Item`.
+- [x] Main screen settings panel placeholder references are typed as the Item-derived `Backgrounds.BackgroundRegion`, retaining geometry and four integer corner-state properties.
 
 ### Settings UI helpers
 
