@@ -8,13 +8,12 @@ import os
 from pathlib import Path
 import re
 import shutil
+import stat
 import subprocess
 import tempfile
 import unittest
 
 REPO = Path(__file__).resolve().parents[1]
-REAL_SETTINGS = Path("/home/osso/.config/noctalia/settings.json")
-SETTINGS_HASH = "bc53e7cae6f456d443ba79ccee688802f18fb38abd6cbfc695ae331885b841e4"
 GOLDEN = REPO / "Tests/fixtures/settings-types-default.json"
 MUTATED_GOLDEN = REPO / "Tests/fixtures/settings-types-mutated.json"
 GROUPS_GOLDEN = REPO / "Tests/fixtures/settings-types-groups.json"
@@ -81,10 +80,11 @@ def representative_values(value):
     }
 
 
-def assert_real_settings_unchanged():
-    actual = hashlib.sha256(REAL_SETTINGS.read_bytes()).hexdigest()
-    if actual != SETTINGS_HASH:
-        raise AssertionError(f"Real settings changed: {actual}")
+def assert_fixture_settings_unchanged(path, expected):
+    if path.read_bytes() != expected:
+        raise AssertionError(f"Fixture settings changed: {path}")
+    if stat.S_IMODE(path.stat().st_mode) != 0o600:
+        raise AssertionError(f"Fixture settings must remain 0600: {path}")
 
 
 def isolated_environment(root):
@@ -120,13 +120,19 @@ def prepare_sources(root):
 
 
 def run_contract(value, mutate=False):
-    assert_real_settings_unchanged()
     with tempfile.TemporaryDirectory(prefix="noctalia-settings-types-") as temporary:
         root = Path(temporary)
         prepare_sources(root)
         environment = isolated_environment(root)
+        fixture_path = Path(environment["HOME"]) / ".config/noctalia/settings.json"
+        fixture_path.parent.mkdir(mode=0o700, parents=True)
+        fixture_bytes = json.dumps(value).encode("utf-8")
+        fixture_path.touch(mode=0o600)
+        fixture_path.write_bytes(fixture_bytes)
+        assert_fixture_settings_unchanged(fixture_path, fixture_bytes)
         settings_path = root / "xdg_config_home/settings.json"
-        settings_path.write_text(json.dumps(value))
+        settings_path.touch(mode=0o600)
+        settings_path.write_bytes(fixture_bytes)
         environment.update(
             SETTINGS_TYPES_PATH=str(settings_path),
             SETTINGS_TYPES_MUTATE="1" if mutate else "0",
@@ -159,7 +165,7 @@ def run_contract(value, mutate=False):
                 f"Offscreen harness timed out: {error.stdout!r} {error.stderr!r}"
             ) from error
         finally:
-            assert_real_settings_unchanged()
+            assert_fixture_settings_unchanged(fixture_path, fixture_bytes)
 
 
 class SettingsContractTest(unittest.TestCase):
@@ -288,6 +294,7 @@ class SettingsStaticTest(unittest.TestCase):
                     str(source / "Probe.qml"),
                 ],
                 cwd=root,
+                env=isolated_environment(root),
                 capture_output=True,
                 text=True,
                 timeout=30,
