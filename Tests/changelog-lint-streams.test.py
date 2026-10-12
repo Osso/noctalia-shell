@@ -144,12 +144,16 @@ class NativeStreams(unittest.TestCase):
                     def stage(staged):
                         (staged / "tst_history.qml").write_text(source)
 
+                    reports = []
+
                     def run(staged, command, label):
-                        return isolated(
+                        result = isolated(
                             staged,
                             ["/usr/bin/env", f"LC_ALL={locale}", *command],
                             label,
                         )
+                        reports.append(json.loads(result.stdout))
+                        return result
 
                     with (
                         patch.object(OWNER, "stage_runtime", stage),
@@ -159,6 +163,14 @@ class NativeStreams(unittest.TestCase):
                     ):
                         code = OWNER.lint_harness(Path(tmp))
                     self.assertEqual(code != 0, rejected)
+                    entry = reports[0]["files"][0]
+                    self.assertEqual(entry["success"], not rejected)
+                    if name == "warning":
+                        self.assertIn(
+                            "warning", [item["type"] for item in entry["warnings"]]
+                        )
+                    if name == "syntax":
+                        self.assertTrue(entry["warnings"])
                     self.assertIn(
                         "zero settings attempts; host home/config not mounted",
                         stdout.getvalue(),
@@ -167,6 +179,47 @@ class NativeStreams(unittest.TestCase):
                         self.assertEqual(stderr.getvalue(), LOCALE_NOTICE)
                     else:
                         self.assertEqual(stderr.getvalue(), "")
+
+    def test_native_malformed_json_and_nonzero_exit_preserve_error_stream(self):
+        isolated = OWNER.run_isolated
+        for machine, exit_code in (
+            (SAVED_JSON + "trailing garbage", 0),
+            (SAVED_JSON, 7),
+        ):
+            with (
+                self.subTest(exit_code=exit_code),
+                tempfile.TemporaryDirectory(
+                    prefix="noctalia-changelog-native-errors-"
+                ) as tmp,
+            ):
+                stdout, stderr = io.StringIO(), io.StringIO()
+
+                def stage(staged):
+                    (staged / "tst_history.qml").write_text("import QtQuick\nItem {}\n")
+
+                def run(staged, command, label):
+                    emitter = (
+                        "import sys; "
+                        f"sys.stdout.write({machine!r}); "
+                        "sys.stdout.flush(); "
+                        "sys.stderr.write('native tool error\\n'); "
+                        f"sys.exit({exit_code})"
+                    )
+                    return isolated(staged, ["/usr/bin/python3", "-c", emitter], label)
+
+                with (
+                    patch.object(OWNER, "stage_runtime", stage),
+                    patch.object(OWNER, "run_isolated", run),
+                    redirect_stdout(stdout),
+                    redirect_stderr(stderr),
+                ):
+                    if exit_code:
+                        self.assertEqual(OWNER.lint_harness(Path(tmp)), exit_code)
+                    else:
+                        with self.assertRaises(json.JSONDecodeError):
+                            OWNER.lint_harness(Path(tmp))
+                self.assertEqual(stderr.getvalue(), "native tool error\n")
+                self.assertIn(machine, stdout.getvalue())
 
 
 if __name__ == "__main__":
