@@ -91,6 +91,8 @@ Settings covers persisted shell configuration, startup bootstrap and recovery, d
 
 ## Tests asserting this spec
 
+- `9b40f9ff9`/`9a80fb4f7`: `Tests/settings-types.test.py lint-harness` checks its exact runtime stage with native FileView/JsonAdapter, private serialization and fail-closed semantic injection. The staged adapter metadata correction changes no persistence contract; [fixture audit and limits](testing.md#final-fixture-staging-audit).
+
 - `Tests/settings-types-isolated.test.py` — settings-type entrypoint host-access denial, private subprocess completion and fixture byte/permission tamper rejection.
 
 - `Tests/settings-types.test.py` — isolated offscreen production SettingsData contract: exact default/mutated/group JSON fixtures, load/save/fresh-process reload, unknown-key omission, nested arrays, and targeted qmllint alias probes; not canonical hot-reload coverage. At `d21cd2d27`, synthetic HOME contains fixture-owned `0600` settings checked for unchanged bytes/mode, with a separate private serialization file and no canonical settings read. Isolation and tamper-rejection regression: [testing](testing.md).
