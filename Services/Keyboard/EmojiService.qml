@@ -31,18 +31,18 @@ Singleton {
 
     const terms = query.toLowerCase().split(" ").filter(t => t);
     const results = emojis.filter(emoji => {
-                                    for (let term of terms) {
-                                      const emojiMatch = emoji.emoji.toLowerCase().includes(term);
-                                      const nameMatch = emoji.name.toLowerCase().includes(term);
-                                      const keywordMatch = emoji.keywords.some(kw => kw.toLowerCase().includes(term));
-                                      const categoryMatch = emoji.category.toLowerCase().includes(term);
+      for (let term of terms) {
+        const emojiMatch = emoji.emoji.toLowerCase().includes(term);
+        const nameMatch = emoji.name.toLowerCase().includes(term);
+        const keywordMatch = emoji.keywords.some(kw => kw.toLowerCase().includes(term));
+        const categoryMatch = emoji.category.toLowerCase().includes(term);
 
-                                      if (!emojiMatch && !nameMatch && !keywordMatch && !categoryMatch) {
-                                        return false;
-                                      }
-                                    }
-                                    return true;
-                                  });
+        if (!emojiMatch && !nameMatch && !keywordMatch && !categoryMatch) {
+          return false;
+        }
+      }
+      return true;
+    });
 
     return results;
   }
@@ -78,9 +78,9 @@ Singleton {
 
     var categoryCounts = {};
 
-    for (var i = 0; i < emojis.length; i++) {
-      var emoji = emojis[i];
-      var category = emoji.category || "other";
+    for (let i = 0; i < emojis.length; i++) {
+      const emoji = emojis[i];
+      const category = emoji.category || "other";
       if (!categoryCounts[category]) {
         categoryCounts[category] = 0;
       }
@@ -88,7 +88,7 @@ Singleton {
     }
 
     var categories = [];
-    for (var cat in categoryCounts) {
+    for (const cat in categoryCounts) {
       categories.push({
                         name: cat,
                         count: categoryCounts[cat]

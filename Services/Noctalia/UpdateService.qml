@@ -53,10 +53,10 @@ Singleton {
 
     // Load changelog state from ShellState
     Qt.callLater(() => {
-                   if (typeof ShellState !== 'undefined' && ShellState.isLoaded) {
-                     loadChangelogState();
-                   }
-                 });
+      if (typeof ShellState !== 'undefined' && ShellState.isLoaded) {
+        loadChangelogState();
+      }
+    });
   }
 
   Connections {
@@ -187,7 +187,7 @@ Singleton {
     const partsA = parseVersionParts(a);
     const partsB = parseVersionParts(b);
     const length = Math.max(partsA.length, partsB.length);
-    for (var i = 0; i < length; i++) {
+    for (let i = 0; i < length; i++) {
       const valA = partsA[i] || 0;
       const valB = partsB[i] || 0;
       if (valA > valB)
@@ -205,7 +205,7 @@ Singleton {
     const lines = body.split(/\r?\n/);
     var entries = [];
 
-    for (var i = 0; i < lines.length; i++) {
+    for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       entries.push(line);
     }

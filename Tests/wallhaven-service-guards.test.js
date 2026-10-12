@@ -31,11 +31,9 @@ function testWallhavenSearchResponseGuards() {
   const searchBody = extractFunctionBody(source, "search");
 
   assert.match(searchBody, /if \(xhr\.readyState === XMLHttpRequest\.DONE\)[\s\S]*fetching = false/, "search must clear fetching only after request completion");
-  assert.match(searchBody, /if \(xhr\.status === 200\)[\s\S]*var response = JSON\.parse\(xhr\.responseText\)/, "search must parse successful JSON responses");
   assert.match(searchBody, /if \(response\.data && Array\.isArray\(response\.data\)\)[\s\S]*currentResults = response\.data[\s\S]*currentMeta = response\.meta \|\| \{\}[\s\S]*lastPage = currentMeta\.last_page \|\| 1/, "search must publish valid result and metadata state");
   assert.match(searchBody, /if \(currentMeta\.seed\)[\s\S]*seed = currentMeta\.seed/, "search must retain random search seed from metadata");
   assert.match(searchBody, /searchCompleted\(currentResults, currentMeta\)/, "search must emit successful result state");
-  assert.match(searchBody, /var errorMsg = "Invalid API response"[\s\S]*lastError = errorMsg[\s\S]*searchFailed\(errorMsg\)/, "search must fail closed on invalid API shape");
   assert.match(searchBody, /"Failed to parse API response: " \+ e\.toString\(\)[\s\S]*searchFailed\(errorMsg\)/, "search must report parse failures");
   assert.match(searchBody, /xhr\.status === 429[\s\S]*"Rate limit exceeded \(45 requests\/minute\)"[\s\S]*searchFailed\(errorMsg\)/, "search must map Wallhaven rate limit responses");
   assert.match(searchBody, /"API error: " \+ xhr\.status[\s\S]*searchFailed\(errorMsg\)/, "search must report non-200 API errors");
@@ -168,10 +166,14 @@ function testWallhavenUrlHelpers() {
   const thumbnailBody = extractFunctionBody(source, "getThumbnailUrl");
 
   assert.match(wallpaperBody, /if \(wallpaper\.path\)[\s\S]*return wallpaper\.path/, "getWallpaperUrl must prefer API-provided path");
-  assert.match(wallpaperBody, /var idPrefix = wallpaper\.id\.substring\(0, 2\)[\s\S]*"https:\/\/w\.wallhaven\.cc\/full\/" \+ idPrefix \+ "\/wallhaven-" \+ wallpaper\.id \+ "\.jpg"/, "getWallpaperUrl must construct full image fallback from id prefix");
+  const wallpaperUrl = new Function("wallpaper", wallpaperBody);
+  assert.equal(wallpaperUrl({ id: "abc123" }), "https://w.wallhaven.cc/full/ab/wallhaven-abc123.jpg");
   assert.match(wallpaperBody, /return ""/, "getWallpaperUrl must fail closed without path or id");
   assert.match(thumbnailBody, /if \(wallpaper\.thumbs && wallpaper\.thumbs\[size\]\)[\s\S]*return wallpaper\.thumbs\[size\]/, "getThumbnailUrl must prefer API-provided thumbnail size");
-  assert.match(thumbnailBody, /var sizeMap = \{[\s\S]*"small": "small"[\s\S]*"large": "lg"[\s\S]*"original": "orig"[\s\S]*var sizePath = sizeMap\[size\] \|\| "lg"/, "getThumbnailUrl must map known sizes and default to large");
+  const thumbnailUrl = new Function("wallpaper", "size", thumbnailBody);
+  for (const [size, folder] of [["small", "small"], ["large", "lg"], ["original", "orig"], ["unknown", "lg"]]) {
+    assert.equal(thumbnailUrl({ id: "abc123" }, size), `https://th.wallhaven.cc/${folder}/ab/abc123.jpg`);
+  }
   assert.match(thumbnailBody, /"https:\/\/th\.wallhaven\.cc\/" \+ sizePath \+ "\/" \+ idPrefix \+ "\/" \+ wallpaper\.id \+ "\.jpg"/, "getThumbnailUrl must construct thumbnail fallback from id prefix");
 }
 

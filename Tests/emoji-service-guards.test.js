@@ -50,7 +50,11 @@ function testEmojiServiceCategoriesAndUsage() {
   const recordBody = extractFunctionBody(source, "recordUsage");
 
   assert.match(categoriesBody, /if \(!loaded\)[\s\S]*return \[\]/, "getCategoriesWithCounts must fail closed before load");
-  assert.match(categoriesBody, /var category = emoji\.category \|\| "other"/, "getCategoriesWithCounts must bucket missing categories under other");
+  const categoryContext = { loaded: true, emojis: [{ category: "animals" }, {}, { category: "animals" }] };
+  assert.deepEqual(qmlFunction("getCategoriesWithCounts")(categoryContext), [
+    { name: "animals", count: 2 },
+    { name: "other", count: 1 },
+  ], "getCategoriesWithCounts must count populated and missing categories");
   assert.match(categoriesBody, /categoryCounts\[category\]\+\+/, "getCategoriesWithCounts must count each category");
   assert.match(categoriesBody, /categories\.push\(\{[\s\S]*name: cat[\s\S]*count: categoryCounts\[cat\]/, "getCategoriesWithCounts must expose names and counts");
   assert.match(byCategoryBody, /if \(!loaded\)[\s\S]*return \[\]/, "getEmojisByCategory must fail closed before load");

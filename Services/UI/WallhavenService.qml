@@ -101,7 +101,7 @@ Singleton {
         fetching = false;
         if (xhr.status === 200) {
           try {
-            var response = JSON.parse(xhr.responseText);
+            const response = JSON.parse(xhr.responseText);
             if (response.data && Array.isArray(response.data)) {
               currentResults = response.data;
               currentMeta = response.meta || {};
@@ -115,24 +115,24 @@ Singleton {
               Logger.d("Wallhaven", "Search completed:", currentResults.length, "results, page", currentPage, "of", lastPage);
               searchCompleted(currentResults, currentMeta);
             } else {
-              var errorMsg = "Invalid API response";
+              const errorMsg = "Invalid API response";
               lastError = errorMsg;
               Logger.e("Wallhaven", errorMsg);
               searchFailed(errorMsg);
             }
           } catch (e) {
-            var errorMsg = "Failed to parse API response: " + e.toString();
+            const errorMsg = "Failed to parse API response: " + e.toString();
             lastError = errorMsg;
             Logger.e("Wallhaven", errorMsg);
             searchFailed(errorMsg);
           }
         } else if (xhr.status === 429) {
-          var errorMsg = "Rate limit exceeded (45 requests/minute)";
+          const errorMsg = "Rate limit exceeded (45 requests/minute)";
           lastError = errorMsg;
           Logger.w("Wallhaven", errorMsg);
           searchFailed(errorMsg);
         } else {
-          var errorMsg = "API error: " + xhr.status;
+          const errorMsg = "API error: " + xhr.status;
           lastError = errorMsg;
           Logger.e("Wallhaven", "Search failed:", errorMsg);
           searchFailed(errorMsg);
@@ -152,7 +152,7 @@ Singleton {
     }
     // Fallback to constructing URL from ID
     if (wallpaper.id) {
-      var idPrefix = wallpaper.id.substring(0, 2);
+      const idPrefix = wallpaper.id.substring(0, 2);
       return "https://w.wallhaven.cc/full/" + idPrefix + "/wallhaven-" + wallpaper.id + ".jpg";
     }
     return "";
@@ -166,13 +166,13 @@ Singleton {
     }
     // Fallback
     if (wallpaper.id) {
-      var idPrefix = wallpaper.id.substring(0, 2);
-      var sizeMap = {
+      const idPrefix = wallpaper.id.substring(0, 2);
+      const sizeMap = {
         "small": "small",
         "large": "lg",
         "original": "orig"
       };
-      var sizePath = sizeMap[size] || "lg";
+      const sizePath = sizeMap[size] || "lg";
       return "https://th.wallhaven.cc/" + sizePath + "/" + idPrefix + "/" + wallpaper.id + ".jpg";
     }
     return "";
