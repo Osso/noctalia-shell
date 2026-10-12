@@ -107,6 +107,8 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 
 ### Other bar coverage
 
+- ActiveWindowSettings warning reduction 6→0 and six reported offscreen passes through `40d1f6391`/`a5322cf4b`/`9f3c50289` cover editor options, pending/copy-save isolation, and shared-dialog cancel/reopen/apply with synthetic settings. This does not prove BarService popup ownership, real persistence, or resolution of reload-time ActiveWindow warnings. Coverage: [active window](active-window.md#tests-asserting-this-spec); invocation/isolation: [testing](testing.md#activewindow-settings-isolated-runtime).
+
 - `Tests/background-paths-warnings.test.py` / `Tests/Qml/BackgroundPathsHarness.qml` cover production bar/panel paths through `7c8e74ea2`/`23b32ca34`/`f16acbc36`: 11 offscreen behavioral rows plus init/cleanup (13 reported passes), with four detected layout/rounding negative controls. Shape containment and fill-color properties are not compositor visual proof. Invocation, retained diagnostics, and isolation: [testing](testing.md#background-paths).
 
 - `Tests/layer-bar-owner-warnings.test.py loader` covers production BarWidgetLoader offscreen after `097536acb`: owner warnings 15→0, with three unsuppressed dynamic-widget `missing-property` diagnostics (`screen`, `scaling`, `onLoaded`) retained. One behavioral case covers two-screen property assignment, registration before widget callback, rounded/hidden sizes, density scaling, opacity/hide mode, resize propagation, ordered teardown, and recreation. Synthetic clicks reach an underlying receiver; the unchanged input region is only a fixture property, not compositor proof. Invocation and isolation: [testing](testing.md#background-and-widget-loader-owners).
