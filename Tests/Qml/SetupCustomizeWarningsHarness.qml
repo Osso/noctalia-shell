@@ -136,6 +136,28 @@ ShellRoot {
     }
   }
 
+  function exerciseIndependentInstance() {
+    const other = customize.createObject(window.contentItem, {
+      width: window.width,
+      height: 720
+    });
+    if (!other)
+      throw new Error("Second customization instance did not instantiate");
+    const positionCount = positions.length;
+    const ratioCount = ratios.length;
+    const tile = findItems(other, item => item.key === "bottom")[0];
+    click(tile);
+    assertValue(other.selectedBarPosition, "bottom", "second instance position");
+    assertValue(step.selectedBarPosition, "left", "first instance position unchanged");
+    const slider = findItems(other, item => item.textSize !== undefined && item.from === 0.8)[0];
+    slider.moved(0.9);
+    assertValue(other.selectedScaleRatio, 0.9, "second instance scale");
+    assertValue(step.selectedScaleRatio, 1.2, "first instance scale unchanged");
+    assertValue(positions.length, positionCount, "no first-instance position signal");
+    assertValue(ratios.length, ratioCount, "no first-instance scale signal");
+    other.destroy();
+  }
+
   function reorderModels() {
     const repeaters = findItems(step, item => typeof item.itemAt === "function" && item.model !== undefined);
     assertValue(repeaters.length, 2, "repeater count");
@@ -188,6 +210,7 @@ ShellRoot {
         if (!harness.reordered) {
           harness.exerciseSelections();
           harness.exerciseForm();
+          harness.exerciseIndependentInstance();
           harness.reorderModels();
           harness.reordered = true;
           return;
