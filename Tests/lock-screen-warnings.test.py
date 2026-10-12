@@ -2,13 +2,16 @@
 """Bounded lock UI lint and offscreen behavior; no Wayland lock or PAM.
 
 Production Loader, timers, layouts, password input and signal handlers remain
-real. Session-lock transport, authentication and service/leaf dependencies are
-inert fixtures. This proves UI routing, not compositor locking or authentication.
+real. Fake lock transport preserves the native default Component surface and
+creation-context boundary, with deferred surface destruction on release. Fake
+authentication supplies delayed success/failure; no PAM or native lock type is
+loaded. Owner shadow and routing/clear-order/unload/visibility mutations test
+binding ownership and lifecycle. Bubblewrap masks real config and runtime
+sockets; only software/offscreen Qt runs. No live-lock/authentication proof.
 """
 
 import argparse
 from collections import Counter
-import hashlib
 import importlib.util
 import json
 import os
@@ -33,6 +36,8 @@ def lint(directory):
     result = subprocess.run(
         [
             "/usr/lib/qt6/bin/qmllint",
+            "--max-warnings",
+            "0",
             "-I",
             str(directory),
             str(directory / "qs" / TARGET),
@@ -46,16 +51,11 @@ def lint(directory):
     warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
     counts = Counter(re.findall(r"\[([^]]+)\]", line)[-1] for line in warnings)
     print("LOCK_SCREEN_LINT_COUNTS", dict(counts), "TOTAL", len(warnings))
-    # Remaining diagnostics are the unchanged implicit-component context accesses.
-    assert counts == {"unqualified": 10}, dict(counts)
-    diagnostic_sources = re.findall(r"^Warning:.*\n([^\n]+)", output, re.M)
-    assert all("lockContext." in line for line in diagnostic_sources), (
-        diagnostic_sources
-    )
+    assert not warnings, dict(counts)
     assert result.returncode == 0, result.returncode
 
 
-def stage_runtime(directory, mutation):
+def stage_runtime(directory, mutation, owner_shadow):
     helpers = helper("about-tab-warnings.test.py")
     write, singleton = helpers.write_module, helpers.singleton
     inert = {"Inert": "import QtQuick\nQtObject {}"}
@@ -75,8 +75,37 @@ def stage_runtime(directory, mutation):
         directory,
         "Quickshell.Wayland",
         {
-            "WlSessionLock": "import QtQuick\nItem { property bool locked: false }",
-            "WlSessionLockSurface": 'import QtQuick\nimport Quickshell\nItem { width: 1920; height: 1080; property ShellScreen screen: ShellScreen { name: "fixture-screen" } }',
+            "WlSessionLock": """import QtQuick
+Item {
+  id: transport
+  default property Component surface
+  property bool locked: false
+  property Item surfaceInstance: null
+  Component.onCompleted: {
+    surfaceInstance = surface.createObject(transport);
+  }
+  onLockedChanged: {
+    if (!locked && surfaceInstance !== null) {
+      surfaceInstance.destroy();
+      surfaceInstance = null;
+    }
+  }
+}""",
+            "WlSessionLockSurface": """import QtQuick
+import Quickshell
+import qs.Modules.LockScreen
+Item {
+  width: 1920
+  height: 1080
+  property ShellScreen screen: ShellScreen { name: "fixture-screen" }
+  property LockContext shadowContext: LockContext { objectName: "shadowContext" }
+"""
+            + (
+                "  property LockContext lockContext: shadowContext\n"
+                if owner_shadow
+                else ""
+            )
+            + "}",
         },
     )
     write(
@@ -249,6 +278,13 @@ def stage_runtime(directory, mutation):
         },
     )
     source = (ROOT / TARGET).read_text()
+    if mutation == "routing":
+        source = source.replace("pragma ComponentBehavior: Bound\n", "")
+    if mutation == "clear-order":
+        source = source.replace(
+            'lockSession.locked = false;\n          root.scheduleUnloadAfterUnlock();\n          lockContext.currentText = "";',
+            'lockContext.currentText = "";\n          lockSession.locked = false;\n          root.scheduleUnloadAfterUnlock();',
+        )
     # Observation labels only, on a disposable copy; no production test hooks.
     source = re.sub(r"(id: (\w+))", r'\1; objectName: "\2"', source)
     if mutation == "visibility":
@@ -272,7 +308,39 @@ Item {
   property int attempts: 0
   signal unlocked()
   signal failed()
-  function tryUnlock() { attempts++; unlockInProgress = true; }
+  property var submissions: []
+  property bool nextSuccess: false
+  onCurrentTextChanged: {
+    if (currentText !== "") {
+      showFailure = false;
+      errorMessage = "";
+    }
+  }
+  function tryUnlock() {
+    submissions = submissions.concat([currentText]);
+    attempts++;
+    unlockInProgress = true;
+    showFailure = false;
+    errorMessage = "";
+  }
+  function finish(success) {
+    nextSuccess = success;
+    completion.start();
+  }
+  Timer {
+    id: completion
+    interval: 40
+    onTriggered: {
+      if (parent.nextSuccess) {
+        parent.unlocked();
+      } else {
+        parent.errorMessage = "Fixture authentication failed";
+        parent.showFailure = true;
+        parent.failed();
+      }
+      parent.unlockInProgress = false;
+    }
+  }
 }""",
         },
     )
@@ -342,22 +410,81 @@ Item {
       compare(input.enabled, false);
       compare(named("eyeButtonArea").parent.enabled, false);
       compare(named("submitButtonArea").parent.enabled, false);
-      context.failed();
-      compare(input.text, "");
+      compare(context.submissions, ["aBc42"]);
+      context.finish(false);
+      compare(input.text, "aBc42");
+      tryCompare(input, "text", "");
+      compare(input.enabled, true);
       compare(lock.active, true);
+      compare(named("lockSession").locked, true);
+      compare(named("unloadAfterUnlockTimer").running, false);
+      const failureText = descendants(lock.item, child => child.text === "Fixture authentication failed");
+      compare(failureText.length, 1);
+      compare(failureText[0].parent.parent.visible, true);
+      compare(failureText[0].parent.parent.color, NColor.mError);
+      input.insert(0, "retry7");
+      compare(context.showFailure, false);
+      compare(failureText[0].parent.parent.visible, false);
+      input.forceActiveFocus();
+      compare(input.activeFocus, true);
+      keyClick(Qt.Key_Return);
+      compare(context.submissions, ["aBc42", "retry7"]);
+      compare(input.enabled, false);
+      context.finish(false);
+      tryCompare(input, "text", "");
+      input.insert(0, "enter8");
+      input.forceActiveFocus();
+      keyClick(Qt.Key_Enter);
+      compare(context.submissions, ["aBc42", "retry7", "enter8"]);
+      compare(input.enabled, false);
+      const shadow = named("shadowContext");
+      compare(shadow.currentText, "");
+      compare(shadow.attempts, 0);
+      compare(shadow.showFailure, false);
     }
     function test_unlock_release_then_delayed_unload_and_reactivation() {
       const context = named("lockContext");
       const session = named("lockSession");
-      context.currentText = "secret";
-      context.unlocked();
-      compare(session.locked, false);
+      const input = named("passwordInput");
+      const unload = named("unloadAfterUnlockTimer");
+      compare(unload.interval, 250);
+      input.insert(0, "secret");
+      named("submitButtonArea").clicked(null);
+      compare(context.submissions, ["secret"]);
+      let releaseText = null;
+      let clearState = null;
+      let releaseAt = 0;
+      let unloadedAt = 0;
+      session.lockedChanged.connect(() => {
+        if (!session.locked) {
+          releaseText = context.currentText;
+          releaseAt = Date.now();
+        }
+      });
+      context.currentTextChanged.connect(() => {
+        if (context.currentText === "")
+          clearState = [session.locked, unload.running, lock.active, lock.item !== null, input.text];
+      });
+      lock.activeChanged.connect(() => {
+        if (!lock.active)
+          unloadedAt = Date.now();
+      });
+      context.finish(true);
+      compare(session.locked, true);
+      compare(unload.running, false);
+      compare(context.currentText, "secret");
+      tryCompare(session, "locked", false);
+      compare(releaseText, "secret");
+      compare(clearState, [false, true, true, true, ""]);
       compare(context.currentText, "");
+      compare(session.surfaceInstance, null);
       compare(lock.active, true);
       verify(lock.item !== null);
-      wait(100);
+      wait(150);
       compare(lock.active, true);
-      tryCompare(lock, "active", false, 1000);
+      tryCompare(lock, "active", false, 750);
+      verify(unloadedAt - releaseAt >= 225, "unloaded before 250ms boundary");
+      verify(unloadedAt - releaseAt < 750, "unloaded too late");
       compare(lock.item, null);
       lock.active = true;
       tryVerify(() => lock.item !== null);
@@ -397,15 +524,7 @@ Item {
 """
 
 
-def runtime(directory, mutation):
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    backup = directory / "settings.backup.json"
-    backup.touch(mode=0o600)
-    backup.write_bytes(original)
-    sha = hashlib.sha256(original).hexdigest()
-    assert backup.stat().st_mode & 0o777 == 0o600
-    assert hashlib.sha256(backup.read_bytes()).hexdigest() == sha
+def runtime(directory, mutation, owner_shadow):
     environment = {
         k: v
         for k, v in os.environ.items()
@@ -434,35 +553,56 @@ def runtime(directory, mutation):
         path.mkdir(mode=0o700)
         environment[key] = str(path)
     environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
-    stage_runtime(directory, mutation)
-    try:
-        result = subprocess.run(
-            [
-                "/usr/lib/qt6/bin/qmltestrunner",
-                "-input",
-                str(directory / "tst_lock.qml"),
-                "-import",
-                str(directory),
-            ],
-            env=environment,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        output = result.stdout + result.stderr
-        print(output, end="")
-        assert not re.search(r"QWARN|QFATAL|ReferenceError|TypeError", output), output
-        assert result.returncode == 0, result.returncode
-        assert "0 failed" in output
-    finally:
-        assert settings.read_bytes() == original, "real settings changed"
-        print("LOCK_SCREEN_SETTINGS_SHA_UNCHANGED", sha)
+    stage_runtime(directory, mutation, owner_shadow)
+    result = subprocess.run(
+        [
+            "bwrap",
+            "--ro-bind",
+            "/",
+            "/",
+            "--tmpfs",
+            "/home/osso/.config",
+            "--tmpfs",
+            "/run",
+            "--unshare-net",
+            "--die-with-parent",
+            "--",
+            "python3",
+            "-c",
+            "import os, pathlib, sys; "
+            "assert not pathlib.Path('/home/osso/.config/noctalia/settings.json').exists(); "
+            "assert os.environ['QT_QPA_PLATFORM'] == 'offscreen'; "
+            "assert 'WAYLAND_DISPLAY' not in os.environ and 'DISPLAY' not in os.environ; "
+            "print('LOCK_SCREEN_REAL_CONFIG_MASKED', flush=True); "
+            "os.execv(sys.argv[1], sys.argv[1:])",
+            "/usr/lib/qt6/bin/qmltestrunner",
+            "-input",
+            str(directory / "tst_lock.qml"),
+            "-import",
+            str(directory),
+        ],
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    output = result.stdout + result.stderr
+    print(output, end="")
+    assert not re.search(
+        r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:",
+        output,
+    ), output
+    assert result.returncode == 0, result.returncode
+    assert "6 passed, 0 failed" in output
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=("lint", "runtime"))
-    parser.add_argument("--mutation", choices=("visibility", "unload"))
+    parser.add_argument(
+        "--mutation", choices=("visibility", "unload", "routing", "clear-order")
+    )
+    parser.add_argument("--owner-shadow", action="store_true")
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-lock-screen-") as temporary:
         directory = Path(temporary)
@@ -470,4 +610,4 @@ if __name__ == "__main__":
         if args.mode == "lint":
             lint(directory)
         else:
-            runtime(directory, args.mutation)
+            runtime(directory, args.mutation, args.owner_shadow)
