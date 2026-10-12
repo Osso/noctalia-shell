@@ -20,27 +20,27 @@ Singleton {
   readonly property bool discovering: adapter ? adapter.discovering : false
   readonly property ObjectModel devices: adapter ? adapter.devices : null
   readonly property var pairedDevices: {
-    if (!adapter || !adapter.devices) {
+    if (!root.devices) {
       return [];
     }
-    return adapter.devices.values.filter(dev => {
-                                           return dev && (dev.paired || dev.trusted);
-                                         });
+    return root.devices.values.filter(dev => {
+      return dev && (dev.paired || dev.trusted);
+    });
   }
   readonly property var connectedDevices: {
-    if (!adapter || !adapter.devices) {
+    if (!root.devices) {
       return [];
     }
-    return adapter.devices.values.filter(dev => dev && dev.connected);
+    return root.devices.values.filter(dev => dev && dev.connected);
   }
 
   readonly property var allDevicesWithBattery: {
-    if (!adapter || !adapter.devices) {
+    if (!root.devices) {
       return [];
     }
-    return adapter.devices.values.filter(dev => {
-                                           return dev && dev.batteryAvailable && dev.battery > 0;
-                                         });
+    return root.devices.values.filter(dev => {
+      return dev && dev.batteryAvailable && dev.battery > 0;
+    });
   }
 
   function init() {
