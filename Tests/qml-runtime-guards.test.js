@@ -30,8 +30,8 @@ function testOsdShowRequiresScreenBeforeActivatingLoader() {
 function testTaskbarGroupedUrgentBadgeHasCooldown() {
   const result = spawnSync(
       "python3",
-      [ path.join(__dirname, "taskbar-grouped-warnings.test.py"), "behavior" ],
-      {encoding : "utf8", timeout : 60000},
+      [path.join(__dirname, "taskbar-grouped-warnings.test.py"), "behavior"],
+      {encoding: "utf8", timeout: 60000},
   );
   assert.ifError(result.error);
   assert.equal(result.status, 0, result.stdout + result.stderr);
@@ -63,16 +63,17 @@ with tempfile.TemporaryDirectory(prefix="noctalia-workspace-guards-") as tempora
     print(result.stdout + result.stderr, end="")
     sys.exit(result.returncode)
 `;
-  const result = spawnSync("python3", [ "-c", script, __dirname ], {
-    input : extraTests,
-    encoding : "utf8",
-    timeout : 60000,
+  const result = spawnSync("python3", ["-c", script, __dirname], {
+    input: extraTests,
+    encoding: "utf8",
+    timeout: 60000,
   });
   assert.ifError(result.error);
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.match(result.stdout, /Totals: 4 passed, 0 failed/);
-  assert.doesNotMatch(result.stdout + result.stderr,
-                      /QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop/);
+  assert.doesNotMatch(
+      result.stdout + result.stderr,
+      /QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop/);
   process.stdout.write(result.stdout);
 }
 
@@ -129,19 +130,31 @@ function testFocusedWorkspaceBurstOnlyRunsOnFocusChange() {
     const bursts = [];
     const changes = [];
     const root = {
-      screen : {name : "DP-1"},
-      focusedWorkspaceKey : "",
-      NColor : {mPrimary : "#00ff00"},
-      localWorkspaces : {count : 0, get(index) { return this.rows[index]; }},
-      masterAnimation : {restart() { bursts.push(root.focusedWorkspaceKey); }},
-      workspaceChanged(id, color) { changes.push([ id, color ]); },
+      screen: {name: "DP-1"},
+      focusedWorkspaceKey: "",
+      effectColor: "#000000",
+      NColor: {mPrimary: "#00ff00"},
+      localWorkspaces: {
+        count: 0,
+        get(index) {
+          return this.rows[index];
+        }
+      },
+      masterAnimation: {
+        restart() {
+          bursts.push(root.focusedWorkspaceKey);
+        }
+      },
+      workspaceChanged(id, color) {
+        changes.push([id, color]);
+      },
     };
     root.root = root;
     for (const name of ["workspaceUrgencyKey", "triggerUnifiedWave", "updateWorkspaceFocus"]) {
       root[name] = new Function("workspace", `with (this) ${extractFunctionBody(source, name)}`);
     }
     const refreshFocus = (id, output, isFocused = true) => {
-      root.localWorkspaces.rows = [ {id, idx : 1, output, isFocused} ];
+      root.localWorkspaces.rows = [{id, idx: 1, output, isFocused}];
       root.localWorkspaces.count = 1;
       root.updateWorkspaceFocus();
     };
@@ -152,10 +165,10 @@ function testFocusedWorkspaceBurstOnlyRunsOnFocusChange() {
     refreshFocus(12, "HDMI-A-1");
     refreshFocus(12, "HDMI-A-1", false);
     refreshFocus(12, "HDMI-A-1");
-    assert.deepEqual(bursts, [ "DP-1:11", "DP-1:12", "HDMI-A-1:12" ], widget);
+    assert.deepEqual(bursts, ["DP-1:11", "DP-1:12", "HDMI-A-1:12"], widget);
     assert.equal(root.effectColor, "#00ff00", widget);
     if (widget === "Workspace") {
-      assert.deepEqual(changes, [ [ 11, "#00ff00" ], [ 12, "#00ff00" ], [ 12, "#00ff00" ] ]);
+      assert.deepEqual(changes, [[11, "#00ff00"], [12, "#00ff00"], [12, "#00ff00"]]);
     }
   }
 }
