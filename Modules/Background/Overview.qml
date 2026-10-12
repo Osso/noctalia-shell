@@ -28,7 +28,6 @@ Loader {
 
       Component.onDestruction: {
         // Clean up resources to prevent memory leak when overviewEnabled is toggled off
-        timerDisableFx.stop();
         bgImage.layer.enabled = false;
         bgImage.source = "";
       }
@@ -37,8 +36,8 @@ Loader {
       Connections {
         target: WallpaperService
         function onWallpaperChanged(screenName, path) {
-          if (screenName === monitorName) {
-            wallpaper = path;
+          if (screenName === panelWindow.monitorName) {
+            panelWindow.wallpaper = path;
           }
         }
       }
@@ -58,7 +57,7 @@ Loader {
       screen: modelData
       WlrLayershell.layer: WlrLayer.Background
       WlrLayershell.exclusionMode: ExclusionMode.Ignore
-      WlrLayershell.namespace: "noctalia-overview-" + (screen ? screen.name : "unknown")
+      WlrLayershell.namespace: "noctalia-overview-" + (modelData ? monitorName : "unknown")
 
       anchors {
         top: true
@@ -71,7 +70,7 @@ Loader {
         id: bgImage
         anchors.fill: parent
         fillMode: Image.PreserveAspectCrop
-        source: wallpaper
+        source: panelWindow.wallpaper
         smooth: true
         mipmap: false
         cache: false
