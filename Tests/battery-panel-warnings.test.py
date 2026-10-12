@@ -239,6 +239,9 @@ def main():
     parser.add_argument("--artifacts", type=Path, required=True)
     args = parser.parse_args()
     args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
+    if args.mode in ("lint-harness", "lint-harness-regression"):
+        run_proof(args.artifacts, args.mode)
+        return
     settings = Path.home() / ".config/noctalia/settings.json"
     original = settings.read_bytes()
     backup = args.artifacts / "settings.backup.json"
