@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exact Launcher lint and private offscreen model/delegate behavior.
+"""Exact Launcher/fixture lint and private offscreen model/delegate behavior.
 
 External plugins, image decode, panel surface and leaf controls are inert.
 Launcher source, Qt model/delegate lifetime, bindings and keyboard routing are real.
@@ -289,10 +289,14 @@ def run_isolated(directory, command, label):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "runtime"))
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     parser.add_argument("--owner-shadow", action="store_true")
     parser.add_argument("--mutation", choices=("revision", "selection"))
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-launcher-proof-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
@@ -313,6 +317,53 @@ def main():
             warnings = re.findall(r"^Warning:.*$", output, re.M)
             print("LAUNCHER_WARNINGS", len(warnings), "EXIT", code)
             assert not warnings and code == 0, "strict Launcher diagnostics failed"
+        elif args.mode == "lint-harness":
+            stage_runtime(directory, args.owner_shadow, args.mutation)
+            harness = directory / "tst_launcher.qml"
+            if args.inject_warning:
+                harness.write_text(
+                    harness.read_text().replace(
+                        "id: tests",
+                        "id: tests\n    property int injectedWarning: tests.missingLintProbe",
+                        1,
+                    )
+                )
+            code, output = run_isolated(
+                directory,
+                [
+                    "/usr/lib/qt6/bin/qmllint",
+                    "--bare",
+                    "-I",
+                    str(directory),
+                    "-I",
+                    "/usr/lib/qt6/qml",
+                    "--max-warnings",
+                    "0",
+                    "--json",
+                    "-",
+                    str(harness),
+                ],
+                "lint-harness",
+            )
+            diagnostics = json.loads(output)
+            warnings = [
+                warning
+                for result in diagnostics["files"]
+                for warning in result["warnings"]
+                if warning["type"] in ("warning", "critical", "fatal")
+            ]
+            print("LAUNCHER_HARNESS_WARNINGS", len(warnings), "EXIT", code)
+            if args.inject_warning:
+                assert any(
+                    warning["id"] == "missing-property"
+                    and "missingLintProbe" in warning["message"]
+                    for warning in warnings
+                ), "injected semantic warning not diagnosed"
+                assert code != 0, "injected semantic warning accepted"
+                raise SystemExit(code)
+            assert not warnings and code == 0, (
+                "strict Launcher harness diagnostics failed"
+            )
         else:
             stage_runtime(directory, args.owner_shadow, args.mutation)
             code, output = run_isolated(
@@ -326,7 +377,9 @@ def main():
                 ],
                 "runtime",
             )
-            assert code == 0 and "0 failed" in output, "launcher runtime failed"
+            assert code == 0 and "7 passed, 0 failed" in output, (
+                "launcher runtime failed"
+            )
             assert not re.search(
                 r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:",
                 output,
