@@ -168,13 +168,14 @@ def main():
             config_parent,
         ]
         if args.harness:
+            harness_target = str(directory / "supplied-harness.qml")
             separator = command.index("--")
             command[separator:separator] = [
                 "--ro-bind",
                 str(args.harness.resolve()),
-                "/bar-pill-harness.qml",
+                harness_target,
             ]
-            command.extend(["--harness", "/bar-pill-harness.qml"])
+            command.extend(["--harness", harness_target])
         if args.mutation:
             command.append("--mutation")
         environment = {"PATH": "/usr/bin", "HOME": "/home/osso", "LANG": "C.UTF-8"}
