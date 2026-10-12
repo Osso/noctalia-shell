@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -76,32 +78,32 @@ PopupWindow {
     if (isRunning) {
       // Focus item
       next.push({
-                  "icon": "eye",
-                  "text": I18n.tr("dock.menu.focus"),
-                  "action": function () {
-                    handleFocus();
-                  }
-                });
+        "icon": "eye",
+        "text": I18n.tr("dock.menu.focus"),
+        "action": function () {
+          handleFocus();
+        }
+      });
     }
 
     // Pin/Unpin item
     next.push({
-                "icon": !isPinned ? "pin" : "unpin",
-                "text": !isPinned ? I18n.tr("dock.menu.pin") : I18n.tr("dock.menu.unpin"),
-                "action": function () {
-                  handlePin();
-                }
-              });
+      "icon": !isPinned ? "pin" : "unpin",
+      "text": !isPinned ? I18n.tr("dock.menu.pin") : I18n.tr("dock.menu.unpin"),
+      "action": function () {
+        handlePin();
+      }
+    });
 
     if (isRunning) {
       // Close item
       next.push({
-                  "icon": "close",
-                  "text": I18n.tr("dock.menu.close"),
-                  "action": function () {
-                    handleClose();
-                  }
-                });
+        "icon": "close",
+        "text": I18n.tr("dock.menu.close"),
+        "action": function () {
+          handleClose();
+        }
+      });
     }
 
     // Create a menu entry for each app-specific action definied in its .desktop file
@@ -109,23 +111,24 @@ PopupWindow {
       const appId = root.toplevel.appId;
       const entry = (DesktopEntries.heuristicLookup) ? DesktopEntries.heuristicLookup(appId) : DesktopEntries.byId(appId);
       if (entry != null) {
-        entry.actions.forEach(function (action) {
+        for (let i = 0; i < entry.actions.length; i++) {
+          const action = entry.actions[i];
           next.push({
-                      "icon": "",
-                      "text": action.name,
-                      "action": function () {
-                        action.execute();
-                      }
-                    });
-        });
+            "icon": "",
+            "text": action.name,
+            "action": function () {
+              action.execute();
+            }
+          });
+        }
       }
     }
 
     root.items = next;
     // Force width recalculation when items change
     Qt.callLater(() => {
-                   calculateMenuWidth();
-                 });
+      calculateMenuWidth();
+    });
   }
 
   // Helper function to normalize app IDs for case-insensitive matching
@@ -148,7 +151,7 @@ PopupWindow {
           return entry.id;
         }
       } catch (e)
-        // Fall through to return original appId
+      // Fall through to return original appId
       {}
     }
 
@@ -160,7 +163,7 @@ PopupWindow {
           return entry.id;
         }
       } catch (e)
-        // Fall through to return original appId
+      // Fall through to return original appId
       {}
     }
 
@@ -217,8 +220,8 @@ PopupWindow {
     initItems();
     // Calculate width after items are initialized
     Qt.callLater(() => {
-                   calculateMenuWidth();
-                 });
+      calculateMenuWidth();
+    });
     visible = true;
     canAutoClose = false;
     gracePeriodTimer.restart();
@@ -321,15 +324,15 @@ PopupWindow {
       }
 
       onPositionChanged: mouse => {
-                           root.hoveredItem = root.getHoveredItem(mouse.y);
-                         }
+        root.hoveredItem = root.getHoveredItem(mouse.y);
+      }
 
       onClicked: mouse => {
-                   const clickedItem = root.getHoveredItem(mouse.y);
-                   if (clickedItem >= 0) {
-                     root.items[clickedItem].action.call();
-                   }
-                 }
+        const clickedItem = root.getHoveredItem(mouse.y);
+        if (clickedItem >= 0) {
+          root.items[clickedItem].action.call();
+        }
+      }
     }
 
     ColumnLayout {
@@ -343,6 +346,7 @@ PopupWindow {
         model: root.items
 
         Rectangle {
+          id: menuEntry
           required property var modelData
           required property int index
           readonly property string menuIcon: modelData ? (modelData.icon || "") : ""
@@ -363,17 +367,17 @@ PopupWindow {
             spacing: Style.marginS
 
             NIcon {
-              icon: menuIcon
+              icon: menuEntry.menuIcon
               pointSize: Style.fontSizeL
-              color: root.hoveredItem === index ? NColor.mOnHover : NColor.mOnSurfaceVariant
+              color: root.hoveredItem === menuEntry.index ? NColor.mOnHover : NColor.mOnSurfaceVariant
               visible: icon !== ""
               anchors.verticalCenter: parent.verticalCenter
             }
 
             NText {
-              text: menuText
+              text: menuEntry.menuText
               pointSize: Style.fontSizeS
-              color: root.hoveredItem === index ? NColor.mOnHover : NColor.mOnSurfaceVariant
+              color: root.hoveredItem === menuEntry.index ? NColor.mOnHover : NColor.mOnSurfaceVariant
               anchors.verticalCenter: parent.verticalCenter
             }
           }
