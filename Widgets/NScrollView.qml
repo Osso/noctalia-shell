@@ -55,6 +55,7 @@ T.ScrollView {
   }
 
   ScrollBar.vertical: ScrollBar {
+    id: verticalScrollBar
     parent: root
     x: root.mirrored ? 0 : root.width - width
     y: root.topPadding
@@ -66,8 +67,8 @@ T.ScrollView {
       implicitWidth: root.handleWidth
       implicitHeight: 100
       radius: root.handleRadius
-      color: parent.pressed ? root.handlePressedColor : parent.hovered ? root.handleHoverColor : root.handleColor
-      opacity: parent.policy === ScrollBar.AlwaysOn ? 1.0 : root.verticalScrollable ? (parent.active ? 1.0 : 0.0) : 0.0
+      color: verticalScrollBar.pressed ? root.handlePressedColor : verticalScrollBar.hovered ? root.handleHoverColor : root.handleColor
+      opacity: verticalScrollBar.policy === ScrollBar.AlwaysOn ? 1.0 : root.verticalScrollable ? (verticalScrollBar.active ? 1.0 : 0.0) : 0.0
 
       Behavior on opacity {
         NumberAnimation {
@@ -86,7 +87,7 @@ T.ScrollView {
       implicitWidth: root.handleWidth
       implicitHeight: 100
       color: root.trackColor
-      opacity: parent.policy === ScrollBar.AlwaysOn ? 0.3 : root.verticalScrollable ? (parent.active ? 0.3 : 0.0) : 0.0
+      opacity: verticalScrollBar.policy === ScrollBar.AlwaysOn ? 0.3 : root.verticalScrollable ? (verticalScrollBar.active ? 0.3 : 0.0) : 0.0
       radius: root.handleRadius / 2
 
       Behavior on opacity {
@@ -98,6 +99,7 @@ T.ScrollView {
   }
 
   ScrollBar.horizontal: ScrollBar {
+    id: horizontalScrollBar
     parent: root
     x: root.leftPadding
     y: root.height - height
@@ -109,8 +111,8 @@ T.ScrollView {
       implicitWidth: 100
       implicitHeight: root.handleWidth
       radius: root.handleRadius
-      color: parent.pressed ? root.handlePressedColor : parent.hovered ? root.handleHoverColor : root.handleColor
-      opacity: parent.policy === ScrollBar.AlwaysOn ? 1.0 : root.horizontalScrollable ? (parent.active ? 1.0 : 0.0) : 0.0
+      color: horizontalScrollBar.pressed ? root.handlePressedColor : horizontalScrollBar.hovered ? root.handleHoverColor : root.handleColor
+      opacity: horizontalScrollBar.policy === ScrollBar.AlwaysOn ? 1.0 : root.horizontalScrollable ? (horizontalScrollBar.active ? 1.0 : 0.0) : 0.0
 
       Behavior on opacity {
         NumberAnimation {
@@ -129,7 +131,7 @@ T.ScrollView {
       implicitWidth: 100
       implicitHeight: root.handleWidth
       color: root.trackColor
-      opacity: parent.policy === ScrollBar.AlwaysOn ? 0.3 : root.horizontalScrollable ? (parent.active ? 0.3 : 0.0) : 0.0
+      opacity: horizontalScrollBar.policy === ScrollBar.AlwaysOn ? 0.3 : root.horizontalScrollable ? (horizontalScrollBar.active ? 0.3 : 0.0) : 0.0
       radius: root.handleRadius / 2
 
       Behavior on opacity {
