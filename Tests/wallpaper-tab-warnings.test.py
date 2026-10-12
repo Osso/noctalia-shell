@@ -295,8 +295,11 @@ def sandbox_command(directory, argv):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime", "isolation"))
+    parser.add_argument(
+        "mode", choices=("lint", "lint-harness", "runtime", "isolation")
+    )
     parser.add_argument("--mutation", action="store_true")
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-wallpaper-tab-") as temporary:
         directory = Path(temporary)
@@ -310,6 +313,27 @@ def main():
                 "-I",
                 temporary,
                 str(directory / "qs" / TARGET),
+            ]
+        elif args.mode == "lint-harness":
+            stage_runtime(directory)
+            harness = directory / "tst_wallpaper_tab.qml"
+            if args.inject_warning:
+                harness.write_text(
+                    harness.read_text().replace(
+                        'name: "WallpaperTabWarnings"',
+                        'name: "WallpaperTabWarnings"\n  property int injectedWarning: missingFixtureValue',
+                    )
+                )
+            argv = [
+                "/usr/lib/qt6/bin/qmllint",
+                "--bare",
+                "-I",
+                temporary,
+                "-I",
+                "/usr/lib/qt6/qml",
+                "--max-warnings",
+                "0",
+                str(harness),
             ]
         elif args.mode == "runtime":
             stage_runtime(directory)
@@ -365,6 +389,12 @@ finally:
             counts = Counter(re.findall(r"\[([^]]+)\]", line)[-1] for line in warnings)
             print("WALLPAPER_TAB_LINT_COUNTS", dict(counts), "TOTAL", len(warnings))
             assert counts == {"unqualified": 1}, dict(counts)
+        elif args.mode == "lint-harness":
+            warnings = [
+                line for line in output.splitlines() if line.startswith("Warning:")
+            ]
+            print("WALLPAPER_TAB_HARNESS_LINT_COUNTS", {"total": len(warnings)})
+            assert not warnings, "WallpaperTab harness warnings remain"
         elif args.mode == "runtime":
             assert "0 failed" in output, "Missing successful QtTest completion"
             assert not re.search(
