@@ -147,6 +147,10 @@ def wait_ready(process, selector, output):
 def run_reload(directory):
     source = stage(directory)
     environment = helper("media-mini-warnings.test.py").isolate_environment(directory)
+    # Keep Quickshell's Unix IPC socket below the sockaddr_un path limit.
+    runtime = directory / "run"
+    runtime.mkdir(mode=0o700)
+    environment["XDG_RUNTIME_DIR"] = str(runtime)
     environment.update(
         QT_QPA_PLATFORM="wayland",
         WLR_BACKENDS="headless",
