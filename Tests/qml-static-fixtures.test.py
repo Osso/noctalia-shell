@@ -183,6 +183,27 @@ POPUP_HISTORY_LOCATION_PROCESS_MARKERS = {
     "LocationTabWarningsHarness.qml": "LOCATION_TAB_HARNESS_LINT_WARNINGS",
     "ProcessPanelWarningsHarness.qml": "PROCESS_PANEL_HARNESS_WARNINGS",
 }
+SHELL_AUDIO_WIFI_WORKSPACE_BAR_HARNESSES = {
+    "ShellRootWarningsProbe.qml": "shell-root-warnings.test.py",
+    "AudioDockTabsWarningsHarness.qml": "audio-dock-tabs-warnings.test.py",
+    "WiFiNetworksListWarningsHarness.qml": "wifi-networks-list-warnings.test.py",
+    "WorkspaceHarness.qml": "workspace-runtime.test.py",
+    "BarContentWindowWarningsHarness.qml": "bar-content-window-warnings.test.py",
+}
+SHELL_AUDIO_WIFI_WORKSPACE_BAR_REPORTS = {
+    "ShellRootWarningsProbe.qml": "ShellRootWarningsProbe.qml",
+    "AudioDockTabsWarningsHarness.qml": "tst_audio_dock.qml",
+    "WiFiNetworksListWarningsHarness.qml": "tst_wifi.qml",
+    "WorkspaceHarness.qml": "tst_workspace.qml",
+    "BarContentWindowWarningsHarness.qml": "tst_bar_content.qml",
+}
+SHELL_AUDIO_WIFI_WORKSPACE_BAR_MARKERS = {
+    "ShellRootWarningsProbe.qml": "SHELL_ROOT_HARNESS_LINT_COUNTS",
+    "AudioDockTabsWarningsHarness.qml": "AUDIO_DOCK_TABS_HARNESS_LINT_WARNINGS",
+    "WiFiNetworksListWarningsHarness.qml": "WIFI_LIST_HARNESS_LINT_COUNTS",
+    "WorkspaceHarness.qml": "WORKSPACE_HARNESS_LINT_WARNINGS",
+    "BarContentWindowWarningsHarness.qml": "BAR_CONTENT_HARNESS_LINT_WARNINGS",
+}
 ARTIFACT_HARNESSES = (
     "BrightnessPanelWarningsHarness.qml",
     "WallpaperServiceHarness.qml",
@@ -250,6 +271,19 @@ class FixtureLintTest(unittest.TestCase):
             "simple-widgets-warnings.test.py",
         ):
             shutil.copy2(ROOT / "Tests" / script, tests / script)
+        if any(
+            name in harness_scripts for name in SHELL_AUDIO_WIFI_WORKSPACE_BAR_HARNESSES
+        ):
+            for script in (
+                "audio-notification-settings-warnings.test.py",
+                "wifi-panel-warnings.test.py",
+            ):
+                shutil.copy2(ROOT / "Tests" / script, tests / script)
+        if "ShellRootWarningsProbe.qml" in harness_scripts:
+            source = root / ".fixture-dependencies/shell.qml"
+            source.parent.mkdir(exist_ok=True)
+            shutil.copy2(ROOT / "shell.qml", source)
+            (root / "shell.qml").symlink_to(source)
         helper = ROOT / "Tests/qml_fixture_lint.py"
         if helper.exists():
             shutil.copy2(helper, tests / helper.name)
@@ -513,6 +547,21 @@ class FixtureLintTest(unittest.TestCase):
                     self.assertNotIn(filename, artifact_paths, "artifact path reused")
                     artifact_paths.add(filename)
 
+    def test_shell_audio_wifi_workspace_bar_routes_are_strict_and_isolated(self):
+        artifact_paths = set()
+        for name, script in SHELL_AUDIO_WIFI_WORKSPACE_BAR_HARNESSES.items():
+            for mode in ("present", "absent", "warning"):
+                with self.subTest(harness=name, mode=mode):
+                    filename = self.check_requested_route(
+                        name,
+                        mode,
+                        {name: script},
+                        SHELL_AUDIO_WIFI_WORKSPACE_BAR_REPORTS,
+                        SHELL_AUDIO_WIFI_WORKSPACE_BAR_MARKERS,
+                    )
+                    self.assertNotIn(filename, artifact_paths, "artifact path reused")
+                    artifact_paths.add(filename)
+
     def check_requested_route(
         self,
         name,
@@ -555,13 +604,18 @@ class FixtureLintTest(unittest.TestCase):
                 root,
                 settings_present=mode == "present",
                 audit_settings=name in UTILITY_HARNESSES
-                or name in POPUP_HISTORY_LOCATION_PROCESS_HARNESSES,
+                or name in POPUP_HISTORY_LOCATION_PROCESS_HARNESSES
+                or name in SHELL_AUDIO_WIFI_WORKSPACE_BAR_HARNESSES,
                 owner_audits=name
                 in (
                     "EmojiRecorderWarningsHarness.qml",
                     "AllScreensWarningsHarness.qml",
                     "ButtonPopupWarningsHarness.qml",
                     "ProcessPanelWarningsHarness.qml",
+                    "ShellRootWarningsProbe.qml",
+                    "WiFiNetworksListWarningsHarness.qml",
+                    "WorkspaceHarness.qml",
+                    "BarContentWindowWarningsHarness.qml",
                 ),
             )
             output = result.stdout + result.stderr
