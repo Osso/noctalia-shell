@@ -74,11 +74,9 @@ def lint(directory):
     )
     print("COMPOSITOR_SERVICE_TEXT_LINT", dict(text_counts))
     assert text.returncode == 0, text.returncode
-    # Retain genuine Item metadata gaps and pre-existing block-scope diagnostics.
+    # Concrete backend methods are absent from their shared Item metadata.
     assert text_counts == {"missing-property": 7}, dict(text_counts)
-    assert counts == {"missing-property": 19, "block-scope-var-declaration": 7}, dict(
-        counts
-    )
+    assert counts == {"missing-property": 19}, dict(counts)
 
 
 def stage_runtime(directory, mutation):

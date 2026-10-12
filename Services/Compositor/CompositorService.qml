@@ -193,7 +193,7 @@ Singleton {
   function syncWorkspaces() {
     workspaces.clear();
     const ws = backend.workspaces;
-    for (var i = 0; i < ws.count; i++) {
+    for (let i = 0; i < ws.count; i++) {
       workspaces.append(ws.get(i));
     }
     // Emit signal to notify listeners that workspace list has been updated
@@ -203,7 +203,7 @@ Singleton {
   function syncWindows() {
     windows.clear();
     const ws = backend.windows;
-    for (var i = 0; i < ws.length; i++) {
+    for (let i = 0; i < ws.length; i++) {
       windows.append(ws[i]);
     }
     // Emit signal to notify listeners that workspace list has been updated
@@ -265,7 +265,7 @@ Singleton {
   // Get focused window title
   function getFocusedWindowTitle() {
     if (focusedWindowIndex >= 0 && focusedWindowIndex < windows.count) {
-      var title = windows.get(focusedWindowIndex).title;
+      let title = windows.get(focusedWindowIndex).title;
       if (title !== undefined) {
         title = title.replace(/(\r\n|\n|\r)/g, "");
       }
@@ -284,8 +284,8 @@ Singleton {
 
   function getWindowsForWorkspace(workspaceId) {
     var windowsInWs = [];
-    for (var i = 0; i < windows.count; i++) {
-      var window = windows.get(i);
+    for (let i = 0; i < windows.count; i++) {
+      const window = windows.get(i);
       if (window.workspaceId === workspaceId) {
         windowsInWs.push(window);
       }
@@ -304,7 +304,7 @@ Singleton {
 
   // Get current workspace
   function getCurrentWorkspace() {
-    for (var i = 0; i < workspaces.count; i++) {
+    for (let i = 0; i < workspaces.count; i++) {
       const ws = workspaces.get(i);
       if (ws.isFocused) {
         return ws;
@@ -316,7 +316,7 @@ Singleton {
   // Get active workspaces
   function getActiveWorkspaces() {
     const activeWorkspaces = [];
-    for (var i = 0; i < workspaces.count; i++) {
+    for (let i = 0; i < workspaces.count; i++) {
       const ws = workspaces.get(i);
       if (ws.isActive) {
         activeWorkspaces.push(ws);
