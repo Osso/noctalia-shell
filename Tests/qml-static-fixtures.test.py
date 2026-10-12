@@ -295,7 +295,10 @@ class FixtureLintTest(unittest.TestCase):
         harness_scripts=REQUESTED_HARNESSES,
         harness_reports=REQUESTED_REPORTS,
     ):
-        with tempfile.TemporaryDirectory(prefix="noctalia-fixture-dispatch-") as temp:
+        # Visualizer's nested sandbox masks /tmp; keep staged owner code outside it.
+        with tempfile.TemporaryDirectory(
+            prefix="noctalia-fixture-dispatch-", dir="/var/tmp"
+        ) as temp:
             root = Path(temp)
             runner = self.stage_repository(root, harness_scripts)
             self.bound_discovery(root, name, harness_scripts)
