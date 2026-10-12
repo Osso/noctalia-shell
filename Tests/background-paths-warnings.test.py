@@ -92,8 +92,10 @@ def execute(directory, argv):
 def lint(directory):
     helper("media-mini-warnings.test.py").stage_modules(directory)
     for name, expected in TARGETS.items():
+        command_directory = directory / name
+        command_directory.mkdir(mode=0o700)
         code, output = execute(
-            directory,
+            command_directory,
             [
                 "/usr/lib/qt6/bin/qmllint",
                 "-I",
