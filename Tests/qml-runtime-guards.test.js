@@ -348,27 +348,13 @@ function testNotificationTimeoutPauseAndResumeTrackElapsedTime() {
   const pauseBody = extractFunctionBody(source, "pauseTimeout");
   const resumeBody = extractFunctionBody(source, "resumeTimeout");
 
-  assert.match(
-      pauseBody, /const notifData = activeNotifications\[id\]/,
-      "pauseTimeout must read active notification metadata");
-  assert.match(
-      pauseBody, /notifData && !notifData\.metadata\.paused/,
-      "pauseTimeout must ignore missing or already paused notifications");
-  assert.match(
-      pauseBody, /notifData\.metadata\.paused = true/, "pauseTimeout must mark the timeout paused");
-  assert.match(
-      pauseBody, /notifData\.metadata\.pauseTime = Date\.now\(\)/,
-      "pauseTimeout must store the pause timestamp");
-  assert.match(
-      resumeBody, /notifData && notifData\.metadata\.paused/,
-      "resumeTimeout must only resume paused notifications");
-  assert.match(
-      resumeBody,
-      /notifData\.metadata\.timestamp \+= Date\.now\(\) - notifData\.metadata\.pauseTime/,
-      "resumeTimeout must shift the original timestamp by paused time");
-  assert.match(
-      resumeBody, /notifData\.metadata\.paused = false/,
-      "resumeTimeout must clear the paused flag");
+  assert.match(pauseBody, /const notifData = activeNotifications\[id\]/, "pauseTimeout must read active notification metadata");
+  assert.match(pauseBody, /notifData && !notifData\.metadata\.paused/, "pauseTimeout must ignore missing or already paused notifications");
+  assert.match(pauseBody, /notifData\.metadata\.paused = true/, "pauseTimeout must mark the timeout paused");
+  assert.match(pauseBody, /notifData\.metadata\.pauseTime = Date\.now\(\)/, "pauseTimeout must store the pause timestamp");
+  assert.match(resumeBody, /notifData && notifData\.metadata\.paused/, "resumeTimeout must only resume paused notifications");
+  assert.match(resumeBody, /notifData\.metadata\.timestamp \+= Date\.now\(\) - notifData\.metadata\.pauseTime/, "resumeTimeout must shift the original timestamp by paused time");
+  assert.match(resumeBody, /notifData\.metadata\.paused = false/, "resumeTimeout must clear the paused flag");
 }
 
 function testNotificationDismissAndActionFunctionsFailClosed() {
@@ -378,42 +364,18 @@ function testNotificationDismissAndActionFunctionsFailClosed() {
   const dismissAllBody = extractFunctionBody(source, "dismissAllActive");
   const invokeBody = extractFunctionBody(source, "invokeAction");
 
-  assert.match(
-      dismissActiveBody, /activeNotifications\[id\] && activeNotifications\[id\]\.notification/,
-      "dismissActiveNotification must check notification existence before dismissing");
-  assert.match(
-      dismissActiveBody, /activeNotifications\[id\]\.notification\.dismiss\(\)/,
-      "dismissActiveNotification must dismiss the backing notification");
-  assert.match(
-      dismissActiveBody, /removeNotification\(id\)/,
-      "dismissActiveNotification must remove local state");
-  assert.match(
-      dismissOldestBody, /if \(activeList\.count > 0\)/,
-      "dismissOldestActive must tolerate an empty active list");
-  assert.match(
-      dismissOldestBody, /activeList\.get\(activeList\.count - 1\)/,
-      "dismissOldestActive must select the oldest visible active notification");
-  assert.match(
-      dismissOldestBody, /dismissActiveNotification\(lastNotif\.id\)/,
-      "dismissOldestActive must reuse active dismissal");
-  assert.match(
-      dismissAllBody, /for \(const id in activeNotifications\)/,
-      "dismissAllActive must visit all active notifications");
-  assert.match(
-      dismissAllBody, /activeList\.clear\(\)/, "dismissAllActive must clear the visible model");
-  assert.match(
-      dismissAllBody, /activeNotifications = \{\}/,
-      "dismissAllActive must reset active notification state");
-  assert.match(
-      dismissAllBody, /quickshellIdToInternalId = \{\}/,
-      "dismissAllActive must reset quickshell id mappings");
-  assert.match(
-      invokeBody,
-      /if \(!notifData \|\| !notifData\.notification \|\| !notifData\.notification\.actions\)\s+return false/,
-      "invokeAction must fail closed when action data is missing");
-  assert.match(
-      invokeBody, /action\.identifier === actionId && action\.invoke/,
-      "invokeAction must call only the selected invokable action");
+  assert.match(dismissActiveBody, /activeNotifications\[id\] && activeNotifications\[id\]\.notification/, "dismissActiveNotification must check notification existence before dismissing");
+  assert.match(dismissActiveBody, /activeNotifications\[id\]\.notification\.dismiss\(\)/, "dismissActiveNotification must dismiss the backing notification");
+  assert.match(dismissActiveBody, /removeNotification\(id\)/, "dismissActiveNotification must remove local state");
+  assert.match(dismissOldestBody, /if \(activeList\.count > 0\)/, "dismissOldestActive must tolerate an empty active list");
+  assert.match(dismissOldestBody, /activeList\.get\(activeList\.count - 1\)/, "dismissOldestActive must select the oldest visible active notification");
+  assert.match(dismissOldestBody, /dismissActiveNotification\(lastNotif\.id\)/, "dismissOldestActive must reuse active dismissal");
+  assert.match(dismissAllBody, /for \(const id in activeNotifications\)/, "dismissAllActive must visit all active notifications");
+  assert.match(dismissAllBody, /activeList\.clear\(\)/, "dismissAllActive must clear the visible model");
+  assert.match(dismissAllBody, /activeNotifications = \{\}/, "dismissAllActive must reset active notification state");
+  assert.match(dismissAllBody, /quickshellIdToInternalId = \{\}/, "dismissAllActive must reset quickshell id mappings");
+  assert.match(invokeBody, /if \(!notifData \|\| !notifData\.notification \|\| !notifData\.notification\.actions\)\s+return false/, "invokeAction must fail closed when action data is missing");
+  assert.match(invokeBody, /action\.identifier === actionId && action\.invoke/, "invokeAction must call only the selected invokable action");
   assert.match(invokeBody, /action\.invoke\(\)/, "invokeAction must invoke matching actions");
   assert.match(invokeBody, /return true/, "invokeAction must report successful invocation");
   assert.match(invokeBody, /return false/, "invokeAction must report missing actions");
@@ -491,31 +453,15 @@ function testIpcPanelHelpersGuardMissingPanelsAndModes() {
   const togglePanelBody = extractFunctionBody(source, "togglePanel");
   const setLauncherModeBody = extractFunctionBody(source, "setLauncherMode");
 
-  assert.match(
-      togglePanelBody, /if \(!panel\)\s*\{\s*return;/, "togglePanel must ignore missing panels");
-  assert.match(
-      togglePanelBody, /if \(anchorName\)/, "togglePanel must route anchored panel toggles");
-  assert.match(
-      togglePanelBody, /panel\.toggle\(null,\s*anchorName\)/,
-      "togglePanel must pass anchor names to panel toggles");
-  assert.match(
-      togglePanelBody, /panel\.toggle\(\)/, "togglePanel must support unanchored panel toggles");
-  assert.match(
-      setLauncherModeBody, /if \(!launcherPanel\)\s*\{\s*return;/,
-      "setLauncherMode must ignore missing launcher panels");
-  assert.match(
-      setLauncherModeBody, /const inactive = !launcherPanel\.windowActive/,
-      "setLauncherMode must detect inactive launcher windows");
-  assert.match(
-      setLauncherModeBody,
-      /activePrefix === "" \? !launcherPanel\.activePlugin : launcherPanel\.searchText\.startsWith\(activePrefix\)/,
-      "setLauncherMode must compare the active launcher mode");
-  assert.match(
-      setLauncherModeBody, /if \(inactive \|\| sameMode\)/,
-      "setLauncherMode must toggle only inactive or same-mode launchers");
-  assert.match(
-      setLauncherModeBody, /launcherPanel\.setSearchText\(searchText\)/,
-      "setLauncherMode must set the requested launcher search text");
+  assert.match(togglePanelBody, /if \(!panel\)\s*\{\s*return;/, "togglePanel must ignore missing panels");
+  assert.match(togglePanelBody, /if \(anchorName\)/, "togglePanel must route anchored panel toggles");
+  assert.match(togglePanelBody, /panel\.toggle\(null,\s*anchorName\)/, "togglePanel must pass anchor names to panel toggles");
+  assert.match(togglePanelBody, /panel\.toggle\(\)/, "togglePanel must support unanchored panel toggles");
+  assert.match(setLauncherModeBody, /if \(!launcherPanel\)\s*\{\s*return;/, "setLauncherMode must ignore missing launcher panels");
+  assert.match(setLauncherModeBody, /const inactive = !launcherPanel\.windowActive/, "setLauncherMode must detect inactive launcher windows");
+  assert.match(setLauncherModeBody, /activePrefix === "" \? !launcherPanel\.activePlugin : launcherPanel\.searchText\.startsWith\(activePrefix\)/, "setLauncherMode must compare the active launcher mode");
+  assert.match(setLauncherModeBody, /if \(inactive \|\| sameMode\)/, "setLauncherMode must toggle only inactive or same-mode launchers");
+  assert.match(setLauncherModeBody, /launcherPanel\.setSearchText\(searchText\)/, "setLauncherMode must set the requested launcher search text");
 }
 
 function testIpcLauncherAndPanelTargetsUseTargetScreen() {
