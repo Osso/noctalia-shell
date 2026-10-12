@@ -1,36 +1,35 @@
 import QtQuick
 import Quickshell
-import qs.Commons
-import qs.Services.Networking
 import qs.Modules.Panels.VPN
+import qs.Services.Networking
 
 ShellRoot {
   id: harness
 
   property int phase: 0
   property var profiles: ({
-      zulu: {
-        uuid: "zulu-uuid",
-        name: "Zulu Office",
-        active: true,
-        type: "vpn",
-        device: "tun0"
-      },
-      beta: {
-        uuid: "beta-uuid",
-        name: "Beta Failed",
-        active: false,
-        type: "vpn",
-        device: "--"
-      },
-      alpha: {
-        uuid: "alpha-uuid",
-        name: "Alpha Home",
-        active: false,
-        type: "wireguard",
-        device: "--"
-      }
-    })
+                            zulu: {
+                              uuid: "zulu-uuid",
+                              name: "Zulu Office",
+                              active: true,
+                              type: "vpn",
+                              device: "tun0"
+                            },
+                            beta: {
+                              uuid: "beta-uuid",
+                              name: "Beta Failed",
+                              active: false,
+                              type: "vpn",
+                              device: "--"
+                            },
+                            alpha: {
+                              uuid: "alpha-uuid",
+                              name: "Alpha Home",
+                              active: false,
+                              type: "wireguard",
+                              device: "--"
+                            }
+                          })
 
   function action(uuid, key) {
     const found = descendants(row(uuid)).find(child => typeof child.clicked === "function" && child.text === key);
@@ -70,9 +69,9 @@ ShellRoot {
       VPNService.connectingUuid = "";
       VPNService.connections = {
         alpha: Object.assign({}, harness.profiles.alpha, {
-          active: true,
-          device: "wg0"
-        }),
+                               active: true,
+                               device: "wg0"
+                             }),
         zulu: harness.profiles.zulu,
         beta: harness.profiles.beta
       };

@@ -1,10 +1,12 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtTest
 import Quickshell
 import qs.Commons
-import qs.Services.UI
 import qs.Modules.Panels.Wallpaper
+import qs.Services.UI
 
 Item {
   id: scene
@@ -57,8 +59,8 @@ Item {
       WallpaperService.selected["DP-1"] = WallpaperService.files + "/forest.png";
       WallpaperService.lists["DP-1"] = [WallpaperService.files + "/forest.png", WallpaperService.files + "/desert.png"];
       panel = createTemporaryObject(panelComponent, scene, {
-        "screen": Quickshell.screens[0]
-      });
+                                      "screen": Quickshell.screens[0]
+                                    });
       verify(panel !== null);
       tryVerify(() => panel.contentItem !== null);
       wait(30);
@@ -66,8 +68,8 @@ Item {
 
     function test_instance_routing_survives_content_recreation() {
       const other = createTemporaryObject(panelComponent, scene, {
-        "screen": Quickshell.screens[1]
-      });
+                                            "screen": Quickshell.screens[1]
+                                          });
       verify(other !== null);
       tryVerify(() => other.contentItem !== null);
       wait(30);
@@ -101,9 +103,9 @@ Item {
           compare(settings.length, 1);
           settings[0].clicked();
           compare(PanelService.routes[PanelService.routes.length - 1], {
-            "name": "settingsPanel",
-            "screen": owner.screen.name
-          });
+                    "name": "settingsPanel",
+                    "screen": owner.screen.name
+                  });
           compare(PanelService.settingsPanel.requestedTab, 0);
           const close = descendants(owner, child => child.icon === "close")[0];
           const previous = owner.closeCount;
@@ -175,11 +177,11 @@ Item {
       compare(grid.currentIndex, 1);
       keyClick(Qt.Key_Return);
       compare(WallpaperService.changes, [
-        {
-          "path": WallpaperService.files + "/desert.png",
-          "screen": "DP-1"
-        }
-      ]);
+                {
+                  "path": WallpaperService.files + "/desert.png",
+                  "screen": "DP-1"
+                }
+              ]);
       compare(view.currentWallpaper, WallpaperService.files + "/desert.png");
       const items = descendants(grid.contentItem, child => child.wallpaperPath !== undefined);
       compare(items.length, 2);
@@ -187,9 +189,9 @@ Item {
       compare(items.map(child => child.isSelected), [false, true]);
       mouseClick(items[0], items[0].width / 2, 20);
       compare(WallpaperService.changes[1], {
-        "path": WallpaperService.files + "/forest.png",
-        "screen": "DP-1"
-      });
+                "path": WallpaperService.files + "/forest.png",
+                "screen": "DP-1"
+              });
       const toggle = control(child => child.toggled !== undefined);
       toggle.toggled(true);
       verify(Settings.data.wallpaper.setWallpaperOnAllMonitors);
@@ -197,9 +199,9 @@ Item {
       grid.forceActiveFocus();
       panel.onReturnPressed();
       compare(WallpaperService.changes[2], {
-        "path": WallpaperService.files + "/desert.png",
-        "screen": "ALL"
-      });
+                "path": WallpaperService.files + "/desert.png",
+                "screen": "ALL"
+              });
       Settings.data.wallpaper.hideWallpaperFilenames = true;
       wait(10);
       const labels = descendants(grid.contentItem, child => child.text === "forest.png" || child.text === "desert.png");
@@ -250,9 +252,9 @@ Item {
       keyClick(Qt.Key_Space);
       compare(WallhavenService.downloads, ["fixture"]);
       compare(WallpaperService.changes[0], {
-        "path": result.local,
-        "screen": "DP-1"
-      });
+                "path": result.local,
+                "screen": "DP-1"
+              });
       const next = control(child => child.icon === "chevron-right");
       next.clicked();
       compare(WallhavenService.currentPage, 2);
@@ -293,9 +295,9 @@ Item {
       Settings.data.wallpaper.useWallhaven = true;
       const remote = control(child => child.wallpapers !== undefined).gridView;
       const results = names.map(name => ({
-            "id": name,
-            "thumb": WallpaperService.files + "/" + name
-          }));
+        "id": name,
+        "thumb": WallpaperService.files + "/" + name
+      }));
       WallhavenService.searchCompleted(results, {});
       tryCompare(remote, "count", 6);
       remote.currentIndex = 0;

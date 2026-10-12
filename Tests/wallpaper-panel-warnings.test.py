@@ -117,9 +117,12 @@ QtObject {
         "qs.Commons",
         {
             "Settings": singleton(
-                'property string cacheDirImagesWallpapers: ""\nproperty QtObject data: QtObject { property var bar: ({position: "top"}); property QtObject wallpaper: QtObject {\n'
+                'property string cacheDirImagesWallpapers: ""\n'
+                + "component FixtureWallpaperSettings: QtObject {\n"
                 + "\n".join(properties)
-                + "\n} }"
+                + "\n}\n"
+                + 'component FixtureSettingsData: QtObject { property var bar: ({position: "top"}); property FixtureWallpaperSettings wallpaper: FixtureWallpaperSettings {} }\n'
+                + "property FixtureSettingsData data: FixtureSettingsData {}"
             ),
             "Style": singleton(
                 "\n".join(
@@ -216,11 +219,12 @@ function nextPage() { currentPage++; }
 """),
             "PanelService": singleton(
                 """property var routes: []
-property QtObject settingsPanel: QtObject {
+component FixtureSettingsPanel: QtObject {
   property int requestedTab: -1
   property int opens: 0
   function open() { opens++; }
 }
+property FixtureSettingsPanel settingsPanel: FixtureSettingsPanel {}
 function getPanel(name, screen) {
   routes = routes.concat([{name: name, screen: screen.name}]);
   return settingsPanel;
@@ -256,6 +260,73 @@ function getPanel(name, screen) {
     (directory / "tst_wallpaper.qml").write_text(
         (ROOT / "Tests/Qml/WallpaperPanelWarningsHarness.qml").read_text()
     )
+
+
+def check_harness(directory, environment, label):
+    result = subprocess.run(
+        sandbox_command(
+            directory,
+            [
+                "/usr/lib/qt6/bin/qmllint",
+                "--bare",
+                "-I",
+                str(directory),
+                "-I",
+                "/usr/lib/qt6/qml",
+                "--max-warnings",
+                "0",
+                "--json",
+                "-",
+                str(directory / "tst_wallpaper.qml"),
+            ],
+        ),
+        cwd=directory,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    output = result.stdout + result.stderr
+    (directory / f"{label}.log").write_text(output)
+    print(output, end="")
+    diagnostics = [
+        diagnostic
+        for file in json.loads(output)["files"]
+        for diagnostic in file["warnings"]
+        if diagnostic["type"] in ("warning", "error")
+    ]
+    counts = Counter(diagnostic["id"] for diagnostic in diagnostics)
+    print(
+        "WALLPAPER_PANEL_HARNESS_LINT_COUNTS", dict(counts), "EXIT", result.returncode
+    )
+    return result.returncode, diagnostics
+
+
+def lint_harness(directory, inject_warning=False):
+    environment = isolation_helper().isolated_environment(directory)
+    stage_runtime(directory)
+    code, diagnostics = check_harness(directory, environment, "harness-lint")
+    assert code == 0 and not diagnostics, (code, diagnostics)
+    if inject_warning:
+        harness = directory / "tst_wallpaper.qml"
+        source = harness.read_text()
+        marker = "id: scene"
+        assert source.count(marker) == 1, "injection owner must be unique"
+        harness.write_text(
+            source.replace(
+                marker,
+                marker + "\n  property int injectedWarning: scene.missingLintProbe",
+                1,
+            )
+        )
+        code, diagnostics = check_harness(directory, environment, "harness-injected")
+        assert code != 0, "injected diagnostic was accepted"
+        assert any(
+            diagnostic["id"] == "missing-property"
+            and "missingLintProbe" in diagnostic["message"]
+            for diagnostic in diagnostics
+        ), diagnostics
+        print("WALLPAPER_PANEL_HARNESS_WARNING_REJECTED")
 
 
 def runtime(directory, mutation=False):
@@ -384,17 +455,24 @@ def isolation(directory):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--mode", choices=("lint", "runtime", "isolation"), required=True
+        "--mode",
+        choices=("lint", "lint-harness", "runtime", "isolation"),
+        required=True,
     )
     parser.add_argument("--mutation", action="store_true")
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
     if args.mutation and args.mode != "runtime":
         parser.error("--mutation requires --mode runtime")
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires --mode lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-wallpaper-panel-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
         isolation_helper().install_audit(directory)
         if args.mode == "runtime":
             runtime(directory, args.mutation)
+        elif args.mode == "lint-harness":
+            lint_harness(directory, args.inject_warning)
         else:
             {"lint": lint, "isolation": isolation}[args.mode](directory)
