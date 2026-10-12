@@ -76,6 +76,12 @@ Theming covers color scheme discovery/application, wallpaper and predefined them
 - Synthetic input opens the production dialog with `#123456` and RGB 18/52/86, edits red to 128 without changing the picker before Apply, then checks exactly one commit signal, `#803456`, and matching label. Cancel preserves externally updated `#abcdef` without another signal; reopen uses that preserved color. Shadow mode adds a conflicting MouseArea `selectedColor` to exercise picker ownership.
 - Host config is denied rather than backed up; synthetic services/settings and software/offscreen controls prove no real persistence, live compositor input/rendering, or whole-shell acceptance. Isolation and section add/remove/reorder coverage: [testing](testing.md#section-editorcompact-color-picker-isolated-runtime).
 
+### Palette same-process lifecycle evidence
+
+- At `a28c07302`, deferred reading after `saved` repairs watcher reload skipped during an active write. The existing missing-file save→load contract remains: explicit save then load completion in the same process, followed by fresh-process byte preservation. Fresh-only narrowing in `6a5c04e68` was rejected.
+- Reported 12 targeted runs pass with zero runtime diagnostics, covering both watcher/save orderings, exactly one creation write, and subsequent external custom-palette loading in the same formerly missing-file process. Transparent/default bindings and fresh byte integrity pass; no loop or save occurs in empty/custom/fresh cases.
+- Installed `FileViewAdapter` metadata remains a static residual; runtime results do not establish zero static warnings. No live-config or resource testing is claimed. Test boundary: [testing](testing.md#palette-same-process-lifecycle).
+
 ## How it works
 
 - [docs/wiki/systems/theming.md](../wiki/systems/theming.md)

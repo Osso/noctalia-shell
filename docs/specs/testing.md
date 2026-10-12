@@ -9,6 +9,12 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - Private HOME/XDG paths and bubblewrap isolate the child from host config, desktop devices/connections, and network. The harness asserts masks/network denial, zero traced settings-file attempts, and private-process termination. No real persistence, backend, compositor pixel/input, or whole-shell acceptance is proven.
 - Reported main-session read-only observation, October 11, 2026 at 22:13 CDT: canonical PID `797384` loaded and wlsunset `manual22` unaffected. This prior observation is not a current live test claim. This docs-only update runs no tests or restart.
 
+### Palette same-process lifecycle
+
+- `a28c07302`: reported 12 targeted runs of `Tests/color-namespace-runtime.test.py` pass with zero runtime diagnostics. Missing-file creation requires save→load in the same process, then subsequent external custom-palette loading there; fresh-process byte integrity supplements, never replaces, that contract. Rejected fresh-only narrowing: `6a5c04e68`.
+- Both watcher/save orderings, exactly one creation write, transparent/default bindings, and no loop or save in empty/custom/fresh cases are covered. Deferred post-save reading repairs the skipped watcher reload during writing. Feature contract and static `FileViewAdapter` metadata residual: [theming](theming.md#palette-same-process-lifecycle-evidence).
+- Evidence is isolated runtime only, not live-config or resource testing. This docs-only update runs no tests, suites, or restart.
+
 ### Residual singleton owners
 
 - Through `159c2d307`/`47e304613`, Icons/Settings/Time owner warnings each drop 1→0. `python3 Tests/residual-singleton-owners.test.py lint` requires zero exit status, no Icons/Time visible diagnostics (`--max-warnings 0`), and exactly one Settings `missing-property` diagnostic for `Qt.application.font`. Settings omits `--max-warnings` because Qt counts non-rendered diagnostics; exact visible counts remain enforced and `--unqualified error` is retained. No global zero-warning claim.
