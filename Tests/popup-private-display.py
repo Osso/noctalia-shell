@@ -18,7 +18,8 @@ HELPER = Path(
 )
 spec = importlib.util.spec_from_file_location("popup_private_display_helper", HELPER)
 shared = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(shared)
+# Execute the installed helper without writing bytecode into its directory.
+exec(compile(HELPER.read_bytes(), str(HELPER), "exec"), shared.__dict__)
 
 
 def sandbox(directory, command):
