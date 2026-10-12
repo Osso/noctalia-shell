@@ -26,6 +26,7 @@ Rectangle {
   }
 
   readonly property Loader trayMenu: popupMenuWindow ? popupMenuWindow.trayMenuLoader : null
+  readonly property TrayMenu loadedTrayMenu: root.trayMenu ? root.trayMenu.item : null
 
   Connections {
     target: PanelService
@@ -202,8 +203,8 @@ Rectangle {
 
   function onLoaded() {
     // When the widget is fully initialized with its props set the screen for the trayMenu
-    if (trayMenu && trayMenu.item) {
-      trayMenu.item.screen = screen;
+    if (root.loadedTrayMenu) {
+      root.loadedTrayMenu.screen = root.screen;
     }
   }
 
@@ -316,7 +317,7 @@ Rectangle {
       property real iconSize
       property bool colorizeIcons
       property QtObject popupMenuWindow
-      property Loader trayMenu
+      property TrayMenu loadedTrayMenu
       property string barPosition
       property string widgetSection
       property int widgetIndex
@@ -325,7 +326,7 @@ Rectangle {
         trayDelegate.iconSize = Qt.binding(() => owner.iconSize);
         trayDelegate.colorizeIcons = Qt.binding(() => owner.widgetSettings.colorizeIcons !== false);
         trayDelegate.popupMenuWindow = Qt.binding(() => owner.popupMenuWindow);
-        trayDelegate.trayMenu = Qt.binding(() => owner.trayMenu);
+        trayDelegate.loadedTrayMenu = Qt.binding(() => owner.loadedTrayMenu);
         trayDelegate.barPosition = Qt.binding(() => owner.barPosition);
         trayDelegate.widgetSection = Qt.binding(() => owner.section);
         trayDelegate.widgetIndex = Qt.binding(() => owner.sectionWidgetIndex);
@@ -411,7 +412,7 @@ Rectangle {
                 PanelService.openedPanel.close();
               }
 
-              if (trayDelegate.modelData.hasMenu && trayDelegate.modelData.menu && trayDelegate.popupMenuWindow && trayDelegate.trayMenu && trayDelegate.trayMenu.item) {
+              if (trayDelegate.modelData.hasMenu && trayDelegate.modelData.menu && trayDelegate.popupMenuWindow && trayDelegate.loadedTrayMenu) {
                 trayDelegate.popupMenuWindow.open();
 
                 // Position menu based on bar position
@@ -422,17 +423,17 @@ Rectangle {
                   menuY = 0;
                 } else if (trayDelegate.barPosition === "right") {
                   // For right bar: position menu to the left of the bar
-                  menuX = -trayDelegate.trayMenu.item.width - Style.marginM;
+                  menuX = -trayDelegate.loadedTrayMenu.width - Style.marginM;
                   menuY = 0;
                 } else {
                   // For horizontal bars: center horizontally and position below
-                  menuX = (trayIcon.width / 2) - (trayDelegate.trayMenu.item.width / 2);
+                  menuX = (trayIcon.width / 2) - (trayDelegate.loadedTrayMenu.width / 2);
                   menuY = (trayDelegate.barPosition === "top") ? Style.barHeight : -Style.barHeight;
                 }
-                trayDelegate.trayMenu.item.trayItem = trayDelegate.modelData;
-                trayDelegate.trayMenu.item.widgetSection = trayDelegate.widgetSection;
-                trayDelegate.trayMenu.item.widgetIndex = trayDelegate.widgetIndex;
-                trayDelegate.trayMenu.item.showAt(trayIcon, menuX, menuY);
+                trayDelegate.loadedTrayMenu.trayItem = trayDelegate.modelData;
+                trayDelegate.loadedTrayMenu.widgetSection = trayDelegate.widgetSection;
+                trayDelegate.loadedTrayMenu.widgetIndex = trayDelegate.widgetIndex;
+                trayDelegate.loadedTrayMenu.showAt(trayIcon, menuX, menuY);
               } else {
                 Logger.d("Tray", "No menu available for", trayDelegate.modelData.id, "or trayMenu not set");
               }

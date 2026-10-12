@@ -24,6 +24,7 @@ def load_helper(name, filename):
 
 
 helpers = load_helper("tray_widget_helpers", "workspace-runtime.test.py")
+isolation = load_helper("tray_widget_isolation", "grid-list-warnings.test.py")
 
 
 def lint(directory):
@@ -53,16 +54,17 @@ def lint(directory):
     assert set(counts) <= {"unqualified", "missing-property", "incompatible-type"}, (
         dict(counts)
     )
-    # Explicit delegate inputs expose QObject popup/Loader.item metadata gaps.
-    # Repeater.itemAdded exposes QQuickItem, not the delegate's binding method.
-    # Runtime fixtures exercise those boundaries; no casts mask metadata gaps.
-    assert counts.get("missing-property") == 19, dict(counts)
+    # Actual production metadata, not fixture metadata, must expose the menu.
+    menu_warnings = [block for block in blocks if "QQuickLoader::item" in block]
+    assert not menu_warnings, "Loaded menu remains untyped:\n" + "".join(menu_warnings)
+    # Popup QObject, Repeater QQuickItem and external model metadata stay visible.
+    assert counts.get("missing-property") == 12, dict(counts)
     assert counts.get("incompatible-type") == 1, dict(counts)
     assert result.returncode in (0, 255), result.returncode
     print("TRAY_WIDGET_LINT_PASS")
 
 
-def stage_runtime(directory):
+def stage_runtime(directory, shadow=False):
     write = helpers.write_module
     singleton = helpers.singleton
     write(
@@ -163,10 +165,37 @@ Item {
 }"""
         },
     )
-    write(directory, "qs.Modules.Bar.Widgets", {"Tray": (ROOT / TARGET).read_text()})
-    (directory / "tst_tray_widget.qml").write_text(
-        (ROOT / "Tests/Qml/TrayWidgetWarningsHarness.qml").read_text()
+    source = (ROOT / TARGET).read_text()
+    if shadow:
+        source = source.replace(
+            "        MouseArea {",
+            """        MouseArea {
+          property QtObject popupMenuWindow: QtObject {
+            function close() { throw new Error("SHADOW_POPUP"); }
+          }
+          property Loader trayMenu: Loader {}
+          property QtObject loadedTrayMenu: QtObject {}
+          property QtObject screen: QtObject {}
+""",
+        )
+    write(directory, "qs.Modules.Bar.Widgets", {"Tray": source})
+    harness = (ROOT / "Tests/Qml/TrayWidgetWarningsHarness.qml").read_text()
+    # Give the inert transport the same nominal module type as the real menu.
+    menu_start = harness.index("  component TrayMenu: Item {")
+    menu_end = harness.index("\n\n  Item {", menu_start)
+    menu = harness[menu_start:menu_end].replace("  component TrayMenu:", "", 1)
+    menu_module = directory / "qs/Modules/Bar/Extras"
+    (menu_module / "TrayMenu.qml").write_text(
+        "import QtQuick\nimport Quickshell\n" + menu
     )
+    with (menu_module / "qmldir").open("a") as declarations:
+        declarations.write("TrayMenu 1.0 TrayMenu.qml\n")
+    harness = harness[:menu_start] + harness[menu_end:]
+    harness = harness.replace(
+        "import qs.Modules.Bar.Widgets",
+        "import qs.Modules.Bar.Extras\nimport qs.Modules.Bar.Widgets",
+    )
+    (directory / "tst_tray_widget.qml").write_text(harness)
     # Local SVG reaches real Image.Ready without icon themes/providers or DBus.
     (directory / "icon.svg").write_text(
         '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect width="16" height="16" fill="red"/></svg>'
@@ -200,7 +229,7 @@ def lint_harness_regression(directory):
     print("TRAY_WIDGET_HARNESS_WARNING_REJECTED")
 
 
-def runtime(directory):
+def runtime(directory, shadow=False):
     environment = {
         key: value
         for key, value in os.environ.items()
@@ -229,7 +258,7 @@ def runtime(directory):
         path.mkdir(mode=0o700)
         environment[key] = str(path)
     environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
-    settings = Path(environment["HOME"]) / ".config/noctalia/settings.json"
+    settings = Path(environment["HOME"]) / ".config/noctalia/fixture.json"
     settings.parent.mkdir(mode=0o700, parents=True)
     original = (ROOT / "Assets/settings-default.json").read_bytes()
     backup = directory / "settings.backup.json"
@@ -239,8 +268,10 @@ def runtime(directory):
         assert path.read_bytes() == original, "fixture bytes differ"
         assert path.stat().st_mode & 0o777 == 0o600, "fixture mode differs"
     try:
-        stage_runtime(directory)
-        result = subprocess.run(
+        stage_runtime(directory, shadow)
+        code, output = isolation.run_audited(
+            directory,
+            environment,
             [
                 "/usr/lib/qt6/bin/qmltestrunner",
                 "-input",
@@ -248,15 +279,9 @@ def runtime(directory):
                 "-import",
                 str(directory),
             ],
-            cwd=ROOT,
-            env=environment,
-            capture_output=True,
-            text=True,
-            timeout=45,
+            "tray-widget-shadow" if shadow else "tray-widget-runtime",
         )
-        output = result.stdout + result.stderr
-        print(output, end="")
-        assert result.returncode == 0, f"Offscreen Tray exit {result.returncode}"
+        assert code == 0, f"Offscreen Tray exit {code}"
         assert "0 failed" in output
         assert not re.search(
             r"QWARN|QFATAL|ReferenceError|TypeError|Binding loop", output
@@ -276,12 +301,17 @@ if __name__ == "__main__":
     mode.add_argument(
         "command", choices=("lint-harness", "lint-harness-regression"), nargs="?"
     )
+    parser.add_argument("--shadow", action="store_true")
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-tray-widget-") as temporary:
         directory = Path(temporary)
+        isolation.install_settings_guard(directory)
         if args.command == "lint-harness":
             raise SystemExit(lint_harness(directory))
         if args.command == "lint-harness-regression":
             lint_harness_regression(directory)
         else:
-            {"lint": lint, "runtime": runtime}[args.mode](directory)
+            if args.mode == "runtime":
+                runtime(directory, args.shadow)
+            else:
+                lint(directory)
