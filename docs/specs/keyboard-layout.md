@@ -36,6 +36,7 @@ Keyboard Layout covers shell display of the current keyboard layout and normaliz
 
 ## Tests asserting this spec
 
+- At `919e77989`/`5d0857b06`, `Tests/brightness-keyboard-services-warnings.test.py` reports KeyboardLayoutService diagnostics 4→0. One of three shared behavioral cases covers initial-layout toast suppression, timer initialization, subsequent normalized-layout toasts, duplicate/disabled/unknown-layout suppression, and previous-layout updates. `keyboard-timer` is a failing negative control; harness lint is zero-warning. Inert fixtures do not prove compositor event delivery or real configuration: [testing](testing.md#brightnesskeyboard-services-isolated-runtime).
 - `Tests/keyboard-layout-service-guards.test.js`
 - `Tests/keyboard-layout-widget-guards.test.js`
 - `Tests/source-coverage.test.js`

@@ -69,6 +69,11 @@ Brightness covers monitor lookup, available brightness methods, global brightnes
 
 - `Tests/bar-controls-warnings.test.py` — isolated production bar-widget panel/display-settings routing, wheel adjustment and unavailable-monitor guard, first-update suppression/subsequent pill reveal, and display modes. Cohort evidence: [bar](bar.md#bar-control-cohort); no direct widget OSD dispatch or real monitor changes: [testing](testing.md#bar-control-cohort).
 
+### Isolated service signal/order evidence
+
+- At `919e77989`/`5d0857b06`, `Tests/brightness-keyboard-services-warnings.test.py` reports BrightnessService diagnostics 6→5: undeclared `detectedDisplays` and four cross-component `root` references remain. This is not zero-warning production acceptance.
+- Two of the three shared behavioral cases cover DDC enable/collector/exit/stop ordering, coalesced restart and stale completion after disable; and monitor publication before recorded command dispatch, refresh signals, unchanged-value suppression and screen removal. `ddc-signal` is a failing negative control. Harness lint is zero-warning; isolation and shared proof limits: [testing](testing.md#brightnesskeyboard-services-isolated-runtime).
+
 ### Brightness panel coverage
 
 - `Tests/brightness-panel-warnings.test.py` — standalone panel-only lint and offscreen production BrightnessPanel/NValueSlider/NSlider/NScrollView behavior. Owner diagnostics drop 20→0 through `e1fb713f0`, `5fb28925d`; seven exposed generic `QtObject` member diagnostics drop 7→0 at `4b0aea12d` using the confirmed `BrightnessService.Monitor` type. Current lint requires zero warnings and exit status zero, not whole-project warning-free acceptance.
