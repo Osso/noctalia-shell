@@ -448,6 +448,11 @@ None for the current registry-selection contract.
 - Runtime stages production PopupMenuWindow with inert PanelService/tray content under private headless Cage/Quickshell, isolated writable paths and removed desktop connections. If real settings exist, it creates a permission-locked byte-for-byte backup and verifies its SHA-256 before staging; cleanup checks real settings unchanged and terminates the experimental process group. Backup bytes and canonical registry identity are not separately checked afterward.
 - Lint timeout is 60 seconds; runtime timeout is 20 seconds. Runtime requires exit status zero and `POPUP_WINDOW_RUNTIME_PASS`; only `Failed to initialize layershell integration` platform warnings are allowed among checked WARN/ERROR/FATAL, ReferenceError, TypeError and binding-loop diagnostics. Manual parent sizing and direct click signals prove bindings/dispatch, not compositor sizing/input delivery, actual focus, real menu rendering, persistence or whole-shell acceptance. No canonical visible popup or shell restart is part of this evidence.
 
+### Tray menu isolated runtime
+
+- `python3 Tests/tray-menu-warnings.test.py lint`, `runtime` or `guard` runs standalone; no runner integration is claimed. At `149effda0`/`2970c1957`, target diagnostics drop 9→1, retaining the unsuppressed `PopupAnchor.updateAnchor` metadata warning. Exact lint acceptance, six offscreen plus six existing guard passes, `Bound` recreation/owner coverage and failing activation/owner negative controls: [tray](tray.md#tray-menu-isolated-evidence).
+- Runtime uses production TrayMenu delegates/layout/handlers under offscreen `qmltestrunner`, with synthetic popup/notifier transport and fixture settings/services/leaf widgets. Acceptance requires exit status zero, `0 failed`, and no `QWARN`, `QFATAL`, `QCRITICAL`, `ReferenceError`, `TypeError` or `Binding loop`. All modes install/prove the settings-access guard; real settings are never accessed, resolved, hashed or backed up. Native transport, compositor delivery/focus/placement, persistence, nested submenus and whole-shell acceptance remain unproven.
+
 ## Out of scope
 
 - Feature behavior tested by individual guard suites belongs in that feature's spec.

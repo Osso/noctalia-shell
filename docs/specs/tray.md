@@ -56,9 +56,16 @@ Tray covers the bar tray widget, tray menu popup, tray drawer panel, pinned/blac
 - `Tests/tray-widget-guards.test.js`
 - `Tests/tray-widget-warnings.test.py` (`--mode lint` / `--mode runtime`), with `Tests/Qml/TrayWidgetWarningsHarness.qml`: production Tray and installed IconImage offscreen, inert notifier/popup/settings boundaries. Six behavioral cases (two tests plus four menu-position rows), with QtTest init/cleanup accounting for eight reported passes. Covers Ready/Null opacity, primary/secondary activation, only-menu inhibition, blacklist/pinned filtering, model reorder/clear/reassignment, all four bar menu positions, Loader clear/recreation, popup reassignment, tooltip ownership, and drawer metadata. Preserves SystemTray order; does not introduce alphabetical sorting or exercise real notifier/menu DBus actions. Lint rejects known-owner accesses; the audited slice fell from 60 to 34 warnings after `5268c25d3` and formatting-only `57f1fc78a`, without a claimed user-facing behavior change. Remaining diagnostics: 28 unbound creation-context captures, five `missing-property` metadata warnings, and one `incompatible-type` warning. Lint enforces the latter two counts but does not fix the unbound count.
 - `Tests/tray-menu-guards.test.js`
+- `Tests/tray-menu-warnings.test.py` and `Tests/Qml/TrayMenuWarningsHarness.qml`: [isolated TrayMenu evidence](#tray-menu-isolated-evidence).
 - `Tests/bar-action-helper-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
+
+### Tray menu isolated evidence
+
+- At `149effda0`/`2970c1957`, TrayMenu diagnostics drop 9→1 after enabling `ComponentBehavior: Bound`; the installed `PopupAnchor.updateAnchor` `missing-property` metadata warning remains unsuppressed. Standalone lint accepts exactly that diagnostic and exit status 0 or 255, not zero-warning acceptance.
+- Four offscreen behavioral tests plus QtTest init/cleanup yield six reported passes; six existing tray-menu guard passes are separately reported. Production delegates/layout/handlers cover handle order, reorder/clear, newline normalization, disabled/separator inhibition, activation and owner drawer closure, anchor bindings, reopen/recreation after destruction, and independent popup owners with model replacement. Activation and owner mutations are reported failing negative controls, not acceptance modes.
+- Popup transport, notifier handles, settings, services and leaf widgets are fixtures. Real settings are never accessed, resolved, hashed or backed up; sandbox and access audits deny access. These results do not prove native menu transport, compositor placement/focus/input, real persistence, nested submenus or whole-shell acceptance.
 
 ## Known gaps (current cycle)
 
