@@ -38,6 +38,8 @@ def lint(directory):
             "/usr/lib/qt6/bin/qmllint",
             "--max-warnings",
             "0",
+            "--json",
+            "-",
             "-I",
             str(directory),
             str(directory / "qs" / TARGET),
@@ -48,10 +50,18 @@ def lint(directory):
     )
     output = result.stdout + result.stderr
     print(output, end="")
-    warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
-    counts = Counter(re.findall(r"\[([^]]+)\]", line)[-1] for line in warnings)
+    files = json.loads(result.stdout)["files"]
+    assert len(files) == 1, files
+    # Qt's block-scope diagnostics are absent from text output, but count toward
+    # --max-warnings. Inspect JSON so strict acceptance cannot miss them.
+    warnings = [
+        diagnostic
+        for diagnostic in files[0]["warnings"]
+        if diagnostic["type"] in {"warning", "error"}
+    ]
+    counts = Counter(diagnostic["id"] for diagnostic in warnings)
     print("LOCK_SCREEN_LINT_COUNTS", dict(counts), "TOTAL", len(warnings))
-    assert not warnings, dict(counts)
+    assert not warnings, warnings
     assert result.returncode == 0, result.returncode
 
 
