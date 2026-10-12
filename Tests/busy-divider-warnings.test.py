@@ -3,6 +3,7 @@
 
 import argparse
 import importlib.util
+import json
 import os
 from pathlib import Path
 import re
@@ -93,6 +94,18 @@ def run_sandboxed(args, directory):
     else:
         harness = stage(directory, args.shadow)
         if args.mode == "lint-harness":
+            if args.inject_warning:
+                source = harness.read_text()
+                marker = "  id: scene"
+                assert source.count(marker) == 1, "injection owner must be unique"
+                harness.write_text(
+                    source.replace(
+                        marker,
+                        marker
+                        + "\n  property int injectedWarning: scene.missingLintProbe",
+                        1,
+                    )
+                )
             command = [
                 "/usr/lib/qt6/bin/qmllint",
                 "--bare",
@@ -102,6 +115,8 @@ def run_sandboxed(args, directory):
                 "/usr/lib/qt6/qml",
                 "--max-warnings",
                 "0",
+                "--json",
+                "-",
                 str(harness),
             ]
         else:
@@ -122,13 +137,27 @@ def run_sandboxed(args, directory):
         assert all(count == args.expect_warnings for count in counts.values()), counts
         assert len(warnings) == sum(counts.values()), warnings
         assert all("[unqualified]" in line for line in warnings), warnings
+    elif args.mode == "lint-harness":
+        reports = json.loads(output)["files"]
+        assert len(reports) == 1, reports
+        assert reports[0]["filename"] == str(harness), reports
+        warnings = [warning for report in reports for warning in report["warnings"]]
+        print("BUSY_DIVIDER_HARNESS_LINT_WARNINGS", len(warnings), "EXIT", code)
+        if args.inject_warning:
+            assert any(
+                "missingLintProbe" in warning["message"] for warning in warnings
+            ), "semantic warning injection was not diagnosed"
+            assert code != 0, "injected warning was accepted"
+            raise SystemExit(code)
+        assert not warnings, warnings
+        assert reports[0]["success"], reports
     else:
         assert not re.search(
             r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:",
             output,
         ), output
         if args.mode == "behavior":
-            assert "0 failed" in output, output
+            assert "6 passed, 0 failed, 0 skipped, 0 blacklisted" in output, output
     assert code == 0, code
 
 
@@ -136,9 +165,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
     parser.add_argument("--shadow", action="store_true")
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     parser.add_argument("--expect-warnings", type=int, default=0)
     parser.add_argument("--sandbox", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     sys.addaudithook(isolation.audit)
     with (
         patch("os.stat", isolation.guard_metadata(os.stat)),
@@ -193,6 +226,8 @@ def main():
             ]
             if args.shadow:
                 command.append("--shadow")
+            if args.inject_warning:
+                command.append("--inject-warning")
             code, _ = isolation.run_child(
                 command,
                 directory,
