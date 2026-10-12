@@ -314,7 +314,13 @@ def runtime(directory, shadow=False):
             print(log.read_text() + errors.read_text(), end="")
             assert process.poll() is not None
     assert "settings.json" not in trace.read_text(), "client attempted settings access"
-    output = log.read_text() + errors.read_text()
+    validate_native_output(log.read_text() + errors.read_text())
+    print(
+        "DRAWER_NATIVE_CLEANUP_PASS zero settings attempts; private client/display groups terminated"
+    )
+
+
+def validate_native_output(output):
     assert output.count("DRAWER_NATIVE_READY") == 3
     diagnostics = [
         line
@@ -335,8 +341,35 @@ def runtime(directory, shadow=False):
     ):
         assert expected in line and " ERROR:" in line, diagnostics
     assert "Syntax error" in diagnostics[-1], diagnostics
+
+
+def diagnostics_regression(receipts):
+    for directory in receipts:
+        output = (directory / "runtime.log").read_text() + (
+            directory / "client.stderr"
+        ).read_text()
+        validate_native_output(output)
+        print("DRAWER_SAVED_OUTPUT_PASS", directory)
+        mutations = {
+            "unexpected-error": output + "\n ERROR: unexpected reload error\n",
+            "unexpected-warning": output + "\n WARN: unexpected input warning\n",
+            "wrong-failure": output.replace(
+                "Syntax error", "Unrelated input failure", 1
+            ),
+        }
+        for name, mutated in mutations.items():
+            try:
+                validate_native_output(mutated)
+            except AssertionError:
+                print("DRAWER_OUTPUT_NEGATIVE_REJECTED", directory, name)
+            else:
+                raise AssertionError(f"native output gate accepted {name}: {directory}")
     print(
-        "DRAWER_NATIVE_CLEANUP_PASS zero settings attempts; private client/display groups terminated"
+        "DRAWER_OUTPUT_REGRESSION_PASS",
+        len(receipts),
+        "positive;",
+        len(receipts) * 3,
+        "negative",
     )
 
 
@@ -344,8 +377,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--shadow", action="store_true")
     parser.add_argument("--out", type=Path)
+    parser.add_argument("--diagnostics-regression", type=Path, nargs=2)
     args = parser.parse_args()
-    if args.out:
+    if args.diagnostics_regression:
+        if args.out or args.shadow:
+            parser.error("--diagnostics-regression cannot start a native runtime")
+        diagnostics_regression(args.diagnostics_regression)
+    elif args.out:
         directory = args.out.absolute()
         directory.mkdir(mode=0o700)
         fixtures.isolation.install_settings_guard(directory)
