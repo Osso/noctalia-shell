@@ -267,6 +267,18 @@ for file in "${qml_files[@]}"; do
     Tests/Qml/BarContentWindowWarningsHarness.qml)
         python3 "$repo_root/Tests/bar-content-window-warnings.test.py" lint-harness --max-warnings 0
         ;;
+    Tests/Qml/AudioCardHarness.qml)
+        python3 "$repo_root/Tests/audio-card-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/AudioPanelRegressionHarness.qml)
+        python3 "$repo_root/Tests/audio-panel-warnings.test.py" lint-harness
+        ;;
+    Tests/Qml/BarTabWarningsHarness.qml)
+        python3 "$repo_root/Tests/bar-tab-warnings.test.py" lint-harness --max-warnings 0
+        ;;
+    Tests/Qml/ControlCenterTabWarningsHarness.qml)
+        python3 "$repo_root/Tests/control-center-tab-warnings.test.py" lint-harness --max-warnings 0
+        ;;
     Tests/Qml/PanelServiceLifecycleHarness.qml)
         "$repo_root/Tests/panel-service-lifecycle.test.sh" lint-harness
         printf '\n'

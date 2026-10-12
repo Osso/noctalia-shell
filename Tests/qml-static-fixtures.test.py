@@ -204,6 +204,24 @@ SHELL_AUDIO_WIFI_WORKSPACE_BAR_MARKERS = {
     "WorkspaceHarness.qml": "WORKSPACE_HARNESS_LINT_WARNINGS",
     "BarContentWindowWarningsHarness.qml": "BAR_CONTENT_HARNESS_LINT_WARNINGS",
 }
+AUDIO_TAB_HARNESSES = {
+    "AudioCardHarness.qml": "audio-card-warnings.test.py",
+    "AudioPanelRegressionHarness.qml": "audio-panel-warnings.test.py",
+    "BarTabWarningsHarness.qml": "bar-tab-warnings.test.py",
+    "ControlCenterTabWarningsHarness.qml": "control-center-tab-warnings.test.py",
+}
+AUDIO_TAB_REPORTS = {
+    "AudioCardHarness.qml": "tst_audio_card.qml",
+    "AudioPanelRegressionHarness.qml": "tst_audio_panel.qml",
+    "BarTabWarningsHarness.qml": "tst_tab.qml",
+    "ControlCenterTabWarningsHarness.qml": "tst_tab.qml",
+}
+AUDIO_TAB_MARKERS = {
+    "AudioCardHarness.qml": "AUDIO_CARD HARNESS_WARNINGS",
+    "AudioPanelRegressionHarness.qml": "AUDIO_PANEL HARNESS_WARNINGS",
+    "BarTabWarningsHarness.qml": "BAR_TAB_HARNESS_LINT_WARNINGS",
+    "ControlCenterTabWarningsHarness.qml": "CONTROL_CENTER_TAB_HARNESS_LINT_WARNINGS",
+}
 ARTIFACT_HARNESSES = (
     "BrightnessPanelWarningsHarness.qml",
     "WallpaperServiceHarness.qml",
@@ -279,6 +297,12 @@ class FixtureLintTest(unittest.TestCase):
                 "wifi-panel-warnings.test.py",
             ):
                 shutil.copy2(ROOT / "Tests" / script, tests / script)
+        if any(name in harness_scripts for name in AUDIO_TAB_HARNESSES):
+            for script in (
+                "audio-card-warnings.test.py",
+                "audio-notification-settings-warnings.test.py",
+            ):
+                shutil.copy2(ROOT / "Tests" / script, tests / script)
         if "ShellRootWarningsProbe.qml" in harness_scripts:
             source = root / ".fixture-dependencies/shell.qml"
             source.parent.mkdir(exist_ok=True)
@@ -342,6 +366,7 @@ class FixtureLintTest(unittest.TestCase):
                 fixtures / "LocationNetworkPlugin.cpp",
             )
         dependencies = {
+            "AudioPanelRegressionHarness.qml": ("AudioCardHarness.qml",),
             "AudioDockTabsWarningsHarness.qml": ("ClockSettingsWarningsHarness.qml",),
             "ButtonPopupWarningsHarness.qml": ("SimpleWidgetsWarningsHarness.qml",),
             "LocationTabWarningsHarness.qml": ("AboutTabWarningsHarness.qml",),
@@ -384,6 +409,8 @@ class FixtureLintTest(unittest.TestCase):
         settings_present=True,
         audit_settings=False,
         owner_audits=False,
+        mask_audio=False,
+        command=None,
     ):
         home = root / ".fixture-home"
         settings = home / ".config/noctalia/settings.json"
@@ -408,7 +435,15 @@ class FixtureLintTest(unittest.TestCase):
                     "import os, pathlib, sys; "
                     "assert not any(pathlib.Path('/home/osso/.config').iterdir()); "
                     "assert pathlib.Path.home() == pathlib.Path(sys.argv[1]); "
-                    "print('CHECKER_PRIVATE_HOME_CONFIG_MASKED', flush=True); "
+                    + (
+                        "assert not any(pathlib.Path('/run').iterdir()); "
+                        "assert os.environ['PULSE_SERVER'] == 'unix:/run/no-audio'; "
+                        "assert os.environ['PIPEWIRE_REMOTE'] == '/run/no-audio'; "
+                        "print('CHECKER_AUDIO_SOCKETS_MASKED', flush=True); "
+                        if mask_audio
+                        else ""
+                    )
+                    + "print('CHECKER_PRIVATE_HOME_CONFIG_MASKED', flush=True); "
                     "os.execv(sys.argv[2], sys.argv[2:])",
                     str(home),
                 ]
@@ -433,6 +468,7 @@ class FixtureLintTest(unittest.TestCase):
                     "/home/osso/.config",
                     "--tmpfs",
                     "/tmp",
+                    *(["--tmpfs", "/run"] if mask_audio else []),
                     "--bind",
                     str(root),
                     str(root),
@@ -445,16 +481,32 @@ class FixtureLintTest(unittest.TestCase):
                     "/proc",
                     "--",
                     *probe_command,
-                    str(runner),
+                    *(command or [str(runner)]),
                 ],
                 cwd=root,
                 check=False,
-                env=dict(os.environ, HOME=str(home), TMPDIR=temp),
+                env=dict(
+                    os.environ,
+                    HOME=str(home),
+                    TMPDIR=temp,
+                    **(
+                        {
+                            "XDG_RUNTIME_DIR": "/run/no-runtime",
+                            "PULSE_SERVER": "unix:/run/no-audio",
+                            "PIPEWIRE_REMOTE": "/run/no-audio",
+                            "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/no-bus",
+                        }
+                        if mask_audio
+                        else {}
+                    ),
+                ),
                 capture_output=True,
                 text=True,
                 timeout=90,
             )
             print(result.stdout + result.stderr, end="")
+            if mask_audio:
+                self.assertIn("CHECKER_AUDIO_SOCKETS_MASKED", result.stdout)
             if audit_settings:
                 self.assertIn("CHECKER_PRIVATE_HOME_CONFIG_MASKED", result.stdout)
                 if owner_audits:
@@ -565,6 +617,30 @@ class FixtureLintTest(unittest.TestCase):
                     self.assertNotIn(filename, artifact_paths, "artifact path reused")
                     artifact_paths.add(filename)
 
+    def test_audio_tab_checker_routes_are_strict_once_only_and_isolated(self):
+        artifact_paths = set()
+        for name, script in AUDIO_TAB_HARNESSES.items():
+            for mode in ("absent", "warning"):
+                with self.subTest(harness=name, mode=mode):
+                    filename = self.check_requested_route(
+                        name, mode, {name: script}, AUDIO_TAB_REPORTS, AUDIO_TAB_MARKERS
+                    )
+                    self.assertNotIn(filename, artifact_paths, "artifact path reused")
+                    artifact_paths.add(filename)
+
+    def test_audio_tab_owner_clis_reject_injected_semantic_warnings(self):
+        for name, script in AUDIO_TAB_HARNESSES.items():
+            for mode in ("absent", "warning"):
+                with self.subTest(harness=name, mode=mode):
+                    self.check_requested_route(
+                        name,
+                        mode,
+                        {name: script},
+                        AUDIO_TAB_REPORTS,
+                        AUDIO_TAB_MARKERS,
+                        owner_cli=True,
+                    )
+
     def check_requested_route(
         self,
         name,
@@ -572,6 +648,7 @@ class FixtureLintTest(unittest.TestCase):
         harness_scripts=REQUESTED_HARNESSES,
         harness_reports=REQUESTED_REPORTS,
         harness_markers=STRICT_MARKERS,
+        owner_cli=False,
     ):
         # Visualizer's nested sandbox masks /tmp; keep staged owner code outside it.
         with tempfile.TemporaryDirectory(
@@ -594,7 +671,7 @@ class FixtureLintTest(unittest.TestCase):
                 if mode == "syntax":
                     # Exercise JSON parse diagnostics separately from semantic warnings.
                     harness.write_text(harness.read_text() + "\n}\n")
-                else:
+                elif not owner_cli:
                     harness.write_text(
                         harness.read_text().replace(
                             "{",
@@ -602,13 +679,30 @@ class FixtureLintTest(unittest.TestCase):
                             1,
                         )
                     )
+            command = None
+            if owner_cli:
+                command = [
+                    "/usr/bin/python3",
+                    str(root / "Tests" / harness_scripts[name]),
+                    "lint-harness",
+                ]
+                if name in (
+                    "BarTabWarningsHarness.qml",
+                    "ControlCenterTabWarningsHarness.qml",
+                ):
+                    command += ["--max-warnings", "0"]
+                if failing:
+                    command.append("--inject-warning")
             result = self.run_checker(
                 runner,
                 root,
+                command=command,
+                mask_audio=name in AUDIO_TAB_HARNESSES,
                 settings_present=mode == "present",
                 audit_settings=name in UTILITY_HARNESSES
                 or name in POPUP_HISTORY_LOCATION_PROCESS_HARNESSES
-                or name in SHELL_AUDIO_WIFI_WORKSPACE_BAR_HARNESSES,
+                or name in SHELL_AUDIO_WIFI_WORKSPACE_BAR_HARNESSES
+                or name in AUDIO_TAB_HARNESSES,
                 owner_audits=name
                 in (
                     "EmojiRecorderWarningsHarness.qml",
@@ -619,6 +713,8 @@ class FixtureLintTest(unittest.TestCase):
                     "WiFiNetworksListWarningsHarness.qml",
                     "WorkspaceHarness.qml",
                     "BarContentWindowWarningsHarness.qml",
+                    "BarTabWarningsHarness.qml",
+                    "ControlCenterTabWarningsHarness.qml",
                 ),
             )
             output = result.stdout + result.stderr
@@ -629,14 +725,18 @@ class FixtureLintTest(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0, output)
                 self.assertTrue(result.stderr.startswith(diagnostic), result.stderr)
                 if mode == "warning":
-                    self.assertIn("missingFixtureValue", output)
+                    self.assertIn(
+                        "missingLintProbe" if owner_cli else "missingFixtureValue",
+                        output,
+                    )
                 self.assertNotIn("ok qmlStaticCheck", output)
                 self.assertNotIn("Checked ", output)
             else:
                 self.assertEqual(result.returncode, 0, output)
-                self.assertEqual(output.count("ok qmlStaticCheck"), 1)
-                self.assertIn("Checked 1 QML files", output)
-                self.assertIn("skipped 0", output)
+                if not owner_cli:
+                    self.assertEqual(output.count("ok qmlStaticCheck"), 1)
+                    self.assertIn("Checked 1 QML files", output)
+                    self.assertIn("skipped 0", output)
             self.assertEqual(len(reports), 1, output)
             self.assertEqual(len(reports[0]["files"]), 1)
             file = reports[0]["files"][0]
