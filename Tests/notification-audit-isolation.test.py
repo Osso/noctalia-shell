@@ -54,7 +54,7 @@ spec.loader.exec_module(runner)
 
 
 class NotificationAuditIsolationTest(unittest.TestCase):
-    def run_case(self, arguments=None, probe=None):
+    def run_case(self, arguments=None, probe=None, public_entrypoint=False):
         with tempfile.TemporaryDirectory(prefix="notification-audit-") as temporary:
             directory = Path(temporary)
             directory.chmod(0o700)
@@ -105,6 +105,8 @@ class NotificationAuditIsolationTest(unittest.TestCase):
                 command += ["-c", LOAD_RUNNER + probe]
             else:
                 command += [str(RUNNER), *arguments]
+                if not public_entrypoint:
+                    command += ["--sandbox", temporary]
             result = subprocess.run(
                 command,
                 env=environment,
@@ -199,6 +201,14 @@ else:
 
     def test_isolated_notification_behavior(self):
         self.assert_runner_pass("behavior", "NOTIFICATION_BEHAVIOR_PASS")
+
+    def test_public_entrypoint_creates_host_mask(self):
+        code, output = self.run_case(
+            ["lint-harness", "--max-warnings", "0"], public_entrypoint=True
+        )
+        self.assertEqual(code, 0, output)
+        self.assertIn("NOTIFICATION_HOST_CONFIG_MASKED", output)
+        self.assertIn('"warnings": []', output)
 
 
 if __name__ == "__main__":

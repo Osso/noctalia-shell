@@ -264,7 +264,7 @@ def prove_host_config_mask():
         mounts[fields[4]] = (fields[separator + 1], fields[separator + 3])
     for path in ("/home", "/syncthing", "/run", "/tmp"):
         assert mounts.get(path, (None,))[0] == "tmpfs", f"host path not masked: {path}"
-    assert "mode=0" in mounts["/home"][1].split(","), "host home mask not locked"
+    assert os.stat("/home").st_mode & 0o777 == 0, "host home mask not locked"
     print("NOTIFICATION_HOST_CONFIG_MASKED", flush=True)
 
 
