@@ -82,7 +82,9 @@ property real opacityFull: 1
             ),
             "PanelService": singleton("""property var events: []
 property QtObject popup: QtObject {
-  property var contentItem
+  // Native window content and selected menu are separate production contracts.
+  readonly property Item contentItem: Item {}
+  property QtObject activeMenu: null
   function open() { PanelService.events = PanelService.events.concat(["open"]); }
   function close() { PanelService.events = PanelService.events.concat(["close"]); }
 }

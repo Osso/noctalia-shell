@@ -3,6 +3,8 @@
 const assert = require("assert/strict");
 const fs = require("fs");
 const path = require("path");
+const { spawnSync } = require("node:child_process");
+const { extractComponentBlocks, stripQmlComments } = require("./qml-test-utils");
 
 const repoRoot = path.resolve(__dirname, "..");
 
@@ -34,45 +36,72 @@ function qmlFiles() {
   return files.sort();
 }
 
-function testQmlFunctionSignaturesAvoidUnsupportedTypeAnnotations() {
-  const annotatedFunctions = [];
-  const annotatedReturns = [];
+function extractAnnotatedSignatures(source) {
+  let code = stripQmlComments(source);
+  // IPC has a separate typed wire contract; retain the inventory's original scope.
+  for (const block of extractComponentBlocks(code, "IpcHandler"))
+    code = code.replace(block, "");
 
-  for (const qmlFile of qmlFiles()) {
-    const lines = readQml(qmlFile).split("\n");
-    let inIpcHandler = false;
-    let ipcDepth = 0;
-
-    lines.forEach((line, index) => {
-      const opens = (line.match(/\{/g) || []).length;
-      const closes = (line.match(/\}/g) || []).length;
-
-      if (/\bIpcHandler\s*\{/.test(line)) {
-        inIpcHandler = true;
-        ipcDepth = opens - closes;
-        return;
-      }
-
-      if (inIpcHandler) {
-        ipcDepth += opens - closes;
-        if (ipcDepth <= 0)
-          inIpcHandler = false;
-        return;
-      }
-
-      if (/\bfunction\s+[A-Za-z_$][\w$]*\s*\([^)]*:\s*[A-Za-z_]/.test(line)
-        || /\bfunction\s*\([^)]*:\s*[A-Za-z_]/.test(line)) {
-        annotatedFunctions.push(`${qmlFile}:${index + 1}: ${line.trim()}`);
-      }
-
-      if (/\)\s*:\s*[A-Za-z_][A-Za-z0-9_<>]*\s*\{/.test(line)) {
-        annotatedReturns.push(`${qmlFile}:${index + 1}: ${line.trim()}`);
-      }
+  const declaration = /^[ \t]*function\s*([A-Za-z_$][\w$]*)?\s*\(([^)]*)\)\s*(?::\s*([\w<>.]+))?\s*\{/gm;
+  return Array.from(code.matchAll(declaration))
+    .filter(match => match[2].includes(":") || match[3])
+    .map(match => {
+      const parameters = match[2].replace(/\s+/g, "").replace(/,/g, ", ");
+      const returnType = match[3] ? `: ${match[3]}` : "";
+      return `${match[1] || "<anonymous>"}(${parameters})${returnType}`;
     });
-  }
+}
 
-  assert.deepEqual(annotatedFunctions, [], "Quickshell 0.3.0 does not support JavaScript function parameter type annotations");
-  assert.deepEqual(annotatedReturns, [], "Quickshell 0.3.0 does not support JavaScript function return type annotations");
+function testAnnotatedSignatureExtraction() {
+  const source = `Item {
+    // function ignored(value: int): bool {}
+    IpcHandler {
+      function wire(value: string): void { const nested = {}; }
+    }
+    function typed(
+      condition: bool, /* argument contract */ message: string
+    ): void { }
+    function untyped(value) { }
+    function returnOnly(): Item { }
+  }`;
+  assert.deepEqual(extractAnnotatedSignatures(source), [
+    "typed(condition:bool, message:string): void",
+    "returnOnly(): Item",
+  ]);
+}
+
+function testQmlFunctionTypeContractInventory() {
+  const inventory = qmlFiles().flatMap(qmlFile =>
+    extractAnnotatedSignatures(readQml(qmlFile)).map(signature => `${qmlFile}: ${signature}`));
+
+  // Declaration inventory, not behavior proof. Runtime gates below execute these
+  // annotations in their real owners on the installed Qt/Quickshell runtime.
+  assert.deepEqual(inventory, [
+    "Modules/Bar/Widgets/Tray.qml: bindTrayContext(owner:Tray): void",
+    "Modules/MainScreen/PopupMenuWindow.qml: initializeTrayMenu(menu:var): void",
+    "Modules/MainScreen/PopupMenuWindow.qml: hideContent(menu:var): void",
+    "Tests/Qml/LocationServiceHarness.qml: require(condition:bool, message:string): void",
+    "Tests/Qml/LocationTabWarningsHarness.qml: descendants(item:Item): var",
+  ], "Update the typed contract inventory and runtime evidence together when signatures change");
+}
+
+function testAnnotatedFunctionRuntimeContracts() {
+  const gates = [
+    ["tray-widget-reload.test.py"],
+    ["popup-menu-window-warnings.test.py", "runtime"],
+    ["location-service-runtime.test.py", "runtime"],
+    ["location-tab-warnings.test.py", "behavior"],
+  ];
+  for (const [runner, ...args] of gates) {
+    const result = spawnSync("python3", [path.join(__dirname, runner), ...args], {
+      encoding: "utf8",
+      timeout: 120000,
+      maxBuffer: 4 * 1024 * 1024,
+    });
+    assert.ifError(result.error);
+    assert.equal(result.status, 0, `${runner}\n${result.stdout}${result.stderr}`);
+    process.stdout.write(result.stdout);
+  }
 }
 
 function assertPropertyType(relativePath, propertyName, expectedType) {
@@ -644,11 +673,11 @@ function testMangoPatternContainerIsTyped() {
   assertNoPropertyType(mangoServiceFile, "patterns", "var");
 }
 
-function testPopupMenuWindowContentItemIsTyped() {
+function testPopupMenuWindowActiveMenuIsTyped() {
   const popupMenuWindowFile = "Modules/MainScreen/PopupMenuWindow.qml";
 
-  assertPropertyType(popupMenuWindowFile, "contentItem", "QtObject");
-  assertNoPropertyType(popupMenuWindowFile, "contentItem", "var");
+  assertPropertyType(popupMenuWindowFile, "activeMenu", "QtObject");
+  assertNoPropertyType(popupMenuWindowFile, "activeMenu", "var");
 }
 
 function testLauncherActivePluginIsTyped() {
@@ -1170,7 +1199,9 @@ function testWiFiNetworkDelegateAliasesAreTyped() {
 }
 
 const tests = [
-  testQmlFunctionSignaturesAvoidUnsupportedTypeAnnotations,
+  testAnnotatedSignatureExtraction,
+  testQmlFunctionTypeContractInventory,
+  testAnnotatedFunctionRuntimeContracts,
   testSliderCutoutColorsAreTyped,
   testPopupAnchorItemsAreTyped,
   testPopupContextMenuOpenHelpersAreTyped,
@@ -1233,7 +1264,7 @@ const tests = [
   testClockSettingsFocusedInputIsTyped,
   testClockSettingsPreviewModelsAreTyped,
   testMangoPatternContainerIsTyped,
-  testPopupMenuWindowContentItemIsTyped,
+  testPopupMenuWindowActiveMenuIsTyped,
   testLauncherActivePluginIsTyped,
   testDockCurrentContextMenuIsTyped,
   testDockMenuToplevelIsTyped,
