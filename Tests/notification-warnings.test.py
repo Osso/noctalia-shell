@@ -226,48 +226,131 @@ def behavior(directory):
     )
 
 
+def deny_settings_path(path):
+    if isinstance(path, (str, bytes, os.PathLike)):
+        # Linux treats repeated leading slashes alike; abspath is lexical only.
+        requested = "/" + os.path.abspath(os.fsdecode(path)).lstrip("/")
+        if requested == "/home/osso/.config/noctalia/settings.json":
+            raise PermissionError(f"real settings access denied: {requested}")
+
+
 def deny_real_settings(event, args):
-    if event == "open":
-        path = args[0]
-        if isinstance(path, (str, bytes, os.PathLike)):
-            requested = Path(os.fsdecode(path)).absolute()
-            protected = Path("/home/osso/.config/noctalia/settings.json")
-            if requested == protected or requested.resolve() == protected.resolve():
-                raise PermissionError(f"real settings access denied: {requested}")
+    if event == "open" and args:
+        deny_settings_path(args[0])
     if event == "socket.connect":
         raise PermissionError("network access denied in notification fixture")
 
 
-def main():
+def guard_metadata(operation):
+    def guarded(path, *args, **kwargs):
+        deny_settings_path(path)
+        return operation(path, *args, **kwargs)
+
+    return guarded
+
+
+def install_settings_guard():
     sys.addaudithook(deny_real_settings)
+    for name in ("stat", "lstat", "readlink"):
+        setattr(os, name, guard_metadata(getattr(os, name)))
+    Path.resolve = guard_metadata(Path.resolve)
+
+
+def prove_host_config_mask():
+    mounts = {}
+    for line in Path("/proc/self/mountinfo").read_text().splitlines():
+        fields = line.split()
+        separator = fields.index("-")
+        mounts[fields[4]] = (fields[separator + 1], fields[separator + 3])
+    for path in ("/home", "/syncthing", "/run", "/tmp"):
+        assert mounts.get(path, (None,))[0] == "tmpfs", f"host path not masked: {path}"
+    assert "mode=0" in mounts["/home"][1].split(","), "host home mask not locked"
+    print("NOTIFICATION_HOST_CONFIG_MASKED", flush=True)
+
+
+def run_sandbox(directory, arguments):
+    command = [
+        "bwrap",
+        "--die-with-parent",
+        "--unshare-all",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--perms",
+        "000",
+        "--tmpfs",
+        "/home",
+        "--tmpfs",
+        "/syncthing",
+        "--ro-bind",
+        str(ROOT),
+        str(ROOT),
+        "--tmpfs",
+        "/run",
+        "--tmpfs",
+        "/tmp",
+        "--bind",
+        str(directory),
+        str(directory),
+        "--proc",
+        "/proc",
+        "--dev",
+        "/dev",
+        "--chdir",
+        str(directory),
+        "--",
+        sys.executable,
+        str(Path(__file__).absolute()),
+        *arguments,
+        "--sandbox",
+        str(directory),
+    ]
+    result = subprocess.run(command, timeout=120, check=False)
+    return result.returncode
+
+
+def run_fixture(directory, mode):
+    prove_host_config_mask()
+    environment_directory = directory / "environment"
+    environment_directory.mkdir(mode=0o700)
+    environment = helper("media-mini-warnings").isolate_environment(
+        environment_directory
+    )
+    os.environ.clear()
+    os.environ.update(environment)
+    try:
+        deny_real_settings(
+            "open", ("/home/osso/.config/noctalia/settings.json", "r", 0)
+        )
+    except PermissionError:
+        print("NOTIFICATION_REAL_SETTINGS_AUDIT_DENIED")
+    else:
+        raise AssertionError("real settings audit guard failed")
+    if mode == "lint-harness":
+        return lint_harness(directory)
+    if mode == "lint-harness-regression":
+        lint_harness_regression(directory)
+    else:
+        (lint if mode == "lint" else behavior)(directory)
+    return 0
+
+
+def main():
+    install_settings_guard()
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "mode", choices=("lint", "lint-harness", "lint-harness-regression", "behavior")
     )
     parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--sandbox", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.sandbox:
+        raise SystemExit(run_fixture(args.sandbox, args.mode))
     with tempfile.TemporaryDirectory(prefix="noctalia-notification-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
-        environment_directory = directory / "environment"
-        environment_directory.mkdir(mode=0o700)
-        environment = helper("media-mini-warnings").isolate_environment(
-            environment_directory
-        )
-        os.environ.clear()
-        os.environ.update(environment)
-        try:
-            sys.audit("open", "/home/osso/.config/noctalia/settings.json", "r", 0)
-        except PermissionError:
-            print("NOTIFICATION_REAL_SETTINGS_AUDIT_DENIED")
-        else:
-            raise AssertionError("real settings audit guard failed")
-        if args.mode == "lint-harness":
-            raise SystemExit(lint_harness(directory))
-        if args.mode == "lint-harness-regression":
-            lint_harness_regression(directory)
-        else:
-            (lint if args.mode == "lint" else behavior)(directory)
+        raise SystemExit(run_sandbox(directory, sys.argv[1:]))
 
 
 if __name__ == "__main__":
