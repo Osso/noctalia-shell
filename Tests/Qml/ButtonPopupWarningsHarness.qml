@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Window
 import QtTest
 import Quickshell
-import qs.Commons
 import qs.Widgets
 import qs.Services.UI
 
@@ -88,13 +87,24 @@ ShellRoot {
 
   function makePopup(height, label) {
     return popupFactory.createObject(suite, {
-                                       itemHeight: height,
-                                       model: [
-                                         { label: label, action: "first" },
-                                         { label: "Disabled", action: "disabled", enabled: false },
-                                         { label: "Hidden", action: "hidden", visible: false }
-                                       ]
-                                     });
+      itemHeight: height,
+      model: [
+        {
+          label: label,
+          action: "first"
+        },
+        {
+          label: "Disabled",
+          action: "disabled",
+          enabled: false
+        },
+        {
+          label: "Hidden",
+          action: "hidden",
+          visible: false
+        }
+      ]
+    });
   }
 
   function testButtonInput() {
@@ -102,7 +112,13 @@ ShellRoot {
     button.visible = true;
     settle();
     try {
-      const counts = { left: 0, right: 0, middle: 0, entered: 0, exited: 0 };
+      const counts = {
+        left: 0,
+        right: 0,
+        middle: 0,
+        entered: 0,
+        exited: 0
+      };
       button.clicked.connect(() => counts.left++);
       button.rightClicked.connect(() => counts.right++);
       button.middleClicked.connect(() => counts.middle++);
@@ -257,7 +273,12 @@ ShellRoot {
       first.model = [];
       settle();
       equal(entries(first).length, 0, "delegates cleared");
-      first.model = [{ text: "Replacement", key: "replacement" }];
+      first.model = [
+        {
+          text: "Replacement",
+          key: "replacement"
+        }
+      ];
       first.itemHeight = 35;
       settle();
       equal(entries(first).length, 1, "delegate recreated");

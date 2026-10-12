@@ -8,6 +8,7 @@ PopupWindow, PopupAnchor, Qt input, layout, text and icons remain production.
 import argparse
 from collections import Counter
 import importlib.util
+import json
 from pathlib import Path
 import re
 import shutil
@@ -70,6 +71,9 @@ def stage_runtime(directory, bound, mutation, owner_shadow):
     for module in (directory / "qs").iterdir():
         shutil.move(str(module), directory / module.name)
     (directory / "qs").rmdir()
+    (directory / "qs").mkdir()
+    for name in ("Commons", "Widgets", "Services"):
+        (directory / "qs" / name).symlink_to(directory / name, target_is_directory=True)
     shutil.copyfile(
         ROOT / "Tests/Qml/ButtonPopupWarningsHarness.qml", directory / "shell.qml"
     )
@@ -102,26 +106,50 @@ def lint(directory, environment):
         assert code == 0, code
 
 
-def lint_harness(directory, environment):
+def lint_harness(directory, environment, inject_warning):
     stage_runtime(directory, False, None, False)
-    (directory / "qs").mkdir()
-    for name in ("Commons", "Widgets", "Services"):
-        (directory / "qs" / name).symlink_to(directory / name, target_is_directory=True)
+    harness = directory / "shell.qml"
+    if inject_warning:
+        source = harness.read_text()
+        marker = "id: suite"
+        assert source.count(marker) == 1, "injection owner must be unique"
+        harness.write_text(
+            source.replace(
+                marker,
+                marker + "\n  property int injectedWarning: suite.missingLintProbe",
+                1,
+            )
+        )
     code, output = isolation.run_audited(
         directory,
         environment,
         [
             "/usr/lib/qt6/bin/qmllint",
+            "--bare",
             "-I",
             str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
             "--max-warnings",
             "0",
-            str(directory / "shell.qml"),
+            "--json",
+            "-",
+            str(harness),
         ],
         "button-popup-harness-lint",
     )
-    assert code == 0, code
-    assert "Warning:" not in output, output
+    diagnostics = json.loads(output)
+    warnings = sum(
+        warning["type"] == "warning"
+        for result in diagnostics["files"]
+        for warning in result["warnings"]
+    )
+    print("BUTTON_POPUP_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
+    if inject_warning:
+        assert warnings > 0 and code != 0, "injected warning was accepted"
+    else:
+        assert warnings == 0 and code == 0, "strict harness lint failed"
+    return code
 
 
 def runtime(directory, environment, bound, mutation, owner_shadow):
@@ -159,9 +187,13 @@ if __name__ == "__main__":
         action="store_true",
         help="private-copy Bound recreation proof before production edit",
     )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     parser.add_argument("--owner-shadow", action="store_true")
     parser.add_argument("--mutation", choices=("button-owner", "popup-close"))
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-button-popup-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
@@ -171,7 +203,7 @@ if __name__ == "__main__":
         if args.mode == "lint":
             lint(directory, environment)
         elif args.mode == "lint-harness":
-            lint_harness(directory, environment)
+            raise SystemExit(lint_harness(directory, environment, args.inject_warning))
         else:
             runtime(
                 directory, environment, args.bound, args.mutation, args.owner_shadow
