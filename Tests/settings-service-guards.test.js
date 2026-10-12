@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const assert = require("assert/strict");
-const { extractFunctionBody, readQml } = require("./qml-test-utils");
+const { extractFunctionBody, extractHandlerBlock, findComponentBlock, readQml } = require("./qml-test-utils");
 
 const source = readQml("Commons/Settings.qml");
 const settingsDataSource = readQml("Commons/SettingsData.qml");
@@ -10,7 +10,11 @@ const defaultSettings = JSON.parse(readQml("Assets/settings-default.json"));
 
 function qmlFunction(functionName, ...argNames) {
   const body = extractFunctionBody(source, functionName);
-  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+  return new Function(
+    "ctx",
+    ...argNames,
+    `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`,
+  );
 }
 
 function createLogger() {
@@ -69,10 +73,10 @@ function createBootstrapContext(overrides = {}) {
       directoriesCreated: false,
       loadGeneration: 0,
       errorMessage: "",
-      validatedSettingsText: "{\"settingsVersion\":26}",
+      validatedSettingsText: '{"settingsVersion":26}',
       validatedSettingsData: null,
       pendingSavedSettingsText: "",
-      persistedSettingsText: "{\"settingsVersion\":26}",
+      persistedSettingsText: '{"settingsVersion":26}',
       saveInProgress: false,
       saveQueued: false,
       watcherChangeQueued: false,
@@ -90,7 +94,11 @@ function createBootstrapContext(overrides = {}) {
         this.stops += 1;
       },
     },
-    Quickshell: { env() { return ""; } },
+    Quickshell: {
+      env() {
+        return "";
+      },
+    },
     Qt: {
       callLater() {},
     },
@@ -120,10 +128,10 @@ function createBootstrapContext(overrides = {}) {
   };
   ctx.root.beginBootstrap = () => qmlFunction("beginBootstrap")(ctx);
   ctx.root.beginValidation = () => qmlFunction("beginValidation")(ctx);
-  ctx.root.failBootstrap = message => qmlFunction("failBootstrap", "message")(ctx, message);
-  ctx.root.sortSettingsValue = value => qmlFunction("sortSettingsValue", "value")(ctx, value);
-  ctx.root.canonicalizeSettingsValue = value => qmlFunction("canonicalizeSettingsValue", "value")(ctx, value);
-  ctx.root.canonicalizeSettingsText = rawText => qmlFunction("canonicalizeSettingsText", "rawText")(ctx, rawText);
+  ctx.root.failBootstrap = (message) => qmlFunction("failBootstrap", "message")(ctx, message);
+  ctx.root.sortSettingsValue = (value) => qmlFunction("sortSettingsValue", "value")(ctx, value);
+  ctx.root.canonicalizeSettingsValue = (value) => qmlFunction("canonicalizeSettingsValue", "value")(ctx, value);
+  ctx.root.canonicalizeSettingsText = (rawText) => qmlFunction("canonicalizeSettingsText", "rawText")(ctx, rawText);
   ctx.root.byteArraysEqual = (left, right) => qmlFunction("byteArraysEqual", "left", "right")(ctx, left, right);
   ctx.failures = failures;
   return ctx;
@@ -171,11 +179,11 @@ function testSettingsValidJsonAdvancesToSnapshotOfExactBytes() {
   ctx.root.loadGeneration = 4;
   ctx.root.bootstrapState = ctx.Validating;
 
-  const rawData = Buffer.from("{\"settingsVersion\":26}");
-  handleValidationLoaded(ctx, 4, "{\"settingsVersion\":26}", rawData);
+  const rawData = Buffer.from('{"settingsVersion":26}');
+  handleValidationLoaded(ctx, 4, '{"settingsVersion":26}', rawData);
 
   assert.equal(ctx.root.bootstrapState, ctx.Snapshotting);
-  assert.equal(ctx.root.validatedSettingsText, "{\"settingsVersion\":26}");
+  assert.equal(ctx.root.validatedSettingsText, '{"settingsVersion":26}');
   assert.equal(ctx.root.validatedSettingsData, rawData);
   assert.equal(ctx.root.errorMessage, "");
 }
@@ -186,7 +194,7 @@ function testSettingsSnapshotSaveRequiresByteExactReadBackBeforeHydration() {
   const ctx = createBootstrapContext();
   ctx.root.loadGeneration = 4;
   ctx.root.bootstrapState = ctx.Snapshotting;
-  ctx.root.validatedSettingsData = Buffer.from("{\"settingsVersion\":26}");
+  ctx.root.validatedSettingsData = Buffer.from('{"settingsVersion":26}');
 
   handleSnapshotSaved(ctx, 3);
   assert.equal(ctx.root.verifyingSnapshot, false);
@@ -290,7 +298,7 @@ function testSettingsOwnWriteFileContentDoesNotUnloadShell() {
   ctx.root.isLoaded = true;
   ctx.adapter.settingsVersion = 26;
 
-  handleReadyFileLoaded(ctx, 5, "{\"settingsVersion\":26}");
+  handleReadyFileLoaded(ctx, 5, '{"settingsVersion":26}');
 
   assert.equal(ctx.root.isLoaded, true);
   assert.equal(ctx.root.loadGeneration, 5);
@@ -304,10 +312,10 @@ function testSettingsPendingWriteContentDoesNotUnloadShellDuringQueuedSave() {
   ctx.root.bootstrapState = ctx.Ready;
   ctx.root.isLoaded = true;
   ctx.root.saveInProgress = true;
-  ctx.root.pendingSavedSettingsText = "{\"settingsVersion\":26}";
+  ctx.root.pendingSavedSettingsText = '{"settingsVersion":26}';
   ctx.adapter.settingsVersion = 27;
 
-  handleReadyFileLoaded(ctx, 5, "{\"settingsVersion\":25}");
+  handleReadyFileLoaded(ctx, 5, '{"settingsVersion":25}');
 
   assert.equal(ctx.root.bootstrapState, ctx.Ready);
   assert.equal(ctx.root.loadGeneration, 5);
@@ -321,7 +329,7 @@ function testSettingsDivergentFileContentUnloadsShellAndRevalidates() {
   ctx.root.isLoaded = true;
   ctx.adapter.settingsVersion = 26;
 
-  handleReadyFileLoaded(ctx, 5, "{\"settingsVersion\":99}");
+  handleReadyFileLoaded(ctx, 5, '{"settingsVersion":99}');
 
   assert.equal(ctx.root.isLoaded, false);
   assert.equal(ctx.root.loadGeneration, 6);
@@ -344,10 +352,66 @@ function testSettingsErrorRetryIsReadOnlyAndStartsNewGeneration() {
   assert.equal(ctx.root.bootstrapState, ctx.Validating);
 }
 
+function settingsFileHandler(loaderId, handlerName, ...argNames) {
+  const loader = findComponentBlock(source, "Loader", `id: ${loaderId}`);
+  const file = findComponentBlock(loader, "FileView", `${handlerName}:`);
+  const declaration = new RegExp(`^\\s*${handlerName}: (.*)$`, "m").exec(file);
+  assert.ok(declaration, `missing ${loaderId}.${handlerName}`);
+  const expression = declaration[1];
+  let body = `{ ${expression}; }`;
+  if (expression.startsWith("{") || expression.startsWith("function")) {
+    const handler = extractHandlerBlock(file, handlerName);
+    body = handler.slice(handler.indexOf("{"));
+  }
+  return new Function(
+    "ctx",
+    ...argNames,
+    `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`,
+  );
+}
+
 function testSettingsWatcherQueuesOwnedSaveChangesBeforeReading() {
-  assert.match(source, /id:\s*settingsWatcherLoader[\s\S]*?blockLoading:\s*true[\s\S]*?blockAllReads:\s*true/);
-  assert.match(source, /onFileChanged:\s*\{\s*if \(root\.saveInProgress\) \{\s*root\.watcherChangeQueued = true;\s*return;\s*\}\s*reload\(\);\s*root\.handleReadyFileLoaded\(generation,\s*text\(\)\);\s*\}/);
-  assert.match(source, /onLoadFailed:\s*function \(error\) \{\s*if \(root\.saveInProgress\) \{\s*root\.watcherChangeQueued = true;\s*return;\s*\}/);
+  const changed = settingsFileHandler("settingsWatcherLoader", "onFileChanged");
+  const failed = settingsFileHandler("settingsWatcherLoader", "onLoadFailed", "error");
+  const ctx = createBootstrapContext();
+  ctx.Settings = ctx.root;
+  ctx.root.loadGeneration = 5;
+  ctx.root.bootstrapState = ctx.Ready;
+  ctx.root.isLoaded = true;
+  ctx.root.handleReadyFileLoaded = (generation, text) =>
+    qmlFunction("handleReadyFileLoaded", "generation", "rawText")(ctx, generation, text);
+  ctx.root.handleBootstrapFailure = (generation, message) =>
+    qmlFunction("handleBootstrapFailure", "generation", "message")(ctx, generation, message);
+  const events = [];
+  ctx.generation = 5;
+  ctx.reload = () => events.push("reload");
+  ctx.text = () => {
+    events.push("read");
+    return '{"settingsVersion":99}';
+  };
+
+  ctx.root.saveInProgress = true;
+  changed(ctx);
+  assert.equal(ctx.root.watcherChangeQueued, true);
+  assert.deepEqual(events, []);
+  ctx.root.watcherChangeQueued = false;
+  failed(ctx, "write in progress");
+  assert.equal(ctx.root.watcherChangeQueued, true);
+  assert.equal(ctx.root.bootstrapState, ctx.Ready);
+  assert.deepEqual(ctx.failures, []);
+
+  ctx.root.saveInProgress = false;
+  changed(ctx);
+  assert.deepEqual(events, ["reload", "read"]);
+  assert.equal(ctx.root.bootstrapState, ctx.Validating);
+  assert.equal(ctx.root.isLoaded, false);
+  assert.equal(ctx.root.loadGeneration, 6);
+  failed(ctx, "stale failure");
+  assert.deepEqual(ctx.failures, []);
+  ctx.generation = 6;
+  failed(ctx, "permission denied");
+  assert.equal(ctx.root.bootstrapState, ctx.Error);
+  assert.deepEqual(ctx.failures, ["Failed to read changed settings: permission denied"]);
 }
 
 function testSettingsQueuedWatcherChangeRevalidatesExternalContent() {
@@ -380,12 +444,65 @@ function testSettingsQueuedWatcherChangeRevalidatesExternalContent() {
 }
 
 function testSettingsBootstrapUsesSnapshotHydrationAndWriteOnlyPersistence() {
-  assert.match(source, /Loader\s*\{\s*id:\s*validationFileLoader/);
-  assert.match(source, /Loader\s*\{\s*id:\s*snapshotWriterLoader/);
-  assert.match(source, /setData\(root\.validatedSettingsData\)/);
-  assert.match(source, /Loader\s*\{\s*id:\s*hydrationFileLoader[\s\S]*?path:\s*root\.settingsSnapshotFile/);
-  assert.match(source, /Loader\s*\{\s*id:\s*settingsWriterLoader[\s\S]*?preload:\s*false/);
-  assert.match(source, /Loader\s*\{\s*id:\s*settingsWatcherLoader/);
+  const ctx = createBootstrapContext();
+  ctx.Settings = ctx.root;
+  ctx.root.data = ctx.adapter;
+  ctx.root.settingsSnapshotFile = "/private-fixture/snapshot.json";
+  ctx.root.settingsFile = "/private-fixture/settings.json";
+  ctx.root.loadGeneration = 4;
+  ctx.root.bootstrapState = ctx.Snapshotting;
+  ctx.root.validatedSettingsData = Buffer.from('{"settingsVersion":26}\n');
+  const snapshots = [];
+  ctx.setData = (bytes) => snapshots.push(bytes);
+  settingsFileHandler("snapshotWriterLoader", "Component.onCompleted")(ctx);
+  assert.equal(ctx.generation, 4);
+  assert.deepEqual(snapshots, [ctx.root.validatedSettingsData]);
+
+  ctx.root.bootstrapState = ctx.Hydrating;
+  ctx.root.handleHydrationLoaded = (generation) => qmlFunction("handleHydrationLoaded", "generation")(ctx, generation);
+  settingsFileHandler("hydrationFileLoader", "onLoaded")(ctx);
+  assert.equal(ctx.root.bootstrapState, ctx.Ready);
+  assert.equal(ctx.root.isLoaded, true);
+  assert.equal(ctx.settingsLoadedCount, 1);
+
+  let savesScheduled = 0;
+  ctx.root.scheduleSave = () => {
+    savesScheduled += 1;
+  };
+  ctx.text = () => {
+    throw new Error("adapter update must not read settings");
+  };
+  ctx.reload = () => {
+    throw new Error("adapter update must not reload settings");
+  };
+  settingsFileHandler("settingsWriterLoader", "onAdapterUpdated")(ctx);
+  assert.equal(savesScheduled, 1);
+
+  for (
+    const [loaderId, expectedPath] of [
+      ["hydrationFileLoader", ctx.root.settingsSnapshotFile],
+      ["settingsWriterLoader", ctx.root.settingsFile],
+      ["settingsWatcherLoader", ctx.root.settingsFile],
+      ["validationFileLoader", ctx.root.settingsFile],
+    ]
+  ) {
+    const file = findComponentBlock(findComponentBlock(source, "Loader", `id: ${loaderId}`), "FileView", "path:");
+    const evaluateBinding = (name) => {
+      const expression = new RegExp(`^\\s*${name}: (.+)$`, "m").exec(file)[1];
+      return new Function("Settings", `return ${expression}`)(ctx.root);
+    };
+    assert.equal(evaluateBinding("path"), expectedPath);
+    if (loaderId === "hydrationFileLoader" || loaderId === "settingsWriterLoader") {
+      assert.equal(evaluateBinding("adapter"), ctx.adapter);
+    }
+    if (loaderId === "settingsWriterLoader" || loaderId === "settingsWatcherLoader") {
+      assert.equal(evaluateBinding("preload"), false, "idle persistence must not preload settings");
+    }
+    if (loaderId === "settingsWatcherLoader") {
+      assert.equal(evaluateBinding("blockLoading"), true);
+      assert.equal(evaluateBinding("blockAllReads"), true, "watcher reads must wait for its explicit change handler");
+    }
+  }
 }
 
 function testSettingsPreprocessPathExpandsHomeOnlyForStringPaths() {
@@ -425,7 +542,7 @@ function testSettingsNoOpSaveCompletesWithoutStartingWriter() {
       canonicalizeSettingsValue(value) {
         return JSON.stringify(value);
       },
-      persistedSettingsText: "{\"settingsVersion\":26}",
+      persistedSettingsText: '{"settingsVersion":26}',
       saveInProgress: false,
       saveQueued: false,
       settingsSaved() {
@@ -476,7 +593,7 @@ function testSettingsSaveImmediateQueuesOverlappingRequestWithoutReplacingSnapsh
   saveImmediate(ctx);
 
   assert.deepEqual(writes, ["primary"]);
-  assert.equal(ctx.root.pendingSavedSettingsText, "{\"settingsVersion\":26}");
+  assert.equal(ctx.root.pendingSavedSettingsText, '{"settingsVersion":26}');
   assert.equal(ctx.root.saveInProgress, true);
   assert.equal(ctx.root.saveQueued, true);
   assert.equal(savedSignals, 0);
@@ -523,18 +640,18 @@ function testSettingsSavedSignalWaitsForVerifiedPrimaryContent() {
   ctx.root.bootstrapState = ctx.Ready;
   ctx.root.saveInProgress = true;
   ctx.root.watcherChangeQueued = true;
-  ctx.root.pendingSavedSettingsText = "{\"settingsVersion\":999}";
+  ctx.root.pendingSavedSettingsText = '{"settingsVersion":999}';
   let watcherChecks = 0;
   ctx.root.processQueuedWatcherChange = () => {
     watcherChecks += 1;
   };
 
-  handleSettingsSaved(ctx, 4, "{\n  \"settingsVersion\": 26\n}");
-  assert.equal(ctx.root.pendingSavedSettingsText, "{\"settingsVersion\":26}");
+  handleSettingsSaved(ctx, 4, '{\n  "settingsVersion": 26\n}');
+  assert.equal(ctx.root.pendingSavedSettingsText, '{"settingsVersion":26}');
   assert.equal(ctx.root.verifyingSave, true);
   assert.equal(ctx.settingsSavedCount, 0);
 
-  handleSaveVerificationLoaded(ctx, 4, "{\"settingsVersion\":26}");
+  handleSaveVerificationLoaded(ctx, 4, '{"settingsVersion":26}');
   assert.equal(ctx.root.verifyingSave, false);
   assert.equal(ctx.root.saveInProgress, false);
   assert.equal(ctx.root.watcherChangeQueued, false);
@@ -689,7 +806,8 @@ function testSettingsRunVersionedMigrationsRunsOnlyNewerVersionsAndDestroysInsta
       },
     },
   };
-  ctx.runMigration = (version, migrationComponent) => qmlFunction("runMigration", "version", "migrationComponent")(ctx, version, migrationComponent);
+  ctx.runMigration = (version, migrationComponent) =>
+    qmlFunction("runMigration", "version", "migrationComponent")(ctx, version, migrationComponent);
 
   const migrationsSucceeded = runVersionedMigrations(ctx);
 

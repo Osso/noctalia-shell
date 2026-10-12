@@ -42,11 +42,34 @@ function isDynamicKeyPrefix(source, match) {
   return nextCharacter === "+";
 }
 
+function partitionQmlFiles(files) {
+  return {
+    production: files.filter((file) => !file.startsWith("Tests/")),
+    fixtures: files.filter((file) => file.startsWith("Tests/")),
+  };
+}
+
+function testQmlReferenceScopeSeparatesSyntheticFixtures() {
+  const files = ["Commons/I18n.qml", "Modules/Panels/Example.qml", "Tests/Qml/I18nThemeIconsHarness.qml"];
+  assert.deepEqual(partitionQmlFiles(files), {
+    production: ["Commons/I18n.qml", "Modules/Panels/Example.qml"],
+    fixtures: ["Tests/Qml/I18nThemeIconsHarness.qml"],
+  });
+  assert.equal(hasTranslationKey("menu.greeting"), false, "synthetic fixture keys must not enter the real locale");
+  assert.equal(hasTranslationKey("menu.onlyEnglish"), false);
+  assert.equal(hasTranslationKey("menu.missing"), false);
+}
+
 function testQmlLiteralTranslationReferencesExist() {
   const failures = [];
   let checkedReferences = 0;
 
-  for (const file of qmlFiles()) {
+  const files = qmlFiles();
+  const { production, fixtures } = partitionQmlFiles(files);
+  assert.equal(production.length + fixtures.length, files.length);
+  console.log(`scope: ${production.length} production QML files; ${fixtures.length} test fixtures use synthetic locales`);
+
+  for (const file of production) {
     const source = fs.readFileSync(path.join(repoRoot, file), "utf8");
     let match;
     while ((match = literalTranslationPattern.exec(source)) !== null) {
@@ -65,7 +88,10 @@ function testQmlLiteralTranslationReferencesExist() {
 
   assert.equal(failures.length, 0, failures.join("\n"));
   assert.ok(checkedReferences > 500, `expected broad literal translation reference coverage, got ${checkedReferences}`);
+  console.log(`checked ${checkedReferences} production literal translation references`);
 }
 
+testQmlReferenceScopeSeparatesSyntheticFixtures();
+console.log("ok testQmlReferenceScopeSeparatesSyntheticFixtures");
 testQmlLiteralTranslationReferencesExist();
 console.log("ok testQmlLiteralTranslationReferencesExist");

@@ -12,7 +12,11 @@ const wallhavenPopupSource = readQml("Modules/Panels/Wallpaper/WallhavenSettings
 
 function qmlFunction(source, functionName, ...argNames) {
   const body = extractFunctionBody(source, functionName);
-  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+  return new Function(
+    "ctx",
+    ...argNames,
+    `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`,
+  );
 }
 
 function testAboutTabFetchGitCommitSkipsMissingShellDir() {
@@ -92,19 +96,28 @@ function testBatterySettingsBuildDeviceModelFiltersLinePowerDevices() {
 
 function testChangelogFormatReleaseDateHandlesEmptyInvalidAndValidDates() {
   const formatReleaseDate = qmlFunction(changelogSource, "formatReleaseDate", "dateString");
+  const locale = { name: "fr_FR" };
+  const formattedDates = [];
   const ctx = {
-    Qt: {
-      DefaultLocaleLongDate: "long-date",
-      formatDate(date, format) {
-        assert.equal(format, "long-date");
-        return `formatted:${date.toISOString().slice(0, 10)}`;
-      },
+    Qt: { locale: () => locale },
+    // QML's Date overload accepts a QLocale; Node's accepts BCP-47 strings.
+    Date: class extends Date {
+      toLocaleDateString(qtLocale) {
+        assert.equal(qtLocale, locale);
+        formattedDates.push(this.toISOString());
+        return super.toLocaleDateString("fr-FR", { timeZone: "UTC" });
+      }
     },
   };
 
   assert.equal(formatReleaseDate(ctx, ""), "");
   assert.equal(formatReleaseDate(ctx, "not-a-date"), "not-a-date");
-  assert.equal(formatReleaseDate(ctx, "2026-06-16T12:00:00Z"), "formatted:2026-06-16");
+  assert.equal(formatReleaseDate(ctx, "2026-06-16T12:00:00Z"), "16/06/2026");
+  assert.deepEqual(formattedDates, ["2026-06-16T12:00:00.000Z"]);
+  ctx.Qt.locale = () => {
+    throw new Error("locale unavailable");
+  };
+  assert.equal(formatReleaseDate(ctx, "2026-06-16T12:00:00Z"), "2026-06-16T12:00:00Z");
 }
 
 function testClockSettingsInsertTokenDefaultsToHorizontalInput() {
