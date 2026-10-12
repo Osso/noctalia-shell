@@ -47,9 +47,9 @@ Scope {
       Logger.i("LockContext", "PAM message:", message, "isError:", messageIsError, "responseRequired:", responseRequired);
 
       if (messageIsError) {
-        errorMessage = message;
+        root.errorMessage = message;
       } else {
-        infoMessage = message;
+        root.infoMessage = message;
       }
 
       if (responseRequired) {
@@ -67,23 +67,23 @@ Scope {
     }
 
     onCompleted: result => {
-                   Logger.i("LockContext", "PAM completed with result:", result);
-                   if (result === PamResult.Success) {
-                     Logger.i("LockContext", "Authentication successful");
-                     root.unlocked();
-                   } else {
-                     Logger.i("LockContext", "Authentication failed");
-                     errorMessage = I18n.tr("lock-screen.authentication-failed");
-                     showFailure = true;
-                     root.failed();
-                   }
-                   root.unlockInProgress = false;
-                 }
+      Logger.i("LockContext", "PAM completed with result:", result);
+      if (result === PamResult.Success) {
+        Logger.i("LockContext", "Authentication successful");
+        root.unlocked();
+      } else {
+        Logger.i("LockContext", "Authentication failed");
+        root.errorMessage = I18n.tr("lock-screen.authentication-failed");
+        root.showFailure = true;
+        root.failed();
+      }
+      root.unlockInProgress = false;
+    }
 
     onError: {
       Logger.i("LockContext", "PAM error:", error, "message:", message);
-      errorMessage = message || "Authentication error";
-      showFailure = true;
+      root.errorMessage = message || "Authentication error";
+      root.showFailure = true;
       root.unlockInProgress = false;
       root.failed();
     }
