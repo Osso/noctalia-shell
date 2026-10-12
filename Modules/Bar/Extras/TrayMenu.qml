@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -81,8 +83,8 @@ PopupWindow {
 
     // Force update after showing.
     Qt.callLater(() => {
-                   root.anchor.updateAnchor();
-                 });
+      root.anchor.updateAnchor();
+    });
   }
 
   function hideMenu() {
@@ -232,72 +234,72 @@ PopupWindow {
               acceptedButtons: Qt.LeftButton | Qt.RightButton
 
               onClicked: mouse => {
-                           if (entry.menuItem && !entry.isSeparator) {
-                             if (entry.hasChildren) {
-                               // Click on items with children toggles submenu
-                               if (entry.subMenu) {
-                                 // Close existing submenu
-                                 entry.subMenu.hideMenu();
-                                 entry.subMenu.destroy();
-                                 entry.subMenu = null;
-                               } else {
-                                 // Close any other open submenus first
-                                 for (var i = 0; i < columnLayout.children.length; i++) {
-                                   const sibling = columnLayout.children[i];
-                                   if (sibling !== entry && sibling.subMenu) {
-                                     sibling.subMenu.hideMenu();
-                                     sibling.subMenu.destroy();
-                                     sibling.subMenu = null;
-                                   }
-                                 }
+                if (entry.menuItem && !entry.isSeparator) {
+                  if (entry.hasChildren) {
+                    // Click on items with children toggles submenu
+                    if (entry.subMenu) {
+                      // Close existing submenu
+                      entry.subMenu.hideMenu();
+                      entry.subMenu.destroy();
+                      entry.subMenu = null;
+                    } else {
+                      // Close any other open submenus first
+                      for (var i = 0; i < columnLayout.children.length; i++) {
+                        const sibling = columnLayout.children[i];
+                        if (sibling !== entry && sibling.subMenu) {
+                          sibling.subMenu.hideMenu();
+                          sibling.subMenu.destroy();
+                          sibling.subMenu = null;
+                        }
+                      }
 
-                                 // Determine submenu opening direction
-                                 let openLeft = false;
-                                 const barPosition = Settings.data.bar.position;
-                                 const globalPos = entry.mapToItem(null, 0, 0);
+                      // Determine submenu opening direction
+                      let openLeft = false;
+                      const barPosition = Settings.data.bar.position;
+                      const globalPos = entry.mapToItem(null, 0, 0);
 
-                                 if (barPosition === "right") {
-                                   openLeft = true;
-                                 } else if (barPosition === "left") {
-                                   openLeft = false;
-                                 } else {
-                                   openLeft = (root.widgetSection === "right");
-                                 }
+                      if (barPosition === "right") {
+                        openLeft = true;
+                      } else if (barPosition === "left") {
+                        openLeft = false;
+                      } else {
+                        openLeft = (root.widgetSection === "right");
+                      }
 
-                                 // Open new submenu
-                                 entry.subMenu = Qt.createComponent("TrayMenu.qml").createObject(root, {
-                                                                                                   "menu": entry.menuItem,
-                                                                                                   "isSubMenu": true,
-                                                                                                   "screen": root.screen
-                                                                                                 });
+                      // Open new submenu
+                      entry.subMenu = Qt.createComponent("TrayMenu.qml").createObject(root, {
+                                                                                        "menu": entry.menuItem,
+                                                                                        "isSubMenu": true,
+                                                                                        "screen": root.screen
+                                                                                      });
 
-                                 if (entry.subMenu) {
-                                   const overlap = 60;
-                                   entry.subMenu.anchorItem = entry;
-                                   entry.subMenu.anchorX = openLeft ? -overlap : overlap;
-                                   entry.subMenu.anchorY = 0;
-                                   entry.subMenu.visible = true;
-                                   // Force anchor update with new position
-                                   Qt.callLater(() => {
-                                                  entry.subMenu.anchor.updateAnchor();
-                                                });
-                                 }
-                               }
-                             } else {
-                               // Click on regular items triggers them
-                               entry.menuItem.triggered();
-                               root.hideMenu();
+                      if (entry.subMenu) {
+                        const overlap = 60;
+                        entry.subMenu.anchorItem = entry;
+                        entry.subMenu.anchorX = openLeft ? -overlap : overlap;
+                        entry.subMenu.anchorY = 0;
+                        entry.subMenu.visible = true;
+                        // Force anchor update with new position
+                        Qt.callLater(() => {
+                          entry.subMenu.anchor.updateAnchor();
+                        });
+                      }
+                    }
+                  } else {
+                    // Click on regular items triggers them
+                    entry.menuItem.triggered();
+                    root.hideMenu();
 
-                               // Close the drawer if it's open
-                               if (root.screen) {
-                                 const panel = PanelService.getPanel("trayDrawerPanel", root.screen);
-                                 if (panel && panel.visible) {
-                                   panel.close();
-                                 }
-                               }
-                             }
-                           }
-                         }
+                    // Close the drawer if it's open
+                    if (root.screen) {
+                      const panel = PanelService.getPanel("trayDrawerPanel", root.screen);
+                      if (panel && panel.visible) {
+                        panel.close();
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
 
