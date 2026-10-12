@@ -55,7 +55,7 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - `835f4e503`: `Tests/sound-service-runtime.test.py` and `Tests/Qml/SoundServiceHarness.qml` check explicit media-error arguments; one injected-parameter deprecation removed, nine expected isolated backend warnings remain. `09031accb` stages actual BackgroundRegion in setup geometry/isolation fixtures; reported 20 geometries/52 transitions remain. Boundaries: [sound](sound-service.md#tests-asserting-this-spec), [setup](setup-wizard.md#tests-asserting-this-spec).
 - `64b6441d7`/`78bb2329f`/`38dbacc56`: repaired Node suites execute extracted production functions/handlers with mocked locale, XMLHttpRequest, FileView/adapter and UI-helper state; retained source-shape checks remain structural. Exact paths and boundaries: [i18n](i18n.md#tests-asserting-this-spec), [weather](location-weather.md#tests-asserting-this-spec), [settings](settings.md#tests-asserting-this-spec). These are not offscreen integration results.
 - `0a2361b52`: `Tests/Qml/FilePickerWarningsHarness.qml` settles model/layout before clicks and verifies reopened selection enables acceptance; this is offscreen production-picker interaction, not a mock-only/source-shape assertion. See [file picker](file-picker.md#tests-asserting-this-spec).
-- The reported runtime-guard result with 39 failures is failed aggregate proof, not global green. Scoped repairs do not establish a passing full gate; this audit runs no tests.
+- The initial aggregate gate stopped after 39 passing checks at a `ReferenceError` in `Tests/bar-action-helper-guards.test.js`; 39 is not a failure count. Scoped repairs do not establish a passing full gate; this audit runs no tests.
 
 ### QML runtime guards behavioral replacement
 
