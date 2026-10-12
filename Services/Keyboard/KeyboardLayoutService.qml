@@ -81,10 +81,10 @@ Singleton {
     id: initializationTimer
     interval: 2000 // Wait 2 seconds for first layout update to complete
     onTriggered: {
-      isInitialized = true;
+      root.isInitialized = true;
       // Set previousLayout to current value after initialization
-      previousLayout = currentLayout;
-      Logger.d("KeyboardLayout", "Service initialized, current layout:", currentLayout);
+      root.previousLayout = root.currentLayout;
+      Logger.d("KeyboardLayout", "Service initialized, current layout:", root.currentLayout);
     }
   }
 

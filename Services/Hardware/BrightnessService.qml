@@ -117,7 +117,7 @@ Singleton {
     function onEnableDdcSupportChanged() {
       if (Settings.data.brightness.enableDdcSupport) {
         // Re-detect DDC monitors when enabled
-        requestDdcDetection();
+        root.requestDdcDetection();
       } else {
         // Clear DDC monitors when disabled
         root.ddcDetectionGeneration += 1;
