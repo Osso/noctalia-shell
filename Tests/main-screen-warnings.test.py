@@ -81,7 +81,7 @@ def stage_runtime(directory, mutation):
     elif mutation == "selection":
         source = source.replace(
             "readonly property ShellScreen selectedScreen: root.screen",
-            "property ShellScreen selectedScreen",
+            "property ShellScreen selectedScreen: root.screen",
         ).replace(
             "Component.onCompleted: {",
             "Component.onCompleted: {\n    selectedScreen = root.screen;",
