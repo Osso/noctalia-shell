@@ -8,6 +8,7 @@ const path = require("path");
 
 const repoRoot = path.resolve(__dirname, "..");
 const metaTestFiles = new Set([
+  "Tests/changelog-lint-streams.test.py",
   "Tests/ipc-idle-services-harness-lint.test.py",
   "Tests/qml-static-fixtures.test.py",
   "Tests/qml-static-imports.test.py",
