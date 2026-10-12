@@ -50,13 +50,9 @@ def lint(directory):
         assert report["filename"] == str(directory / "qs" / target), report
         counts = Counter(warning["id"] for warning in report["warnings"])
         print(f"{target}: {dict(counts)}")
-        # Existing hoisting diagnostics are outside this owner-qualification scope.
-        expected = {"block-scope-var-declaration": 11} if target == TARGETS[0] else {}
-        assert dict(counts) == expected, counts
-    assert result.returncode == 255, result.returncode
-    print(
-        "Owner regression PASS; strict zero-warning lint retains 11 hoisting warnings."
-    )
+        assert not counts, counts
+    assert result.returncode == 0, result.returncode
+    print("Strict zero-warning lint PASS.")
 
 
 def stage_runtime(directory):

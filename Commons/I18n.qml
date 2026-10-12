@@ -33,7 +33,7 @@ Singleton {
 
     onExited: function (exitCode, exitStatus) {
       if (exitCode === 0) {
-        var output = stdoutCollector.text || "";
+        const output = stdoutCollector.text || "";
         root.parseDirectoryListing(output);
       } else {
         Logger.e("I18n", `Failed to scan translation directory`);
@@ -51,7 +51,7 @@ Singleton {
     onFileChanged: reload()
     onLoaded: {
       try {
-        var data = JSON.parse(text());
+        const data = JSON.parse(text());
         root.translations = data;
         Logger.i("I18n", `Loaded translations for "${root.langCode}"`);
         Logger.d("I18n", `Available root keys: ${Object.keys(data).join(", ")}`);
@@ -76,7 +76,7 @@ Singleton {
     onFileChanged: reload()
     onLoaded: {
       try {
-        var data = JSON.parse(text());
+        const data = JSON.parse(text());
         root.fallbackTranslations = data;
         Logger.d("I18n", `Loaded english fallback translations`);
       } catch (e) {
@@ -113,7 +113,7 @@ Singleton {
 
       const entries = output.trim().split('\n');
 
-      for (var i = 0; i < entries.length; i++) {
+      for (let i = 0; i < entries.length; i++) {
         const entry = entries[i].trim();
         if (entry && entry.endsWith('.json')) {
           // Extract language code from filename (e.g., "en.json" -> "en")
@@ -164,7 +164,7 @@ Singleton {
     var detectedFullLocale = "";
 
     // First, determine the system's preferred language
-    for (var i = 0; i < Qt.locale().uiLanguages.length; i++) {
+    for (let i = 0; i < Qt.locale().uiLanguages.length; i++) {
       const fullUserLang = Qt.locale().uiLanguages[i];
 
       if (availableLanguages.includes(fullUserLang)) {
@@ -243,7 +243,7 @@ Singleton {
     const keys = key.split(".");
     var value = translations;
 
-    for (var i = 0; i < keys.length; i++) {
+    for (let i = 0; i < keys.length; i++) {
       if (value && typeof value === "object" && keys[i] in value) {
         value = value[keys[i]];
       } else {
@@ -263,7 +263,7 @@ Singleton {
       prefix = "";
 
     var keys = [];
-    for (var key in (obj || {})) {
+    for (const key in (obj || {})) {
       const value = obj[key];
       const fullKey = prefix ? `${prefix}.${key}` : key;
       if (typeof value === "object" && value !== null) {
@@ -299,7 +299,7 @@ Singleton {
     // Look-up translation in the active language
     var value = translations;
     var notFound = false;
-    for (var i = 0; i < keys.length; i++) {
+    for (let i = 0; i < keys.length; i++) {
       if (value && typeof value === "object" && keys[i] in value) {
         value = value[keys[i]];
       } else {
@@ -313,7 +313,7 @@ Singleton {
     // Fallback to english if not found
     if (notFound && availableLanguages.includes("en") && langCode !== "en") {
       value = fallbackTranslations;
-      for (var i = 0; i < keys.length; i++) {
+      for (let i = 0; i < keys.length; i++) {
         if (value && typeof value === "object" && keys[i] in value) {
           value = value[keys[i]];
         } else {
@@ -336,7 +336,7 @@ Singleton {
 
     // Handle interpolations (e.g., "Hello {name}!")
     var result = value;
-    for (var placeholder in interpolations) {
+    for (const placeholder in interpolations) {
       const regex = new RegExp(`\\{${placeholder}\\}`, 'g');
       result = result.replace(regex, interpolations[placeholder]);
     }
@@ -361,7 +361,7 @@ Singleton {
     var finalInterpolations = {
       "count": count
     };
-    for (var prop in interpolations) {
+    for (const prop in interpolations) {
       finalInterpolations[prop] = interpolations[prop];
     }
 
