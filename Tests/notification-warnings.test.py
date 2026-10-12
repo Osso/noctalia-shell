@@ -18,6 +18,8 @@ import shutil
 import subprocess
 import tempfile
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Notification/Notification.qml")
 
@@ -153,6 +155,41 @@ signal clicked(); width: baseSize; height: baseSize }""",
     )
 
 
+def stage_harness_lint(directory):
+    runtime = directory / "runtime"
+    runtime.mkdir()
+    stage_runtime(runtime)
+    imports = directory / "imports"
+    helper("media-mini-warnings").stage_modules(imports, source_root=runtime)
+    return imports, imports / "qs/shell.qml"
+
+
+def lint_harness(directory):
+    imports, harness = stage_harness_lint(directory)
+    return check_harness(imports, harness)
+
+
+def lint_harness_regression(directory):
+    clean = directory / "clean"
+    clean.mkdir()
+    assert lint_harness(clean) == 0, "clean harness lint failed"
+    injected = directory / "injected"
+    injected.mkdir()
+    imports, harness = stage_harness_lint(injected)
+    source = harness.read_text()
+    marker = "id: harness"
+    assert source.count(marker) == 1, "injection owner must be unique"
+    harness.write_text(
+        source.replace(
+            marker,
+            marker + "\n  property int injectedWarning: harness.missingLintProbe",
+            1,
+        )
+    )
+    assert check_harness(imports, harness) != 0, "genuine warning was accepted"
+    print("NOTIFICATION_HARNESS_WARNING_REJECTED")
+
+
 def behavior(directory):
     settings = Path.home() / ".config/noctalia/settings.json"
     original = settings.read_bytes()
@@ -202,12 +239,20 @@ def behavior(directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument(
+        "mode", choices=("lint", "lint-harness", "lint-harness-regression", "behavior")
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-notification-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
-        (lint if args.mode == "lint" else behavior)(directory)
+        if args.mode == "lint-harness":
+            raise SystemExit(lint_harness(directory))
+        if args.mode == "lint-harness-regression":
+            lint_harness_regression(directory)
+        else:
+            (lint if args.mode == "lint" else behavior)(directory)
 
 
 if __name__ == "__main__":
