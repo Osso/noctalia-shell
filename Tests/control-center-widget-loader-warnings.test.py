@@ -9,6 +9,7 @@ sandbox masking real config parents; staging never reads real settings.
 import argparse
 import errno
 import importlib.util
+import json
 import os
 from pathlib import Path
 import re
@@ -111,6 +112,47 @@ QtObject {
     return harness
 
 
+def lint_harness(directory, harness, environment, inject_warning):
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                "id: host",
+                "id: host\n  property int injectedWarning: host.missingLintProbe",
+                1,
+            )
+        )
+    code, output = run_command(
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        directory,
+        environment,
+    )
+    diagnostics = json.loads(output)
+    warnings = sum(
+        warning["type"] == "warning"
+        for result in diagnostics["files"]
+        for warning in result["warnings"]
+    )
+    print("LOADER_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
+    if inject_warning:
+        assert warnings > 0, "injected warning not diagnosed"
+        assert code != 0, "injected warning accepted"
+    else:
+        assert code != 0 or warnings == 0, "warnings accepted by strict lint"
+    return code
+
+
 def sandboxed(args):
     deny_config(args.config_parent)
     directory = args.sandbox
@@ -151,7 +193,7 @@ def sandboxed(args):
     harness = stage_runtime(directory, args.mutation, args.owner_shadow)
     if args.mode == "lint-harness":
         raise SystemExit(
-            helper("qml_fixture_lint.py").check_harness(directory, harness)
+            lint_harness(directory, harness, environment, args.inject_warning)
         )
     code, output = run_command(
         [
@@ -174,11 +216,15 @@ def sandboxed(args):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=("runtime", "lint", "lint-harness"))
+    parser.add_argument("--inject-warning", action="store_true")
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
     parser.add_argument("--mutation", action="store_true")
     parser.add_argument("--owner-shadow", action="store_true")
     parser.add_argument("--sandbox", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--config-parent", help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     if args.sandbox:
         sandboxed(args)
         return
@@ -194,6 +240,11 @@ def main():
             "--ro-bind",
             "/",
             "/",
+            "--tmpfs",
+            "/syncthing",
+            "--ro-bind",
+            str(ROOT),
+            str(ROOT),
             "--perms",
             "000",
             "--tmpfs",
@@ -224,6 +275,8 @@ def main():
             "--config-parent",
             config_parent,
         ]
+        if args.inject_warning:
+            command.append("--inject-warning")
         if args.mutation:
             command.append("--mutation")
         if args.owner_shadow:

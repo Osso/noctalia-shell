@@ -12,6 +12,7 @@ TestCase {
   when: true
 
   property Overview overview
+  readonly property Variants screenVariants: test.overview ? test.overview.item as Variants : null
   Component {
     id: factory
     Overview {}
@@ -25,7 +26,7 @@ TestCase {
     overview = factory.createObject(test);
     verify(overview !== null);
     tryVerify(() => overview.item !== null);
-    compare(overview.item.instances.count, 2);
+    compare(test.screenVariants.instances.count, 2);
     wait(0); // Flush anchor layout on invisible fixture Windows.
   }
 
@@ -35,7 +36,7 @@ TestCase {
   }
 
   function panel(index) {
-    return overview.item.instances.objectAt(index);
+    return test.screenVariants.instances.objectAt(index);
   }
 
   function preview(window) {
@@ -91,7 +92,7 @@ TestCase {
       WallpaperService.wallpaperChanged("wide", "while-disabled");
       gates[index][names[index]] = true;
       tryVerify(() => overview.item !== null);
-      compare(overview.item.instances.count, 2);
+      compare(test.screenVariants.instances.count, 2);
       verify(panel(0) !== oldPanel);
       compare(panel(0).wallpaper, "fixture-wide");
       compare(preview(panel(0)).source.toString(), "fixture-wide");
@@ -100,9 +101,9 @@ TestCase {
     // Removing/readding screens also exercises delegate destruction, not only Loader.
     const screens = Array.from(Quickshell.screens);
     Quickshell.screens = [];
-    tryCompare(overview.item.instances, "count", 0);
+    tryCompare(test.screenVariants.instances, "count", 0);
     Quickshell.screens = screens;
-    tryCompare(overview.item.instances, "count", 2);
+    tryCompare(test.screenVariants.instances, "count", 2);
     WallpaperService.wallpaperChanged("wide", "after-recreate");
     compare(preview(panel(0)).source.toString(), "after-recreate");
   }

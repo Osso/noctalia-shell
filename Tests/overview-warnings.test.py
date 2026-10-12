@@ -13,6 +13,7 @@ break cover anchors, overview enable gating, and image fill geometry.
 import argparse
 import errno
 import importlib.util
+import json
 import os
 from pathlib import Path
 import re
@@ -71,10 +72,18 @@ Window {
         directory,
         "qs.Commons",
         {
-            "Settings": singleton("""property QtObject data: QtObject {
-  property QtObject wallpaper: QtObject { property bool enabled: true; property bool overviewEnabled: true }
-  property QtObject colorSchemes: QtObject { property bool darkMode: true }
-}"""),
+            "Settings": singleton("""component WallpaperSettings: QtObject {
+  property bool enabled: true
+  property bool overviewEnabled: true
+}
+component ColorSchemeSettings: QtObject {
+  property bool darkMode: true
+}
+component SettingsData: QtObject {
+  property WallpaperSettings wallpaper: WallpaperSettings {}
+  property ColorSchemeSettings colorSchemes: ColorSchemeSettings {}
+}
+property SettingsData data: SettingsData {}"""),
             "Logger": singleton("function d(...args) {}"),
             "NColor": singleton(
                 'property color transparent: "transparent"\nproperty color mSurface: "#202020"\nproperty color mOnSurface: "#eeeeee"'
@@ -146,6 +155,48 @@ def execute(argv, directory, environment):
     return result.returncode, output
 
 
+def lint_harness(directory, environment, inject_warning):
+    harness = directory / "tst_overview.qml"
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                "id: test",
+                "id: test\n  property int injectedWarning: test.missingLintProbe",
+                1,
+            )
+        )
+    code, output = execute(
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        directory,
+        environment,
+    )
+    diagnostics = json.loads(output)
+    warnings = sum(
+        warning["type"] == "warning"
+        for result in diagnostics["files"]
+        for warning in result["warnings"]
+    )
+    print("OVERVIEW_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
+    if inject_warning:
+        assert warnings > 0, "injected warning not diagnosed"
+        assert code != 0, "injected warning accepted"
+    else:
+        assert code != 0 or warnings == 0, "warnings accepted by strict lint"
+    return code
+
+
 def inside(args):
     directory = args.sandbox
     mounts = Path("/proc/self/mountinfo").read_text()
@@ -197,6 +248,8 @@ def inside(args):
         assert code == 0, code
     else:
         stage_runtime(directory, args.mutation)
+        if args.mode == "lint-harness":
+            raise SystemExit(lint_harness(directory, environment, args.inject_warning))
         code, output = execute(
             [
                 "/usr/lib/qt6/bin/qmltestrunner",
@@ -228,12 +281,16 @@ def inside(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "runtime", "lint-harness"))
+    parser.add_argument("--inject-warning", action="store_true")
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
     parser.add_argument("--expected", type=int, default=0)
     parser.add_argument("--mutation", choices=("cover", "visibility", "geometry"))
     parser.add_argument("--sandbox", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--config-parent", help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     if args.sandbox:
         inside(args)
         return
@@ -249,6 +306,11 @@ def main():
             "--ro-bind",
             "/",
             "/",
+            "--tmpfs",
+            "/syncthing",
+            "--ro-bind",
+            str(ROOT),
+            str(ROOT),
             "--perms",
             "000",
             "--tmpfs",
@@ -281,6 +343,8 @@ def main():
             "--config-parent",
             config_parent,
         ]
+        if args.inject_warning:
+            argv.append("--inject-warning")
         if args.mutation:
             argv.extend(["--mutation", args.mutation])
         code, _ = execute(
