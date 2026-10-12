@@ -71,7 +71,9 @@ Item {
 
     // ===== REGEX PATTERNS =====
 
-    readonly property QtObject patterns: QtObject {
+    readonly property QtObject _patterns: QtObject {
+      id: patterns
+
       // Detailed tag format: "OUTPUT tag N STATE CLIENTS FOCUSED"
       readonly property var tagDetail: /^(\S+)\s+tag\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)$/
 
@@ -531,7 +533,7 @@ Item {
                 internal.streamBuffer += line + "\n";
 
                 // Process frame when we get a binary tag line (signals end of frame)
-                if (line.match(internal.patterns.tagBinary)) {
+                if (line.match(patterns.tagBinary)) {
                   internal.processTagData(internal.streamBuffer);
                   internal.streamBuffer = "";
                 }
