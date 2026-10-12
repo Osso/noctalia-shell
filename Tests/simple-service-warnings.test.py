@@ -17,6 +17,8 @@ import shutil
 import subprocess
 import tempfile
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 SERVICES = [
     Path("Services/Noctalia/GitHubService.qml"),
@@ -150,9 +152,9 @@ Item {
     defaults["screenRecorder"]["videoSource"] = "portal"
     defaults["nightLight"].update(enabled=False, forced=True)
     settings = 'property string cacheDir: "/fixture/"\nproperty string cacheDirImages: "/fixture/"\n'
-    settings += "property QtObject data: QtObject {\n"
     for name in ("network", "nightLight"):
-        settings += f"property QtObject {name}: QtObject {{\n"
+        component = name[0].upper() + name[1:] + "Settings"
+        settings += f"component {component}: QtObject {{\n"
         for key, value in defaults[name].items():
             kind = (
                 "bool"
@@ -163,9 +165,14 @@ Item {
             )
             settings += f"property {kind} {key}: {json.dumps(value)}\n"
         settings += "}\n"
+    settings += "component ServiceSettings: QtObject {\n"
+    for name in ("network", "nightLight"):
+        component = name[0].upper() + name[1:] + "Settings"
+        settings += f"property {component} {name}: {component} {{}}\n"
     for name in ("audio", "screenRecorder", "bar"):
         settings += f"property var {name}: {json.dumps(defaults[name])}\n"
-    settings += "}\nfunction preprocessPath(path) { return path; }"
+    settings += "}\nproperty ServiceSettings data: ServiceSettings {}\n"
+    settings += "function preprocessPath(path) { return path; }"
     write(
         directory,
         "qs.Commons",
@@ -216,6 +223,11 @@ signal checksCompleted()""")
     shutil.copyfile(
         ROOT / "Tests/Qml/SimpleServiceHarness.qml", directory / "tst_services.qml"
     )
+
+
+def lint_harness(directory):
+    stage_runtime(directory)
+    return check_harness(directory, directory / "tst_services.qml")
 
 
 def behavior(directory):
@@ -291,18 +303,18 @@ def behavior(directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "behavior", "lint-harness"))
     parser.add_argument("--artifacts", type=Path)
     args = parser.parse_args()
+    command = {"lint": lint, "behavior": behavior, "lint-harness": lint_harness}[
+        args.mode
+    ]
     if args.artifacts:
         args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
-        globals()[args.mode](args.artifacts.resolve())
-    else:
-        with tempfile.TemporaryDirectory(
-            prefix="noctalia-simple-services-"
-        ) as temporary:
-            globals()[args.mode](Path(temporary))
+        return command(args.artifacts.resolve())
+    with tempfile.TemporaryDirectory(prefix="noctalia-simple-services-") as temporary:
+        return command(Path(temporary))
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
