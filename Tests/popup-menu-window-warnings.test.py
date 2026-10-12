@@ -7,15 +7,15 @@ popup. No whole-widget/input acceptance or canonical settings/process access.
 """
 
 import argparse
-from collections import Counter
 import importlib.util
 import json
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import tempfile
 import time
+from collections import Counter
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/MainScreen/PopupMenuWindow.qml")
@@ -400,7 +400,7 @@ def assert_native_output(output):
         if re.search(
             r" WARN[: ]| ERROR[: ]| FATAL[: ]|ReferenceError|TypeError|Binding loop|^warning:|wl_callback|queue destroyed",
             line,
-            re.I,
+            re.IGNORECASE,
         )
     ]
     assert not diagnostics, diagnostics
@@ -416,46 +416,49 @@ def runtime(directory):
     display = helper("popup-private-display.py")
     log = directory / "runtime.log"
     errors = directory / "client.stderr.raw"
-    with display.PopupPrivateDisplay(directory / "display") as environment:
-        with log.open("w") as stream, errors.open("w") as stderr:
-            process = subprocess.Popen(
-                display.sandbox(
-                    directory,
-                    ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
-                ),
-                cwd=directory,
-                env=environment,
-                stdout=stream,
-                stderr=stderr,
-                text=True,
-                start_new_session=True,
-            )
-            try:
-                deadline = time.monotonic() + 20
-                while "POPUP_WINDOW_RUNTIME_PASS INITIAL" not in log.read_text():
-                    output = log.read_text() + errors.read_text()
-                    assert process.poll() is None, output
-                    assert not re.search(
-                        r"ERROR|TypeError|ReferenceError|Binding loop", output
-                    ), output
-                    assert time.monotonic() < deadline, output
-                    time.sleep(0.05)
-                # Actual file-watcher reload in the same private Quickshell process.
-                shell = directory / "shell.qml"
-                shell.write_text(
-                    shell.read_text().replace(
-                        'generation: "INITIAL"', 'generation: "RELOADED"'
-                    )
-                )
-                process.wait(timeout=20)
+    with (
+        display.PopupPrivateDisplay(directory / "display") as environment,
+        log.open("w") as stream,
+        errors.open("w") as stderr,
+    ):
+        process = subprocess.Popen(
+            display.sandbox(
+                directory,
+                ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
+            ),
+            cwd=directory,
+            env=environment,
+            stdout=stream,
+            stderr=stderr,
+            text=True,
+            start_new_session=True,
+        )
+        try:
+            deadline = time.monotonic() + 20
+            while "POPUP_WINDOW_RUNTIME_PASS INITIAL" not in log.read_text():
                 output = log.read_text() + errors.read_text()
-                print(output, end="")
-                assert process.returncode == 0, process.returncode
-                assert_native_output(output)
-                print("POPUP_WINDOW_PRIVATE_RELOAD_PASS")
-            finally:
-                display.stop_owned(process)
-                assert process.poll() is not None, "private client still running"
+                assert process.poll() is None, output
+                assert not re.search(
+                    r"ERROR|TypeError|ReferenceError|Binding loop", output
+                ), output
+                assert time.monotonic() < deadline, output
+                time.sleep(0.05)
+            # Actual file-watcher reload in the same private Quickshell process.
+            shell = directory / "shell.qml"
+            shell.write_text(
+                shell.read_text().replace(
+                    'generation: "INITIAL"', 'generation: "RELOADED"'
+                )
+            )
+            process.wait(timeout=20)
+            output = log.read_text() + errors.read_text()
+            print(output, end="")
+            assert process.returncode == 0, process.returncode
+            assert_native_output(output)
+            print("POPUP_WINDOW_PRIVATE_RELOAD_PASS")
+        finally:
+            display.stop_owned(process)
+            assert process.poll() is not None, "private client still running"
 
 
 if __name__ == "__main__":

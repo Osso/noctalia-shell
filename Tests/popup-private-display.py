@@ -7,19 +7,25 @@ settings, Niri config, socket discovery and validation remain authoritative.
 import importlib.util
 import json
 import os
-from pathlib import Path
 import re
 import signal
 import subprocess
+import sys
 import time
+from pathlib import Path
 
 HELPER = Path(
     "/home/osso/AgentConfig/skills/desktop-control/scripts/private_display.py"
 )
 spec = importlib.util.spec_from_file_location("popup_private_display_helper", HELPER)
 shared = importlib.util.module_from_spec(spec)
-# Execute the installed helper without writing bytecode into its directory.
-exec(compile(HELPER.read_bytes(), str(HELPER), "exec"), shared.__dict__)
+# Import the installed helper without writing bytecode into its directory.
+write_bytecode = sys.dont_write_bytecode
+try:
+    sys.dont_write_bytecode = True
+    spec.loader.exec_module(shared)
+finally:
+    sys.dont_write_bytecode = write_bytecode
 
 
 def sandbox(directory, command):
@@ -128,6 +134,11 @@ class PopupPrivateDisplay(shared.PrivateDisplay):
 
     def __init__(self, out):
         super().__init__(out, app="/usr/bin/true")
+        self.runtime = self.out / "r"
+        ipc_path = self.runtime / "quickshell/by-id/xxxxxxxx/ipc.sock"
+        assert len(os.fsencode(ipc_path)) < 108, (
+            f"private IPC path too long: {ipc_path}"
+        )
         self.process = None
         self.stream = None
 
@@ -195,6 +206,7 @@ class PopupPrivateDisplay(shared.PrivateDisplay):
         assert self.process.poll() is None, (self.out / "display.log").read_text()
         result = subprocess.run(
             sandbox(self.out, ["niri", "msg", "--json", "outputs"]),
+            check=False,
             env=self.env,
             capture_output=True,
             text=True,
@@ -211,6 +223,7 @@ class PopupPrivateDisplay(shared.PrivateDisplay):
         assert re.search(r'"/usr/lib/libLLVM[^" ]*".*= [0-9]+', trace), trace
         result = subprocess.run(
             sandbox(self.out, ["python3", "-c", REGISTRY_PROBE]),
+            check=False,
             env=self.env,
             capture_output=True,
             text=True,
