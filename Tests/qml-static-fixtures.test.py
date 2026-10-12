@@ -82,6 +82,7 @@ REQUESTED_HARNESSES = {
 }
 REQUESTED_REPORTS = {
     "BluetoothPanelWarningsHarness.qml": "tst_bluetooth_panel.qml",
+    "IpcIdleServicesHarness.qml": "tst_services.qml",
     "BrightnessKeyboardServicesHarness.qml": "tst_services.qml",
     "DockMenuWarningsHarness.qml": "tst_dock_menu.qml",
     "WallpaperTabWarningsHarness.qml": "tst_wallpaper_tab.qml",
@@ -500,7 +501,7 @@ class FixtureLintTest(unittest.TestCase):
                 )
                 harness = root / "Tests/Qml" / name
                 if mode == "syntax":
-                    # IPC hides semantic warning text; parse diagnostics remain visible.
+                    # Exercise JSON parse diagnostics separately from semantic warnings.
                     harness.write_text(harness.read_text() + "\n}\n")
                 else:
                     harness.write_text(
@@ -528,11 +529,7 @@ class FixtureLintTest(unittest.TestCase):
             if failing:
                 self.assertNotEqual(result.returncode, 0, output)
                 self.assertTrue(result.stderr.startswith(diagnostic), result.stderr)
-                if mode == "syntax":
-                    self.assertIn("Unexpected token", result.stdout)
-                    self.assertIn("[syntax]", result.stdout)
-                    self.assertIn("tst_services.qml", result.stdout)
-                elif name != "IpcIdleServicesHarness.qml":
+                if mode == "warning":
                     self.assertIn("missingFixtureValue", output)
                 self.assertNotIn("ok qmlStaticCheck", output)
                 self.assertNotIn("Checked ", output)
@@ -541,39 +538,54 @@ class FixtureLintTest(unittest.TestCase):
                 self.assertEqual(output.count("ok qmlStaticCheck"), 1)
                 self.assertIn("Checked 1 QML files", output)
                 self.assertIn("skipped 0", output)
+            self.assertEqual(len(reports), 1, output)
+            self.assertEqual(len(reports[0]["files"]), 1)
+            file = reports[0]["files"][0]
+            self.assertEqual(Path(file["filename"]).name, harness_reports[name])
             if name == "IpcIdleServicesHarness.qml":
-                self.assertEqual(reports, [])
-                self.assertEqual(output.count("HARNESS_LINT_COUNTS"), 1)
-                if not failing:
-                    self.assertIn("HARNESS_LINT_COUNTS {} TOTAL 0", output)
-            else:
-                self.assertEqual(len(reports), 1, output)
-                self.assertEqual(len(reports[0]["files"]), 1)
-                file = reports[0]["files"][0]
-                self.assertEqual(Path(file["filename"]).name, harness_reports[name])
-                if mode == "warning":
-                    self.assertTrue(file["warnings"], output)
-                elif name == "LocationServiceHarness.qml":
-                    # Unused-import info is not a warning under the strict CLI.
+                self.assertEqual(file["success"], not failing)
+                expected_counts = {}
+                if failing:
+                    warning_id = "syntax" if mode == "syntax" else "missing-property"
                     self.assertEqual(
-                        [w for w in file["warnings"] if w["type"] != "info"], []
+                        [(w["id"], w["type"]) for w in file["warnings"]],
+                        [(warning_id, "warning")],
                     )
+                    self.assertEqual(
+                        file["warnings"][0]["message"],
+                        "Unexpected token `}'"
+                        if mode == "syntax"
+                        else 'Member "missingFixtureValue" not found on type "QQmlApplication"',
+                    )
+                    expected_counts = {warning_id: 1}
                 else:
                     self.assertEqual(file["warnings"], [])
-                if name == "FilePickerWarningsHarness.qml":
-                    # Owner re-executes with a fresh /tmp in its nested sandbox.
-                    harness = Path(file["filename"])
-                    harness.relative_to("/tmp")
-                    self.assertFalse(harness.parent.exists(), "picker artifacts leaked")
-                    self.assertEqual(
-                        output.count("FILE_PICKER_CONFIG_NETWORK_MASKED"), 1
-                    )
-                elif name == "WallhavenPowerWarningsHarness.qml":
-                    self.assertEqual(file["filename"], "/fixture/tst_bounded.qml")
-                elif name == "BrightnessKeyboardServicesHarness.qml":
-                    self.assertEqual(file["filename"], "/fixture/tst_services.qml")
-                else:
-                    self.assert_artifacts_are_isolated(file)
+                self.assertEqual(output.count("HARNESS_LINT_COUNTS"), 1)
+                self.assertIn(
+                    f"HARNESS_LINT_COUNTS {expected_counts} TOTAL {sum(expected_counts.values())}",
+                    output.splitlines(),
+                )
+            elif mode == "warning":
+                self.assertTrue(file["warnings"], output)
+            elif name == "LocationServiceHarness.qml":
+                # Unused-import info is not a warning under the strict CLI.
+                self.assertEqual(
+                    [w for w in file["warnings"] if w["type"] != "info"], []
+                )
+            else:
+                self.assertEqual(file["warnings"], [])
+            if name == "FilePickerWarningsHarness.qml":
+                # Owner re-executes with a fresh /tmp in its nested sandbox.
+                harness = Path(file["filename"])
+                harness.relative_to("/tmp")
+                self.assertFalse(harness.parent.exists(), "picker artifacts leaked")
+                self.assertEqual(output.count("FILE_PICKER_CONFIG_NETWORK_MASKED"), 1)
+            elif name == "WallhavenPowerWarningsHarness.qml":
+                self.assertEqual(file["filename"], "/fixture/tst_bounded.qml")
+            elif name == "BrightnessKeyboardServicesHarness.qml":
+                self.assertEqual(file["filename"], "/fixture/tst_services.qml")
+            else:
+                self.assert_artifacts_are_isolated(file)
 
     def test_all_harnesses_are_checked_without_fixture_type_warnings(self):
         with tempfile.TemporaryDirectory(prefix="noctalia-fixture-static-") as temp:
