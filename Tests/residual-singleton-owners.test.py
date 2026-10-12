@@ -114,6 +114,72 @@ def stage_runtime(directory, shadow):
     )
 
 
+def stage_harness(directory, shadow):
+    runtime = directory / "runtime"
+    runtime.mkdir()
+    stage_runtime(runtime, shadow)
+    imports = directory / "imports"
+    helper("media-mini-warnings.test.py").stage_modules(imports, source_root=runtime)
+    return imports, imports / "qs/shell.qml"
+
+
+def check_harness(directory, environment, isolation, imports, harness):
+    result = run(
+        directory,
+        environment,
+        isolation,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(imports),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+    )
+    (directory / "lint-harness.log").write_text(result.stdout + result.stderr)
+    diagnostics = json.loads(result.stdout)
+    warnings = sum(
+        warning["type"] == "warning"
+        for item in diagnostics["files"]
+        for warning in item["warnings"]
+    )
+    print("OWNER_HARNESS_WARNINGS", warnings, "EXIT", result.returncode)
+    passed = (
+        result.returncode == 0
+        and warnings == 0
+        and all(item["success"] for item in diagnostics["files"])
+    )
+    return 0 if passed else result.returncode or 1
+
+
+def lint_harness(directory, environment, isolation, shadow, inject=False):
+    imports, harness = stage_harness(directory, shadow)
+    if inject:
+        source = harness.read_text()
+        marker = "id: harness"
+        assert source.count(marker) == 1
+        harness.write_text(
+            source.replace(
+                marker,
+                marker + "\n  property int injectedWarning: harness.missingLintProbe",
+                1,
+            )
+        )
+    status = check_harness(directory, environment, isolation, imports, harness)
+    if inject:
+        assert status != 0, "Injected semantic warning accepted"
+        assert "missingLintProbe" in (directory / "lint-harness.log").read_text()
+        print("OWNER_HARNESS_WARNING_REJECTED")
+        return 0
+    return status
+
+
 def runtime(directory, environment, isolation, shadow):
     stage_runtime(directory, shadow)
     config = directory / "config"
@@ -180,7 +246,9 @@ def runtime(directory, environment, isolation, shadow):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument(
+        "mode", choices=("lint", "runtime", "lint-harness", "lint-harness-regression")
+    )
     parser.add_argument("--shadow", action="store_true")
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="owner-") as temporary:
@@ -208,8 +276,18 @@ def main():
         assert probe.returncode == 0 and probe.stdout.count("CHILD_CONFIG_DENIED") == 2
         if args.mode == "lint":
             lint(directory, environment, isolation)
-        else:
+        elif args.mode == "runtime":
             runtime(directory, environment, isolation, args.shadow)
+        else:
+            raise SystemExit(
+                lint_harness(
+                    directory,
+                    environment,
+                    isolation,
+                    args.shadow,
+                    inject=args.mode == "lint-harness-regression",
+                )
+            )
 
 
 if __name__ == "__main__":

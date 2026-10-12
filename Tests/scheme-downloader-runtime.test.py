@@ -17,8 +17,6 @@ import tempfile
 from collections import Counter
 from pathlib import Path
 
-from qml_fixture_lint import check_harness
-
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/Settings/Tabs/ColorScheme/SchemeDownloader.qml")
 
@@ -212,13 +210,81 @@ target.write_bytes(source.read_bytes())
         path.chmod(0o700)
 
 
-def lint_harness(directory):
+def load_isolation():
+    spec = importlib.util.spec_from_file_location(
+        "downloader_isolation", ROOT / "Tests/wallpaper-tab-warnings.test.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def lint_harness(directory, inject=False):
     runtime = directory / "runtime"
     runtime.mkdir()
     stage_runtime(runtime)
     imports = directory / "imports"
     load_staging().stage_modules(imports, source_root=runtime)
-    return check_harness(imports, imports / "qs/shell.qml")
+    transport = imports / "qs/Commons/Transport.qml"
+    if inject:
+        source = transport.read_text()
+        marker = "QtObject {"
+        assert source.count(marker) == 1
+        transport.write_text(
+            source.replace(
+                marker,
+                marker
+                + "\n    property int injectedWarning: transport.missingLintProbe",
+                1,
+            )
+        )
+    isolation = load_isolation()
+    result = subprocess.run(
+        isolation.sandbox_command(
+            directory,
+            [
+                "/usr/lib/qt6/bin/qmllint",
+                "--bare",
+                "-I",
+                str(imports),
+                "-I",
+                "/usr/lib/qt6/qml",
+                "--max-warnings",
+                "0",
+                "--json",
+                "-",
+                str(imports / "qs/shell.qml"),
+                str(transport),
+            ],
+        ),
+        cwd=directory,
+        env=isolation.isolated_environment(directory),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    output = result.stdout + result.stderr
+    print(output, end="", flush=True)
+    diagnostics = json.loads(result.stdout)
+    warnings = sum(
+        warning["type"] == "warning"
+        for item in diagnostics["files"]
+        for warning in item["warnings"]
+    )
+    print("SCHEME_DOWNLOADER_HARNESS_WARNINGS", warnings, "EXIT", result.returncode)
+    passed = (
+        result.returncode == 0
+        and warnings == 0
+        and all(item["success"] for item in diagnostics["files"])
+    )
+    if inject:
+        assert not passed and result.returncode != 0, (
+            "Injected semantic warning accepted"
+        )
+        assert "missingLintProbe" in output
+        print("SCHEME_DOWNLOADER_HARNESS_WARNING_REJECTED")
+        return 0
+    return 0 if passed else result.returncode or 1
 
 
 def runtime(directory):
@@ -263,7 +329,9 @@ def runtime(directory):
     assert backup.read_bytes() == original, "fixture backup bytes differ"
     try:
         result = subprocess.run(
-            ["quickshell", "-p", str(directory / "shell.qml")],
+            load_isolation().sandbox_command(
+                directory, ["quickshell", "-p", str(directory / "shell.qml")]
+            ),
             cwd=directory,
             env=environment,
             capture_output=True,
@@ -290,13 +358,17 @@ def runtime(directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime", "lint-harness"))
+    parser.add_argument(
+        "mode", choices=("lint", "runtime", "lint-harness", "lint-harness-regression")
+    )
     args = parser.parse_args()
-    if args.mode == "lint-harness":
+    if args.mode in ("lint-harness", "lint-harness-regression"):
         with tempfile.TemporaryDirectory(
             prefix="noctalia-scheme-harness-lint-"
         ) as name:
-            raise SystemExit(lint_harness(Path(name)))
+            raise SystemExit(
+                lint_harness(Path(name), inject=args.mode == "lint-harness-regression")
+            )
     with tempfile.TemporaryDirectory(prefix="noctalia-scheme-downloader-") as name:
         globals()[args.mode](Path(name))
 
