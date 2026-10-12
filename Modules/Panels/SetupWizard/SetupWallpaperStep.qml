@@ -418,11 +418,13 @@ ColumnLayout {
     id: directoryScanner
     command: ["find", "", "-type", "f", "\\(-iname", "*.jpg", "-o", "-iname", "*.jpeg", "-o", "-iname", "*.png", "-o", "-iname", "*.bmp", "-o", "-iname", "*.webp", "-o", "-iname", "*.svg", "\\)"]
     running: false
-    stdout: StdioCollector {}
+    stdout: StdioCollector {
+      id: directoryOutput
+    }
     stderr: StdioCollector {}
     onExited: function (exitCode) {
       if (exitCode === 0) {
-        var lines = stdout.text.split('\n');
+        var lines = directoryOutput.text.split('\n');
         var images = [];
         for (var i = 0; i < lines.length; i++) {
           var line = lines[i].trim();
@@ -430,10 +432,10 @@ ColumnLayout {
             images.push(line);
           }
         }
-        wallpapersList = images;
-        updateFilteredWallpapers();
-        if (wallpapersList.length > 0 && selectedWallpaper === "") {
-          selectedWallpaper = wallpapersList[0];
+        root.wallpapersList = images;
+        root.updateFilteredWallpapers();
+        if (root.wallpapersList.length > 0 && root.selectedWallpaper === "") {
+          root.selectedWallpaper = root.wallpapersList[0];
         }
       }
     }
