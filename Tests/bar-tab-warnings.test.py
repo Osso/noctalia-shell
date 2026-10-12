@@ -5,14 +5,12 @@ Standalone only. Direct signals do not prove physical input or live persistence.
 """
 
 import argparse
-import hashlib
 import importlib.util
 import json
-import os
 from pathlib import Path
 import re
 import shutil
-import subprocess
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/Settings/Tabs/BarTab.qml")
@@ -50,18 +48,21 @@ def stage_behavior(directory):
         "Commons/Settings.qml",
         """
   property int saveRequests: 0
-  property QtObject data: QtObject {
+  component BarWidgets: QtObject {
+    property var left: []
+    property var center: []
+    property var right: []
+  }
+  component BarSettings: QtObject {
+    BAR_FIELDS
+    property BarWidgets widgets: BarWidgets {}
+  }
+  component SettingsData: QtObject {
     property var ui: UI_DEFAULTS
     property var general: GENERAL_DEFAULTS
-    property QtObject bar: QtObject {
-      BAR_FIELDS
-      property QtObject widgets: QtObject {
-        property var left: []
-        property var center: []
-        property var right: []
-      }
-    }
+    property BarSettings bar: BarSettings {}
   }
+  property SettingsData data: SettingsData {}
   function saveImmediate() { saveRequests++; }
 """.replace("UI_DEFAULTS", json.dumps(defaults["ui"]))
         .replace("GENERAL_DEFAULTS", json.dumps(defaults["general"]))
@@ -158,7 +159,7 @@ Item {
     )
 
 
-def execute(mode, directory):
+def execute(mode, directory, environment, inject_warning=False):
     if mode == "lint":
         helper("media-mini-warnings.test.py").stage_modules(directory)
         argv = [
@@ -169,6 +170,8 @@ def execute(mode, directory):
         ]
     else:
         stage_behavior(directory)
+        if mode == "lint-harness":
+            return lint_staged_harness(directory, environment, inject_warning)
         argv = [
             "/usr/lib/qt6/bin/qmltestrunner",
             "-input",
@@ -176,12 +179,9 @@ def execute(mode, directory):
             "-import",
             str(directory),
         ]
-    environment = helper("display-tab-warnings.test.py").isolated_environment(directory)
-    environment["NOCTALIA_CONFIG_DIR"] = environment["XDG_CONFIG_HOME"]
-    result = subprocess.run(
-        argv, cwd=directory, env=environment, capture_output=True, text=True, timeout=60
+    code, output = helper("grid-list-warnings.test.py").run_audited(
+        directory, environment, argv, f"bar-tab-{mode}"
     )
-    output = result.stdout + result.stderr
     (directory / f"{mode}.log").write_text(output)
     print(output, end="")
     if mode == "lint":
@@ -194,33 +194,72 @@ def execute(mode, directory):
             r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|qt\.qml\.|Warning:",
             output,
         ), output
-    assert result.returncode == 0, result.returncode
+    assert code == 0, code
+
+
+def lint_staged_harness(directory, environment, inject_warning):
+    harness = directory / "tst_tab.qml"
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                "id: scene",
+                "id: scene\n  property int injectedWarning: scene.missingLintProbe",
+                1,
+            )
+        )
+    code, output = helper("grid-list-warnings.test.py").run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        "bar-tab-harness-lint",
+    )
+    diagnostics = json.loads(output)
+    warnings = sum(
+        warning["type"] == "warning"
+        for result in diagnostics["files"]
+        for warning in result["warnings"]
+    )
+    print("BAR_TAB_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
+    if inject_warning:
+        assert warnings > 0 and code != 0, "semantic warning accepted or hidden"
+    else:
+        assert warnings == 0 and code == 0, "harness lint failed"
+    return code
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("lint", "behavior"))
-    parser.add_argument("--artifacts", type=Path, required=True)
+    parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
+    parser.add_argument("--artifacts", type=Path)
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
-    directory = args.artifacts.resolve()
-    directory.mkdir(mode=0o700, parents=True, exist_ok=False)
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    digest = hashlib.sha256(original).hexdigest()
-    backup = directory / "settings.backup.json"
-    descriptor = os.open(backup, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    with os.fdopen(descriptor, "wb") as stream:
-        stream.write(original)
-    assert backup.stat().st_mode & 0o777 == 0o600
-    assert backup.read_bytes() == original
-    assert hashlib.sha256(backup.read_bytes()).hexdigest() == digest
-    print("SETTINGS_BACKUP_VERIFIED", backup, digest)
-    try:
-        execute(args.mode, directory)
-    finally:
-        assert settings.read_bytes() == original, "Real settings changed"
-        assert backup.read_bytes() == original, "Backup changed"
-        print("SETTINGS_SHA_UNCHANGED", digest)
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
+    with tempfile.TemporaryDirectory(prefix="noctalia-bar-tab-") as temporary:
+        directory = args.artifacts.resolve() if args.artifacts else Path(temporary)
+        if args.artifacts:
+            directory.mkdir(mode=0o700, parents=True, exist_ok=False)
+        isolation = helper("grid-list-warnings.test.py")
+        isolation.install_settings_guard(directory)
+        isolation.prove_settings_guard()
+        environment = isolation.isolated_environment(directory)
+        environment["NOCTALIA_CONFIG_DIR"] = environment["XDG_CONFIG_HOME"]
+        code = execute(args.mode, directory, environment, args.inject_warning)
+        if args.mode == "lint-harness":
+            raise SystemExit(code)
 
 
 if __name__ == "__main__":

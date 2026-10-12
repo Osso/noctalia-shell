@@ -2,14 +2,11 @@
 """Bounded ControlCenterTab production controls/dialog, offscreen and isolated."""
 
 import argparse
-import hashlib
 import importlib.util
 import json
-import os
 from pathlib import Path
 import re
 import shutil
-import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,28 +20,25 @@ def helper(filename):
     return module
 
 
-def lint(directory):
+def lint(directory, environment):
     helper("media-mini-warnings.test.py").stage_modules(directory)
-    result = subprocess.run(
+    code, output = helper("grid-list-warnings.test.py").run_audited(
+        directory,
+        environment,
         [
             "/usr/lib/qt6/bin/qmllint",
             "-I",
             str(directory),
             str(directory / "qs" / TARGET),
         ],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        timeout=60,
+        "control-center-tab-production-lint",
     )
-    output = result.stdout + result.stderr
-    print(output, end="")
     warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
     print("CONTROL_CENTER_TAB_WARNINGS", len(warnings))
-    assert not warnings and result.returncode == 0, output
+    assert not warnings and code == 0, output
 
 
-def behavior(directory):
+def stage_behavior(directory):
     geometry = helper("setup-layout-geometry.test.py")
     source = directory / "source"
     source.mkdir()
@@ -68,20 +62,26 @@ import QtQuick
 QtObject {
   id: settings
   property int saveRequests: 0
-  property QtObject data: QtObject {
-    property QtObject location: QtObject { property bool weatherEnabled: false }
-    property QtObject controlCenter: QtObject {
-      property string position: "center"
-      property var cards: []
-      property QtObject shortcuts: QtObject {
-        property var left: []
-        property var right: []
-      }
-    }
+  component LocationSettings: QtObject {
+    property bool weatherEnabled: false
+  }
+  component Shortcuts: QtObject {
+    property var left: []
+    property var right: []
+  }
+  component ControlCenterSettings: QtObject {
+    property string position: "center"
+    property var cards: []
+    property Shortcuts shortcuts: Shortcuts {}
+  }
+  component SettingsData: QtObject {
+    property LocationSettings location: LocationSettings {}
+    property ControlCenterSettings controlCenter: ControlCenterSettings {}
     property var ui: UI_DEFAULTS
     property var general: GENERAL_DEFAULTS
     property var bar: BAR_DEFAULTS
   }
+  property SettingsData data: SettingsData {}
   function saveImmediate() { settings.saveRequests++; }
 }
 """.replace("UI_DEFAULTS", json.dumps(defaults["ui"]))
@@ -167,9 +167,13 @@ Item {
         ROOT / "Tests/Qml/ControlCenterTabWarningsHarness.qml",
         directory / "tst_tab.qml",
     )
-    environment = geometry.isolated_environment(directory)
-    environment["NOCTALIA_CONFIG_DIR"] = str(directory / "XDG_CONFIG_HOME")
-    result = subprocess.run(
+
+
+def behavior(directory, environment):
+    stage_behavior(directory)
+    code, output = helper("grid-list-warnings.test.py").run_audited(
+        directory,
+        environment,
         [
             "/usr/lib/qt6/bin/qmltestrunner",
             "-input",
@@ -177,50 +181,87 @@ Item {
             "-import",
             str(directory),
         ],
-        cwd=directory,
-        env=environment,
-        capture_output=True,
-        text=True,
-        timeout=60,
+        "control-center-tab-behavior",
     )
-    output = result.stdout + result.stderr
-    print(output, end="")
-    assert result.returncode == 0 and "0 failed" in output, output
+    assert code == 0 and "0 failed" in output, output
     diagnostics = [
         line
         for line in output.splitlines()
         if re.search(
-            r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", line
+            r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|qt\.qml\.|Warning:",
+            line,
         )
     ]
     print("CONTROL_CENTER_RUNTIME_DIAGNOSTICS", json.dumps(diagnostics))
     assert not diagnostics, diagnostics
 
 
+def lint_harness(directory, environment, inject_warning):
+    stage_behavior(directory)
+    harness = directory / "tst_tab.qml"
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                "id: scene",
+                "id: scene\n  property int injectedWarning: scene.missingLintProbe",
+                1,
+            )
+        )
+    code, output = helper("grid-list-warnings.test.py").run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        "control-center-tab-harness-lint",
+    )
+    diagnostics = json.loads(output)
+    warnings = sum(
+        warning["type"] == "warning"
+        for result in diagnostics["files"]
+        for warning in result["warnings"]
+    )
+    print("CONTROL_CENTER_TAB_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
+    if inject_warning:
+        assert warnings > 0 and code != 0, "semantic warning accepted or hidden"
+    else:
+        assert warnings == 0 and code == 0, "harness lint failed"
+    return code
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
+    parser.add_argument("--artifacts", type=Path)
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    digest = hashlib.sha256(original).hexdigest()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(
         prefix="noctalia-control-center-tab-"
     ) as temporary:
-        directory = Path(temporary)
-        backup = directory / "settings.backup.json"
-        descriptor = os.open(backup, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(descriptor, "wb") as stream:
-            stream.write(original)
-        assert backup.stat().st_mode & 0o777 == 0o600
-        assert backup.read_bytes() == original
-        print("SETTINGS_BACKUP_VERIFIED", backup, digest)
-        try:
-            (lint if args.mode == "lint" else behavior)(directory)
-        finally:
-            assert settings.read_bytes() == original, "Real settings changed"
-            assert hashlib.sha256(backup.read_bytes()).hexdigest() == digest
-            print("SETTINGS_SHA_UNCHANGED", digest)
+        directory = args.artifacts.resolve() if args.artifacts else Path(temporary)
+        if args.artifacts:
+            directory.mkdir(mode=0o700, parents=True, exist_ok=False)
+        isolation = helper("grid-list-warnings.test.py")
+        isolation.install_settings_guard(directory)
+        isolation.prove_settings_guard()
+        environment = isolation.isolated_environment(directory)
+        environment["NOCTALIA_CONFIG_DIR"] = environment["XDG_CONFIG_HOME"]
+        if args.mode == "lint-harness":
+            raise SystemExit(lint_harness(directory, environment, args.inject_warning))
+        (lint if args.mode == "lint" else behavior)(directory, environment)
 
 
 if __name__ == "__main__":
