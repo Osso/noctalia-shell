@@ -142,6 +142,45 @@ TestCase {
     compare(root.rows(NotificationService.activeList), ["Second"]);
   }
 
+  function test_burst_overflow_queued_close_preserves_survivors() {
+    Settings.isLoaded = true;
+    Settings.settingsLoaded();
+    const server = NotificationService.notificationServerLoader;
+    const sent = [];
+    for (let index = 0; index < 8; index++) {
+      const object = root.notification(100 + index, "Burst " + index);
+      object.closeAfterDismiss = true;
+      server.notification(object);
+      sent.push(object);
+    }
+    compare(root.rows(NotificationService.activeList), ["Burst 7", "Burst 6", "Burst 5", "Burst 4", "Burst 3"]);
+    compare(root.rows(NotificationService.historyList), ["Burst 7", "Burst 6", "Burst 5", "Burst 4", "Burst 3", "Burst 2", "Burst 1", "Burst 0"]);
+    for (let index = 0; index < sent.length; index++) {
+      verify(sent[index].tracked);
+      compare(sent[index].dismissals, index < 3 ? 1 : 0);
+    }
+    // Overflow dismissal closes asynchronously, after the burst's model updates.
+    tryVerify(() => Object.keys(NotificationService.activeNotifications).length === 5);
+    compare(Object.keys(NotificationService.quickshellIdToInternalId).length, 5);
+    for (let index = 0; index < NotificationService.activeList.count; index++) {
+      const row = NotificationService.activeList.get(index);
+      const entry = NotificationService.activeNotifications[row.id];
+      compare(entry.notification, sent[7 - index]);
+      verify(entry.watcher !== null);
+      compare(entry.metadata.timestamp, row.timestamp.getTime());
+      compare(entry.metadata.duration, -1);
+      compare(row.progress, 1);
+    }
+    sent[7].summary = "Burst live change";
+    compare(NotificationService.activeList.get(0).summary, "Burst live change");
+    sent[7].closed();
+    compare(root.rows(NotificationService.activeList), ["Burst 6", "Burst 5", "Burst 4", "Burst 3"]);
+    sent[7].body = "Disposed watcher";
+    wait(1);
+    compare(NotificationService.activeList.count, 4);
+    root.assertEmptyInputContract();
+  }
+
   function test_suppression_overflow_dismiss_and_action() {
     NotificationService.doNotDisturb = true;
     const silent = root.notification(10, "Silent history");

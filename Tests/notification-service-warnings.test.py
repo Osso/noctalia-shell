@@ -54,16 +54,16 @@ def lint(directory):
         print(warning["line"], warning["id"], warning["message"])
     print("NOTIFICATION_SERVICE_LINT", dict(counts))
     assert result.returncode == 0, result.returncode
-    # Unbound Component owner/adapter IDs and upstream type inference remain.
+    # Component captures resolve; adapter and upstream type inference remain.
     assert counts == {
-        "unqualified": 10,
+        "unqualified": 2,
         "missing-property": 2,
         "unresolved-type": 1,
         "uncreatable-type": 1,
     }, dict(counts)
 
 
-def stage_runtime(directory):
+def stage_runtime(directory, owner_shadow=False):
     workspace = helper("workspace-runtime")
     write = workspace.write_module
     singleton = workspace.singleton
@@ -113,8 +113,13 @@ QtObject {
   property var actions: []
   property bool tracked: false
   property int dismissals: 0
+  property bool closeAfterDismiss: false
   signal closed()
-  function dismiss() { dismissals++; }
+  function dismiss() {
+    dismissals++;
+    if (closeAfterDismiss)
+      Qt.callLater(() => closed());
+  }
 }""",
             "NotificationServer": """import QtQuick
 QtObject {
@@ -171,6 +176,23 @@ function showNotice(...args) { messages = messages.concat([args]); }"""),
             "NotificationService": (ROOT / TARGET).read_text(),
         },
     )
+    if owner_shadow:
+        service = directory / "qs/Services/System/NotificationService.qml"
+        # Component-local properties collide with the service's lexical root ID.
+        source = service.read_text()
+        for boundary, handler in (
+            ("    NotificationServer {\n", "handleNotification(notification)"),
+            ("    Connections {\n", "updateNotificationFromObject(id)"),
+        ):
+            assert source.count(boundary) == 1, boundary
+            source = source.replace(
+                boundary,
+                boundary
+                + "      property QtObject root: QtObject {\n"
+                + f"        function {handler} {{}}\n"
+                + "      }\n",
+            )
+        service.write_text(source)
     helpers = directory / "qs/Helpers"
     helpers.mkdir(parents=True)
     shutil.copyfile(ROOT / "Helpers/sha256.js", helpers / "sha256.js")
@@ -298,8 +320,8 @@ def lint_harness_regression(directory):
     print("NOTIFICATION_SERVICE_HARNESS_WARNING_REJECTED")
 
 
-def runtime(directory):
-    stage_runtime(directory)
+def runtime(directory, owner_shadow=False):
+    stage_runtime(directory, owner_shadow)
     result = run_isolated(
         directory,
         [
@@ -339,6 +361,7 @@ def main():
         "mode", choices=("lint", "lint-harness", "lint-harness-regression", "runtime")
     )
     parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--owner-shadow", action="store_true")
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(
         prefix="noctalia-notification-service-"
@@ -363,7 +386,10 @@ def main():
         elif args.mode == "lint-harness-regression":
             lint_harness_regression(directory)
         else:
-            (lint if args.mode == "lint" else runtime)(directory)
+            if args.mode == "lint":
+                lint(directory)
+            else:
+                runtime(directory, args.owner_shadow)
 
 
 if __name__ == "__main__":
