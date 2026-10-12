@@ -8,6 +8,12 @@ const path = require("path");
 
 const repoRoot = path.resolve(__dirname, "..");
 const metaTestFiles = new Set([
+  "Tests/ipc-idle-services-harness-lint.test.py",
+  "Tests/qml-static-fixtures.test.py",
+  "Tests/qml-static-imports.test.py",
+  "Tests/qml-static-runtime-fixtures.test.py",
+  "Tests/service-cohort-harness-lint.test.py",
+  "Tests/unit-parent-settings-isolation.test.py",
   "Tests/qml-function-inventory.test.js",
   "Tests/qml-test-utils.test.js",
   "Tests/runner-completeness.test.js",
