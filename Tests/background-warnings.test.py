@@ -53,13 +53,9 @@ def lint(directory):
         if line.startswith("Warning:")
     )
     print("BACKGROUND_LINT_COUNTS", dict(counts))
-    # No color/screen member warnings remain. Residuals are unbound outer-ID
-    # captures: one screen handoff plus 32 shader Component accesses.
-    assert counts == {"unqualified": 33}, dict(counts)
-    blocks = re.split(r"(?=Warning:)", output)[1:]
-    assert all("ComponentBehavior: Bound" in block for block in blocks), output
+    assert not counts, dict(counts)
     assert result.returncode == 0, result.returncode
-    print("BACKGROUND_LINT_PASS (33 component-context residuals retained)")
+    print("BACKGROUND_LINT_PASS (zero warnings)")
 
 
 def stage_runtime(directory):
@@ -144,6 +140,13 @@ function getFillModeUniform() { return 0; }"""),
     source = re.sub(
         r"^\s*(?:screen: [^\n]+|WlrLayershell\.[^\n]+)\n", "\n", source, flags=re.M
     )
+    source = source.replace(
+        "id: shaderLoader",
+        """id: shaderLoader
+        property var root: ({transitionProgress: -9, fillMode: -9})
+        property var currentWallpaper: null
+        property var nextWallpaper: null""",
+    )
     write_module(directory, "qs.Modules.Background", {"Background": source})
     shutil.copytree(ROOT / "Shaders/qsb", directory / "Shaders/qsb")
     # Synthetic images only; no real wallpaper or visible surface.
@@ -153,10 +156,92 @@ function getFillModeUniform() { return 0; }"""),
     (directory / "blue.svg").write_text(
         '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720"><rect width="1280" height="720" fill="#0000ff"/></svg>'
     )
-    shutil.copyfile(
-        ROOT / "Tests/Qml/BackgroundWarningsHarness.qml",
-        directory / "tst_background.qml",
+    harness = (ROOT / "Tests/Qml/BackgroundWarningsHarness.qml").read_text()
+    (directory / "tst_background.qml").write_text(
+        harness.rstrip()[:-1] + SHADER_LIFECYCLE_TEST + "}\n"
     )
+
+
+SHADER_LIFECYCLE_TEST = """
+    function test_owner_shadow_reactivity_and_recreation_data() {
+        return test_synthetic_transition_data();
+    }
+
+    function assert_shader_bindings(shader, type) {
+        compare(shader.source1, currentImage);
+        compare(shader.source2, nextImage);
+        compare(shader.progress, window.transitionProgress);
+        compare(shader.fillMode, window.fillMode);
+        compare(shader.fillColor, window.fillColor);
+        compare(shader.imageWidth1, currentImage.sourceSize.width);
+        compare(shader.imageHeight1, currentImage.sourceSize.height);
+        compare(shader.imageWidth2, nextImage.sourceSize.width);
+        compare(shader.imageHeight2, nextImage.sourceSize.height);
+        compare(shader.screenWidth, window.contentItem.width);
+        compare(shader.screenHeight, window.contentItem.height);
+        if (type !== "fade")
+            compare(shader.smoothness, window.edgeSmoothness);
+
+        if (type === "wipe")
+            compare(shader.direction, window.wipeDirection);
+
+        if (type === "disc" || type === "stripes")
+            compare(shader.aspectRatio, window.width / window.height);
+
+        if (type === "disc") {
+            compare(shader.centerX, window.discCenterX);
+            compare(shader.centerY, window.discCenterY);
+        }
+        if (type === "stripes") {
+            compare(shader.stripeCount, window.stripesCount);
+            compare(shader.angle, window.stripesAngle);
+        }
+    }
+
+    function test_owner_shadow_reactivity_and_recreation(row) {
+        window.setWallpaperImmediate(Qt.resolvedUrl("red.svg"));
+        tryCompare(currentImage, "status", Image.Ready);
+        nextImage.source = Qt.resolvedUrl("blue.svg");
+        tryCompare(nextImage, "status", Image.Ready);
+        window.transitionType = row.type;
+        tryVerify(() => {
+            return shaderLoader.item !== null;
+        });
+        assert_shader_bindings(shaderLoader.item, row.type);
+        window.transitionProgress = 0.37;
+        window.fillMode = 2;
+        Settings.data.wallpaper.fillColor = "#993366";
+        Settings.data.wallpaper.transitionEdgeSmoothness = 0.17;
+        window.wipeDirection = 2;
+        window.discCenterX = 0.23;
+        window.discCenterY = 0.71;
+        window.stripesCount = 11;
+        window.stripesAngle = 0.4;
+        window.width = 800;
+        window.height = 500;
+        currentImage.sourceSize = Qt.size(400, 200);
+        nextImage.sourceSize = Qt.size(300, 100);
+        assert_shader_bindings(shaderLoader.item, row.type);
+        const oldShader = shaderLoader.item;
+        shaderLoader.active = false;
+        tryCompare(shaderLoader, "item", null);
+        shaderLoader.active = true;
+        tryVerify(() => {
+            return shaderLoader.item !== null;
+        });
+        verify(shaderLoader.item !== oldShader);
+        assert_shader_bindings(shaderLoader.item, row.type);
+        window.transitionProgress = 0.64;
+        assert_shader_bindings(shaderLoader.item, row.type);
+        compare(window.monitorName, "fixture");
+        const delegate = background.fixtureRepeater.itemAt(0);
+        delegate.modelData.name = "changed-monitor";
+        compare(window.monitorName, "changed-monitor");
+        delegate.modelData.name = "fixture";
+        Settings.data.wallpaper.fillColor = "#336699";
+    }
+
+"""
 
 
 def runtime(directory):
@@ -173,15 +258,18 @@ def runtime(directory):
     )
     environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
     try:
+        command = [
+            "/usr/lib/qt6/bin/qmltestrunner",
+            "-input",
+            str(directory / "tst_background.qml"),
+            "-import",
+            str(directory),
+        ]
         result = subprocess.run(
-            [
-                "/usr/lib/qt6/bin/qmltestrunner",
-                "-input",
-                str(directory / "tst_background.qml"),
-                "-import",
-                str(directory),
-            ],
-            cwd=ROOT,
+            load_helpers("wallpaper-panel-warnings.test.py").sandbox_command(
+                directory, command
+            ),
+            cwd=directory,
             env=environment,
             capture_output=True,
             text=True,
