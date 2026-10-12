@@ -151,6 +151,9 @@ fi
 output_log="$runtime_dir/output.log"
 set +e
 timeout --kill-after=2s 45s "${sandbox[@]}" \
+    --setenv QT_QPA_PLATFORM wayland --setenv WLR_BACKENDS headless \
+    --setenv WLR_RENDERER pixman --setenv WLR_LIBINPUT_NO_DEVICES 1 \
+    dbus-run-session -- cage -- \
     quickshell --no-color -p "$runtime_dir/shell.qml" >"$output_log" 2>&1
 status=$?
 set -e
