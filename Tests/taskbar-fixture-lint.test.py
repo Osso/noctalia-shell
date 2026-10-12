@@ -17,7 +17,7 @@ class TaskbarFixtureLintTest(unittest.TestCase):
     def run_lint(self, warning=False):
         with tempfile.TemporaryDirectory(prefix="noctalia-taskbar-lint-test-") as temp:
             root = Path(temp)
-            for directory in ("Assets", "Modules", "Services"):
+            for directory in ("Assets", "Modules", "Services", "Widgets"):
                 (root / directory).symlink_to(
                     ROOT / directory, target_is_directory=True
                 )
