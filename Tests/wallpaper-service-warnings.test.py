@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """WallpaperService-only lint and isolated QML behavior; no desktop or real I/O.
 
-RED controls mutate only the staged service. Lint uses real installed metadata,
-never the runtime mocks. Runtime executes production service with inert process,
-folder and persistence boundaries; it proves routing/state, not rendering or I/O.
+RED controls mutate only the staged service. Service lint uses real installed
+metadata; lint-harness uses exactly the runtime-staged fixture modules. Runtime
+executes production service with inert process, folder and persistence boundaries;
+it proves routing/state, not rendering or I/O.
 """
 
 import argparse
@@ -193,6 +194,11 @@ QtObject {
     )
 
 
+def lint_harness(directory):
+    stage_runtime(directory, None)
+    return check_harness(directory, directory / "tst_wallpaper.qml")
+
+
 def behavior(directory, mutation):
     stage_runtime(directory, mutation)
     assert check_harness(directory, directory / "tst_wallpaper.qml") == 0, (
@@ -253,7 +259,7 @@ def behavior(directory, mutation):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
     parser.add_argument("--artifacts", type=Path, required=True)
     parser.add_argument("--mutation", choices=("signal", "list"))
     args = parser.parse_args()
@@ -261,6 +267,8 @@ def main():
         "Mutations are behavior-only RED controls"
     )
     args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
+    if args.mode == "lint-harness":
+        return lint_harness(args.artifacts)
     # No settings test occurs: all Settings/FileView operations are inert mocks.
     # Read-only hash checks additionally prove host settings bytes stayed intact.
     settings = Path.home() / ".config/noctalia/settings.json"
@@ -281,4 +289,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
