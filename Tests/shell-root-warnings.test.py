@@ -217,6 +217,83 @@ QtObject {
     return directory / "shell.qml"
 
 
+def lint_harness(directory, environment, inject_warning=False):
+    modules = directory / "qs"
+    modules.mkdir()
+    stage_runtime(modules, False)
+    # Add only resolver metadata to the scanner's exact private runtime tree.
+    for module in sorted(modules.rglob("*.qml")):
+        if module.parent == modules:
+            continue
+        declaration = module.parent / "qmldir"
+        if not declaration.exists():
+            uri = "qs." + ".".join(module.parent.relative_to(modules).parts)
+            declaration.write_text(f"module {uri}\n")
+        singleton = "singleton " if "pragma Singleton" in module.read_text() else ""
+        with declaration.open("a") as stream:
+            stream.write(f"{singleton}{module.stem} 1.0 {module.name}\n")
+    source = modules / "Probe/ShellRootWarningsProbe.qml"
+    if inject_warning:
+        source.write_text(
+            source.read_text().replace(
+                "id: probe",
+                "id: probe\n  property int injectedWarning: probe.missingLintProbe",
+                1,
+            )
+        )
+    code, output = isolation.run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(source),
+        ],
+        "shell-root-harness-lint",
+    )
+    diagnostics = [
+        warning
+        for result in json.loads(output)["files"]
+        for warning in result["warnings"]
+        if warning["type"] in {"warning", "error"}
+    ]
+    counts = Counter(warning["id"] for warning in diagnostics)
+    print(
+        "SHELL_ROOT_HARNESS_LINT_COUNTS",
+        dict(counts),
+        "TOTAL",
+        len(diagnostics),
+        "EXIT",
+        code,
+    )
+    if inject_warning:
+        assert any(
+            "missingLintProbe" in warning["message"] for warning in diagnostics
+        ), diagnostics
+        assert code != 0, "injected semantic warning accepted"
+    else:
+        assert not diagnostics, diagnostics
+        assert code == 0, code
+    return code
+
+
+def lint_harness_regression(directory):
+    for name, injected in (("clean", False), ("injected", True)):
+        staged = directory / name
+        staged.mkdir(mode=0o700)
+        code = lint_harness(staged, isolation.isolated_environment(staged), injected)
+        assert (code != 0) if injected else (code == 0), code
+    print("SHELL_ROOT_HARNESS_WARNING_REJECTED")
+
+
 def sandbox(directory, command):
     return [
         "bwrap",
@@ -341,15 +418,26 @@ else: raise AssertionError("network accessible")
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument(
+        "mode", choices=("lint", "runtime", "lint-harness", "lint-harness-regression")
+    )
     parser.add_argument("--mutation", action="store_true")
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-shell-root-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
         isolation.install_settings_guard(directory)
         isolation.prove_settings_guard()
+        if args.mode == "lint-harness-regression":
+            lint_harness_regression(directory)
+            return
         environment = isolation.isolated_environment(directory)
+        if args.mode == "lint-harness":
+            raise SystemExit(lint_harness(directory, environment, args.inject_warning))
         if args.mode == "lint":
             lint(directory, environment)
         else:
