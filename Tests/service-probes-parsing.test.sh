@@ -957,4 +957,6 @@ if [[ "$run_tests_source" != *'NOCTALIA_BLUETOOTHCTL="$repo_root/Tests/fixtures/
     exit 1
 fi
 
+python3 "$repo_root/Tests/service-probes-settings.test.py"
+
 echo "ok testServiceProbeParsing"

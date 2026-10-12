@@ -803,17 +803,39 @@ has_settings_value_shape() {
     ' "$settings_file" >/dev/null
 }
 
-probe_settings() {
-    require_command jq
+write_settings_probe_fixture() {
+    local defaults_file="$1"
+    local settings_file="$2"
 
-    local settings_file="/home/osso/.config/noctalia/settings.json"
+    jq '
+        .bar.position = "bottom"
+        | .bar.widgets.left = [{id: "ControlCenter"}, {id: "Workspace"}]
+        | .audio.volumeStep = 7
+        | .wallpaper.monitorDirectories = [{name: "fixture-monitor", path: "/fixture/wallpapers"}]
+        | .wallpaper.enableMultiMonitorDirectories = true
+        | .osd.enabledTypes = [0, 3]
+        | .dock.monitors = ["fixture-monitor"]
+        | .templates.kitty = true
+    ' "$defaults_file" >"$settings_file"
+}
+
+probe_settings() (
+    require_command jq
+    require_command mktemp
+
+    umask 077
+    local fixture_dir
+    fixture_dir="$(mktemp -d)"
+    trap 'rm -rf -- "$fixture_dir"' EXIT
+    local settings_file="$fixture_dir/settings.json"
     local defaults_file="$repo_root/Assets/settings-default.json"
 
+    write_settings_probe_fixture "$defaults_file" "$settings_file"
     has_settings_default_keys "$settings_file" "$defaults_file"
     has_settings_value_shape "$settings_file"
 
-    echo "ok probeSettings"
-}
+    echo "ok probeSettings (private fixture; host settings not checked)"
+)
 
 probe_state_cache() {
     require_command jq
