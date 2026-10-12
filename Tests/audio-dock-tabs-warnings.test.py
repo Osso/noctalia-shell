@@ -155,6 +155,60 @@ function tr(key, values) {
     return harness
 
 
+def lint_harness(directory, environment, inject_warning=False):
+    harness = stage_behavior(directory)
+    if inject_warning:
+        source = harness.read_text()
+        marker = "id: testCase"
+        assert source.count(marker) == 1, "harness root must be unique"
+        harness.write_text(
+            source.replace(
+                marker,
+                marker + "\n  property int injectedWarning: testCase.missingLintProbe",
+                1,
+            )
+        )
+    code, output = ISOLATION.run_child(
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        directory,
+        environment,
+    )
+    (directory / "lint-harness.log").write_text(output)
+    diagnostics = [
+        warning
+        for result in json.loads(output)["files"]
+        for warning in result["warnings"]
+    ]
+    warnings = sum(warning["type"] == "warning" for warning in diagnostics)
+    print("AUDIO_DOCK_TABS_HARNESS_LINT_WARNINGS", warnings, "EXIT", code, flush=True)
+    if inject_warning:
+        assert warnings > 0, "injected warning not diagnosed"
+        assert code != 0, "genuine harness warning accepted"
+    else:
+        assert not diagnostics, output
+        assert code == 0, code
+
+
+def lint_harness_regression(directory):
+    for name, injected in (("clean", False), ("injected", True)):
+        staged = directory / name
+        staged.mkdir(mode=0o700)
+        lint_harness(staged, ISOLATION.isolated_environment(staged), injected)
+    print("AUDIO_DOCK_TABS_HARNESS_WARNING_REJECTED", flush=True)
+
+
 def run_sandboxed(mode, directory):
     mounts = Path("/proc/self/mountinfo").read_text()
     for path in ("/home", "/syncthing", "/run"):
@@ -162,7 +216,13 @@ def run_sandboxed(mode, directory):
             line.split()[4] == path and " - tmpfs " in line
             for line in mounts.splitlines()
         ), path
+    if mode == "lint-harness-regression":
+        lint_harness_regression(directory)
+        return
     environment = ISOLATION.isolated_environment(directory)
+    if mode == "lint-harness":
+        lint_harness(directory, environment)
+        return
     if mode == "lint":
         load_helper("media-mini-warnings.test.py").stage_modules(directory)
         command = [
@@ -173,26 +233,13 @@ def run_sandboxed(mode, directory):
         ]
     else:
         harness = stage_behavior(directory)
-        if mode == "lint-harness":
-            command = [
-                "/usr/lib/qt6/bin/qmllint",
-                "--bare",
-                "-I",
-                str(directory),
-                "-I",
-                "/usr/lib/qt6/qml",
-                "--max-warnings",
-                "0",
-                str(harness),
-            ]
-        else:
-            command = [
-                "/usr/lib/qt6/bin/qmltestrunner",
-                "-input",
-                str(harness),
-                "-import",
-                str(directory),
-            ]
+        command = [
+            "/usr/lib/qt6/bin/qmltestrunner",
+            "-input",
+            str(harness),
+            "-import",
+            str(directory),
+        ]
     code, output = ISOLATION.run_child(command, directory, environment)
     (directory / f"{mode}.log").write_text(output)
     if mode == "lint":
@@ -205,7 +252,7 @@ def run_sandboxed(mode, directory):
             )
         assert not warnings, output
     elif mode == "behavior":
-        assert "0 failed" in output, output
+        assert "8 passed, 0 failed" in output, output
         assert not re.search(
             r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:",
             output,
@@ -215,7 +262,9 @@ def run_sandboxed(mode, directory):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("lint", "behavior", "lint-harness"))
+    parser.add_argument(
+        "mode", choices=("lint", "behavior", "lint-harness", "lint-harness-regression")
+    )
     parser.add_argument("--sandbox", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
     sys.addaudithook(ISOLATION.audit)
