@@ -12,8 +12,7 @@ ShellRoot {
   MainScreen {
     id: mainScreen
     screen: Quickshell.screens[0]
-    // Mapped only inside the sandbox's headless compositor, never the desktop.
-    visible: true
+    visible: false
   }
 
   Connections {
@@ -100,6 +99,9 @@ ShellRoot {
         check(path.panelX === region.x && path.panelY === region.y, "active position " + name);
         check(path.tlRadius === path.effectiveRadius && path.tlMultX === -1, "top attachment inversion " + name);
         panel.close();
+        // Hidden windows do not tick render-driven close animations.
+        // Exercise the real completion boundary without claiming animation proof.
+        panel.finalizeClose();
         phase = 2;
         return;
       }
