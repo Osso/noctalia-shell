@@ -83,6 +83,7 @@ function beginPolling() { pollingRefs++; starts++; }
 function endPolling() { pollingRefs--; stops++; }"""),
         },
     )
+    write(directory, "Quickshell", {"Inert": "import QtQuick\nQtObject {}"})
     write(directory, "qs.Services.UI", {"Inert": "import QtQuick\nQtObject {}"})
     write(directory, "qs.Widgets", {"Inert": "import QtQuick\nQtObject {}"})
     write(
