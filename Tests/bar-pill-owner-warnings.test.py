@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Bounded BarPill owner proof; parent runner and Qt child cannot access config.
 
-Only the launcher resolves config symlink metadata. All staging, lint and runtime
-execute inside bubblewrap with both config parents hidden and desktop IO removed.
+All staging, lint and runtime execute inside bubblewrap with host home/sync
+roots hidden, a read-only repository and private temporary/runtime filesystems.
 Production pills remain unchanged; the negative control mutates a staged copy.
 """
 
@@ -12,6 +12,7 @@ import importlib.util
 import os
 import re
 import subprocess
+import sys
 import tempfile
 from collections import Counter
 from pathlib import Path
@@ -21,6 +22,7 @@ WIDGET = Path("Modules/Bar/Extras/BarPill.qml")
 
 
 def load_helper():
+    sys.path.insert(0, str(ROOT / "Tests"))
     spec = importlib.util.spec_from_file_location(
         "bar_pill", ROOT / "Tests/bar-pill-warnings.test.py"
     )
@@ -40,7 +42,7 @@ def run_command(command, directory, environment):
         timeout=60,
     )
     output = result.stdout + result.stderr
-    print(output, end="")
+    print(output, end="" if output.endswith("\n") else "\n")
     return result.returncode, output
 
 
@@ -48,23 +50,26 @@ def run_sandboxed(args):
     directory = args.sandbox
     # A direct invocation must fail before staging or importing fixture helpers.
     mounts = Path("/proc/self/mountinfo").read_text()
-    for masked in ("/home/osso", args.config_parent):
+    for masked in ("/home", "/syncthing", "/tmp", "/run"):
         assert any(
             line.split()[4] == masked and " - tmpfs " in line
             for line in mounts.splitlines()
-        ), f"config parent is not masked: {masked}"
-    for settings in (
-        "/home/osso/.config/noctalia/settings.json",
-        args.config_parent + "/noctalia/settings.json",
-    ):
-        try:
-            descriptor = os.open(settings, os.O_RDONLY)
-        except OSError as error:
-            assert error.errno == errno.EACCES, (settings, error)
-        else:
-            os.close(descriptor)
-            raise AssertionError(f"real settings are accessible: {settings}")
-        print("CONFIG_ACCESS_DENIED", settings, "EACCES")
+        ), f"host path is not masked: {masked}"
+    assert os.stat("/home").st_mode & 0o777 == 0, "home mask is not locked"
+    assert any(
+        line.split()[4] == str(ROOT) and "ro" in line.split()[5].split(",")
+        for line in mounts.splitlines()
+    ), "repository rebind is not read-only"
+    probe = "/home/bar-pill-isolation-probe"
+    try:
+        descriptor = os.open(probe, os.O_RDONLY)
+    except OSError as error:
+        assert error.errno == errno.EACCES, (probe, error)
+    else:
+        os.close(descriptor)
+        raise AssertionError("host home mask permits file access")
+    print("CONFIG_ACCESS_DENIED", probe, "EACCES")
+    print("BAR_PILL_HOST_MASKED", flush=True)
     helper = load_helper()
     environment = helper.load_helper("media-mini-warnings").isolate_environment(
         directory
@@ -91,6 +96,27 @@ def run_sandboxed(args):
     (directory / "tst_bar_pill.qml").unlink()
     harness = args.harness or ROOT / "Tests/Qml/BarPillOwnerHarness.qml"
     (directory / "tst_bar_pill_owner.qml").write_text(harness.read_text())
+    if args.mode == "lint-harness":
+        code, _ = run_command(
+            [
+                "/usr/lib/qt6/bin/qmllint",
+                "--bare",
+                "-I",
+                str(directory),
+                "-I",
+                "/usr/lib/qt6/qml",
+                "--max-warnings",
+                "0",
+                "--json",
+                "-",
+                str(directory / "tst_bar_pill_owner.qml"),
+            ],
+            directory,
+            environment,
+        )
+        assert code == 0, f"BarPill fixture lint exit {code}"
+        print("BAR_PILL_FIXTURE_LINT_PASS")
+        return
     if args.mutation:
         staged = directory / "qs" / WIDGET
         source = staged.read_text()
@@ -117,16 +143,14 @@ def run_sandboxed(args):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "runtime"))
     parser.add_argument("--mutation", action="store_true")
     parser.add_argument("--harness", type=Path)
     parser.add_argument("--sandbox", type=Path, help=argparse.SUPPRESS)
-    parser.add_argument("--config-parent", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.sandbox:
         run_sandboxed(args)
         return
-    config_parent = str((Path.home() / ".config/noctalia").resolve().parent)
     with tempfile.TemporaryDirectory(prefix="noctalia-bar-pill-owner-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
@@ -141,11 +165,12 @@ def main():
             "--perms",
             "000",
             "--tmpfs",
-            "/home/osso",
-            "--perms",
-            "000",
+            "/home",
             "--tmpfs",
-            config_parent,
+            "/syncthing",
+            "--ro-bind",
+            str(ROOT),
+            str(ROOT),
             "--tmpfs",
             "/tmp",
             "--tmpfs",
@@ -161,19 +186,21 @@ def main():
             temporary,
             "--",
             "/usr/bin/python3",
-            str(Path(__file__).resolve()),
+            str(Path(__file__).absolute()),
             args.mode,
             "--sandbox",
             temporary,
-            "--config-parent",
-            config_parent,
         ]
+        script = Path(__file__).absolute()
+        if not script.is_relative_to(ROOT):
+            separator = command.index("--")
+            command[separator:separator] = ["--bind", str(script), str(script)]
         if args.harness:
             harness_target = str(directory / "supplied-harness.qml")
             separator = command.index("--")
             command[separator:separator] = [
-                "--ro-bind",
-                str(args.harness.resolve()),
+                "--bind",
+                str(args.harness.absolute()),
                 harness_target,
             ]
             command.extend(["--harness", harness_target])
