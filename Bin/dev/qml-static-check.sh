@@ -71,6 +71,7 @@ done <"$exclusions_file"
 
 checked_count=0
 skipped_count=0
+scheme_downloader_checked=false
 
 for file in "${qml_files[@]}"; do
     if [ -n "${excluded_files[$file]:-}" ]; then
@@ -97,8 +98,15 @@ for file in "${qml_files[@]}"; do
     Tests/Qml/SetupLayoutGeometryHarness.qml)
         python3 "$repo_root/Tests/setup-layout-geometry.test.py" lint-harness
         ;;
-    Tests/Qml/SchemeDownloaderHarness.qml)
-        python3 "$repo_root/Tests/scheme-downloader-runtime.test.py" lint-harness
+    Tests/Qml/SchemeDownloaderHarness.qml | Tests/Qml/SchemeDownloaderTransport.qml)
+        # Owner lint checks both exact staged runtime files in one invocation.
+        if [ "$scheme_downloader_checked" = false ]; then
+            python3 "$repo_root/Tests/scheme-downloader-runtime.test.py" lint-harness
+            scheme_downloader_checked=true
+        fi
+        ;;
+    Tests/Qml/ResidualSingletonOwnersHarness.qml)
+        python3 "$repo_root/Tests/residual-singleton-owners.test.py" lint-harness
         ;;
     Tests/Qml/ClipboardPreviewWarningsHarness.qml)
         python3 "$repo_root/Tests/clipboard-preview-warnings.test.py" lint-harness

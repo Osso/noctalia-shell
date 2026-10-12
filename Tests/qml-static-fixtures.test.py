@@ -398,6 +398,7 @@ class FixtureLintTest(unittest.TestCase):
                 "WallpaperTabWarningsHarness.qml",
                 "CalendarMonthCardWarningsHarness.qml",
                 "ShortcutsClockWarningsHarness.qml",
+                "ResidualSingletonOwnersHarness.qml",
             )
         ):
             # Owner audits block directory discovery after installation.
@@ -406,6 +407,7 @@ class FixtureLintTest(unittest.TestCase):
                 "WallpaperTabWarningsHarness.qml",
                 "CalendarMonthCardWarningsHarness.qml",
                 "ShortcutsClockWarningsHarness.qml",
+                "ResidualSingletonOwnersHarness.qml",
             ):
                 if name in harness_scripts:
                     script = tests / harness_scripts[name]
@@ -447,6 +449,7 @@ class FixtureLintTest(unittest.TestCase):
                 fixtures / "LocationNetworkPlugin.cpp",
             )
         dependencies = {
+            "ResidualSingletonOwnersHarness.qml": ("SettingsSingletonHarness.qml",),
             "PanelServiceLifecycleHarness.qml": ("tst_panel_service_lifecycle.qml",),
             "AudioPanelRegressionHarness.qml": ("AudioCardHarness.qml",),
             "AudioDockTabsWarningsHarness.qml": ("ClockSettingsWarningsHarness.qml",),
@@ -495,6 +498,7 @@ class FixtureLintTest(unittest.TestCase):
         mask_audio=False,
         command=None,
         static_only=False,
+        denied_host_config_probes=False,
     ):
         home = root / ".fixture-home"
         settings = home / ".config/noctalia/settings.json"
@@ -608,9 +612,34 @@ class FixtureLintTest(unittest.TestCase):
                     self.assertIn("host home/config not mounted", result.stdout)
                 else:
                     audit = trace.read_text()
-                    self.assertEqual(
-                        settings_file_attempts(audit, self.fixture_tmp), [], audit
-                    )
+                    self.qmllint_calls = [
+                        line
+                        for line in audit.splitlines()
+                        if 'execve("/usr/lib/qt6/bin/qmllint",' in line
+                    ]
+                    attempts = settings_file_attempts(audit, self.fixture_tmp)
+                    if denied_host_config_probes:
+                        # Residual owner deliberately verifies read/write denial
+                        # inside its allowlist sandbox, never against host config.
+                        self.assertEqual(len(attempts), 2, attempts)
+                        for attempt, flags in zip(attempts, ("O_RDONLY", "O_WRONLY")):
+                            self.assertIn(
+                                '"/home/osso/.config/noctalia/settings.json", '
+                                + flags
+                                + "|O_CLOEXEC)",
+                                attempt,
+                            )
+                            self.assertTrue(
+                                attempt.endswith(
+                                    "= -1 ENOENT (No such file or directory)"
+                                ),
+                                attempt,
+                            )
+                        print(
+                            "CHECKER_CONFIG_DENIAL_PROBES: two denied, zero successful"
+                        )
+                    else:
+                        self.assertEqual(attempts, [], attempts)
                     if static_only:
                         executables = {
                             Path(path).name
@@ -636,7 +665,7 @@ class FixtureLintTest(unittest.TestCase):
                         print("CHECKER_STATIC_ONLY_AUDIT: no runtime or gamma commands")
                     trace.unlink()
                 print(
-                    "CHECKER_SETTINGS_AUDIT: zero protected settings attempts; "
+                    "CHECKER_SETTINGS_AUDIT: zero unexpected settings attempts; "
                     "zero successful host settings access"
                 )
             self.assertEqual(self.fixture_tmp.stat().st_mode & 0o777, 0o700)
@@ -989,6 +1018,122 @@ class FixtureLintTest(unittest.TestCase):
                     )
                     self.assertNotIn(filename, artifact_paths, "artifact path reused")
                     artifact_paths.add(filename)
+
+    def test_residual_downloader_routes_check_exact_modules_once(self):
+        routes = {
+            "ResidualSingletonOwnersHarness.qml": "residual-singleton-owners.test.py",
+            "SchemeDownloaderHarness.qml": "scheme-downloader-runtime.test.py",
+            "SchemeDownloaderTransport.qml": "scheme-downloader-runtime.test.py",
+        }
+        cases = (
+            (("ResidualSingletonOwnersHarness.qml",), None),
+            (
+                ("ResidualSingletonOwnersHarness.qml",),
+                "ResidualSingletonOwnersHarness.qml",
+            ),
+            (("SchemeDownloaderHarness.qml", "SchemeDownloaderTransport.qml"), None),
+            (
+                ("SchemeDownloaderHarness.qml", "SchemeDownloaderTransport.qml"),
+                "SchemeDownloaderHarness.qml",
+            ),
+            (
+                ("SchemeDownloaderHarness.qml", "SchemeDownloaderTransport.qml"),
+                "SchemeDownloaderTransport.qml",
+            ),
+            (("SchemeDownloaderHarness.qml",), None),
+            (("SchemeDownloaderTransport.qml",), None),
+        )
+        for discovered, warning in cases:
+            with (
+                self.subTest(discovered=discovered, warning=warning),
+                tempfile.TemporaryDirectory(
+                    prefix="noctalia-residual-downloader-routes-", dir="/var/tmp"
+                ) as temp,
+            ):
+                root = Path(temp)
+                runner = self.stage_repository(root, routes)
+                for name in routes:
+                    if name not in discovered:
+                        harness = root / "Tests/Qml" / name
+                        dependency = root / ".fixture-dependencies" / name
+                        dependency.parent.mkdir(exist_ok=True)
+                        harness.rename(dependency)
+                        harness.symlink_to(dependency)
+                if warning:
+                    harness = root / "Tests/Qml" / warning
+                    harness.write_text(
+                        harness.read_text().replace(
+                            "{",
+                            "{\n  property int injectedWarning: Qt.application.missingFixtureValue",
+                            1,
+                        )
+                    )
+                result = self.run_checker(
+                    runner,
+                    root,
+                    settings_present=False,
+                    audit_settings=True,
+                    mask_audio=True,
+                    denied_host_config_probes=(
+                        discovered[0] == "ResidualSingletonOwnersHarness.qml"
+                    ),
+                )
+                output = result.stdout + result.stderr
+                marker = (
+                    "OWNER_HARNESS_WARNINGS"
+                    if discovered[0] == "ResidualSingletonOwnersHarness.qml"
+                    else "SCHEME_DOWNLOADER_HARNESS_WARNINGS"
+                )
+                self.assertEqual(output.count(marker), 1, output)
+                reports = lint_reports(result.stdout)
+                self.assertEqual(len(reports), 1, output)
+                files = reports[0]["files"]
+                expected = (
+                    ["qs/shell.qml"]
+                    if discovered[0] == "ResidualSingletonOwnersHarness.qml"
+                    else ["qs/shell.qml", "qs/Commons/Transport.qml"]
+                )
+                self.assertEqual(len(files), len(expected), output)
+                self.assertEqual(
+                    Counter(
+                        "qs/" + file["filename"].rsplit("/qs/", 1)[1] for file in files
+                    ),
+                    Counter(expected),
+                    output,
+                )
+                self.assertEqual(len(self.qmllint_calls), 1, self.qmllint_calls)
+                for file in files:
+                    self.assert_artifacts_are_isolated(file)
+                warnings = [
+                    item
+                    for file in files
+                    for item in file["warnings"]
+                    if item["type"] in ("warning", "error")
+                ]
+                if warning:
+                    self.assertNotEqual(result.returncode, 0, output)
+                    self.assertIn("missingFixtureValue", output)
+                    self.assertTrue(
+                        any(w["id"] == "missing-property" for w in warnings), output
+                    )
+                    affected = next(file for file in files if file["warnings"])
+                    self.assertTrue(
+                        affected["filename"].endswith(
+                            "/qs/Commons/Transport.qml"
+                            if warning == "SchemeDownloaderTransport.qml"
+                            else "/qs/shell.qml"
+                        ),
+                        output,
+                    )
+                    self.assertNotIn("ok qmlStaticCheck", output)
+                    self.assertNotIn("Checked ", output)
+                else:
+                    self.assertEqual(result.returncode, 0, output)
+                    self.assertEqual(warnings, [], output)
+                    self.assertTrue(all(file["success"] for file in files), output)
+                    self.assertEqual(output.count("ok qmlStaticCheck"), 1)
+                    self.assertIn(f"Checked {len(discovered)} QML files", output)
+                    self.assertIn("skipped 0", output)
 
     def test_launcher_mango_program_vpn_wallpaper_real_strict_routes(self):
         for name, (
