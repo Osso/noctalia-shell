@@ -71,14 +71,15 @@ The runner uses synthetic HOME/XDG paths and a Python audit hook denying the nam
 
 ### Isolated service lifecycle coverage
 
-At `ef455de63`/`ddd0a4acf`, NotificationService midpoint subset warnings drop **15→8**; standalone production lint drops **27→14**. These are different scopes. Standalone lint accepts exactly ten unbound-owner `unqualified` accesses, two string-inference `missing-property` diagnostics, and two Quickshell metadata diagnostics (`unresolved-type`/`uncreatable-type`), with exit status zero; warnings remain unsuppressed.
+At `ef455de63`/`ddd0a4acf`, NotificationService midpoint subset warnings drop **15→8**; standalone production lint drops **27→14**. These are different scopes. At `a15ff9af2`, `ComponentBehavior: Bound` reduces standalone warnings **14→6**, including `unqualified` **10→2**. Standalone lint requires exit status zero and exactly two adapter-boundary `unqualified` diagnostics, two string `replace` inference `missing-property` diagnostics, one unresolved adapter type and one uncreatable `PanelWindow` diagnostic; all remain unsuppressed.
 
-`Tests/notification-service-warnings.test.py runtime` exercises production NotificationService under offscreen/software `qmltestrunner`. Four behavioral passes cover:
+`Tests/notification-service-warnings.test.py runtime` exercises production NotificationService under offscreen/software `qmltestrunner`. Through `a15ff9af2`, five behavioral cases plus QtTest initialization/cleanup yield **seven normal and seven owner-shadow passes**. Shadow fixtures collide with the service's lexical `root` at NotificationServer and Connections boundaries, exercising Bound owner captures. Cases cover:
 
 - Delivery ordering, duplicate/replacement identity and timestamps, live updates, stale sender/close rejection, and disposal.
 - DND history-only routing, visible/history overflow, action invocation, and individual/all dismissal.
 - Progress, pause/resume, expiry signal emission, and timer shutdown after explicit dismissal; expiry alone does not remove the row.
 - Server recreation/disable, state/history adapter callbacks, and image-queue advancement.
+- Eight-notification burst overflow with queued close callbacks, survivor identity/metadata, live updates, and disposed watcher isolation.
 
 Overflow cleanup retains an expected failure: removing the ListModel row loses its id before cleanup, leaving a stale quickshell-id mapping. Passing cases do not mean this bug is fixed. Delivery, storage, settings, images, and surfaces are inert fixtures. The harness checks an invisible 1×1 surface and empty mask through fixtures only. Production surface/input-region behavior is unchanged; compositor delivery and Firefox/grouped-taskbar cursor behavior remain unproven, unreproduced, and unfixed.
 
