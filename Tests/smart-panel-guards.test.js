@@ -103,9 +103,8 @@ function createPositionContext(overrides = {}) {
     contentLoader: {
       item: null,
     },
-    panelContent: {
-      allowAttach: false,
-    },
+    forceAttachToBar: false,
+    Settings: { data: { ui: { panelsAttachedToBar: false } } },
     panelBackground: {
       targetWidth: 0,
       targetHeight: 0,
@@ -128,6 +127,15 @@ function createPositionContext(overrides = {}) {
     ...overrides,
   });
   ctx.root = ctx;
+  const declaration = source.split("\n").find(line => line.includes("readonly property bool allowAttach:"));
+  assert.ok(declaration, "panelContainer attachment binding must exist");
+  const binding = declaration.slice(declaration.indexOf(":") + 1);
+  const evaluate = new Function("ctx", `with (ctx) { return (${binding}); }`);
+  ctx.panelContainer = {
+    get allowAttach() {
+      return evaluate(ctx);
+    },
+  };
   return ctx;
 }
 
@@ -224,9 +232,7 @@ function testSmartPanelSetPositionUsesButtonAttachedTopBarPlacement() {
     buttonPosition: { x: 450, y: 0 },
     buttonWidth: 100,
     buttonHeight: 48,
-    panelContent: {
-      allowAttach: true,
-    },
+    Settings: { data: { ui: { panelsAttachedToBar: true } } },
   });
 
   setPosition(ctx);
@@ -249,6 +255,25 @@ function testSmartPanelSetPositionUsesDetachedStandardPlacement() {
   assert.equal(ctx.panelBackground.targetY, 86);
 }
 
+function testSmartPanelAttachmentUsesItsOwnRootAndSettings() {
+  const setPosition = qmlFunction("setPosition");
+  const attached = createPositionContext({ forceAttachToBar: true });
+  const detached = createPositionContext();
+
+  setPosition(attached);
+  setPosition(detached);
+  assert.equal(attached.panelBackground.targetY, 58);
+  assert.equal(detached.panelBackground.targetY, 86);
+
+  attached.forceAttachToBar = false;
+  setPosition(attached);
+  assert.equal(attached.panelBackground.targetY, 86);
+  detached.Settings.data.ui.panelsAttachedToBar = true;
+  setPosition(detached);
+  assert.equal(detached.panelBackground.targetY, 58);
+  assert.equal(attached.panelBackground.targetY, 86, "attachment must not leak between owners");
+}
+
 const tests = [
   testSmartPanelCloseStartsCloseSequenceAndWatchdog,
   testSmartPanelCloseMarksOpacityCompleteWhenAlreadyHidden,
@@ -257,6 +282,7 @@ const tests = [
   testSmartPanelSetPositionRetriesWhenDimensionsAreMissing,
   testSmartPanelSetPositionUsesButtonAttachedTopBarPlacement,
   testSmartPanelSetPositionUsesDetachedStandardPlacement,
+  testSmartPanelAttachmentUsesItsOwnRootAndSettings,
 ];
 
 for (const test of tests) {

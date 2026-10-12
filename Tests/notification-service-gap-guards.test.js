@@ -13,20 +13,41 @@ function qmlFunction(functionName, ...argNames) {
 
 function testNotificationServerAndImageQueueLifecycle() {
   const serverBody = extractFunctionBody(source, "updateNotificationServer");
-  const processBody = extractFunctionBody(source, "processNextImage");
-  const queueBody = extractFunctionBody(source, "queueImage");
+  const processNextImage = qmlFunction("processNextImage");
+  const queueImage = qmlFunction("queueImage", "path", "imageId");
 
   assert.match(serverBody, /if \(notificationServerLoader\)[\s\S]*notificationServerLoader\.destroy\(\)[\s\S]*notificationServerLoader = null/, "updateNotificationServer must destroy any old server before reloading");
   assert.match(serverBody, /Settings\.isLoaded && Settings\.data\.notifications\.enabled !== false/, "updateNotificationServer must only create the server when notifications are enabled");
   assert.match(serverBody, /notificationServerComponent\.createObject\(root\)/, "updateNotificationServer must create the notification server from its component");
-  assert.match(processBody, /imageQueue\.shift\(\)/, "processNextImage must discard the completed image request");
-  assert.match(processBody, /if \(imageQueue\.length > 0\)[\s\S]*source = imageQueue\[0\]\.src/, "processNextImage must continue with the next image request");
-  assert.match(processBody, /else[\s\S]*source = ""/, "processNextImage must clear the image source when the queue is empty");
-  assert.match(queueBody, /if \(!path \|\| !path\.startsWith\("image:\/\/"\) \|\| !imageId\)\s+return;/, "queueImage must only cache image-provider URLs with IDs");
-  assert.match(queueBody, /const dest = Settings\.cacheDirImagesNotifications \+ imageId \+ "\.png"/, "queueImage must derive the notification cache path");
-  assert.match(queueBody, /for \(const req of imageQueue\)[\s\S]*if \(req\.imageId === imageId\)\s+return;/, "queueImage must deduplicate queued image IDs");
-  assert.match(queueBody, /imageQueue\.push\(\{[\s\S]*"src": path[\s\S]*"dest": dest[\s\S]*"imageId": imageId/, "queueImage must enqueue source, destination, and image id");
-  assert.match(queueBody, /if \(imageQueue\.length === 1\)\s+cacher\.source = path/, "queueImage must start caching when the queue was empty");
+  const owner = {
+    imageQueue: [],
+    Settings: { cacheDirImagesNotifications: "/cache/notifications/" },
+  };
+  const decoyQueue = [{ src: "image://other/untouched" }];
+  const cacher = { root: owner, source: "", imageQueue: decoyQueue };
+  owner.cacher = cacher;
+  for (const [path, id] of [["", "empty"], ["/plain.png", "plain"], ["image://provider/no-id", ""]]) {
+    queueImage(owner, path, id);
+  }
+  assert.deepEqual(owner.imageQueue, []);
+  assert.equal(cacher.source, "");
+
+  queueImage(owner, "image://provider/first", "first");
+  queueImage(owner, "image://provider/duplicate", "first");
+  queueImage(owner, "image://provider/second", "second");
+  assert.deepEqual(owner.imageQueue, [
+    { src: "image://provider/first", dest: "/cache/notifications/first.png", imageId: "first" },
+    { src: "image://provider/second", dest: "/cache/notifications/second.png", imageId: "second" },
+  ]);
+  assert.equal(cacher.source, "image://provider/first", "enqueue must not interrupt current image");
+  processNextImage(cacher);
+  assert.equal(owner.imageQueue.length, 1);
+  assert.equal(owner.imageQueue[0].imageId, "second");
+  assert.equal(cacher.source, "image://provider/second");
+  processNextImage(cacher);
+  assert.deepEqual(owner.imageQueue, []);
+  assert.equal(cacher.source, "");
+  assert.deepEqual(decoyQueue, [{ src: "image://other/untouched" }], "advancement must mutate root queue, not cacher-local state");
 }
 
 function testNotificationReplacementAndObjectUpdatePreserveStableFields() {
@@ -53,7 +74,19 @@ function testNotificationReplacementAndObjectUpdatePreserveStableFields() {
   assert.match(objectBody, /activeList\.setProperty\(index,\s*"actionsJson",\s*data\.actionsJson\)/, "updateNotificationFromObject must update action data");
   assert.match(objectBody, /notifData\.metadata\.duration = calculateDuration\(data\)/, "updateNotificationFromObject must refresh timeout metadata");
   assert.match(duplicateBody, /const contentId = getContentId\(data\.summary,\s*data\.body,\s*data\.appName\)/, "findDuplicateNotification must compare stable content ids");
-  assert.match(duplicateBody, /for \(var i = 0; i < activeList\.count; i\+\+\)/, "findDuplicateNotification must scan visible notifications");
+  const findDuplicateNotification = qmlFunction("findDuplicateNotification", "data");
+  const rows = [
+    { id: "first", summary: "unrelated", body: "body", appName: "Firefox" },
+    { id: "second", summary: "match", body: "body", appName: "Terminal" },
+  ];
+  const ctx = {
+    activeList: { count: rows.length, get: index => rows[index] },
+    getContentId: (...fields) => JSON.stringify(fields),
+  };
+  assert.equal(findDuplicateNotification(ctx, rows[1]), "second", "duplicate search must reach later rows");
+  assert.equal(findDuplicateNotification(ctx, { ...rows[1], body: "different" }), null);
+  ctx.activeList.count = 0;
+  assert.equal(findDuplicateNotification(ctx, rows[1]), null);
   assert.match(duplicateBody, /if \(existingContentId === contentId\)[\s\S]*return existing\.id/, "findDuplicateNotification must return the matching internal id");
 }
 
@@ -83,7 +116,28 @@ function testNotificationHistoryAndStatePersistence() {
   const seenBody = extractFunctionBody(source, "updateLastSeenTs");
 
   assert.match(performSaveBody, /const items = \[\]/, "performSaveHistory must serialize a fresh item list");
-  assert.match(performSaveBody, /for \(var i = 0; i < historyList\.count; i\+\+\)/, "performSaveHistory must scan history rows");
+  const performSaveHistory = qmlFunction("performSaveHistory");
+  const rows = [
+    { id: "first", timestamp: new Date(1710000000000), summary: "First" },
+    { id: "second", timestamp: new Date(1710000001000), summary: "Second" },
+  ];
+  let writes = 0;
+  const errors = [];
+  const ctx = {
+    historyList: { count: rows.length, get: index => rows[index] },
+    adapter: { notifications: [] },
+    historyFileView: { writeAdapter() { writes++; } },
+    Logger: { e: (...args) => errors.push(args) },
+  };
+  performSaveHistory(ctx);
+  assert.deepEqual(ctx.adapter.notifications, rows.map(row => ({ ...row, timestamp: row.timestamp.getTime() })));
+  assert.equal(writes, 1);
+  assert.ok(rows.every(row => row.timestamp instanceof Date), "serialization must not mutate model timestamps");
+  assert.notEqual(ctx.adapter.notifications[0], rows[0]);
+  const failure = new Error("write failed");
+  ctx.historyFileView.writeAdapter = () => { throw failure; };
+  performSaveHistory(ctx);
+  assert.deepEqual(errors, [["Notifications", "Save history failed:", failure]]);
   assert.match(performSaveBody, /const copy = Object\.assign\(\{\},\s*n\)/, "performSaveHistory must copy rows before serializing");
   assert.match(performSaveBody, /copy\.timestamp = n\.timestamp\.getTime\(\)/, "performSaveHistory must serialize timestamps as milliseconds");
   assert.match(performSaveBody, /adapter\.notifications = items[\s\S]*historyFileView\.writeAdapter\(\)/, "performSaveHistory must write the JSON adapter");

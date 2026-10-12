@@ -175,7 +175,8 @@ function testLockScreenSchedulesUnloadTimer() {
 function testPopupMenuWindowShowContextMenuGuardsMissingMenu() {
   const showContextMenu = qmlFunction(popupMenuWindowSource, "showContextMenu", "menu");
   const ctx = {
-    contentItem: "old",
+    activeMenu: "old",
+    contentItem: { id: "native-window-content" },
     openCount: 0,
     open() {
       this.openCount++;
@@ -183,13 +184,21 @@ function testPopupMenuWindowShowContextMenuGuardsMissingMenu() {
   };
   const menu = { id: "menu" };
 
+  const nativeContent = ctx.contentItem;
   showContextMenu(ctx, null);
-  assert.equal(ctx.contentItem, "old");
+  assert.equal(ctx.activeMenu, "old");
   assert.equal(ctx.openCount, 0);
 
   showContextMenu(ctx, menu);
-  assert.equal(ctx.contentItem, menu);
+  assert.equal(ctx.activeMenu, menu);
+  assert.equal(ctx.contentItem, nativeContent, "menu selection must not replace native window content");
   assert.equal(ctx.openCount, 1);
+
+  const other = { activeMenu: "other", openCount: 0, open: ctx.open };
+  showContextMenu(other, { id: "other-menu" });
+  assert.equal(other.activeMenu.id, "other-menu");
+  assert.equal(other.openCount, 1);
+  assert.equal(ctx.activeMenu, menu, "another popup must not change this popup's menu");
 }
 
 function testProfileCardUpdateSystemInfoStartsUptimeProcess() {
@@ -218,7 +227,8 @@ function testTaskbarGroupedOpenContextMenuBuildsWindowActionsAndPositionsMenu() 
   };
   const popupMenuWindow = {
     openCount: 0,
-    contentItem: null,
+    activeMenu: null,
+    contentItem: { id: "native-window-content" },
     open() {
       this.openCount++;
     },
@@ -258,7 +268,8 @@ function testTaskbarGroupedOpenContextMenuBuildsWindowActionsAndPositionsMenu() 
     "context-menu.widget-settings",
   ]);
   assert.equal(popupMenuWindow.openCount, 1);
-  assert.equal(popupMenuWindow.contentItem, contextMenu);
+  assert.equal(popupMenuWindow.activeMenu, contextMenu);
+  assert.equal(popupMenuWindow.contentItem.id, "native-window-content");
   assert.deepEqual(contextMenu.openCall, [root, 190, -90]);
 }
 

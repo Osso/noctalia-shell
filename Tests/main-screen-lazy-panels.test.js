@@ -16,8 +16,26 @@ function testMainScreenRegistersLazyPanelLoaders() {
   assert.match(source, /function registerLazyPanel\(panelName, loader\)/, "MainScreen must centralize lazy panel registration");
   assert.match(source, /const panelKey = panelObjectName\(panelName\)[\s\S]*PanelService\.registerPanelLoader\(panelKey, loader\)/, "MainScreen must register panel loaders with PanelService");
   assert.match(source, /Component\.onDestruction: root\.unregisterLazyPanels\(\)/, "MainScreen must unregister its lazy loaders during destruction");
-  assert.match(source, /readonly property Item audioPanelPlaceholder: audioPanelLoader\.item \? audioPanelLoader\.item\.panelRegion : audioPanelPlaceholderItem/, "audio panel background placeholder must not force panel loading");
-  assert.match(source, /readonly property Item settingsPanelPlaceholder: settingsPanelLoader\.item \? settingsPanelLoader\.item\.panelRegion : settingsPanelPlaceholderItem/, "settings panel background placeholder must not force panel loading");
+  for (const panelName of ["audio", "settings"]) {
+    const declaration = source.split("\n").find(line => line.includes(` ${panelName}PanelPlaceholder:`));
+    assert.ok(declaration, `${panelName} placeholder binding must exist`);
+    const binding = declaration.slice(declaration.indexOf(":") + 1);
+    const evaluate = new Function("ctx", `with (ctx) { return (${binding}); }`);
+    const placeholder = { name: `${panelName}-placeholder` };
+    const loader = { active: false, item: null };
+    const ctx = {
+      [`${panelName}PanelLoader`]: loader,
+      [`${panelName}PanelPlaceholderItem`]: placeholder,
+    };
+    assert.equal(evaluate(ctx), placeholder, "unloaded panels expose their placeholder");
+    assert.equal(loader.active, false, "reading placeholder must not activate loader");
+    const region = { name: `${panelName}-loaded-region` };
+    loader.item = { panelRegion: region };
+    assert.equal(evaluate(ctx), region, "loaded panels expose their own region");
+    loader.item = null;
+    assert.equal(evaluate(ctx), placeholder, "unloaded panels return to their placeholder");
+    assert.equal(loader.active, false);
+  }
 }
 
 function testMainScreenRegistersAndUnregistersLazyLoaders() {
