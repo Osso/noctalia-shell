@@ -2,16 +2,16 @@
 """Bounded AudioCard lint and actual-QML behavior with isolated fake PipeWire."""
 
 import argparse
-from collections import Counter
 import importlib.util
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
-import tempfile
 import sys
+import tempfile
+from collections import Counter
+from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
