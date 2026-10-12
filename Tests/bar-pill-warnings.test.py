@@ -6,13 +6,13 @@ BarPillHorizontal and BarPillVertical are copied unchanged, never edited.
 """
 
 import argparse
-from collections import Counter
 import importlib.util
 import json
-from pathlib import Path
 import re
 import subprocess
 import tempfile
+from collections import Counter
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WIDGET = Path("Modules/Bar/Extras/BarPill.qml")
@@ -36,26 +36,26 @@ def stage_runtime(directory):
     )
     defaults = json.loads((ROOT / "Assets/settings-default.json").read_text())
     defaults["bar"]["position"] = "top"
-    style = dict(
-        capsuleHeight=40,
-        marginXS=3,
-        marginXXS=2,
-        marginM=8,
-        radiusM=8,
-        radiusL=12,
-        fontWeightMedium=500,
-        fontWeightBold=700,
-        fontSizeM=12,
-        fontSizeL=14,
-        uiScaleRatio=1,
-        animationNormal=80,
-        animationFast=40,
-        pillDelay=100,
-        tooltipDelay=100,
-        tooltipDelayLong=200,
-        opacityFull=1,
-        opacityNone=0,
-    )
+    style = {
+        "capsuleHeight": 40,
+        "marginXS": 3,
+        "marginXXS": 2,
+        "marginM": 8,
+        "radiusM": 8,
+        "radiusL": 12,
+        "fontWeightMedium": 500,
+        "fontWeightBold": 700,
+        "fontSizeM": 12,
+        "fontSizeL": 14,
+        "uiScaleRatio": 1,
+        "animationNormal": 80,
+        "animationFast": 40,
+        "pillDelay": 100,
+        "tooltipDelay": 100,
+        "tooltipDelayLong": 200,
+        "opacityFull": 1,
+        "opacityNone": 0,
+    }
     write(
         directory,
         "qs.Commons",
@@ -120,6 +120,7 @@ def run_behavior(directory):
             "--harness",
             str(harness),
         ],
+        check=False,
         cwd=ROOT,
         capture_output=True,
         text=True,
@@ -138,6 +139,7 @@ def run_lint(directory):
             str(directory),
             str(directory / "qs" / WIDGET),
         ],
+        check=False,
         cwd=ROOT,
         capture_output=True,
         text=True,

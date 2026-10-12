@@ -7,14 +7,14 @@ Production pills remain unchanged; the negative control mutates a staged copy.
 """
 
 import argparse
-from collections import Counter
 import errno
 import importlib.util
 import os
-from pathlib import Path
 import re
 import subprocess
 import tempfile
+from collections import Counter
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WIDGET = Path("Modules/Bar/Extras/BarPill.qml")
@@ -32,6 +32,7 @@ def load_helper():
 def run_command(command, directory, environment):
     result = subprocess.run(
         command,
+        check=False,
         cwd=directory,
         env=environment,
         capture_output=True,
