@@ -32,6 +32,8 @@ Bounded runtime regression:
 
 ## Tests asserting this spec
 
+- `Tests/osd-resolution.test.py` — private Quickshell resolver cold start, reload and recovery after failed reload, without desktop surfaces.
+
 - `Tests/osd-warnings.test.py behavior` with `Tests/Qml/OSDWarningsHarness.qml`: actual production component, inert services, one private Cage output; standalone, not added to the broad runner.
 - `Tests/osd-warnings.test.py lint`: staged production `Modules/OSD/OSD.qml` requires zero warnings and exit status zero; residual 37 unqualified plus five missing-property warnings drop 42→0 at `baf99c712`. This is target-file static coverage, not project-wide warning-free acceptance.
 - [Tests/osd-tab-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/osd-tab-guards.test.js)

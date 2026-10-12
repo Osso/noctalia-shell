@@ -20,6 +20,8 @@ Reported isolated passes through `3a3706a43`/`258fc13c0`/`95f0e0838` back these 
 
 ## Tests asserting this spec
 
+- `Tests/button-enabled-warnings.test.py` — offscreen NButton enabled/disabled/re-enabled pointer dispatch, opacity and hover; companion NTextInput case checks disabled editing. Production lint retains unrelated baseline warnings.
+
 - `Tests/Qml/ButtonPopupWarningsHarness.qml` — two button cases within six combined button/popup cases; synthetic pointer input and direct cancellation signal.
 - `Tests/button-popup-warnings.test.py` — reported NButton lint reduction 4→0; owner-shadow coverage and failing `button-owner` negative control. Shared isolation, acceptance and residual runtime notices: [testing](testing.md#buttonpopup-isolated-runtime).
 

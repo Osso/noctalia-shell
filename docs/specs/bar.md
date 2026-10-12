@@ -90,6 +90,11 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 
 ## Tests asserting this spec
 
+- `Tests/bar-widget-metadata-runtime.test.py` — offscreen Loader construction checks ActiveWindow/MediaMini metadata before instance IDs, late settings, width caps, vertical scaling and hidden dimensions.
+- `Tests/qml-static-bar-fixtures.test.py` — metadata/grouped-taskbar harnesses are counted once by the static checker; injected genuine warnings remain visible and fail.
+- `Tests/taskbar-fixture-lint.test.py` — actual Taskbar runtime fixture lint accepts clean diagnostics and rejects an injected missing property.
+- `Tests/downloader-sound-monitor-taskbar-isolation.test.py` — grouped-taskbar parent CLI denies host config, preserves private settings/backup bytes and rejects fixture mutations.
+
 ### Optional dynamic widget loader contract
 
 - At `985a57a53`, BarWidgetLoader diagnostics remain 3→3 (`screen`, `scaling`, `onLoaded`); production is unchanged. Inspection of all 40 registered widget types across both registries found no truthful shared contract for these optional members. Exact-count acceptance is not zero-warning analysis.

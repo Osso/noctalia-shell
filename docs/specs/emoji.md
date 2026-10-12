@@ -57,6 +57,8 @@ Emoji covers emoji data loading, search, category browsing, usage tracking, clip
 
 ## Tests asserting this spec
 
+- `Tests/remaining-service-hoisting.test.js` — extracted EmojiService load completion and category counts with concrete emoji fixtures.
+
 - `Tests/emoji-service-guards.test.js`
 - `Tests/emoji-plugin-guards.test.js`
 - `Tests/qml-runtime-guards.test.js`

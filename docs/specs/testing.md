@@ -771,6 +771,12 @@ These fourteen mappings account for the reported graph gaps without exclusions. 
 
 ## Tests asserting this spec
 
+- `Tests/clipboard-datetime-location-media-isolation.test.py`, `Tests/downloader-sound-monitor-taskbar-isolation.test.py`, `Tests/timer-tray-wallpaper-isolation.test.py`, `Tests/weather-wifi-workspace-isolation.test.py` — parent-CLI host-config denial, synthetic settings/backup integrity, mutation rejection and cleanup across their named cohorts.
+- `Tests/notification-audit-isolation.test.py` — notification audit denial precedes protected metadata access; harmless imports, alias/network denial, strict/injected-warning gates and public-entrypoint host masking are exercised.
+- `Tests/control-center-panel-static.test.py` and `Tests/overview-isolation.test.py` — isolated CLI lint/behavior and warning/behavior negative controls with absent or synthetic settings.
+- `Tests/qml-static-bar-fixtures.test.py` and `Tests/qml-static-network-fixture.test.py` — fixture-aware static checker counts each harness once and propagates genuine injected-warning failures.
+- `Tests/simple-service-harness-lint.test.py` and `Tests/taskbar-fixture-lint.test.py` — runtime-staged harness lint accepts clean fixtures and rejects injected diagnostics.
+
 - `Tests/source-coverage.test.js`
 - `Tests/qml-function-inventory.test.js`
 - `Tests/qml-test-utils.test.js`

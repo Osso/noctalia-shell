@@ -112,6 +112,8 @@ The history ListModel and Qt Repeaters/layout are real; NotificationService, Sma
 
 ## Tests asserting this spec
 
+- `Tests/notification-audit-isolation.test.py` — harmless imports, lexical settings denial before metadata, masked aliases/network denial, strict harness lint and injected-warning rejection, isolated behavior and public-entrypoint host masks.
+
 - At `18fed36d7`/`23790c6b2`, NotificationsTab warnings drop 2→0. `Tests/Qml/NotificationsHooksWarningsHarness.qml` checks enabled/overlay/expiry/keyboard-toast/DND toggles, synthetic state on reopen, monitor metadata, and monitor selection by replacement array without mutating the original. Colliding checkbox methods exercise editor ownership; `ComponentBehavior: Bound` follows reported private-copy proof. No real notification delivery, config access, disk persistence, or cursor/input-region proof. Shared accounting and isolation: [testing](testing.md#notifications-hooks-settings-isolated-runtime).
 
 - At `adeaf6598`/`1121019df`, NotificationHistory widget warnings drop 3→0. `Tests/Qml/HistorySimpleToastHarness.qml` checks numeric/Date unread counts, badge count updates, zero/settings-driven Loader destruction and recreation with `ComponentBehavior: Bound`, and clear-history/popup-close callbacks. Model mutation alone is not reactive proof: the badge case advances `lastSeenTs`. Services and popup are fixtures; real delivery, persistence, desktop input and cursor behavior remain unproven. Shared accounting and isolation: [testing](testing.md#historysimpletoast-isolated-runtime).

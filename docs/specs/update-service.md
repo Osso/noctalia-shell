@@ -69,6 +69,8 @@ Update Service covers changelog initialization, upgrade-log fetching, release-no
 
 ## Tests asserting this spec
 
+- `Tests/remaining-service-hoisting.test.js` — extracted version comparison and release-note normalization with concrete inputs.
+
 - `Tests/update-service-fixtures.test.js`
 - `Tests/update-service-guards.test.js`
 - `Tests/shell-state-consumer-roundtrip.test.js`

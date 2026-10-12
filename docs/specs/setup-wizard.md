@@ -60,6 +60,8 @@ Setup Wizard covers first-run onboarding launch, completion, and selected setup 
 
 ## Tests asserting this spec
 
+- `Tests/setup-appearance-warnings.test.py` — appearance lint and four offscreen width/scale cases under masked config; harness lint rejects an injected semantic warning.
+
 - `Tests/shell-setup-wizard-guards.test.js`
 - `Tests/setup-wallpaper-step-guards.test.js`
 - `Tests/setup-wizard-guards.test.js`

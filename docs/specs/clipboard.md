@@ -60,6 +60,8 @@ Clipboard covers cliphist availability, wl-paste watcher lifecycle, history list
 
 ## Tests asserting this spec
 
+- `Tests/clipboard-datetime-location-media-isolation.test.py` — clipboard parent runtime and harness-lint entrypoints deny host config; private fixture mutations fail and temporary state is cleaned up.
+
 - `Tests/clipboard-service-guards.test.js`
 - `Tests/clipboard-plugin-guards.test.js`
 - `Tests/clipboard-preview-warnings.test.py --mode runtime` - four offscreen production-preview cases plus QtTest init/cleanup (six reported passes), with an inert clipboard boundary; no real clipboard integration.

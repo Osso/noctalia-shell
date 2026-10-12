@@ -53,6 +53,10 @@ Tray covers the bar tray widget, tray menu popup, tray drawer panel, pinned/blac
 
 ## Tests asserting this spec
 
+- `Tests/tray-drawer-resolution.test.py` and `Tests/tray-widget-resolution.test.py` — private real Quickshell resolver cold start, reload and failed-reload recovery without desktop surfaces.
+- `Tests/tray-drawer-warnings.test.py` — targeted production lint and offscreen drawer Loader/delegate/icon/mouse behavior with fixture notifier/popup/settings boundaries; includes strict harness lint and private reload regression.
+- `Tests/timer-tray-wallpaper-isolation.test.py` — drawer/widget runtime and lint entrypoints deny host config, preserve private fixture integrity and reject mutations.
+
 - `Tests/tray-widget-guards.test.js`
 - `Tests/tray-widget-warnings.test.py`, `Tests/Qml/TrayWidgetWarningsHarness.qml` and `Tests/tray-widget-reload.test.py`: [isolated Tray widget evidence](#tray-widget-isolated-evidence).
 - `Tests/tray-menu-guards.test.js`

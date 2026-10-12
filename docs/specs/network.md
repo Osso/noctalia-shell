@@ -82,6 +82,9 @@ Network covers Wi-Fi radio state, scan scheduling, NetworkManager connection com
 
 ## Tests asserting this spec
 
+- `Tests/qml-static-network-fixture.test.py` — isolated network harness is lint-clean and counted once; injected genuine warnings fail the static checker.
+- `Tests/weather-wifi-workspace-isolation.test.py` — WiFi-list behavior/lint entrypoints deny host config and reject private settings/backup mutations.
+
 - `Tests/bar-status-warnings.test.py behavior` adds two production WiFi bar-widget cases at `c14da3540`: fixture SSID/signal, Ethernet precedence/connectivity, disconnected tooltip, vertical pill collapse/geometry, panel/menu anchoring, WiFi enable/disable requests, settings dispatch, and inert wheel. Signals/icons come from an inert NetworkService; no NetworkManager/radio action, native input, real popup, or persistence is proved. Cohort lint and isolation: [testing](testing.md#bar-status-cohort).
 
 - `Tests/network-forget-profiles.test.sh`

@@ -14,5 +14,7 @@ Runtime warning guards cover repeated QML/Qt warnings that obscure profiling and
 
 ## Tests asserting this spec
 
+- `Tests/simple-service-harness-lint.test.py` — staged simple-service runtime harness requires zero diagnostics and rejects an injected warning.
+
 - `Tests/runtime-warning-guards.test.js`
 - `Tests/source-coverage.test.js`

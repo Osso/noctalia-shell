@@ -32,6 +32,8 @@ Typed contracts:
 
 ## Tests asserting this spec
 
+- `Tests/lock-context-warnings.test.py` — production LockContext lint and sandboxed state/message/success/failure ordering with fake PAM and lock consumer; not native authentication or compositor security proof.
+
 - [Tests/panel-lock-palette-helper-guards.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/panel-lock-palette-helper-guards.test.js)
 - [Tests/qml-type-annotations.test.js](/syncthing/Sync/Projects/apps/noctalia-shell/Tests/qml-type-annotations.test.js)
 
