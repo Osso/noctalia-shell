@@ -100,22 +100,36 @@ property var codeClients: [
     )
 
 
-def lint(directory):
-    for path in (directory / "qs" / TARGET, directory / "shell.qml"):
+def lint(directory, harness_only=False, inject_warning=False):
+    harness = directory / "shell.qml"
+    if inject_warning:
+        harness.write_text(
+            harness.read_text().replace(
+                "id: harness",
+                "id: harness\n  property int injectedWarning: harness.missingLintProbe",
+                1,
+            )
+        )
+    paths = (harness,) if harness_only else (directory / "qs" / TARGET, harness)
+    for path in paths:
         result = subprocess.run(
-            [
-                "/usr/lib/qt6/bin/qmllint",
-                "--bare",
-                "-I",
-                str(directory),
-                "-I",
-                "/usr/lib/qt6/qml",
-                "--max-warnings",
-                "0",
-                "--json",
-                "-",
-                str(path),
-            ],
+            sandbox_command(
+                directory,
+                [
+                    "/usr/lib/qt6/bin/qmllint",
+                    "--bare",
+                    "-I",
+                    "/fixture",
+                    "-I",
+                    "/usr/lib/qt6/qml",
+                    "--max-warnings",
+                    "0",
+                    "--json",
+                    "-",
+                    "/fixture/" + str(path.relative_to(directory)),
+                ],
+            ),
+            env=isolated_environment(),
             capture_output=True,
             text=True,
             timeout=60,
@@ -124,12 +138,87 @@ def lint(directory):
         print(result.stderr, end="")
         report = json.loads(result.stdout)
         warnings = [warning for file in report["files"] for warning in file["warnings"]]
+        print(
+            "PROGRAM_CHECKER_LINT_COUNTS",
+            path.relative_to(directory),
+            "DIAGNOSTICS",
+            len(warnings),
+            "EXIT",
+            result.returncode,
+            flush=True,
+        )
+        if inject_warning:
+            assert any(
+                "missingLintProbe" in warning["message"] for warning in warnings
+            ), (
+                "injected semantic warning not visible",
+                warnings,
+            )
+            assert result.returncode != 0, "injected semantic warning accepted"
+            return result.returncode
         assert result.returncode == 0 and not warnings, (
             path,
             result.returncode,
             warnings,
         )
     print("PROGRAM_CHECKER_STRICT_LINT_PASS")
+    return 0
+
+
+def isolated_environment():
+    return {
+        "PATH": "/fixture/bin",
+        "HOME": "/home/fixture",
+        "LANG": "C.UTF-8",
+        "XDG_CONFIG_HOME": "/home/fixture/config",
+        "XDG_CACHE_HOME": "/tmp/cache",
+        "XDG_RUNTIME_DIR": "/tmp/runtime",
+        "QT_QPA_PLATFORM": "offscreen",
+        "FONTCONFIG_FILE": "/fixture/fonts.conf",
+        "QT_QUICK_BACKEND": "software",
+        "DBUS_SESSION_BUS_ADDRESS": "unix:path=/nonexistent",
+        "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/nonexistent",
+    }
+
+
+def sandbox_command(directory, command, state=None):
+    mounts = ["--bind", str(state), "/state"] if state is not None else []
+    return [
+        "/usr/bin/bwrap",
+        "--unshare-all",
+        "--die-with-parent",
+        "--ro-bind",
+        "/usr",
+        "/usr",
+        "--symlink",
+        "usr/lib",
+        "/lib",
+        "--symlink",
+        "usr/lib",
+        "/lib64",
+        "--proc",
+        "/proc",
+        "--dev",
+        "/dev",
+        "--tmpfs",
+        "/tmp",
+        "--tmpfs",
+        "/home",
+        "--dir",
+        "/home/fixture",
+        "--dir",
+        "/tmp/runtime",
+        "--chmod",
+        "0700",
+        "/tmp/runtime",
+        "--ro-bind",
+        str(directory),
+        "/fixture",
+        *mounts,
+        "--chdir",
+        "/fixture",
+        *command,
+    ]
 
 
 def runtime(directory):
@@ -150,62 +239,13 @@ def runtime(directory):
     (directory / "fonts.conf").write_text(
         "<fontconfig><dir>/usr/share/fonts</dir><cachedir>/tmp/fonts</cachedir></fontconfig>"
     )
-    environment = {
-        "PATH": "/fixture/bin",
-        "HOME": "/home/fixture",
-        "LANG": "C.UTF-8",
-        "XDG_CONFIG_HOME": "/home/fixture/config",
-        "XDG_CACHE_HOME": "/tmp/cache",
-        "XDG_RUNTIME_DIR": "/tmp/runtime",
-        "QT_QPA_PLATFORM": "offscreen",
-        "FONTCONFIG_FILE": "/fixture/fonts.conf",
-        "QT_QUICK_BACKEND": "software",
-        "DBUS_SESSION_BUS_ADDRESS": "unix:path=/nonexistent",
-        "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/nonexistent",
-    }
     result = subprocess.run(
-        [
-            "/usr/bin/bwrap",
-            "--unshare-all",
-            "--die-with-parent",
-            "--ro-bind",
-            "/usr",
-            "/usr",
-            "--symlink",
-            "usr/lib",
-            "/lib",
-            "--symlink",
-            "usr/lib",
-            "/lib64",
-            "--proc",
-            "/proc",
-            "--dev",
-            "/dev",
-            "--tmpfs",
-            "/tmp",
-            "--tmpfs",
-            "/home",
-            "--dir",
-            "/home/fixture",
-            "--dir",
-            "/tmp/runtime",
-            "--chmod",
-            "0700",
-            "/tmp/runtime",
-            "--ro-bind",
-            str(directory),
-            "/fixture",
-            "--bind",
-            str(state),
-            "/state",
-            "--chdir",
-            "/fixture",
-            "/usr/bin/quickshell",
-            "--no-color",
-            "-p",
-            "/fixture/shell.qml",
-        ],
-        env=environment,
+        sandbox_command(
+            directory,
+            ["/usr/bin/quickshell", "--no-color", "-p", "/fixture/shell.qml"],
+            state,
+        ),
+        env=isolated_environment(),
         capture_output=True,
         text=True,
         timeout=45,
@@ -214,7 +254,7 @@ def runtime(directory):
     print(output, end="")
     assert (
         result.returncode == 0
-        and "PROGRAM_CHECKER_PASS:" in output
+        and "PROGRAM_CHECKER_PASS: 7 cases:" in output
         and "PROGRAM_CHECKER_FAIL:" not in output
     ), (result.returncode, output)
     assert not re.search(
@@ -225,17 +265,25 @@ def runtime(directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "runtime"))
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="program-checker-") as temporary:
         directory = Path(temporary)
         os.chmod(directory, 0o700)
         stage(directory)
-        if args.mode == "lint":
-            lint(directory)
-        else:
+        if args.mode == "runtime":
             runtime(directory)
+            return 0
+        return lint(
+            directory,
+            harness_only=args.mode == "lint-harness",
+            inject_warning=args.inject_warning,
+        )
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

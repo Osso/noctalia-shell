@@ -81,7 +81,7 @@ ShellRoot {
     } else if (harness.phase === 4 && detected && harness.completions === harness.previousCompletions + 1) {
       harness.require(ProgramCheckerService.completedChecks === ProgramCheckerService.totalChecks, "rerun queue completed");
       harness.checkAvailability();
-      console.log("PROGRAM_CHECKER_PASS: availability, unknown property, collector output, deduplication, nonzero exit, empty output, rerun completion");
+      console.log("PROGRAM_CHECKER_PASS: 7 cases: availability, unknown property, collector output, deduplication, nonzero exit, empty output, rerun completion");
       Qt.quit();
     }
   }
