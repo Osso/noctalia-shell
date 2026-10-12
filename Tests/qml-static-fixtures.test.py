@@ -312,9 +312,12 @@ class FixtureLintTest(unittest.TestCase):
                         (root / "Tests/Qml" / other).unlink()
                 result = self.run_checker(runner, root)
                 self.assertNotEqual(result.returncode, 0)
-                if name == "BatteryPanelWarningsHarness.qml":
-                    self.assertIn(diagnostic, result.stderr)
-                    self.assertIn("AssertionError: harness lint failed", result.stderr)
+                if name in (
+                    "BatteryPanelWarningsHarness.qml",
+                    "BarWidgetLoaderOwnerHarness.qml",
+                ):
+                    self.assertTrue(result.stderr.startswith(diagnostic), result.stderr)
+                    self.assertIn("AssertionError", result.stderr)
                 else:
                     self.assertEqual(result.stderr, diagnostic)
                 if name != "RemainingLayoutGeometryHarness.qml":

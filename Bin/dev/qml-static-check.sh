@@ -150,6 +150,7 @@ for file in "${qml_files[@]}"; do
         ;;
     Tests/Qml/PanelServiceLifecycleHarness.qml)
         "$repo_root/Tests/panel-service-lifecycle.test.sh" lint-harness
+        printf '\n'
         ;;
     Tests/network-service/shell.qml)
         python3 "$repo_root/Tests/network-service-warnings.test.py" lint-harness
