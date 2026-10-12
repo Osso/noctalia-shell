@@ -29,9 +29,9 @@ function testOsdShowRequiresScreenBeforeActivatingLoader() {
 
 function testTaskbarGroupedUrgentBadgeHasCooldown() {
   const result = spawnSync(
-    "python3",
-    [path.join(__dirname, "taskbar-grouped-warnings.test.py"), "behavior"],
-    { encoding: "utf8", timeout: 60000 },
+      "python3",
+      [ path.join(__dirname, "taskbar-grouped-warnings.test.py"), "behavior" ],
+      {encoding : "utf8", timeout : 60000},
   );
   assert.ifError(result.error);
   assert.equal(result.status, 0, result.stdout + result.stderr);
@@ -63,15 +63,16 @@ with tempfile.TemporaryDirectory(prefix="noctalia-workspace-guards-") as tempora
     print(result.stdout + result.stderr, end="")
     sys.exit(result.returncode)
 `;
-  const result = spawnSync("python3", ["-c", script, __dirname], {
-    input: extraTests,
-    encoding: "utf8",
-    timeout: 60000,
+  const result = spawnSync("python3", [ "-c", script, __dirname ], {
+    input : extraTests,
+    encoding : "utf8",
+    timeout : 60000,
   });
   assert.ifError(result.error);
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.match(result.stdout, /Totals: 4 passed, 0 failed/);
-  assert.doesNotMatch(result.stdout + result.stderr, /QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop/);
+  assert.doesNotMatch(result.stdout + result.stderr,
+                      /QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop/);
   process.stdout.write(result.stdout);
 }
 
@@ -123,17 +124,40 @@ function testWorkspaceUrgentBadgeHasCooldown() {
 }
 
 function testFocusedWorkspaceBurstOnlyRunsOnFocusChange() {
-  const workspaceSource = readQml("Modules/Bar/Widgets/Workspace.qml");
-  const groupedSource = readQml("Modules/Bar/Widgets/TaskbarGrouped.qml");
-  const workspaceBody = extractFunctionBody(workspaceSource, "updateWorkspaceFocus");
-  const groupedBody = extractFunctionBody(groupedSource, "updateWorkspaceFocus");
-
-  assert.match(workspaceSource, /property string focusedWorkspaceKey:/, "Workspace must remember the last focused workspace key");
-  assert.match(groupedSource, /property string focusedWorkspaceKey:/, "TaskbarGrouped must remember the last focused workspace key");
-  assert.match(workspaceBody, /if \(key === focusedWorkspaceKey\)\s+return;/, "Workspace must not restart focus burst for the same focused workspace");
-  assert.match(groupedBody, /if \(key === focusedWorkspaceKey\)\s+return;/, "TaskbarGrouped must not restart focus burst for the same focused workspace");
-  assert.match(workspaceBody, /focusedWorkspaceKey = key[\s\S]*root\.triggerUnifiedWave\(\)/, "Workspace must update focus key before running the burst");
-  assert.match(groupedBody, /focusedWorkspaceKey = key[\s\S]*root\.triggerUnifiedWave\(\)/, "TaskbarGrouped must update focus key before running the burst");
+  for (const widget of ["Workspace", "TaskbarGrouped"]) {
+    const source = readQml(`Modules/Bar/Widgets/${widget}.qml`);
+    const bursts = [];
+    const changes = [];
+    const root = {
+      screen : {name : "DP-1"},
+      focusedWorkspaceKey : "",
+      NColor : {mPrimary : "#00ff00"},
+      localWorkspaces : {count : 0, get(index) { return this.rows[index]; }},
+      masterAnimation : {restart() { bursts.push(root.focusedWorkspaceKey); }},
+      workspaceChanged(id, color) { changes.push([ id, color ]); },
+    };
+    root.root = root;
+    for (const name of ["workspaceUrgencyKey", "triggerUnifiedWave", "updateWorkspaceFocus"]) {
+      root[name] = new Function("workspace", `with (this) ${extractFunctionBody(source, name)}`);
+    }
+    const refreshFocus = (id, output, isFocused = true) => {
+      root.localWorkspaces.rows = [ {id, idx : 1, output, isFocused} ];
+      root.localWorkspaces.count = 1;
+      root.updateWorkspaceFocus();
+    };
+    refreshFocus(11, "DP-1");
+    refreshFocus(11, "DP-1");
+    refreshFocus(12, "DP-1");
+    refreshFocus(12, "HDMI-A-1");
+    refreshFocus(12, "HDMI-A-1");
+    refreshFocus(12, "HDMI-A-1", false);
+    refreshFocus(12, "HDMI-A-1");
+    assert.deepEqual(bursts, [ "DP-1:11", "DP-1:12", "HDMI-A-1:12" ], widget);
+    assert.equal(root.effectColor, "#00ff00", widget);
+    if (widget === "Workspace") {
+      assert.deepEqual(changes, [ [ 11, "#00ff00" ], [ 12, "#00ff00" ], [ 12, "#00ff00" ] ]);
+    }
+  }
 }
 
 function testTerminalBellNotificationsHaveCooldown() {
