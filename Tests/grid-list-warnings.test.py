@@ -111,6 +111,7 @@ def isolated_environment(directory):
     environment.update(
         QT_QPA_PLATFORM="offscreen",
         QT_QUICK_BACKEND="software",
+        QT_FORCE_STDERR_LOGGING="1",
         QML_DISABLE_DISK_CACHE="1",
     )
     return environment
