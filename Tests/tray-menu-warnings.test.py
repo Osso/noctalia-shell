@@ -7,12 +7,12 @@ are never read, resolved, hashed or backed up; sandbox and audits deny access.
 """
 
 import argparse
-from collections import Counter
 import importlib.util
-from pathlib import Path
 import re
 import shutil
 import tempfile
+from collections import Counter
+from pathlib import Path
 
 ROOT = Path(__file__).absolute().parents[1]
 TARGET = Path("Modules/Bar/Extras/TrayMenu.qml")
