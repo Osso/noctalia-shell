@@ -213,6 +213,18 @@ def sandboxed(args):
     print("LOADER_RUNTIME_PASS")
 
 
+def audit_config_access(trace, config_parent):
+    for parent in ("/home/osso/.config", config_parent):
+        for relative in ("noctalia/settings.json", "noctalia"):
+            path = parent + "/" + relative
+            access = [
+                line
+                for line in trace.splitlines()
+                if re.search(r"\bopen(?:at2?)?\(", line) and '"' + path + '"' in line
+            ]
+            assert all("= -1 EACCES" in line for line in access), access
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=("runtime", "lint", "lint-harness"))
@@ -228,7 +240,7 @@ def main():
     if args.sandbox:
         sandboxed(args)
         return
-    config_parent = str((Path.home() / ".config/noctalia").resolve().parent)
+    config_parent = str(Path.home() / ".config")
     with tempfile.TemporaryDirectory(prefix="noctalia-loader-proof-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
@@ -245,6 +257,11 @@ def main():
             "--ro-bind",
             str(ROOT),
             str(ROOT),
+            # Replace read-only outer /tmp before creating the HOME config mask.
+            "--tmpfs",
+            "/tmp",
+            "--tmpfs",
+            "/run",
             "--perms",
             "000",
             "--tmpfs",
@@ -253,10 +270,6 @@ def main():
             "000",
             "--tmpfs",
             config_parent,
-            "--tmpfs",
-            "/tmp",
-            "--tmpfs",
-            "/run",
             "--bind",
             temporary,
             temporary,
@@ -300,21 +313,12 @@ def main():
             {"PATH": "/usr/bin", "HOME": "/home/osso", "LANG": "C.UTF-8"},
         )
         trace = audit.read_text()
-        for path in (
-            "/home/osso/.config/noctalia/settings.json",
-            config_parent + "/noctalia/settings.json",
-        ):
-            access = [
-                line
-                for line in trace.splitlines()
-                if "openat(" in line and '"' + path + '"' in line
-            ]
-            assert access and all("= -1 EACCES" in line for line in access), access
+        audit_config_access(trace, config_parent)
         assert not re.search(r"connect\(.*sa_family=AF_INET6?[,}]", trace), (
             "network connection attempted"
         )
         print(
-            "CONFIG_AUDIT_PASS parent probes denied; sandboxed Qt has no real config or network"
+            "CONFIG_AUDIT_PASS zero successful protected opens; sandboxed Qt has no real config or network"
         )
         raise SystemExit(code)
 
