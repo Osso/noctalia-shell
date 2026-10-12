@@ -81,7 +81,9 @@ TestCase {
     }
 
     function test_optionsAndSaveDefaults() {
-        const tab = newTab();
+        const tab = createTemporaryObject(tabFactory, testCase);
+        verify(tab !== null);
+        wait(30);
         compare(tab.entriesModel.map(entry => entry.id), ["logout", "lock", "suspend", "hibernate", "reboot", "shutdown"]);
         compare(Settings.data.sessionMenu.powerOptions, [
             {
@@ -115,6 +117,9 @@ TestCase {
                 countdownEnabled: true
             }
         ]);
+        // Assert startup persistence above before exercising any edit/save method.
+        tab.updateEntry(0, {});
+        wait(30);
         const view = entryList(tab);
         compare(view.itemAtIndex(0).text, "session-menu.logout");
         compare(view.itemAtIndex(0).entryEnabled, false);
