@@ -79,7 +79,7 @@ with patch('os.stat', guard(os.stat)), patch('os.lstat', guard(os.lstat)), patch
 
 class SettingsIsolationTest(unittest.TestCase):
     def run_case(self, filename, arguments, mode):
-        with tempfile.TemporaryDirectory(prefix="cdlm-isolation-") as temporary:
+        with tempfile.TemporaryDirectory(prefix="c-") as temporary:
             root = Path(temporary)
             home = root / "absent-home"
             self.assertFalse(home.exists())
