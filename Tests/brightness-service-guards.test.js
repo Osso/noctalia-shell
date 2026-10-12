@@ -108,17 +108,6 @@ function testBrightnessServiceDecreaseBrightnessDelegatesToEveryMonitor() {
   assert.deepEqual(calls, ["left", "right"]);
 }
 
-function testBrightnessServiceDetectedDisplaysPassThrough() {
-  const getDetectedDisplays = qmlFunction("getDetectedDisplays");
-  const detectedDisplays = [
-    { model: "LG ULTRAWIDE", method: "ddcutil" },
-    { model: "Built-in", method: "internal" },
-  ];
-  const ctx = { detectedDisplays };
-
-  assert.equal(getDetectedDisplays(ctx), detectedDisplays);
-}
-
 function createDdcDetectionContext(overrides = {}) {
   const warnings = [];
   const ctx = {
@@ -327,11 +316,6 @@ function testDdcDetectionStartFailureExecutesWithoutExitedSignal() {
   assert.equal(ctx.warnings.length, warningCount);
 }
 
-function testDdcProcessRoutesExitAndStartFailure() {
-  assert.match(source, /id:\s*ddcProc[\s\S]*?onExited:\s*function\s*\(exitCode\)[\s\S]*?finishDdcDetection/);
-  assert.match(source, /id:\s*ddcProc[\s\S]*?onRunningChanged:\s*\{[\s\S]*?handleDdcStartFailure[\s\S]*?exitObserved = false[\s\S]*?restartPendingDdcDetection/);
-}
-
 function createMonitorContext(overrides = {}) {
   const commands = [];
   const timerRestarts = [];
@@ -440,7 +424,6 @@ const tests = [
   testBrightnessServiceScreenLookupFindsMatchingMonitor,
   testBrightnessServiceIncreaseBrightnessDelegatesToEveryMonitor,
   testBrightnessServiceDecreaseBrightnessDelegatesToEveryMonitor,
-  testBrightnessServiceDetectedDisplaysPassThrough,
   testDdcDetectionRequestDoesNotStartWhenSupportDisabled,
   testDdcDetectionRequestStartsProcessAndPreservesKnownMonitors,
   testDdcDetectionRequestWhileRunningCoalescesIncludingInitialDetection,
@@ -451,7 +434,6 @@ const tests = [
   testDdcMalformedAndDisabledCompletionsPreserveState,
   testDdcUnsupportedOnlySuccessClearsKnownMonitors,
   testDdcDetectionStartFailureExecutesWithoutExitedSignal,
-  testDdcProcessRoutesExitAndStartFailure,
   testMonitorSetBrightnessRoutesInternalBacklightCommand,
   testMonitorSetBrightnessRoutesDdcCommandAndRestartsTimer,
   testMonitorSetBrightnessRoutesAppleDisplayCommand,

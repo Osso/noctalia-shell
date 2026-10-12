@@ -42,10 +42,6 @@ Singleton {
     monitors.forEach(m => m.decreaseBrightness());
   }
 
-  function getDetectedDisplays() {
-    return detectedDisplays;
-  }
-
   function requestDdcDetection() {
     if (!Settings.data.brightness.enableDdcSupport) {
       return;
@@ -179,12 +175,12 @@ Singleton {
 
     required property ShellScreen modelData
     readonly property string screenModel: modelData ? modelData.model : ""
-    readonly property bool isDdc: Settings.data.brightness.enableDdcSupport && root.ddcMonitors.some(m => m.model === screenModel)
+    readonly property bool isDdc: Settings.data.brightness.enableDdcSupport && BrightnessService.ddcMonitors.some(m => m.model === screenModel)
     readonly property string busNum: {
-      const ddcMonitor = root.ddcMonitors.find(m => m.model === screenModel);
+      const ddcMonitor = BrightnessService.ddcMonitors.find(m => m.model === screenModel);
       return ddcMonitor ? ddcMonitor.busNum : "";
     }
-    readonly property bool isAppleDisplay: root.appleDisplayPresent && screenModel.startsWith("StudioDisplay")
+    readonly property bool isAppleDisplay: BrightnessService.appleDisplayPresent && screenModel.startsWith("StudioDisplay")
     readonly property string method: isAppleDisplay ? "apple" : (isDdc ? "ddcutil" : "internal")
 
     // Check if brightness control is available for this monitor
@@ -218,7 +214,7 @@ Singleton {
       }
 
       monitor.brightnessUpdated(monitor.brightness);
-      root.monitorBrightnessChanged(monitor, monitor.brightness);
+      BrightnessService.monitorBrightnessChanged(monitor, monitor.brightness);
     }
 
     // Execute a system command to get the current brightness value directly
