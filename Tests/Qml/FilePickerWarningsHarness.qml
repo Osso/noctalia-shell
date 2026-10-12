@@ -46,7 +46,9 @@ Item {
 
     // QtTest rejects list row handles after grid row clicks despite instanceof Item.
     // Use stable scene coordinates until QtTest accepts mixed row types; handlers remain real.
-    function clickDelegate(item, doubleClick = false) {
+    function clickDelegate(fileName, listMode, doubleClick = false) {
+      waitForRendering(harness);
+      const item = entry(fileName, listMode);
       verify(item !== null);
       const center = item.mapToItem(harness, item.width / 2, item.height / 2);
       if (doubleClick)
@@ -112,8 +114,7 @@ Item {
         mouseClick(button("filepicker-list"));
       }
       tryVerify(() => entry("alpha.txt", data.listMode) !== null);
-      const alpha = entry("alpha.txt", data.listMode);
-      clickDelegate(alpha);
+      clickDelegate("alpha.txt", data.listMode);
       const select = button("widgets.file-picker.select-file");
       tryCompare(select, "enabled", true);
 
@@ -139,8 +140,7 @@ Item {
       tryVerify(() => entry("child", data.listMode) !== null);
       wait(50); // Reassigned delegates need a layout pass before pointer events.
 
-      const child = entry("child", data.listMode);
-      clickDelegate(child, true);
+      clickDelegate("child", data.listMode, true);
       tryCompare(picker, "currentPath", "@FILES@/child");
       tryCompare(grid(), "count", 0);
       tryCompare(select, "enabled", false);
@@ -150,7 +150,7 @@ Item {
       const beta = entry("beta.log", data.listMode);
       compare(beta.filePath, "@FILES@/beta.log");
       wait(50); // Let asynchronous view layout place reassigned rows before clicking.
-      clickDelegate(beta);
+      clickDelegate("beta.log", data.listMode);
       tryCompare(select, "enabled", true);
       mouseClick(button("widgets.file-picker.cancel"));
       tryCompare(cancelledSpy, "count", 1);
@@ -162,8 +162,7 @@ Item {
       tryCompare(picker, "opened", true);
       tryCompare(select, "enabled", false);
       tryVerify(() => entry("alpha.txt", data.listMode) !== null);
-      const reassignedAlpha = entry("alpha.txt", data.listMode);
-      clickDelegate(reassignedAlpha);
+      clickDelegate("alpha.txt", data.listMode);
       mouseClick(select);
       tryCompare(acceptedSpy, "count", 1);
       compare(acceptedSpy.signalArguments[0][0][0], "@FILES@/alpha.txt");
@@ -213,12 +212,12 @@ Item {
       tryCompare(search, "activeFocus", true);
       keyClick(Qt.Key_B);
       tryCompare(grid(), "count", 1);
+      waitForRendering(harness);
       mouseClick(button("filepicker-x"));
       tryCompare(search, "visible", false);
       compare(search.text, "");
       tryCompare(grid(), "count", 3);
-      const child = entry("child", false);
-      clickDelegate(child, true);
+      clickDelegate("child", false, true);
       tryCompare(picker, "currentPath", "@FILES@/child");
       tryCompare(grid(), "count", 0);
       mouseClick(button("filepicker-arrow-up"));
@@ -232,7 +231,7 @@ Item {
       const child = entry("child", false);
       compare(child.filePath, "@FILES@/child");
       verify(child.fileIsDir);
-      clickDelegate(child, true);
+      clickDelegate("child", false, true);
       tryCompare(picker, "currentPath", "@FILES@/child");
       tryCompare(grid(), "count", 0);
       picker.navigateToPath("@FILES@");
@@ -240,7 +239,7 @@ Item {
       tryVerify(() => entry("alpha.txt", false) !== null);
       const alpha = entry("alpha.txt", false);
       compare(alpha.fileSize, 5);
-      clickDelegate(alpha);
+      clickDelegate("alpha.txt", false);
       const select = button("widgets.file-picker.select-file");
       tryCompare(select, "enabled", true);
       mouseClick(select);
@@ -256,7 +255,7 @@ Item {
       tryVerify(() => entry("beta.log", true) !== null);
       const beta = entry("beta.log", true);
       compare(beta.filePath, "@FILES@/beta.log");
-      clickDelegate(beta, true);
+      clickDelegate("beta.log", true, true);
       tryCompare(acceptedSpy, "count", 2);
       compare(picker.selectedPaths[0], "@FILES@/beta.log");
 
