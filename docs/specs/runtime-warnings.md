@@ -1,5 +1,7 @@
 Runtime warning guards cover repeated QML/Qt warnings that obscure profiling and reload health. Runtime source spans the components that emit or trigger the warnings.
 
+Current static inventory, installed metadata and runtime residual/blocker evidence: [QML warning investigation](../local/qml-warning-investigation.md).
+
 ## What it must do
 
 - [x] Cava process startup is gated by `ProgramCheckerService.cavaAvailable` so missing `cava` does not repeatedly spawn and warn.

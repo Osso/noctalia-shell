@@ -1,5 +1,7 @@
 Testing covers local regression gates, structural source-reference guardrails, executable behavior checks, QML lifecycle integration, live host probes, and log filtering used to keep this fork maintainable against current Quickshell. Runtime source lives mainly in `run-tests.sh`, `Tests/source-coverage.test.js`, `Tests/qml-function-inventory.test.js`, and `Bin/dev/quickshell-regression.sh`.
 
+Current aggregate/static scope, exact residual inventory and later strict-owner routing: [QML warning evidence](../local/qml-warning-investigation.md). Historical scoped results below do not imply full-runner acceptance.
+
 ## What it must do
 
 ### Shell-root isolated lifecycle
