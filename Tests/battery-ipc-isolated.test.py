@@ -220,11 +220,11 @@ def runtime(directory):
                 ("set", "lifespan"),
             ]:
                 rejected = ipc("call", "batteryManager", *command)
-                assert rejected.returncode != 0, rejected
-                diagnostic = rejected.stdout + rejected.stderr
-                assert (
-                    "batteryManager" in diagnostic and "target" in diagnostic.lower()
-                ), diagnostic
+                # Native Quickshell reports dispatch rejection in stdout but
+                # returns zero; assert its explicit result, not shell exit status.
+                assert rejected.returncode == 0, rejected
+                assert rejected.stdout.strip() == "Target not found.", rejected
+                assert rejected.stderr == "", rejected
             print("PASS removed commands fail explicitly at dispatch")
 
             def call(target, command, *args):
