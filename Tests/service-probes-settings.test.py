@@ -1,14 +1,13 @@
-#!/usr/bin/env python3
 """Private fixture coverage for the settings service probe; no host settings mount."""
 
 import hashlib
 import json
-from pathlib import Path
 import shutil
 import stat
 import subprocess
 import tempfile
 import unittest
+from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 PROBE = REPO / "Bin/dev/service-probes.sh"
@@ -75,7 +74,9 @@ class SettingsProbeTest(unittest.TestCase):
             str(script),
             *arguments,
         ]
-        result = subprocess.run(command, text=True, capture_output=True, timeout=20)
+        result = subprocess.run(
+            command, check=False, text=True, capture_output=True, timeout=20
+        )
         host_accesses = [
             line for line in trace.read_text().splitlines() if HOST_SETTINGS in line
         ]
