@@ -47,8 +47,10 @@ def lint(directory, environment, isolation):
                 "/usr/lib/qt6/bin/qmllint",
                 "--unqualified",
                 "error",
-                "--max-warnings",
-                str(limit),
+                # Qt counts non-rendered diagnostics toward --max-warnings.
+                # Settings' visible residual is enforced by the exact counter;
+                # owner diagnostics remain errors, never disabled/demoted.
+                *(["--max-warnings", "0"] if not limit else []),
                 "-I",
                 str(directory),
                 str(directory / "qs" / target),
