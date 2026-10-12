@@ -4,10 +4,10 @@ Testing covers local regression gates, structural source-reference guardrails, e
 
 ### Shell-root isolated lifecycle
 
-- At `03d617445`, `python3 Tests/shell-root-warnings.test.py lint` proves shell.qml six `unqualified` warnings → zero, with exactly two `block-scope-var-declaration` hoisting warnings remaining. No overall zero-QML-warning claim.
-- `runtime` uses real Quickshell with fake Settings/services/screens; private cold-start and source reload each pass nine lifecycle cases. Exact assertions and Bound Loader/screen owner proof: [shell](shell.md#tests-asserting-this-spec). No inline types introduced.
+- At `03d617445`, shell.qml six `unqualified` warnings → zero; at `f4f157c81`, two `block-scope-var-declaration` hoisting warnings → zero. `python3 Tests/shell-root-warnings.test.py lint` requires `--max-warnings 0`, zero JSON warning/error diagnostics, and exit status zero. Three synthetic-fixture unused-import informational notices are not source warnings. No overall zero-QML-warning claim.
+- Through `f4f157c81`, `runtime` uses real Quickshell with fake Settings/services/screens; reported private cold-start and source reload each pass nine lifecycle cases. Exact assertions and Bound Loader/screen owner proof: [shell](shell.md#tests-asserting-this-spec). No inline types introduced.
 - Private HOME/XDG paths and bubblewrap isolate the child from host config, desktop devices/connections, and network. The harness asserts masks/network denial, zero traced settings-file attempts, and private-process termination. No real persistence, backend, compositor pixel/input, or whole-shell acceptance is proven.
-- Reported main-session read-only observation, October 11, 2026 at 22:13 CDT: canonical PID `797384` loaded and wlsunset `manual22` unaffected. This docs-only update runs no tests or restart.
+- Reported main-session read-only observation, October 11, 2026 at 22:13 CDT: canonical PID `797384` loaded and wlsunset `manual22` unaffected. This prior observation is not a current live test claim. This docs-only update runs no tests or restart.
 
 ### Calendar month card isolated runtime
 

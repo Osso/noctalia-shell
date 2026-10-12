@@ -16,13 +16,13 @@ Shell bootstrap in `shell.qml` gates full-shell loading, routes settings errors 
 
 ## Tests asserting this spec
 
-- `Tests/shell-root-warnings.test.py` and `Tests/Qml/ShellRootWarningsProbe.qml` — at `03d617445`, private cold-start and source reload each pass nine lifecycle cases using fake Settings/services/screens and real Quickshell Loader/Variants. Loader destruction/recreation and exact screen identity provide Bound owner-resolution proof, not compositor rendering/input proof.
-- Static shell-only evidence: six `unqualified` warnings → zero; two `block-scope-var-declaration` hoisting warnings remain.
-- Reported main-session read-only observation, October 11, 2026 at 22:13 CDT: canonical PID `797384` loaded; wlsunset `manual22` unaffected. This is not whole-shell warning-free acceptance.
+- `Tests/shell-root-warnings.test.py` and `Tests/Qml/ShellRootWarningsProbe.qml` — through `f4f157c81`, reported private cold-start and source reload each pass nine lifecycle cases using fake Settings/services/screens and real Quickshell Loader/Variants. Loader destruction/recreation and exact screen identity provide Bound owner-resolution proof, not compositor rendering/input proof.
+- Static shell-only evidence: six `unqualified` warnings → zero at `03d617445`; at `f4f157c81`, two `block-scope-var-declaration` hoisting warnings → zero. Strict source lint uses `--max-warnings 0` and JSON warning/error diagnostics. Three synthetic-fixture unused-import informational notices are not source warnings.
+- Reported main-session read-only observation, October 11, 2026 at 22:13 CDT: canonical PID `797384` loaded; wlsunset `manual22` unaffected. This prior observation is not a current live test or whole-shell warning-free acceptance.
 
 ## Known gaps (current cycle)
 
-- [ ] Two shell-root hoisting warnings remain; overall QML warnings are not zero.
+- [ ] Whole-shell warning-free acceptance remains unproven; zero strict source warnings applies only to `shell.qml`.
 
 ## Out of scope
 
