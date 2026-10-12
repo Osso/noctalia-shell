@@ -1,15 +1,14 @@
-#!/usr/bin/env python3
 """Bounded lint and sandboxed production emoji/recorder behavioral proof."""
 
 import argparse
-from collections import Counter
 import importlib.util
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import tempfile
+from collections import Counter
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = (
@@ -35,6 +34,7 @@ def lint(directory):
                 str(directory),
                 str(directory / "qs" / target),
             ],
+            check=False,
             capture_output=True,
             text=True,
             timeout=60,
@@ -240,12 +240,14 @@ def runtime(directory, mutation):
         str(directory),
         "/usr/bin/python3",
         "-c",
-        "import os, pathlib, sys; "
-        "assert all(not pathlib.Path(p).exists() for p in "
-        "('/home/osso/.config', '/syncthing', '/run/user', '/dev/dri', '/dev/snd')); "
-        "assert os.readlink('/proc/self/ns/net') != sys.argv[1]; "
-        "print('ISOLATION_PASS', flush=True); "
-        "os.execv(sys.argv[2], sys.argv[2:])",
+        (
+            "import os, pathlib, sys; "
+            "assert all(not pathlib.Path(p).exists() for p in "
+            "('/home/osso/.config', '/syncthing', '/run/user', '/dev/dri', '/dev/snd')); "
+            "assert os.readlink('/proc/self/ns/net') != sys.argv[1]; "
+            "print('ISOLATION_PASS', flush=True); "
+            "os.execv(sys.argv[2], sys.argv[2:])"
+        ),
         os.readlink("/proc/self/ns/net"),
         "/usr/lib/qt6/bin/qmltestrunner",
         "-input",
@@ -254,7 +256,12 @@ def runtime(directory, mutation):
         str(directory),
     ]
     result = subprocess.run(
-        command, env=environment, capture_output=True, text=True, timeout=45
+        command,
+        check=False,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=45,
     )
     output = result.stdout + result.stderr
     print(output, end="")
