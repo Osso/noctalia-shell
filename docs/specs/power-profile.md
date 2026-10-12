@@ -54,13 +54,14 @@ Power profile covers UPower profile labeling, icon selection, profile mutation, 
 
 ## Tests asserting this spec
 
+- `Tests/wallhaven-power-warnings.test.py` and `Tests/Qml/WallhavenPowerWarningsHarness.qml` — at `8aaf36a04`/`86772f679`, PowerProfileService warnings drop 6→0. Two service cases assert the balanced→performance→power-saver→balanced cycle, backend-signal state updates, default detection, live/unknown labels and icons, unavailable set/cycle no-ops, profile-change toast icon, and Noctalia performance toggle/set with rocket/rocket-off icons. The power mutation must fail `test_power_backend_state`. Six reported passes comprise these two cases, two popup cases and QtTest init/cleanup. UPower and toast services are synthetic; no real power mutation, D-Bus/hardware, IPC/widget/consumer or live integration proof. Commands and safety: [testing](testing.md#wallhaven-popup-and-power-profile-isolated-runtime).
 - `Tests/power-profile-service-guards.test.js`
 - `Tests/qml-runtime-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 
 ## Known gaps (current cycle)
 
-- [ ] Add executable tests for the profile-change toast handler.
+- [ ] Extend isolated profile-change toast icon coverage to translated message/body and assignment-failure logging.
 - [ ] Add executable tests for control-center and bar power-profile widget bindings.
 - [ ] Add executable tests for Noctalia performance consumers that disable expensive UI effects.
 
