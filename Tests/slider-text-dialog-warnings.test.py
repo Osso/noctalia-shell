@@ -147,6 +147,15 @@ def run_sandboxed(args):
         return
     harness = stage_runtime(directory)
     if args.mode == "lint-harness":
+        if args.inject_warning:
+            source = harness.read_text()
+            assert source.count("id: scene") == 1
+            harness.write_text(
+                source.replace(
+                    "id: scene",
+                    "id: scene\n  property int injectedWarning: scene.missingLintProbe",
+                )
+            )
         command = [
             "/usr/lib/qt6/bin/qmllint",
             "--bare",
@@ -156,6 +165,8 @@ def run_sandboxed(args):
             "/usr/lib/qt6/qml",
             "--max-warnings",
             "0",
+            "--json",
+            "-",
             str(harness),
         ]
     else:
@@ -168,7 +179,18 @@ def run_sandboxed(args):
         ]
     code, output = guard.run_child(command, directory, environment)
     (directory / f"{args.mode}.log").write_text(output)
-    assert code == 0, output
+    if args.mode == "lint-harness":
+        diagnostics = json.loads(output)
+        warnings = [
+            warning
+            for entry in diagnostics["files"]
+            for warning in entry["warnings"]
+            if warning["type"] != "info"
+        ]
+        print("SLIDER_TEXT_DIALOG_HARNESS_WARNINGS", len(warnings), "EXIT", code)
+        assert code == 0 and not warnings, output
+    else:
+        assert code == 0, output
     if args.mode == "runtime":
         assert "10 passed, 0 failed" in output, output
         assert not re.search(
@@ -180,9 +202,13 @@ def run_sandboxed(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("lint", "lint-harness", "runtime"))
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     parser.add_argument("--sandbox", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--artifacts", type=Path)
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     sys.addaudithook(guard.audit)
     with (
         patch("os.stat", guard.guard_metadata(os.stat)),
@@ -237,6 +263,8 @@ def main():
                 "--sandbox",
                 temporary,
             ]
+            if args.inject_warning:
+                command.append("--inject-warning")
             code, output = guard.run_child(
                 command,
                 directory,

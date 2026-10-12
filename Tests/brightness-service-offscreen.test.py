@@ -235,6 +235,49 @@ def run_audited(directory, command):
     return result
 
 
+def lint_harness(directory, inject_warning):
+    stage_runtime(directory, None)
+    harness = directory / "tst_brightness.qml"
+    if inject_warning:
+        source = harness.read_text()
+        assert source.count("id: suite") == 1
+        harness.write_text(
+            source.replace(
+                "id: suite",
+                "id: suite\n  property int injectedWarning: suite.missingLintProbe",
+            )
+        )
+    (directory / "audit").mkdir(mode=0o700)
+    result = run_audited(
+        directory,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            "/fixture",
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            "/fixture/tst_brightness.qml",
+        ],
+    )
+    output = result.stdout + result.stderr
+    (directory / "lint-harness.log").write_text(output)
+    print(output, end="", flush=True)
+    diagnostics = json.loads(result.stdout)
+    warnings = [
+        warning
+        for entry in diagnostics["files"]
+        for warning in entry["warnings"]
+        if warning["type"] != "info"
+    ]
+    print("BRIGHTNESS_HARNESS_WARNINGS", len(warnings), "EXIT", result.returncode)
+    assert result.returncode == 0 and not warnings, output
+
+
 def runtime(directory, mutation):
     stage_runtime(directory, mutation)
     (directory / "audit").mkdir(mode=0o700)
@@ -273,13 +316,21 @@ def runtime(directory, mutation):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "runtime"))
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     parser.add_argument("--artifacts", required=True, type=Path)
     parser.add_argument("--expected", type=int, default=0)
     parser.add_argument("--mutation", choices=("monitor-signal", "apple-callback"))
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
+    if args.mutation and args.mode != "runtime":
+        parser.error("--mutation requires runtime")
     args.artifacts.mkdir(mode=0o700)
-    if args.mode == "lint":
+    if args.mode == "lint-harness":
+        lint_harness(args.artifacts, args.inject_warning)
+    elif args.mode == "lint":
         assert args.mutation is None
         lint(args.artifacts, args.expected)
     else:

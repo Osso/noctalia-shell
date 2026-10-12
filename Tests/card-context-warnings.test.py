@@ -208,17 +208,21 @@ def run_child(directory, environment, argv):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("baseline", "lint", "runtime"))
+    parser.add_argument("mode", choices=("baseline", "lint", "lint-harness", "runtime"))
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     parser.add_argument("--shadow", action="store_true")
     parser.add_argument("--direct-only", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-card-context-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
         isolation = helper("wallpaper-tab-warnings.test.py")
         isolation.install_audit(directory)
         environment = isolation.isolated_environment(directory)
-        if args.mode != "runtime":
+        if args.mode in ("baseline", "lint"):
             helper("media-mini-warnings.test.py").stage_modules(directory)
             for target, expected in zip(
                 TARGETS, (4, 1, 1) if args.mode == "baseline" else (0, 0, 0)
@@ -259,6 +263,44 @@ def main():
                     "property bool directOnly: false", "property bool directOnly: true"
                 )
             )
+        if args.mode == "lint-harness":
+            harness = directory / "qs/shell.qml"
+            if args.inject_warning:
+                source = harness.read_text()
+                assert source.count("id: scene") == 1
+                harness.write_text(
+                    source.replace(
+                        "id: scene",
+                        "id: scene\n    property int injectedWarning: scene.missingLintProbe",
+                    )
+                )
+            code, output = run_child(
+                directory,
+                environment,
+                [
+                    "/usr/lib/qt6/bin/qmllint",
+                    "--bare",
+                    "-I",
+                    temporary,
+                    "-I",
+                    "/usr/lib/qt6/qml",
+                    "--max-warnings",
+                    "0",
+                    "--json",
+                    "-",
+                    str(harness),
+                ],
+            )
+            diagnostics = json.loads(output)
+            warnings = [
+                warning
+                for entry in diagnostics["files"]
+                for warning in entry["warnings"]
+                if warning["type"] != "info"
+            ]
+            print("CARD_HARNESS_WARNINGS", len(warnings), "EXIT", code)
+            assert code == 0 and not warnings, output
+            return
         screens = directory / "screens.json"
         screens.write_text(
             json.dumps(
