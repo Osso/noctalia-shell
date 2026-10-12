@@ -39,7 +39,7 @@ Item {
 
         var centerX = width / 2;
         var centerY = height / 2;
-        var radius = Math.min(width, height) / 2 - strokeWidth / 2;
+        var radius = Math.min(width, height) / 2 - root.strokeWidth / 2;
 
         ctx.strokeStyle = root.color;
         ctx.lineWidth = Math.max(1, root.strokeWidth);
