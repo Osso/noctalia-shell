@@ -134,13 +134,13 @@ class SetupLayoutIsolationTest(unittest.TestCase):
             self.assert_fixture(artifacts)
 
     def test_unit_entrypoint_without_arguments_cleans_temporary_fixture(self):
-        with tempfile.TemporaryDirectory(prefix="setup-unit-entrypoint-") as temp:
+        with tempfile.TemporaryDirectory(prefix="su-") as temp:
             root = Path(temp)
             result, artifacts = self.run_mode(root, omit_artifacts=True)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertIn("20 offscreen cases", result.stdout)
             self.assertFalse(artifacts.exists())
-            self.assertEqual(list(root.glob("noctalia-setup-geometry-*")), [])
+            self.assertEqual(list(root.glob("setup-*")), [])
             self.assertEqual(list(root.glob("noctalia-setup-offscreen-*")), [])
 
     def test_wizard_transitions_preserve_fixture(self):

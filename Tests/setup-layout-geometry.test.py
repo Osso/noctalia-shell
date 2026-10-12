@@ -292,7 +292,7 @@ def main():
         raise SystemExit(lint_harness())
     temporary = None
     if args.artifacts is None:
-        temporary = tempfile.TemporaryDirectory(prefix="noctalia-setup-geometry-")
+        temporary = tempfile.TemporaryDirectory(prefix="setup-")
         args.artifacts = Path(temporary.name)
     args.artifacts.mkdir(parents=True, exist_ok=True, mode=0o700)
     try:
