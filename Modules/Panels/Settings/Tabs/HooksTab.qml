@@ -1,15 +1,12 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
 import qs.Services.Control
-import qs.Services.UI
 import qs.Widgets
 
 ColumnLayout {
   id: contentColumn
   spacing: Style.marginL
-  width: root.width
 
   NHeader {
     label: I18n.tr("settings.hooks.system-hooks.section.label")

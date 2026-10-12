@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import qs.Commons
@@ -282,20 +281,20 @@ ColumnLayout {
         description: {
           const compositorScale = CompositorService.getDisplayScale(monitorName);
           I18n.tr("system.monitor-description", {
-                    "model": monitorModel,
-                    "width": monitorWidth * compositorScale,
-                    "height": monitorHeight * compositorScale,
-                    "scale": compositorScale
-                  });
+            "model": monitorModel,
+            "width": monitorWidth * compositorScale,
+            "height": monitorHeight * compositorScale,
+            "scale": compositorScale
+          });
         }
         checked: (Settings.data.notifications.monitors || []).indexOf(monitorName) !== -1
         onToggled: checked => {
-                     if (checked) {
-                       Settings.data.notifications.monitors = addMonitor(Settings.data.notifications.monitors, monitorName);
-                     } else {
-                       Settings.data.notifications.monitors = removeMonitor(Settings.data.notifications.monitors, monitorName);
-                     }
-                   }
+          if (checked) {
+            Settings.data.notifications.monitors = root.addMonitor(Settings.data.notifications.monitors, monitorName);
+          } else {
+            Settings.data.notifications.monitors = root.removeMonitor(Settings.data.notifications.monitors, monitorName);
+          }
+        }
       }
     }
 
