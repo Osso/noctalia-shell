@@ -121,10 +121,10 @@ Slider {
         } else {
           // Linear Interpolation for Standard Gradients
           // visualPosition 0.0 = Top, 1.0 = Bottom
-          var t = root.visualPosition;
-          var r = root.topColor.r * (1 - t) + root.bottomColor.r * t;
-          var g = root.topColor.g * (1 - t) + root.bottomColor.g * t;
-          var b = root.topColor.b * (1 - t) + root.bottomColor.b * t;
+          const t = root.visualPosition;
+          const r = root.topColor.r * (1 - t) + root.bottomColor.r * t;
+          const g = root.topColor.g * (1 - t) + root.bottomColor.g * t;
+          const b = root.topColor.b * (1 - t) + root.bottomColor.b * t;
           return Qt.rgba(r, g, b, 1);
         }
       }

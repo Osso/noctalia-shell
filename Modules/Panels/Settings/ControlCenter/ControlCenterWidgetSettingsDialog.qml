@@ -46,8 +46,8 @@ Popup {
 
       NText {
         text: I18n.tr("system.widget-settings-title", {
-                        "widget": root.widgetId
-                      })
+          "widget": root.widgetId
+        })
         pointSize: Style.fontSizeL
         font.weight: Style.fontWeightBold
         color: NColor.mPrimary
@@ -94,7 +94,7 @@ Popup {
         icon: "check"
         onClicked: {
           if (settingsLoader.item && settingsLoader.item.saveSettings) {
-            var newSettings = settingsLoader.item.saveSettings();
+            const newSettings = settingsLoader.item.saveSettings();
             root.updateWidgetSettings(root.sectionId, root.widgetIndex, newSettings);
             root.close();
           }
@@ -111,9 +111,9 @@ Popup {
     const source = widgetSettingsMap[widgetId];
     if (source) {
       settingsLoader.setSource(source, {
-                                 "widgetData": widgetData,
-                                 "widgetMetadata": ControlCenterWidgetRegistry.widgetMetadata[widgetId]
-                               });
+        "widgetData": widgetData,
+        "widgetMetadata": ControlCenterWidgetRegistry.widgetMetadata[widgetId]
+      });
     }
   }
 }
