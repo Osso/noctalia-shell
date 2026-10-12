@@ -1,13 +1,12 @@
-#!/usr/bin/env python3
 """Exercise loader CLI isolation inside the static checker's outer sandbox."""
 
 import importlib.util
 import os
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "Tests/control-center-widget-loader-warnings.test.py"

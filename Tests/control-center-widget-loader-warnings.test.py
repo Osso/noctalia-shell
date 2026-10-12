@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Production widget-loader proof with private modules and denied host config.
 
 Runtime uses synthetic widget components, not desktop widgets or services.
@@ -11,11 +10,11 @@ import errno
 import importlib.util
 import json
 import os
-from pathlib import Path
 import re
 import subprocess
 import tempfile
 from collections import Counter
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/ControlCenter/ControlCenterWidgetLoader.qml")
