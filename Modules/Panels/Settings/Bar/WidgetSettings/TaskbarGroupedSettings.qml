@@ -30,8 +30,8 @@ ColumnLayout {
   NToggle {
     label: I18n.tr("bar.widget-settings.workspace.hide-unoccupied.label")
     description: I18n.tr("bar.widget-settings.workspace.hide-unoccupied.description")
-    checked: valueHideUnoccupied
-    onToggled: checked => valueHideUnoccupied = checked
+    checked: root.valueHideUnoccupied
+    onToggled: checked => root.valueHideUnoccupied = checked
   }
 
   NComboBox {
@@ -56,8 +56,8 @@ ColumnLayout {
         "name": I18n.tr("options.workspace-labels.index+name")
       }
     ]
-    currentKey: widgetData.labelMode
-    onSelected: key => valueLabelMode = key
+    currentKey: root.widgetData.labelMode
+    onSelected: key => root.valueLabelMode = key
     minimumWidth: 200
   }
 

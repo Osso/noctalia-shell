@@ -186,12 +186,12 @@ ColumnLayout {
         description: I18n.tr("settings.osd.types." + key + ".description")
         checked: (Settings.data.osd.enabledTypes || []).includes(type)
         onToggled: checked => {
-                     if (checked) {
-                       Settings.data.osd.enabledTypes = addType(Settings.data.osd.enabledTypes, type);
-                     } else {
-                       Settings.data.osd.enabledTypes = removeType(Settings.data.osd.enabledTypes, type);
-                     }
-                   }
+          if (checked) {
+            Settings.data.osd.enabledTypes = root.addType(Settings.data.osd.enabledTypes, type);
+          } else {
+            Settings.data.osd.enabledTypes = root.removeType(Settings.data.osd.enabledTypes, type);
+          }
+        }
       }
     }
   }
@@ -234,12 +234,12 @@ ColumnLayout {
         }
         checked: (Settings.data.osd.monitors || []).indexOf(monitorName) !== -1
         onToggled: checked => {
-                     if (checked) {
-                       Settings.data.osd.monitors = addMonitor(Settings.data.osd.monitors, monitorName);
-                     } else {
-                       Settings.data.osd.monitors = removeMonitor(Settings.data.osd.monitors, monitorName);
-                     }
-                   }
+          if (checked) {
+            Settings.data.osd.monitors = root.addMonitor(Settings.data.osd.monitors, monitorName);
+          } else {
+            Settings.data.osd.monitors = root.removeMonitor(Settings.data.osd.monitors, monitorName);
+          }
+        }
       }
     }
   }
