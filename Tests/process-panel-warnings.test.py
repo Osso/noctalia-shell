@@ -2,12 +2,10 @@
 """ProcessPanel-only lint and actual offscreen panel with recorded IO boundaries."""
 
 import argparse
-import hashlib
 import importlib.util
-import os
+import json
 from pathlib import Path
 import re
-import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/Process/ProcessPanel.qml")
@@ -20,7 +18,7 @@ def helper(filename):
     return module
 
 
-def run_proof(directory, mode):
+def run_proof(directory, mode, environment):
     if mode == "lint":
         helper("media-mini-warnings.test.py").stage_modules(directory)
         command = [
@@ -29,7 +27,6 @@ def run_proof(directory, mode):
             str(directory),
             str(directory / "qs" / TARGET),
         ]
-        environment = None
     else:
         stage_behavior(directory)
         command = [
@@ -39,25 +36,21 @@ def run_proof(directory, mode):
             "-import",
             str(directory),
         ]
-        environment = helper(
-            "wifi-networks-list-warnings.test.py"
-        ).isolated_environment(directory)
-    result = subprocess.run(
-        command, cwd=ROOT, env=environment, capture_output=True, text=True, timeout=60
+    code, output = helper("grid-list-warnings.test.py").run_audited(
+        directory, environment, command, f"process-panel-{mode}"
     )
-    output = result.stdout + result.stderr
     (directory / f"{mode}.log").write_text(output)
-    print(output, end="")
     if mode == "lint":
         warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
         print("PROCESS_PANEL_WARNINGS", len(warnings))
         assert not warnings, warnings
     else:
-        assert "0 failed" in output, output
+        assert "6 passed, 0 failed" in output, output
         assert not re.search(
-            r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output
+            r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:",
+            output,
         ), output
-    assert result.returncode == 0, result.returncode
+    assert code == 0, code
 
 
 def stage_behavior(directory):
@@ -215,47 +208,76 @@ function formatMemory(value) { return (value / 1024).toFixed(1) + " MB"; }
     )
 
 
-def canonical_instances():
-    result = subprocess.run(
-        ["quickshell", "list", "--all"],
-        capture_output=True,
-        text=True,
-        check=True,
-        timeout=10,
-    )
-    return tuple(
-        line.strip()
-        for line in result.stdout.splitlines()
-        if re.match(
-            r"\s*(Instance |Process ID:|Shell ID:|Config path:|Display connection:)",
-            line,
+def lint_harness(directory, environment, inject_warning):
+    stage_behavior(directory)
+    harness = directory / "tst_process.qml"
+    if inject_warning:
+        source = harness.read_text()
+        marker = "id: testCase"
+        assert source.count(marker) == 1, "injection owner must be unique"
+        harness.write_text(
+            source.replace(
+                marker,
+                marker
+                + "\n    property int injectedWarning: testCase.missingLintProbe",
+                1,
+            )
         )
+    code, output = helper("grid-list-warnings.test.py").run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        "process-harness-lint",
     )
+    (directory / "lint-harness.json").write_text(output)
+    diagnostics = json.loads(output)
+    warnings = sum(
+        diagnostic["type"] == "warning"
+        for entry in diagnostics["files"]
+        for diagnostic in entry["warnings"]
+    )
+    print("PROCESS_PANEL_HARNESS_WARNINGS", warnings, "EXIT", code)
+    if inject_warning:
+        assert warnings > 0 and code != 0, "injected warning was accepted"
+        assert any(
+            diagnostic["id"] == "missing-property"
+            and "missingLintProbe" in diagnostic["message"]
+            for entry in diagnostics["files"]
+            for diagnostic in entry["warnings"]
+        ), "injected semantic diagnostic missing"
+    else:
+        assert warnings == 0 and code == 0, "strict harness lint failed"
+    return code
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
     parser.add_argument("--artifacts", type=Path, required=True)
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    digest = hashlib.sha256(original).hexdigest()
-    backup = args.artifacts / "settings.backup.json"
-    backup.touch(mode=0o600)
-    backup.write_bytes(original)
-    assert backup.stat().st_mode & 0o777 == 0o600
-    assert hashlib.sha256(backup.read_bytes()).hexdigest() == digest
-    instances = canonical_instances()
-    try:
-        run_proof(args.artifacts, args.mode)
-    finally:
-        assert settings.read_bytes() == original, "real settings changed"
-        assert backup.read_bytes() == original, "backup changed"
-        assert canonical_instances() == instances, "shell process/registry changed"
-        print("SETTINGS_SHA_UNCHANGED", digest)
-        print("CANONICAL_REGISTRY_UNCHANGED", instances)
+    isolation = helper("grid-list-warnings.test.py")
+    isolation.install_settings_guard(args.artifacts)
+    environment = isolation.isolated_environment(args.artifacts)
+    if args.mode == "lint-harness":
+        raise SystemExit(lint_harness(args.artifacts, environment, args.inject_warning))
+    run_proof(args.artifacts, args.mode, environment)
 
 
 if __name__ == "__main__":
