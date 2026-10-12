@@ -329,6 +329,7 @@ def load_fixture_helper():
 
 def stage_runtime(root):
     prepare_sources(root)
+    stage_io_metadata(root)
     # qs imports and relative JS imports resolve to this exact runtime tree.
     (root / "qs").symlink_to(".", target_is_directory=True)
     for directory, entries in {
@@ -337,6 +338,22 @@ def stage_runtime(root):
     }.items():
         module = "qs." + directory.replace("/", ".")
         (root / directory / "qmldir").write_text(f"module {module}\n{entries}")
+
+
+def stage_io_metadata(root):
+    # Installed FileView metadata references an unqualified C++ type, while its
+    # declaration/prototype use qs::io::FileViewAdapter. Correct that reference
+    # in the shared runtime/lint stage; retain the real FileView and JsonAdapter.
+    # Remove this correction once installed metadata uses the declared name.
+    module = root / "Quickshell/Io"
+    shutil.copytree(Path("/usr/lib/qt6/qml/Quickshell/Io"), module)
+    metadata = module / "quickshell-io.qmltypes"
+    source = metadata.read_text()
+    reference = 'type: "FileViewAdapter"'
+    assert source.count(reference) == 1, (
+        "Reassess installed adapter metadata correction"
+    )
+    metadata.write_text(source.replace(reference, 'type: "qs::io::FileViewAdapter"'))
 
 
 def lint_harness(root, inject_warning=False):
