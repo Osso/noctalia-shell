@@ -26,15 +26,6 @@ ShellRoot {
       }
     }
 
-    Component {
-      id: secondPanelFactory
-      ControlCenterPanel {
-        readonly property int shortcutsHeight: 73
-        width: 520
-        height: 300
-      }
-    }
-
     // Unrelated creation-context root must not become the supplied card owner.
     ControlCenterPanel {
       id: root
@@ -157,23 +148,33 @@ ShellRoot {
       scene.first = panelFactory.createObject(scene, {
         "screen": Quickshell.screens[0]
       });
-      scene.second = secondPanelFactory.createObject(scene, {
+      scene.second = panelFactory.createObject(scene, {
         "screen": Quickshell.screens[1],
         "x": 560
       });
       check(scene.first !== null && scene.second !== null, "two actual panel owners");
-      check(scene.first.shortcutsHeight === 52 && scene.second.shortcutsHeight === 73, "distinct panel heights");
+      check(scene.first !== scene.second, "distinct actual panel owners");
+      assertOwnerHeights(52);
       scene.first.open();
       scene.second.open();
     }
 
+    function assertOwnerHeights(expected) {
+      for (const owner of [scene.first, scene.second])
+        check(owner.shortcutsHeight === expected, "computed owner height " + expected);
+      console.log("CARD_HEIGHT_PROOF: first=" + scene.first.shortcutsHeight + " second=" + scene.second.shortcutsHeight);
+    }
+
     function assertDetachedOwners() {
+      assertOwnerHeights(52);
       assertShortcuts(scene.detachedCard, scene.first);
-      check(scene.first.shortcutsHeight === 52, "initial shortcut height");
+      // Production owners share Style; 73 must come from its input, not an override.
+      Style.uiScaleRatio = 73 / 52;
+      assertOwnerHeights(73);
+      assertShortcuts(scene.detachedCard, scene.first);
       Style.uiScaleRatio = 1.5;
-      check(scene.first.shortcutsHeight === 78, "reactive production shortcut height");
+      assertOwnerHeights(78);
       assertShortcuts(scene.detachedCard, scene.first);
-      check(scene.second.shortcutsHeight === 73, "second owner height independent of first");
       // Widget screens are assigned on load, so exercise a fresh card per owner.
       scene.detachedCard.destroy();
       scene.detachedCard = root.shortcutFactory.createObject(scene, {
@@ -203,6 +204,9 @@ ShellRoot {
           case 1:
           case 3:
             scene.assertLoadedPanels();
+            Style.uiScaleRatio = 73 / 52;
+            scene.assertOwnerHeights(73);
+            scene.assertLoadedPanels();
             scene.first.close();
             scene.second.close();
             break;
@@ -212,6 +216,7 @@ ShellRoot {
             scene.second.open();
             break;
           case 4:
+            Style.uiScaleRatio = 1;
             scene.detachedCard = root.shortcutFactory.createObject(scene, {
               "controlCenter": scene.first,
               "width": 520,
@@ -228,6 +233,10 @@ ShellRoot {
             break;
           case 6:
             scene.assertShortcuts(scene.detachedCard, scene.second);
+            Style.uiScaleRatio = 1;
+            scene.check(scene.second.shortcutsHeight === 52, "surviving owner reactive height after other owner disposal");
+            scene.assertShortcuts(scene.detachedCard, scene.second);
+            console.log("CARD_HEIGHT_PROOF: surviving second=" + scene.second.shortcutsHeight);
             console.log("CARD_CONTEXT_PASS: two screens, panel loaders/recreation, owner shadow, reactive height/screen, actions, owner disposal");
             Qt.quit();
           }

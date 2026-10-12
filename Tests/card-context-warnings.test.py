@@ -213,9 +213,12 @@ def main():
     parser.add_argument("--inject-warning", action="store_true")
     parser.add_argument("--shadow", action="store_true")
     parser.add_argument("--direct-only", action="store_true")
+    parser.add_argument("--mutate", choices=("wrong-height", "wrong-owner"))
     args = parser.parse_args()
     if args.inject_warning and args.mode != "lint-harness":
         parser.error("--inject-warning requires lint-harness")
+    if args.mutate and args.mode != "runtime":
+        parser.error("--mutate requires runtime")
     with tempfile.TemporaryDirectory(prefix="noctalia-card-context-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
@@ -263,6 +266,19 @@ def main():
                     "property bool directOnly: false", "property bool directOnly: true"
                 )
             )
+        if args.mutate:
+            harness = directory / "qs/shell.qml"
+            source = harness.read_text()
+            if args.mutate == "wrong-owner":
+                original = '"controlCenter": scene.first,'
+                mutation = '"controlCenter": scene.second,'
+            else:
+                original = "      // Production owners share Style;"
+                mutation = """      for (const box of scene.detachedCard.children.filter(child => child.border !== undefined))
+        box.Layout.preferredHeight = 52;
+      // Production owners share Style;"""
+            assert source.count(original) == 1
+            harness.write_text(source.replace(original, mutation))
         if args.mode == "lint-harness":
             harness = directory / "qs/shell.qml"
             if args.inject_warning:
@@ -340,7 +356,19 @@ def main():
                 str(directory / "qs"),
             ],
         )
+        if args.mutate:
+            expected = (
+                "explicit shortcut owner"
+                if args.mutate == "wrong-owner"
+                else "shortcut owner height"
+            )
+            assert code == 0 and f"CARD_CONTEXT_FAIL: {expected}" in output, output
+            assert "CARD_CONTEXT_PASS:" not in output, output
+            raise AssertionError(f"CARD_MUTATION_REJECTED: {args.mutate}: {expected}")
         assert code == 0 and "CARD_CONTEXT_PASS:" in output, output
+        assert "CARD_HEIGHT_PROOF: first=73 second=73" in output, output
+        assert "CARD_HEIGHT_PROOF: first=78 second=78" in output, output
+        assert "CARD_HEIGHT_PROOF: surviving second=52" in output, output
         assert not re.search(
             r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:|WARN|ERROR|CARD_CONTEXT_FAIL",
             output,
