@@ -447,8 +447,7 @@ def main():
         if args.mutation:
             command += ["--mutation", args.mutation]
         result = subprocess.run(command, timeout=90, check=False)
-        assert result.returncode == 0, f"sandbox exit {result.returncode}"
-        return
+        return result.returncode
     assert not Path("/home/osso/.config").exists(), "Host config exposed"
     assert not Path("/run/user").exists(), "Desktop sockets exposed"
     assert not list((ROOT / "Assets/Wallpaper").iterdir()), "Wallpapers exposed"

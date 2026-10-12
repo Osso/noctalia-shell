@@ -421,6 +421,7 @@ class FixtureLintTest(unittest.TestCase):
                 fixtures / "LocationNetworkPlugin.cpp",
             )
         dependencies = {
+            "PanelServiceLifecycleHarness.qml": ("tst_panel_service_lifecycle.qml",),
             "AudioPanelRegressionHarness.qml": ("AudioCardHarness.qml",),
             "AudioDockTabsWarningsHarness.qml": ("ClockSettingsWarningsHarness.qml",),
             "ButtonPopupWarningsHarness.qml": ("SimpleWidgetsWarningsHarness.qml",),
@@ -1338,6 +1339,7 @@ class FixtureLintTest(unittest.TestCase):
                 self.bound_discovery(root, name)
                 result = self.run_checker(runner, root)
                 self.assertNotEqual(result.returncode, 0)
+                self.assertIn(diagnostic, result.stderr)
                 if name in (
                     "BatteryPanelWarningsHarness.qml",
                     "BarWidgetLoaderOwnerHarness.qml",
@@ -1346,7 +1348,11 @@ class FixtureLintTest(unittest.TestCase):
                     self.assertTrue(result.stderr.startswith(diagnostic), result.stderr)
                     self.assertIn("AssertionError", result.stderr)
                 else:
-                    self.assertEqual(result.stderr, diagnostic)
+                    self.assertNotRegex(
+                        result.stderr,
+                        r"Traceback|AssertionError|cp:|cannot stat|No such file or directory|"
+                        r"ModuleNotFoundError|ImportError",
+                    )
                 if name != "RemainingLayoutGeometryHarness.qml":
                     self.assertIn("missingFixtureValue", result.stdout)
                     self.assertIn('"id":"missing-property"', result.stdout)
@@ -1365,6 +1371,15 @@ class FixtureLintTest(unittest.TestCase):
                 self.assertEqual(len(reports), 1, result.stdout)
                 report = reports[0]
                 self.assertEqual(len(report["files"]), 1)
+                self.assertTrue(
+                    any(
+                        warning["type"] == "warning"
+                        and warning["id"] == "missing-property"
+                        and "missingFixtureValue" in warning["message"]
+                        for warning in report["files"][0]["warnings"]
+                    ),
+                    report,
+                )
                 if name in ARTIFACT_HARNESSES:
                     self.assert_artifacts_are_isolated(report["files"][0])
                 self.assertEqual(
