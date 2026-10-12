@@ -1,13 +1,23 @@
 #!/usr/bin/env node
 
 const assert = require("assert/strict");
-const { extractFunctionBody, readQml } = require("./qml-test-utils");
+const {
+  extractComponentBlocks,
+  extractFunctionBody,
+  extractHandlerBlock,
+  findComponentBlock,
+  readQml,
+} = require("./qml-test-utils");
 
 const source = readQml("Widgets/NSearchableComboBox.qml");
 
 function qmlFunction(functionName, ...argNames) {
   const body = extractFunctionBody(source, functionName);
-  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+  return new Function(
+    "ctx",
+    ...argNames,
+    `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`,
+  );
 }
 
 function createListModel(items = []) {
@@ -28,7 +38,12 @@ function createListModel(items = []) {
   };
 }
 
-function createContext({ modelItems = [], filteredItems = [], searchText = "", Fuzzysort } = {}) {
+function createContext({
+  modelItems = [],
+  filteredItems = [],
+  searchText = "",
+  Fuzzysort,
+} = {}) {
   const ctx = {
     model: createListModel(modelItems),
     filteredModel: createListModel(filteredItems),
@@ -59,7 +74,10 @@ function testSearchableComboBoxFindIndexByKeyReturnsFirstMatchAndMissingSentinel
 }
 
 function testSearchableComboBoxFindIndexByKeyInFilteredUsesFilteredModelOnly() {
-  const findIndexByKeyInFiltered = qmlFunction("findIndexByKeyInFiltered", "key");
+  const findIndexByKeyInFiltered = qmlFunction(
+    "findIndexByKeyInFiltered",
+    "key",
+  );
   const ctx = createContext({
     modelItems: [{ key: "wifi", name: "Wi-Fi" }],
     filteredItems: [
@@ -72,9 +90,20 @@ function testSearchableComboBoxFindIndexByKeyInFilteredUsesFilteredModelOnly() {
   assert.equal(findIndexByKeyInFiltered(ctx, "wifi"), -1);
 }
 
-function testSearchableComboBoxKeyLookupInputsAreTyped() {
-  assert.match(source, /function findIndexByKey\(key\)/, "findIndexByKey must type the key input");
-  assert.match(source, /function findIndexByKeyInFiltered\(key\)/, "findIndexByKeyInFiltered must type the key input");
+function testSearchableComboBoxKeyLookupKeepsDistinctStringKeys() {
+  const ctx = createContext({
+    modelItems: [
+      { key: "01", name: "First" },
+      { key: "1", name: "Second" },
+    ],
+    filteredItems: [
+      { key: "1", name: "Second" },
+      { key: "01", name: "First" },
+    ],
+  });
+  assert.equal(qmlFunction("findIndexByKey", "key")(ctx, "01"), 0);
+  assert.equal(qmlFunction("findIndexByKeyInFiltered", "key")(ctx, "01"), 1);
+  assert.equal(qmlFunction("findIndexByKey", "key")(ctx, 1), -1);
 }
 
 function testSearchableComboBoxFilterModelClearsAndReturnsForMissingOrEmptyModel() {
@@ -163,20 +192,91 @@ function testSearchableComboBoxFilterModelUsesFuzzyResultOrdering() {
   ]);
 }
 
-function testSearchableComboBoxDefaultDelegateRolesAreTyped() {
-  const defaultDelegate = /Component\s*\{[\s\S]*?id:\s*defaultDelegate[\s\S]*?ItemDelegate\s*\{/;
-  const typedItemRoles = /required\s+property\s+int\s+index[\s\S]*?required\s+property\s+string\s+key[\s\S]*?required\s+property\s+string\s+name/;
-  const typedRoleUsage = /root\.selected\(key\)[\s\S]*?findIndexByKeyInFiltered\(key\)[\s\S]*?text:\s*delegateRoot\.name/;
-  const typedBadgeText = /Repeater\s*\{[\s\S]*?delegate:\s*Item\s*\{[\s\S]*?required\s+property\s+string\s+modelData[\s\S]*?text:\s*modelData/;
+function evaluateBinding(block, property, ctx) {
+  const match = block.match(new RegExp(`^\\s*${property}:\\s*(.+)$`, "m"));
+  assert.ok(match, `missing ${property} binding`);
+  return new Function("ctx", `with (ctx) { return (${match[1]}); }`)(ctx);
+}
 
-  assert.match(source, defaultDelegate, "default delegate must be present");
-  assert.match(source, typedItemRoles, "default delegate must type key/name/index roles");
-  assert.match(source, typedRoleUsage, "default delegate must use typed roles for selection and label text");
-  assert.match(source, typedBadgeText, "default delegate must type badge modelData");
+function executeHandler(block, handler, ctx) {
+  const declaration = extractHandlerBlock(block, handler);
+  const body = declaration.slice(declaration.indexOf("{"));
+  return new Function(
+    "ctx",
+    `with (ctx) { return (function() ${body}).call(ctx); }`,
+  )(ctx);
+}
+
+function testSearchableComboBoxDefaultDelegateSelectsOwnRolesAndBadges() {
+  const inlineComponents = source.replace(/component (\w+): \w+\s*\{/g, "$1 {");
+  const option = extractComponentBlocks(inlineComponents, "SearchOption")[0];
+  const badge = extractComponentBlocks(inlineComponents, "Badge")[0];
+  const defaults = findComponentBlock(
+    source,
+    "Component",
+    "id: defaultDelegate",
+  );
+  const selected = [];
+  const owner = createContext({
+    filteredItems: [{ key: "display", name: "Display" }],
+  });
+  owner.selected = (key) => selected.push(key);
+  owner.findIndexByKeyInFiltered = (key) =>
+    qmlFunction("findIndexByKeyInFiltered", "key")(owner, key);
+  let closes = 0;
+  const combo = {
+    currentIndex: -1,
+    popup: {
+      close() {
+        closes++;
+      },
+    },
+  };
+  const view = { width: 320, currentIndex: -1 };
+  const ownerScope = { root: owner, combo, listView: view };
+  const delegateRoot = {
+    widgetOwner: evaluateBinding(defaults, "widgetOwner", ownerScope),
+    parentComboBox: evaluateBinding(defaults, "parentComboBox", ownerScope),
+    ownerView: evaluateBinding(defaults, "ownerView", ownerScope),
+    ListView: { view },
+    index: 0,
+    key: "display",
+    name: "Display",
+    hovered: false,
+    model: { badgeLocations: ["DP-1", "HDMI-A-1"] },
+  };
+  const scope = { delegateRoot };
+  assert.equal(evaluateBinding(option, "width", scope), 320);
+  assert.equal(
+    evaluateBinding(extractComponentBlocks(option, "NText")[0], "text", scope),
+    "Display",
+  );
+  executeHandler(option, "onHoveredChanged", scope);
+  assert.equal(view.currentIndex, -1);
+  delegateRoot.hovered = true;
+  executeHandler(option, "onHoveredChanged", scope);
+  assert.equal(view.currentIndex, 0);
+  assert.equal(evaluateBinding(option, "highlighted", scope), true);
+  executeHandler(option, "onClicked", scope);
+  assert.deepEqual(selected, ["display"]);
+  assert.equal(combo.currentIndex, 0);
+  assert.equal(closes, 1);
+  const repeater = extractComponentBlocks(option, "Repeater")[0];
+  const badges = evaluateBinding(repeater, "model", scope);
+  const text = extractComponentBlocks(badge, "NText")[0];
+  assert.deepEqual(
+    badges.map((modelData) =>
+      evaluateBinding(text, "text", {
+        badgeDelegate: { modelData },
+      }),
+    ),
+    ["DP-1", "HDMI-A-1"],
+  );
+  delegateRoot.model = {};
+  assert.deepEqual(evaluateBinding(repeater, "model", scope), []);
 }
 
 function testSearchableComboBoxCurrentSelectionHelpersExecute() {
-  assert.match(source, /function filteredKeyAt\(index\)/, "filteredKeyAt must type index input");
   const filteredKeyAt = qmlFunction("filteredKeyAt", "index");
   const activateCurrentSelection = qmlFunction("activateCurrentSelection");
   const selectedKeys = [];
@@ -187,8 +287,8 @@ function testSearchableComboBoxCurrentSelectionHelpersExecute() {
     ],
   });
   ctx.combo = { currentIndex: 1 };
-  ctx.filteredKeyAt = index => filteredKeyAt(ctx, index);
-  ctx.selected = key => selectedKeys.push(key);
+  ctx.filteredKeyAt = (index) => filteredKeyAt(ctx, index);
+  ctx.selected = (key) => selectedKeys.push(key);
 
   assert.equal(filteredKeyAt(ctx, -1), "");
   assert.equal(filteredKeyAt(ctx, 2), "");
@@ -203,7 +303,9 @@ function testSearchableComboBoxCurrentSelectionHelpersExecute() {
 }
 
 function testSearchableComboBoxCurrentKeySyncExecutes() {
-  const syncCurrentIndexToCurrentKey = qmlFunction("syncCurrentIndexToCurrentKey");
+  const syncCurrentIndexToCurrentKey = qmlFunction(
+    "syncCurrentIndexToCurrentKey",
+  );
   const ctx = createContext({
     filteredItems: [
       { key: "audio", name: "Audio" },
@@ -212,7 +314,8 @@ function testSearchableComboBoxCurrentKeySyncExecutes() {
   });
   ctx.currentKey = "network";
   ctx.combo = { currentIndex: -1 };
-  ctx.findIndexByKeyInFiltered = key => qmlFunction("findIndexByKeyInFiltered", "key")(ctx, key);
+  ctx.findIndexByKeyInFiltered = (key) =>
+    qmlFunction("findIndexByKeyInFiltered", "key")(ctx, key);
 
   syncCurrentIndexToCurrentKey(ctx);
   assert.equal(ctx.combo.currentIndex, 1);
@@ -253,12 +356,12 @@ function testSearchableComboBoxPopupOpenFiltersAndFocusesSearch() {
 const tests = [
   testSearchableComboBoxFindIndexByKeyReturnsFirstMatchAndMissingSentinel,
   testSearchableComboBoxFindIndexByKeyInFilteredUsesFilteredModelOnly,
-  testSearchableComboBoxKeyLookupInputsAreTyped,
+  testSearchableComboBoxKeyLookupKeepsDistinctStringKeys,
   testSearchableComboBoxFilterModelClearsAndReturnsForMissingOrEmptyModel,
   testSearchableComboBoxFilterModelCopiesAllItemsForBlankSearch,
   testSearchableComboBoxFilterModelFallsBackToCaseInsensitiveNameSearch,
   testSearchableComboBoxFilterModelUsesFuzzyResultOrdering,
-  testSearchableComboBoxDefaultDelegateRolesAreTyped,
+  testSearchableComboBoxDefaultDelegateSelectsOwnRolesAndBadges,
   testSearchableComboBoxCurrentSelectionHelpersExecute,
   testSearchableComboBoxCurrentKeySyncExecutes,
   testSearchableComboBoxPopupOpenFiltersAndFocusesSearch,

@@ -7,7 +7,11 @@ const source = readQml("Modules/Bar/Widgets/Workspace.qml");
 
 function qmlFunction(functionName, ...argNames) {
   const body = extractFunctionBody(source, functionName);
-  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+  return new Function(
+    "ctx",
+    ...argNames,
+    `const root = ctx; with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`,
+  );
 }
 
 function listModel(items = []) {
@@ -44,21 +48,30 @@ function testWorkspaceDimensionsRespectLabelsAndActivity() {
   assert.equal(getWorkspaceHeight(ctx, { idx: 2, isActive: true }), 44);
 
   ctx.labelMode = "name";
-  assert.equal(getWorkspaceWidth(ctx, { idx: 2, name: "mailbox", isActive: false }), 44);
+  assert.equal(
+    getWorkspaceWidth(ctx, { idx: 2, name: "mailbox", isActive: false }),
+    44,
+  );
 
   ctx.labelMode = "index+name";
-  assert.equal(getWorkspaceWidth(ctx, { idx: 2, name: "mailbox", isActive: false }), 60);
+  assert.equal(
+    getWorkspaceWidth(ctx, { idx: 2, name: "mailbox", isActive: false }),
+    60,
+  );
 }
 
 function testWorkspaceAggregateDimensionsIncludeSpacingAndPadding() {
   const computeWidth = qmlFunction("computeWidth");
   const computeHeight = qmlFunction("computeHeight");
   const ctx = {
-    localWorkspaces: listModel([{ w: 10, h: 3 }, { w: 14, h: 7 }]),
+    localWorkspaces: listModel([
+      { w: 10, h: 3 },
+      { w: 14, h: 7 },
+    ]),
     spacingBetweenPills: 5,
     horizontalPadding: 2,
-    getWorkspaceWidth: ws => ws.w,
-    getWorkspaceHeight: ws => ws.h,
+    getWorkspaceWidth: (ws) => ws.w,
+    getWorkspaceHeight: (ws) => ws.h,
   };
 
   assert.equal(computeWidth(ctx), 33);
@@ -70,10 +83,14 @@ function testWorkspaceFocusedIndexAndSwitchingGuards() {
   const switchByOffset = qmlFunction("switchByOffset", "offset");
   const switched = [];
   const ctx = {
-    localWorkspaces: listModel([{ idx: 1 }, { idx: 2, isFocused: true }, { idx: 3 }]),
+    localWorkspaces: listModel([
+      { idx: 1 },
+      { idx: 2, isFocused: true },
+      { idx: 3 },
+    ]),
     getFocusedLocalIndex: () => getFocusedLocalIndex(ctx),
     CompositorService: {
-      switchToWorkspace: ws => switched.push(ws.idx),
+      switchToWorkspace: (ws) => switched.push(ws.idx),
     },
   };
 
@@ -110,14 +127,55 @@ function testWorkspaceRefreshFiltersByScreenAndOccupancy() {
   };
 
   refreshWorkspaces(ctx);
-  assert.deepEqual(ctx.localWorkspaces.items.map(ws => ws.idx), [1]);
+  assert.deepEqual(
+    ctx.localWorkspaces.items.map((ws) => ws.idx),
+    [1],
+  );
   assert.equal(ctx.workspaceRepeaterHorizontal.model, ctx.localWorkspaces);
   assert.equal(ctx.workspaceRepeaterVertical.model, ctx.localWorkspaces);
   assert.equal(focusUpdates, 1);
 
+  const other = {
+    ...ctx,
+    screen: { name: "hdmi-a-1" },
+    localWorkspaces: listModel(),
+    workspaceRepeaterHorizontal: {},
+    workspaceRepeaterVertical: {},
+  };
+  refreshWorkspaces(other);
+  assert.deepEqual(
+    other.localWorkspaces.items.map((ws) => ws.idx),
+    [3],
+  );
+  assert.deepEqual(
+    ctx.localWorkspaces.items.map((ws) => ws.idx),
+    [1],
+  );
+  assert.equal(other.workspaceRepeaterHorizontal.model, other.localWorkspaces);
+  assert.equal(other.workspaceRepeaterVertical.model, other.localWorkspaces);
+
   ctx.followFocusedScreen = true;
   refreshWorkspaces(ctx);
-  assert.deepEqual(ctx.localWorkspaces.items.map(ws => ws.idx), [3]);
+  assert.deepEqual(
+    ctx.localWorkspaces.items.map((ws) => ws.idx),
+    [3],
+  );
+  assert.notEqual(ctx.localWorkspaces, other.localWorkspaces);
+
+  ctx.followFocusedScreen = false;
+  ctx.hideUnoccupied = false;
+  refreshWorkspaces(ctx);
+  assert.deepEqual(
+    ctx.localWorkspaces.items.map((ws) => ws.idx),
+    [1, 2],
+  );
+  ctx.screen = null;
+  refreshWorkspaces(ctx);
+  assert.deepEqual(ctx.localWorkspaces.items, []);
+  assert.deepEqual(
+    other.localWorkspaces.items.map((ws) => ws.idx),
+    [3],
+  );
 }
 
 const tests = [

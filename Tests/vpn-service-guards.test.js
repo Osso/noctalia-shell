@@ -1,46 +1,135 @@
 #!/usr/bin/env node
 
 const assert = require("assert/strict");
-const { extractFunctionBody, readQml } = require("./qml-test-utils");
+const {
+  extractFunctionBody,
+  extractHandlerBlock,
+  findComponentBlock,
+  readQml,
+} = require("./qml-test-utils");
 
 const source = readQml("Services/Networking/VPNService.qml");
 
 function qmlFunction(functionName, ...argNames) {
   const body = extractFunctionBody(source, functionName);
-  return new Function("ctx", ...argNames, `with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`);
+  return new Function(
+    "ctx",
+    ...argNames,
+    `const root = ctx; with (ctx) { return (function(${argNames.join(", ")}) ${body}).call(ctx, ${argNames.join(", ")}); }`,
+  );
+}
+
+function executeHandler(block, handler, ctx, ...args) {
+  const match = block.match(
+    new RegExp(`^\\s*${handler.replaceAll(".", "\\.")}:\\s*(.+)$`, "m"),
+  );
+  assert.ok(match, `missing ${handler} handler`);
+  const declaration = match[1].includes("{")
+    ? extractHandlerBlock(block, handler)
+    : null;
+  const body = declaration
+    ? declaration.slice(declaration.indexOf("{"))
+    : `{ ${match[1]}; }`;
+  return new Function(
+    "ctx",
+    "args",
+    `with (ctx) { return (function(exitCode) ${body}).apply(ctx, args); }`,
+  )(ctx, args);
+}
+
+function evaluateBinding(block, property, ctx) {
+  const match = block.match(new RegExp(`^\\s*${property}:\\s*(.+)$`, "m"));
+  assert.ok(match, `missing ${property} binding`);
+  return new Function("ctx", `with (ctx) { return (${match[1]}); }`)(ctx);
 }
 
 function testVpnPollingLifecycleGuards() {
-  const barWidget = readQml("Modules/Bar/Widgets/VPN.qml");
-  const controlCenterPanel = readQml("Modules/Panels/ControlCenter/ControlCenterPanel.qml");
-  const panel = readQml("Modules/Panels/VPN/VPNPanel.qml");
-  const beginBody = extractFunctionBody(source, "beginPolling");
-  const endBody = extractFunctionBody(source, "endPolling");
-  const isActiveBody = extractFunctionBody(source, "isPollingActive");
-  const updateBody = extractFunctionBody(barWidget, "updateVpnPolling");
-  const controlUpdateBody = extractFunctionBody(controlCenterPanel, "updateVpnPanelPolling");
-  const shortcutBody = extractFunctionBody(controlCenterPanel, "shortcutSectionHasVpn");
-  const hasShortcutBody = extractFunctionBody(controlCenterPanel, "hasVpnShortcut");
+  let refreshes = 0;
+  const service = {
+    pollingRefs: 0,
+    refresh() {
+      refreshes++;
+    },
+    Logger: { i() {} },
+  };
+  service.root = service;
+  for (const name of ["beginPolling", "endPolling", "isPollingActive"]) {
+    service[name] = () => qmlFunction(name)(service);
+  }
+  executeHandler(source, "Component.onCompleted", service);
+  assert.equal(refreshes, 0);
+  const timer = findComponentBlock(source, "Timer", "id: refreshTimer");
+  const delayed = findComponentBlock(
+    source,
+    "Timer",
+    "id: delayedRefreshTimer",
+  );
+  assert.equal(evaluateBinding(timer, "running", service), false);
+  executeHandler(delayed, "onTriggered", service);
+  assert.equal(refreshes, 0);
 
-  assert.match(source, /property int pollingRefs: 0/, "VPNService must ref-count polling consumers");
-  assert.match(source, /running: root\.isPollingActive\(\)/, "VPN refresh timer must run only while polling is active");
-  assert.match(source, /Component\.onCompleted: \{\s*Logger\.i\("VPN", "Service started with lazy polling"\);\s*\}/, "VPNService must not start nmcli refresh at startup without consumers");
-  assert.match(beginBody, /pollingRefs = pollingRefs \+ 1[\s\S]*refresh\(\)/, "beginPolling must increment refs and refresh immediately");
-  assert.match(endBody, /pollingRefs = Math\.max\(0, pollingRefs - 1\)/, "endPolling must clamp refs at zero");
-  assert.match(isActiveBody, /return pollingRefs > 0/, "isPollingActive must report positive refs");
-  assert.match(updateBody, /VPNService\.beginPolling\(\)[\s\S]*VPNService\.endPolling\(\)/, "bar VPN widget must hold a polling ref only while visible");
-  assert.match(shortcutBody, /Settings\.data\.controlCenter\.shortcuts\[section\] \|\| \[\][\s\S]*widgets\[i\]\.id === "VPN"/, "Control Center panel must detect configured VPN shortcuts");
-  assert.match(hasShortcutBody, /shortcutSectionHasVpn\("left"\) \|\| shortcutSectionHasVpn\("right"\)/, "Control Center panel must check both shortcut sections");
-  assert.match(controlCenterPanel, /import qs\.Services\.Networking/, "Control Center panel must import VPNService before using it");
-  assert.match(controlUpdateBody, /const shouldRegister = shouldPoll && hasVpnShortcut\(\)[\s\S]*VPNService\.beginPolling\(\)[\s\S]*VPNService\.endPolling\(\)/, "Control Center panel must hold a polling ref only while open and containing a VPN shortcut");
-  assert.match(panel, /onOpened:[\s\S]*VPNService\.beginPolling\(\)[\s\S]*onClosed:[\s\S]*VPNService\.endPolling\(\)/, "VPN panel must hold a polling ref while open");
+  const barWidget = readQml("Modules/Bar/Widgets/VPN.qml");
+  const update = new Function(
+    "ctx",
+    `with (ctx) { return (function() ${extractFunctionBody(barWidget, "updateVpnPolling")}).call(ctx); }`,
+  );
+  const owners = ["DP-1", "HDMI-A-1"].map((name) => {
+    const owner = {
+      screen: { name },
+      visible: false,
+      vpnPollingRegistered: false,
+      VPNService: service,
+    };
+    owner.updateVpnPolling = () => update(owner);
+    return owner;
+  });
+  for (const owner of owners)
+    executeHandler(barWidget, "Component.onCompleted", owner);
+  assert.equal(service.pollingRefs, 0);
+  owners[0].visible = true;
+  executeHandler(barWidget, "onVisibleChanged", owners[0]);
+  executeHandler(barWidget, "onVisibleChanged", owners[0]);
+  owners[1].visible = true;
+  executeHandler(barWidget, "onVisibleChanged", owners[1]);
+  assert.equal(service.pollingRefs, 2);
+  assert.equal(refreshes, 2);
+  assert.equal(evaluateBinding(timer, "running", service), true);
+  executeHandler(timer, "onTriggered", service);
+  executeHandler(delayed, "onTriggered", service);
+  assert.equal(refreshes, 4);
+  owners[0].visible = false;
+  executeHandler(barWidget, "onVisibleChanged", owners[0]);
+  assert.equal(service.pollingRefs, 1);
+  assert.equal(owners[1].vpnPollingRegistered, true);
+  executeHandler(barWidget, "Component.onDestruction", owners[1]);
+  executeHandler(barWidget, "Component.onDestruction", owners[1]);
+  assert.equal(service.pollingRefs, 0);
+  const panel = readQml("Modules/Panels/VPN/VPNPanel.qml");
+  executeHandler(panel, "onOpened", { VPNService: service });
+  assert.equal(service.pollingRefs, 1);
+  executeHandler(panel, "onClosed", { VPNService: service });
+  assert.equal(service.pollingRefs, 0);
+  assert.equal(evaluateBinding(timer, "running", service), false);
 }
 
 function testControlCenterVpnPollingExecutes() {
-  const controlCenterPanel = readQml("Modules/Panels/ControlCenter/ControlCenterPanel.qml");
-  const shortcutSectionHasVpn = new Function("ctx", "section", `with (ctx) { return (function(section) ${extractFunctionBody(controlCenterPanel, "shortcutSectionHasVpn")}).call(ctx, section); }`);
-  const hasVpnShortcut = new Function("ctx", `with (ctx) { return (function() ${extractFunctionBody(controlCenterPanel, "hasVpnShortcut")}).call(ctx); }`);
-  const updateVpnPanelPolling = new Function("ctx", "shouldPoll", `with (ctx) { return (function(shouldPoll) ${extractFunctionBody(controlCenterPanel, "updateVpnPanelPolling")}).call(ctx, shouldPoll); }`);
+  const controlCenterPanel = readQml(
+    "Modules/Panels/ControlCenter/ControlCenterPanel.qml",
+  );
+  const shortcutSectionHasVpn = new Function(
+    "ctx",
+    "section",
+    `with (ctx) { return (function(section) ${extractFunctionBody(controlCenterPanel, "shortcutSectionHasVpn")}).call(ctx, section); }`,
+  );
+  const hasVpnShortcut = new Function(
+    "ctx",
+    `with (ctx) { return (function() ${extractFunctionBody(controlCenterPanel, "hasVpnShortcut")}).call(ctx); }`,
+  );
+  const updateVpnPanelPolling = new Function(
+    "ctx",
+    "shouldPoll",
+    `with (ctx) { return (function(shouldPoll) ${extractFunctionBody(controlCenterPanel, "updateVpnPanelPolling")}).call(ctx, shouldPoll); }`,
+  );
   const calls = [];
   const ctx = {
     Settings: {
@@ -78,6 +167,19 @@ function testControlCenterVpnPollingExecutes() {
   updateVpnPanelPolling(ctx, false);
   updateVpnPanelPolling(ctx, false);
   assert.deepEqual(calls, ["begin", "end"]);
+
+  const shortcuts = ctx.Settings.data.controlCenter.shortcuts;
+  shortcuts.right = [];
+  updateVpnPanelPolling(ctx, true);
+  assert.deepEqual(calls, ["begin", "end"]);
+  shortcuts.left = [{ id: "VPN" }];
+  assert.equal(hasVpnShortcut(ctx), true);
+  updateVpnPanelPolling(ctx, true);
+  shortcuts.left = [];
+  updateVpnPanelPolling(ctx, true);
+  assert.deepEqual(calls, ["begin", "end", "begin", "end"]);
+  delete shortcuts.right;
+  assert.equal(shortcutSectionHasVpn(ctx, "right"), false);
 }
 
 function testVpnPollingRefsExecute() {
@@ -135,7 +237,14 @@ function testVpnConnectGuardsAndStartsProcess() {
     connections: {
       "vpn-1": { name: "Work VPN" },
     },
-    connectProcess: { uuid: "", name: "", output: "stale", errorOutput: "stale", exitObserved: true, running: false },
+    connectProcess: {
+      uuid: "",
+      name: "",
+      output: "stale",
+      errorOutput: "stale",
+      exitObserved: true,
+      running: false,
+    },
   };
 
   connectVpn(ctx, "");
@@ -144,14 +253,25 @@ function testVpnConnectGuardsAndStartsProcess() {
 
   ctx.connectProcess.running = true;
   connectVpn(ctx, "vpn-1");
-  assert.equal(ctx.connecting, false, "running process must block a second connect even if flags desynchronize");
+  assert.equal(
+    ctx.connecting,
+    false,
+    "running process must block a second connect even if flags desynchronize",
+  );
   ctx.connectProcess.running = false;
 
   connectVpn(ctx, "vpn-1");
   assert.equal(ctx.connecting, true);
   assert.equal(ctx.connectingUuid, "vpn-1");
   assert.equal(ctx.lastError, "");
-  assert.deepEqual(ctx.connectProcess, { uuid: "vpn-1", name: "Work VPN", output: "", errorOutput: "", exitObserved: false, running: true });
+  assert.deepEqual(ctx.connectProcess, {
+    uuid: "vpn-1",
+    name: "Work VPN",
+    output: "",
+    errorOutput: "",
+    exitObserved: false,
+    running: true,
+  });
 
   ctx.connectProcess.running = false;
   connectVpn(ctx, "vpn-1");
@@ -167,7 +287,14 @@ function testVpnDisconnectGuardsAndStartsProcess() {
     connections: {
       "vpn-1": { name: "Work VPN" },
     },
-    disconnectProcess: { uuid: "", name: "", output: "stale", errorOutput: "stale", exitObserved: true, running: false },
+    disconnectProcess: {
+      uuid: "",
+      name: "",
+      output: "stale",
+      errorOutput: "stale",
+      exitObserved: true,
+      running: false,
+    },
   };
 
   disconnectVpn(ctx, "");
@@ -176,14 +303,25 @@ function testVpnDisconnectGuardsAndStartsProcess() {
 
   ctx.disconnectProcess.running = true;
   disconnectVpn(ctx, "vpn-1");
-  assert.equal(ctx.disconnecting, false, "running process must block a second disconnect even if flags desynchronize");
+  assert.equal(
+    ctx.disconnecting,
+    false,
+    "running process must block a second disconnect even if flags desynchronize",
+  );
   ctx.disconnectProcess.running = false;
 
   disconnectVpn(ctx, "vpn-1");
   assert.equal(ctx.disconnecting, true);
   assert.equal(ctx.disconnectingUuid, "vpn-1");
   assert.equal(ctx.lastError, "");
-  assert.deepEqual(ctx.disconnectProcess, { uuid: "vpn-1", name: "Work VPN", output: "", errorOutput: "", exitObserved: false, running: true });
+  assert.deepEqual(ctx.disconnectProcess, {
+    uuid: "vpn-1",
+    name: "Work VPN",
+    output: "",
+    errorOutput: "",
+    exitObserved: false,
+    running: true,
+  });
 
   ctx.disconnectProcess.running = false;
   disconnectVpn(ctx, "vpn-1");
@@ -260,33 +398,43 @@ function testVpnScheduleRefreshRestartsTimer() {
 function testVpnParsesRefreshOutput() {
   const parseRefreshOutput = qmlFunction("parseRefreshOutput", "rawOutput");
 
-  assert.match(source, /function parseRefreshOutput\(rawOutput\)/, "parseRefreshOutput must type raw nmcli output");
-  assert.deepEqual(parseRefreshOutput({}, [
-    "Work:VPN:11111111-1111-1111-1111-111111111111:vpn:tun0",
-    "Wire:Guard:22222222-2222-2222-2222-222222222222:wireguard:--",
-    "Home WiFi:33333333-3333-3333-3333-333333333333:802-11-wireless:wlan0",
-    "malformed",
-    "Missing UUID::vpn:tun1",
-  ].join("\n")), {
-    "11111111-1111-1111-1111-111111111111": {
-      uuid: "11111111-1111-1111-1111-111111111111",
-      name: "Work:VPN",
-      device: "tun0",
-      active: true,
+  assert.deepEqual(
+    parseRefreshOutput(
+      {},
+      [
+        "Work:VPN:11111111-1111-1111-1111-111111111111:vpn:tun0",
+        "Wire:Guard:22222222-2222-2222-2222-222222222222:wireguard:--",
+        "Home WiFi:33333333-3333-3333-3333-333333333333:802-11-wireless:wlan0",
+        "malformed",
+        "Missing UUID::vpn:tun1",
+      ].join("\n"),
+    ),
+    {
+      "11111111-1111-1111-1111-111111111111": {
+        uuid: "11111111-1111-1111-1111-111111111111",
+        name: "Work:VPN",
+        device: "tun0",
+        active: true,
+      },
+      "22222222-2222-2222-2222-222222222222": {
+        uuid: "22222222-2222-2222-2222-222222222222",
+        name: "Wire:Guard",
+        device: "--",
+        active: false,
+      },
     },
-    "22222222-2222-2222-2222-222222222222": {
-      uuid: "22222222-2222-2222-2222-222222222222",
-      name: "Wire:Guard",
-      device: "--",
-      active: false,
-    },
-  });
+  );
   assert.deepEqual(parseRefreshOutput({}, ""), {});
 }
 
 function testVpnRefreshCompletionExecutesSuccessFailureAndPendingDrain() {
-  const finishRefresh = qmlFunction("finishRefresh", "exitCode", "output", "errorOutput");
-  const createContext = overrides => {
+  const finishRefresh = qmlFunction(
+    "finishRefresh",
+    "exitCode",
+    "output",
+    "errorOutput",
+  );
+  const createContext = (overrides) => {
     const schedules = [];
     const ctx = {
       refreshing: true,
@@ -309,7 +457,9 @@ function testVpnRefreshCompletionExecutesSuccessFailureAndPendingDrain() {
 
   const success = createContext({ refreshPending: true });
   finishRefresh(success, 0, "vpn output", "");
-  assert.deepEqual(success.connections, { fresh: { uuid: "fresh", active: true } });
+  assert.deepEqual(success.connections, {
+    fresh: { uuid: "fresh", active: true },
+  });
   assert.equal(success.refreshing, false);
   assert.equal(success.refreshPending, false);
   assert.deepEqual(success.schedules, [200]);
@@ -323,19 +473,30 @@ function testVpnRefreshCompletionExecutesSuccessFailureAndPendingDrain() {
 }
 
 function testVpnRefreshStartFailureExecutesWithoutExitedSignal() {
-  const handleRefreshStartFailure = qmlFunction("handleRefreshStartFailure", "exitObserved");
-  const finishRefresh = qmlFunction("finishRefresh", "exitCode", "output", "errorOutput");
+  const handleRefreshStartFailure = qmlFunction(
+    "handleRefreshStartFailure",
+    "exitObserved",
+  );
+  const finishRefresh = qmlFunction(
+    "finishRefresh",
+    "exitCode",
+    "output",
+    "errorOutput",
+  );
   const ctx = {
     refreshing: true,
     refreshPending: false,
     connections: {},
     lastError: "",
     Logger: { w() {} },
-    parseRefreshOutput() { return {}; },
+    parseRefreshOutput() {
+      return {};
+    },
     scheduleRefresh() {},
   };
   ctx.root = ctx;
-  ctx.finishRefresh = (exitCode, output, errorOutput) => finishRefresh(ctx, exitCode, output, errorOutput);
+  ctx.finishRefresh = (exitCode, output, errorOutput) =>
+    finishRefresh(ctx, exitCode, output, errorOutput);
 
   handleRefreshStartFailure(ctx, false);
   assert.equal(ctx.refreshing, false);
@@ -360,13 +521,25 @@ function createVpnActionContext() {
     disconnectingUuid: "vpn-1",
     lastError: "",
     Logger: { i() {}, w() {} },
-    I18n: { tr(key) { return key; } },
-    ToastService: {
-      showNotice(...args) { notices.push(args); },
-      showWarning(...args) { warnings.push(args); },
+    I18n: {
+      tr(key) {
+        return key;
+      },
     },
-    setConnection(uuid, data) { connectionUpdates.push([uuid, data]); },
-    scheduleRefresh(interval) { schedules.push(interval); },
+    ToastService: {
+      showNotice(...args) {
+        notices.push(args);
+      },
+      showWarning(...args) {
+        warnings.push(args);
+      },
+    },
+    setConnection(uuid, data) {
+      connectionUpdates.push([uuid, data]);
+    },
+    scheduleRefresh(interval) {
+      schedules.push(interval);
+    },
   };
   ctx.root = ctx;
   ctx.connectionUpdates = connectionUpdates;
@@ -377,7 +550,14 @@ function createVpnActionContext() {
 }
 
 function testVpnConnectCompletionUsesExitStatus() {
-  const finishConnect = qmlFunction("finishConnect", "uuid", "name", "exitCode", "output", "errorOutput");
+  const finishConnect = qmlFunction(
+    "finishConnect",
+    "uuid",
+    "name",
+    "exitCode",
+    "output",
+    "errorOutput",
+  );
   const success = createVpnActionContext();
   finishConnect(success, "vpn-1", "Work VPN", 0, "localized success", "");
   assert.deepEqual(success.connectionUpdates, [["vpn-1", { active: true }]]);
@@ -389,24 +569,40 @@ function testVpnConnectCompletionUsesExitStatus() {
 
   const reentrant = createVpnActionContext();
   Object.defineProperty(reentrant, "connecting", {
-    get() { return true; },
+    get() {
+      return true;
+    },
     set(value) {
-      if (!value)
-        reentrant.connectingUuid = "vpn-2";
+      if (!value) reentrant.connectingUuid = "vpn-2";
     },
   });
   finishConnect(reentrant, "vpn-1", "Work VPN", 0, "", "");
-  assert.equal(reentrant.connectingUuid, "vpn-2", "completion must not clobber an action started by busy-state observers");
+  assert.equal(
+    reentrant.connectingUuid,
+    "vpn-2",
+    "completion must not clobber an action started by busy-state observers",
+  );
 
   const stale = createVpnActionContext();
   stale.connectingUuid = "vpn-2";
   finishConnect(stale, "vpn-1", "Work VPN", 0, "", "");
-  assert.equal(stale.connecting, true, "stale completion must not clear a newer action");
+  assert.equal(
+    stale.connecting,
+    true,
+    "stale completion must not clear a newer action",
+  );
   assert.equal(stale.connectingUuid, "vpn-2");
   assert.deepEqual(stale.connectionUpdates, []);
 
   const failure = createVpnActionContext();
-  finishConnect(failure, "vpn-1", "Work VPN", 10, "stdout diagnostic\nmore", "");
+  finishConnect(
+    failure,
+    "vpn-1",
+    "Work VPN",
+    10,
+    "stdout diagnostic\nmore",
+    "",
+  );
   assert.deepEqual(failure.connectionUpdates, []);
   assert.equal(failure.connecting, false);
   assert.equal(failure.connectingUuid, "");
@@ -416,10 +612,19 @@ function testVpnConnectCompletionUsesExitStatus() {
 }
 
 function testVpnDisconnectCompletionUsesExitStatus() {
-  const finishDisconnect = qmlFunction("finishDisconnect", "uuid", "name", "exitCode", "output", "errorOutput");
+  const finishDisconnect = qmlFunction(
+    "finishDisconnect",
+    "uuid",
+    "name",
+    "exitCode",
+    "output",
+    "errorOutput",
+  );
   const success = createVpnActionContext();
   finishDisconnect(success, "vpn-1", "Work VPN", 0, "", "");
-  assert.deepEqual(success.connectionUpdates, [["vpn-1", { active: false, device: "" }]]);
+  assert.deepEqual(success.connectionUpdates, [
+    ["vpn-1", { active: false, device: "" }],
+  ]);
   assert.equal(success.disconnecting, false);
   assert.equal(success.disconnectingUuid, "");
   assert.equal(success.notices.length, 1);
@@ -427,19 +632,28 @@ function testVpnDisconnectCompletionUsesExitStatus() {
 
   const reentrant = createVpnActionContext();
   Object.defineProperty(reentrant, "disconnecting", {
-    get() { return true; },
+    get() {
+      return true;
+    },
     set(value) {
-      if (!value)
-        reentrant.disconnectingUuid = "vpn-2";
+      if (!value) reentrant.disconnectingUuid = "vpn-2";
     },
   });
   finishDisconnect(reentrant, "vpn-1", "Work VPN", 0, "", "");
-  assert.equal(reentrant.disconnectingUuid, "vpn-2", "completion must not clobber an action started by busy-state observers");
+  assert.equal(
+    reentrant.disconnectingUuid,
+    "vpn-2",
+    "completion must not clobber an action started by busy-state observers",
+  );
 
   const stale = createVpnActionContext();
   stale.disconnectingUuid = "vpn-2";
   finishDisconnect(stale, "vpn-1", "Work VPN", 0, "", "");
-  assert.equal(stale.disconnecting, true, "stale completion must not clear a newer action");
+  assert.equal(
+    stale.disconnecting,
+    true,
+    "stale completion must not clear a newer action",
+  );
   assert.equal(stale.disconnectingUuid, "vpn-2");
   assert.deepEqual(stale.connectionUpdates, []);
 
@@ -452,10 +666,34 @@ function testVpnDisconnectCompletionUsesExitStatus() {
 }
 
 function testVpnActionStartFailuresDoNotDoubleFinalize() {
-  const finishConnect = qmlFunction("finishConnect", "uuid", "name", "exitCode", "output", "errorOutput");
-  const finishDisconnect = qmlFunction("finishDisconnect", "uuid", "name", "exitCode", "output", "errorOutput");
-  const handleConnectStartFailure = qmlFunction("handleConnectStartFailure", "uuid", "name", "exitObserved");
-  const handleDisconnectStartFailure = qmlFunction("handleDisconnectStartFailure", "uuid", "name", "exitObserved");
+  const finishConnect = qmlFunction(
+    "finishConnect",
+    "uuid",
+    "name",
+    "exitCode",
+    "output",
+    "errorOutput",
+  );
+  const finishDisconnect = qmlFunction(
+    "finishDisconnect",
+    "uuid",
+    "name",
+    "exitCode",
+    "output",
+    "errorOutput",
+  );
+  const handleConnectStartFailure = qmlFunction(
+    "handleConnectStartFailure",
+    "uuid",
+    "name",
+    "exitObserved",
+  );
+  const handleDisconnectStartFailure = qmlFunction(
+    "handleDisconnectStartFailure",
+    "uuid",
+    "name",
+    "exitObserved",
+  );
 
   const connect = createVpnActionContext();
   connect.finishConnect = (...args) => finishConnect(connect, ...args);
@@ -463,36 +701,106 @@ function testVpnActionStartFailuresDoNotDoubleFinalize() {
   assert.equal(connect.connecting, false);
   assert.match(connect.lastError, /failed to start/);
   const normalConnectExit = createVpnActionContext();
-  normalConnectExit.finishConnect = (...args) => finishConnect(normalConnectExit, ...args);
+  normalConnectExit.finishConnect = (...args) =>
+    finishConnect(normalConnectExit, ...args);
   handleConnectStartFailure(normalConnectExit, "vpn-1", "Work VPN", true);
   assert.equal(normalConnectExit.connecting, true);
   assert.equal(normalConnectExit.connectingUuid, "vpn-1");
   assert.equal(normalConnectExit.warnings.length, 0);
 
   const disconnect = createVpnActionContext();
-  disconnect.finishDisconnect = (...args) => finishDisconnect(disconnect, ...args);
+  disconnect.finishDisconnect = (...args) =>
+    finishDisconnect(disconnect, ...args);
   handleDisconnectStartFailure(disconnect, "vpn-1", "Work VPN", false);
   assert.equal(disconnect.disconnecting, false);
   assert.match(disconnect.lastError, /failed to start/);
   const normalDisconnectExit = createVpnActionContext();
-  normalDisconnectExit.finishDisconnect = (...args) => finishDisconnect(normalDisconnectExit, ...args);
+  normalDisconnectExit.finishDisconnect = (...args) =>
+    finishDisconnect(normalDisconnectExit, ...args);
   handleDisconnectStartFailure(normalDisconnectExit, "vpn-1", "Work VPN", true);
   assert.equal(normalDisconnectExit.disconnecting, true);
   assert.equal(normalDisconnectExit.disconnectingUuid, "vpn-1");
   assert.equal(normalDisconnectExit.warnings.length, 0);
 }
 
+function exerciseProcessHandlers(processId, finishName, startFailureName) {
+  const block = findComponentBlock(source, "Process", `id: ${processId}`);
+  const calls = [];
+  const process = {
+    uuid: "vpn-1",
+    name: "Work",
+    output: "",
+    errorOutput: "",
+    exitObserved: false,
+    running: true,
+  };
+  const root = {
+    [finishName]: (...args) => calls.push(["exit", ...args]),
+    [startFailureName]: (...args) => calls.push(["running", ...args]),
+  };
+  const ctx = { root, [processId]: process };
+  for (const property of ["running", "exitObserved"]) {
+    Object.defineProperty(ctx, property, {
+      get: () => process[property],
+      set: (value) => {
+        process[property] = value;
+      },
+    });
+  }
+  executeHandler(
+    findComponentBlock(block, "StdioCollector", `${processId}.output = text`),
+    "onStreamFinished",
+    { ...ctx, text: "localized output" },
+  );
+  executeHandler(
+    findComponentBlock(
+      block,
+      "StdioCollector",
+      `${processId}.errorOutput = text`,
+    ),
+    "onStreamFinished",
+    { ...ctx, text: "permission denied" },
+  );
+  executeHandler(block, "onExited", ctx, 10);
+  const identity = processId === "refreshProcess" ? [] : ["vpn-1", "Work"];
+  assert.deepEqual(calls, [
+    ["exit", ...identity, 10, "localized output", "permission denied"],
+  ]);
+  assert.equal(process.output, "");
+  assert.equal(process.errorOutput, "");
+  assert.equal(process.exitObserved, true);
+  process.running = false;
+  executeHandler(block, "onRunningChanged", ctx);
+  assert.deepEqual(calls.at(-1), ["running", ...identity, true]);
+  assert.equal(process.exitObserved, false);
+  calls.length = 0;
+  executeHandler(block, "onRunningChanged", ctx);
+  assert.deepEqual(calls, [["running", ...identity, false]]);
+  calls.length = 0;
+  process.running = true;
+  executeHandler(block, "onRunningChanged", ctx);
+  assert.deepEqual(calls, []);
+}
+
 function testVpnActionProcessesRouteBufferedExitAndStartFailure() {
-  assert.match(source, /id:\s*connectProcess[\s\S]*?property string output[\s\S]*?property string errorOutput[\s\S]*?property bool exitObserved/);
-  assert.match(source, /id:\s*connectProcess[\s\S]*?onExited:\s*function\s*\(exitCode\)[\s\S]*?exitObserved = true[\s\S]*?finishConnect/);
-  assert.match(source, /id:\s*connectProcess[\s\S]*?onRunningChanged:[\s\S]*?handleConnectStartFailure/);
-  assert.match(source, /id:\s*disconnectProcess[\s\S]*?onExited:\s*function\s*\(exitCode\)[\s\S]*?exitObserved = true[\s\S]*?finishDisconnect/);
-  assert.match(source, /id:\s*disconnectProcess[\s\S]*?onRunningChanged:[\s\S]*?handleDisconnectStartFailure/);
+  exerciseProcessHandlers(
+    "connectProcess",
+    "finishConnect",
+    "handleConnectStartFailure",
+  );
+  exerciseProcessHandlers(
+    "disconnectProcess",
+    "finishDisconnect",
+    "handleDisconnectStartFailure",
+  );
 }
 
 function testVpnRefreshProcessRoutesExitAndStartFailure() {
-  assert.match(source, /id:\s*refreshProcess[\s\S]*?onExited:\s*function\s*\(exitCode\)[\s\S]*?finishRefresh/);
-  assert.match(source, /id:\s*refreshProcess[\s\S]*?onRunningChanged:[\s\S]*?handleRefreshStartFailure/);
+  exerciseProcessHandlers(
+    "refreshProcess",
+    "finishRefresh",
+    "handleRefreshStartFailure",
+  );
 }
 
 const tests = [
