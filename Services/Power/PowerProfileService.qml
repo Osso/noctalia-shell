@@ -9,7 +9,7 @@ import qs.Services.UI
 Singleton {
   id: root
 
-  readonly property QtObject powerProfiles: PowerProfiles
+  readonly property PowerProfiles powerProfiles: PowerProfiles
   readonly property bool available: powerProfiles && powerProfiles.hasPerformanceProfile
   property int profile: powerProfiles ? powerProfiles.profile : PowerProfile.Balanced
 
@@ -85,15 +85,15 @@ Singleton {
   }
 
   Connections {
-    target: powerProfiles
+    target: root.powerProfiles
     function onProfileChanged() {
-      root.profile = powerProfiles.profile;
+      root.profile = root.powerProfiles.profile;
       // Only show toast if we have a valid profile name (not "Unknown")
       const profileName = root.getName();
       if (profileName !== "Unknown") {
         ToastService.showNotice(I18n.tr("toast.power-profile.changed"), I18n.tr("toast.power-profile.profile-name", {
-                                                                                  "profile": profileName
-                                                                                }), profileName.toLowerCase().replace(" ", ""));
+          "profile": profileName
+        }), profileName.toLowerCase().replace(" ", ""));
       }
     }
   }

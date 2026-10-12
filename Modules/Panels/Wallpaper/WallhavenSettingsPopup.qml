@@ -22,7 +22,7 @@ Popup {
 
   x: {
     if (anchorItem) {
-      var itemPos = anchorItem.mapToItem(parent, 0, 0);
+      const itemPos = anchorItem.mapToItem(parent, 0, 0);
       return itemPos.x - width + anchorItem.width;
     }
     return 0;
@@ -30,7 +30,7 @@ Popup {
 
   y: {
     if (anchorItem) {
-      var itemPos = anchorItem.mapToItem(parent, 0, 0);
+      const itemPos = anchorItem.mapToItem(parent, 0, 0);
       return itemPos.y + anchorItem.height + Style.marginS;
     }
     return 0;
@@ -43,19 +43,19 @@ Popup {
     anchorItem = item;
     open();
     Qt.callLater(() => {
-                   // Try to focus the first input if available
-                   if (resolutionWidthInput.inputItem) {
-                     resolutionWidthInput.inputItem.forceActiveFocus();
-                   }
-                 });
+      // Try to focus the first input if available
+      if (resolutionWidthInput.inputItem) {
+        resolutionWidthInput.inputItem.forceActiveFocus();
+      }
+    });
   }
 
   onOpened: {
     Qt.callLater(() => {
-                   if (resolutionWidthInput.inputItem) {
-                     resolutionWidthInput.inputItem.forceActiveFocus();
-                   }
-                 });
+      if (resolutionWidthInput.inputItem) {
+        resolutionWidthInput.inputItem.forceActiveFocus();
+      }
+    });
   }
 
   function hide() {
@@ -72,7 +72,7 @@ Popup {
     var mode = Settings.data.wallpaper.wallhavenResolutionMode || "atleast";
 
     if (width && height) {
-      var resolution = width + "x" + height;
+      const resolution = width + "x" + height;
       if (mode === "atleast") {
         WallhavenService.minResolution = resolution;
         WallhavenService.resolutions = "";
@@ -182,12 +182,12 @@ Popup {
         ]
         currentKey: Settings.data.wallpaper.wallhavenSorting || "relevance"
         onSelected: key => {
-                      Settings.data.wallpaper.wallhavenSorting = key;
-                      if (typeof WallhavenService !== "undefined") {
-                        WallhavenService.sorting = key;
-                        WallhavenService.search(Settings.data.wallpaper.wallhavenQuery || "", 1);
-                      }
-                    }
+          Settings.data.wallpaper.wallhavenSorting = key;
+          if (typeof WallhavenService !== "undefined") {
+            WallhavenService.sorting = key;
+            WallhavenService.search(Settings.data.wallpaper.wallhavenQuery || "", 1);
+          }
+        }
       }
     }
 
@@ -220,12 +220,12 @@ Popup {
         ]
         currentKey: Settings.data.wallpaper.wallhavenOrder || "desc"
         onSelected: key => {
-                      Settings.data.wallpaper.wallhavenOrder = key;
-                      if (typeof WallhavenService !== "undefined") {
-                        WallhavenService.order = key;
-                        WallhavenService.search(Settings.data.wallpaper.wallhavenQuery || "", 1);
-                      }
-                    }
+          Settings.data.wallpaper.wallhavenOrder = key;
+          if (typeof WallhavenService !== "undefined") {
+            WallhavenService.order = key;
+            WallhavenService.search(Settings.data.wallpaper.wallhavenQuery || "", 1);
+          }
+        }
       }
     }
 
@@ -261,12 +261,12 @@ Popup {
         ]
         currentKey: Settings.data.wallpaper.wallhavenPurity
         onSelected: key => {
-                      Settings.data.wallpaper.wallhavenPurity = key;
-                      if (typeof WallhavenService !== "undefined") {
-                        WallhavenService.purity = key;
-                        WallhavenService.search(Settings.data.wallpaper.wallhavenQuery || "", 1);
-                      }
-                    }
+          Settings.data.wallpaper.wallhavenPurity = key;
+          if (typeof WallhavenService !== "undefined") {
+            WallhavenService.purity = key;
+            WallhavenService.search(Settings.data.wallpaper.wallhavenQuery || "", 1);
+          }
+        }
       }
     }
 
@@ -476,8 +476,8 @@ Popup {
           property bool checked: false
           signal toggled(bool checked)
           onToggled: checked => {
-                       categoriesRow.updateCategories(checked, categoriesRow.getCategoryValue(1), categoriesRow.getCategoryValue(2));
-                     }
+            categoriesRow.updateCategories(checked, categoriesRow.getCategoryValue(1), categoriesRow.getCategoryValue(2));
+          }
         }
 
         QtObject {
@@ -485,8 +485,8 @@ Popup {
           property bool checked: false
           signal toggled(bool checked)
           onToggled: checked => {
-                       categoriesRow.updateCategories(categoriesRow.getCategoryValue(0), checked, categoriesRow.getCategoryValue(2));
-                     }
+            categoriesRow.updateCategories(categoriesRow.getCategoryValue(0), checked, categoriesRow.getCategoryValue(2));
+          }
         }
 
         QtObject {
@@ -494,8 +494,8 @@ Popup {
           property bool checked: false
           signal toggled(bool checked)
           onToggled: checked => {
-                       categoriesRow.updateCategories(categoriesRow.getCategoryValue(0), categoriesRow.getCategoryValue(1), checked);
-                     }
+            categoriesRow.updateCategories(categoriesRow.getCategoryValue(0), categoriesRow.getCategoryValue(1), checked);
+          }
         }
       }
     }
@@ -548,9 +548,9 @@ Popup {
           }
 
           onSelected: key => {
-                        Settings.data.wallpaper.wallhavenResolutionMode = key;
-                        updateResolution(false);
-                      }
+            Settings.data.wallpaper.wallhavenResolutionMode = key;
+            root.updateResolution(false);
+          }
         }
       }
 
@@ -591,7 +591,7 @@ Popup {
 
           onEditingFinished: {
             Settings.data.wallpaper.wallhavenResolutionWidth = text;
-            updateResolution(false);
+            root.updateResolution(false);
           }
         }
 
@@ -634,7 +634,7 @@ Popup {
 
           onEditingFinished: {
             Settings.data.wallpaper.wallhavenResolutionHeight = text;
-            updateResolution(false);
+            root.updateResolution(false);
           }
         }
       }
@@ -659,15 +659,15 @@ Popup {
           WallhavenService.order = Settings.data.wallpaper.wallhavenOrder;
 
           // Update resolution settings (without triggering search)
-          updateResolution(false);
+          root.updateResolution(false);
 
           // Refresh the wallpaper search with current settings
           WallhavenService.search(Settings.data.wallpaper.wallhavenQuery || "", 1);
 
           // Close the popup after applying (delay to prevent click propagation)
           Qt.callLater(() => {
-                         root.hide();
-                       });
+            root.hide();
+          });
         }
       }
     }
