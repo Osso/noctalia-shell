@@ -138,6 +138,7 @@ QtObject {
                     "AllBackgrounds",
                     "BarBackground",
                     "PanelBackground",
+                    "BackgroundRegion",
                     "ShapeCornerHelper",
                 )
             },

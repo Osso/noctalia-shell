@@ -18,13 +18,13 @@ Item {
     name: "DP-fixture"
   }
 
-  Item {
+  BackgroundRegion {
     id: fakeBar
 
-    property int topLeftCornerState: -1
-    property int topRightCornerState: -1
-    property int bottomLeftCornerState: -1
-    property int bottomRightCornerState: -1
+    topLeftCornerState: -1
+    topRightCornerState: -1
+    bottomLeftCornerState: -1
+    bottomRightCornerState: -1
 
     x: 20
     y: 10
@@ -32,13 +32,13 @@ Item {
     height: 30
   }
 
-  Item {
+  BackgroundRegion {
     id: panelGeometry
 
-    property int topLeftCornerState: -1
-    property int topRightCornerState: -1
-    property int bottomLeftCornerState: -1
-    property int bottomRightCornerState: -1
+    topLeftCornerState: -1
+    topRightCornerState: -1
+    bottomLeftCornerState: -1
+    bottomRightCornerState: -1
 
     x: 80
     y: 100
@@ -46,34 +46,28 @@ Item {
     height: 90
   }
 
-  Item {
-    id: panel
-
-    property Item panelItem: panelGeometry
-  }
-
   QtObject {
     id: fakeWindow
 
     property ShellScreen screen: screenA
     property rect inputRegion: Qt.rect(20, 10, 240, 30)
-    property Item audioPanelPlaceholder: panel
-    property Item batteryPanelPlaceholder: panel
-    property Item bluetoothPanelPlaceholder: panel
-    property Item brightnessPanelPlaceholder: panel
-    property Item clockPanelPlaceholder: panel
-    property Item controlCenterPanelPlaceholder: panel
-    property Item changelogPanelPlaceholder: panel
-    property Item launcherPanelPlaceholder: panel
-    property Item notificationHistoryPanelPlaceholder: panel
-    property Item sessionMenuPanelPlaceholder: panel
-    property Item settingsPanelPlaceholder: panel
-    property Item setupWizardPanelPlaceholder: panel
-    property Item trayDrawerPanelPlaceholder: panel
-    property Item wallpaperPanelPlaceholder: panel
-    property Item wifiPanelPlaceholder: panel
-    property Item vpnPanelPlaceholder: panel
-    property Item processPanelPlaceholder: panel
+    property BackgroundRegion audioPanelPlaceholder: panelGeometry
+    property BackgroundRegion batteryPanelPlaceholder: panelGeometry
+    property BackgroundRegion bluetoothPanelPlaceholder: panelGeometry
+    property BackgroundRegion brightnessPanelPlaceholder: panelGeometry
+    property BackgroundRegion clockPanelPlaceholder: panelGeometry
+    property BackgroundRegion controlCenterPanelPlaceholder: panelGeometry
+    property BackgroundRegion changelogPanelPlaceholder: panelGeometry
+    property BackgroundRegion launcherPanelPlaceholder: panelGeometry
+    property BackgroundRegion notificationHistoryPanelPlaceholder: panelGeometry
+    property BackgroundRegion sessionMenuPanelPlaceholder: panelGeometry
+    property BackgroundRegion settingsPanelPlaceholder: panelGeometry
+    property BackgroundRegion setupWizardPanelPlaceholder: panelGeometry
+    property BackgroundRegion trayDrawerPanelPlaceholder: panelGeometry
+    property BackgroundRegion wallpaperPanelPlaceholder: panelGeometry
+    property BackgroundRegion wifiPanelPlaceholder: panelGeometry
+    property BackgroundRegion vpnPanelPlaceholder: panelGeometry
+    property BackgroundRegion processPanelPlaceholder: panelGeometry
   }
 
   Rectangle {
@@ -135,9 +129,9 @@ Item {
       compare(paths()[1].panelX, 80);
       panelGeometry.width = 180;
       compare(paths()[1].panelWidth, 180);
-      panel.visible = false;
+      panelGeometry.visible = false;
       compare(paths()[1].panelWidth, 0);
-      panel.visible = true;
+      panelGeometry.visible = true;
       BarService.isVisible = false;
       compare(paths()[0].barWidth, 0);
       BarService.isVisible = true;

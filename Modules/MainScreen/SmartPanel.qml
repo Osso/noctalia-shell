@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import qs.Commons
 import qs.Services.UI
+import qs.Modules.MainScreen.Backgrounds
 
 /**
 * SmartPanel for use within MainScreen
@@ -105,7 +106,7 @@ Item {
   }
 
   // Expose actual background geometry for AllBackgrounds and click-through masks.
-  readonly property Item panelRegion: panelBackground
+  readonly property BackgroundRegion panelRegion: panelBackground
 
   readonly property string barPosition: Settings.data.bar.position
   readonly property bool barIsVertical: barPosition === "left" || barPosition === "right"
@@ -723,11 +724,8 @@ Item {
     property alias maskRegion: panelBackground
 
     // The actual panel background - provides geometry for PanelBackground rendering
-    Item {
+    BackgroundRegion {
       id: panelBackground
-
-      // Expose self as panelItem for PanelBackground compatibility
-      readonly property Item panelItem: panelBackground
 
       // Store target dimensions (Initialize to 0, set by setPosition())
       property real targetWidth: 0
@@ -976,7 +974,7 @@ Item {
       // State 2: Vertical inversion (outer curve on Y-axis)
 
       // Smart corner state calculation based on bar attachment and edge touching
-      property int topLeftCornerState: {
+      topLeftCornerState: {
         var barInverted = panelContainer.allowAttachToBar && ((root.barPosition === "top" && !root.barIsVertical && root.effectivePanelAnchorTop) || (root.barPosition === "left" && root.barIsVertical && root.effectivePanelAnchorLeft));
         var barTouchInverted = panelContainer.touchingTopBar || panelContainer.touchingLeftBar;
         // Invert if touching either edge that forms this corner (left OR top), regardless of bar position
@@ -996,7 +994,7 @@ Item {
         return 0;
       }
 
-      property int topRightCornerState: {
+      topRightCornerState: {
         var barInverted = panelContainer.allowAttachToBar && ((root.barPosition === "top" && !root.barIsVertical && root.effectivePanelAnchorTop) || (root.barPosition === "right" && root.barIsVertical && root.effectivePanelAnchorRight));
         var barTouchInverted = panelContainer.touchingTopBar || panelContainer.touchingRightBar;
         // Invert if touching either edge that forms this corner (right OR top), regardless of bar position
@@ -1016,7 +1014,7 @@ Item {
         return 0;
       }
 
-      property int bottomLeftCornerState: {
+      bottomLeftCornerState: {
         var barInverted = panelContainer.allowAttachToBar && ((root.barPosition === "bottom" && !root.barIsVertical && root.effectivePanelAnchorBottom) || (root.barPosition === "left" && root.barIsVertical && root.effectivePanelAnchorLeft));
         var barTouchInverted = panelContainer.touchingBottomBar || panelContainer.touchingLeftBar;
         // Invert if touching either edge that forms this corner (left OR bottom), regardless of bar position
@@ -1036,7 +1034,7 @@ Item {
         return 0;
       }
 
-      property int bottomRightCornerState: {
+      bottomRightCornerState: {
         var barInverted = panelContainer.allowAttachToBar && ((root.barPosition === "bottom" && !root.barIsVertical && root.effectivePanelAnchorBottom) || (root.barPosition === "right" && root.barIsVertical && root.effectivePanelAnchorRight));
         var barTouchInverted = panelContainer.touchingBottomBar || panelContainer.touchingRightBar;
         // Invert if touching either edge that forms this corner (right OR bottom), regardless of bar position

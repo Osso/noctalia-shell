@@ -17,7 +17,7 @@ Item {
   id: root
 
   // Reference Bar
-  required property Item bar
+  required property BackgroundRegion bar
 
   // Reference to MainScreen (for panel access)
   required property var windowRoot

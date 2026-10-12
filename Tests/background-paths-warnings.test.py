@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 """Scoped background-path lint and offscreen fill-containment regression.
 
-Production ShapePaths and corner helper are unchanged. Fixtures supply geometry,
-style and visibility only; no layer surfaces, real settings or wallpaper access.
-Negative controls mutate staged copies, never canonical production sources.
-All 13 panel/12 bar diagnostics are retained: panelItem and four corner-state
-fields belong to anonymous Items in MainScreen.qml/SmartPanel.qml, not Item's
-static metadata. Resolving them needs an out-of-scope shared typed contract.
+Fixtures supply geometry, style and visibility only; no layer surfaces,
+real settings or wallpaper access. Production BackgroundRegion supplies the
+four-state corner contract. Negative controls mutate staged copies only.
+Lint requires zero diagnostics in the two background paths and shared type.
 """
 
 import argparse
@@ -20,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE = Path("Modules/MainScreen/Backgrounds")
-TARGETS = {"PanelBackground": 13, "BarBackground": 12}
+TARGETS = ("PanelBackground", "BarBackground", "BackgroundRegion")
 
 
 def helper(filename):
@@ -97,7 +95,7 @@ def execute(directory, argv):
 
 def lint(directory):
     helper("media-mini-warnings.test.py").stage_modules(directory)
-    for name, expected in TARGETS.items():
+    for name in TARGETS:
         command_directory = directory / name
         command_directory.mkdir(mode=0o700)
         code, output = execute(
@@ -112,20 +110,8 @@ def lint(directory):
         (directory / f"{name}.lint.log").write_text(output)
         warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
         assert code == 0, code
-        assert len(warnings) == expected, warnings
-        assert all("[missing-property]" in line for line in warnings), warnings
-        members = [re.search(r'Member "([^"]+)"', line).group(1) for line in warnings]
-        corners = [
-            "topLeftCornerState",
-            "topRightCornerState",
-            "bottomRightCornerState",
-            "bottomLeftCornerState",
-        ]
-        expected_members = corners * 3 + (
-            ["panelItem"] if name == "PanelBackground" else []
-        )
-        assert sorted(members) == sorted(expected_members), members
-        print("RETAINED_METADATA_WARNINGS", name, len(warnings), "exit", code)
+        assert not warnings, warnings
+        print("BACKGROUND_PATH_LINT_PASS", name, "zero warnings", "exit", code)
 
 
 def behavior(directory, mutation):

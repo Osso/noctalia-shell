@@ -13,26 +13,11 @@ TestCase {
   visible: true
   when: windowShown
 
-  component Region: Item {
-    x: 40
-    y: 30
-    width: 120
-    height: 80
-    property int topLeftCornerState: 0
-    property int topRightCornerState: 0
-    property int bottomRightCornerState: 0
-    property int bottomLeftCornerState: 0
-  }
-
-  Region {
+  BackgroundRegion {
     id: panelRegion
   }
-  Region {
+  BackgroundRegion {
     id: barRegion
-  }
-  Item {
-    id: placeholder
-    property Item panelItem: panelRegion
   }
   QtObject {
     id: screenOwner
@@ -46,7 +31,7 @@ TestCase {
     containsMode: Shape.FillContains
     PanelBackground {
       id: panelPath
-      panel: placeholder
+      panel: panelRegion
       shapeContainer: panelShape
       backgroundColor: "#204060"
     }
@@ -65,9 +50,8 @@ TestCase {
   }
 
   function init() {
-    placeholder.visible = true;
-    placeholder.panelItem = panelRegion;
-    panelPath.panel = placeholder;
+    panelRegion.visible = true;
+    panelPath.panel = panelRegion;
     barPath.bar = barRegion;
     barPath.windowRoot = screenOwner;
     BarService.isVisible = true;
@@ -190,12 +174,12 @@ TestCase {
   }
 
   function test_panel_hidden_null_and_replacement() {
-    placeholder.visible = false;
+    panelRegion.visible = false;
     wait(0);
     compare(panelPath.panelWidth, 0);
     verify(!panelShape.contains(Qt.point(100, 70)));
-    placeholder.visible = true;
-    placeholder.panelItem = barRegion;
+    panelRegion.visible = true;
+    panelPath.panel = barRegion;
     barRegion.x = 210;
     wait(0);
     verify(!panelShape.contains(Qt.point(100, 70)));

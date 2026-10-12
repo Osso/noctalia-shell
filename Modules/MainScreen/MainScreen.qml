@@ -61,23 +61,23 @@ PanelWindow {
   property var registeredLazyPanels: []
 
   // Expose panel backgrounds for AllBackgrounds without forcing panel instantiation.
-  readonly property Item audioPanelPlaceholder: audioPanelLoader.item ? audioPanelLoader.item.panelRegion : audioPanelPlaceholderItem
-  readonly property Item batteryPanelPlaceholder: batteryPanelLoader.item ? batteryPanelLoader.item.panelRegion : batteryPanelPlaceholderItem
-  readonly property Item bluetoothPanelPlaceholder: bluetoothPanelLoader.item ? bluetoothPanelLoader.item.panelRegion : bluetoothPanelPlaceholderItem
-  readonly property Item brightnessPanelPlaceholder: brightnessPanelLoader.item ? brightnessPanelLoader.item.panelRegion : brightnessPanelPlaceholderItem
-  readonly property Item clockPanelPlaceholder: clockPanelLoader.item ? clockPanelLoader.item.panelRegion : clockPanelPlaceholderItem
-  readonly property Item changelogPanelPlaceholder: changelogPanelLoader.item ? changelogPanelLoader.item.panelRegion : changelogPanelPlaceholderItem
-  readonly property Item controlCenterPanelPlaceholder: controlCenterPanelLoader.item ? controlCenterPanelLoader.item.panelRegion : controlCenterPanelPlaceholderItem
-  readonly property Item launcherPanelPlaceholder: launcherPanelLoader.item ? launcherPanelLoader.item.panelRegion : launcherPanelPlaceholderItem
-  readonly property Item notificationHistoryPanelPlaceholder: notificationHistoryPanelLoader.item ? notificationHistoryPanelLoader.item.panelRegion : notificationHistoryPanelPlaceholderItem
-  readonly property Item sessionMenuPanelPlaceholder: sessionMenuPanelLoader.item ? sessionMenuPanelLoader.item.panelRegion : sessionMenuPanelPlaceholderItem
-  readonly property Item settingsPanelPlaceholder: settingsPanelLoader.item ? settingsPanelLoader.item.panelRegion : settingsPanelPlaceholderItem
-  readonly property Item setupWizardPanelPlaceholder: setupWizardPanelLoader.item ? setupWizardPanelLoader.item.panelRegion : setupWizardPanelPlaceholderItem
-  readonly property Item trayDrawerPanelPlaceholder: trayDrawerPanelLoader.item ? trayDrawerPanelLoader.item.panelRegion : trayDrawerPanelPlaceholderItem
-  readonly property Item wallpaperPanelPlaceholder: wallpaperPanelLoader.item ? wallpaperPanelLoader.item.panelRegion : wallpaperPanelPlaceholderItem
-  readonly property Item wifiPanelPlaceholder: wifiPanelLoader.item ? wifiPanelLoader.item.panelRegion : wifiPanelPlaceholderItem
-  readonly property Item vpnPanelPlaceholder: vpnPanelLoader.item ? vpnPanelLoader.item.panelRegion : vpnPanelPlaceholderItem
-  readonly property Item processPanelPlaceholder: processPanelLoader.item ? processPanelLoader.item.panelRegion : processPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion audioPanelPlaceholder: audioPanelLoader.item ? audioPanelLoader.item.panelRegion : audioPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion batteryPanelPlaceholder: batteryPanelLoader.item ? batteryPanelLoader.item.panelRegion : batteryPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion bluetoothPanelPlaceholder: bluetoothPanelLoader.item ? bluetoothPanelLoader.item.panelRegion : bluetoothPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion brightnessPanelPlaceholder: brightnessPanelLoader.item ? brightnessPanelLoader.item.panelRegion : brightnessPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion clockPanelPlaceholder: clockPanelLoader.item ? clockPanelLoader.item.panelRegion : clockPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion changelogPanelPlaceholder: changelogPanelLoader.item ? changelogPanelLoader.item.panelRegion : changelogPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion controlCenterPanelPlaceholder: controlCenterPanelLoader.item ? controlCenterPanelLoader.item.panelRegion : controlCenterPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion launcherPanelPlaceholder: launcherPanelLoader.item ? launcherPanelLoader.item.panelRegion : launcherPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion notificationHistoryPanelPlaceholder: notificationHistoryPanelLoader.item ? notificationHistoryPanelLoader.item.panelRegion : notificationHistoryPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion sessionMenuPanelPlaceholder: sessionMenuPanelLoader.item ? sessionMenuPanelLoader.item.panelRegion : sessionMenuPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion settingsPanelPlaceholder: settingsPanelLoader.item ? settingsPanelLoader.item.panelRegion : settingsPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion setupWizardPanelPlaceholder: setupWizardPanelLoader.item ? setupWizardPanelLoader.item.panelRegion : setupWizardPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion trayDrawerPanelPlaceholder: trayDrawerPanelLoader.item ? trayDrawerPanelLoader.item.panelRegion : trayDrawerPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion wallpaperPanelPlaceholder: wallpaperPanelLoader.item ? wallpaperPanelLoader.item.panelRegion : wallpaperPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion wifiPanelPlaceholder: wifiPanelLoader.item ? wifiPanelLoader.item.panelRegion : wifiPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion vpnPanelPlaceholder: vpnPanelLoader.item ? vpnPanelLoader.item.panelRegion : vpnPanelPlaceholderItem
+  readonly property Backgrounds.BackgroundRegion processPanelPlaceholder: processPanelLoader.item ? processPanelLoader.item.panelRegion : processPanelPlaceholderItem
 
   Component.onCompleted: {
     const screenWidth = root.selectedScreen ? root.selectedScreen.width : 0;
@@ -213,7 +213,7 @@ PanelWindow {
     Backgrounds.AllBackgrounds {
       id: unifiedBackgrounds
       anchors.fill: parent
-      bar: barPlaceholder.barItem || null
+      bar: barPlaceholder
       windowRoot: root
       z: 0 // Behind all content
     }
@@ -235,119 +235,119 @@ PanelWindow {
     // ---------------------------------------
     // Lazy panel placeholders and loaders
     // ---------------------------------------
-    Item {
+    Backgrounds.BackgroundRegion {
       id: audioPanelPlaceholderItem
       visible: false
       width: 0
       height: 0
     }
 
-    Item {
+    Backgrounds.BackgroundRegion {
       id: batteryPanelPlaceholderItem
       visible: false
       width: 0
       height: 0
     }
 
-    Item {
+    Backgrounds.BackgroundRegion {
       id: bluetoothPanelPlaceholderItem
       visible: false
       width: 0
       height: 0
     }
 
-    Item {
+    Backgrounds.BackgroundRegion {
       id: brightnessPanelPlaceholderItem
       visible: false
       width: 0
       height: 0
     }
 
-    Item {
+    Backgrounds.BackgroundRegion {
       id: controlCenterPanelPlaceholderItem
       visible: false
       width: 0
       height: 0
     }
 
-    Item {
+    Backgrounds.BackgroundRegion {
       id: changelogPanelPlaceholderItem
       visible: false
       width: 0
       height: 0
     }
 
-    Item {
+    Backgrounds.BackgroundRegion {
       id: clockPanelPlaceholderItem
       visible: false
       width: 0
       height: 0
     }
 
-    Item {
+    Backgrounds.BackgroundRegion {
       id: launcherPanelPlaceholderItem
       visible: false
       width: 0
       height: 0
     }
 
-    Item {
+    Backgrounds.BackgroundRegion {
       id: notificationHistoryPanelPlaceholderItem
       visible: false
       width: 0
       height: 0
     }
 
-    Item {
+    Backgrounds.BackgroundRegion {
       id: sessionMenuPanelPlaceholderItem
       visible: false
       width: 0
       height: 0
     }
 
-    Item {
+    Backgrounds.BackgroundRegion {
       id: settingsPanelPlaceholderItem
       visible: false
       width: 0
       height: 0
     }
 
-    Item {
+    Backgrounds.BackgroundRegion {
       id: setupWizardPanelPlaceholderItem
       visible: false
       width: 0
       height: 0
     }
 
-    Item {
+    Backgrounds.BackgroundRegion {
       id: trayDrawerPanelPlaceholderItem
       visible: false
       width: 0
       height: 0
     }
 
-    Item {
+    Backgrounds.BackgroundRegion {
       id: wallpaperPanelPlaceholderItem
       visible: false
       width: 0
       height: 0
     }
 
-    Item {
+    Backgrounds.BackgroundRegion {
       id: wifiPanelPlaceholderItem
       visible: false
       width: 0
       height: 0
     }
 
-    Item {
+    Backgrounds.BackgroundRegion {
       id: vpnPanelPlaceholderItem
       visible: false
       width: 0
       height: 0
     }
 
-    Item {
+    Backgrounds.BackgroundRegion {
       id: processPanelPlaceholderItem
       visible: false
       width: 0
@@ -559,11 +559,8 @@ PanelWindow {
 
     // ----------------------------------------------
     // Bar background placeholder - just for background positioning (actual bar content is in BarContentWindow)
-    Item {
+    Backgrounds.BackgroundRegion {
       id: barPlaceholder
-
-      // Expose self as barItem for AllBackgrounds compatibility
-      readonly property Item barItem: barPlaceholder
 
       // Screen reference
       property ShellScreen screen: root.screen
@@ -604,7 +601,7 @@ PanelWindow {
       }
 
       // Corner states (same as Bar.qml)
-      readonly property int topLeftCornerState: {
+      topLeftCornerState: {
         if (barFloating)
           return 0;
         if (barPosition === "top")
@@ -617,7 +614,7 @@ PanelWindow {
         return -1;
       }
 
-      readonly property int topRightCornerState: {
+      topRightCornerState: {
         if (barFloating)
           return 0;
         if (barPosition === "top")
@@ -630,7 +627,7 @@ PanelWindow {
         return -1;
       }
 
-      readonly property int bottomLeftCornerState: {
+      bottomLeftCornerState: {
         if (barFloating)
           return 0;
         if (barPosition === "bottom")
@@ -643,7 +640,7 @@ PanelWindow {
         return -1;
       }
 
-      readonly property int bottomRightCornerState: {
+      bottomRightCornerState: {
         if (barFloating)
           return 0;
         if (barPosition === "bottom")
