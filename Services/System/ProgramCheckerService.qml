@@ -52,7 +52,7 @@ Singleton {
     });
     const detectedClients = [];
 
-    for (var i = 0; i < clients.length; i++) {
+    for (let i = 0; i < clients.length; i++) {
       const client = clients[i];
       const detectedByLine = detectedLines.includes(client.name);
       const detectedByToken = detectedTokens.includes(client.name);
@@ -79,7 +79,7 @@ Singleton {
   function buildClientDetectionScript(clients, requireThemesFolder) {
     const scriptParts = [];
 
-    for (var i = 0; i < clients.length; i++) {
+    for (let i = 0; i < clients.length; i++) {
       const client = clients[i];
       const suffix = requireThemesFolder && client.requiresThemesFolder ? "/themes" : "";
       const checkPath = root.clientConfigPathExpression(client.configPath, suffix);
@@ -105,7 +105,7 @@ Singleton {
       root.availableDiscordClients = [];
 
       if (exitCode === 0) {
-        var detectedClients = root.parseDetectedClients(stdout.text, TemplateRegistry.discordClients);
+        const detectedClients = root.parseDetectedClients(discordOutput.text, TemplateRegistry.discordClients);
 
         if (detectedClients.length > 0) {
           root.availableDiscordClients = detectedClients;
@@ -120,7 +120,9 @@ Singleton {
       }
     }
 
-    stdout: StdioCollector {}
+    stdout: StdioCollector {
+      id: discordOutput
+    }
     stderr: StdioCollector {}
   }
 
@@ -140,7 +142,7 @@ Singleton {
       root.availableCodeClients = [];
 
       if (exitCode === 0) {
-        var detectedClients = root.parseDetectedClients(stdout.text, TemplateRegistry.codeClients);
+        const detectedClients = root.parseDetectedClients(codeOutput.text, TemplateRegistry.codeClients);
 
         if (detectedClients.length > 0) {
           root.availableCodeClients = detectedClients;
@@ -155,7 +157,9 @@ Singleton {
       }
     }
 
-    stdout: StdioCollector {}
+    stdout: StdioCollector {
+      id: codeOutput
+    }
     stderr: StdioCollector {}
   }
 
@@ -266,9 +270,9 @@ Singleton {
     Logger.d("ProgramChecker", "HOME:", Quickshell.env("HOME"));
 
     // Test each client directory
-    for (var i = 0; i < TemplateRegistry.discordClients.length; i++) {
-      var client = TemplateRegistry.discordClients[i];
-      var configDir = client.configPath.replace("~", Quickshell.env("HOME"));
+    for (let i = 0; i < TemplateRegistry.discordClients.length; i++) {
+      const client = TemplateRegistry.discordClients[i];
+      const configDir = client.configPath.replace("~", Quickshell.env("HOME"));
       Logger.d("ProgramChecker", "Checking:", configDir);
     }
 
