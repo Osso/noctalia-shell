@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -145,13 +147,13 @@ SmartPanel {
       return I18n.tr("battery.no-battery-detected");
     if (charging && battery.timeToFull > 0) {
       return I18n.tr("battery.time-until-full", {
-                       "time": Time.formatVagueHumanReadableDuration(battery.timeToFull)
-                     });
+        "time": Time.formatVagueHumanReadableDuration(battery.timeToFull)
+      });
     }
     if (!charging && battery.timeToEmpty > 0) {
       return I18n.tr("battery.time-left", {
-                       "time": Time.formatVagueHumanReadableDuration(battery.timeToEmpty)
-                     });
+        "time": Time.formatVagueHumanReadableDuration(battery.timeToEmpty)
+      });
     }
     return I18n.tr("battery.idle");
   }
@@ -180,7 +182,7 @@ SmartPanel {
           NIcon {
             pointSize: Style.fontSizeXXL
             color: root.charging ? NColor.mPrimary : NColor.mOnSurface
-            icon: iconName
+            icon: root.iconName
           }
 
           ColumnLayout {
@@ -197,7 +199,7 @@ SmartPanel {
             }
 
             NText {
-              text: timeText
+              text: root.timeText
               pointSize: Style.fontSizeS
               color: NColor.mOnSurfaceVariant
               wrapMode: Text.Wrap
@@ -218,7 +220,7 @@ SmartPanel {
       NBox {
         Layout.fillWidth: true
         height: chargeLayout.implicitHeight + Style.marginL * 2
-        visible: isReady
+        visible: root.isReady
 
         ColumnLayout {
           id: chargeLayout
@@ -248,7 +250,7 @@ SmartPanel {
                   height: parent.height
                   radius: parent.radius
                   width: {
-                    var ratio = Math.max(0, Math.min(1, percent / 100));
+                    var ratio = Math.max(0, Math.min(1, root.percent / 100));
                     return parent.width * ratio;
                   }
                   color: NColor.mPrimary
@@ -257,7 +259,7 @@ SmartPanel {
             }
 
             NText {
-              text: percent >= 0 ? `${percent}%` : "--"
+              text: root.percent >= 0 ? `${root.percent}%` : "--"
               color: NColor.mOnSurface
               pointSize: Style.fontSizeS
               font.weight: Style.fontWeightBold
@@ -267,12 +269,12 @@ SmartPanel {
           RowLayout {
             Layout.fillWidth: true
             spacing: Style.marginL
-            visible: healthAvailable
+            visible: root.healthAvailable
 
             NText {
               text: I18n.tr("battery.health", {
-                              "percent": healthPercent
-                            })
+                "percent": root.healthPercent
+              })
               color: NColor.mOnSurface
               pointSize: Style.fontSizeS
               font.weight: Style.fontWeightMedium
