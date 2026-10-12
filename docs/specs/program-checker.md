@@ -44,6 +44,9 @@ Program Checker covers runtime availability checks for optional tools and themed
 
 - `Tests/program-checker-service-guards.test.js`
 - `Tests/source-coverage.test.js`
+- `Tests/program-checker-warnings.test.py` — standalone strict installed-metadata lint and isolated real-process runtime; `Tests/Qml/ProgramCheckerHarness.qml` asserts seven behaviors: availability, unknown-property warning without queue advancement, collector output, deduplication/unknown-name rejection, nonzero-exit clearing despite plausible stdout, successful empty-output clearing, and rerun completion.
+- At `954eab59d`, supplied proof records strict warnings 9→0. Detector callbacks read named concrete `StdioCollector.text`; installed `Process.stdout` remains the base `DataStreamParser`, without invented `text` metadata.
+- Runtime retains production Process/collector ordering but executes only private inert `which`/`sh` binaries with synthetic client metadata. No host executable/directory probing, real config access, live client detection, desktop interaction, or whole-shell acceptance is proven. Isolation and supplied negative-control evidence: [testing](testing.md#program-checker-isolated-runtime).
 
 ## Known gaps (current cycle)
 
