@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 /*
 * Noctalia – made by https://github.com/noctalia-dev
 * Licensed under the MIT License.
@@ -61,7 +63,7 @@ ShellRoot {
   Connections {
     target: I18n ? I18n : null
     function onTranslationsLoaded() {
-      i18nLoaded = true;
+      shellRoot.i18nLoaded = true;
     }
   }
 
@@ -69,7 +71,7 @@ ShellRoot {
     target: ShellState ? ShellState : null
     function onIsLoadedChanged() {
       if (ShellState.isLoaded) {
-        shellStateLoaded = true;
+        shellRoot.shellStateLoaded = true;
       }
     }
   }
@@ -87,7 +89,7 @@ ShellRoot {
   }
 
   Loader {
-    active: i18nLoaded && Settings.ready && shellStateLoaded
+    active: shellRoot.i18nLoaded && Settings.ready && shellRoot.shellStateLoaded
 
     sourceComponent: Item {
       Component.onCompleted: {
@@ -108,7 +110,7 @@ ShellRoot {
         UpdateService.init();
         UpdateService.showLatestChangelog();
 
-        checkSetupWizard();
+        shellRoot.checkSetupWizard();
       }
 
       Overview {}
@@ -144,7 +146,7 @@ ShellRoot {
     running: false
     interval: 1000
     onTriggered: {
-      showSetupWizard();
+      shellRoot.showSetupWizard();
     }
   }
 
