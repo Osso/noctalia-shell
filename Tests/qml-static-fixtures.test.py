@@ -80,7 +80,11 @@ class FixtureLintTest(unittest.TestCase):
         for harness in HARNESS_SCRIPTS:
             shutil.copy2(ROOT / "Tests/Qml" / harness, tests / "Qml" / harness)
         # Runtime staging copies these dependencies; rg skips symlinks.
-        for name in ("SimpleServiceHarness.qml", "TaskbarGroupedHarness.qml"):
+        for name in (
+            "SimpleServiceHarness.qml",
+            "TaskbarGroupedHarness.qml",
+            "WorkspaceHarness.qml",
+        ):
             (tests / "Qml" / name).symlink_to(ROOT / "Tests/Qml" / name)
         # Redirect the owner's hardcoded guard to synthetic settings only.
         geometry = tests / "remaining-layout-geometry.test.py"
@@ -245,12 +249,29 @@ class FixtureLintTest(unittest.TestCase):
                 runner = self.stage_repository(root)
                 harness = root / "Tests/Qml" / name
                 source = harness.read_text()
-                harness.write_text(
-                    source.replace(
-                        "{",
-                        "{\n  property int regressionWarning: Qt.application.missingFixtureValue",
-                        1,
+                if name == "RemainingLayoutGeometryHarness.qml":
+                    harness.write_text(
+                        source.replace(
+                            "width: 1000",
+                            "width: Qt.application.missingFixtureValue",
+                            1,
+                        )
                     )
+                else:
+                    harness.write_text(
+                        source.replace(
+                            "{",
+                            "{\n  property int regressionWarning: Qt.application.missingFixtureValue",
+                            1,
+                        )
+                    )
+                diagnostic = f"fixture stderr: {name}\n"
+                script = root / "Tests" / HARNESS_SCRIPTS[name]
+                script.write_text(
+                    "import sys\nsys.stderr.write("
+                    + repr(diagnostic)
+                    + ")\n"
+                    + script.read_text()
                 )
                 # Earlier genuine warnings must not mask this injected failure.
                 for other in HARNESS_SCRIPTS:
@@ -258,6 +279,7 @@ class FixtureLintTest(unittest.TestCase):
                         (root / "Tests/Qml" / other).unlink()
                 result = self.run_checker(runner, root)
                 self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stderr, diagnostic)
                 self.assertIn("missingFixtureValue", result.stdout)
                 if name == "RemainingLayoutGeometryHarness.qml":
                     self.assertIn("[missing-property]", result.stdout)
