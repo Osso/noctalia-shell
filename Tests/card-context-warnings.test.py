@@ -221,7 +221,7 @@ def main():
         if args.mode != "runtime":
             helper("media-mini-warnings.test.py").stage_modules(directory)
             for target, expected in zip(
-                TARGETS, (4, 1, 1) if args.mode == "baseline" else (0, 0, 1)
+                TARGETS, (4, 1, 1) if args.mode == "baseline" else (0, 0, 0)
             ):
                 argv = [
                     "/usr/lib/qt6/bin/qmllint",
@@ -232,7 +232,7 @@ def main():
                     "--json",
                     "-",
                 ]
-                if args.mode == "lint" and target != TARGETS[2]:
+                if args.mode == "lint":
                     argv += ["--max-warnings", "0", "--unqualified", "error"]
                 code, output = run_child(
                     directory, environment, [*argv, str(directory / "qs" / target)]
@@ -246,7 +246,7 @@ def main():
                 ]
                 print(target.name, "WARNINGS", len(warnings), "EXIT", code)
                 assert code == 0 and len(warnings) == expected, output
-                if target == TARGETS[2]:
+                if args.mode == "baseline" and target == TARGETS[2]:
                     assert [warning["id"] for warning in warnings] == [
                         "block-scope-var-declaration"
                     ], output
