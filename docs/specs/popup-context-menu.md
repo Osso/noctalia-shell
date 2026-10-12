@@ -50,8 +50,9 @@ Popup Context Menu covers the shared popup menu widgets used by bar widgets and 
 
 ### Popup window isolated evidence
 
-- At `d7ecf92b5`, PopupMenuWindow warnings drop 10→3. Retained installed metadata diagnostics: one `uncreatable-type` for PanelWindow and two `property-override` warnings for inherited `screen`/`contentItem`; no zero-warning claim.
+- Through `9e04e7934`/`bfec13089`, PopupMenuWindow warnings drop 3→1 (previously 10→3 at `d7ecf92b5`). Only installed PanelWindow `uncreatable-type` metadata remains. Both inherited `screen`/`contentItem` overrides are removed: public `screen` assignment is preserved through a typed `selectedScreen` binding; native `contentItem` remains the visual root, while `activeMenu` selects menu content. No zero-warning claim.
 - Private headless Cage exercises production PanelWindow/Loader with inert PanelService and tray content. Assertions cover registration/destruction, tray screen/default content, open/close/reopen, hide-before-callback ordering, `hideMenu` precedence over `close`, null/inert content, tray restoration, transparent color, full-screen anchors, and None→OnDemand→None dialog focus binding.
+- Reported private proofs cover 66 consumer operations, both taskbar variants across all four bar positions and empty selection, and actual file-watcher reload in the same private Quickshell process. They preserve menu ownership, action models, offsets, close callbacks and tray restoration. Private libwayland teardown still reports an outstanding `wl_callback`; unresolved despite delayed destruction drain, so no clean runtime acceptance is claimed.
 - Manually assigned 640×480 visual-parent geometry verifies dialog/catcher anchor propagation; direct `clicked(null)` verifies close dispatch and accepted-button binding. Cage lacks layer-shell integration: compositor sizing, pointer delivery, actual keyboard focus, real menu rendering, and canonical desktop behavior remain unproven. Runner isolation/acceptance: [testing](testing.md#popup-window-isolated-runtime).
 
 ## Known gaps (current cycle)
