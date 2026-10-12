@@ -221,6 +221,7 @@ ShellRoot {
     const tray = window.trayMenuLoader.item;
     check(tray !== null && tray.screen === window.screen, "tray screen propagation");
     check(window.screen === screenDelegate.modelData, "AllScreens screen assignment");
+    check(window.selectedScreen === window.screen, "typed screen binding preserves identity");
     check(window.contentItem === window.dialogParent.parent, "native contentItem is visual root");
     check(window.activeMenu === tray, "default tray content");
     window.initializeTrayMenu(null);
@@ -316,10 +317,17 @@ ShellRoot {
         window.destroy();
         Qt.callLater(() => {
           check(PanelService.registeredWindow === null && PanelService.removals === 1 && PanelService.removedKey === key, "unregister on destruction");
-          console.log("POPUP_WINDOW_RUNTIME_PASS " + generation);
-          if (generation === "RELOADED") Qt.quit();
+          finish.start();
         });
       });
+    }
+  }
+  Timer {
+    id: finish
+    interval: 150
+    onTriggered: {
+      console.log("POPUP_WINDOW_RUNTIME_PASS " + harness.generation);
+      if (harness.generation === "RELOADED") Qt.quit();
     }
   }
   Component.onCompleted: {
@@ -492,7 +500,7 @@ def runtime(directory):
                 line
                 for line in output.splitlines()
                 if re.search(
-                    r" WARN[: ]| ERROR[: ]| FATAL[: ]|ReferenceError|TypeError|Binding loop",
+                    r" WARN[: ]| ERROR[: ]| FATAL[: ]|ReferenceError|TypeError|Binding loop|^warning:",
                     line,
                 )
             ]

@@ -12,7 +12,8 @@ PanelWindow {
   id: root
 
   property string windowType: "popupmenu"  // Used for namespace and registration
-  readonly property string screenName: screen ? screen.name : "unknown"
+  readonly property ShellScreen selectedScreen: root.screen
+  readonly property string screenName: selectedScreen ? selectedScreen.name : "unknown"
   property string registrationKey: ""
 
   // Content item to display (set by the popup that uses this window)
