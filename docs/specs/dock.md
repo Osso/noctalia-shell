@@ -49,11 +49,20 @@ Dock covers the shell dock and dock context menu for running and pinned app acti
 - `Tests/dock-menu-guards.test.js`
 - `Tests/qml-type-annotations.test.js`
 - `Tests/source-coverage.test.js`
+- `Tests/dock-menu-warnings.test.py`
+- `Tests/Qml/DockMenuWarningsHarness.qml`
+
+### DockMenu isolated evidence
+
+- At `98fd78e72`/`1d1011f9d`, DockMenu-only qmllint warnings drop 8→0. Eight reported offscreen passes comprise six behavioral cases plus QtTest init/cleanup; this audit does not rerun them.
+- Cases cover ordered labels, selection boundaries and minimum geometry; hover colors/icon/text bindings with two independent menu owners under `Bound`; independent desktop-action selection; focus, pin/unpin, close requests and reopen; valid-owner close/callback and stale-owner rejection; and exit auto-close. Reopen recreates cleared item delegates; two-owner assertions prove hover isolation, not native popup ownership.
+- Four staged-copy negative controls (`hover`, `selection`, `action`, `close`) reportedly fail. Actions and pin state use inert fixtures: no host apps launch or real settings access. Isolation and acceptance contract: [testing](testing.md#dock-menu-isolated-runtime).
+- Live compositor popup placement, input delivery, focus/close backends, real desktop-action execution, settings persistence and whole-shell acceptance remain unproved.
 
 ## Known gaps (current cycle)
 
 - [ ] Add executable coverage for `Dock.qml` app list and pinned app rendering.
-- [ ] Add executable coverage for dock context menu show/hide timing.
+- [ ] Prove dock context menu show/hide timing on a live compositor; isolated reopen and exit auto-close are covered.
 - [ ] Add executable coverage for dock monitor settings in setup/settings flows.
 - [ ] Add executable coverage for launching pinned apps without running toplevels.
 
