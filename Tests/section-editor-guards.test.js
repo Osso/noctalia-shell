@@ -31,7 +31,11 @@ function createDropContext(overrides = {}) {
   return {
     dragStarted: true,
     draggedIndex: 1,
-    widgetModel: [{ id: "a" }, { id: "b" }, { id: "c" }],
+    root: {
+      widgetModel: [{ id: "a" }, { id: "b" }, { id: "c" }],
+    },
+    // The MouseArea owns drag state, not the editor's model.
+    widgetModel: [],
     widgetFlow: {
       children: [
         { widgetIndex: 0, x: 10, y: 20, width: 40, height: 30 },
