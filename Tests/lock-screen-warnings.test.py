@@ -361,6 +361,7 @@ HARNESS = """import QtQuick
 import QtTest
 import qs.Commons
 import qs.Modules.LockScreen
+import qs.Services.Hardware
 import qs.Services.Media
 import qs.Services.UI
 
@@ -513,7 +514,32 @@ Item {
       compare(lock.active, true);
       compare(named("lockSession").locked, true);
     }
+    function verify_bluetooth_battery_selection() {
+      const indicator = named("batteryIndicator");
+      const first = { label: "first", connected: true, batteryAvailable: true, battery: 0 };
+      const second = { label: "second", connected: true, batteryAvailable: true, battery: 0.75 };
+      const cases = [
+        [null, null],
+        [{}, null],
+        [{ values: [] }, null],
+        [{ values: [null, { connected: false, batteryAvailable: true, battery: 1 }, { connected: true, batteryAvailable: false, battery: 1 }, { connected: true, batteryAvailable: true }] }, null],
+        [{ values: [null, first, second] }, "first"],
+        [{ values: [{ connected: false }, second] }, "second"],
+        [{ values: [second, first] }, "second"],
+        [{ values: [] }, null]
+      ];
+      for (const fixture of cases) {
+        const before = JSON.stringify(fixture[0]);
+        BluetoothService.devices = fixture[0];
+        const selected = indicator.findBluetoothBatteryDevice();
+        compare(selected === null ? null : selected.label, fixture[1]);
+        compare(indicator.bluetoothDevice === null ? null : indicator.bluetoothDevice.label, fixture[1]);
+        compare(JSON.stringify(BluetoothService.devices), before);
+      }
+      BluetoothService.devices = null;
+    }
     function test_forecast_indices_and_screen() {
+      verify_bluetooth_battery_selection();
       compare(named("lockBgImage").source.toString(), "");
       const weekdays = descendants(lock.item, child => child.text !== undefined && /^(Sun|Mon|Tue|Wed)$/.test(child.text));
       compare(weekdays.map(child => child.text), ["Sun", "Mon", "Tue", "Wed"]);

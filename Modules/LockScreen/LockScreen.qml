@@ -81,9 +81,9 @@ Loader {
               if (!BluetoothService.devices) {
                 return null;
               }
-              var devices = BluetoothService.devices.values || [];
-              for (var i = 0; i < devices.length; i++) {
-                var device = devices[i];
+              const devices = BluetoothService.devices.values || [];
+              for (let i = 0; i < devices.length; i++) {
+                const device = devices[i];
                 if (device && device.connected && device.batteryAvailable && device.battery !== undefined) {
                   return device;
                 }
@@ -184,9 +184,9 @@ Loader {
               }
 
               onWidthChanged: if (available)
-                requestPaint()
+                                requestPaint()
               onHeightChanged: if (available)
-                requestPaint()
+                                 requestPaint()
             }
 
             // Top-right concave corner
@@ -217,9 +217,9 @@ Loader {
               }
 
               onWidthChanged: if (available)
-                requestPaint()
+                                requestPaint()
               onHeightChanged: if (available)
-                requestPaint()
+                                 requestPaint()
             }
 
             // Bottom-left concave corner
@@ -250,9 +250,9 @@ Loader {
               }
 
               onWidthChanged: if (available)
-                requestPaint()
+                                requestPaint()
               onHeightChanged: if (available)
-                requestPaint()
+                                 requestPaint()
             }
 
             // Bottom-right concave corner
@@ -283,9 +283,9 @@ Loader {
               }
 
               onWidthChanged: if (available)
-                requestPaint()
+                                requestPaint()
               onHeightChanged: if (available)
-                requestPaint()
+                                 requestPaint()
             }
           }
 
