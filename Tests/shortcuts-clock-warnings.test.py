@@ -4,10 +4,12 @@
 Clock header/month and shortcut widget loader remain production QML. Only service,
 clock drawing and action-widget boundaries are fixtures. Config audit denies host
 reads in staging; allowlist bwrap mounts and strace prove runtime denial too.
+Harness lint uses these same runtime modules with a strict zero-warning limit.
 """
 
 import argparse
 import importlib.util
+import json
 from pathlib import Path
 import re
 import subprocess
@@ -206,19 +208,78 @@ for path in ('/home/osso/.config/noctalia/settings.json', '/home/osso/.config/no
 """)
 
 
+def lint_harness(directory, environment, isolation, inject_warning):
+    stage_runtime(directory, False, False)
+    harness = directory / "tst_shortcuts_clock.qml"
+    if inject_warning:
+        source = harness.read_text()
+        harness.write_text(
+            source.replace(
+                "id: scene",
+                "id: scene\n  property int injectedWarning: scene.missingLintProbe",
+                1,
+            )
+        )
+    result = subprocess.run(
+        isolation.sandbox_command(
+            directory,
+            [
+                "/usr/lib/qt6/bin/qmllint",
+                "--bare",
+                "-I",
+                str(directory),
+                "-I",
+                "/usr/lib/qt6/qml",
+                "--max-warnings",
+                "0",
+                "--json",
+                "-",
+                str(harness),
+            ],
+        ),
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    output = result.stdout + result.stderr
+    print(output, flush=True)
+    diagnostics = json.loads(result.stdout)
+    warnings = sum(
+        warning["type"] == "warning"
+        for file in diagnostics["files"]
+        for warning in file["warnings"]
+    )
+    print("SHORTCUTS_CLOCK_HARNESS_LINT_WARNINGS", warnings, "EXIT", result.returncode)
+    if inject_warning:
+        assert warnings > 0, "injected warning not diagnosed"
+        assert result.returncode != 0, "injected warning accepted"
+    else:
+        assert warnings == 0, f"harness warnings remain: {warnings}"
+    return result.returncode
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "runtime", "lint-harness"))
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     parser.add_argument("--expect-warnings", nargs=2, type=int, default=(1, 0))
     parser.add_argument("--shadow", action="store_true")
     parser.add_argument("--mutation", action="store_true")
     args = parser.parse_args()
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
     with tempfile.TemporaryDirectory(prefix="noctalia-shortcuts-clock-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
         isolation = helper("wallpaper-tab-warnings.test.py")
         isolation.install_audit(directory)
         environment = isolation.isolated_environment(directory)
+        if args.mode == "lint-harness":
+            raise SystemExit(
+                lint_harness(directory, environment, isolation, args.inject_warning)
+            )
         if args.mode == "lint":
             helper("media-mini-warnings.test.py").stage_modules(directory)
             for target, expected in zip(TARGETS, args.expect_warnings):
