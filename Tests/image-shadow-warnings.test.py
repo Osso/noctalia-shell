@@ -15,6 +15,8 @@ import tempfile
 from collections import Counter
 from pathlib import Path
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 NAMES = ("NDropShadow", "NImageRounded")
 PROTECTED = ("/home/osso/.config", "/syncthing/Sync/Provisioning/config")
@@ -87,7 +89,7 @@ def stage_runtime(directory):
         directory,
         "Quickshell",
         {
-            "Quickshell": singleton(f'property string shellDir: "{ROOT}"'),
+            "Quickshell": singleton(f'property string shellDir: "{directory}"'),
         },
     )
     write(
@@ -186,6 +188,20 @@ for prefix in ("/home/osso/.config", "/syncthing/Sync/Provisioning/config"):
             ), dict(counts)
         return
     stage_runtime(directory)
+    if args.mode == "lint-harness":
+        harness = directory / "tst_image_shadow.qml"
+        if args.mutation == "semantic":
+            source = harness.read_text()
+            harness.write_text(
+                source.replace(
+                    "  id: scene",
+                    "  property int lintFailure: missingFixtureValue\n  id: scene",
+                    1,
+                )
+            )
+        os.environ.clear()
+        os.environ.update(environment)
+        raise SystemExit(check_harness(directory, harness))
     if args.mutation:
         name, original, replacement = {
             "shadow": ("NDropShadow", "source: root.source", "source: null"),
@@ -219,12 +235,16 @@ for prefix in ("/home/osso/.config", "/syncthing/Sync/Provisioning/config"):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "runtime", "lint-harness"))
     parser.add_argument("--shadow-count", type=int, default=0)
     parser.add_argument("--image-count", type=int, default=0)
-    parser.add_argument("--mutation", choices=("shadow", "image"))
+    parser.add_argument("--mutation", choices=("shadow", "image", "semantic"))
     parser.add_argument("--sandbox", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.mutation == "semantic" and args.mode != "lint-harness":
+        parser.error("semantic mutation requires lint-harness")
+    if args.mode == "lint-harness" and args.mutation not in (None, "semantic"):
+        parser.error("lint-harness accepts only semantic mutation")
     if args.sandbox:
         run_sandboxed(args)
         return

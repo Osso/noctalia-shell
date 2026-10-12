@@ -34,6 +34,8 @@ Item {
     id: tests
     name: "ImageShadow"
     when: windowShown
+    // Runtime fixture permits replacement; production Settings.data is read-only.
+    property var fixtureSettings: Settings
 
     SignalSpy {
       id: statusSpy
@@ -41,7 +43,7 @@ Item {
     }
 
     function init() {
-      Settings.data = {
+      fixtureSettings.data = {
         general: {
           enableShadows: true,
           shadowOffsetX: 2,
@@ -265,7 +267,7 @@ Item {
       compare(widget.layer.enabled, false);
       PowerProfileService.noctaliaPerformanceMode = false;
       compare(widget.layer.enabled, true);
-      Settings.data = {
+      fixtureSettings.data = {
         general: {
           enableShadows: false,
           shadowOffsetX: 5,
@@ -275,7 +277,7 @@ Item {
       compare(widget.layer.enabled, false);
       compare(widget.shadowHorizontalOffset, 5);
       compare(widget.shadowVerticalOffset, -2);
-      Settings.data = {
+      fixtureSettings.data = {
         general: {
           enableShadows: true,
           shadowOffsetX: 1,

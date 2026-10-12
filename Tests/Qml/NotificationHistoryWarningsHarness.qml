@@ -20,6 +20,8 @@ Item {
     name: "NotificationHistoryWarnings"
     when: true
     property var panel
+    // Counters belong to the inert runtime fixture, not the production service.
+    property var fixtureService: NotificationService
 
     function descendants(parent, predicate) {
       let found = [];
@@ -69,8 +71,8 @@ Item {
 
     function init() {
       NotificationService.historyList.clear();
-      NotificationService.removed = [];
-      NotificationService.seenCount = 0;
+      fixtureService.removed = [];
+      fixtureService.seenCount = 0;
       NotificationService.doNotDisturb = false;
       // Service order is newest first; production panel must preserve it.
       append("new", 0, 2);
@@ -123,10 +125,10 @@ Item {
 
     function test_dismiss_clear_open_and_teardown() {
       panel.opened();
-      compare(NotificationService.seenCount, 1);
+      compare(fixtureService.seenCount, 1);
       tabs().itemAt(0).clicked();
       button(list().itemAt(1), "tooltips.delete-notification").clicked();
-      compare(NotificationService.removed, ["yesterday"]);
+      compare(fixtureService.removed, ["yesterday"]);
       tryCompare(list(), "count", 2);
       compare(list().itemAt(0).notificationId, "new");
       compare(list().itemAt(1).notificationId, "old");

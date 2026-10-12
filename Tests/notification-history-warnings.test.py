@@ -7,13 +7,14 @@ compositor, desktop input or full widget rendering proof.
 
 import argparse
 from collections import Counter
-import hashlib
 import importlib.util
 import os
 from pathlib import Path
 import re
 import subprocess
 import tempfile
+
+from qml_fixture_lint import check_harness
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/NotificationHistory/NotificationHistoryPanel.qml")
@@ -182,27 +183,14 @@ property color hoverColor; signal clicked() }""",
     )
 
 
-def runtime(directory):
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    backup = directory / "settings.backup.json"
-    backup.touch(mode=0o600)
-    backup.write_bytes(original)
-    sha = hashlib.sha256(original).hexdigest()
-    assert hashlib.sha256(backup.read_bytes()).hexdigest() == sha
+def isolate_environment(directory):
     environment = {
-        k: v
-        for k, v in os.environ.items()
-        if not k.startswith(("XDG_", "WAYLAND_", "QT_", "QML_", "NOCTALIA_"))
-        and k
-        not in {
-            "DISPLAY",
-            "DBUS_SESSION_BUS_ADDRESS",
-            "HOME",
-            "NIRI_SOCKET",
-            "HYPRLAND_INSTANCE_SIGNATURE",
-            "SWAYSOCK",
-        }
+        "PATH": "/usr/bin",
+        "LANG": "C.UTF-8",
+        "QT_QPA_PLATFORM": "offscreen",
+        "QT_QUICK_BACKEND": "software",
+        "DBUS_SESSION_BUS_ADDRESS": "unix:path=/nonexistent/session",
+        "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/nonexistent/system",
     }
     for key in (
         "HOME",
@@ -217,37 +205,122 @@ def runtime(directory):
         path = directory / key
         path.mkdir(mode=0o700)
         environment[key] = str(path)
-    environment.update(QT_QPA_PLATFORM="offscreen", QT_QUICK_BACKEND="software")
+    return environment
+
+
+def runtime(directory):
+    result = subprocess.run(
+        [
+            "/usr/lib/qt6/bin/qmltestrunner",
+            "-input",
+            str(directory / "tst_history.qml"),
+            "-import",
+            str(directory),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=45,
+    )
+    output = result.stdout + result.stderr
+    print(output, end="")
+    assert result.returncode == 0, result.returncode
+    assert "0 failed" in output
+    assert not re.search(
+        r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output
+    ), output
+
+
+def run_sandboxed(args):
+    directory = args.sandbox
+    safety = helper("image-shadow-warnings.test.py")
+    mounts = Path("/proc/self/mountinfo").read_text().splitlines()
+    for parent in ("/home/osso", safety.PROTECTED[1]):
+        assert any(line.split()[4] == parent and " - tmpfs " in line for line in mounts)
+    for prefix in safety.PROTECTED:
+        try:
+            Path(prefix + "/noctalia/settings.json").read_bytes()
+        except PermissionError:
+            print("HISTORY_CONFIG_DENIED", prefix)
+        else:
+            raise AssertionError("config mask failed")
+    environment = isolate_environment(directory)
+    os.environ.clear()
+    os.environ.update(environment)
+    if args.mode == "lint":
+        lint(directory)
+        return
     stage_runtime(directory)
-    try:
-        result = subprocess.run(
-            [
-                "/usr/lib/qt6/bin/qmltestrunner",
-                "-input",
-                str(directory / "tst_history.qml"),
-                "-import",
-                str(directory),
-            ],
-            env=environment,
-            capture_output=True,
-            text=True,
-            timeout=45,
-        )
-        output = result.stdout + result.stderr
-        print(output, end="")
-        assert result.returncode == 0, result.returncode
-        assert "0 failed" in output
-        assert not re.search(r"QWARN|QFATAL|ReferenceError|TypeError", output), output
-    finally:
-        assert hashlib.sha256(settings.read_bytes()).hexdigest() == sha
-        print("HISTORY_SETTINGS_SHA", sha)
+    if args.mode == "lint-harness":
+        harness = directory / "tst_history.qml"
+        if args.mutation:
+            source = harness.read_text()
+            harness.write_text(
+                source.replace(
+                    "  id: scene",
+                    "  property int lintFailure: missingFixtureValue\n  id: scene",
+                    1,
+                )
+            )
+        raise SystemExit(check_harness(directory, harness))
+    runtime(directory)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument("mode", choices=("lint", "runtime", "lint-harness"))
+    parser.add_argument("--mutation", choices=("semantic",))
+    parser.add_argument("--sandbox", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.mutation and args.mode != "lint-harness":
+        parser.error("semantic mutation requires lint-harness")
+    if args.sandbox:
+        run_sandboxed(args)
+        raise SystemExit(0)
     with tempfile.TemporaryDirectory(prefix="noctalia-history-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
-        {"lint": lint, "runtime": runtime}[args.mode](directory)
+        command = [
+            "bwrap",
+            "--die-with-parent",
+            "--unshare-all",
+            "--new-session",
+            "--ro-bind",
+            "/",
+            "/",
+            "--perms",
+            "000",
+            "--tmpfs",
+            "/home/osso",
+            "--perms",
+            "000",
+            "--tmpfs",
+            "/syncthing/Sync/Provisioning/config",
+            "--tmpfs",
+            "/tmp",
+            "--tmpfs",
+            "/run",
+            "--bind",
+            temporary,
+            temporary,
+            "--proc",
+            "/proc",
+            "--dev",
+            "/dev",
+            "--chdir",
+            temporary,
+            "--",
+            "/usr/bin/python3",
+            str(Path(__file__).resolve()),
+            args.mode,
+            "--sandbox",
+            temporary,
+        ]
+        if args.mutation:
+            command.extend(("--mutation", args.mutation))
+        result = subprocess.run(
+            command,
+            env={"PATH": "/usr/bin", "HOME": temporary, "LANG": "C.UTF-8"},
+            check=False,
+            timeout=90,
+        )
+        raise SystemExit(result.returncode)
