@@ -238,6 +238,15 @@ def runtime(directory, mutation):
         str(directory),
         "--chdir",
         str(directory),
+        "/usr/bin/python3",
+        "-c",
+        "import os, pathlib, sys; "
+        "assert all(not pathlib.Path(p).exists() for p in "
+        "('/home/osso/.config', '/syncthing', '/run/user', '/dev/dri', '/dev/snd')); "
+        "assert os.readlink('/proc/self/ns/net') != sys.argv[1]; "
+        "print('ISOLATION_PASS', flush=True); "
+        "os.execv(sys.argv[2], sys.argv[2:])",
+        os.readlink("/proc/self/ns/net"),
         "/usr/lib/qt6/bin/qmltestrunner",
         "-input",
         str(directory / "tst_emoji_recorder.qml"),
@@ -249,6 +258,7 @@ def runtime(directory, mutation):
     )
     output = result.stdout + result.stderr
     print(output, end="")
+    assert "ISOLATION_PASS" in output, output
     assert not re.search(
         r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:", output
     ), output

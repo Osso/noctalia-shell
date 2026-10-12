@@ -8,244 +8,244 @@ import qs.Services.System
 import qs.Services.UI
 
 Singleton {
-    id: root
+  id: root
 
-    readonly property var settings: Settings.data.screenRecorder
-    property bool isRecording: false
-    property bool isPending: false
-    // True only if the recorder actually started capturing at least once
-    property bool hasActiveRecording: false
-    property string outputPath: ""
-    property bool isAvailable: ProgramCheckerService.gpuScreenRecorderAvailable
+  readonly property var settings: Settings.data.screenRecorder
+  property bool isRecording: false
+  property bool isPending: false
+  // True only if the recorder actually started capturing at least once
+  property bool hasActiveRecording: false
+  property string outputPath: ""
+  property bool isAvailable: ProgramCheckerService.gpuScreenRecorderAvailable
 
-    // Available capture sources (populated from gpu-screen-recorder --list-capture-options)
-    property var captureSources: []
-    // Resolution of first detected monitor (e.g. "1920x1200"), used for -s flag with -w focused
-    property string primaryMonitorResolution: ""
-    property bool discoveryInProgress: false
-    property bool discoveryQueued: false
-    property var pendingCaptureOptions: null
-    property var pendingMonitorOutput: null
+  // Available capture sources (populated from gpu-screen-recorder --list-capture-options)
+  property var captureSources: []
+  // Resolution of first detected monitor (e.g. "1920x1200"), used for -s flag with -w focused
+  property string primaryMonitorResolution: ""
+  property bool discoveryInProgress: false
+  property bool discoveryQueued: false
+  property var pendingCaptureOptions: null
+  property var pendingMonitorOutput: null
 
-    // Update availability when ProgramCheckerService completes its checks
-    Connections {
-        target: ProgramCheckerService
-        function onChecksCompleted() {
-            if (ProgramCheckerService.gpuScreenRecorderAvailable)
-                root.refreshCaptureSources();
-        }
+  // Update availability when ProgramCheckerService completes its checks
+  Connections {
+    target: ProgramCheckerService
+    function onChecksCompleted() {
+      if (ProgramCheckerService.gpuScreenRecorderAvailable)
+        root.refreshCaptureSources();
     }
+  }
 
-    Connections {
-        target: Quickshell
-        function onScreensChanged() {
-            if (root.isAvailable)
-                root.refreshCaptureSources();
-        }
+  Connections {
+    target: Quickshell
+    function onScreensChanged() {
+      if (root.isAvailable)
+        root.refreshCaptureSources();
     }
+  }
 
-    // Also query on startup in case checksCompleted already fired
-    Component.onCompleted: {
-        if (isAvailable)
-            refreshCaptureSources();
+  // Also query on startup in case checksCompleted already fired
+  Component.onCompleted: {
+    if (isAvailable)
+      refreshCaptureSources();
+  }
+
+  function refreshCaptureSources() {
+    if (discoveryInProgress) {
+      discoveryQueued = true;
+      return;
     }
+    discoveryInProgress = true;
+    pendingCaptureOptions = null;
+    pendingMonitorOutput = null;
+    captureSourcesProcess.command = ["gpu-screen-recorder", "--list-capture-options"];
+    captureSourcesProcess.running = true;
+    monitorListProcess.command = ["gpu-screen-recorder", "--list-monitors"];
+    monitorListProcess.running = true;
+  }
 
-    function refreshCaptureSources() {
-        if (discoveryInProgress) {
-            discoveryQueued = true;
-            return;
-        }
-        discoveryInProgress = true;
-        pendingCaptureOptions = null;
-        pendingMonitorOutput = null;
-        captureSourcesProcess.command = ["gpu-screen-recorder", "--list-capture-options"];
-        captureSourcesProcess.running = true;
-        monitorListProcess.command = ["gpu-screen-recorder", "--list-monitors"];
-        monitorListProcess.running = true;
+  function publishDiscoveryIfComplete() {
+    if (pendingCaptureOptions === null || pendingMonitorOutput === null)
+      return;
+
+    const sources = parseCaptureSources(pendingCaptureOptions);
+    const result = parseMonitorList(pendingMonitorOutput, sources);
+    primaryMonitorResolution = result.primaryMonitorResolution;
+    captureSources = result.sources;
+    discoveryInProgress = false;
+    if (discoveryQueued) {
+      discoveryQueued = false;
+      refreshCaptureSources();
     }
+  }
 
-    function publishDiscoveryIfComplete() {
-        if (pendingCaptureOptions === null || pendingMonitorOutput === null)
-            return;
-
-        const sources = parseCaptureSources(pendingCaptureOptions);
-        const result = parseMonitorList(pendingMonitorOutput, sources);
-        primaryMonitorResolution = result.primaryMonitorResolution;
-        captureSources = result.sources;
-        discoveryInProgress = false;
-        if (discoveryQueued) {
-            discoveryQueued = false;
-            refreshCaptureSources();
-        }
+  // Query gpu-screen-recorder for available capture sources
+  Process {
+    id: captureSourcesProcess
+    running: false
+    onExited: {
+      root.pendingCaptureOptions = captureSourcesOutput.text;
+      root.publishDiscoveryIfComplete();
     }
-
-    // Query gpu-screen-recorder for available capture sources
-    Process {
-        id: captureSourcesProcess
-        running: false
-        onExited: {
-            root.pendingCaptureOptions = captureSourcesOutput.text;
-            root.publishDiscoveryIfComplete();
-        }
-        stdout: StdioCollector {
-            id: captureSourcesOutput
-        }
-        stderr: StdioCollector {}
+    stdout: StdioCollector {
+      id: captureSourcesOutput
     }
+    stderr: StdioCollector {}
+  }
 
-    // Query --list-monitors for primary monitor resolution (needed for -w focused)
-    Process {
-        id: monitorListProcess
-        running: false
-        onExited: {
-            root.pendingMonitorOutput = monitorListOutput.text;
-            root.publishDiscoveryIfComplete();
-        }
-        stdout: StdioCollector {
-            id: monitorListOutput
-        }
-        stderr: StdioCollector {}
+  // Query --list-monitors for primary monitor resolution (needed for -w focused)
+  Process {
+    id: monitorListProcess
+    running: false
+    onExited: {
+      root.pendingMonitorOutput = monitorListOutput.text;
+      root.publishDiscoveryIfComplete();
     }
+    stdout: StdioCollector {
+      id: monitorListOutput
+    }
+    stderr: StdioCollector {}
+  }
 
-    function parseCaptureSources(output) {
-        const sources = [];
-        const lines = output.trim().split("\n");
+  function parseCaptureSources(output) {
+    const sources = [];
+    const lines = output.trim().split("\n");
 
-        for (var i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) {
-                continue;
-            }
+    for (var i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) {
+        continue;
+      }
 
-            const parts = line.split("|");
-            const key = parts[0];
-            if (key.startsWith("/dev/")) {
-                continue;
-            }
+      const parts = line.split("|");
+      const key = parts[0];
+      if (key.startsWith("/dev/")) {
+        continue;
+      }
 
-            if (key === "region") {
-                sources.push({
-                    "key": "region",
-                    "name": "Select region",
-                    "label": "Select region"
-                });
-                continue;
-            }
-
-            const resolution = parts.length > 1 ? parts[1] : "";
-            const displayName = resolution ? key + " (" + resolution + ")" : key;
-            sources.push({
-                "key": key,
-                "name": displayName,
-                "label": displayName,
-                "resolution": resolution
-            });
-        }
-
+      if (key === "region") {
         sources.push({
-            "key": "portal",
-            "name": "Portal (window picker)",
-            "label": "Portal (window picker)"
-        });
-        return sources;
+                       "key": "region",
+                       "name": "Select region",
+                       "label": "Select region"
+                     });
+        continue;
+      }
+
+      const resolution = parts.length > 1 ? parts[1] : "";
+      const displayName = resolution ? key + " (" + resolution + ")" : key;
+      sources.push({
+                     "key": key,
+                     "name": displayName,
+                     "label": displayName,
+                     "resolution": resolution
+                   });
     }
 
-    function parseMonitorList(output, existingSources) {
-        const sources = existingSources.slice();
-        var insertIndex = sources.length > 0 ? sources.length - 1 : 0;
-        var primaryResolution = "";
-        const lines = output.trim().split("\n");
+    sources.push({
+                   "key": "portal",
+                   "name": "Portal (window picker)",
+                   "label": "Portal (window picker)"
+                 });
+    return sources;
+  }
 
-        for (var i = 0; i < lines.length; i++) {
-            const parts = lines[i].trim().split("|");
-            if (parts.length <= 1 || parts[0].startsWith("/dev/")) {
-                continue;
-            }
+  function parseMonitorList(output, existingSources) {
+    const sources = existingSources.slice();
+    var insertIndex = sources.length > 0 ? sources.length - 1 : 0;
+    var primaryResolution = "";
+    const lines = output.trim().split("\n");
 
-            const key = parts[0];
-            const resolution = parts[1];
-            if (!primaryResolution) {
-                primaryResolution = resolution;
-            }
+    for (var i = 0; i < lines.length; i++) {
+      const parts = lines[i].trim().split("|");
+      if (parts.length <= 1 || parts[0].startsWith("/dev/")) {
+        continue;
+      }
 
-            var exists = false;
-            for (var j = 0; j < sources.length; j++) {
-                if (sources[j].key === key) {
-                    exists = true;
-                    break;
-                }
-            }
+      const key = parts[0];
+      const resolution = parts[1];
+      if (!primaryResolution) {
+        primaryResolution = resolution;
+      }
 
-            if (exists) {
-                continue;
-            }
-
-            const displayName = key + " (" + resolution + ")";
-            sources.splice(insertIndex, 0, {
-                "key": key,
-                "name": displayName,
-                "label": displayName,
-                "resolution": resolution
-            });
-            insertIndex++;
+      var exists = false;
+      for (var j = 0; j < sources.length; j++) {
+        if (sources[j].key === key) {
+          exists = true;
+          break;
         }
+      }
 
-        return {
-            sources: sources,
-            primaryMonitorResolution: primaryResolution
-        };
+      if (exists) {
+        continue;
+      }
+
+      const displayName = key + " (" + resolution + ")";
+      sources.splice(insertIndex, 0, {
+                       "key": key,
+                       "name": displayName,
+                       "label": displayName,
+                       "resolution": resolution
+                     });
+      insertIndex++;
     }
 
-    // Start or Stop recording
-    function toggleRecording() {
-        (isRecording || isPending) ? stopRecording() : startRecording();
+    return {
+      sources: sources,
+      primaryMonitorResolution: primaryResolution
+    };
+  }
+
+  // Start or Stop recording
+  function toggleRecording() {
+    (isRecording || isPending) ? stopRecording() : startRecording();
+  }
+
+  // Start screen recording using Quickshell.execDetached
+  function startRecording() {
+    if (!isAvailable) {
+      return;
+    }
+    if (isRecording || isPending) {
+      return;
+    }
+    isPending = true;
+    hasActiveRecording = false;
+
+    // Close any opened panel
+    if ((PanelService.openedPanel !== null) && !PanelService.openedPanel.isClosing) {
+      PanelService.openedPanel.close();
     }
 
-    // Start screen recording using Quickshell.execDetached
-    function startRecording() {
-        if (!isAvailable) {
-            return;
-        }
-        if (isRecording || isPending) {
-            return;
-        }
-        isPending = true;
-        hasActiveRecording = false;
-
-        // Close any opened panel
-        if ((PanelService.openedPanel !== null) && !PanelService.openedPanel.isClosing) {
-            PanelService.openedPanel.close();
-        }
-
-        // Portal check only needed when using portal capture mode
-        if (settings.videoSource === "portal") {
-            portalCheckProcess.exec({
-                "command": ["sh", "-c", "pidof xdg-desktop-portal >/dev/null 2>&1 && (pidof xdg-desktop-portal-wlr >/dev/null 2>&1 || pidof xdg-desktop-portal-hyprland >/dev/null 2>&1 || pidof xdg-desktop-portal-gnome >/dev/null 2>&1 || pidof xdg-desktop-portal-kde >/dev/null 2>&1 || pidof xdg-desktop-portal-gtk >/dev/null 2>&1)"]
-            });
-        } else {
-            // Direct monitor/region capture - skip portal check
-            launchRecorder();
-        }
+    // Portal check only needed when using portal capture mode
+    if (settings.videoSource === "portal") {
+      portalCheckProcess.exec({
+                                "command": ["sh", "-c", "pidof xdg-desktop-portal >/dev/null 2>&1 && (pidof xdg-desktop-portal-wlr >/dev/null 2>&1 || pidof xdg-desktop-portal-hyprland >/dev/null 2>&1 || pidof xdg-desktop-portal-gnome >/dev/null 2>&1 || pidof xdg-desktop-portal-kde >/dev/null 2>&1 || pidof xdg-desktop-portal-gtk >/dev/null 2>&1)"]
+                              });
+    } else {
+      // Direct monitor/region capture - skip portal check
+      launchRecorder();
     }
+  }
 
-    function launchRecorder() {
-        killTimer.running = false;
-        var filename = Time.getFormattedTimestamp() + ".mp4";
-        var videoDir = Settings.preprocessPath(settings.directory);
-        if (videoDir && !videoDir.endsWith("/")) {
-            videoDir += "/";
-        }
-        outputPath = videoDir + filename;
+  function launchRecorder() {
+    killTimer.running = false;
+    var filename = Time.getFormattedTimestamp() + ".mp4";
+    var videoDir = Settings.preprocessPath(settings.directory);
+    if (videoDir && !videoDir.endsWith("/")) {
+      videoDir += "/";
+    }
+    outputPath = videoDir + filename;
 
-        var audioArg = (settings.audioSource === "both") ? `-a "default_output|default_input"` : `-a ${settings.audioSource}`;
+    var audioArg = (settings.audioSource === "both") ? `-a "default_output|default_input"` : `-a ${settings.audioSource}`;
 
-        // -s WxH is required when using -w focused
-        var sizeFlag = "";
-        if (settings.videoSource === "focused" && primaryMonitorResolution)
-            sizeFlag = `-s ${primaryMonitorResolution}`;
+    // -s WxH is required when using -w focused
+    var sizeFlag = "";
+    if (settings.videoSource === "focused" && primaryMonitorResolution)
+      sizeFlag = `-s ${primaryMonitorResolution}`;
 
-        var flags = `-w ${settings.videoSource} ${sizeFlag} -f ${settings.frameRate} -ac ${settings.audioCodec} -k ${settings.videoCodec} ${audioArg} -q ${settings.quality} -cursor ${settings.showCursor ? "yes" : "no"} -cr ${settings.colorRange} -o "${outputPath}"`;
-        var command = `
+    var flags = `-w ${settings.videoSource} ${sizeFlag} -f ${settings.frameRate} -ac ${settings.audioCodec} -k ${settings.videoCodec} ${audioArg} -q ${settings.quality} -cursor ${settings.showCursor ? "yes" : "no"} -cr ${settings.colorRange} -o "${outputPath}"`;
+    var command = `
     _gpuscreenrecorder_flatpak_installed() {
     flatpak list --app | grep -q "com.dec05eba.gpu_screen_recorder"
     }
@@ -257,138 +257,138 @@ Singleton {
     echo "GPU_SCREEN_RECORDER_NOT_INSTALLED"
     fi`;
 
-        // Use Process instead of execDetached so we can monitor it and read stderr
-        recorderProcess.exec({
-            "command": ["sh", "-c", command]
-        });
+    // Use Process instead of execDetached so we can monitor it and read stderr
+    recorderProcess.exec({
+                           "command": ["sh", "-c", command]
+                         });
 
-        // Start monitoring - if process ends quickly, it was likely cancelled
-        pendingTimer.running = true;
+    // Start monitoring - if process ends quickly, it was likely cancelled
+    pendingTimer.running = true;
+  }
+
+  // Stop recording using Quickshell.execDetached
+  function stopRecording() {
+    if (!isRecording && !isPending) {
+      return;
     }
 
-    // Stop recording using Quickshell.execDetached
-    function stopRecording() {
-        if (!isRecording && !isPending) {
-            return;
-        }
+    ToastService.showNotice(I18n.tr("toast.recording.stopping"), outputPath, "settings-screen-recorder");
 
-        ToastService.showNotice(I18n.tr("toast.recording.stopping"), outputPath, "settings-screen-recorder");
+    Quickshell.execDetached(["sh", "-c", "pkill -SIGINT -f 'gpu-screen-recorder' || pkill -SIGINT -f 'com.dec05eba.gpu_screen_recorder'"]);
 
-        Quickshell.execDetached(["sh", "-c", "pkill -SIGINT -f 'gpu-screen-recorder' || pkill -SIGINT -f 'com.dec05eba.gpu_screen_recorder'"]);
+    isRecording = false;
+    isPending = false;
+    pendingTimer.running = false;
+    monitorTimer.running = false;
+    hasActiveRecording = false;
 
-        isRecording = false;
-        isPending = false;
-        pendingTimer.running = false;
-        monitorTimer.running = false;
-        hasActiveRecording = false;
+    // Just in case, force kill after 3 seconds
+    killTimer.running = true;
+  }
 
-        // Just in case, force kill after 3 seconds
-        killTimer.running = true;
+  function finishRecorderProcess(exitCode, stdout, stderr) {
+    if (isPending) {
+      isPending = false;
+      pendingTimer.running = false;
+
+      if (stdout.trim() === "GPU_SCREEN_RECORDER_NOT_INSTALLED") {
+        ToastService.showError(I18n.tr("toast.recording.not-installed"), I18n.tr("toast.recording.not-installed-desc"));
+        return;
+      }
+
+      if (exitCode !== 0) {
+        const message = stderr.trim() || I18n.tr("toast.recording.failed-gpu");
+        ToastService.showError(I18n.tr("toast.recording.failed-start"), message);
+      }
+      return;
     }
 
-    function finishRecorderProcess(exitCode, stdout, stderr) {
-        if (isPending) {
-            isPending = false;
-            pendingTimer.running = false;
-
-            if (stdout.trim() === "GPU_SCREEN_RECORDER_NOT_INSTALLED") {
-                ToastService.showError(I18n.tr("toast.recording.not-installed"), I18n.tr("toast.recording.not-installed-desc"));
-                return;
-            }
-
-            if (exitCode !== 0) {
-                const message = stderr.trim() || I18n.tr("toast.recording.failed-gpu");
-                ToastService.showError(I18n.tr("toast.recording.failed-start"), message);
-            }
-            return;
-        }
-
-        if (!isRecording) {
-            return;
-        }
-
-        isRecording = false;
-        hasActiveRecording = false;
-        monitorTimer.running = false;
-        if (exitCode === 0) {
-            ToastService.showNotice(I18n.tr("toast.recording.saved"), outputPath, "settings-screen-recorder");
-        } else {
-            const message = stderr.trim() || I18n.tr("toast.recording.failed-general");
-            ToastService.showError(I18n.tr("toast.recording.failed-start"), message);
-        }
+    if (!isRecording) {
+      return;
     }
 
-    function handlePendingTimer(processRunning) {
-        if (!isPending) {
-            return;
-        }
-        isPending = false;
-        if (processRunning) {
-            isRecording = true;
-            hasActiveRecording = true;
-            monitorTimer.running = true;
-        }
+    isRecording = false;
+    hasActiveRecording = false;
+    monitorTimer.running = false;
+    if (exitCode === 0) {
+      ToastService.showNotice(I18n.tr("toast.recording.saved"), outputPath, "settings-screen-recorder");
+    } else {
+      const message = stderr.trim() || I18n.tr("toast.recording.failed-general");
+      ToastService.showError(I18n.tr("toast.recording.failed-start"), message);
     }
+  }
 
-    function handleMonitorTimer(processRunning) {
-        if (!processRunning && isRecording) {
-            monitorTimer.running = false;
-        }
+  function handlePendingTimer(processRunning) {
+    if (!isPending) {
+      return;
     }
+    isPending = false;
+    if (processRunning) {
+      isRecording = true;
+      hasActiveRecording = true;
+      monitorTimer.running = true;
+    }
+  }
 
-    // Process to run and monitor gpu-screen-recorder
-    Process {
-        id: recorderProcess
-        stdout: StdioCollector {
-            id: recorderOutput
-        }
-        stderr: StdioCollector {
-            id: recorderError
-        }
-        onExited: function (exitCode) {
-            root.finishRecorderProcess(exitCode, String(recorderOutput.text || ""), String(recorderError.text || ""));
-        }
+  function handleMonitorTimer(processRunning) {
+    if (!processRunning && isRecording) {
+      monitorTimer.running = false;
     }
+  }
 
-    // Pre-flight check for xdg-desktop-portal
-    Process {
-        id: portalCheckProcess
-        onExited: function (exitCode, exitStatus) {
-            if (exitCode === 0) {
-                // Portals available, proceed to launch
-                root.launchRecorder();
-            } else {
-                root.isPending = false;
-                root.hasActiveRecording = false;
-                ToastService.showError(I18n.tr("toast.recording.no-portals"), I18n.tr("toast.recording.no-portals-desc"));
-            }
-        }
+  // Process to run and monitor gpu-screen-recorder
+  Process {
+    id: recorderProcess
+    stdout: StdioCollector {
+      id: recorderOutput
     }
+    stderr: StdioCollector {
+      id: recorderError
+    }
+    onExited: function (exitCode) {
+      root.finishRecorderProcess(exitCode, String(recorderOutput.text || ""), String(recorderError.text || ""));
+    }
+  }
 
-    Timer {
-        id: pendingTimer
-        interval: 2000 // Wait 2 seconds to see if process stays alive
-        running: false
-        repeat: false
-        onTriggered: root.handlePendingTimer(recorderProcess.running)
+  // Pre-flight check for xdg-desktop-portal
+  Process {
+    id: portalCheckProcess
+    onExited: function (exitCode, exitStatus) {
+      if (exitCode === 0) {
+        // Portals available, proceed to launch
+        root.launchRecorder();
+      } else {
+        root.isPending = false;
+        root.hasActiveRecording = false;
+        ToastService.showError(I18n.tr("toast.recording.no-portals"), I18n.tr("toast.recording.no-portals-desc"));
+      }
     }
+  }
 
-    // Monitor timer to periodically check if we're still recording
-    Timer {
-        id: monitorTimer
-        interval: 2000
-        running: false
-        repeat: true
-        onTriggered: root.handleMonitorTimer(recorderProcess.running)
-    }
+  Timer {
+    id: pendingTimer
+    interval: 2000 // Wait 2 seconds to see if process stays alive
+    running: false
+    repeat: false
+    onTriggered: root.handlePendingTimer(recorderProcess.running)
+  }
 
-    Timer {
-        id: killTimer
-        interval: 3000
-        running: false
-        repeat: false
-        onTriggered: {
-            Quickshell.execDetached(["sh", "-c", "pkill -9 -f 'gpu-screen-recorder' 2>/dev/null || pkill -9 -f 'com.dec05eba.gpu_screen_recorder' 2>/dev/null || true"]);
-        }
+  // Monitor timer to periodically check if we're still recording
+  Timer {
+    id: monitorTimer
+    interval: 2000
+    running: false
+    repeat: true
+    onTriggered: root.handleMonitorTimer(recorderProcess.running)
+  }
+
+  Timer {
+    id: killTimer
+    interval: 3000
+    running: false
+    repeat: false
+    onTriggered: {
+      Quickshell.execDetached(["sh", "-c", "pkill -9 -f 'gpu-screen-recorder' 2>/dev/null || pkill -9 -f 'com.dec05eba.gpu_screen_recorder' 2>/dev/null || true"]);
     }
+  }
 }
