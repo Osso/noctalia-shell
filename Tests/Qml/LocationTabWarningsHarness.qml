@@ -19,7 +19,7 @@ TestCase {
     }
   }
 
-  function descendants(item: Item) {
+  function descendants(item: Item): var {
     let items = [item];
     for (const child of item.children || [])
       items = items.concat(descendants(child));
