@@ -23,7 +23,7 @@ Item {
   property var widgetMetadata: BarWidgetRegistry.widgetMetadata[widgetId]
   property var widgetSettings: {
     if (section && sectionWidgetIndex >= 0) {
-      var widgets = Settings.data.bar.widgets[section];
+      const widgets = Settings.data.bar.widgets[section];
       if (widgets && sectionWidgetIndex < widgets.length) {
         return widgets[sectionWidgetIndex];
       }
@@ -176,13 +176,13 @@ Item {
         } else if (_scrollState.phase === 1) {
           // Scrolling
           _scrollState.offset++;
-          var start = _scrollState.offset;
-          var end = start + currentMaxTextLength;
+          const start = _scrollState.offset;
+          const end = start + currentMaxTextLength;
 
           if (start >= _scrollState.originalText.length - currentMaxTextLength) {
             // Reached or passed the end, ensure we show the last part
-            var textEnd = _scrollState.originalText.length;
-            var textStart = Math.max(0, textEnd - currentMaxTextLength);
+            const textEnd = _scrollState.originalText.length;
+            const textStart = Math.max(0, textEnd - currentMaxTextLength);
             _dynamicText = _scrollState.originalText.substring(textStart, textEnd);
             _scrollState.phase = 2;  // Move to static end phase
             _scrollState.phaseCounter = 0;
@@ -192,8 +192,8 @@ Item {
         } else if (_scrollState.phase === 2) {
           // Static at end
           // Ensure end text is displayed correctly
-          var textEnd = _scrollState.originalText.length;
-          var textStart = Math.max(0, textEnd - currentMaxTextLength);
+          const textEnd = _scrollState.originalText.length;
+          const textStart = Math.max(0, textEnd - currentMaxTextLength);
           _dynamicText = _scrollState.originalText.substring(textStart, textEnd);
           _scrollState.phaseCounter++;
           if (_scrollState.phaseCounter >= _staticDuration) {
@@ -264,7 +264,7 @@ Item {
       Logger.i("CustomButton", `Executing command: ${leftClickExec}`);
     } else if (!leftClickUpdateText) {
       // No left click script was defined, open settings
-      var settingsPanel = PanelService.getPanel("settingsPanel", screen);
+      const settingsPanel = PanelService.getPanel("settingsPanel", screen);
       settingsPanel.requestedTab = SettingsPanel.Tab.Bar;
       settingsPanel.open();
     }
