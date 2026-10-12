@@ -59,6 +59,8 @@ Control Center covers the panel card loader, shortcut widget registry, shortcut/
 
 ## Tests asserting this spec
 
+- At `1e05e0ef7`, ProfileCard lint drops 6→4; four `unqualified` screen references retain caller-context lookup, not an explicit card screen contract or warning-free acceptance. `Tests/Qml/VisualizerProfileHarness.qml` asserts avatar fallback/geometry, changing display name, synthetic uptime completion and refresh, settings General-tab routing, session-menu open/control-center close ordering, close action, and resizing. The fixture supplies the caller screen; uptime Process and services are inert. No real uptime process, live desktop or persistence proof. Shared accounting and isolation: [testing](testing.md#visualizerprofile-isolated-runtime).
+
 - Production Control Center `WidgetSettings/CustomButtonSettings.qml` editor coverage through `bb8611429`/`b0cc0dc20`: targeted lint 20→0 and four isolated command/icon/state-list/serialization-discard cases. This is not the bar ControlCenterSettings editor or outer settings dialog. Exact coverage and limits: [custom button](custom-button.md#control-center-settings-editor); diagnostic/isolation contract: [testing](testing.md#control-center-custom-button-settings-editor).
 
 - `Tests/bar-controls-warnings.test.py` — production bar-button toggle/anchor, launcher/settings/context routing, and shader target-color bindings under colorization and dark-mode changes. This is not rendered shader pixel or panel-placement proof. Cohort evidence and limits: [bar](bar.md#bar-control-cohort), [testing](testing.md#bar-control-cohort).
