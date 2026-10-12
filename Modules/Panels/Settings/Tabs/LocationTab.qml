@@ -41,9 +41,9 @@ ColumnLayout {
     var toSave = [];
     for (var i = 0; i < cardsModel.length; i++) {
       toSave.push({
-                    "id": cardsModel[i].id,
-                    "enabled": cardsModel[i].enabled
-                  });
+        "id": cardsModel[i].id,
+        "enabled": cardsModel[i].enabled
+      });
     }
     Settings.data.calendar.cards = toSave;
   }
@@ -125,9 +125,9 @@ ColumnLayout {
     NText {
       visible: LocationService.coordinatesReady
       text: I18n.tr("system.location-display", {
-                      "name": LocationService.stableName,
-                      "coordinates": LocationService.displayCoordinates
-                    })
+        "name": LocationService.stableName,
+        "coordinates": LocationService.displayCoordinates
+      })
       pointSize: Style.fontSizeS
       color: NColor.mOnSurfaceVariant
       verticalAlignment: Text.AlignVCenter
@@ -197,14 +197,14 @@ ColumnLayout {
       target: Settings.data.location
       function onWeatherEnabledChanged() {
         // Auto-disable weather card when weather is disabled
-        var newModel = cardsModel.slice();
+        var newModel = root.cardsModel.slice();
         for (var i = 0; i < newModel.length; i++) {
           if (newModel[i].id === "weather-card") {
             newModel[i] = Object.assign({}, newModel[i], {
-                                          "enabled": Settings.data.location.weatherEnabled
-                                        });
-            cardsModel = newModel;
-            saveCards();
+              "enabled": Settings.data.location.weatherEnabled
+            });
+            root.cardsModel = newModel;
+            root.saveCards();
             break;
           }
         }
@@ -213,22 +213,22 @@ ColumnLayout {
 
     NReorderCheckboxes {
       Layout.fillWidth: true
-      model: cardsModel
+      model: root.cardsModel
       disabledIds: Settings.data.location.weatherEnabled ? [] : ["weather-card"]
       onItemToggled: function (index, enabled) {
-        var newModel = cardsModel.slice();
+        var newModel = root.cardsModel.slice();
         newModel[index] = Object.assign({}, newModel[index], {
-                                          "enabled": enabled
-                                        });
-        cardsModel = newModel;
-        saveCards();
+          "enabled": enabled
+        });
+        root.cardsModel = newModel;
+        root.saveCards();
       }
       onItemsReordered: function (fromIndex, toIndex) {
-        var newModel = cardsModel.slice();
+        var newModel = root.cardsModel.slice();
         var item = newModel.splice(fromIndex, 1)[0];
         newModel.splice(toIndex, 0, item);
-        cardsModel = newModel;
-        saveCards();
+        root.cardsModel = newModel;
+        root.saveCards();
       }
     }
   }
