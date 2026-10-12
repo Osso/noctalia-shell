@@ -7,10 +7,10 @@ No real settings or compositor access. Reuses the runtime test's isolated module
 import importlib.util
 import json
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import time
+from pathlib import Path
 
 RUNTIME_PATH = Path(__file__).with_name("night-light-runtime.test.py")
 SPEC = importlib.util.spec_from_file_location("night_light_runtime", RUNTIME_PATH)
