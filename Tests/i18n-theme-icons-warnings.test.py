@@ -5,13 +5,10 @@ import argparse
 import importlib.util
 import json
 from collections import Counter
-import os
 from pathlib import Path
 import shutil
 import subprocess
 import tempfile
-
-from qml_fixture_lint import check_harness
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = ("Commons/I18n.qml", "Commons/ThemeIcons.qml")
@@ -124,54 +121,91 @@ function e(...args) { errors = errors.concat([args]); }"""),
 
 def runtime(directory):
     stage_runtime(directory)
-    environment = {
-        "PATH": os.environ["PATH"],
-        "LANG": "C.UTF-8",
-        "QT_QPA_PLATFORM": "offscreen",
-        "QT_QUICK_BACKEND": "software",
-    }
-    for variable in (
-        "HOME",
-        "XDG_CONFIG_HOME",
-        "XDG_CACHE_HOME",
-        "XDG_DATA_HOME",
-        "XDG_STATE_HOME",
-        "XDG_RUNTIME_DIR",
-    ):
-        path = directory / variable.lower()
-        path.mkdir(mode=0o700)
-        environment[variable] = str(path)
-    result = subprocess.run(
+    isolation = helper("grid-list-warnings")
+    code, output = isolation.run_audited(
+        directory,
+        isolation.isolated_environment(directory),
         [
             "/usr/lib/qt6/bin/qmltestrunner",
             "-input",
-            str(directory),
+            str(directory / "tst_i18n_icons.qml"),
             "-import",
             str(directory),
         ],
-        env=environment,
-        capture_output=True,
-        text=True,
-        timeout=30,
-        cwd=directory,
+        "i18n-icons-runtime",
     )
-    output = result.stdout + result.stderr
-    print(output, end="")
-    assert result.returncode == 0, result.returncode
+    assert code == 0 and "0 failed" in output, (code, output)
     assert "QWARN" not in output and "FAIL!" not in output, output
 
 
-def lint_harness(directory):
+def lint_harness(directory, inject_warning=False):
     stage_runtime(directory)
-    return check_harness(directory, directory / "tst_i18n_icons.qml")
+    harness = directory / "tst_i18n_icons.qml"
+    if inject_warning:
+        source = harness.read_text()
+        harness.write_text(
+            source.replace(
+                "id: testCase",
+                "id: testCase\n    property int injectedWarning: testCase.missingLintProbe",
+                1,
+            )
+        )
+    isolation = helper("grid-list-warnings")
+    code, output = isolation.run_audited(
+        directory,
+        isolation.isolated_environment(directory),
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        "i18n-icons-harness-lint",
+    )
+    reports = json.loads(output)["files"]
+    assert len(reports) == 1 and reports[0]["filename"] == str(harness), reports
+    counts = Counter(
+        diagnostic["id"]
+        for diagnostic in reports[0]["warnings"]
+        if diagnostic["type"] == "warning"
+    )
+    total = sum(counts.values())
+    print("HARNESS_LINT_COUNTS", dict(counts), "TOTAL", total, "EXIT", code)
+    if inject_warning:
+        assert counts["missing-property"] > 0, "injected warning not diagnosed"
+    return int(code != 0 or total != 0 or not reports[0]["success"])
+
+
+def lint_harness_regression(directory):
+    for name, injected in (("clean", False), ("injected", True)):
+        staged = directory / name
+        staged.mkdir(mode=0o700)
+        code = lint_harness(staged, injected)
+        assert code == int(injected), (name, code)
+    print("I18N_ICONS_HARNESS_WARNING_REJECTED")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime", "lint-harness"))
+    parser.add_argument(
+        "mode",
+        choices=("lint", "runtime", "lint-harness", "lint-harness-regression"),
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
     arguments = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-i18n-icons-") as temporary:
         directory = Path(temporary)
-        if arguments.mode == "lint-harness":
+        directory.chmod(0o700)
+        if arguments.mode == "lint-harness-regression":
+            lint_harness_regression(directory)
+        elif arguments.mode == "lint-harness":
             raise SystemExit(lint_harness(directory))
-        globals()[arguments.mode](directory)
+        else:
+            globals()[arguments.mode](directory)

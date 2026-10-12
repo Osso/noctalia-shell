@@ -77,5 +77,4 @@ TestCase {
         target: I18n
         signalName: "translationsLoaded"
     }
-
 }
