@@ -285,22 +285,62 @@ function testNotificationTextHelpersNormalizeInput() {
   assert.match(stripTagsBody, /return text\.replace\(\/<\[\^>\]\*>\?\/gm, ''\)/, "stripTags must remove simple markup tags");
 }
 
-function testNotificationModelUpdatesTargetMatchingRows() {
-  const source = readQml("Services/System/NotificationService.qml");
-  const findBody = extractFunctionBody(source, "findNotificationIndex");
-  const updateBody = extractFunctionBody(source, "updateModel");
-  const imagePathBody = extractFunctionBody(source, "updateImagePath");
+function createNotificationModel(rows) {
+  return {
+    rows,
+    get count() {
+      return this.rows.length;
+    },
+    get(index) {
+      return this.rows[index];
+    },
+    setProperty(index, property, value) {
+      this.rows[index][property] = value;
+    },
+    remove(index) {
+      this.rows.splice(index, 1);
+    },
+    clear() {
+      this.rows = [];
+    },
+  };
+}
 
-  assert.match(findBody, /for \(var i = 0; i < activeList\.count; i\+\+\)/, "findNotificationIndex must scan the active list");
-  assert.match(findBody, /activeList\.get\(i\)\.id === internalId/, "findNotificationIndex must match by notification id");
-  assert.match(findBody, /return -1/, "findNotificationIndex must report missing notifications");
-  assert.match(updateBody, /for \(var i = 0; i < model\.count; i\+\+\)/, "updateModel must scan the provided model");
-  assert.match(updateBody, /model\.get\(i\)\.id === id/, "updateModel must update only the matching row");
-  assert.match(updateBody, /model\.setProperty\(i,\s*prop,\s*value\)/, "updateModel must write the requested property value");
-  assert.match(updateBody, /break;/, "updateModel must stop after the first matching row");
-  assert.match(imagePathBody, /updateModel\(activeList,\s*id,\s*"cachedImage",\s*path\)/, "updateImagePath must update active notification images");
-  assert.match(imagePathBody, /updateModel\(historyList,\s*id,\s*"cachedImage",\s*path\)/, "updateImagePath must update history notification images");
-  assert.match(imagePathBody, /saveHistory\(\)/, "updateImagePath must persist history image changes");
+function compileNotificationFunction(name, parameters) {
+  const source = readQml("Services/System/NotificationService.qml");
+  return new Function("ctx", ...parameters, `with (ctx) ${extractFunctionBody(source, name)}`);
+}
+
+function testNotificationModelUpdatesTargetMatchingRows() {
+  const find = compileNotificationFunction("findNotificationIndex", ["internalId"]);
+  const update = compileNotificationFunction("updateModel", ["model", "id", "prop", "value"]);
+  const updateImage = compileNotificationFunction("updateImagePath", ["id", "path"]);
+  const snapshots = [];
+  const ctx = {
+    activeList: createNotificationModel([{id: 1}, {id: 2}, {id: 2}]),
+    historyList: createNotificationModel([{id: 3}, {id: 2}]),
+    updateModel(model, id, property, value) {
+      update(ctx, model, id, property, value);
+    },
+    saveHistory() {
+      snapshots.push(structuredClone(ctx.historyList.rows));
+    },
+  };
+  assert.equal(find(ctx, 2), 1);
+  assert.equal(find(ctx, 99), -1);
+  update(ctx, ctx.activeList, 99, "summary", "missing");
+  assert.deepEqual(ctx.activeList.rows, [{id: 1}, {id: 2}, {id: 2}]);
+  update(ctx, ctx.activeList, 2, "summary", "updated");
+  assert.deepEqual(ctx.activeList.rows, [{id: 1}, {id: 2, summary: "updated"}, {id: 2}]);
+  updateImage(ctx, 2, "/fixture/cache/2.png");
+  assert.deepEqual(
+      ctx.activeList.rows,
+      [{id: 1}, {id: 2, summary: "updated", cachedImage: "/fixture/cache/2.png"}, {id: 2}]);
+  assert.deepEqual(snapshots, [[{id: 3}, {id: 2, cachedImage: "/fixture/cache/2.png"}]]);
+  ctx.activeList.clear();
+  assert.equal(find(ctx, 2), -1);
+  update(ctx, ctx.activeList, 2, "summary", "empty");
+  assert.deepEqual(ctx.activeList.rows, []);
 }
 
 function testNotificationTimeoutPauseAndResumeTrackElapsedTime() {
@@ -308,13 +348,27 @@ function testNotificationTimeoutPauseAndResumeTrackElapsedTime() {
   const pauseBody = extractFunctionBody(source, "pauseTimeout");
   const resumeBody = extractFunctionBody(source, "resumeTimeout");
 
-  assert.match(pauseBody, /const notifData = activeNotifications\[id\]/, "pauseTimeout must read active notification metadata");
-  assert.match(pauseBody, /notifData && !notifData\.metadata\.paused/, "pauseTimeout must ignore missing or already paused notifications");
-  assert.match(pauseBody, /notifData\.metadata\.paused = true/, "pauseTimeout must mark the timeout paused");
-  assert.match(pauseBody, /notifData\.metadata\.pauseTime = Date\.now\(\)/, "pauseTimeout must store the pause timestamp");
-  assert.match(resumeBody, /notifData && notifData\.metadata\.paused/, "resumeTimeout must only resume paused notifications");
-  assert.match(resumeBody, /notifData\.metadata\.timestamp \+= Date\.now\(\) - notifData\.metadata\.pauseTime/, "resumeTimeout must shift the original timestamp by paused time");
-  assert.match(resumeBody, /notifData\.metadata\.paused = false/, "resumeTimeout must clear the paused flag");
+  assert.match(
+      pauseBody, /const notifData = activeNotifications\[id\]/,
+      "pauseTimeout must read active notification metadata");
+  assert.match(
+      pauseBody, /notifData && !notifData\.metadata\.paused/,
+      "pauseTimeout must ignore missing or already paused notifications");
+  assert.match(
+      pauseBody, /notifData\.metadata\.paused = true/, "pauseTimeout must mark the timeout paused");
+  assert.match(
+      pauseBody, /notifData\.metadata\.pauseTime = Date\.now\(\)/,
+      "pauseTimeout must store the pause timestamp");
+  assert.match(
+      resumeBody, /notifData && notifData\.metadata\.paused/,
+      "resumeTimeout must only resume paused notifications");
+  assert.match(
+      resumeBody,
+      /notifData\.metadata\.timestamp \+= Date\.now\(\) - notifData\.metadata\.pauseTime/,
+      "resumeTimeout must shift the original timestamp by paused time");
+  assert.match(
+      resumeBody, /notifData\.metadata\.paused = false/,
+      "resumeTimeout must clear the paused flag");
 }
 
 function testNotificationDismissAndActionFunctionsFailClosed() {
@@ -324,46 +378,112 @@ function testNotificationDismissAndActionFunctionsFailClosed() {
   const dismissAllBody = extractFunctionBody(source, "dismissAllActive");
   const invokeBody = extractFunctionBody(source, "invokeAction");
 
-  assert.match(dismissActiveBody, /activeNotifications\[id\] && activeNotifications\[id\]\.notification/, "dismissActiveNotification must check notification existence before dismissing");
-  assert.match(dismissActiveBody, /activeNotifications\[id\]\.notification\.dismiss\(\)/, "dismissActiveNotification must dismiss the backing notification");
-  assert.match(dismissActiveBody, /removeNotification\(id\)/, "dismissActiveNotification must remove local state");
-  assert.match(dismissOldestBody, /if \(activeList\.count > 0\)/, "dismissOldestActive must tolerate an empty active list");
-  assert.match(dismissOldestBody, /activeList\.get\(activeList\.count - 1\)/, "dismissOldestActive must select the oldest visible active notification");
-  assert.match(dismissOldestBody, /dismissActiveNotification\(lastNotif\.id\)/, "dismissOldestActive must reuse active dismissal");
-  assert.match(dismissAllBody, /for \(const id in activeNotifications\)/, "dismissAllActive must visit all active notifications");
-  assert.match(dismissAllBody, /activeList\.clear\(\)/, "dismissAllActive must clear the visible model");
-  assert.match(dismissAllBody, /activeNotifications = \{\}/, "dismissAllActive must reset active notification state");
-  assert.match(dismissAllBody, /quickshellIdToInternalId = \{\}/, "dismissAllActive must reset quickshell id mappings");
-  assert.match(invokeBody, /if \(!notifData \|\| !notifData\.notification \|\| !notifData\.notification\.actions\)\s+return false/, "invokeAction must fail closed when action data is missing");
-  assert.match(invokeBody, /action\.identifier === actionId && action\.invoke/, "invokeAction must call only the selected invokable action");
+  assert.match(
+      dismissActiveBody, /activeNotifications\[id\] && activeNotifications\[id\]\.notification/,
+      "dismissActiveNotification must check notification existence before dismissing");
+  assert.match(
+      dismissActiveBody, /activeNotifications\[id\]\.notification\.dismiss\(\)/,
+      "dismissActiveNotification must dismiss the backing notification");
+  assert.match(
+      dismissActiveBody, /removeNotification\(id\)/,
+      "dismissActiveNotification must remove local state");
+  assert.match(
+      dismissOldestBody, /if \(activeList\.count > 0\)/,
+      "dismissOldestActive must tolerate an empty active list");
+  assert.match(
+      dismissOldestBody, /activeList\.get\(activeList\.count - 1\)/,
+      "dismissOldestActive must select the oldest visible active notification");
+  assert.match(
+      dismissOldestBody, /dismissActiveNotification\(lastNotif\.id\)/,
+      "dismissOldestActive must reuse active dismissal");
+  assert.match(
+      dismissAllBody, /for \(const id in activeNotifications\)/,
+      "dismissAllActive must visit all active notifications");
+  assert.match(
+      dismissAllBody, /activeList\.clear\(\)/, "dismissAllActive must clear the visible model");
+  assert.match(
+      dismissAllBody, /activeNotifications = \{\}/,
+      "dismissAllActive must reset active notification state");
+  assert.match(
+      dismissAllBody, /quickshellIdToInternalId = \{\}/,
+      "dismissAllActive must reset quickshell id mappings");
+  assert.match(
+      invokeBody,
+      /if \(!notifData \|\| !notifData\.notification \|\| !notifData\.notification\.actions\)\s+return false/,
+      "invokeAction must fail closed when action data is missing");
+  assert.match(
+      invokeBody, /action\.identifier === actionId && action\.invoke/,
+      "invokeAction must call only the selected invokable action");
   assert.match(invokeBody, /action\.invoke\(\)/, "invokeAction must invoke matching actions");
   assert.match(invokeBody, /return true/, "invokeAction must report successful invocation");
   assert.match(invokeBody, /return false/, "invokeAction must report missing actions");
 }
 
 function testNotificationHistoryRemovalOnlyDeletesOwnedCachedImages() {
-  const source = readQml("Services/System/NotificationService.qml");
-  const removeBody = extractFunctionBody(source, "removeFromHistory");
-  const oldestBody = extractFunctionBody(source, "removeOldestHistory");
-  const clearBody = extractFunctionBody(source, "clearHistory");
+  const remove = compileNotificationFunction("removeFromHistory", ["notificationId"]);
+  const removeOldest = compileNotificationFunction("removeOldestHistory", []);
+  const clear = compileNotificationFunction("clearHistory", []);
+  const commands = [];
+  const snapshots = [];
+  const errors = [];
+  const ctx = {
+    historyList: createNotificationModel([]),
+    Settings: {cacheDirImagesNotifications: "/fixture/cache/"},
+    Quickshell: {
+      execDetached(argv) {
+        commands.push(argv);
+      }
+    },
+    Logger: {
+      e(...args) {
+        errors.push(args);
+      }
+    },
+    saveHistory() {
+      snapshots.push(structuredClone(ctx.historyList.rows));
+    },
+  };
+  for (const cachedImage of ["/fixture/cache/2.png", "/outside/2.png", ""]) {
+    ctx.historyList = createNotificationModel([{id: 1}, {id: 2, cachedImage}, {id: 3}]);
+    const beforeCommands = commands.length;
+    assert.equal(remove(ctx, 99), false);
+    assert.equal(remove(ctx, 2), true);
+    assert.deepEqual(ctx.historyList.rows, [{id: 1}, {id: 3}]);
+    assert.deepEqual(snapshots.at(-1), [{id: 1}, {id: 3}]);
+    assert.deepEqual(
+        commands.slice(beforeCommands),
+        cachedImage.startsWith("/fixture/cache/") ? [["rm", "-f", cachedImage]] : []);
 
-  assert.match(removeBody, /for \(var i = 0; i < historyList\.count; i\+\+\)/, "removeFromHistory must scan history entries");
-  assert.match(removeBody, /notif\.id === notificationId/, "removeFromHistory must match the requested history id");
-  assert.match(removeBody, /notif\.cachedImage && notif\.cachedImage\.startsWith\(Settings\.cacheDirImagesNotifications\)/, "removeFromHistory must delete only owned cached images");
-  assert.match(removeBody, /Quickshell\.execDetached\(\["rm",\s*"-f",\s*notif\.cachedImage\]\)/, "removeFromHistory must remove the matching cached image");
-  assert.match(removeBody, /historyList\.remove\(i\)/, "removeFromHistory must remove the matching history row");
-  assert.match(removeBody, /saveHistory\(\)/, "removeFromHistory must persist the removal");
-  assert.match(removeBody, /return false/, "removeFromHistory must report missing history rows");
-  assert.match(oldestBody, /if \(historyList\.count > 0\)/, "removeOldestHistory must tolerate empty history");
-  assert.match(oldestBody, /historyList\.get\(historyList\.count - 1\)/, "removeOldestHistory must select the oldest history row");
-  assert.match(oldestBody, /oldest\.cachedImage && oldest\.cachedImage\.startsWith\(Settings\.cacheDirImagesNotifications\)/, "removeOldestHistory must delete only owned cached images");
-  assert.match(oldestBody, /historyList\.remove\(historyList\.count - 1\)/, "removeOldestHistory must remove the oldest row");
-  assert.match(oldestBody, /return true/, "removeOldestHistory must report successful removal");
-  assert.match(oldestBody, /return false/, "removeOldestHistory must report empty history");
-  assert.match(clearBody, /Quickshell\.execDetached\(\["sh",\s*"-c",\s*`rm -rf "\$\{Settings\.cacheDirImagesNotifications\}"\*`\]\)/, "clearHistory must only clear the notification image cache directory");
-  assert.match(clearBody, /Logger\.e\("Notifications",\s*"Failed to clear cache directory:",\s*e\)/, "clearHistory must log cache cleanup failures");
-  assert.match(clearBody, /historyList\.clear\(\)/, "clearHistory must clear history rows");
-  assert.match(clearBody, /saveHistory\(\)/, "clearHistory must persist the cleared history");
+    ctx.historyList = createNotificationModel([{id: 1}, {id: 2, cachedImage}]);
+    const beforeOldest = commands.length;
+    assert.equal(removeOldest(ctx), true);
+    assert.deepEqual(ctx.historyList.rows, [{id: 1}]);
+    assert.deepEqual(snapshots.at(-1), [{id: 1}]);
+    assert.deepEqual(
+        commands.slice(beforeOldest),
+        cachedImage.startsWith("/fixture/cache/") ? [["rm", "-f", cachedImage]] : []);
+  }
+  ctx.historyList.clear();
+  const savedBeforeEmpty = snapshots.length;
+  assert.equal(remove(ctx, 1), false);
+  assert.equal(removeOldest(ctx), false);
+  assert.equal(snapshots.length, savedBeforeEmpty);
+
+  ctx.historyList = createNotificationModel([{id: 1}]);
+  clear(ctx);
+  assert.deepEqual(commands.at(-1), ["sh", "-c", "rm -rf \"/fixture/cache/\"*"]);
+  assert.deepEqual(ctx.historyList.rows, []);
+  assert.deepEqual(snapshots.at(-1), []);
+  assert.deepEqual(errors, []);
+  const failure = new Error("cache cleanup failed");
+  ctx.Quickshell.execDetached = () => {
+    throw failure;
+  };
+  ctx.historyList = createNotificationModel([{id: 2}]);
+  clear(ctx);
+  assert.deepEqual(errors, [["Notifications", "Failed to clear cache directory:", failure]]);
+  assert.deepEqual(ctx.historyList.rows, []);
+  assert.deepEqual(snapshots.at(-1), []);
 }
 
 function testIpcPanelHelpersGuardMissingPanelsAndModes() {
@@ -371,15 +491,31 @@ function testIpcPanelHelpersGuardMissingPanelsAndModes() {
   const togglePanelBody = extractFunctionBody(source, "togglePanel");
   const setLauncherModeBody = extractFunctionBody(source, "setLauncherMode");
 
-  assert.match(togglePanelBody, /if \(!panel\)\s*\{\s*return;/, "togglePanel must ignore missing panels");
-  assert.match(togglePanelBody, /if \(anchorName\)/, "togglePanel must route anchored panel toggles");
-  assert.match(togglePanelBody, /panel\.toggle\(null,\s*anchorName\)/, "togglePanel must pass anchor names to panel toggles");
-  assert.match(togglePanelBody, /panel\.toggle\(\)/, "togglePanel must support unanchored panel toggles");
-  assert.match(setLauncherModeBody, /if \(!launcherPanel\)\s*\{\s*return;/, "setLauncherMode must ignore missing launcher panels");
-  assert.match(setLauncherModeBody, /const inactive = !launcherPanel\.windowActive/, "setLauncherMode must detect inactive launcher windows");
-  assert.match(setLauncherModeBody, /activePrefix === "" \? !launcherPanel\.activePlugin : launcherPanel\.searchText\.startsWith\(activePrefix\)/, "setLauncherMode must compare the active launcher mode");
-  assert.match(setLauncherModeBody, /if \(inactive \|\| sameMode\)/, "setLauncherMode must toggle only inactive or same-mode launchers");
-  assert.match(setLauncherModeBody, /launcherPanel\.setSearchText\(searchText\)/, "setLauncherMode must set the requested launcher search text");
+  assert.match(
+      togglePanelBody, /if \(!panel\)\s*\{\s*return;/, "togglePanel must ignore missing panels");
+  assert.match(
+      togglePanelBody, /if \(anchorName\)/, "togglePanel must route anchored panel toggles");
+  assert.match(
+      togglePanelBody, /panel\.toggle\(null,\s*anchorName\)/,
+      "togglePanel must pass anchor names to panel toggles");
+  assert.match(
+      togglePanelBody, /panel\.toggle\(\)/, "togglePanel must support unanchored panel toggles");
+  assert.match(
+      setLauncherModeBody, /if \(!launcherPanel\)\s*\{\s*return;/,
+      "setLauncherMode must ignore missing launcher panels");
+  assert.match(
+      setLauncherModeBody, /const inactive = !launcherPanel\.windowActive/,
+      "setLauncherMode must detect inactive launcher windows");
+  assert.match(
+      setLauncherModeBody,
+      /activePrefix === "" \? !launcherPanel\.activePlugin : launcherPanel\.searchText\.startsWith\(activePrefix\)/,
+      "setLauncherMode must compare the active launcher mode");
+  assert.match(
+      setLauncherModeBody, /if \(inactive \|\| sameMode\)/,
+      "setLauncherMode must toggle only inactive or same-mode launchers");
+  assert.match(
+      setLauncherModeBody, /launcherPanel\.setSearchText\(searchText\)/,
+      "setLauncherMode must set the requested launcher search text");
 }
 
 function testIpcLauncherAndPanelTargetsUseTargetScreen() {
