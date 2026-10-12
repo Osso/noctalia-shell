@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Bounded lint and offscreen interaction proof for ten production widgets."""
+"""Strict staged harness lint and isolated interaction proof for ten widgets."""
 
 import argparse
 from collections import Counter
-import hashlib
 import importlib.util
 import json
+import os
+import sys
 from pathlib import Path
 import re
-import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,6 +31,19 @@ def load_helper(name):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+isolation = load_helper("grid-list-warnings")
+
+
+def deny_real_config(event, args):
+    if event in ("open", "os.listdir", "os.scandir") and args:
+        path = args[0]
+        if isinstance(path, (str, bytes, os.PathLike)):
+            requested = Path(os.path.abspath(os.fsdecode(path)))
+            protected = Path("/home/osso/.config")
+            if requested == protected or protected in requested.parents:
+                raise PermissionError(f"REAL_CONFIG_AUDIT_DENIED: {requested}")
 
 
 def stage_runtime(directory):
@@ -146,59 +159,95 @@ def stage_runtime(directory):
     )
 
 
-def run_behavior(directory):
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    backup = directory / "settings.backup.json"
-    backup.touch(mode=0o600)
-    backup.write_bytes(original)
-    assert (
-        hashlib.sha256(backup.read_bytes()).digest()
-        == hashlib.sha256(original).digest()
-    )
+def run_behavior(directory, environment):
     stage_runtime(directory)
-    try:
-        result = subprocess.run(
-            [
-                "/usr/lib/qt6/bin/qmltestrunner",
-                "-input",
-                str(directory),
-                "-import",
-                str(directory),
-            ],
-            cwd=ROOT,
-            env=load_helper("media-mini-warnings").isolate_environment(directory),
-            capture_output=True,
-            text=True,
-            timeout=60,
+    code, output = isolation.run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmltestrunner",
+            "-input",
+            str(directory / "tst_simple_widgets.qml"),
+            "-import",
+            str(directory),
+        ],
+        "simple-widgets-runtime",
+    )
+    assert code == 0, f"widget behavior exit {code}"
+    assert "0 failed" in output
+    assert not re.search(
+        r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output
+    ), output
+
+
+def lint_harness(directory, environment, inject_warning=False):
+    stage_runtime(directory)
+    harness = directory / "tst_simple_widgets.qml"
+    if inject_warning:
+        source = harness.read_text()
+        harness.write_text(
+            source.replace(
+                "id: tests",
+                "id: tests\n    property int injectedWarning: tests.missingLintProbe",
+                1,
+            )
         )
-        output = result.stdout + result.stderr
-        print(output, end="")
-        assert result.returncode == 0, f"widget behavior exit {result.returncode}"
-        assert "0 failed" in output
-        assert not re.search(
-            r"QWARN|QFATAL|ReferenceError|TypeError|Binding loop", output
-        ), output
-    finally:
-        assert settings.read_bytes() == original, "real settings changed"
+    code, output = isolation.run_audited(
+        directory,
+        environment,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        "simple-widgets-harness-lint",
+    )
+    diagnostics = json.loads(output)
+    warnings = sum(
+        warning["type"] == "warning"
+        for result in diagnostics["files"]
+        for warning in result["warnings"]
+    )
+    print("SIMPLE_WIDGETS_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
+    if inject_warning:
+        assert warnings > 0, "injected warning not diagnosed"
+    assert not warnings or code != 0, "qmllint accepted harness warnings"
+    return code
 
 
-def run_lint(directory):
+def lint_harness_regression(directory):
+    for name, injected in (("clean", False), ("injected", True)):
+        staged = directory / name
+        staged.mkdir(mode=0o700)
+        code = lint_harness(staged, isolation.isolated_environment(staged), injected)
+        if injected:
+            assert code != 0, "genuine harness warning accepted"
+        else:
+            assert code == 0, "clean harness lint failed"
+    print("SIMPLE_WIDGETS_HARNESS_WARNING_REJECTED")
+
+
+def run_lint(directory, environment):
     load_helper("media-mini-warnings").stage_modules(directory)
-    result = subprocess.run(
+    code, output = isolation.run_audited(
+        directory,
+        environment,
         [
             "/usr/lib/qt6/bin/qmllint",
             "-I",
             str(directory),
             *(str(directory / "qs/Widgets" / f"{name}.qml") for name in NAMES),
         ],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        timeout=60,
+        "simple-widgets-lint",
     )
-    output = result.stdout + result.stderr
-    print(output, end="")
     counts = Counter(
         re.findall(r"\[([^]]+)\]", line)[-1]
         for line in output.splitlines()
@@ -210,18 +259,37 @@ def run_lint(directory):
     warnings = [line for line in output.splitlines() if line.startswith("Warning:")]
     assert counts == {"unqualified": 7}, f"unexpected widget warnings: {dict(counts)}"
     assert all("/Widgets/NDropShadow.qml:" in line for line in warnings), output
-    assert result.returncode == 0, f"qmllint exit {result.returncode}"
+    assert code == 0, f"qmllint exit {code}"
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument(
+        "mode", choices=("lint", "behavior", "lint-harness", "lint-harness-regression")
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(
         prefix="noctalia-simple-widget-proof-"
     ) as temporary:
         directory = Path(temporary)
-        (run_lint if args.mode == "lint" else run_behavior)(directory)
+        directory.chmod(0o700)
+        isolation.install_settings_guard(directory)
+        isolation.prove_settings_guard()
+        sys.addaudithook(deny_real_config)
+        try:
+            (Path("/home/osso/.config") / "fixture-denial-probe").read_bytes()
+        except PermissionError as error:
+            print(error)
+        else:
+            raise AssertionError("real config guard failed")
+        environment = isolation.isolated_environment(directory)
+        if args.mode == "lint-harness":
+            raise SystemExit(lint_harness(directory, environment))
+        elif args.mode == "lint-harness-regression":
+            lint_harness_regression(directory)
+        else:
+            (run_lint if args.mode == "lint" else run_behavior)(directory, environment)
 
 
 if __name__ == "__main__":
