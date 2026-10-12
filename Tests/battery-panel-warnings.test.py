@@ -14,6 +14,8 @@ from pathlib import Path
 import re
 import subprocess
 
+from qml_fixture_lint import check_harness
+
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/Battery/BatteryPanel.qml")
 
@@ -97,7 +99,8 @@ QtObject {
                 "enum State { Discharging, Charging, FullyCharged }"
             ),
             "UPower": singleton("""property UPowerDevice displayDevice: UPowerDevice {}
-property QtObject devices: QtObject { property var values: [] }
+component DeviceList: QtObject { property var values: [] }
+property DeviceList devices: DeviceList {}
 """),
         },
     )
@@ -115,7 +118,8 @@ property QtObject devices: QtObject { property var values: [] }
         "qs.Services.Networking",
         {
             "BluetoothService": singleton(
-                "property QtObject devices: QtObject { property var values: [] }"
+                "component DeviceList: QtObject { property var values: [] }\n"
+                "property DeviceList devices: DeviceList {}"
             ),
         },
     )
@@ -149,7 +153,40 @@ property QtObject devices: QtObject { property var values: [] }
     )
 
 
+def lint_harness(directory):
+    stage_behavior(directory)
+    return check_harness(directory, directory / "tst_battery_panel.qml")
+
+
+def lint_harness_regression(directory):
+    clean = directory / "clean"
+    clean.mkdir()
+    assert lint_harness(clean) == 0, "clean harness lint failed"
+    injected = directory / "injected"
+    injected.mkdir()
+    stage_behavior(injected)
+    harness = injected / "tst_battery_panel.qml"
+    source = harness.read_text()
+    marker = "id: suite"
+    assert source.count(marker) == 1, "injection owner must be unique"
+    harness.write_text(
+        source.replace(
+            marker,
+            marker + "\n  property int injectedWarning: suite.missingLintProbe",
+            1,
+        )
+    )
+    assert check_harness(injected, harness) != 0, "genuine warning was accepted"
+    print("BATTERY_PANEL_HARNESS_WARNING_REJECTED")
+
+
 def run_proof(directory, mode):
+    if mode == "lint-harness":
+        assert lint_harness(directory) == 0, "harness lint failed"
+        return
+    if mode == "lint-harness-regression":
+        lint_harness_regression(directory)
+        return
     if mode == "lint":
         helper("media-mini-warnings.test.py").stage_modules(directory)
         command = [
@@ -196,7 +233,9 @@ def run_proof(directory, mode):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("lint", "behavior"))
+    parser.add_argument(
+        "mode", choices=("lint", "behavior", "lint-harness", "lint-harness-regression")
+    )
     parser.add_argument("--artifacts", type=Path, required=True)
     args = parser.parse_args()
     args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
