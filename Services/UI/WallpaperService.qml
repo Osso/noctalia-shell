@@ -465,7 +465,7 @@ Singleton {
       required property ShellScreen modelData
 
       readonly property string screenName: modelData ? modelData.name : ""
-      property string currentDirectory: root.getMonitorDirectory(screenName)
+      property string currentDirectory: WallpaperService.getMonitorDirectory(screenName)
 
       folder: "file://" + currentDirectory
       nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.gif", "*.pnm", "*.bmp"]
@@ -478,7 +478,7 @@ Singleton {
       }
 
       property Connections directoryConnection: Connections {
-        target: root
+        target: WallpaperService
         function onWallpaperDirectoryChanged(screen, directory) {
           if (screen === wallpaperScanner.screenName) {
             wallpaperScanner.currentDirectory = directory;
@@ -489,26 +489,26 @@ Singleton {
       onStatusChanged: {
         if (status === FolderListModel.Null) {
           // Flush the list
-          root.wallpaperLists[screenName] = [];
-          root.wallpaperListChanged(screenName, 0);
+          WallpaperService.wallpaperLists[screenName] = [];
+          WallpaperService.wallpaperListChanged(screenName, 0);
         } else if (status === FolderListModel.Loading) {
           // Flush the list
-          root.wallpaperLists[screenName] = [];
-          root.scanningCount++;
+          WallpaperService.wallpaperLists[screenName] = [];
+          WallpaperService.scanningCount++;
         } else if (status === FolderListModel.Ready) {
           var files = [];
           for (var i = 0; i < count; i++) {
-            var directory = root.getMonitorDirectory(screenName);
+            var directory = WallpaperService.getMonitorDirectory(screenName);
             var filepath = directory + "/" + get(i, "fileName");
             files.push(filepath);
           }
 
           // Update the list
-          root.wallpaperLists[screenName] = files;
+          WallpaperService.wallpaperLists[screenName] = files;
 
-          root.scanningCount--;
+          WallpaperService.scanningCount--;
           Logger.d("Wallpaper", "List refreshed for", screenName, "count:", files.length);
-          root.wallpaperListChanged(screenName, files.length);
+          WallpaperService.wallpaperListChanged(screenName, files.length);
         }
       }
     }
@@ -521,21 +521,23 @@ Singleton {
     id: wallpaperCacheView
     printErrors: false
     watchChanges: false
+    property alias cachedWallpapers: wallpaperCacheAdapter.wallpapers
+    property alias cachedDefaultWallpaper: wallpaperCacheAdapter.defaultWallpaper
 
     adapter: JsonAdapter {
       id: wallpaperCacheAdapter
       property var wallpapers: ({})
-      property string defaultWallpaper: root.noctaliaDefaultWallpaper
+      property string defaultWallpaper: WallpaperService.noctaliaDefaultWallpaper
     }
 
     onLoaded: {
       // Load wallpapers from cache file
-      root.currentWallpapers = wallpaperCacheAdapter.wallpapers || {};
+      root.currentWallpapers = wallpaperCacheView.cachedWallpapers || {};
 
       // Load default wallpaper from cache if it exists, otherwise use Noctalia default
-      if (wallpaperCacheAdapter.defaultWallpaper && wallpaperCacheAdapter.defaultWallpaper !== "") {
-        root.defaultWallpaper = wallpaperCacheAdapter.defaultWallpaper;
-        Logger.d("Wallpaper", "Loaded default wallpaper from cache:", wallpaperCacheAdapter.defaultWallpaper);
+      if (wallpaperCacheView.cachedDefaultWallpaper && wallpaperCacheView.cachedDefaultWallpaper !== "") {
+        root.defaultWallpaper = wallpaperCacheView.cachedDefaultWallpaper;
+        Logger.d("Wallpaper", "Loaded default wallpaper from cache:", wallpaperCacheView.cachedDefaultWallpaper);
       } else {
         root.defaultWallpaper = root.noctaliaDefaultWallpaper;
         Logger.d("Wallpaper", "Using Noctalia default wallpaper");
@@ -558,8 +560,8 @@ Singleton {
     interval: 500
     repeat: false
     onTriggered: {
-      wallpaperCacheAdapter.wallpapers = root.currentWallpapers;
-      wallpaperCacheAdapter.defaultWallpaper = root.defaultWallpaper;
+      wallpaperCacheView.cachedWallpapers = root.currentWallpapers;
+      wallpaperCacheView.cachedDefaultWallpaper = root.defaultWallpaper;
       wallpaperCacheView.writeAdapter();
       Logger.d("Wallpaper", "Saved wallpapers to cache file");
     }

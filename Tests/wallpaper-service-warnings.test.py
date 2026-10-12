@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """WallpaperService-only lint and isolated QML behavior; no desktop or real I/O.
 
-RED controls mutate only the staged service. Service lint uses real installed
-metadata; lint-harness uses exactly the runtime-staged fixture modules. Runtime
-executes production service with inert process, folder and persistence boundaries;
-it proves routing/state, not rendering or I/O.
+RED controls mutate private staged copies. Service lint uses real installed
+metadata; lint-harness uses exactly the runtime-staged fixture modules. Bubblewrap
+masks host config, wallpaper assets, desktop sockets and network. Runtime executes
+production service with inert process, folder and persistence boundaries;
+it proves lifecycle, ownership and signal ordering, not rendering or real I/O.
 """
 
 import argparse
-import hashlib
 import importlib.util
 import json
 import os
 import re
 import shutil
+import sys
 import subprocess
 from collections import Counter
 from pathlib import Path
@@ -53,21 +54,10 @@ def lint(directory):
     warnings = json.loads(result.stdout)["files"][0]["warnings"]
     counts = Counter(w["id"] for w in warnings if w["type"] == "warning")
     print("WALLPAPER_SERVICE_WARNINGS", dict(counts))
-    # Only proven lexical owners are gated. Unbound component/type diagnostics
-    # remain visible in full JSON, as do pre-existing hoisting diagnostics.
-    owners = [
-        w
-        for w in warnings
-        if w["id"] == "unqualified"
-        and (
-            not w.get("suggestions")
-            or any(
-                "scanningCount is a member" in s.get("message", "")
-                for s in w.get("suggestions", [])
-            )
-        )
-    ]
+    owners = [w for w in warnings if w["id"] == "unqualified"]
     assert not owners, [(w["line"], w["message"]) for w in owners]
+    # Unrelated pre-existing hoisting and Screen metadata remain out of scope.
+    assert set(counts) <= {"block-scope-var-declaration", "unresolved-type"}, counts
 
 
 def stage_runtime(directory, mutation):
@@ -90,7 +80,7 @@ def stage_runtime(directory, mutation):
         "Quickshell.Io",
         {
             "FixtureIo": singleton(
-                "property int writes: 0\nproperty var cache: null\nproperty var processes: []"
+                "property int writes: 0\nproperty var snapshots: []\nproperty var cache: null\nproperty var processes: []"
             ),
             "FileView": """import QtQuick
 QtObject {
@@ -99,12 +89,20 @@ QtObject {
   property bool printErrors
   property bool watchChanges
   property QtObject adapter
+  property var wallpaperCacheAdapter: ({
+    wallpapers: {"DP-1": "/shadow/cache.jpg"}, defaultWallpaper: "/shadow/cache.png"
+  })
   signal loaded()
   signal loadFailed(int error)
-  function writeAdapter() { FixtureIo.writes++; }
+  function writeAdapter() {
+    FixtureIo.snapshots = FixtureIo.snapshots.concat([JSON.parse(JSON.stringify({
+      wallpapers: view.adapter.wallpapers, defaultWallpaper: view.adapter.defaultWallpaper
+    }))]);
+    FixtureIo.writes++;
+  }
   Component.onCompleted: FixtureIo.cache = view
 }""",
-            "JsonAdapter": "import QtQuick\nQtObject {}",
+            "JsonAdapter": 'import QtQuick\nQtObject { property var root: ({noctaliaDefaultWallpaper: "/shadow/default.png"}) }',
             "StdioCollector": 'import QtQuick\nQtObject { property string text: "" }',
             "Process": """import QtQuick
 QtObject {
@@ -136,6 +134,13 @@ QtObject {
   property bool showDirs
   property int sortField
   property var files: []
+  // A base-object property wins dynamic root lookup in an unbound delegate.
+  property QtObject root: QtObject {
+    property int scanningCount: 800
+    property var wallpaperLists: ({})
+    function getMonitorDirectory(screen) { return "/shadow/scanner"; }
+    function wallpaperListChanged(screen, count) {}
+  }
   readonly property int count: files.length
   function get(index, role) { return files[index]; }
   Component.onCompleted: FixtureFolders.scanners = FixtureFolders.scanners.concat([scanner])
@@ -183,15 +188,120 @@ QtObject {
             "root.wallpaperChanged(screenName, path);",
             "// staged RED: omit wallpaper notification",
         )
+    elif mutation == "owner":
+        source = source.replace("WallpaperService.", "root.")
+        source = source.replace(
+            "wallpaperCacheView.cachedWallpapers", "wallpaperCacheAdapter.wallpapers"
+        )
+        source = source.replace(
+            "wallpaperCacheView.cachedDefaultWallpaper",
+            "wallpaperCacheAdapter.defaultWallpaper",
+        )
+    elif mutation == "cache-load":
+        source = source.replace(
+            "root.currentWallpapers = wallpaperCacheView.cachedWallpapers || {};",
+            "// staged RED: omit cache load",
+        )
+    elif mutation == "cache-save":
+        source = source.replace(
+            "wallpaperCacheView.cachedWallpapers = root.currentWallpapers;\n"
+            "      wallpaperCacheView.cachedDefaultWallpaper = root.defaultWallpaper;\n"
+            "      wallpaperCacheView.writeAdapter();",
+            "wallpaperCacheView.writeAdapter();\n"
+            "      wallpaperCacheView.cachedWallpapers = root.currentWallpapers;\n"
+            "      wallpaperCacheView.cachedDefaultWallpaper = root.defaultWallpaper;",
+        )
     elif mutation == "list":
         source = source.replace(
-            "root.wallpaperLists[screenName] = files;",
+            "WallpaperService.wallpaperLists[screenName] = files;",
             "// staged RED: omit scanner list update",
         )
     write(directory, "qs.Services.UI", {"WallpaperService": source})
-    shutil.copyfile(
-        ROOT / "Tests/Qml/WallpaperServiceHarness.qml", directory / "tst_wallpaper.qml"
+    harness = (ROOT / "Tests/Qml/WallpaperServiceHarness.qml").read_text()
+    harness = harness.replace(
+        "  function init() {",
+        """
+  // Colliding context names must not own scanner state or cache callbacks.
+  property int scanningCount: 900
+  property var wallpaperLists: ({"DP-1": ["/shadow/wrong.jpg"]})
+  property var currentWallpapers: ({"DP-1": "/shadow/wrong.jpg"})
+  property string defaultWallpaper: "/shadow/wrong.png"
+  property var wallpaperCacheAdapter: ({wallpapers: {}, defaultWallpaper: "/shadow/cache.png"})
+
+  function initTestCase() {
+    tryVerify(() => FixtureIo.cache !== null);
+    compare(FixtureIo.cache.adapter.defaultWallpaper, WallpaperService.noctaliaDefaultWallpaper);
+  }
+
+  function test_repeatedScanAndRecreatedOwner() {
+    for (let cycle = 0; cycle < 3; cycle++) {
+      const scanner = FixtureFolders.scanners[0];
+      scanner.status = FolderListModel.Null;
+      WallpaperService.scanningCount = 0;
+      listSpy.clear();
+      WallpaperService.refreshWallpapersList();
+      compare(scanner.currentDirectory, "/tmp");
+      tryCompare(scanner, "currentDirectory", "/fixture/images");
+      scanner.status = FolderListModel.Loading;
+      compare(WallpaperService.scanningCount, 1);
+      compare(WallpaperService.getWallpapersList("DP-1"), []);
+      scanner.files = ["cycle" + cycle + ".png"];
+      scanner.status = FolderListModel.Ready;
+      compare(WallpaperService.getWallpapersList("DP-1"), ["/fixture/images/cycle" + cycle + ".png"]);
+      compare(WallpaperService.scanningCount, 0);
+      compare(Array.from(listSpy.signalArguments[0]), ["DP-1", 1]);
+      Quickshell.screens = [];
+      tryCompare(FixtureFolders, "scanners", []);
+      Quickshell.screens = [test.firstScreen, test.secondScreen];
+      tryVerify(() => FixtureFolders.scanners.length === 2);
+    }
+    compare(FixtureFolders.scanners[0].root.scanningCount, 800);
+    compare(FixtureFolders.scanners[0].root.wallpaperLists, {});
+    compare(test.scanningCount, 900);
+    compare(test.wallpaperLists["DP-1"], ["/shadow/wrong.jpg"]);
+  }
+
+  function test_cacheLoadFailureSaveOrdering() {
+    const cache = FixtureIo.cache;
+    const writesBefore = FixtureIo.writes;
+    WallpaperService.isInitialized = false;
+    cache.adapter.wallpapers = {"DP-1": "/fixture/loaded.jpg"};
+    cache.adapter.defaultWallpaper = "/fixture/loaded-default.png";
+    cache.loaded();
+    verify(WallpaperService.isInitialized);
+    compare(WallpaperService.getWallpaper("DP-1"), "/fixture/loaded.jpg");
+    compare(FixtureIo.writes, writesBefore);
+    WallpaperService.changeWallpaper("/fixture/pending.jpg", "DP-1");
+    WallpaperService.isInitialized = false;
+    cache.loadFailed(1);
+    verify(WallpaperService.isInitialized);
+    compare(WallpaperService.currentWallpapers, {});
+    compare(WallpaperService.defaultWallpaper, "/fixture/loaded-default.png");
+    WallpaperService.changeWallpaper("/fixture/final.jpg", "DP-2");
+    tryCompare(FixtureIo, "writes", writesBefore + 1);
+    const snapshot = FixtureIo.snapshots[FixtureIo.snapshots.length - 1];
+    compare(snapshot.wallpapers, {"DP-2": "/fixture/final.jpg"});
+    compare(snapshot.defaultWallpaper, "/fixture/loaded-default.png");
+    cache.adapter.wallpapers = {};
+    cache.adapter.defaultWallpaper = "";
+    cache.loaded();
+    compare(WallpaperService.defaultWallpaper, WallpaperService.noctaliaDefaultWallpaper);
+    compare(WallpaperService.currentWallpapers, {});
+    compare(test.currentWallpapers["DP-1"], "/shadow/wrong.jpg");
+    compare(cache.wallpaperCacheAdapter.wallpapers["DP-1"], "/shadow/cache.jpg");
+    compare(cache.wallpaperCacheAdapter.defaultWallpaper, "/shadow/cache.png");
+    compare(test.wallpaperCacheAdapter.defaultWallpaper, "/shadow/cache.png");
+    compare(test.defaultWallpaper, "/shadow/wrong.png");
+  }
+
+  function init() {""",
     )
+    if mutation == "warning":
+        harness = harness.replace(
+            "  function init() {",
+            '  function init() {\n    console.warn("injected-wallpaper-warning");',
+        )
+    (directory / "tst_wallpaper.qml").write_text(harness)
 
 
 def lint_harness(directory):
@@ -251,9 +361,9 @@ def behavior(directory, mutation):
     (directory / "behavior.log").write_text(output)
     print(output, end="")
     assert result.returncode == 0, f"behavior exit {result.returncode}"
-    assert "0 failed" in output, output
+    assert "10 passed, 0 failed, 0 skipped" in output, output
     assert not re.search(
-        r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop", output
+        r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError|Binding loop|Warning:", output
     ), output
 
 
@@ -261,31 +371,91 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
     parser.add_argument("--artifacts", type=Path, required=True)
-    parser.add_argument("--mutation", choices=("signal", "list"))
+    parser.add_argument(
+        "--mutation",
+        choices=("signal", "list", "warning", "owner", "cache-load", "cache-save"),
+    )
+    parser.add_argument("--sandbox", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     assert not args.mutation or args.mode == "behavior", (
         "Mutations are behavior-only RED controls"
     )
-    args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
+    args.artifacts = args.artifacts.absolute()
+    if not args.sandbox:
+        args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
+        command = [
+            "bwrap",
+            "--die-with-parent",
+            "--unshare-all",
+            "--new-session",
+            "--clearenv",
+            "--setenv",
+            "PATH",
+            "/usr/bin",
+            "--setenv",
+            "LANG",
+            "C.UTF-8",
+            "--ro-bind",
+            "/usr",
+            "/usr",
+            "--symlink",
+            "usr/lib",
+            "/lib",
+            "--symlink",
+            "usr/lib",
+            "/lib64",
+            "--symlink",
+            "usr/bin",
+            "/bin",
+            "--dir",
+            "/etc",
+            "--ro-bind",
+            "/etc/fonts",
+            "/etc/fonts",
+            "--tmpfs",
+            "/home",
+            "--tmpfs",
+            "/syncthing",
+            "--tmpfs",
+            "/run",
+            "--tmpfs",
+            "/tmp",
+            "--ro-bind",
+            str(ROOT),
+            str(ROOT),
+            "--tmpfs",
+            str(ROOT / "Assets/Wallpaper"),
+            "--bind",
+            str(args.artifacts),
+            str(args.artifacts),
+            "--proc",
+            "/proc",
+            "--dev",
+            "/dev",
+            "--chdir",
+            str(args.artifacts),
+            "--",
+            "/usr/bin/python3",
+            str(Path(__file__).resolve()),
+            args.mode,
+            "--artifacts",
+            str(args.artifacts),
+            "--sandbox",
+        ]
+        if args.mutation:
+            command += ["--mutation", args.mutation]
+        result = subprocess.run(command, timeout=90, check=False)
+        assert result.returncode == 0, f"sandbox exit {result.returncode}"
+        return
+    assert not Path("/home/osso/.config").exists(), "Host config exposed"
+    assert not Path("/run/user").exists(), "Desktop sockets exposed"
+    assert not list((ROOT / "Assets/Wallpaper").iterdir()), "Wallpapers exposed"
     if args.mode == "lint-harness":
         return lint_harness(args.artifacts)
-    # No settings test occurs: all Settings/FileView operations are inert mocks.
-    # Read-only hash checks additionally prove host settings bytes stayed intact.
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    backup = args.artifacts / "settings-backup.json"
-    backup.write_bytes(original)
-    backup.chmod(0o600)
-    digest = hashlib.sha256(original).hexdigest()
-    assert hashlib.sha256(backup.read_bytes()).hexdigest() == digest
-    try:
-        if args.mode == "lint":
-            lint(args.artifacts)
-        else:
-            behavior(args.artifacts, args.mutation)
-    finally:
-        assert settings.read_bytes() == original, "Host settings changed"
-        assert backup.read_bytes() == original, "Settings backup changed"
+    if args.mode == "lint":
+        lint(args.artifacts)
+    else:
+        behavior(args.artifacts, args.mutation)
 
 
 if __name__ == "__main__":
