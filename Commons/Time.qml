@@ -36,7 +36,7 @@ Singleton {
     repeat: false
     running: false
     triggeredOnStart: false
-    onTriggered: updateTime(new Date())
+    onTriggered: root.updateTime(new Date())
   }
 
   Component.onCompleted: updateTime(new Date())

@@ -34,7 +34,7 @@ Singleton {
     target: Quickshell
     function onReloadCompleted() {
       Logger.d("Icons", "Quickshell reload completed - forcing font reload");
-      reloadFont();
+      root.reloadFont();
     }
   }
 

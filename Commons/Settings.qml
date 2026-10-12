@@ -253,7 +253,7 @@ Singleton {
       printErrors: false
       watchChanges: false
       Component.onCompleted: generation = Settings.loadGeneration
-      onAdapterUpdated: saveTimer.start()
+      onAdapterUpdated: Settings.scheduleSave()
       onSaved: Settings.handleSettingsSaved(generation, text())
       onSaveFailed: function (error) {
         Settings.handleBootstrapFailure(generation, `Failed to save settings: ${error}`);
@@ -576,6 +576,11 @@ Singleton {
   }
 
   // -----------------------------------------------------
+  // Schedule adapter persistence using the singleton-owned debounce timer.
+  function scheduleSave() {
+    saveTimer.start();
+  }
+
   // Public function to trigger immediate settings saving
   function saveImmediate() {
     if (!settingsFileView) {
