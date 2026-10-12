@@ -4,6 +4,7 @@
 import argparse
 from collections import Counter
 import importlib.util
+import json
 import os
 from pathlib import Path
 import re
@@ -229,6 +230,8 @@ def lint_harness(directory, max_warnings):
             "/usr/lib/qt6/qml",
             "--max-warnings",
             str(max_warnings),
+            "--json",
+            "-",
             str(directory / "tst_services.qml"),
         ],
         env=private_environment(directory),
@@ -239,10 +242,12 @@ def lint_harness(directory, max_warnings):
     output = result.stdout + result.stderr
     (directory / "harness.lint.log").write_text(output)
     print(output, end="")
+    report = json.loads(result.stdout)
     counts = Counter(
-        (re.findall(r"\[([^]]+)\]", line) or ["uncategorized"])[-1]
-        for line in output.splitlines()
-        if line.startswith("Warning:")
+        warning["id"]
+        for file in report["files"]
+        for warning in file["warnings"]
+        if warning["type"] == "warning"
     )
     total = sum(counts.values())
     print("HARNESS_LINT_COUNTS", dict(counts), "TOTAL", total)
