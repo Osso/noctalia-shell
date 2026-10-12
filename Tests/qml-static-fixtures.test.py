@@ -85,7 +85,24 @@ ARTIFACT_HARNESSES = (
 )
 
 
+def lint_reports(output):
+    decoder = json.JSONDecoder()
+    return [
+        decoder.raw_decode(line)[0]
+        for line in output.splitlines()
+        if line.startswith('{"files":')
+    ]
+
+
 class FixtureLintTest(unittest.TestCase):
+    def bound_discovery(self, root, name):
+        for other in HARNESS_SCRIPTS:
+            if other != name:
+                harness = root / "Tests/Qml" / other
+                harness.unlink()
+                # Owner staging still needs dependencies; rg skips symlinks.
+                harness.symlink_to(ROOT / "Tests/Qml" / other)
+
     def stage_repository(self, root):
         # Real dependencies remain available to behavior staging, but discovery is
         # bounded to these harnesses, not a full-project lint invocation.
@@ -192,9 +209,8 @@ class FixtureLintTest(unittest.TestCase):
             result = self.run_checker(runner, root)
             files = [
                 file
-                for line in result.stdout.splitlines()
-                if line.startswith('{"files":')
-                for file in json.loads(line)["files"]
+                for report in lint_reports(result.stdout)
+                for file in report["files"]
             ]
             warnings = [
                 warning
@@ -236,16 +252,10 @@ class FixtureLintTest(unittest.TestCase):
             ):
                 root = Path(temp)
                 runner = self.stage_repository(root)
-                for other in HARNESS_SCRIPTS:
-                    if other != name:
-                        (root / "Tests/Qml" / other).unlink()
+                self.bound_discovery(root, name)
                 result = self.run_checker(runner, root)
                 self.assertEqual(result.returncode, 0, result.stderr)
-                reports = [
-                    json.loads(line)
-                    for line in result.stdout.splitlines()
-                    if line.startswith('{"files":')
-                ]
+                reports = lint_reports(result.stdout)
                 if name == "RemainingLayoutGeometryHarness.qml":
                     self.assertEqual(reports, [])
                     self.assertEqual(
@@ -273,9 +283,7 @@ class FixtureLintTest(unittest.TestCase):
             ):
                 root = Path(temp)
                 runner = self.stage_repository(root)
-                for other in HARNESS_SCRIPTS:
-                    if other != name:
-                        (root / "Tests/Qml" / other).unlink()
+                self.bound_discovery(root, name)
                 result = self.run_checker(runner, root, settings_present=False)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn("Checked 1 QML files", result.stdout)
@@ -324,9 +332,7 @@ class FixtureLintTest(unittest.TestCase):
                         + script.read_text()
                     )
                 # Earlier genuine warnings must not mask this injected failure.
-                for other in HARNESS_SCRIPTS:
-                    if other != name:
-                        (root / "Tests/Qml" / other).unlink()
+                self.bound_discovery(root, name)
                 result = self.run_checker(runner, root)
                 self.assertNotEqual(result.returncode, 0)
                 if name in (
@@ -343,11 +349,7 @@ class FixtureLintTest(unittest.TestCase):
                     self.assertIn('"id":"missing-property"', result.stdout)
                 self.assertNotIn("ok qmlStaticCheck", result.stdout)
                 self.assertNotIn("Checked ", result.stdout)
-                reports = [
-                    json.loads(line)
-                    for line in result.stdout.splitlines()
-                    if line.startswith('{"files":')
-                ]
+                reports = lint_reports(result.stdout)
                 if name == "RemainingLayoutGeometryHarness.qml":
                     self.assertEqual(reports, [])
                     self.assertEqual(
