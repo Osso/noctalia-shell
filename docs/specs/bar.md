@@ -145,6 +145,8 @@ Bar covers the multi-monitor shell bar, the bar widget registry, registered widg
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`
 
+- `1611de2ad`: CustomButton/KeepAwake/KeyboardLayout/Spacer scoped hoisting warnings 11→0; 20 reported offscreen cases cover settings lifetimes, commands/scroll branches, awake actions, keyboard context and spacer layout. Inert process/power/keyboard/panel boundaries; no live backend or compositor proof. [Runner limits](testing.md#bar-and-slidertextdialog-lexical-local-evidence).
+
 ## Known gaps (current cycle)
 
 - [ ] Offscreen typed-region coverage proves neither compositor pixels nor live input regions, wallpaper, or render-driven panel animations. MainScreen's separate staging omission prevents an entire unit-gate claim; [testing limits](testing.md#background-region-private-reload).

@@ -80,6 +80,8 @@ Update Service covers changelog initialization, upgrade-log fetching, release-no
 - `Tests/Qml/ChangelogPanelWarningsHarness.qml` covers five behavioral tests plus QtTest init/cleanup (seven cases): version/heading/blank/error/empty rows; long-date formatting under `LC_ALL=C` (including empty/invalid input); two-instance close ownership; 80-entry scrolling and an 820×620 image grab; inert links, dismiss/close seen-version recording, and reopen/content disposal.
 - Production panel content, layouts, Text, and Repeaters run offscreen with a stock ScrollView, fixture leaf widgets, an inert SmartPanel Loader host, and fixture services. This proves isolated rendering/scroll/lifecycle/ownership behavior, not full-widget rendering, live compositor/input, network links, persistence, or whole-shell acceptance.
 
+- `69637defe`: UpdateService scoped lint 2→0; Node version/changelog assertions use fake service boundaries: [service lexical-local evidence](testing.md#service-lexical-local-evidence). No live update/network/persistence proof.
+
 ## Known gaps (current cycle)
 
 - [ ] Live compositor and full-widget changelog panel acceptance remain unverified.

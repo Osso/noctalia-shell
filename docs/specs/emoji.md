@@ -61,6 +61,8 @@ Emoji covers emoji data loading, search, category browsing, usage tracking, clip
 - `Tests/emoji-plugin-guards.test.js`
 - `Tests/qml-runtime-guards.test.js`
 
+- `69637defe`: EmojiService scoped lint 4→0; Node search/category/usage assertions use synthetic boundaries: [service lexical-local evidence](testing.md#service-lexical-local-evidence). No real usage-file or launcher UI proof.
+
 ## Known gaps (current cycle)
 
 - [ ] Add executable tests for user/built-in emoji file parse handlers.

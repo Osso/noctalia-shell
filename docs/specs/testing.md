@@ -706,6 +706,26 @@ Testing covers local regression gates, structural source-reference guardrails, e
 - [x] `all` and `regression` report visible notifications as explicitly excluded before running deterministic unit, structural reference, QML static, host probes, and live logs.
 - [x] Category wrappers preserve fail-closed execution: a failed command cannot continue to a PASS category record.
 
+### Service lexical-local evidence
+
+- `69637defe`: scoped production lint WallhavenService 9→0, EmojiService 4→0, UpdateService 2→0. `Tests/remaining-service-hoisting.test.py` offers `lint`, `behavior`, and staged-copy `negative` modes; behavior runs five Node files, with 28 reported groups across fake boundaries. Assertions cover response/error branches and image URLs, emoji search/category/usage, and version/changelog handling. Scoping mutations must fail; they are negative controls, not acceptance.
+- This is extracted JavaScript/Node behavior, not QML service integration. Private paths and sandbox/audit guards deny host config/network access; fake XHR, settings and service state prove neither live APIs, real files/persistence, launcher UI nor canonical reload. Counts are scoped, not global warning clearance; this docs audit reruns nothing.
+
+### Bar and slider/text/dialog lexical-local evidence
+
+- `1611de2ad`: four bar widgets reduce scoped hoisting warnings 11→0. `Tests/bar-multiline-var-warnings.test.py` supplies strict `lint` and offscreen `runtime`: 20 reported cases cover settings lifetimes, custom commands/scroll branches, awake actions, keyboard context and spacer layout. `tail`/`click` staged-copy mutations must fail.
+- `250d3a565`: NColorSlider/NTextInput/ControlCenterWidgetSettingsDialog hoisting warnings 7→0. `Tests/slider-text-dialog-warnings.test.py` supplies `lint`, `lint-harness`, `runtime`; eight behavioral cases plus init/cleanup yield ten passes for slider edits/rainbow/drag/keyboard/tooltip, text caret/selection/edit/clear/read-only, dialog save/reopen/cancel/empty apply. Production dialog retains exactly two `missing-property` diagnostics for `saveSettings` on QObject; no total-zero claim.
+- Production components run software/offscreen with synthetic settings and inert service/process boundaries. Sandboxed private paths and host-config guards prevent real settings use. Fixture saves are not persistence; synthetic input/property assertions prove no native UI/input, compositor pixels, hardware/backend integration or whole-shell acceptance.
+
+### Card parent-injection evidence
+
+- `6f1f93f23`/`d8bc64e8f`: `Tests/card-context-warnings.test.py lint` enforces ProfileCard 4→0 and ShortcutsCard 1→0; its ControlCenterPanel target retains one `block-scope-var-declaration` diagnostic. `runtime`/`runtime --shadow` use two distinct offscreen ShellScreens and production panel/card loaders; `--direct-only` isolates explicit card dependencies.
+- Assertions cover profile action screens, injected shortcut owner, independent 52/73 heights and first-owner change to 78 without changing the second, reactive screen/action routing, close disposal and loader recreation. Owner-shadow fixtures challenge creation-context lookup. Sandbox/strace denies host-home opens and network connections. Inert leaf services/widgets limit this to offscreen ownership/lifecycle proof, not live UI, compositor placement/input, real persistence or backend acceptance.
+
+### Remaining strict fixture routes
+
+- `e9a0f3f56`: global static dispatch routes ResidualSingletonOwnersHarness to its owner's `lint-harness`; SchemeDownloaderHarness and SchemeDownloaderTransport share one owner invocation that checks both staged runtime files, once even when both paths are selected. `Tests/qml-static-fixtures.test.py` adds clean/injected diagnostic and once-only dispatch assertions. These are fixture lint/dispatch proofs, not downloader transport, singleton runtime or global zero-warning proof.
+
 ## How it works
 
 - Runtime behavior is implemented in `run-tests.sh` and the test/probe files listed below.

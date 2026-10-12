@@ -97,6 +97,8 @@ Wallpaper covers local wallpaper model setup, monitor-specific wallpaper lookup 
 - `Tests/qml-type-annotations.test.js`
 - `Tests/service-probes-parsing.test.sh`
 
+- `69637defe`: WallhavenService scoped lint 9→0; fake-XHR/Node behavior and limits: [service lexical-local evidence](testing.md#service-lexical-local-evidence). No live Wallhaven/network proof.
+
 ## Known gaps (current cycle)
 
 - [ ] Add executable tests for actual wallpaper file acceptance/rejection and image-extension filtering.
