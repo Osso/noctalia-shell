@@ -314,7 +314,27 @@ def runtime(directory, shadow=False):
             print(log.read_text() + errors.read_text(), end="")
             assert process.poll() is not None
     assert "settings.json" not in trace.read_text(), "client attempted settings access"
-    assert log.read_text().count("DRAWER_NATIVE_READY") == 3
+    output = log.read_text() + errors.read_text()
+    assert output.count("DRAWER_NATIVE_READY") == 3
+    diagnostics = [
+        line
+        for line in output.splitlines()
+        if re.search(
+            r" WARN | ERROR | FATAL |ReferenceError|TypeError|Binding loop|DRAWER_NATIVE_ASSERT",
+            line,
+        )
+    ]
+    assert len(diagnostics) == 3, diagnostics
+    for line, expected in zip(
+        diagnostics,
+        (
+            "ERROR: Failed to load configuration",
+            "Type TrayDrawerPanel unavailable",
+            "TrayDrawerPanel.qml",
+        ),
+    ):
+        assert expected in line and " ERROR:" in line, diagnostics
+    assert "Syntax error" in diagnostics[-1], diagnostics
     print(
         "DRAWER_NATIVE_CLEANUP_PASS zero settings attempts; private client/display groups terminated"
     )
