@@ -58,8 +58,8 @@ ColumnLayout {
     ]
     currentKey: Settings.data.dock.displayMode
     onSelected: key => {
-                  Settings.data.dock.displayMode = key;
-                }
+      Settings.data.dock.displayMode = key;
+    }
   }
 
   ColumnLayout {
@@ -170,20 +170,20 @@ ColumnLayout {
         description: {
           const compositorScale = CompositorService.getDisplayScale(monitorName);
           I18n.tr("system.monitor-description", {
-                    "model": monitorModel,
-                    "width": monitorWidth * compositorScale,
-                    "height": monitorHeight * compositorScale,
-                    "scale": compositorScale
-                  });
+            "model": monitorModel,
+            "width": monitorWidth * compositorScale,
+            "height": monitorHeight * compositorScale,
+            "scale": compositorScale
+          });
         }
         checked: (Settings.data.dock.monitors || []).indexOf(monitorName) !== -1
         onToggled: checked => {
-                     if (checked) {
-                       Settings.data.dock.monitors = addMonitor(Settings.data.dock.monitors, monitorName);
-                     } else {
-                       Settings.data.dock.monitors = removeMonitor(Settings.data.dock.monitors, monitorName);
-                     }
-                   }
+          if (checked) {
+            Settings.data.dock.monitors = root.addMonitor(Settings.data.dock.monitors, monitorName);
+          } else {
+            Settings.data.dock.monitors = root.removeMonitor(Settings.data.dock.monitors, monitorName);
+          }
+        }
       }
     }
   }

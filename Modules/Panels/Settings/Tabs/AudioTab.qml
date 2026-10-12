@@ -81,10 +81,10 @@ ColumnLayout {
       description: I18n.tr("settings.audio.volumes.mute-output.description")
       checked: AudioService.muted
       onToggled: checked => {
-                   if (AudioService.sink && AudioService.sink.audio) {
-                     AudioService.sink.audio.muted = checked;
-                   }
-                 }
+        if (AudioService.sink && AudioService.sink.audio) {
+          AudioService.sink.audio.muted = checked;
+        }
+      }
     }
   }
 
@@ -310,6 +310,7 @@ ColumnLayout {
         Repeater {
           model: Settings.data.audio.mprisBlacklist
           delegate: Rectangle {
+            id: blacklistChip
             required property string modelData
             // Padding around the inner row
             property real pad: Style.marginS
@@ -323,10 +324,10 @@ ColumnLayout {
               id: chipRow
               spacing: Style.marginXS
               anchors.fill: parent
-              anchors.margins: pad
+              anchors.margins: blacklistChip.pad
 
               NText {
-                text: modelData
+                text: blacklistChip.modelData
                 color: NColor.mOnSurface
                 pointSize: Style.fontSizeS
                 Layout.alignment: Qt.AlignVCenter
@@ -340,7 +341,7 @@ ColumnLayout {
                 Layout.rightMargin: Style.marginXS
                 onClicked: {
                   const arr = (Settings.data.audio.mprisBlacklist || []);
-                  const idx = arr.findIndex(x => String(x) === modelData);
+                  const idx = arr.findIndex(x => String(x) === blacklistChip.modelData);
                   if (idx >= 0) {
                     arr.splice(idx, 1);
                     Settings.data.audio.mprisBlacklist = arr;
@@ -408,44 +409,44 @@ ColumnLayout {
         {
           "key": "30",
           "name": I18n.tr("options.frame-rates.fps", {
-                            "fps": "30"
-                          })
+            "fps": "30"
+          })
         },
         {
           "key": "60",
           "name": I18n.tr("options.frame-rates.fps", {
-                            "fps": "60"
-                          })
+            "fps": "60"
+          })
         },
         {
           "key": "100",
           "name": I18n.tr("options.frame-rates.fps", {
-                            "fps": "100"
-                          })
+            "fps": "100"
+          })
         },
         {
           "key": "120",
           "name": I18n.tr("options.frame-rates.fps", {
-                            "fps": "120"
-                          })
+            "fps": "120"
+          })
         },
         {
           "key": "144",
           "name": I18n.tr("options.frame-rates.fps", {
-                            "fps": "144"
-                          })
+            "fps": "144"
+          })
         },
         {
           "key": "165",
           "name": I18n.tr("options.frame-rates.fps", {
-                            "fps": "165"
-                          })
+            "fps": "165"
+          })
         },
         {
           "key": "240",
           "name": I18n.tr("options.frame-rates.fps", {
-                            "fps": "240"
-                          })
+            "fps": "240"
+          })
         }
       ]
       currentKey: Settings.data.audio.cavaFrameRate
