@@ -3,7 +3,6 @@
 
 import argparse
 from collections import Counter
-import hashlib
 import importlib.util
 import json
 import os
@@ -12,20 +11,20 @@ import re
 import selectors
 import shutil
 import subprocess
-import tempfile
+import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Commons/Settings.qml")
-REAL = Path("/home/osso/.config/noctalia/settings.json")
-BACKUP = Path("/tmp/noctalia-settings-before-color-defaults-20261011T170411798433.json")
-HASH = "bc53e7cae6f456d443ba79ccee688802f18fb38abd6cbfc695ae331885b841e4"
 
 
-def check_safety(original):
-    assert BACKUP.stat().st_mode & 0o777 == 0o600, "Backup permissions changed"
-    assert hashlib.sha256(BACKUP.read_bytes()).hexdigest() == HASH, "Backup changed"
-    assert REAL.read_bytes() == original, "Real settings changed"
+def deny_real_config(event, arguments):
+    if event in ("open", "os.listdir", "os.scandir") and arguments:
+        path = arguments[0]
+        if isinstance(path, (str, bytes, os.PathLike)):
+            requested = os.path.abspath(os.fsdecode(path))
+            if requested == "/home" or requested.startswith("/home/"):
+                raise PermissionError(f"Host config access denied: {requested}")
 
 
 def helpers():
@@ -113,9 +112,96 @@ def stage_runtime(directory):
     (directory / "Modules/OSD/OSD.qml").write_text(
         "import QtQuick\nQtObject { enum Type { Volume, InputVolume, Brightness, LockKey } }\n"
     )
-    shutil.copyfile(
-        ROOT / "Tests/Qml/SettingsSingletonHarness.qml", directory / "shell.qml"
+    fixture_path = directory / "Tests/Qml/SettingsSingletonHarness.qml"
+    fixture_path.parent.mkdir(parents=True)
+    shutil.copyfile(ROOT / "Tests/Qml/SettingsSingletonHarness.qml", fixture_path)
+    (directory / "shell.qml").write_text(
+        'import "Tests/Qml"\nSettingsSingletonHarness {}\n'
     )
+
+
+def stage_harness(directory):
+    sources = directory / "qs"
+    sources.mkdir()
+    stage_runtime(sources)
+    modules = {}
+    for qml in sorted(sources.rglob("*.qml")):
+        parent = qml.relative_to(sources).parent
+        for ancestor in (parent, *parent.parents):
+            modules.setdefault(ancestor, [])
+        singleton = re.search(r"^\s*pragma\s+Singleton\b", qml.read_text(), re.M)
+        prefix = "singleton " if singleton else ""
+        modules[parent].append(f"{prefix}{qml.stem} 1.0 {qml.name}\n")
+    for parent, declarations in modules.items():
+        module = ".".join(("qs", *parent.parts))
+        (sources / parent / "qmldir").write_text(
+            f"module {module}\n" + "".join(declarations)
+        )
+    return sources / "Tests/Qml/SettingsSingletonHarness.qml"
+
+
+def check_harness(directory, harness):
+    result = subprocess.run(
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        cwd=directory,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    output = result.stdout + result.stderr
+    (directory / "lint-harness.log").write_text(output)
+    print(output, end="", flush=True)
+    diagnostics = json.loads(result.stdout)
+    warnings = sum(
+        warning["type"] == "warning"
+        for item in diagnostics["files"]
+        for warning in item["warnings"]
+    )
+    print("SETTINGS_SINGLETON_HARNESS_WARNINGS", warnings, "EXIT", result.returncode)
+    passed = (
+        result.returncode == 0
+        and warnings == 0
+        and all(item["success"] for item in diagnostics["files"])
+    )
+    return 0 if passed else result.returncode or 1
+
+
+def lint_harness(directory):
+    return check_harness(directory, stage_harness(directory))
+
+
+def lint_harness_regression(directory):
+    clean = directory / "clean"
+    clean.mkdir()
+    assert lint_harness(clean) == 0, "Clean harness rejected"
+    injected = directory / "injected"
+    injected.mkdir()
+    harness = stage_harness(injected)
+    source = harness.read_text()
+    marker = "id: harness"
+    assert source.count(marker) == 1, "Injection owner must be unique"
+    harness.write_text(
+        source.replace(
+            marker,
+            marker + "\n  property int injectedWarning: harness.missingLintProbe",
+            1,
+        )
+    )
+    assert check_harness(injected, harness) != 0, "Injected warning accepted"
+    assert "missingLintProbe" in (injected / "lint-harness.log").read_text()
+    print("SETTINGS_SINGLETON_HARNESS_WARNING_REJECTED")
 
 
 def isolated_environment(directory, mode):
@@ -153,9 +239,9 @@ def isolated_environment(directory, mode):
     return environment
 
 
-def run_case(directory, mode, original):
-    check_safety(original)
-    stage_runtime(directory)
+def run_case(directory, mode):
+    stage_harness(directory)
+    harness = directory / "qs/shell.qml"
     environment = isolated_environment(directory, mode)
     settings = Path(environment["NOCTALIA_SETTINGS_FILE"])
     snapshot = directory / "cache/settings-bootstrap.json"
@@ -177,7 +263,7 @@ def run_case(directory, mode, original):
         settings.write_bytes(b'{"ui": broken}\n')
     transcript = []
     process = subprocess.Popen(
-        ["quickshell", "--no-color", "-p", str(directory / "shell.qml")],
+        ["quickshell", "--no-color", "-p", str(harness)],
         cwd=directory,
         env=environment,
         stdout=subprocess.PIPE,
@@ -276,25 +362,78 @@ def run_case(directory, mode, original):
                 process.kill()
                 process.wait(timeout=3)
         process.stdout.close()
-        check_safety(original)
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
-    mode = parser.parse_args().mode
-    original = REAL.read_bytes()
-    check_safety(original)
-    if mode == "lint":
-        with tempfile.TemporaryDirectory(prefix="noctalia-settings-lint-") as temporary:
-            lint(Path(temporary))
+    parser.add_argument(
+        "mode", choices=("lint", "runtime", "lint-harness", "lint-harness-regression")
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--artifacts", type=Path, required=True)
+    parser.add_argument("--sandbox", action="store_true", help=argparse.SUPPRESS)
+    args = parser.parse_args()
+    sys.addaudithook(deny_real_config)
+    if not args.sandbox:
+        args.artifacts = args.artifacts.absolute()
+        args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
+        command = [
+            "bwrap",
+            "--die-with-parent",
+            "--unshare-all",
+            "--new-session",
+            "--ro-bind",
+            "/",
+            "/",
+            "--perms",
+            "000",
+            "--tmpfs",
+            "/home",
+            "--tmpfs",
+            "/syncthing",
+            "--ro-bind",
+            str(ROOT),
+            str(ROOT),
+            "--tmpfs",
+            "/tmp",
+            "--tmpfs",
+            "/run",
+            "--bind",
+            str(args.artifacts),
+            str(args.artifacts),
+            "--proc",
+            "/proc",
+            "--dev",
+            "/dev",
+            "--chdir",
+            str(args.artifacts),
+            "--",
+            "/usr/bin/python3",
+            str(Path(__file__).absolute()),
+            args.mode,
+            "--artifacts",
+            str(args.artifacts),
+            "--max-warnings",
+            "0",
+            "--sandbox",
+        ]
+        result = subprocess.run(
+            command,
+            env={"PATH": "/usr/bin", "LANG": "C.UTF-8", "HOME": str(args.artifacts)},
+            timeout=90,
+        )
+        raise SystemExit(result.returncode)
+    if args.mode == "lint-harness":
+        raise SystemExit(lint_harness(args.artifacts))
+    if args.mode == "lint-harness-regression":
+        lint_harness_regression(args.artifacts)
+    elif args.mode == "lint":
+        lint(args.artifacts)
     else:
         for case in ("valid", "malformed", "defaults"):
-            with tempfile.TemporaryDirectory(
-                prefix="noctalia-settings-singleton-"
-            ) as temporary:
-                run_case(Path(temporary), case, original)
-    check_safety(original)
+            directory = args.artifacts / case
+            directory.mkdir(mode=0o700)
+            run_case(directory, case)
 
 
 if __name__ == "__main__":

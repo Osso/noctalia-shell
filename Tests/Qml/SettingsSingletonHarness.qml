@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.Commons
-import "Helpers/QtObj2JS.js" as QtObj2JS
+import "../../Helpers/QtObj2JS.js" as QtObj2JS
 
 ShellRoot {
   id: harness
