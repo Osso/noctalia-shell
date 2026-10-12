@@ -7,7 +7,9 @@ settings persistence, canonical Quickshell, native input or whole-shell proof.
 
 import argparse
 import importlib.util
-import os
+import json
+import re
+import sys
 from pathlib import Path
 import shutil
 import subprocess
@@ -134,26 +136,104 @@ ScrollView {
     )
 
 
-def runtime(directory):
-    # Reuse permission-locked settings backup, isolated HOME/XDG and timeout handling.
-    history = helper("notification-history-warnings.test.py")
-    history.stage_runtime = stage_runtime
-    original_locale = os.environ.get("LC_ALL")
-    os.environ["LC_ALL"] = "C"
-    try:
-        history.runtime(directory)
-    finally:
-        if original_locale is None:
-            del os.environ["LC_ALL"]
+def run_isolated(directory, command, label):
+    isolation = helper("grid-list-warnings.test.py")
+    environment = isolation.isolated_environment(directory)
+    environment["LC_ALL"] = "C"
+    return isolation.run_audited(directory, environment, command, label)
+
+
+def lint_harness(directory, inject_warning=False):
+    stage_runtime(directory)
+    harness = directory / "tst_history.qml"
+    if inject_warning:
+        source = harness.read_text()
+        harness.write_text(
+            source.replace(
+                "id: tests",
+                "id: tests\n    property int injectedWarning: tests.missingLintProbe",
+                1,
+            )
+        )
+    code, output = run_isolated(
+        directory,
+        [
+            "/usr/lib/qt6/bin/qmllint",
+            "--bare",
+            "-I",
+            str(directory),
+            "-I",
+            "/usr/lib/qt6/qml",
+            "--max-warnings",
+            "0",
+            "--json",
+            "-",
+            str(harness),
+        ],
+        "changelog-harness-lint",
+    )
+    diagnostics = json.loads(output)
+    warnings = sum(
+        warning["type"] == "warning"
+        for result in diagnostics["files"]
+        for warning in result["warnings"]
+    )
+    print("CHANGELOG_HARNESS_LINT_WARNINGS", warnings, "EXIT", code)
+    if inject_warning:
+        assert warnings > 0, "injected diagnostic not detected"
+    return code
+
+
+def lint_harness_regression(directory):
+    for name, injected in (("clean", False), ("injected", True)):
+        staged = directory / name
+        staged.mkdir(mode=0o700)
+        code = lint_harness(staged, injected)
+        if injected:
+            assert code != 0, "genuine harness diagnostic accepted"
         else:
-            os.environ["LC_ALL"] = original_locale
+            assert code == 0, "clean harness lint failed"
+    print("CHANGELOG_HARNESS_WARNING_REJECTED")
+
+
+def runtime(directory):
+    stage_runtime(directory)
+    code, output = run_isolated(
+        directory,
+        [
+            "/usr/lib/qt6/bin/qmltestrunner",
+            "-input",
+            str(directory / "tst_history.qml"),
+            "-import",
+            str(directory),
+        ],
+        "changelog-runtime",
+    )
+    assert code == 0, f"runtime exit {code}"
+    assert "7 passed, 0 failed" in output, output
+    assert not re.search(r"QWARN|QFATAL|QCRITICAL|ReferenceError|TypeError", output), (
+        output
+    )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("lint", "runtime"))
+    parser.add_argument(
+        "mode", choices=("lint", "runtime", "lint-harness", "lint-harness-regression")
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix="noctalia-changelog-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
-        {"lint": lint, "runtime": runtime}[args.mode](directory)
+        isolation = helper("grid-list-warnings.test.py")
+        isolation.install_settings_guard(directory)
+        isolation.prove_settings_guard()
+        if args.mode == "lint-harness":
+            sys.exit(lint_harness(directory, args.inject_warning))
+        {
+            "lint": lint,
+            "runtime": runtime,
+            "lint-harness-regression": lint_harness_regression,
+        }[args.mode](directory)

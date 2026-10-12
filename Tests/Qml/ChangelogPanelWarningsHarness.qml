@@ -19,6 +19,7 @@ Item {
   }
 
   TestCase {
+    id: tests
     property var panel
 
     function descendants(parent, predicate) {
