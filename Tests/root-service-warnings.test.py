@@ -3,7 +3,6 @@
 
 import argparse
 from collections import Counter
-import hashlib
 import importlib.util
 import json
 import os
@@ -342,26 +341,36 @@ def behavior(directory):
         path = directory / key
         path.mkdir(mode=0o700)
         environment[key] = str(path)
+    settings = directory / "HOME/.config/noctalia/settings.json"
+    settings.parent.mkdir(mode=0o700, parents=True)
+    original = (ROOT / "Assets/settings-default.json").read_bytes()
+    settings.touch(mode=0o600)
+    settings.write_bytes(original)
+    environment["XDG_CONFIG_HOME"] = str(settings.parent.parent)
+    environment["NOCTALIA_CONFIG_DIR"] = str(settings.parent)
     environment.update(
         QT_QPA_PLATFORM="offscreen",
         QT_QUICK_BACKEND="software",
         DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent",
         DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent",
     )
-    result = subprocess.run(
-        [
-            "/usr/lib/qt6/bin/qmltestrunner",
-            "-input",
-            str(directory),
-            "-import",
-            str(directory),
-        ],
-        env=environment,
-        capture_output=True,
-        text=True,
-        timeout=45,
-        cwd=ROOT,
-    )
+    try:
+        result = subprocess.run(
+            [
+                "/usr/lib/qt6/bin/qmltestrunner",
+                "-input",
+                str(directory),
+                "-import",
+                str(directory),
+            ],
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=45,
+            cwd=ROOT,
+        )
+    finally:
+        assert settings.read_bytes() == original, "fixture settings changed"
     output = result.stdout + result.stderr
     (directory / "behavior.log").write_text(output)
     print(output, end="")
@@ -376,27 +385,17 @@ def main():
     parser.add_argument("mode", choices=("lint", "lint-harness", "behavior"))
     parser.add_argument("--artifacts", type=Path)
     args = parser.parse_args()
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
     directory = args.artifacts or Path(
         tempfile.mkdtemp(prefix="noctalia-root-services-")
     )
     directory.mkdir(mode=0o700, parents=True, exist_ok=True)
     directory.chmod(0o700)
-    backup = directory / "settings.backup"
-    backup.touch(mode=0o600)
-    backup.write_bytes(original)
-    assert (
-        hashlib.sha256(backup.read_bytes()).digest()
-        == hashlib.sha256(original).digest()
-    )
     try:
         if args.mode == "lint-harness":
             return lint_harness(directory)
         globals()[args.mode](directory)
         return 0
     finally:
-        assert settings.read_bytes() == original, "real settings changed"
         if not args.artifacts:
             shutil.rmtree(directory)
 
