@@ -4,12 +4,9 @@
 Fixture settings/services; no real persistence, desktop, or live hardware proof.
 """
 
-import argparse
 from collections import Counter
-import hashlib
 import importlib.util
 import json
-import os
 from pathlib import Path
 import re
 import shutil
@@ -209,27 +206,17 @@ def behavior(directory):
     print("WIDGET_SETTINGS_COHORT_BEHAVIOR_PASS")
 
 
+def lint_harness(directory, inject_warning=False):
+    stage_runtime(directory)
+    return load_helper("clock-settings-warnings.test.py").lint_staged_harness(
+        directory, directory / "tst_cohort.qml", "id: suite", inject_warning
+    )
+
+
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("lint", "behavior"))
-    parser.add_argument("--artifacts", type=Path, required=True)
-    args = parser.parse_args()
-    args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    backup = args.artifacts / "settings.backup.json"
-    with backup.open("xb") as stream:
-        os.chmod(backup, 0o600)
-        stream.write(original)
-    digest = hashlib.sha256(original).digest()
-    assert backup.stat().st_mode & 0o777 == 0o600
-    assert hashlib.sha256(backup.read_bytes()).digest() == digest
-    try:
-        (lint if args.mode == "lint" else behavior)(args.artifacts)
-    finally:
-        assert settings.read_bytes() == original, "Real settings changed"
-        assert hashlib.sha256(backup.read_bytes()).digest() == digest, "Backup changed"
-    print("Real settings and backup unchanged; bounded child exited.")
+    load_helper("clock-settings-warnings.test.py").run_fixture_cli(
+        {"lint": lint, "behavior": behavior, "lint-harness": lint_harness}
+    )
 
 
 if __name__ == "__main__":

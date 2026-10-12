@@ -185,7 +185,7 @@ def with_private_settings(directory, environment, action):
         )
 
 
-def reload(directory, environment):
+def stage_reload(directory):
     stage(directory)
     shutil.rmtree(directory / "Quickshell")
     for path in (directory / "qs").iterdir():
@@ -196,6 +196,35 @@ def reload(directory, environment):
     shutil.copyfile(
         ROOT / "Tests/Qml/TabButtonReloadHarness.qml", directory / "shell.qml"
     )
+    (directory / "qs").symlink_to(".", target_is_directory=True)
+    for module in (
+        directory / "Widgets",
+        directory / "Commons",
+        directory / "Services/UI",
+    ):
+        declarations = []
+        for source in sorted(module.glob("*.qml")):
+            singleton = "singleton " if "pragma Singleton" in source.read_text() else ""
+            declarations.append(f"{singleton}{source.stem} 1.0 {source.name}\n")
+        uri = "qs." + ".".join(module.relative_to(directory).parts)
+        (module / "qmldir").write_text(f"module {uri}\n" + "".join(declarations))
+    return directory / "shell.qml"
+
+
+def lint_harness(directory, harness_name, inject_warning):
+    if harness_name == "TabButtonReloadHarness.qml":
+        harness = stage_reload(directory)
+        marker = "id: scene"
+    else:
+        harness = stage(directory)
+        marker = "id: suite"
+    return helper("clock-settings-warnings.test.py").lint_staged_harness(
+        directory, harness, marker, inject_warning
+    )
+
+
+def reload(directory, environment):
+    stage_reload(directory)
     environment["QS_NO_RELOAD_POPUP"] = "1"
     output = []
     source = directory / "Widgets/NTabBar.qml"
@@ -237,7 +266,7 @@ def reload(directory, environment):
     print("TAB_PRIVATE_PROCESS_EXITED", flush=True)
 
 
-def run_sandboxed(mode, directory):
+def run_sandboxed(mode, directory, harness_name, inject_warning):
     mounts = Path("/proc/self/mountinfo").read_text()
     for path in ("/home", "/syncthing", "/run"):
         assert any(
@@ -245,6 +274,8 @@ def run_sandboxed(mode, directory):
             for line in mounts.splitlines()
         ), path
     environment = ISOLATION.isolated_environment(directory)
+    if mode == "lint-harness":
+        raise SystemExit(lint_harness(directory, harness_name, inject_warning))
     if mode == "lint":
         lint(directory, environment)
     else:
@@ -255,9 +286,19 @@ def run_sandboxed(mode, directory):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("lint", "runtime", "reload"))
+    parser.add_argument("mode", choices=("lint", "runtime", "reload", "lint-harness"))
+    parser.add_argument(
+        "--harness",
+        choices=("TabButtonWarningsHarness.qml", "TabButtonReloadHarness.qml"),
+    )
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
     parser.add_argument("--sandbox", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.mode == "lint-harness" and not args.harness:
+        parser.error("--harness required for per-file lint-harness")
+    if args.mode != "lint-harness" and (args.harness or args.inject_warning):
+        parser.error("--harness/--inject-warning require lint-harness")
     sys.addaudithook(ISOLATION.audit)
     with (
         patch("os.stat", ISOLATION.guard_metadata(os.stat)),
@@ -266,7 +307,7 @@ def main():
     ):
         ISOLATION.prove_denial()
         if args.sandbox:
-            run_sandboxed(args.mode, args.sandbox)
+            run_sandboxed(args.mode, args.sandbox, args.harness, args.inject_warning)
             return
         with tempfile.TemporaryDirectory(prefix="noctalia-tabs-") as temporary:
             directory = Path(temporary)
@@ -306,6 +347,10 @@ def main():
                     "/usr/bin/python3",
                     str(Path(__file__).absolute()),
                     args.mode,
+                    *(["--harness", args.harness] if args.harness else []),
+                    *(["--inject-warning"] if args.inject_warning else []),
+                    "--max-warnings",
+                    "0",
                     "--sandbox",
                     temporary,
                 ],

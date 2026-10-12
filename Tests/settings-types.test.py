@@ -3,6 +3,7 @@
 
 import copy
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -122,7 +123,7 @@ def prepare_sources(root):
 def run_contract(value, mutate=False):
     with tempfile.TemporaryDirectory(prefix="noctalia-settings-types-") as temporary:
         root = Path(temporary)
-        prepare_sources(root)
+        stage_runtime(root)
         environment = isolated_environment(root)
         fixture_path = Path(environment["HOME"]) / ".config/noctalia/settings.json"
         fixture_path.parent.mkdir(mode=0o700, parents=True)
@@ -317,5 +318,42 @@ class SettingsStaticTest(unittest.TestCase):
         self.assert_probe_resolves(GROUPS_PROBE)
 
 
+def load_fixture_helper():
+    spec = importlib.util.spec_from_file_location(
+        "settings_fixture", REPO / "Tests/clock-settings-warnings.test.py"
+    )
+    helper = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(helper)
+    return helper
+
+
+def stage_runtime(root):
+    prepare_sources(root)
+    # qs imports and relative JS imports resolve to this exact runtime tree.
+    (root / "qs").symlink_to(".", target_is_directory=True)
+    for directory, entries in {
+        "Commons": "SettingsData 1.0 SettingsData.qml\nsingleton Settings 1.0 Settings.qml\n",
+        "Modules/OSD": "OSD 1.0 OSD.qml\n",
+    }.items():
+        module = "qs." + directory.replace("/", ".")
+        (root / directory / "qmldir").write_text(f"module {module}\n{entries}")
+
+
+def lint_harness(root, inject_warning=False):
+    stage_runtime(root)
+    return load_fixture_helper().lint_staged_harness(
+        root, root / "shell.qml", "id: root", inject_warning
+    )
+
+
+def behavior(directory):
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(SettingsContractTest)
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    if not result.wasSuccessful():
+        raise SystemExit(1)
+
+
 if __name__ == "__main__":
-    unittest.main()
+    load_fixture_helper().run_fixture_cli(
+        {"behavior": behavior, "lint-harness": lint_harness}, default_mode="behavior"
+    )

@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtTest
 import qs.Widgets
@@ -61,7 +63,8 @@ TestCase {
       Component {
         id: textFactory
         TextTab {
-          text: "Tab " + index
+          id: textTab
+          text: "Tab " + textTab.index
           tabIndex: index
           checked: firstBar.currentIndex === index
           onClicked: {

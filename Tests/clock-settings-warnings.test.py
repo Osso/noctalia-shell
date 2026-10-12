@@ -7,7 +7,6 @@ No desktop connection, real settings writes, or whole-shell proof.
 
 import argparse
 from collections import Counter
-import hashlib
 import importlib.util
 import json
 import os
@@ -15,6 +14,9 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
+import tempfile
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = Path("Modules/Panels/Settings/Bar/WidgetSettings/ClockSettings.qml")
@@ -203,29 +205,171 @@ def run_behavior(directory):
     print("CLOCK_SETTINGS_BEHAVIOR_PASS")
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("lint", "behavior"))
-    parser.add_argument("--artifacts", type=Path, required=True)
+def lint_staged_harness(directory, harness, marker, inject_warning=False):
+    if inject_warning:
+        source = harness.read_text()
+        assert source.count(marker) == 1, "Injection marker must identify one object"
+        owner = marker.removeprefix("id: ")
+        harness.write_text(
+            source.replace(
+                marker,
+                marker + f"\n  property int injectedWarning: {owner}.missingLintProbe",
+                1,
+            )
+        )
+    command = [
+        "/usr/lib/qt6/bin/qmllint",
+        "--bare",
+        "-I",
+        str(directory),
+        "-I",
+        "/usr/lib/qt6/qml",
+        "--max-warnings",
+        "0",
+        "--json",
+        "-",
+        str(harness),
+    ]
+    print("HARNESS_CLI", json.dumps(command), flush=True)
+    result = subprocess.run(
+        command,
+        cwd=directory,
+        env={"PATH": "/usr/bin", "LANG": "C.UTF-8", "HOME": str(directory)},
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    output = result.stdout + result.stderr
+    (directory / "lint-harness.log").write_text(output)
+    print(output, end="", flush=True)
+    files = json.loads(result.stdout)["files"]
+    assert len(files) == 1 and Path(files[0]["filename"]) == harness
+    warnings = [
+        entry for entry in files[0]["warnings"] if entry["type"] in ("warning", "error")
+    ]
+    counts = Counter(entry["id"] for entry in warnings)
+    print(
+        "HARNESS_FILE",
+        harness.name,
+        "FILE_COUNT",
+        len(files),
+        "WARNINGS",
+        len(warnings),
+        "COUNTS",
+        dict(counts),
+        "EXIT",
+        result.returncode,
+        flush=True,
+    )
+    if inject_warning:
+        assert counts["missing-property"] > 0 and "missingLintProbe" in output, (
+            "Semantic injection not diagnosed"
+        )
+        assert result.returncode != 0, "Injected warning accepted"
+    assert not warnings or result.returncode != 0, "Warnings accepted"
+    assert result.returncode != 0 or not warnings, output
+    return result.returncode
+
+
+def run_harness_lint(directory, inject_warning=False):
+    stage_runtime(directory)
+    return lint_staged_harness(
+        directory, directory / "tst_clock.qml", "id: suite", inject_warning
+    )
+
+
+def run_fixture_cli(actions, default_mode=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "mode",
+        choices=tuple(actions),
+        **({"nargs": "?", "default": default_mode} if default_mode else {}),
+    )
+    parser.add_argument("--artifacts", type=Path)
+    parser.add_argument("--max-warnings", type=int, choices=(0,), default=0)
+    parser.add_argument("--inject-warning", action="store_true")
+    parser.add_argument("--sandbox", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
-    args.artifacts.mkdir(mode=0o700, parents=True, exist_ok=False)
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes()
-    backup = args.artifacts / "settings.backup.json"
-    with backup.open("xb") as stream:
-        os.chmod(backup, 0o600)
-        stream.write(original)
-    digest = hashlib.sha256(original).digest()
-    assert hashlib.sha256(backup.read_bytes()).digest() == digest
-    try:
-        if args.mode == "lint":
-            run_lint(args.artifacts)
-        else:
-            run_behavior(args.artifacts)
-    finally:
-        assert settings.read_bytes() == original, "Real settings changed"
-        assert hashlib.sha256(backup.read_bytes()).digest() == digest, "Backup changed"
-    print("Real settings/backup bytes unchanged; bounded runner exited.")
+    if args.inject_warning and args.mode != "lint-harness":
+        parser.error("--inject-warning requires lint-harness")
+    isolation = load_helper(
+        "fixture_isolation", ROOT / "Tests/audio-notification-settings-warnings.test.py"
+    )
+    sys.addaudithook(isolation.audit)
+    with (
+        patch("os.stat", isolation.guard_metadata(os.stat)),
+        patch("os.lstat", isolation.guard_metadata(os.lstat)),
+        patch("os.readlink", isolation.guard_metadata(os.readlink)),
+    ):
+        isolation.prove_denial()
+        if args.sandbox:
+            mounts = Path("/proc/self/mountinfo").read_text().splitlines()
+            for path in ("/home", "/syncthing", "/run"):
+                assert any(
+                    line.split()[4] == path and " - tmpfs " in line for line in mounts
+                ), path
+            if args.mode == "lint-harness":
+                raise SystemExit(actions[args.mode](args.sandbox, args.inject_warning))
+            actions[args.mode](args.sandbox)
+            return
+        with tempfile.TemporaryDirectory(prefix="noctalia-fixture-") as temporary:
+            directory = args.artifacts.absolute() if args.artifacts else Path(temporary)
+            if args.artifacts:
+                directory.mkdir(mode=0o700, parents=True, exist_ok=False)
+            directory.chmod(0o700)
+            command = [
+                "bwrap",
+                "--die-with-parent",
+                "--unshare-all",
+                "--new-session",
+                "--ro-bind",
+                "/",
+                "/",
+                "--perms",
+                "000",
+                "--tmpfs",
+                "/home",
+                "--tmpfs",
+                "/syncthing",
+                "--ro-bind",
+                str(ROOT),
+                str(ROOT),
+                "--tmpfs",
+                "/tmp",
+                "--tmpfs",
+                "/run",
+                "--bind",
+                str(directory),
+                str(directory),
+                "--proc",
+                "/proc",
+                "--dev",
+                "/dev",
+                "--chdir",
+                str(directory),
+                "--",
+                "/usr/bin/python3",
+                str(Path(sys.argv[0]).absolute()),
+                args.mode,
+                "--sandbox",
+                str(directory),
+                "--max-warnings",
+                "0",
+            ]
+            if args.inject_warning:
+                command.append("--inject-warning")
+            result = subprocess.run(
+                command,
+                env={"PATH": "/usr/bin", "LANG": "C.UTF-8", "HOME": str(directory)},
+                timeout=120,
+            )
+            raise SystemExit(result.returncode)
+
+
+def main():
+    run_fixture_cli(
+        {"lint": run_lint, "behavior": run_behavior, "lint-harness": run_harness_lint}
+    )
 
 
 if __name__ == "__main__":

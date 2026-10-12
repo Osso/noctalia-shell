@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import Quickshell
 import qs.Widgets
@@ -15,7 +17,8 @@ ShellRoot {
         model: scene.count
         NTabButton {
           required property int index
-          text: "Text " + index
+          id: textTab
+          text: "Text " + textTab.index
           tabIndex: index
           checked: first.currentIndex === index
         }
@@ -36,6 +39,7 @@ ShellRoot {
       }
     }
     Timer {
+      id: probe
       interval: 100
       running: true
       function check(condition, message) {
@@ -43,16 +47,16 @@ ShellRoot {
           throw new Error("TAB_RELOAD_ASSERT: " + message);
       }
       onTriggered: {
-        check(textTabs.itemAt(1).tabBar === first, "text owner assigned");
-        check(iconTabs.itemAt(1).tabBar === second, "icon owner assigned");
+        probe.check((textTabs.itemAt(1) as NTabButton).tabBar === first, "text owner assigned");
+        probe.check((iconTabs.itemAt(1) as NIconTabButton).tabBar === second, "icon owner assigned");
         first.currentIndex = 1;
-        check(textTabs.itemAt(1).checked && !iconTabs.itemAt(1).checked, "independent selection");
+        probe.check((textTabs.itemAt(1) as NTabButton).checked && !(iconTabs.itemAt(1) as NIconTabButton).checked, "independent selection");
         scene.count = 0;
-        check(textTabs.count === 0 && iconTabs.count === 0, "delegate teardown");
+        probe.check(textTabs.count === 0 && iconTabs.count === 0, "delegate teardown");
         scene.count = 3;
-        check(textTabs.itemAt(1).tabBar === first, "recreated text owner");
-        check(iconTabs.itemAt(1).tabBar === second, "recreated icon owner");
-        check(textTabs.itemAt(1).checked && iconTabs.itemAt(2).checked, "recreated checked bindings");
+        probe.check((textTabs.itemAt(1) as NTabButton).tabBar === first, "recreated text owner");
+        probe.check((iconTabs.itemAt(1) as NIconTabButton).tabBar === second, "recreated icon owner");
+        probe.check((textTabs.itemAt(1) as NTabButton).checked && (iconTabs.itemAt(2) as NIconTabButton).checked, "recreated checked bindings");
         console.log("TAB_PRIVATE_READY");
       }
     }
