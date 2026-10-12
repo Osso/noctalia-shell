@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
-"""Production drawer cold-start and failed-reload recovery, private/no surfaces."""
+"""Private Winit/layer-shell drawer cold start, reload and failed-load recovery.
 
-import hashlib
+Production drawer + PopupMenuWindow; synthetic tray, SmartPanel and menu content.
+Handler signals prove routing/state, not compositor-delivered pointer input.
+"""
+
+import argparse
 import importlib.util
-import os
-from pathlib import Path
-import selectors
+import re
 import shutil
 import subprocess
 import tempfile
+import time
+from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).absolute().parents[1]
 TARGET = Path("Modules/Panels/Tray/TrayDrawerPanel.qml")
 
 
@@ -21,144 +25,297 @@ def load_helper(name, filename):
     return module
 
 
-resolver = load_helper("tray_resolution", "tray-widget-resolution.test.py")
 fixtures = load_helper("drawer_fixtures", "tray-drawer-warnings.test.py")
+display = load_helper("drawer_display", "popup-private-display.py")
 
-
-def stage(directory):
-    fixtures.stage_runtime(directory)
-    (directory / "tst_tray_drawer.qml").unlink()
-    for source in (directory / "qs").iterdir():
-        shutil.move(source, directory / source.name)
-    shutil.rmtree(directory / "qs")
-    shutil.rmtree(directory / "Quickshell")
-    for declaration in directory.rglob("qmldir"):
-        declaration.unlink()
-    (directory / "Services/UI/DrawerRegistry.qml").write_text("""pragma Singleton
-import QtQuick
+PROBE = """import QtQuick
 import Quickshell
+import Quickshell.Wayland
+import qs.Commons
+import qs.TestTray
+import qs.Modules.MainScreen
 import qs.Modules.Panels.Tray
-Singleton {
-  property Component drawerComponent: Component { TrayDrawerPanel {} }
-}
-""")
-    (directory / "shell.qml").write_text("""import QtQuick
-import Quickshell
-import Quickshell.Io
 import qs.Services.UI
 ShellRoot {
-  IpcHandler {
-    target: "drawer-test"
-    function reload(): void { Quickshell.reload(false); }
+  Connections {
+    target: Quickshell
+    function onReloadCompleted() { Quickshell.inhibitReloadPopup(); }
   }
-  Loader {
-    sourceComponent: DrawerRegistry.drawerComponent
-    onLoaded: {
-      if (!item.contentItem) throw new Error("Drawer content missing");
-      console.log("DRAWER_RESOLUTION_READY");
+  PopupMenuWindow { id: popup; screen: Quickshell.screens[0] }
+  PanelWindow {
+    id: surface
+    screen: Quickshell.screens[0]
+    anchors.top: true
+    anchors.left: true
+    implicitWidth: 600
+    implicitHeight: 300
+    visible: true
+    WlrLayershell.layer: WlrLayer.Bottom
+    WlrLayershell.namespace: "private-drawer-test"
+    TrayDrawerPanel {
+      id: first
+      screen: surface.screen
+      widgetSection: "left"
+      widgetIndex: 0
+      width: preferredWidth
+      height: preferredHeight
+    }
+    TrayDrawerPanel {
+      id: second
+      x: 300
+      screen: surface.screen
+      widgetSection: "right"
+      widgetIndex: 0
+      width: preferredWidth
+      height: preferredHeight
+    }
+    QtObject {
+      id: alpha
+      property string name: "Alpha"
+      property string icon: ""
+      property bool onlyMenu: false
+      property bool hasMenu: true
+      property QtObject menu: QtObject {}
+      property int activations: 0
+      property int secondaryActivations: 0
+      property int up: 0
+      property int down: 0
+      function activate() { activations++; }
+      function secondaryActivate() { secondaryActivations++; }
+      function scrollUp() { up++; }
+      function scrollDown() { down++; }
+    }
+    QtObject {
+      id: beta
+      property string name: "Beta"
+      property string icon: ""
+      property bool onlyMenu: false
+      property bool hasMenu: true
+      property QtObject menu: QtObject {}
+      property int activations: 0
+      property int secondaryActivations: 0
+      property int up: 0
+      property int down: 0
+      function activate() { activations++; }
+      function secondaryActivate() { secondaryActivations++; }
+      function scrollUp() { up++; }
+      function scrollDown() { down++; }
+    }
+    function check(condition, message) {
+      if (!condition) throw new Error("DRAWER_NATIVE_ASSERT: " + message);
+    }
+    function find(parent, member) {
+      if (parent[member] !== undefined) return parent;
+      for (const child of parent.children) {
+        const found = find(child, member);
+        if (found) return found;
+      }
+      return null;
+    }
+    function delegates(owner) { return find(owner.contentItem, "itemAt"); }
+    function area(owner, index) { return find(delegates(owner).itemAt(index), "clicked"); }
+    Component.onCompleted: {
+      Settings.data = {bar: {position: "top", widgets: {
+        left: [{id: "Tray", pinned: ["Beta"], colorizeIcons: false}],
+        right: [{id: "Tray", pinned: ["Alpha"], colorizeIcons: false}]
+      }}, colorSchemes: {darkMode: true}};
+      SystemTray.items.values = [alpha, beta];
+    }
+    Timer {
+      interval: 250
+      running: true
+      onTriggered: {
+        surface.check(popup.trayMenuLoader.item !== null, "native popup menu loaded");
+        surface.check(first.popupMenuWindow === popup && second.popupMenuWindow === popup, "popup registry identity");
+        surface.check(first.contentItem.drawer === first && second.contentItem.drawer === second, "independent content owners");
+        surface.check(surface.delegates(first).itemAt(0).drawer === first, "first delegate owner");
+        surface.check(surface.delegates(second).itemAt(0).drawer === second, "second delegate owner");
+        surface.check(surface.delegates(first).itemAt(0).modelData === alpha, "first pinned model");
+        surface.check(surface.delegates(second).itemAt(0).modelData === beta, "second pinned model");
+        PanelService.openedPanel = first;
+        surface.area(first, 0).clicked({button: Qt.LeftButton});
+        surface.check(alpha.activations === 1 && beta.activations === 0 && first.closeCount === 1, "left activation routes first owner");
+        PanelService.openedPanel = second;
+        surface.area(second, 0).clicked({button: Qt.MiddleButton});
+        surface.check(beta.secondaryActivations === 1 && second.closeCount === 1, "middle activation routes second owner");
+        SystemTray.items.values = [];
+        surface.check(surface.delegates(first).count === 0 && surface.delegates(second).count === 0, "both models cleared");
+        SystemTray.items.values = [beta, alpha];
+        surface.check(surface.delegates(first).itemAt(0).modelData === alpha && surface.delegates(second).itemAt(0).modelData === beta, "models recreated");
+        first.visible = true;
+        second.visible = true;
+        surface.area(second, 0).wheel({angleDelta: {y: 120}});
+        surface.check(beta.up === 1 && alpha.up === 0, "wheel routes recreated model");
+        surface.area(second, 0).clicked({button: Qt.RightButton});
+        surface.check(popup.visible && second.trayMenuItem.trayItem === beta, "native popup opened for second model");
+        surface.check(second.trayMenuItem.widgetSection === "right" && second.trayMenuItem.widgetIndex === 0, "second owner menu context");
+        surface.check(second.trayMenuItem.anchor === surface.find(surface.delegates(second).itemAt(0), "backer"), "menu anchor identity");
+        surface.area(second, 0).clicked({button: Qt.RightButton});
+        surface.check(!popup.visible, "second right click closes native popup");
+        popup.trayMenuLoader.active = false;
+        surface.check(first.trayMenuItem === null && second.trayMenuItem === null, "menu teardown reaches both owners");
+        popup.trayMenuLoader.active = true;
+        Qt.callLater(() => {
+          surface.check(first.trayMenuItem !== null && first.trayMenuItem === second.trayMenuItem, "menu recreated for both owners");
+          surface.area(first, 0).clicked({button: Qt.RightButton});
+          surface.check(popup.visible && first.trayMenuItem.trayItem === alpha && first.trayMenuItem.widgetSection === "left", "first menu after recreation");
+          surface.area(first, 0).entered();
+          surface.check(!popup.visible && TooltipService.text === "Alpha", "hover closes native popup and routes tooltip");
+          console.log("DRAWER_NATIVE_READY");
+        });
+      }
     }
   }
 }
-""")
+"""
 
 
-def reload_private(process, environment):
-    result = subprocess.run(
-        [
-            "quickshell",
-            "ipc",
-            "--pid",
-            str(process.pid),
-            "call",
-            "drawer-test",
-            "reload",
-        ],
-        env=environment,
-        capture_output=True,
-        text=True,
-        timeout=5,
+def stage(directory, shadow):
+    fixtures.stage_runtime(directory, shadow)
+    (directory / "tst_tray_drawer.qml").unlink()
+    shutil.rmtree(directory / "Quickshell")
+    fixtures.helpers.write_module(
+        directory,
+        "qs.TestTray",
+        {
+            "SystemTray": fixtures.helpers.singleton(
+                "property QtObject items: QtObject { property var values: [] }"
+            ),
+        },
     )
-    assert result.returncode == 0, result.stdout + result.stderr
-
-
-def resolution(directory, mode):
-    stage(directory)
-    source = directory / TARGET
-    production = source.read_bytes()
-    baseline = "import QtQuick\nItem { property Item contentItem: Item {} }\n"
-    if mode != "cold-start":
-        source.write_text(baseline)
-    environment = resolver.private_environment(directory)
-    # No desktop bus or host backend access, including the real SystemTray.
-    environment.update(
-        DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent",
-        DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent",
+    drawer = directory / "qs" / TARGET
+    drawer.write_text(
+        drawer.read_text().replace(
+            "import Quickshell.Services.SystemTray", "import qs.TestTray"
+        )
     )
-    output = []
-    with (
-        subprocess.Popen(
-            ["quickshell", "--no-color", "-p", str(directory)],
-            env=environment,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        ) as process,
-        selectors.DefaultSelector() as selector,
-    ):
-        selector.register(process.stdout, selectors.EVENT_READ)
-        try:
-            resolver.wait_message(process, selector, output, "DRAWER_RESOLUTION_READY")
-            if mode == "reload-after-failure":
-                source.write_text("""import QtQuick
-Item {
-  property Item contentItem: Item {}
-  component DrawerDelegate: Item {}
-  DrawerDelegate {}
+    popup = directory / "qs/Modules/MainScreen/PopupMenuWindow.qml"
+    popup.write_bytes((ROOT / "Modules/MainScreen/PopupMenuWindow.qml").read_bytes())
+    registry = directory / "qs/Services/UI/PanelService.qml"
+    registry.write_text(
+        registry.read_text().rsplit("}", 1)[0]
+        + """
+function registerPopupMenuWindow(screen, window) {
+  popup = window;
+  popupMenuWindowRegistered(screen);
 }
-""")
-                resolver.wait_message(
-                    process, selector, output, "DrawerDelegate is not a type", True
-                )
-            if mode != "cold-start":
-                source.write_bytes(production)
-                if mode == "reload-after-failure":
-                    reload_private(process, environment)
-                resolver.wait_message(
-                    process, selector, output, "DRAWER_RESOLUTION_READY"
-                )
-        finally:
-            process.terminate()
-            try:
-                tail, _ = process.communicate(timeout=5)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                tail, _ = process.communicate(timeout=5)
-            print(tail.decode(), end="")
-    print("DRAWER_RESOLUTION_PASS", mode)
+function unregisterPopupMenuWindow(key, window) { if (popup === window) popup = null; }
+}
+"""
+    )
+    colors = directory / "qs/Commons/NColor.qml"
+    colors.write_text(
+        colors.read_text().rsplit("}", 1)[0]
+        + '\nproperty color transparent: "transparent"\n}\n'
+    )
+    menu = directory / "qs/Modules/Bar/Extras/TrayMenu.qml"
+    menu.write_text(
+        menu.read_text().rsplit("}", 1)[0]
+        + """
+property var screen
+function hideMenu() {}
+}
+"""
+    )
+    for source in (directory / "qs").iterdir():
+        shutil.move(source, directory / source.name)
+    (directory / "qs").rmdir()
+    for declaration in directory.rglob("qmldir"):
+        declaration.unlink()
+    (directory / "shell.qml").write_text(PROBE)
+    return directory / TARGET
 
 
-def main():
-    settings = Path.home() / ".config/noctalia/settings.json"
-    original = settings.read_bytes() if settings.exists() else None
-    with tempfile.TemporaryDirectory(prefix="noctalia-drawer-resolution-") as temporary:
-        directory = Path(temporary)
-        if original is not None:
-            backup = directory / "settings.backup.json"
-            backup.touch(mode=0o600)
-            backup.write_bytes(original)
-            assert (
-                hashlib.sha256(backup.read_bytes()).digest()
-                == hashlib.sha256(original).digest()
-            )
+def wait_for(process, log, errors, marker, start, allow_failure=False):
+    deadline = time.monotonic() + 20
+    while time.monotonic() < deadline:
+        output = (log.read_text() + errors.read_text())[start:]
+        assert process.poll() is None, output
+        if not allow_failure:
+            assert not re.search(
+                r" WARN | ERROR | FATAL |ReferenceError|TypeError|Binding loop|DRAWER_NATIVE_ASSERT",
+                output,
+            ), output
+        if marker in output:
+            return
+        time.sleep(0.05)
+    raise AssertionError("native drawer timed out:\n" + output)
+
+
+def runtime(directory, shadow=False):
+    source = stage(directory, shadow)
+    original = source.read_bytes()
+    log = directory / "runtime.log"
+    errors = directory / "client.stderr"
+    trace = directory / "client.trace"
+    with (
+        display.PopupPrivateDisplay(directory / "display") as environment,
+        log.open("w") as stream,
+        errors.open("w") as stderr,
+    ):
+        process = subprocess.Popen(
+            display.sandbox(
+                directory,
+                [
+                    "strace",
+                    "-f",
+                    "-qq",
+                    "-e",
+                    "trace=%file",
+                    "-o",
+                    str(trace),
+                    "quickshell",
+                    "--no-color",
+                    "-p",
+                    str(directory / "shell.qml"),
+                ],
+            ),
+            cwd=directory,
+            env=environment,
+            stdout=stream,
+            stderr=stderr,
+            start_new_session=True,
+        )
         try:
-            for index, mode in enumerate(
-                ("cold-start", "reload", "reload-after-failure")
-            ):
-                case = directory / str(index)
-                case.mkdir(mode=0o700)
-                resolution(case, mode)
+            wait_for(process, log, errors, "DRAWER_NATIVE_READY", 0)
+            print("DRAWER_NATIVE_COLD_PASS")
+            # Watchers attach after Configuration Loaded; the probe is delayed.
+            start = len(log.read_text()) + len(errors.read_text())
+            source.write_bytes(original + b"\n// private source reload\n")
+            wait_for(process, log, errors, "DRAWER_NATIVE_READY", start)
+            print("DRAWER_NATIVE_RELOAD_PASS")
+            start = len(log.read_text()) + len(errors.read_text())
+            source.write_bytes(original + b"\nINVALID PRIVATE DRAWER\n")
+            wait_for(process, log, errors, "Failed to load configuration", start, True)
+            rejected = (log.read_text() + errors.read_text())[start:]
+            assert "TrayDrawerPanel.qml" in rejected, rejected
+            start = len(log.read_text()) + len(errors.read_text())
+            source.write_bytes(original + b"\n// private recovery\n")
+            wait_for(process, log, errors, "DRAWER_NATIVE_READY", start)
+            print("DRAWER_NATIVE_RECOVERY_PASS")
         finally:
-            assert (settings.read_bytes() if settings.exists() else None) == original
+            display.stop_owned(process)
+            print(log.read_text() + errors.read_text(), end="")
+            assert process.poll() is not None
+    assert "settings.json" not in trace.read_text(), "client attempted settings access"
+    assert log.read_text().count("DRAWER_NATIVE_READY") == 3
+    print(
+        "DRAWER_NATIVE_CLEANUP_PASS zero settings attempts; private client/display groups terminated"
+    )
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--shadow", action="store_true")
+    parser.add_argument("--out", type=Path)
+    args = parser.parse_args()
+    if args.out:
+        directory = args.out.absolute()
+        directory.mkdir(mode=0o700)
+        fixtures.isolation.install_settings_guard(directory)
+        runtime(directory, args.shadow)
+    else:
+        with tempfile.TemporaryDirectory(prefix="ncd-") as temporary:
+            directory = Path(temporary)
+            fixtures.isolation.install_settings_guard(directory)
+            runtime(directory, args.shadow)
