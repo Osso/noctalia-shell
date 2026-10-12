@@ -234,18 +234,19 @@ class PopupPrivateDisplay(shared.PrivateDisplay):
         if self.process is not None:
             stop_owned(self.process)
             assert self.process.poll() is not None
-            self.verify_devices()
         if self.stream is not None:
             self.stream.close()
         sockets = [
             path
-            for path in self.runtime.iterdir()
+            for path in self.runtime.rglob("*")
             if path.is_socket() or path.name.endswith(".lock")
         ]
         for path in sockets:
             path.unlink()
-        remaining = [str(path) for path in self.runtime.iterdir() if path.is_socket()]
+        remaining = [str(path) for path in self.runtime.rglob("*") if path.is_socket()]
         assert not remaining, remaining
+        if self.process is not None:
+            self.verify_devices()
         (self.out / "cleanup.json").write_text(
             json.dumps(
                 {
