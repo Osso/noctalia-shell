@@ -26,6 +26,15 @@ ShellRoot {
       }
     }
 
+    Component {
+      id: secondPanelFactory
+      ControlCenterPanel {
+        readonly property int shortcutsHeight: 73
+        width: 520
+        height: 300
+      }
+    }
+
     // Unrelated creation-context root must not become the supplied card owner.
     ControlCenterPanel {
       id: root
@@ -148,11 +157,12 @@ ShellRoot {
       scene.first = panelFactory.createObject(scene, {
         "screen": Quickshell.screens[0]
       });
-      scene.second = panelFactory.createObject(scene, {
+      scene.second = secondPanelFactory.createObject(scene, {
         "screen": Quickshell.screens[1],
         "x": 560
       });
       check(scene.first !== null && scene.second !== null, "two actual panel owners");
+      check(scene.first.shortcutsHeight === 52 && scene.second.shortcutsHeight === 73, "distinct panel heights");
       scene.first.open();
       scene.second.open();
     }
@@ -163,6 +173,7 @@ ShellRoot {
       Style.uiScaleRatio = 1.5;
       check(scene.first.shortcutsHeight === 78, "reactive production shortcut height");
       assertShortcuts(scene.detachedCard, scene.first);
+      check(scene.second.shortcutsHeight === 73, "second owner height independent of first");
       // Widget screens are assigned on load, so exercise a fresh card per owner.
       scene.detachedCard.destroy();
       scene.detachedCard = root.shortcutFactory.createObject(scene, {
