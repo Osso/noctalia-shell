@@ -23,7 +23,7 @@ ColumnLayout {
     Layout.fillWidth: true
     label: I18n.tr("bar.widget-settings.spacer.width.label")
     description: I18n.tr("bar.widget-settings.spacer.width.description")
-    text: widgetData.width || widgetMetadata.width
+    text: root.widgetData.width || root.widgetMetadata.width
     placeholderText: I18n.tr("placeholders.enter-width-pixels")
   }
 }

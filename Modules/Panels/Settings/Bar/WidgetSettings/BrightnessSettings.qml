@@ -39,7 +39,7 @@ ColumnLayout {
         "name": I18n.tr("options.display-mode.always-hide")
       }
     ]
-    currentKey: valueDisplayMode
-    onSelected: key => valueDisplayMode = key
+    currentKey: root.valueDisplayMode
+    onSelected: key => root.valueDisplayMode = key
   }
 }
