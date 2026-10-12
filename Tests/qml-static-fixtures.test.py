@@ -22,6 +22,11 @@ HARNESS_SCRIPTS = {
     "TaskbarHarness.qml": "taskbar-warnings.test.py",
     "AboutTabWarningsHarness.qml": "about-tab-warnings.test.py",
     "RemainingLayoutGeometryHarness.qml": "remaining-layout-geometry.test.py",
+    "BatteryPanelWarningsHarness.qml": "battery-panel-warnings.test.py",
+    "ColorSchemeServiceHarness.qml": "color-scheme-service-runtime.test.py",
+    "BarWidgetLoaderOwnerHarness.qml": "layer-bar-owner-warnings.test.py",
+    "NotificationWarningsHarness.qml": "notification-warnings.test.py",
+    "PanelServiceLifecycleHarness.qml": "panel-service-lifecycle.test.sh",
 }
 HARNESS_REPORTS = {
     "BatteryTabWarningsHarness.qml": "tst_battery.qml",
@@ -35,6 +40,11 @@ HARNESS_REPORTS = {
     "TaskbarHarness.qml": "tst_taskbar.qml",
     "AboutTabWarningsHarness.qml": "tst_about.qml",
     "RemainingLayoutGeometryHarness.qml": "shell.qml",
+    "BatteryPanelWarningsHarness.qml": "tst_battery_panel.qml",
+    "ColorSchemeServiceHarness.qml": "shell.qml",
+    "BarWidgetLoaderOwnerHarness.qml": "tst_owner.qml",
+    "NotificationWarningsHarness.qml": "shell.qml",
+    "PanelServiceLifecycleHarness.qml": "shell.qml",
 }
 NEW_HARNESSES = (
     "TrayWidgetWarningsHarness.qml",
@@ -42,11 +52,19 @@ NEW_HARNESSES = (
     "TaskbarHarness.qml",
     "AboutTabWarningsHarness.qml",
     "RemainingLayoutGeometryHarness.qml",
+    "BatteryPanelWarningsHarness.qml",
+    "ColorSchemeServiceHarness.qml",
+    "BarWidgetLoaderOwnerHarness.qml",
+    "NotificationWarningsHarness.qml",
+    "PanelServiceLifecycleHarness.qml",
 )
 ARTIFACT_HARNESSES = (
     "BrightnessPanelWarningsHarness.qml",
     "WallpaperServiceHarness.qml",
     "RemainingLayoutGeometryHarness.qml",
+    "BatteryPanelWarningsHarness.qml",
+    "ColorSchemeServiceHarness.qml",
+    "BarWidgetLoaderOwnerHarness.qml",
 )
 
 
@@ -72,6 +90,7 @@ class FixtureLintTest(unittest.TestCase):
             "workspace-runtime.test.py",
             "taskbar-grouped-warnings.test.py",
             "setup-layout-geometry.test.py",
+            "process-panel-warnings.test.py",
         ):
             shutil.copy2(ROOT / "Tests" / script, tests / script)
         helper = ROOT / "Tests/qml_fixture_lint.py"
@@ -84,16 +103,21 @@ class FixtureLintTest(unittest.TestCase):
             "SimpleServiceHarness.qml",
             "TaskbarGroupedHarness.qml",
             "WorkspaceHarness.qml",
+            "ProcessPanelWarningsHarness.qml",
         ):
             (tests / "Qml" / name).symlink_to(ROOT / "Tests/Qml" / name)
         # Redirect the owner's hardcoded guard to synthetic settings only.
-        geometry = tests / "remaining-layout-geometry.test.py"
-        geometry.write_text(
-            geometry.read_text().replace(
-                'Path("/home/osso/.config/noctalia/settings.json")',
-                'Path.home() / ".config/noctalia/settings.json"',
+        for name in (
+            "remaining-layout-geometry.test.py",
+            "color-scheme-service-runtime.test.py",
+        ):
+            script = tests / name
+            script.write_text(
+                script.read_text().replace(
+                    'Path("/home/osso/.config/noctalia/settings.json")',
+                    'Path.home() / ".config/noctalia/settings.json"',
+                )
             )
-        )
         (tests / "fixtures").mkdir()
         shutil.copy2(
             ROOT / "Tests/fixtures/root-services-wayland.cpp",
@@ -267,19 +291,32 @@ class FixtureLintTest(unittest.TestCase):
                     )
                 diagnostic = f"fixture stderr: {name}\n"
                 script = root / "Tests" / HARNESS_SCRIPTS[name]
-                script.write_text(
-                    "import sys\nsys.stderr.write("
-                    + repr(diagnostic)
-                    + ")\n"
-                    + script.read_text()
-                )
+                if script.suffix == ".sh":
+                    source = script.read_text()
+                    shebang, body = source.split("\n", 1)
+                    script.write_text(
+                        shebang
+                        + f"\nprintf '%s\\n' 'fixture stderr: {name}' >&2\n"
+                        + body
+                    )
+                else:
+                    script.write_text(
+                        "import sys\nsys.stderr.write("
+                        + repr(diagnostic)
+                        + ")\n"
+                        + script.read_text()
+                    )
                 # Earlier genuine warnings must not mask this injected failure.
                 for other in HARNESS_SCRIPTS:
                     if other != name:
                         (root / "Tests/Qml" / other).unlink()
                 result = self.run_checker(runner, root)
                 self.assertNotEqual(result.returncode, 0)
-                self.assertEqual(result.stderr, diagnostic)
+                if name == "BatteryPanelWarningsHarness.qml":
+                    self.assertIn(diagnostic, result.stderr)
+                    self.assertIn("AssertionError: harness lint failed", result.stderr)
+                else:
+                    self.assertEqual(result.stderr, diagnostic)
                 if name != "RemainingLayoutGeometryHarness.qml":
                     self.assertIn("missingFixtureValue", result.stdout)
                     self.assertIn('"id":"missing-property"', result.stdout)
