@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -143,15 +145,15 @@ SmartPanel {
           Layout.preferredHeight: {
             switch (cardId) {
             case "profile-card":
-              return profileHeight;
+              return root.profileHeight;
             case "shortcuts-card":
-              return shortcutsHeight;
+              return root.shortcutsHeight;
             case "audio-card":
-              return audioHeight;
+              return root.audioHeight;
             case "weather-card":
-              return weatherHeight;
+              return root.weatherHeight;
             case "media-sysmon-card":
-              return mediaSysMonHeight;
+              return root.mediaSysMonHeight;
             default:
               return 0;
             }
