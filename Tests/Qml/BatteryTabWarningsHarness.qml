@@ -153,7 +153,7 @@ TestCase {
     compare(writer.running, false, "Dragging does not write");
     sliders[0].pressedChanged(false, 25);
     compare(writer.running, true);
-    compare(writer.command, ["pkexec", "bash", "-c", "echo 25 > /sys/class/power_supply/BAT0/charge_control_start_threshold"]);
+    compare(writer.command, ["/usr/bin/authsudo", "/usr/local/libexec/noctalia-battery-threshold", "start", "25"]);
     writer.running = false;
     sliders[1].moved(10);
     compare(tab.localStopThreshold, 30);
@@ -162,13 +162,12 @@ TestCase {
     compare(writer.running, false);
     sliders[1].pressedChanged(false, 85);
     compare(writer.running, true);
-    compare(writer.command, ["pkexec", "bash", "-c", "echo 85 > /sys/class/power_supply/BAT0/charge_control_end_threshold"]);
+    compare(writer.command, ["/usr/bin/authsudo", "/usr/local/libexec/noctalia-battery-threshold", "end", "85"]);
     writer.running = false;
     writer.exited(0);
     compare(tab.chargeStopThreshold, 80, "Successful write reloads fixture sysfs");
     tab.setStartThreshold(35);
-    compare(writer.command[2], "-c");
-    verify(writer.command[3].includes("echo 35 >"));
+    compare(writer.command, ["/usr/bin/authsudo", "/usr/local/libexec/noctalia-battery-threshold", "start", "35"]);
     writer.running = false;
     writer.exited(0);
     compare(tab.localStartThreshold, 20);

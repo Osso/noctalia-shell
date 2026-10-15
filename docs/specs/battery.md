@@ -36,6 +36,9 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 
 - [x] Battery settings start the write-threshold process with `start` and the requested value for start-threshold changes.
 - [x] Battery settings start the write-threshold process with `end` and the requested value for stop-threshold changes.
+- [x] Local wheel-group users change BAT0 charge limits without a root confirmation through an installed root-owned helper; arbitrary shell commands retain their existing authorization requirements.
+- [x] The battery helper accepts exactly `start|end` and an ASCII integer from 0 to 100, writes only the corresponding existing BAT0 threshold file, and reports validation or write failures with nonzero exit status.
+- [x] Battery settings wait for the helper to exit before reloading threshold values; failed writes are reported rather than treated as successful.
 - [x] Battery settings preserve displayed state, threshold drag/release behavior, and progress-track/fill geometry at UI scales 1 and 1.25. The offscreen production-tab regression uses isolated fake UPower/sysfs/process/settings services and compares content/geometry with the pre-fix fixture; it never performs privileged writes.
 - [x] Battery settings display the positive magnitude of signed UPower `changeRate` in watts to one decimal for charging and discharging; zero hides the power row, and battery state separately conveys direction.
 - [x] Battery settings health uses the normal text color at 80% and above, the tertiary warning color from 50% to below 80%, and the error color below 50%.
@@ -77,6 +80,7 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 - `Tests/battery-panel-guards.test.js` (seven reported passes at `3df8fa763`).
 - `Tests/battery-panel-warnings.test.py` (`lint` and `behavior --artifacts <new-directory>`); isolated evidence below.
 - `Tests/battery-service-guards.test.js`
+- `Tests/battery-threshold-helper.test.py` — fixed-path threshold writes, input rejection and IO failures using temporary fixtures; no privileged host writes.
 - `Tests/battery-tab-guards.test.js`
 - `Tests/battery-tab-warnings.test.py` (`lint` checks only BatteryTab, requires qmllint exit status zero and no warnings; `behavior --snapshot <path>` checks signed watts (+12.5/-12.5/0), health colors (80/50/49%), normal progress animation, baseline geometry, and inert threshold writes in the production tab/controls with unchanged real-settings SHA).
 - `Tests/battery-ipc-isolated.test.py` (`lint` and `runtime`); native private registry/dispatch evidence and limits: [testing](testing.md#retired-battery-ipc-private-native-runtime).

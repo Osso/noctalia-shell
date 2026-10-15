@@ -82,6 +82,7 @@ run_unit_tests() {
     python3 "$repo_root/Tests/color-namespace-runtime.test.py"
     python3 "$repo_root/Tests/weather-card-effects.test.py"
     python3 "$repo_root/Tests/calendar-events-safe-get-time.test.py"
+    python3 "$repo_root/Tests/battery-threshold-helper.test.py"
     python3 "$repo_root/Tests/deploy-source.test.py"
     python3 "$repo_root/Tests/night-light-runtime.test.py"
     bash "$repo_root/Tests/i18n-json.test.sh"

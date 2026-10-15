@@ -92,13 +92,13 @@ ColumnLayout {
     }
   }
 
-  // Process to write thresholds (requires root via pkexec)
+  // Only the installed battery helper is authorized without a root prompt.
   Process {
     id: writeThresholdProcess
     property string thresholdType: ""
     property int thresholdValue: 0
 
-    command: ["pkexec", "bash", "-c", `echo ${writeThresholdProcess.thresholdValue} > /sys/class/power_supply/BAT0/charge_control_${writeThresholdProcess.thresholdType}_threshold`]
+    command: ["/usr/bin/authsudo", "/usr/local/libexec/noctalia-battery-threshold", writeThresholdProcess.thresholdType, String(writeThresholdProcess.thresholdValue)]
     running: false
 
     onExited: exitCode => {
