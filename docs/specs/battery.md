@@ -102,13 +102,20 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 - Coverage: defaults; save-copy/source immutability and unknown-field preservation; clearing the default device path; device/display-mode selection and threshold clamping to 5–50%; same-count hotplug, add/remove, line-power filtering, name fallbacks, manual refresh, and retained selection. Charging and discharging fixtures both use positive `changeRate = 12.5`; assertions cover device listing/selection/save, not watts rendering (this editor has no power row).
 - Real settings and the permission-locked, hash-verified backup remain unchanged. Offscreen fixture proof does not establish real UPower hotplug, hardware behavior, persistence, native input, or whole-shell acceptance. Runner/isolation details: [testing](testing.md#per-widget-battery-settings-isolated-runtime).
 
+### Battery threshold live host evidence
+
+- On 2026-10-15, `d9f90789f` was deployed via `./deploy.sh`; canonical instance `94wn1o0fsmt`, PID `2794329`, remained unchanged.
+- An independent disposable offscreen harness staged the actual production `BatteryTab` with real Quickshell `Process`/`FileView` and fixtures for other services. Four writes alternated `start 90` and `end 95` through the installed root-owned helper via real `authsudo`; runtime exited `0` with `BATTERY_LIVE_PASS` and no authorization prompts. Helper ownership/mode was `root:root 0755`; policy was `root:root 0644`.
+- Evidence: `/tmp/noctalia-battery-live-s62algfx/runtime-fixed-imports.log` and `/tmp/noctalia-battery-live-s62algfx/baseline.json`. Real settings SHA-256 remained `4bbcfc6d7a421fe64371415cbba5ba4524aa929e0418a214f576164421a911d9`; thresholds stayed at start `90` / end `95`. The first harness failed imports before any write; only its `qs` layout was corrected.
+- This covers repeated same-value authorized host writes without prompts, not changed-limit effects across recharge/reboot or visible desktop slider interaction. The existing isolated production-tab fixture suite remains command-construction/inert-process evidence, not privileged-write proof.
+
 ## Known gaps (current cycle)
 
 - [ ] Add hardware and desktop integration coverage for the battery widget; its offscreen regression does not cover real UPower/Bluetooth hardware, visible popup interaction, desktop notifications, settings persistence, or whole-shell acceptance.
 - [ ] Correct the separate IPC/idle lint test's stale seven-warning expectation and resolve the guards runner baseline `root is not defined`; neither blocks standalone private IPC evidence nor establishes suite acceptance.
 - [ ] Add live hardware and desktop integration coverage for battery panel health/time display and close behavior; offscreen fixture assertions are covered above.
 - [ ] Resolve the six per-widget battery settings UPower `UntypedObjectModel` metadata diagnostics; the standalone `lint` mode still requires zero warnings and therefore remains failing.
-- [ ] Add host integration coverage for privileged threshold writes; the isolated production-tab test checks command construction, drag/release timing, threshold bounds, and successful-write reload using inert process/sysfs fixtures, not actual writes.
+- [ ] Extend threshold host integration beyond the repeated same-value authorized writes covered above: changed-limit effects across recharge/reboot and visible desktop slider interaction remain untested. The isolated production-tab test checks command construction, drag/release timing, threshold bounds, and successful-write reload using inert process/sysfs fixtures, not actual writes.
 
 ## Out of scope
 

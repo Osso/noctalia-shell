@@ -18,7 +18,7 @@ Run `./deploy.sh` after committing changes. Source already lives in the active c
 
 The policy targets only that installed helper, allows group `wheel`, and sets `auth = "none"`. It does not authorize `bash` or arbitrary commands. Battery settings call `authsudo /usr/local/libexec/noctalia-battery-threshold start|end VALUE`; the helper accepts only integers 0–100 and writes only existing BAT0 threshold files. Battery behavior and validation requirements: [battery](battery.md#settings-and-ipc).
 
-These are deployment requirements and source behavior, not evidence that installation, live authd policy enforcement, or hardware writes have succeeded on the host. Isolated deployment tests use fake authorization/installation; live prompt-free writes require separate host evidence.
+Isolated deployment tests use fake authorization/installation, not live policy or hardware writes. Deployed host evidence and its limits: [battery threshold live host evidence](battery.md#battery-threshold-live-host-evidence).
 
 ## Implementation inventory
 
