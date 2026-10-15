@@ -1,0 +1,4 @@
+[[rules]]
+target = "/usr/local/libexec/noctalia-battery-threshold"
+allow_groups = ["wheel"]
+auth = "none"

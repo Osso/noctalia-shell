@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reload this checkout in its running Quickshell instance without restarting it."""
+"""Install battery threshold authorization, then reload the running Quickshell."""
 
 import json
 from pathlib import Path
@@ -41,8 +41,57 @@ def instance_log(pid):
     return quickshell("log", "--pid", str(pid), "--no-color")
 
 
+def install_battery_policy():
+    checkout = SHELL.parent
+    commands = [
+        [
+            "install",
+            "-d",
+            "-o",
+            "root",
+            "-g",
+            "root",
+            "-m",
+            "0755",
+            "/usr/local/libexec",
+            "/etc/authd",
+            "/etc/authd/policies.d",
+        ],
+        [
+            "install",
+            "-o",
+            "root",
+            "-g",
+            "root",
+            "-m",
+            "0755",
+            str(checkout / "Bin/noctalia-battery-threshold"),
+            "/usr/local/libexec/noctalia-battery-threshold",
+        ],
+        [
+            "install",
+            "-o",
+            "root",
+            "-g",
+            "root",
+            "-m",
+            "0644",
+            str(checkout / "Assets/authd/noctalia-battery.toml"),
+            "/etc/authd/policies.d/noctalia-battery.toml",
+        ],
+    ]
+    for command in commands:
+        result = subprocess.run(["authsudo", *command], capture_output=True, text=True)
+        if result.returncode:
+            raise RuntimeError(
+                f"authsudo {' '.join(command)} exited {result.returncode}: "
+                f"{result.stderr.strip() or result.stdout.strip()}"
+            )
+
+
 def main():
     instance = active_instance()
+    install_battery_policy()
     pid = instance["pid"]
     baseline = instance_log(pid)
     quickshell("ipc", "--pid", str(pid), "call", "shell", "reload")
