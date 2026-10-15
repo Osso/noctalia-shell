@@ -1,0 +1,41 @@
+#!/usr/bin/python3 -I
+"""Write one BAT0 charge threshold; intended for root-owned authsudo installation."""
+
+import os
+from pathlib import Path
+import sys
+
+
+def main(argv, *, directory=Path("/sys/class/power_supply/BAT0")):
+    if (
+        len(argv) != 2
+        or argv[0] not in ("start", "end")
+        or not argv[1].isascii()
+        or not argv[1].isdecimal()
+    ):
+        print(
+            "noctalia-battery-threshold: expected start|end and an ASCII integer 0..100",
+            file=sys.stderr,
+        )
+        return 1
+
+    value = argv[1].lstrip("0") or "0"
+    if len(value) > 3 or int(value) > 100:
+        print("noctalia-battery-threshold: value must be 0..100", file=sys.stderr)
+        return 1
+
+    path = directory / f"charge_control_{argv[0]}_threshold"
+    try:
+        descriptor = os.open(path, os.O_WRONLY | os.O_TRUNC)
+        with os.fdopen(descriptor, "w", encoding="ascii") as output:
+            output.write(f"{int(value)}\n")
+    except OSError as error:
+        print(
+            f"noctalia-battery-threshold: cannot write {path}: {error}", file=sys.stderr
+        )
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
