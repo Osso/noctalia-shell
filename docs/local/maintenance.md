@@ -106,7 +106,7 @@ The underlying scripts require `--run` when called directly to avoid accidental 
 
 ## Deploy Local Source
 
-Run `./deploy.sh` from this checkout after committing changes. It requests a normal QML reload, waits for a new successful configuration load on the same running instance, and checks IPC responsiveness. It does not restart Quickshell or change settings. Missing or ambiguous instances, load failures, and timeouts fail deployment.
+Run `./deploy.sh` from this checkout after committing changes. After checking for exactly one matching instance, it installs the battery helper and narrow authd policy through existing installation authorization, then requests a normal QML reload, waits for a new successful configuration load on the same running instance, and checks IPC responsiveness. It does not restart Quickshell or change settings. Missing or ambiguous instances, installation failures, load failures, and timeouts fail deployment. Installation paths, permissions, prompt-free scope and evidence limits: [deployment](../specs/deployment.md#battery-authorization-installation).
 
 ### Inline component reload caveat
 
