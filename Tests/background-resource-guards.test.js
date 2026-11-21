@@ -6,9 +6,9 @@ const { extractFunctionBody, readQml } = require("./qml-test-utils");
 function testBackgroundAvoidsIdleTransitionShader() {
   const source = readQml("Modules/Background/Background.qml");
 
-  assert.match(source, /readonly property bool shaderActive: transitioning \|\| nextWallpaper\.source !== ""/, "background shader must be active only during transition work");
+  assert.match(source, /readonly property bool shaderActive: transitioning \|\| nextWallpaper\.source\.toString\(\) !== ""/, "background shader must be active only during transition work");
   assert.match(source, /active: root\.shaderActive/, "shader loader must unload while wallpaper is idle");
-  assert.match(source, /visible: !root\.shaderActive && currentWallpaper\.source !== ""/, "current wallpaper image must render directly while idle");
+  assert.match(source, /visible: !root\.shaderActive && currentWallpaper\.source\.toString\(\) !== ""/, "current wallpaper image must render directly while idle");
 }
 
 function testBackgroundSetsDecodeSizeBeforeSource() {

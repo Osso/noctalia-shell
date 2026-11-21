@@ -33,7 +33,7 @@ Variants {
       readonly property real edgeSmoothness: Settings.data.wallpaper.transitionEdgeSmoothness
       readonly property var allTransitions: WallpaperService.allTransitions
       readonly property bool transitioning: transitionAnimation.running
-      readonly property bool shaderActive: transitioning || nextWallpaper.source !== ""
+      readonly property bool shaderActive: transitioning || nextWallpaper.source.toString() !== ""
       readonly property size targetDecodeSize: calculateTargetDecodeSize()
 
       // Wipe direction: 0=left, 1=right, 2=up, 3=down
@@ -128,7 +128,7 @@ Variants {
         source: ""
         smooth: true
         mipmap: false
-        visible: !root.shaderActive && currentWallpaper.source !== ""
+        visible: !root.shaderActive && currentWallpaper.source.toString() !== ""
         fillMode: root.imageFillMode()
         cache: false
         asynchronous: true
