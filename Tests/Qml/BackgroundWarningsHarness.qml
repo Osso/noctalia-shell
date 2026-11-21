@@ -82,10 +82,9 @@ TestCase {
     tryCompare(nextImage, "status", Image.Null);
     compare(nextImage.source.toString(), "");
     tryCompare(currentImage, "asynchronous", true);
-    // Existing URL/string strict comparison prevents idle unload; not this slice's fix.
-    compare(window.shaderActive, true);
-    verify(shaderLoader.item !== null);
-    console.log("BACKGROUND_IDLE_UNLOAD_BLOCKED: empty source URL !== empty string");
+    compare(window.shaderActive, false);
+    tryCompare(shaderLoader, "item", null);
+    compare(currentImage.visible, true);
   }
 
   function test_decode_size_and_fill_modes() {
@@ -170,11 +169,8 @@ TestCase {
     tryCompare(window, "transitionProgress", 0);
     compare(nextImage.source.toString(), "");
     tryCompare(currentImage, "asynchronous", true);
-    if (window.shaderActive) {
-      console.log("BACKGROUND_IDLE_UNLOAD_BLOCKED: empty source URL !== empty string; no idle cleanup proof");
-    } else {
-      tryCompare(shaderLoader, "item", null);
-    }
+    compare(window.shaderActive, false);
+    tryCompare(shaderLoader, "item", null);
   }
 
   function test_settings_signal_and_random_selection() {
