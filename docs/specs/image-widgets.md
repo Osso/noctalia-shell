@@ -9,7 +9,7 @@ Image widgets cover shared rounded-image and cached-thumbnail resource behavior.
 - [x] Rounded images request decode size from rendered size and device pixel ratio.
 - [x] Rounded images avoid mipmap allocation for small rounded UI images.
 - [x] Rounded image shaders instantiate only while image resources are needed.
-- [x] Rounded images show the backing `Image` directly when running on the Qt Quick software backend (`GraphicsInfo.Software`), where `ShaderEffect` does not render.
+- [x] Rounded images render through a rounded-clipped `Canvas` when running on the Qt Quick software backend (`GraphicsInfo.Software`), where `ShaderEffect` does not render.
 
 ### Cached thumbnails
 

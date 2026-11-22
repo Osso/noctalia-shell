@@ -18,7 +18,8 @@ function testRoundedImageResourceGuards() {
   assert.match(shouldLoadBody, /if \(!visible \|\| showFallback\)[\s\S]*return false;[\s\S]*return imagePath !== "" && width > 0 && height > 0/, "NImageRounded must load image resources only while visible with size and source");
   assert.match(decodeBody, /Math\.ceil\(width \* scale\)[\s\S]*Math\.ceil\(height \* scale\)/, "NImageRounded must derive decode size from rendered size");
   assert.match(roundedSource, /readonly property bool isSoftwareBackend: root\.GraphicsInfo\.api === GraphicsInfo\.Software/, "NImageRounded must detect the Qt Quick software backend");
-  assert.match(roundedSource, /visible: root\.isSoftwareBackend && root\.shouldLoadImage\(\)/, "NImageRounded must display the backing Image when ShaderEffect is unavailable on the software backend");
+  assert.match(roundedSource, /Loader \{[\s\S]*active: root\.isSoftwareBackend && root\.shouldLoadImage\(\)[\s\S]*sourceComponent: softwareRoundedComponent/, "NImageRounded must instantiate the rounded software Canvas only on the software backend while image resources are needed");
+  assert.match(extractFunctionBody(roundedSource, "syncImageUrl"), /unloadImage[\s\S]*loadImage/, "NImageRounded software Canvas must unload previous image URLs when changing source");
   assert.match(roundedSource, /source: root\.shouldLoadImage\(\) \? root\.imagePath : ""/, "NImageRounded must clear Image source when hidden or fallback-only");
   assert.match(roundedSource, /mipmap: false/, "NImageRounded must avoid mipmap allocation for small rounded images");
   assert.match(roundedSource, /Loader \{[\s\S]*active: root\.shouldLoadImage\(\)[\s\S]*sourceComponent: roundedShaderComponent/, "NImageRounded must instantiate rounded shader only while image resources are needed");

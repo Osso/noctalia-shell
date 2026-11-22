@@ -109,13 +109,14 @@ Item {
         fallbackIcon: "disc"
       });
       const image = imageChild(widget);
+      const softwareLoader = widget.children[0].children[2];
       compare(widget.showFallback, true);
       compare(widget.shouldLoadImage(), false);
-      compare(image.visible, false);
+      compare(softwareLoader.active, false);
       widget.imagePath = Qt.resolvedUrl("red.svg");
       tryCompare(image, "status", Image.Ready);
       compare(widget.showFallback, false);
-      compare(image.visible, widget.isSoftwareBackend);
+      compare(softwareLoader.active, widget.isSoftwareBackend);
       verify(statusSpy.count > 0);
       compare(statusSpy.signalArguments[statusSpy.count - 1][0], Image.Ready);
       widget.imagePath = Qt.resolvedUrl("blue.svg");
@@ -124,14 +125,14 @@ Item {
       widget.visible = false;
       tryCompare(image, "status", Image.Null);
       compare(widget.shouldLoadImage(), false);
-      compare(image.visible, false);
+      compare(softwareLoader.active, false);
       widget.visible = true;
       tryCompare(image, "status", Image.Ready);
-      compare(image.visible, widget.isSoftwareBackend);
+      compare(softwareLoader.active, widget.isSoftwareBackend);
       widget.imagePath = "";
       tryCompare(image, "status", Image.Null);
       compare(widget.showFallback, true);
-      compare(image.visible, false);
+      compare(softwareLoader.active, false);
       compare(statusSpy.signalArguments[statusSpy.count - 1][0], Image.Null);
     }
 

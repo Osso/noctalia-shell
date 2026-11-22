@@ -48,7 +48,7 @@ Item {
       id: imageSource
       anchors.fill: parent
       anchors.margins: root.borderWidth
-      visible: root.isSoftwareBackend && root.shouldLoadImage()
+      visible: false
       source: root.shouldLoadImage() ? root.imagePath : ""
       sourceSize.width: root.shouldLoadImage() ? root.targetDecodeSize().width : 0
       sourceSize.height: root.shouldLoadImage() ? root.targetDecodeSize().height : 0
@@ -65,6 +65,14 @@ Item {
       anchors.margins: root.borderWidth
       active: root.shouldLoadImage()
       sourceComponent: roundedShaderComponent
+    }
+
+    Loader {
+      id: softwareRoundedLoader
+      anchors.fill: parent
+      anchors.margins: root.borderWidth
+      active: root.isSoftwareBackend && root.shouldLoadImage()
+      sourceComponent: softwareRoundedComponent
     }
 
     Component {
@@ -84,6 +92,83 @@ Item {
         fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/rounded_image.frag.qsb")
         supportsAtlasTextures: false
         blending: true
+      }
+    }
+
+    Component {
+      id: softwareRoundedComponent
+
+      Canvas {
+        id: roundedCanvas
+        visible: !root.showFallback
+        antialiasing: true
+
+        property string activeUrl: ""
+        readonly property string requestedUrl: imageSource.source.toString()
+        readonly property real cornerRadius: Math.max(0, root.radius - root.borderWidth)
+        readonly property int fillMode: root.imageFillMode
+
+        function syncImageUrl() {
+          if (roundedCanvas.activeUrl === roundedCanvas.requestedUrl) {
+            return;
+          }
+          if (roundedCanvas.activeUrl !== "") {
+            roundedCanvas.unloadImage(roundedCanvas.activeUrl);
+          }
+          roundedCanvas.activeUrl = roundedCanvas.requestedUrl;
+          if (roundedCanvas.activeUrl !== "") {
+            roundedCanvas.loadImage(roundedCanvas.activeUrl);
+          }
+          roundedCanvas.requestPaint();
+        }
+
+        Component.onCompleted: roundedCanvas.syncImageUrl()
+        Component.onDestruction: {
+          if (roundedCanvas.activeUrl !== "") {
+            roundedCanvas.unloadImage(roundedCanvas.activeUrl);
+            roundedCanvas.activeUrl = "";
+          }
+        }
+        onRequestedUrlChanged: roundedCanvas.syncImageUrl()
+        onImageLoaded: roundedCanvas.requestPaint()
+        onWidthChanged: roundedCanvas.requestPaint()
+        onHeightChanged: roundedCanvas.requestPaint()
+        onCornerRadiusChanged: roundedCanvas.requestPaint()
+        onFillModeChanged: roundedCanvas.requestPaint()
+
+        onPaint: {
+          const ctx = roundedCanvas.getContext("2d");
+          ctx.reset();
+          const url = roundedCanvas.activeUrl;
+          if (url === "" || !roundedCanvas.isImageLoaded(url) || roundedCanvas.width <= 0 || roundedCanvas.height <= 0) {
+            return;
+          }
+
+          const r = Math.min(roundedCanvas.cornerRadius, roundedCanvas.width / 2, roundedCanvas.height / 2);
+          ctx.beginPath();
+          ctx.roundedRect(0, 0, roundedCanvas.width, roundedCanvas.height, r, r);
+          ctx.clip();
+
+          let dx = 0;
+          let dy = 0;
+          let dw = roundedCanvas.width;
+          let dh = roundedCanvas.height;
+          const sw = imageSource.implicitWidth;
+          const sh = imageSource.implicitHeight;
+          if (sw > 0 && sh > 0 && (roundedCanvas.fillMode === Image.PreserveAspectCrop || roundedCanvas.fillMode === Image.PreserveAspectFit)) {
+            const itemAspect = roundedCanvas.width / roundedCanvas.height;
+            const sourceAspect = sw / sh;
+            const fitWidth = roundedCanvas.fillMode === Image.PreserveAspectCrop ? (sourceAspect < itemAspect) : (sourceAspect > itemAspect);
+            if (fitWidth) {
+              dh = roundedCanvas.width / sourceAspect;
+              dy = (roundedCanvas.height - dh) / 2;
+            } else {
+              dw = roundedCanvas.height * sourceAspect;
+              dx = (roundedCanvas.width - dw) / 2;
+            }
+          }
+          ctx.drawImage(url, dx, dy, dw, dh);
+        }
       }
     }
 
