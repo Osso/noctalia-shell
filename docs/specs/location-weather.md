@@ -6,7 +6,8 @@ Location/weather covers configured location lookup, cached coordinate reuse, wea
 
 - [x] Initialization logs Location service startup.
 - [x] Resetting weather marks coordinates as changing, clears stable display values, clears cached coordinates, clears cached weather, and triggers a weather refresh.
-- [x] Weather refreshes stop immediately when weather is disabled in settings.
+- [x] Weather refreshes stop immediately when weather is disabled in settings, while location geocoding still resolves coordinates and IANA timezone for `Time`.
+- [x] Geocoding persists the resolved IANA timezone and publishes it to `Time.setLocationTimezone` without modifying the OS system timezone.
 - [x] Weather refreshes avoid concurrent fetches and log that weather is still fetching.
 - [x] Weather refreshes run when weather data, coordinates, location name, or fetch freshness requires it.
 - [x] Weather refresh scheduling sleeps until the cache can expire instead of waking every few seconds while data is fresh.
@@ -29,7 +30,7 @@ Location/weather covers configured location lookup, cached coordinate reuse, wea
 
 ### Network requests and error handling
 
-- [x] Geocoding builds an encoded `assets.noctalia.dev` geocode URL.
+- [x] Geocoding builds an encoded `geocoding-api.open-meteo.com` search URL.
 - [x] Geocoding uses a typed string location-name input while keeping callbacks dynamic.
 - [x] Geocoding waits for completed XMLHttpRequest state before processing.
 - [x] Geocoding parses successful responses and calls back with resolved coordinates.

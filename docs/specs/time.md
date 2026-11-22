@@ -23,6 +23,7 @@ Time covers shared timestamp formatting, vague duration formatting, stopwatch/co
 ### Update cadence
 
 - [x] Shared Unix timestamps read current wall-clock time directly so they do not become stale when `Time.now` sleeps.
+- [x] `Time.now` shifts displayed wall-clock time to the configured location's IANA timezone without modifying the OS system timezone.
 - [x] `Time.now` sleeps until the next minute boundary when no visible UI requires seconds and no timer is running.
 - [x] Visible second-level clock consumers register and deregister second updates with ref-counted guards.
 - [x] Bar clock formats request second updates only when the active format includes second tokens.

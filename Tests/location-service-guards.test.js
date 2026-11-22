@@ -12,15 +12,23 @@ function testLocationServiceLifecycleAndRefreshGuards() {
   const logs = [];
   const fetches = [];
   const geocodes = [];
+  const timezones = [];
   const ctx = {
     coordinatesReady: true,
     stableLatitude: "32",
     stableLongitude: "-96",
     stableName: "Dallas, US",
-    cacheData: { latitude: "32", longitude: "-96", name: "Dallas", weatherLastFetch: 1000, weather: {} },
+    stableTimezone: "America/Chicago",
+    cacheData: { latitude: "32", longitude: "-96", name: "Dallas", timezone: "America/Chicago", weatherLastFetch: 1000, weather: {} },
     Settings: { data: { location: { name: "Dallas", weatherEnabled: true } } },
     isFetchingWeather: false,
-    Time: { timestamp: 1100 },
+    isFetchingLocation: false,
+    Time: {
+      timestamp: 1100,
+      setLocationTimezone(tz) {
+        timezones.push(tz);
+      },
+    },
     weatherUpdateFrequency: 1800,
     Logger: {
       i(...args) {
@@ -28,6 +36,9 @@ function testLocationServiceLifecycleAndRefreshGuards() {
       },
       d() {},
       w(...args) {
+        logs.push(args);
+      },
+      e(...args) {
         logs.push(args);
       },
     },
@@ -39,14 +50,14 @@ function testLocationServiceLifecycleAndRefreshGuards() {
       fetches.push([latitude, longitude]);
     },
     _geocodeLocation(name, callback, error) {
-      assert.equal(error, ctx.errorCallback);
       geocodes.push(name);
-      assert.equal(ctx.isFetchingWeather, true);
-      callback(48.85, 2.35, "Paris", "France");
+      callback(48.85, 2.35, "Paris", "France", "Europe/Paris");
     },
   };
   ctx.root = ctx;
   ctx.data = ctx.cacheData;
+  ctx.needsLocationGeocode = () => locationFunction("needsLocationGeocode")(ctx);
+  ctx.resolveLocation = () => locationFunction("resolveLocation")(ctx);
   ctx.shouldRefreshWeather = () => locationFunction("shouldRefreshWeather")(ctx);
   ctx.getFreshWeather = () => locationFunction("getFreshWeather")(ctx);
   ctx.updateWeather = () => locationFunction("updateWeather")(ctx);
@@ -62,12 +73,16 @@ function testLocationServiceLifecycleAndRefreshGuards() {
   ctx.updateWeather = () => {
     resetSnapshot = { ...ctx.cacheData };
     assert.equal(ctx.coordinatesReady, false);
-    assert.deepEqual([ctx.stableLatitude, ctx.stableLongitude, ctx.stableName], ["", "", ""]);
+    assert.deepEqual([ctx.stableLatitude, ctx.stableLongitude, ctx.stableName, ctx.stableTimezone], ["", "", "", ""]);
     updateWeather();
   };
   locationFunction("resetWeather")(ctx);
-  assert.deepEqual(resetSnapshot, { latitude: "", longitude: "", name: "", weatherLastFetch: 0, weather: null });
+  assert.deepEqual(resetSnapshot, { latitude: "", longitude: "", name: "", timezone: "", weatherLastFetch: 0, weather: null });
   assert.deepEqual(fetches, [], "disabled weather must not fetch even after reset");
+  assert.deepEqual(geocodes, ["Dallas"], "disabled weather must still resolve location and timezone");
+  assert.equal(ctx.coordinatesReady, true);
+  assert.equal(ctx.stableTimezone, "Europe/Paris");
+  assert.deepEqual(timezones, ["Europe/Paris"]);
   ctx.updateWeather = updateWeather;
 
   ctx.Settings.data.location.weatherEnabled = true;
@@ -76,30 +91,34 @@ function testLocationServiceLifecycleAndRefreshGuards() {
   assert.deepEqual(fetches, [], "in-flight fetch must not start another");
   assert.deepEqual(logs.at(-1), ["Location", "Weather is still fetching"]);
   ctx.isFetchingWeather = false;
+  ctx.cacheData.latitude = "";
+  ctx.cacheData.longitude = "";
+  ctx.cacheData.timezone = "";
   ctx.updateWeather();
-  assert.deepEqual(geocodes, ["Dallas"]);
+  assert.deepEqual(geocodes, ["Dallas", "Dallas"]);
   assert.deepEqual(fetches, [[48.85, 2.35]]);
-  assert.deepEqual(ctx.cacheData, { latitude: "48.85", longitude: "2.35", name: "Dallas", weatherLastFetch: 0, weather: null });
+  assert.deepEqual(ctx.cacheData, { latitude: "48.85", longitude: "2.35", name: "Dallas", timezone: "Europe/Paris", weatherLastFetch: 0, weather: null });
   assert.equal(ctx.stableName, "Paris, France");
   assert.equal(ctx.isFetchingWeather, true);
 
   ctx.isFetchingWeather = false;
   ctx.getFreshWeather();
   assert.deepEqual(fetches.at(-1), ["48.85", "2.35"], "unchanged location reuses cached coordinates");
-  assert.deepEqual(geocodes, ["Dallas"]);
+  assert.deepEqual(geocodes, ["Dallas", "Dallas"]);
   ctx.coordinatesReady = true;
   ctx.Settings.data.location.name = "Paris";
   ctx.getFreshWeather();
   assert.equal(ctx.coordinatesReady, false);
-  assert.deepEqual(geocodes, ["Dallas", "Paris"]);
+  assert.deepEqual(geocodes, ["Dallas", "Dallas", "Paris"]);
   assert.equal(ctx.cacheData.name, "Paris");
   assert.deepEqual(fetches.at(-1), [48.85, 2.35]);
 
-  for (const coordinate of ["latitude", "longitude"]) {
+  for (const coordinate of ["latitude", "longitude", "timezone"]) {
+    const beforeCount = geocodes.length;
     ctx.cacheData[coordinate] = "";
     ctx.getFreshWeather();
-    assert.equal(geocodes.length, coordinate === "latitude" ? 3 : 4);
-    assert.equal(ctx.cacheData[coordinate], coordinate === "latitude" ? "48.85" : "2.35");
+    assert.equal(geocodes.length, beforeCount + 1);
+    assert.equal(ctx.cacheData[coordinate], coordinate === "latitude" ? "48.85" : coordinate === "longitude" ? "2.35" : "Europe/Paris");
   }
 }
 
@@ -228,17 +247,18 @@ function testLocationServiceNetworkRequestGuards() {
   geocode(ctx, "Paris & suburbs", (...coordinates) => resolved.push(coordinates), error);
   const geoRequest = requests.at(-1);
   assert.equal(geoRequest.method, "GET");
-  assert.equal(geoRequest.url, "https://assets.noctalia.dev/geocode.php?city=Paris%20%26%20suburbs&language=en&format=json");
+  assert.equal(geoRequest.url, "https://geocoding-api.open-meteo.com/v1/search?name=Paris%20%26%20suburbs&count=1&language=en&format=json");
   assert.equal(geoRequest.sent, true);
-  geoRequest.respond(200, '{"lat":48.85,"lng":2.35,"name":"Paris","country":"France"}', 3);
+  geoRequest.respond(200, '{"results":[{"latitude":48.85,"longitude":2.35,"name":"Paris","country":"France","timezone":"Europe/Paris"}]}', 3);
   assert.deepEqual(resolved, [], "incomplete geocoding response must not publish coordinates");
-  geoRequest.respond(200, '{"lat":48.85,"lng":2.35,"name":"Paris","country":"France"}');
-  assert.deepEqual(resolved, [[48.85, 2.35, "Paris", "France"]]);
+  geoRequest.respond(200, '{"results":[{"latitude":48.85,"longitude":2.35,"name":"Paris","country":"France","timezone":"Europe/Paris"}]}');
+  assert.deepEqual(resolved, [[48.85, 2.35, "Paris", "France", "Europe/Paris"]]);
   assert.deepEqual(errors, []);
 
   for (
     const [status, payload, expected] of [
       [200, "{}", "could not resolve location name"],
+      [200, '{"results":[]}', "could not resolve location name"],
       [200, "invalid json", /^Failed to parse geocoding data:/],
       [503, "{}", "Geocoding error: 503"],
     ]
@@ -252,7 +272,7 @@ function testLocationServiceNetworkRequestGuards() {
     assert.equal(ctx.isFetchingWeather, false);
   }
   assert.equal(resolved.length, 1, "geocoding failures must not publish coordinates");
-  assert.equal(reschedules, 3);
+  assert.equal(reschedules, 4);
 
   ctx.isFetchingWeather = true;
   fetchWeather(ctx, 48.85, 2.35, error);
@@ -277,7 +297,7 @@ function testLocationServiceNetworkRequestGuards() {
   assert.deepEqual([ctx.stableLatitude, ctx.stableLongitude], ["48.85", "2.35"]);
   assert.equal(ctx.coordinatesReady, true);
   assert.equal(ctx.isFetchingWeather, false);
-  assert.equal(reschedules, 4);
+  assert.equal(reschedules, 5);
 
   for (
     const [status, payload, expected] of [
@@ -293,7 +313,7 @@ function testLocationServiceNetworkRequestGuards() {
     assert.deepEqual(ctx.data.weather, weather, "failed requests must preserve cached weather");
     assert.equal(ctx.data.weatherLastFetch, 1234);
   }
-  assert.equal(reschedules, 6);
+  assert.equal(reschedules, 7);
 }
 
 function testLocationServiceWeatherFormattingHelpers() {

@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SCENARIOS = (
     "cached",
     "reuse",
+    "location-only",
     "geocode",
     "missing",
     "geo-http-error",
@@ -51,9 +52,17 @@ def build_transport(directory):
     include_flags = shlex.split(
         command(["pkg-config", "--cflags", "Qt6Qml", "Qt6Network"])
     )
+    moc = next(
+        (
+            path
+            for path in ("/usr/lib/qt6/libexec/moc", "/usr/lib/qt6/moc")
+            if Path(path).exists()
+        ),
+        "/usr/lib/qt6/moc",
+    )
     command(
         [
-            "/usr/lib/qt6/moc",
+            moc,
             *include_flags,
             str(plugin / "LocationNetworkPlugin.cpp"),
             "-o",
@@ -103,7 +112,13 @@ def stage_service(directory):
   }
   property FixtureSettingsData data: FixtureSettingsData {}""",
     )
-    write_singleton(commons, "Time", "  property int timestamp: 1000")
+    write_singleton(
+        commons,
+        "Time",
+        """  property int timestamp: 1000
+  property string locationTimezone: ""
+  function setLocationTimezone(tz) { locationTimezone = tz || ""; }""",
+    )
     write_singleton(
         commons,
         "Logger",
@@ -247,6 +262,7 @@ def run_scenario(directory, scenario):
         "latitude": "",
         "longitude": "",
         "name": "",
+        "timezone": "",
         "weatherLastFetch": 0,
         "weather": None,
     }
@@ -255,6 +271,7 @@ def run_scenario(directory, scenario):
             latitude="32",
             longitude="-96",
             name="Fixture City",
+            timezone="America/Chicago",
             weatherLastFetch=1000 if scenario == "cached" else 1,
             weather=weather if scenario == "cached" else None,
         )
@@ -266,7 +283,17 @@ def run_scenario(directory, scenario):
     geo = {
         "status": 200,
         "body": json.dumps(
-            {"lat": 32, "lng": -96, "name": "Fixture City", "country": "ZZ"}
+            {
+                "results": [
+                    {
+                        "latitude": 32,
+                        "longitude": -96,
+                        "name": "Fixture City",
+                        "country": "ZZ",
+                        "timezone": "America/Chicago",
+                    }
+                ]
+            }
         ),
     }
     forecast = {"status": 200, "body": json.dumps(weather)}
@@ -306,18 +333,22 @@ def run_scenario(directory, scenario):
         0
         if scenario == "cached"
         else 1
-        if scenario == "reuse" or scenario.startswith("geo-")
+        if scenario in ("reuse", "location-only") or scenario.startswith("geo-")
         else 2
     )
     assert len(urls) == expected_count, urls
     saved = json.loads((directory / "location.json").read_text())
     if not scenario.endswith("error"):
         assert saved["latitude"] == "32" and saved["longitude"] == "-96", saved
-        assert saved["weatherLastFetch"] == 1000 and saved["weather"] == weather, saved
+        assert saved["timezone"] == "America/Chicago", saved
+        if scenario == "location-only":
+            assert saved["weatherLastFetch"] == 0 and saved["weather"] is None, saved
+        else:
+            assert saved["weatherLastFetch"] == 1000 and saved["weather"] == weather, saved
     if scenario not in ("cached", "reuse"):
         assert (
             urls[0]
-            == "https://assets.noctalia.dev/geocode.php?city=Fixture%20City&language=en&format=json"
+            == "https://geocoding-api.open-meteo.com/v1/search?name=Fixture%20City&count=1&language=en&format=json"
         ), urls
     if scenario in ("reuse", "geocode", "missing") or scenario.startswith("weather-"):
         assert urls[-1].startswith(

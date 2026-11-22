@@ -2,14 +2,18 @@ pragma Singleton
 import QtQuick
 
 import Quickshell
+import Quickshell.Io
 import qs.Commons
 import qs.Services.System
 
 Singleton {
   id: root
 
-  // Current date
+  // Current date (shifted to locationTimezone when resolved)
   property date now: new Date()
+  property string locationTimezone: ""
+  property var locationUtcOffsetSeconds: null
+  property int _lastOffsetRefreshHour: -1
 
   // Returns a Unix Timestamp (in seconds)
   readonly property int timestamp: Math.floor(Date.now() / 1000)
@@ -39,10 +43,73 @@ Singleton {
     onTriggered: root.updateTime(new Date())
   }
 
+  Process {
+    id: timezoneProcess
+    command: ["env", "TZ=" + root.locationTimezone, "date", "+%z"]
+    stdout: StdioCollector {
+      id: timezoneStdout
+      onStreamFinished: root.applyTimezoneOffsetString(timezoneStdout.text)
+    }
+  }
+
   Component.onCompleted: updateTime(new Date())
 
+  function parseUtcOffsetSeconds(offsetText) {
+    const match = /^([+-])(\d{2})(\d{2})$/.exec((offsetText || "").trim());
+    if (!match) {
+      return null;
+    }
+    const sign = match[1] === "-" ? -1 : 1;
+    const hours = parseInt(match[2], 10);
+    const minutes = parseInt(match[3], 10);
+    return sign * (hours * 3600 + minutes * 60);
+  }
+
+  function dateInLocationTimezone(currentTime, utcOffsetSeconds) {
+    if (utcOffsetSeconds === null || utcOffsetSeconds === undefined) {
+      return currentTime;
+    }
+    const localOffsetSeconds = -currentTime.getTimezoneOffset() * 60;
+    const deltaMs = (utcOffsetSeconds - localOffsetSeconds) * 1000;
+    return new Date(currentTime.getTime() + deltaMs);
+  }
+
+  function applyTimezoneOffsetString(offsetText) {
+    const parsed = root.parseUtcOffsetSeconds(offsetText);
+    if (parsed !== null) {
+      root.locationUtcOffsetSeconds = parsed;
+      root.updateTime(new Date());
+    }
+  }
+
+  function setLocationTimezone(tz) {
+    const normalized = (tz || "").trim();
+    if (normalized === root.locationTimezone && (normalized === "" || root.locationUtcOffsetSeconds !== null)) {
+      return;
+    }
+    root.locationTimezone = normalized;
+    if (normalized === "") {
+      root.locationUtcOffsetSeconds = null;
+      root._lastOffsetRefreshHour = -1;
+      root.updateTime(new Date());
+      return;
+    }
+    if (!/^[A-Za-z0-9_+-]+(\/[A-Za-z0-9_+-]+)*$/.test(normalized)) {
+      return;
+    }
+    timezoneProcess.running = false;
+    timezoneProcess.command = ["env", "TZ=" + normalized, "date", "+%z"];
+    timezoneProcess.running = true;
+  }
+
   function updateTime(currentTime) {
-    root.now = currentTime;
+    root.now = root.dateInLocationTimezone(currentTime, root.locationUtcOffsetSeconds);
+    if (root.locationTimezone !== "" && currentTime.getMinutes() === 0 && currentTime.getHours() !== root._lastOffsetRefreshHour) {
+      root._lastOffsetRefreshHour = currentTime.getHours();
+      timezoneProcess.running = false;
+      timezoneProcess.command = ["env", "TZ=" + root.locationTimezone, "date", "+%z"];
+      timezoneProcess.running = true;
+    }
     updateTimerState();
     scheduleNextUpdate(currentTime);
   }
@@ -173,7 +240,8 @@ Singleton {
 
   // Timer functions
   function timerStart() {
-    root.now = new Date();
+    const currentTime = new Date();
+    root.now = root.dateInLocationTimezone(currentTime, root.locationUtcOffsetSeconds);
     if (root.timerStopwatchMode) {
       root.timerRunning = true;
       root.timerStartTimestamp = root.timestamp;

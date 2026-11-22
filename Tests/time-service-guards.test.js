@@ -203,6 +203,62 @@ function testTimerSoundServiceCallsExecuteAgainstFakeService() {
   }]);
 }
 
+function testLocationTimezoneOffsetCalculationAndState() {
+  const source = readQml("Commons/Time.qml");
+  const parseUtcOffsetSeconds = new Function("ctx", "offsetText", `with (ctx) { return (function(offsetText) ${extractFunctionBody(source, "parseUtcOffsetSeconds")}).call(ctx, offsetText); }`);
+  const dateInLocationTimezone = new Function("ctx", "currentTime", "utcOffsetSeconds", `with (ctx) { return (function(currentTime, utcOffsetSeconds) ${extractFunctionBody(source, "dateInLocationTimezone")}).call(ctx, currentTime, utcOffsetSeconds); }`);
+  const applyTimezoneOffsetString = new Function("ctx", "offsetText", `with (ctx) { return (function(offsetText) ${extractFunctionBody(source, "applyTimezoneOffsetString")}).call(ctx, offsetText); }`);
+  const setLocationTimezone = new Function("ctx", "tz", `with (ctx) { return (function(tz) ${extractFunctionBody(source, "setLocationTimezone")}).call(ctx, tz); }`);
+  const updateTime = new Function("ctx", "currentTime", `with (ctx) { return (function(currentTime) ${extractFunctionBody(source, "updateTime")}).call(ctx, currentTime); }`);
+
+  const ctx = {
+    root: null,
+    now: new Date(0),
+    locationTimezone: "",
+    locationUtcOffsetSeconds: null,
+    _lastOffsetRefreshHour: -1,
+    timezoneProcess: { running: false, command: [] },
+    updates: 0,
+    updateTimerState() {},
+    scheduleNextUpdate() {},
+  };
+  ctx.root = ctx;
+  ctx.parseUtcOffsetSeconds = offsetText => parseUtcOffsetSeconds(ctx, offsetText);
+  ctx.dateInLocationTimezone = (currentTime, utcOffsetSeconds) => dateInLocationTimezone(ctx, currentTime, utcOffsetSeconds);
+  ctx.updateTime = currentTime => {
+    ctx.updates += 1;
+    updateTime(ctx, currentTime);
+  };
+
+  assert.equal(ctx.parseUtcOffsetSeconds("+0000"), 0);
+  assert.equal(ctx.parseUtcOffsetSeconds("-0600"), -21600);
+  assert.equal(ctx.parseUtcOffsetSeconds("+0530"), 19800);
+  assert.equal(ctx.parseUtcOffsetSeconds("invalid"), null);
+
+  const sample = new Date(Date.UTC(2026, 10, 22, 10, 30, 0));
+  assert.equal(ctx.dateInLocationTimezone(sample, null), sample);
+  const shiftedTokyo = ctx.dateInLocationTimezone(sample, 9 * 3600);
+  assert.equal(shiftedTokyo.getHours(), 19);
+  assert.equal(shiftedTokyo.getMinutes(), 30);
+  const shiftedChicago = ctx.dateInLocationTimezone(sample, -6 * 3600);
+  assert.equal(shiftedChicago.getHours(), 4);
+  assert.equal(shiftedChicago.getMinutes(), 30);
+
+  setLocationTimezone(ctx, "Europe/Lisbon");
+  assert.equal(ctx.locationTimezone, "Europe/Lisbon");
+  assert.deepEqual(ctx.timezoneProcess.command, ["env", "TZ=Europe/Lisbon", "date", "+%z"]);
+  assert.equal(ctx.timezoneProcess.running, true);
+
+  applyTimezoneOffsetString(ctx, "+0000\n");
+  assert.equal(ctx.locationUtcOffsetSeconds, 0);
+  assert.equal(ctx.updates, 1);
+
+  setLocationTimezone(ctx, "");
+  assert.equal(ctx.locationTimezone, "");
+  assert.equal(ctx.locationUtcOffsetSeconds, null);
+  assert.equal(ctx.updates, 2);
+}
+
 const tests = [
   testTimeFormattingSignaturesAreTyped,
   testRelativeTimeFormattingOutputsTranslatedBuckets,
@@ -213,6 +269,7 @@ const tests = [
   testTimerStartGuards,
   testTimerPauseResetAndFinishedGuards,
   testTimerSoundServiceCallsExecuteAgainstFakeService,
+  testLocationTimezoneOffsetCalculationAndState,
 ];
 
 for (const test of tests) {

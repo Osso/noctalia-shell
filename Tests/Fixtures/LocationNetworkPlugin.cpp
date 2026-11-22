@@ -16,7 +16,7 @@ public:
       : QNetworkReply(parent) {
     setRequest(request);
     setUrl(request.url());
-    const bool geocode = request.url().host() == "assets.noctalia.dev";
+    const bool geocode = request.url().host() == "geocoding-api.open-meteo.com";
     QFile fixture(qEnvironmentVariable("LOCATION_FIXTURES") +
                   (geocode ? "/geocode.json" : "/weather.json"));
     if (!fixture.open(QIODevice::ReadOnly))
@@ -62,7 +62,7 @@ protected:
                                const QNetworkRequest &request,
                                QIODevice *) override {
     if (operation != GetOperation ||
-        (request.url().host() != "assets.noctalia.dev" &&
+        (request.url().host() != "geocoding-api.open-meteo.com" &&
          request.url().host() != "api.open-meteo.com"))
       qFatal("Unexpected location provider request");
     QFile requests(qEnvironmentVariable("LOCATION_FIXTURES") + "/requests.txt");

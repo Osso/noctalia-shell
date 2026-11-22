@@ -13,6 +13,7 @@ Singleton {
   property int weatherUpdateFrequency: 30 * 60 // 30 minutes expressed in seconds
   property int weatherTimerIntervalMs: 1000
   property bool isFetchingWeather: false
+  property bool isFetchingLocation: false
 
   readonly property alias data: adapter // Public cached weather data.
   readonly property alias cacheData: adapter
@@ -22,6 +23,7 @@ Singleton {
   property string stableLatitude: ""
   property string stableLongitude: ""
   property string stableName: ""
+  property string stableTimezone: ""
 
   FileView {
     id: locationFileView
@@ -31,12 +33,18 @@ Singleton {
     onLoaded: {
       Logger.d("Location", "Loaded cached data");
       // Initialize stable properties on load
-      if (root.cacheData.latitude !== "" && root.cacheData.longitude !== "" && root.cacheData.weatherLastFetch > 0) {
+      if (root.cacheData.latitude !== "" && root.cacheData.longitude !== "" && root.cacheData.name === Settings.data.location.name) {
         root.stableLatitude = root.cacheData.latitude;
         root.stableLongitude = root.cacheData.longitude;
         root.stableName = root.cacheData.name;
-        root.coordinatesReady = true;
-        Logger.i("Location", "Coordinates ready");
+        root.stableTimezone = root.cacheData.timezone || "";
+        if (root.stableTimezone !== "") {
+          Time.setLocationTimezone(root.stableTimezone);
+        }
+        if (root.cacheData.weatherLastFetch > 0 || !Settings.data.location.weatherEnabled) {
+          root.coordinatesReady = true;
+          Logger.i("Location", "Coordinates ready");
+        }
       }
       root.updateWeather();
       root.scheduleWeatherUpdate();
@@ -53,6 +61,7 @@ Singleton {
       property string latitude: ""
       property string longitude: ""
       property string name: ""
+      property string timezone: ""
       property int weatherLastFetch: 0
       property var weather: null
     }
@@ -109,11 +118,13 @@ Singleton {
     root.stableLatitude = "";
     root.stableLongitude = "";
     root.stableName = "";
+    root.stableTimezone = "";
 
     // Reset core data
     root.cacheData.latitude = "";
     root.cacheData.longitude = "";
     root.cacheData.name = "";
+    root.cacheData.timezone = "";
     root.cacheData.weatherLastFetch = 0;
     root.cacheData.weather = null;
 
@@ -122,8 +133,43 @@ Singleton {
   }
 
   // --------------------------------
+  function needsLocationGeocode() {
+    return (root.cacheData.latitude === "") || (root.cacheData.longitude === "") || (root.cacheData.name !== Settings.data.location.name) || (root.cacheData.timezone === "");
+  }
+
+  // --------------------------------
+  function resolveLocation() {
+    if (root.isFetchingLocation || !Settings.data.location.name || !root.needsLocationGeocode()) {
+      return;
+    }
+
+    root.isFetchingLocation = true;
+    root.coordinatesReady = false;
+    _geocodeLocation(Settings.data.location.name, function (latitude, longitude, name, country, timezone) {
+      Logger.d("Location", "Geocoded", Settings.data.location.name, "to:", latitude, "/", longitude);
+      root.cacheData.name = Settings.data.location.name;
+      root.cacheData.latitude = latitude.toString();
+      root.cacheData.longitude = longitude.toString();
+      root.cacheData.timezone = timezone || "";
+      root.stableLatitude = root.cacheData.latitude;
+      root.stableLongitude = root.cacheData.longitude;
+      root.stableName = `${name}, ${country}`;
+      root.stableTimezone = root.cacheData.timezone;
+      root.coordinatesReady = true;
+      if (root.stableTimezone !== "") {
+        Time.setLocationTimezone(root.stableTimezone);
+      }
+      root.isFetchingLocation = false;
+    }, function (module, message) {
+      Logger.e(module, message);
+      root.isFetchingLocation = false;
+    });
+  }
+
+  // --------------------------------
   function updateWeather() {
     if (!Settings.data.location.weatherEnabled) {
+      root.resolveLocation();
       return;
     }
 
@@ -169,22 +215,31 @@ Singleton {
       Logger.d("Location", "Location changed from", root.cacheData.name, "to", Settings.data.location.name);
     }
 
-    if ((root.cacheData.latitude === "") || (root.cacheData.longitude === "") || locationChanged) {
-      _geocodeLocation(Settings.data.location.name, function (latitude, longitude, name, country) {
+    if (root.needsLocationGeocode()) {
+      _geocodeLocation(Settings.data.location.name, function (latitude, longitude, name, country, timezone) {
         Logger.d("Location", "Geocoded", Settings.data.location.name, "to:", latitude, "/", longitude);
 
         // Save location name
         root.cacheData.name = Settings.data.location.name;
 
-        // Save GPS coordinates
+        // Save GPS coordinates and timezone
         root.cacheData.latitude = latitude.toString();
         root.cacheData.longitude = longitude.toString();
+        root.cacheData.timezone = timezone || "";
 
         root.stableName = `${name}, ${country}`;
+        root.stableTimezone = root.cacheData.timezone;
+        if (root.stableTimezone !== "") {
+          Time.setLocationTimezone(root.stableTimezone);
+        }
 
         _fetchWeather(latitude, longitude, errorCallback);
       }, errorCallback);
     } else {
+      if (root.cacheData.timezone && root.cacheData.timezone !== "") {
+        root.stableTimezone = root.cacheData.timezone;
+        Time.setLocationTimezone(root.stableTimezone);
+      }
       _fetchWeather(root.cacheData.latitude, root.cacheData.longitude, errorCallback);
     }
   }
@@ -192,15 +247,16 @@ Singleton {
   // --------------------------------
   function _geocodeLocation(locationName, callback, errorCallback) {
     Logger.d("Location", "Geocoding location name");
-    var geoUrl = "https://assets.noctalia.dev/geocode.php?city=" + encodeURIComponent(locationName) + "&language=en&format=json";
+    var geoUrl = "https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(locationName) + "&count=1&language=en&format=json";
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function () {
       if (xhr.readyState === XMLHttpRequest.DONE) {
         if (xhr.status === 200) {
           try {
             const geoData = JSON.parse(xhr.responseText);
-            if (geoData.lat != null) {
-              callback(geoData.lat, geoData.lng, geoData.name, geoData.country);
+            const first = geoData.results && geoData.results.length > 0 ? geoData.results[0] : null;
+            if (first && first.latitude != null && first.longitude != null) {
+              callback(first.latitude, first.longitude, first.name, first.country, first.timezone || "");
             } else {
               errorCallback("Location", "could not resolve location name");
             }

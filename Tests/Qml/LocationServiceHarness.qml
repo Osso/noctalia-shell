@@ -32,14 +32,17 @@ ShellRoot {
     onTriggered: {
       const service = root.service;
       if (root.step++ === 0) {
-        if (root.scenario === "missing")
-          return; // Enabled startup refresh comes from the real FileView load failure.
+        if (root.scenario === "missing" || root.scenario === "location-only")
+          return;
         root.require(!service.isFetchingWeather, "disabled weather must not fetch on cache load");
         if (root.scenario === "cached") {
           root.require(service.coordinatesReady, "cache must publish coordinates");
           root.require(service.displayCoordinates === "32.0000, -96.0000", "cache display coordinates");
           root.require(service.stableName === "Fixture City", "cache name");
+          root.require(Time.locationTimezone === "America/Chicago", "cache timezone published");
         }
+        if (root.scenario.startsWith("geo-"))
+          return; // Location geocode runs on load even with weather disabled.
         Settings.data.location.weatherEnabled = true;
         if (root.scenario === "reuse")
           return; // Exercise the production update Timer, not a manual refresh.
@@ -51,14 +54,25 @@ ShellRoot {
         return;
       }
       const saveFinished = root.step >= (root.scenario === "reuse" ? 25 : 14);
-      if (service.isFetchingWeather || (!root.scenario.endsWith("error") && !saveFinished))
+      if (service.isFetchingWeather || service.isFetchingLocation || (!root.scenario.endsWith("error") && !saveFinished))
         return; // Allow the real one-second adapter save timer to finish.
       if (root.scenario.endsWith("error")) {
-        root.require(!service.coordinatesReady, "failure must not publish coordinates");
         root.require(Logger.errors.length === 1, "provider failure must be logged once");
         const expected = root.expectedErrors[root.scenario];
         root.require(Logger.errors[0].startsWith(expected), "wrong provider error: " + Logger.errors[0]);
-        root.require(service.weatherTimerIntervalMs === 1000, "failure retry interval");
+        if (root.scenario.startsWith("weather-")) {
+          root.require(service.weatherTimerIntervalMs === 1000, "failure retry interval");
+        } else {
+          root.require(!service.coordinatesReady, "failure must not publish coordinates");
+        }
+      } else if (root.scenario === "location-only") {
+        root.require(Logger.errors.length === 0, "unexpected provider error");
+        root.require(service.coordinatesReady, "location-only must publish coordinates");
+        root.require(service.displayCoordinates === "32.0000, -96.0000", "location-only display");
+        root.require(service.stableName === "Fixture City, ZZ", "location-only stable name");
+        root.require(service.stableTimezone === "America/Chicago", "location-only stable timezone");
+        root.require(Time.locationTimezone === "America/Chicago", "location-only Time timezone");
+        root.require(service.data.weather === null, "location-only must not fetch weather");
       } else {
         root.require(Logger.errors.length === 0, "unexpected provider error");
         root.require(service.coordinatesReady, "success must publish coordinates");
@@ -68,6 +82,7 @@ ShellRoot {
         root.require(service.data.weather.current_weather.temperature === 21, "provider JSON cached");
         root.require(service.weatherTimerIntervalMs === 1800000, "fresh cache expiry scheduling");
         root.require(service.stableName === (root.scenario === "geocode" || root.scenario === "missing" ? "Fixture City, ZZ" : "Fixture City"), "stable location name");
+        root.require(Time.locationTimezone === "America/Chicago", "Time timezone published");
       }
       console.log("LOCATION_PASS", root.scenario);
       Qt.exit(0);
