@@ -111,9 +111,11 @@ Item {
       const image = imageChild(widget);
       compare(widget.showFallback, true);
       compare(widget.shouldLoadImage(), false);
+      compare(image.visible, false);
       widget.imagePath = Qt.resolvedUrl("red.svg");
       tryCompare(image, "status", Image.Ready);
       compare(widget.showFallback, false);
+      compare(image.visible, widget.isSoftwareBackend);
       verify(statusSpy.count > 0);
       compare(statusSpy.signalArguments[statusSpy.count - 1][0], Image.Ready);
       widget.imagePath = Qt.resolvedUrl("blue.svg");
@@ -122,11 +124,14 @@ Item {
       widget.visible = false;
       tryCompare(image, "status", Image.Null);
       compare(widget.shouldLoadImage(), false);
+      compare(image.visible, false);
       widget.visible = true;
       tryCompare(image, "status", Image.Ready);
+      compare(image.visible, widget.isSoftwareBackend);
       widget.imagePath = "";
       tryCompare(image, "status", Image.Null);
       compare(widget.showFallback, true);
+      compare(image.visible, false);
       compare(statusSpy.signalArguments[statusSpy.count - 1][0], Image.Null);
     }
 

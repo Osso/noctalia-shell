@@ -18,6 +18,7 @@ Item {
   property int imageFillMode: Image.PreserveAspectCrop
 
   readonly property bool showFallback: (fallbackIcon !== undefined && fallbackIcon !== "") && (imagePath === undefined || imagePath === "")
+  readonly property bool isSoftwareBackend: root.GraphicsInfo.api === GraphicsInfo.Software
 
   signal statusChanged(int status)
 
@@ -47,7 +48,7 @@ Item {
       id: imageSource
       anchors.fill: parent
       anchors.margins: root.borderWidth
-      visible: false
+      visible: root.isSoftwareBackend && root.shouldLoadImage()
       source: root.shouldLoadImage() ? root.imagePath : ""
       sourceSize.width: root.shouldLoadImage() ? root.targetDecodeSize().width : 0
       sourceSize.height: root.shouldLoadImage() ? root.targetDecodeSize().height : 0
