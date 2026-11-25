@@ -27,6 +27,9 @@ function resolveIconPath(iconApi, iconName, fallbackName) {
   const fallback = fallbackName || "application-x-executable";
   const primary = iconName || "";
 
+  if (primary.startsWith("file:///") || primary.startsWith("file://localhost/"))
+    return primary;
+
   if (!iconApi || !iconApi.iconPath)
     return "";
 

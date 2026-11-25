@@ -17,12 +17,23 @@ Singleton {
     }
   }
 
+  function localFileUrl(path) {
+    return `file://${path.split("/").map(encodeURIComponent).join("/")}`;
+  }
+
   function sanitizeDesktopEntryIcon(iconName, fallbackName) {
     const fallback = fallbackName || "application-x-executable";
     if (!iconName) {
       return fallback;
     }
-    if (iconName.startsWith("/") || iconName.startsWith("file:")) {
+    if (iconName.startsWith("/")) {
+      return localFileUrl(iconName);
+    }
+    const isLocalFileUrl = iconName.startsWith("file:///") || iconName.startsWith("file://localhost/");
+    if (isLocalFileUrl) {
+      return iconName;
+    }
+    if (/^[a-z][a-z0-9+.-]*:/i.test(iconName)) {
       return fallback;
     }
     return iconName;

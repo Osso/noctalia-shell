@@ -65,6 +65,7 @@ Variants {
         nextWallpaper.source = "";
       }
 
+
       Connections {
         target: Settings.data.wallpaper
         function onFillModeChanged() {
