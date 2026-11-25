@@ -52,6 +52,7 @@ TestCase {
 
     function init() {
         suite.configure();
+        UPower.onBattery = true;
         const display = UPower.displayDevice;
         display.ready = true;
         display.isPresent = true;
@@ -219,6 +220,17 @@ TestCase {
         suite.compare(second.closeCount, 0);
         suite.compare(second.isPanelOpen, true);
         suite.verify(suite.texts(second).includes("25%"));
+    }
+
+    function test_pluggedInIdle() {
+        UPower.displayDevice.state = UPowerDeviceState.PendingCharge;
+        UPower.displayDevice.timeToEmpty = 0;
+        const panel = suite.createPanel();
+        suite.verify(suite.texts(panel).includes("battery.idle"));
+        UPower.onBattery = false;
+        suite.tryVerify(() => suite.texts(panel).includes("battery.plugged-in · battery.idle"));
+        UPower.onBattery = true;
+        suite.tryVerify(() => suite.texts(panel).includes("battery.idle"));
     }
 
     function test_absentIdleAndHealth() {

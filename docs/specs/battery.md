@@ -18,6 +18,8 @@ Battery covers UPower battery selection, Bluetooth battery matching, low-battery
 
 ### Battery panel display
 
+- The laptop battery panel displays `Plugged in` when UPower reports external power, independently of charge state or estimated charge time. It removes that label when external power disconnects and does not apply laptop AC status to peripheral batteries.
+
 - [x] Battery panel device-path selection prefers a right-section battery widget over left and center sections.
 - [x] Battery panel device-path selection falls back from left to center sections.
 - [x] Battery panel device-path selection ignores missing device paths and non-battery widgets.

@@ -96,9 +96,10 @@ QtObject {
 """,
             "UPowerDeviceType": singleton("enum Type { Battery, LinePower, Mouse }"),
             "UPowerDeviceState": singleton(
-                "enum State { Discharging, Charging, FullyCharged }"
+                "enum State { Discharging, Charging, FullyCharged, PendingCharge }"
             ),
-            "UPower": singleton("""property UPowerDevice displayDevice: UPowerDevice {}
+            "UPower": singleton("""property bool onBattery: true
+property UPowerDevice displayDevice: UPowerDevice {}
 component DeviceList: QtObject { property var values: [] }
 property DeviceList devices: DeviceList {}
 """),

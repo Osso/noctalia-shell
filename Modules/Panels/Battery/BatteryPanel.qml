@@ -199,7 +199,7 @@ SmartPanel {
             }
 
             NText {
-              text: root.timeText
+              text: root.isReady && root.battery.isLaptopBattery && !UPower.onBattery ? `${I18n.tr("battery.plugged-in")} · ${root.timeText}` : root.timeText
               pointSize: Style.fontSizeS
               color: NColor.mOnSurfaceVariant
               wrapMode: Text.Wrap
